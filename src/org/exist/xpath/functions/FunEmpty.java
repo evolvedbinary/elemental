@@ -20,51 +20,47 @@
  *  
  *  $Id$
  */
-package org.exist.xpath.functions.xmldb;
+package org.exist.xpath.functions;
 
 import org.exist.dom.DocumentSet;
 import org.exist.dom.QName;
 import org.exist.xpath.Cardinality;
+import org.exist.xpath.Dependency;
 import org.exist.xpath.Function;
 import org.exist.xpath.FunctionSignature;
 import org.exist.xpath.StaticContext;
 import org.exist.xpath.XPathException;
+import org.exist.xpath.value.BooleanValue;
 import org.exist.xpath.value.Item;
-import org.exist.xpath.value.JavaObjectValue;
 import org.exist.xpath.value.Sequence;
 import org.exist.xpath.value.SequenceType;
 import org.exist.xpath.value.Type;
-import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.XMLDBException;
 
 /**
  * @author wolf
  */
-public class XMLDBCollection extends Function {
+public class FunEmpty extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("collection", XMLDB_FUNCTION_NS, "xmldb"),
-			"Get a reference to a collection identified by the XMLDB URI passed " +
-			"as first argument. The second argument should specify the name of " +
-			"a valid user, the third is the password. The method returns a Java object " +
-			"type, which can then be used as argument to the create-collection or store " +
-			"functions.",
+			new QName("empty", BUILTIN_FUNCTION_NS),
+			"Returns true if the value of the argument is the empty sequence, false otherwise.",
 			new SequenceType[] {
-				 new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE),
-				 new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE),
-				new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE)},
-			new SequenceType(Type.JAVA_OBJECT, Cardinality.ZERO_OR_ONE));
-
-	/**
-	 * @param context
-	 * @param signature
-	 */
-	public XMLDBCollection(StaticContext context) {
+				 new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE)
+			},
+			new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE));
+	
+	public FunEmpty(StaticContext context) {
 		super(context, signature);
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see org.exist.xpath.Function#getDependencies()
+	 */
+	public int getDependencies() {
+		return Dependency.CONTEXT_SET;
+	}
+	
 	/* (non-Javadoc)
 	 * @see org.exist.xpath.Expression#eval(org.exist.dom.DocumentSet, org.exist.xpath.value.Sequence, org.exist.xpath.value.Item)
 	 */
@@ -73,15 +69,9 @@ public class XMLDBCollection extends Function {
 		Sequence contextSequence,
 		Item contextItem)
 		throws XPathException {
-		String collectionURI = getArgument(0).eval(docs, contextSequence, contextItem).getStringValue();
-		String user = getArgument(1).eval(docs, contextSequence, contextItem).getStringValue();
-		String passwd = getArgument(2).eval(docs, contextSequence, contextItem).getStringValue();
-		Collection collection = null;
-		try {
-			collection = DatabaseManager.getCollection(collectionURI, user, passwd);
-		} catch (XMLDBException e) {
-			LOG.debug("exception while retrieving collection: " + e.getMessage(), e);
-		}
-		return collection == null ? Sequence.EMPTY_SEQUENCE : new JavaObjectValue(collection);
+		if(contextItem != null)
+			contextSequence = contextItem.toSequence();
+		Sequence seq = getArgument(0).eval(docs, contextSequence, contextItem);
+		return seq.getLength() == 0 ? BooleanValue.TRUE : BooleanValue.FALSE;
 	}
 }

@@ -20,51 +20,44 @@
  *  
  *  $Id$
  */
-package org.exist.xpath.functions.xmldb;
+package org.exist.xpath.functions.request;
 
+import javax.servlet.http.HttpSession;
+
+import org.apache.cocoon.environment.Session;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.QName;
 import org.exist.xpath.Cardinality;
 import org.exist.xpath.Function;
 import org.exist.xpath.FunctionSignature;
 import org.exist.xpath.StaticContext;
+import org.exist.xpath.Variable;
 import org.exist.xpath.XPathException;
 import org.exist.xpath.value.Item;
 import org.exist.xpath.value.JavaObjectValue;
 import org.exist.xpath.value.Sequence;
 import org.exist.xpath.value.SequenceType;
 import org.exist.xpath.value.Type;
-import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.XMLDBException;
 
 /**
  * @author wolf
  */
-public class XMLDBCollection extends Function {
+public class SetSessionAttribute extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("collection", XMLDB_FUNCTION_NS, "xmldb"),
-			"Get a reference to a collection identified by the XMLDB URI passed " +
-			"as first argument. The second argument should specify the name of " +
-			"a valid user, the third is the password. The method returns a Java object " +
-			"type, which can then be used as argument to the create-collection or store " +
-			"functions.",
+			new QName("set-session-attribute", REQUEST_FUNCTION_NS, "request"),
+			"Stores a value in the current session using the supplied attribute name.",
 			new SequenceType[] {
-				 new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE),
-				 new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE),
-				new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE)},
-			new SequenceType(Type.JAVA_OBJECT, Cardinality.ZERO_OR_ONE));
+				new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE),
+				new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE)
+			},
+			new SequenceType(Type.ITEM, Cardinality.EMPTY));
 
-	/**
-	 * @param context
-	 * @param signature
-	 */
-	public XMLDBCollection(StaticContext context) {
+	public SetSessionAttribute(StaticContext context) {
 		super(context, signature);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see org.exist.xpath.Expression#eval(org.exist.dom.DocumentSet, org.exist.xpath.value.Sequence, org.exist.xpath.value.Item)
 	 */
@@ -73,15 +66,23 @@ public class XMLDBCollection extends Function {
 		Sequence contextSequence,
 		Item contextItem)
 		throws XPathException {
-		String collectionURI = getArgument(0).eval(docs, contextSequence, contextItem).getStringValue();
-		String user = getArgument(1).eval(docs, contextSequence, contextItem).getStringValue();
-		String passwd = getArgument(2).eval(docs, contextSequence, contextItem).getStringValue();
-		Collection collection = null;
-		try {
-			collection = DatabaseManager.getCollection(collectionURI, user, passwd);
-		} catch (XMLDBException e) {
-			LOG.debug("exception while retrieving collection: " + e.getMessage(), e);
-		}
-		return collection == null ? Sequence.EMPTY_SEQUENCE : new JavaObjectValue(collection);
+		// session object is read from global variable $session
+		Variable var = context.resolveVariable("session");
+		if(var.getValue() == null)
+			throw new XPathException("Session not set");
+		if(var.getValue().getItemType() != Type.JAVA_OBJECT)
+			throw new XPathException("Variable $session is not bound to an Java object.");
+		JavaObjectValue session = (JavaObjectValue) var.getValue().itemAt(0);
+		
+		// get attribute name parameter
+		String attrib = getArgument(0).eval(docs, contextSequence, contextItem).getStringValue();
+		Sequence value = getArgument(1).eval(docs, contextSequence, contextItem);
+		if(session.getObject() instanceof Session)
+			((Session)session.getObject()).setAttribute(attrib, value);
+		else if(session.getObject() instanceof HttpSession)
+			((HttpSession)session.getObject()).setAttribute(attrib, value);
+		else
+			throw new XPathException("Type error: variable $session is not bound to a session object");
+		return Sequence.EMPTY_SEQUENCE;
 	}
 }
