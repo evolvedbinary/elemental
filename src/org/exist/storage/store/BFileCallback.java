@@ -1,5 +1,4 @@
-
-package org.exist.storage;
+package org.exist.storage.store;
 
 import org.dbxml.core.data.Value;
 

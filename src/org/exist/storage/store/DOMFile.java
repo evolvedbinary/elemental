@@ -1,4 +1,4 @@
-package org.exist.storage;
+package org.exist.storage.store;
 
 /*
  *  eXist Open Source Native XML Database
@@ -42,6 +42,10 @@ import org.exist.dom.DocumentImpl;
 import org.exist.dom.NodeImpl;
 import org.exist.dom.NodeIndexListener;
 import org.exist.dom.NodeProxy;
+import org.exist.storage.BufferStats;
+import org.exist.storage.NativeBroker;
+import org.exist.storage.Signatures;
+import org.exist.storage.NativeBroker.NodeRef;
 import org.exist.util.ByteArrayPool;
 import org.exist.util.ByteConversion;
 import org.exist.util.Lock;
@@ -955,21 +959,6 @@ public class DOMFile extends BTree implements Lockable {
 					+ "; previous-page = "
 					+ rec.page.getPageHeader().getPrevDataPage());
 			throw new RuntimeException("shrinked");
-			//			int next = rec.offset + 2 + l;
-			//			ByteConversion.shortToByte(
-			//				(short) value.length,
-			//				rec.page.data,
-			//				rec.offset);
-			//			rec.offset += 2;
-			//			System.arraycopy(value, 0, rec.page.data, rec.offset, value.length);
-			//			rec.offset += value.length;
-			//			System.arraycopy(
-			//				rec.page.data,
-			//				next,
-			//				rec.page.data,
-			//				rec.offset,
-			//				rec.page.getPageHeader().getDataLength() - next);
-			//			rec.page.len = rec.page.len - (l - value.length);
 		} else if (value.length > l) {
 			throw new IllegalStateException("value too long");
 		} else {

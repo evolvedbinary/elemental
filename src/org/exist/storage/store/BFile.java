@@ -20,7 +20,7 @@
  * 
  *  $Id:
  */
-package org.exist.storage;
+package org.exist.storage.store;
 
 import it.unimi.dsi.fastutil.Long2ObjectLinkedOpenHashMap;
 
@@ -39,6 +39,7 @@ import org.dbxml.core.filer.BTree;
 import org.dbxml.core.filer.BTreeCallback;
 import org.dbxml.core.filer.BTreeException;
 import org.dbxml.core.indexer.IndexQuery;
+import org.exist.storage.BufferStats;
 import org.exist.util.ByteArray;
 import org.exist.util.ByteConversion;
 import org.exist.util.FastByteBuffer;
@@ -943,7 +944,7 @@ public class BFile extends BTree {
 	 *@param  value  Description of the Parameter
 	 *@return        Description of the Return Value
 	 */
-	protected long update(long p, Value key, ByteArray value) throws ReadOnlyException {
+	public long update(long p, Value key, ByteArray value) throws ReadOnlyException {
 		try {
 			long pos = (long) pageFromPointer(p);
 			DataPage page = getDataPage(pos);

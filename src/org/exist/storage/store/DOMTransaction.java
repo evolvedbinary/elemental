@@ -1,5 +1,4 @@
-
-package org.exist.storage;
+package org.exist.storage.store;
 
 import org.exist.util.Lock;
 import org.exist.util.LockException;

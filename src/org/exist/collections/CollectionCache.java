@@ -3,13 +3,12 @@
  * 
  * @author wolf
  */
-package org.exist.util;
+package org.exist.collections;
 
 import it.unimi.dsi.fastutil.Object2ObjectAVLTreeMap;
 
 import java.util.Iterator;
 
-import org.exist.dom.Collection;
 
 public class CollectionCache {
 

@@ -1,5 +1,4 @@
-
-package org.exist.storage;
+package org.exist.storage.store;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -9,8 +8,8 @@ import org.dbxml.core.data.Value;
 import org.dbxml.core.filer.BTree;
 import org.dbxml.core.filer.BTreeException;
 import org.exist.dom.NodeProxy;
-import org.exist.storage.DOMFile.DOMFilePageHeader;
-import org.exist.storage.DOMFile.DOMPage;
+import org.exist.storage.store.DOMFile.DOMFilePageHeader;
+import org.exist.storage.store.DOMFile.DOMPage;
 import org.exist.util.ByteConversion;
 import org.exist.util.Lock;
 import org.exist.util.LockException;

@@ -3,11 +3,11 @@
  * 
  * @author wolf
  */
-package org.exist.storage;
+package org.exist.storage.store;
 
 import java.io.File;
 
-import org.exist.util.CollectionCache;
+import org.exist.collections.CollectionCache;
 
 public class CollectionStore extends BFile {
 

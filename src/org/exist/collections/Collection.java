@@ -21,13 +21,11 @@
  * 
  * $Id:
  */
-package org.exist.dom;
+package org.exist.collections;
 
 import it.unimi.dsi.fastutil.Object2LongRBTreeMap;
 import it.unimi.dsi.fastutil.Object2ObjectRBTreeMap;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +34,8 @@ import java.util.List;
 import java.util.TreeSet;
 
 import org.apache.log4j.Category;
+import org.exist.dom.DocumentImpl;
+import org.exist.dom.DocumentSet;
 import org.exist.security.Group;
 import org.exist.security.Permission;
 import org.exist.security.SecurityManager;
@@ -45,15 +45,32 @@ import org.exist.util.SyntaxException;
 import org.exist.util.VariableByteInputStream;
 import org.exist.util.VariableByteOutputStream;
 
+/**
+ * This class represents a collection in the database.
+ * 
+ * A collection maintains a list of sub-collections and documents.
+ *  
+ * @author wolf
+ */
 public class Collection implements Comparable {
 
 	private final static Category LOG =
-		Category.getInstance(Collection.class.getName());	
+		Category.getInstance(Collection.class.getName());
+		
+	private final static String COLLECTION_CONFIG_FILE = "collection.xconf";
+	
+	// the broker instance that created this collection	
 	private DBBroker broker;
+	
 	private int refCount = 0;
 	private short collectionId = -1;
+	
+	// the documents contained in this collection
 	private Object2ObjectRBTreeMap documents = new Object2ObjectRBTreeMap();
+	
+	// the name of this collection
 	private String name;
+	
 	private Permission permissions = new Permission(0755);
 	
 	// stores child-collections with their storage address
@@ -63,6 +80,8 @@ public class Collection implements Comparable {
 	// temporary field for the storage address
 	private long address = -1;
 
+	//private CollectionConfiguration configuration = null;
+	
 	public Collection(DBBroker broker) {
 		this.broker = broker;
 	}
@@ -71,11 +90,11 @@ public class Collection implements Comparable {
 		this(broker);
 		this.name = name;
 	}
-
+	
 	/**
-	 *  Adds a feature to the Collection attribute of the Collection object
+	 *  Add a new sub-collection to the collection.
 	 *
-	 *@param  name  The feature to be added to the Collection attribute
+	 *@param  name
 	 */
 	synchronized public void addCollection(Collection child) {
 		final int p = child.name.lastIndexOf('/') + 1;
@@ -84,11 +103,21 @@ public class Collection implements Comparable {
 			subcollections.put(childName, child.address);
 	}
 
+	/**
+	 * Add a new sub-collection to the collection.
+	 * 
+	 * @param name
+	 */
 	synchronized public void addCollection(String name) {
 		if(!subcollections.containsKey(name))
 			subcollections.put(name, -1);
 	}
 	
+	/**
+	 * Update the specified child-collection.
+	 * 
+	 * @param child
+	 */
 	synchronized public void update(Collection child) {
 		final int p = child.name.lastIndexOf('/') + 1;
 		final String childName = child.name.substring(p);
@@ -97,9 +126,9 @@ public class Collection implements Comparable {
 	}
 	
 	/**
-	 *  Adds a feature to the Document attribute of the Collection object
+	 *  Add a document to the collection.
 	 *
-	 *@param  doc  The feature to be added to the Document attribute
+	 *@param  doc 
 	 */
 	synchronized public void addDocument(DocumentImpl doc) {
 		if (doc.getDocId() < 0)
@@ -108,10 +137,10 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Adds a feature to the Document attribute of the Collection object
+	 *  Add a document to the collection.
 	 *
-	 *@param  user  The feature to be added to the Document attribute
-	 *@param  doc   The feature to be added to the Document attribute
+	 *@param  user
+	 *@param  doc
 	 */
 	synchronized public void addDocument(User user, DocumentImpl doc) {
 		addDocument(doc);
@@ -142,7 +171,7 @@ public class Collection implements Comparable {
 	 * 
 	 * @return List
 	 */
-	public List getDescendants(User user) {
+	public synchronized List getDescendants(User user) {
 		final ArrayList cl = new ArrayList(subcollections.size());
 		Collection child;
 		String childName;
@@ -158,7 +187,17 @@ public class Collection implements Comparable {
 		return cl;
 	}
 
-	public DocumentSet allDocs(User user, boolean recursive) {
+	/**
+	 * Retrieve all documents contained in this collections.
+	 * 
+	 * If recursive is true, documents from sub-collections are
+	 * included.
+	 * 
+	 * @param user
+	 * @param recursive
+	 * @return
+	 */
+	public synchronized DocumentSet allDocs(User user, boolean recursive) {
 		DocumentSet docs = new DocumentSet();
 		getDocuments(docs);
 		if(recursive)
@@ -186,17 +225,16 @@ public class Collection implements Comparable {
 		return docs;
 	}
 
-	public void getDocuments(DocumentSet docs) {
+	/**
+	 * Add all documents to the specified document set.
+	 *  
+	 * @param docs
+	 */
+	public synchronized void getDocuments(DocumentSet docs) {
 		docs.addCollection(this);
 		docs.addAll(documents.values());
 	}
 
-	/**
-	 *  Description of the Method
-	 *
-	 *@param  obj  Description of the Parameter
-	 *@return      Description of the Return Value
-	 */
 	public int compareTo(Object obj) {
 		Collection other = (Collection) obj;
 		if (collectionId == other.collectionId)
@@ -214,42 +252,36 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Gets the childCollectionCount attribute of the Collection object
+	 *  Return the number of child-collections managed by this
+	 * collection.
 	 *
 	 *@return    The childCollectionCount value
 	 */
-	public int getChildCollectionCount() {
+	public synchronized int getChildCollectionCount() {
 		return subcollections.size();
 	}
 
 	/**
-	 *  Gets the document attribute of the Collection object
+	 *  Get a child-document.
 	 *
 	 *@param  name  Description of the Parameter
 	 *@return       The document value
 	 */
-	public DocumentImpl getDocument(String name) {
+	public synchronized DocumentImpl getDocument(String name) {
 		return (DocumentImpl) documents.get(name);
-//		DocumentImpl doc;
-//		for (Iterator i = documents.iterator(); i.hasNext();) {
-//			doc = (DocumentImpl) i.next();
-//			if (doc.getFileName().equals(name))
-//				return doc;
-//		}
-//		return null;
 	}
 
 	/**
-	 *  Gets the documentCount attribute of the Collection object
+	 *  Returns the number of documents in this collection.
 	 *
 	 *@return    The documentCount value
 	 */
-	public int getDocumentCount() {
+	public synchronized int getDocumentCount() {
 		return documents.size();
 	}
 
 	/**
-	 *  Gets the id attribute of the Collection object
+	 *  Get the internal id.
 	 *
 	 *@return    The id value
 	 */
@@ -258,7 +290,7 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Gets the name attribute of the Collection object
+	 *  Get the name of this collection.
 	 *
 	 *@return    The name value
 	 */
@@ -267,11 +299,12 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Gets the parent attribute of the Collection object
+	 *  Returns the parent-collection.
 	 *
-	 *@return    The parent value
+	 *@return    The parent-collection or null if this
+	 *is the root collection.
 	 */
-	public Collection getParent() {
+	public synchronized Collection getParent() {
 		if (name.equals("/db"))
 			return null;
 		String parent =
@@ -282,52 +315,70 @@ public class Collection implements Comparable {
 	}
 
 	/**
+	 * Returns the broker instance that created this collection.
+	 * 
+	 * @return
+	 */
+	protected synchronized DBBroker getBroker() {
+		return broker;
+	}
+	
+	public synchronized void setBroker(DBBroker newBroker) {
+		broker = newBroker;
+	}
+	
+	/**
 	 *  Gets the permissions attribute of the Collection object
 	 *
 	 *@return    The permissions value
 	 */
-	public Permission getPermissions() {
+	public synchronized Permission getPermissions() {
 		return permissions;
 	}
 
 	/**
-	 *  Gets the symbols attribute of the Collection object
+	 *  Check if the collection has a child document.
 	 *
-	 *@return    The symbols value
+	 *@param  name  the name (without path) of the document
+	 *@return  
 	 */
-	public SymbolTable getSymbols() {
-		return null;
-	}
-
-	/**
-	 *  Description of the Method
-	 *
-	 *@param  name  Description of the Parameter
-	 *@return       Description of the Return Value
-	 */
-	public boolean hasDocument(String name) {
+	public synchronized boolean hasDocument(String name) {
 		return getDocument(name) != null;
 	}
 
 	/**
-	 *  Description of the Method
+	 *  Check if the collection has a sub-collection.
 	 *
-	 *@param  name  Description of the Parameter
-	 *@return       Description of the Return Value
+	 *@param  name  the name of the subcollection (without path).
+	 *@return  
 	 */
-	public boolean hasSubcollection(String name) {
+	public synchronized boolean hasSubcollection(String name) {
 		return subcollections.containsKey(name);
 	}
 
 	/**
-	 *  Description of the Method
+	 *  Returns an iterator on the child-documents in this collection.
 	 *
-	 *@return    Description of the Return Value
+	 *@return
 	 */
-	public Iterator iterator() {
+	public synchronized Iterator iterator() {
 		return documents.values().iterator();
 	}
 
+//	public synchronized CollectionConfiguration getConfiguration() 
+//	throws CollectionConfigurationException {
+//		if(configuration == null)
+//			configuration = 
+//				new CollectionConfiguration(this, getDocument(COLLECTION_CONFIG_FILE));
+//		return configuration;
+//	}
+	
+	/**
+	 * Read collection contents from the stream.
+	 * 
+	 * @param istream
+	 * @throws IOException
+	 */
 	public void read(VariableByteInputStream istream) throws IOException {
 		collectionId = istream.readShort();
 		final int collLen = istream.readInt();
@@ -360,33 +411,25 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Description of the Method
+	 *  Remove the specified sub-collection.
 	 *
 	 *@param  name  Description of the Parameter
 	 */
-	public void removeCollection(String name) {
+	public synchronized void removeCollection(String name) {
 		subcollections.remove(name);
 	}
 
 	/**
-	 *  Description of the Method
+	 *  Remove the specified document from the collection.
 	 *
 	 *@param  name  Description of the Parameter
 	 */
 	synchronized public void removeDocument(String name) {
 		documents.remove(name);
-//		DocumentImpl doc;
-//		for (Iterator i = documents.iterator(); i.hasNext();) {
-//			doc = (DocumentImpl) i.next();
-//			if (doc.getFileName().equals(name)) {
-//				i.remove();
-//				return;
-//			}
-//		}
 	}
 
 	/**
-	 *  Sets the id attribute of the Collection object
+	 *  Set the id of this collection.
 	 *
 	 *@param  id  The new id value
 	 */
@@ -395,7 +438,7 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Sets the name attribute of the Collection object
+	 *  Set the name of this collection.
 	 *
 	 *@param  name  The new name value
 	 */
@@ -404,51 +447,39 @@ public class Collection implements Comparable {
 	}
 
 	/**
-	 *  Sets the permissions attribute of the Collection object
+	 *  Set permissions for the collection.
 	 *
 	 *@param  mode  The new permissions value
 	 */
-	public void setPermissions(int mode) {
+	public synchronized void setPermissions(int mode) {
 		permissions.setPermissions(mode);
 	}
 
 	/**
-	 *  Sets the permissions attribute of the Collection object
+	 *  Set permissions for the collection.
 	 *
 	 *@param  mode                 The new permissions value
 	 *@exception  SyntaxException  Description of the Exception
 	 */
-	public void setPermissions(String mode) throws SyntaxException {
+	public synchronized void setPermissions(String mode) throws SyntaxException {
 		permissions.setPermissions(mode);
 	}
 
-	public void setPermissions(Permission permissions) {
+	/**
+	 * Set permissions for the collection.
+	 * 
+	 * @param permissions
+	 */
+	public synchronized void setPermissions(Permission permissions) {
 		this.permissions = permissions;
 	}
 	
 	/**
-	 *  Description of the Method
-	 *
-	 *@param  ostream          Description of the Parameter
-	 *@exception  IOException  Description of the Exception
+	 * Write collection contents to stream.
+	 * 
+	 * @param ostream
+	 * @throws IOException
 	 */
-	public void write(DataOutput ostream) throws IOException {
-		ostream.writeShort(collectionId);
-		ostream.writeUTF(name);
-		ostream.writeInt(subcollections.size());
-		for (Iterator i = collectionIterator(); i.hasNext();)
-			ostream.writeUTF((String) i.next());
-
-		//        symbols.write(ostream);
-		permissions.write(ostream);
-		ostream.writeInt(documents.size());
-		DocumentImpl doc;
-		for (Iterator i = iterator(); i.hasNext();) {
-			doc = (DocumentImpl) i.next();
-			doc.write(ostream);
-		}
-	}
-
 	public void write(VariableByteOutputStream ostream) throws IOException {
 		ostream.writeShort(collectionId);
 		ostream.writeInt(subcollections.size());
@@ -478,6 +509,11 @@ public class Collection implements Comparable {
 		}
 	}
 
+	/**
+	 * Set the internal storage address of the collection data.
+	 * 
+	 * @param addr
+	 */
 	public void setAddress(long addr) {
 		this.address = addr;
 	}

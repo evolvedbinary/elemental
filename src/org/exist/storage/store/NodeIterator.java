@@ -1,4 +1,4 @@
-package org.exist.storage;
+package org.exist.storage.store;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -9,8 +9,6 @@ import org.dbxml.core.filer.BTreeException;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.NodeImpl;
 import org.exist.dom.NodeProxy;
-import org.exist.storage.DOMFile.DOMFilePageHeader;
-import org.exist.storage.DOMFile.DOMPage;
 import org.exist.util.ByteConversion;
 import org.exist.util.Lock;
 import org.exist.util.LockException;
@@ -33,7 +31,7 @@ public final class NodeIterator implements Iterator {
 	DocumentImpl doc = null;
 	int offset;
 	short lastTID = -1;
-	DOMPage p = null;
+	DOMFile.DOMPage p = null;
 	long page;
 	long startAddress = -1;
 	Object lockKey;
@@ -81,7 +79,7 @@ public final class NodeIterator implements Iterator {
 			}
 			if(gotoNextPosition()) {
 				db.getPageBuffer().add(p);
-				final DOMFilePageHeader ph = p.getPageHeader();
+				final DOMFile.DOMFilePageHeader ph = p.getPageHeader();
 				if (offset < ph.getDataLength())
 					return true;
 				else if (ph.getNextDataPage() < 0)
@@ -114,7 +112,7 @@ public final class NodeIterator implements Iterator {
 				return null;
 			}
 			if(gotoNextPosition()) {
-				final DOMFilePageHeader ph = p.getPageHeader();
+				final DOMFile.DOMFilePageHeader ph = p.getPageHeader();
 				// next value larger than length of the current page?
 				if (offset >= ph.getDataLength()) {
 					// load next page in chain
