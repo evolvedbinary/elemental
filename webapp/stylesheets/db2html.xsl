@@ -140,7 +140,14 @@
     
     <xsl:template match="bookinfo">
         <div id="top">
-            <img src="logo.jpg" title="eXist"/>
+            <xsl:choose>
+                <xsl:when test="graphic/@fileref">
+                    <img src="{graphic/@fileref}"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <img src="logo.jpg" title="eXist"/>
+                </xsl:otherwise>
+            </xsl:choose>
             <table id="menubar">
                 <tr>
                     <td id="header"><xsl:value-of select="title"/></td>
