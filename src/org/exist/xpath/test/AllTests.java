@@ -20,48 +20,26 @@
  *  
  *  $Id$
  */
-package org.exist.xpath;
+package org.exist.xpath.test;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 /**
- * An XQuery order specifier as specified in an "order by" clause.
- * 
- * @author wolf
+ * @author Wolfgang Meier (wolfgang@exist-db.org)
  */
-public class OrderSpec {
+public class AllTests {
 
-	public static final int ASCENDING_ORDER = 0;
-	public static final int DESCENDING_ORDER = 1;
-	
-	public static final int EMPTY_GREATEST = 0;
-	public static final int EMPTY_LEAST = 4;
-	
-	private Expression expression;
-	private int modifiers = 0;
-	
-	/**
-	 * 
-	 */
-	public OrderSpec(Expression sortExpr) {
-		this.expression = sortExpr;
+	public static void main(String[] args) {
+		junit.swingui.TestRunner.run(AllTests.class);
 	}
 
-	public void setModifiers(int modifiers) {
-		this.modifiers = modifiers;
-	}
-	
-	public Expression getSortExpression() {
-		return expression;
-	}
-	
-	public int getModifiers() {
-		return modifiers;
-	}
-	
-	public String toString() {
-		StringBuffer buf = new StringBuffer();
-		buf.append(expression.pprint());
-		buf.append(' ');
-		buf.append((modifiers & DESCENDING_ORDER) == 0 ? "ascending" : "descending");
-		return buf.toString();
+	public static Test suite() {
+		TestSuite suite = new TestSuite("Test for org.exist.xpath.test");
+		//$JUnit-BEGIN$
+		suite.addTestSuite(LexerTest.class);
+		suite.addTestSuite(XPathQueryTest.class);
+		//$JUnit-END$
+		return suite;
 	}
 }
