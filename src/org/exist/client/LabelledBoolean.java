@@ -19,36 +19,31 @@
  *
  *  $Id$
  */
-package org.exist.xquery;
+package org.exist.client;
 
 /**
- * Base class to be implemented by an index module if it wants to rewrite
- * certain query expressions. Subclasses should overwrite the rewriteXXX methods
- * they are interested in.
+ * Simple Label and Boolean value
  *
- * @author Wolfgang Meier
+ * @author Adam Retter <adam@existsolutions.com>
  */
-public class QueryRewriter {
+public class LabelledBoolean {  
+    private final String label;
+    private final boolean set;
 
-    private final XQueryContext context;
-
-    public QueryRewriter(XQueryContext context) {
-        this.context = context;
+    public LabelledBoolean(final String label, final boolean set) {
+        this.label = label;
+        this.set = set;
     }
 
-    /**
-     * Rewrite the expression to make use of indexes. The method may also return an additional
-     * pragma to be added to the extension expression which is inserted by the optimizer.
-     *
-     * @param locationStep
-     * @return
-     * @throws XPathException
-     */
-    public Pragma rewriteLocationStep(LocationStep locationStep) throws XPathException {
-        return null;
+    public String getLabel() {
+        return label;
     }
 
-    protected XQueryContext getContext() {
-        return context;
+    public boolean isSet() {
+        return set;
+    }
+    
+    public LabelledBoolean copy(final boolean set) {
+        return new LabelledBoolean(getLabel(), set);
     }
 }
