@@ -75,6 +75,17 @@
         </dependency -->
 
         <dependency>
+            <groupId>com.evolvedbinary.xpdl</groupId>
+            <artifactId>xpdl-extension</artifactId>
+            <version>20150512</version>
+        </dependency>
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
+            <version>3.3.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.evolvedbinary.multilock</groupId>
             <artifactId>multilock</artifactId>
         </dependency>

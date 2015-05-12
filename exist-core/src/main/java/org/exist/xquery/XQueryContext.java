@@ -89,6 +89,7 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.hashtable.NamePool;
 import org.exist.xmldb.XmldbURI;
+import org.exist.xpdl.XpdlExtensionModuleBridge;
 import org.exist.xquery.parser.*;
 import org.exist.xquery.pragmas.*;
 import org.exist.xquery.update.Modification;
@@ -1757,23 +1758,22 @@ public class XQueryContext implements BinaryValueManager, Context {
         }
     }
 
-    private @Nullable Module instantiateModule(final String namespaceURI, final Class<Module> moduleClass,
-                                               final Map<String, Map<String, List<? extends Object>>> moduleParameters) {
+
+    protected @Nullable Module instantiateModule( String namespaceURI, Class<Module> mClass, Map<String, Map<String, List<? extends Object>>> moduleParameters) {
+        @Nullable final Module module;
+        if(org.exist.xquery.Module.class.isAssignableFrom(mClass)) {
+            module = instantiateNativeModule(mClass, moduleParameters.get(namespaceURI));
+        } else if(xpdl.extension.Module.class.isAssignableFrom(mClass)) {
+            module = instantiateXpdlExtensionModule(mClass, moduleParameters.get(namespaceURI));
+        } else {
+            module = null;
+        }
+
+	if (module == null) {
+		return null;
+	}
+
         try {
-            final Constructor<Module> constructor = XQueryContext.getModuleConstructor(moduleClass);
-
-            if (constructor == null) {
-                LOG.warn("Module {} has no matching public constructor!", moduleClass.getName());
-                return null;
-            }
-
-            final Module module;
-            if (constructor.getParameterCount() == 1) {
-                module = constructor.newInstance(moduleParameters.get(namespaceURI));
-            } else {
-                // attempt for a constructor that takes 0 arguments
-                module = constructor.newInstance();
-            }
 
             if (namespaceURI != null && !module.getNamespaceURI().equals(namespaceURI)) {
                 LOG.warn("the module declares a different namespace URI. Expected: {} found: {}", namespaceURI, module.getNamespaceURI());
@@ -1791,8 +1791,22 @@ public class XQueryContext implements BinaryValueManager, Context {
                 ((InternalModule) module).prepare(this);
             }
             return module;
-        } catch (final InstantiationException | IllegalAccessException | InvocationTargetException | XPathException e) {
-            LOG.warn("error while instantiating module class {}", moduleClass.getName(), e);
+        } catch (final XPathException e) {
+            LOG.warn("error while instantiating module class {}", mClass.getName(), e);
+            return null;
+        }
+    }
+
+    private @Nullable Module instantiateNativeModule(final Class mClass, final Map<String, List<? extends Object>> parameters) {
+        try {
+	    final Constructor<Module> constructor = getModuleConstructor(mClass);
+            if (constructor == null) {
+                LOG.warn("Module {} has no matching public constructor!", mClass.getName());
+                return null;
+            }
+            return constructor.newInstance(parameters);
+        } catch(final InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            LOG.error("error while instantiating module class " + mClass.getName(), e);
             return null;
         }
     }
@@ -1808,6 +1822,16 @@ public class XQueryContext implements BinaryValueManager, Context {
             } catch (final NoSuchMethodException noUsableConstructor) {
                 return null;
             }
+        }
+    }
+
+    private @Nullable Module instantiateXpdlExtensionModule(final Class mClass, final Map<String, List<? extends Object>> parameters) {
+        try {
+            final xpdl.extension.Module module = (xpdl.extension.Module)mClass.newInstance();
+            return XpdlExtensionModuleBridge.from(module, parameters);
+        } catch(final InstantiationException | IllegalAccessException e) {
+            LOG.error("error while instantiating XPDL extension module class " + mClass.getName(), e);
+            return null;
         }
     }
 
