@@ -990,6 +990,7 @@
                 <parameter name="exiftool-path" value="/usr/bin/exiftool" description="file system path to the exiftool perl script"/>
             </module -->
             <module uri="http://expath.org/ns/http-client" class="org.expath.exist.HttpClientModule"/>
+            <module uri="http://expath.org/ns/task" class="org.expath.task.TaskModule"/>
             <module uri="http://expath.org/ns/zip" class="org.expath.exist.ZipModule"/>
             <module uri="http://exquery.org/ns/request" class="org.exist.extensions.exquery.modules.request.RequestModule"/>
             <module uri="http://exquery.org/ns/restxq" class="org.exist.extensions.exquery.restxq.impl.xquery.RestXqModule"/>
