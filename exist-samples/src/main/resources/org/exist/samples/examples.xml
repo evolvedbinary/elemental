@@ -1,0 +1,263 @@
+<?xml version="1.0"?>
+
+<!--    
+    This file contains example queries for the web interface
+    (see webapp/sandbox/)
+-->
+<example-queries>
+    <query>
+        <description>Simple full text query on the Shakespeare plays</description>
+        <code><![CDATA[//SPEECH[ft:query(., 'love')]]]></code>
+    </query>
+    <query>
+        <description>Full text query searching for phrase</description>
+        <code><![CDATA[//SPEECH[ngram:contains(SPEAKER, 'witch')][ft:query(., '"fenny snake"')]]]></code>
+    </query>
+    <query>
+        <description>Full text query using near</description>
+        <code><![CDATA[let $query :=
+    <query>
+        <near slop="20"><term>snake</term><near>tongue dog</near></near>
+    </query>
+return //SPEECH[ft:query(., $query)]]]></code>
+    </query>
+    <query>
+        <description>Full text query with results ordered by match score</description>
+        <code><![CDATA[for $m in //SPEECH[ft:query(., "boil bubble")]
+let $score := ft:score($m)
+order by $score descending
+return <m score="{$score}">{$m}</m>]]></code>
+    </query>
+    <query>
+        <description>Show the context of a match</description>
+        <code><![CDATA[let $query :=
+    <query>
+        <bool><term occur="must">nation</term><wildcard occur="should">miser*</wildcard></bool>
+    </query>
+for $speech in //SPEECH[ft:query(., $query)]
+let $scene := $speech/ancestor::SCENE,
+    $act := $scene/ancestor::ACT,
+    $play := $scene/ancestor::PLAY
+    return
+        <hit>
+            <play title="{$play/TITLE}">
+                <act title="{$act/TITLE}">
+                    <scene title="{$scene/TITLE}">{$speech}</scene>
+                </act>
+            </play>
+        </hit>]]></code>
+    </query>
+    <query>
+        <description>Group hits by play</description>
+        <code><![CDATA[let $speech := //SPEECH[ft:query(., "passion*")]
+let $plays := (for $s in $speech return root($s))
+for $play in $plays/PLAY
+let $hits := $play//$speech
+return
+	<play title="{$play/TITLE}" hits="{count($hits)}">
+		{$hits}
+	</play>]]></code>
+    </query>
+    <query>
+        <description>Show table of contents for Macbeth</description>
+        <code><![CDATA[
+<toc>{
+    for $act in doc("/db/shakespeare/plays/macbeth.xml")/PLAY/ACT
+    return
+        <act>
+            {$act/TITLE}
+            {
+                for $scene in $act/SCENE return
+                    <scene>
+                        {$scene/TITLE}
+                        <actors>
+                        {
+                            for $speaker in distinct-values($scene//SPEAKER)
+                            order by $speaker return
+                                <actor>{$speaker}</actor>
+                        }
+                        </actors>
+                    </scene>
+            }
+        </act>
+}</toc>]]></code>
+    </query>
+	<query>
+		<description>Basic Keywords in Context Display</description>
+		<code><![CDATA[import module namespace kwic="http://exist-db.org/xquery/kwic";
+
+let $config :=
+  <config xmlns="" width="30"
+    table="no"/>
+
+for $hit in //SPEECH[ft:query(., "hell")]
+let $matches := kwic:get-matches($hit)
+for $ancestor in $matches/ancestor::SPEECH
+return
+  kwic:get-summary($ancestor, ($ancestor//exist:match)[1], $config)
+]]></code>
+	</query>
+    <query>
+        <description>Keywords in Context with Callback</description>
+        <code><![CDATA[import module namespace kwic="http://exist-db.org/xquery/kwic";
+
+declare function local:filter($node as node(), $mode as xs:string) as xs:string? {
+  if ($node/parent::SPEAKER or $node/parent::STAGEDIR) then 
+      ()
+  else if ($mode eq 'before') then 
+      concat($node, ' ')
+  else 
+      concat(' ', $node)
+};
+
+<table>{
+    for $hit in doc("/db/shakespeare/plays/hamlet.xml")//SPEECH[ft:query(., "nature")]
+    order by ft:score($hit) descending
+    return
+        kwic:summarize($hit, <config width="40" table="yes"/>,
+            util:function(xs:QName("local:filter"), 2))
+}</table>]]></code>
+    </query>
+    <query>
+            <description>Find books by author</description>
+            <code><![CDATA[xquery version "1.0";
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+declare namespace dc="http://purl.org/dc/elements/1.1/";
+
+for $p in distinct-values(doc('/db/library/biblio.rdf')//dc:creator)
+let $books := //rdf:Description[dc:creator&=$p]
+return
+        <result>
+                <creator titles="{count($books)}">{$p}</creator>
+                {for $b in $books return $b/dc:title}
+        </result>]]></code>
+    </query>
+    <query>
+    	<description>Find a city by name</description>
+	<code><![CDATA[
+(:  This script accesses the mondial database, which can be
+    found at http://dbis.informatik.uni-goettingen.de/Mondial/ :)
+for $city in /mondial//city[name&='tre*']
+return
+	<result>
+		{$city}
+		<country>{$city/ancestor::country/name}</country>
+		<province>{$city/ancestor::province/name}</province>
+	</result>]]></code>
+    </query>
+	<query>
+		<description>Show countries with decreasing population</description>
+		<code><![CDATA[for $c in //country[population_growth < 0]
+order by $c/name
+return
+<country>
+  {$c/name, $c/population_growth}
+</country>
+]]></code>
+	</query>
+    <query>
+    	<description>Find spanish provinces and their cities</description>
+        <code><![CDATA[xquery version "1.0";
+(:  This script accesses the mondial database, which can be
+    found at http://dbis.informatik.uni-goettingen.de/Mondial/ :)
+
+let $country := /mondial/country[name = 'Spain']
+for $province in $country/province
+order by $province/name
+return
+	<province>
+		{$province/name}
+		{
+			for $city in $country//city[@province=$province/@id]
+			order by $city/name
+			return $city
+		}
+	</province>]]></code>
+    </query>
+    <query>
+        <description>List all organizations Germany is a member of</description>
+        <code><![CDATA[
+    (:  This script accesses the mondial database, which can be
+        found at http://dbis.informatik.uni-goettingen.de/Mondial/ :)
+        /mondial/id(/mondial/country[@car_code="D"]/@memberships)]]></code>
+    </query>
+    <query>
+        <description>Countries having a common border with Austria</description>
+        <code><![CDATA[/mondial/id(/mondial/country[name = "Austria"]/border/@country)/name
+        ]]></code>
+    </query>
+    <query>
+        <description>For each country, list 3 cities with highest population</description>
+        <code><![CDATA[(:  This script accesses the mondial database, which can be
+    found at http://dbis.informatik.uni-goettingen.de/Mondial/ :)
+for $country in /mondial/country
+let $cities := 
+    (for $city in $country//city[population] 
+    order by xs:integer($city/population[1]) descending 
+    return $city)
+order by $country/name
+return
+    <country name="{$country/name}">
+    {
+        subsequence($cities, 1, 3)
+    }
+    </country>]]></code>
+    </query>
+    <query>
+        <description>Show countries with highest roman catholic population</description>
+        <code><![CDATA[for $country in /mondial/country
+where some $r in $country/religions satisfies $r = "Roman Catholic"
+order by $country/religions[. = "Roman Catholic"]/@percentage cast as xs:double descending
+return
+  <country name="{$country/name}">
+    {$country/religions}
+  </country>
+]]></code>
+    </query>
+    <query>
+        <description>Java binding (static)</description>
+        <code><![CDATA[xquery version "1.0";
+
+declare namespace math="java:java.lang.Math";
+
+<random>{ceiling(math:random() * 100)}</random>]]></code>
+    </query>
+    <query>
+        <description>Java binding (instance)</description>
+        <code><![CDATA[xquery version "1.0";
+
+declare namespace rand="java:java.util.Random";
+
+let $r := rand:new()
+return
+<random>{rand:nextInt($r, 100)}</random>]]></code>
+    </query>
+    <query>
+        <description>Request module</description>
+        <code><![CDATA[xquery version "1.0";
+
+declare namespace request="http://exist-db.org/xquery/request";
+
+<request>
+<request-uri>{request:get-uri()}</request-uri>
+<parameters>
+	{
+		for $name in request:get-parameter-names() return
+			<parameter name="{$name}">
+				<value>{request:get-parameter($name, ())}</value>
+			</parameter>
+	}
+</parameters>
+</request>]]></code>
+    </query>
+    <query>
+        <description>Display system properties</description>
+        <code><![CDATA[
+<system>
+    <version>{util:system-property("product-version")}</version>
+    <build>{util:system-property("product-build")}</build>
+    <jvm>{util:system-property("java.vendor"), util:system-property("java.version")}</jvm>
+</system>]]>
+        </code>
+    </query>
+</example-queries>
