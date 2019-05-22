@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<disclaimer>
+	<p xml:id="statement">The opinions presented herein represent those 
+	of the individual and should not be interpreted as the official 
+	policy endorsed by this organization.</p>
+
+	<comment xmlns="http://test.org">
+		This comment uses a different default namespace.
+	</comment>
+</disclaimer>
