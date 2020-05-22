@@ -1601,7 +1601,9 @@
                                 <include>src/main/java/org/exist/xquery/value/ValueSequence.java</include>
                                 <include>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</include>
+                                <include>src/main/java/org/exist/xslt/EXistDbXMLReader.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
+                                <include>src/main/java/org/exist/xslt/StylesheetResolverAndCompiler.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
                                 <include>src/main/java/org/exist/xupdate/Append.java</include>
                                 <include>src/main/java/org/exist/xupdate/Conditional.java</include>
@@ -2588,7 +2590,9 @@
                                 <exclude>src/main/java/org/exist/xquery/value/ValueSequence.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xslt/EXistDbXMLReader.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
+                                <exclude>src/main/java/org/exist/xslt/StylesheetResolverAndCompiler.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Append.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Conditional.java</exclude>
