@@ -58,6 +58,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
+import org.xml.sax.ext.LexicalHandler;
 
 /**
  * {@link org.xml.sax.XMLReader} that uses an {@link org.exist.storage.serializers.Serializer}
@@ -117,7 +118,7 @@ public class EXistDbXMLReader implements XMLReader, Locator {
         try {
             this.source = input;  
             this.contentHandler.setDocumentLocator(this);
-            serializer.setSAXHandlers(this.contentHandler, null);
+            serializer.setSAXHandlers(this.contentHandler, this.contentHandler instanceof LexicalHandler ? (LexicalHandler)this.contentHandler : null);
             serializer.toSAX(source.getDocument());
         }
         catch (SAXParseException e) {
