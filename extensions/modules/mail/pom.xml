@@ -72,7 +72,6 @@
     <properties>
         <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <eclipse.angus-mail.version>2.0.5</eclipse.angus-mail.version>
-        <jakarta.activation-api.version>2.1.4</jakarta.activation-api.version>
         <greenmail.version>2.1.7</greenmail.version>
     </properties>
 
@@ -91,13 +90,6 @@
         <dependency>
             <groupId>jakarta.activation</groupId>
             <artifactId>jakarta.activation-api</artifactId>
-            <version>${jakarta.activation-api.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.angus</groupId>
-            <artifactId>angus-activation</artifactId>
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -269,7 +261,7 @@
                             <!--
                                 FDB backport to LGPL 2.1-only licensed code
                             -->
-                            <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
+                            <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-to-existdb-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</include>
                                 <include>src/test/java/org/exist/xquery/modules/mail/Util.java</include>

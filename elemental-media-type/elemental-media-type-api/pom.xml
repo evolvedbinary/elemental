@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2014, Evolved Binary Ltd
+
+    This file was originally ported from FusionDB to Elemental by
+    Evolved Binary, for the benefit of the Elemental Open Source community.
+    Only the ported code as it appears in this file, at the time that
+    it was contributed to Elemental, was re-licensed under The GNU
+    Lesser General Public License v2.1 only for use in Elemental.
+
+    This license grant applies only to a snapshot of the code as it
+    appeared when ported, it does not offer or infer any rights to either
+    updates of this source code or access to the original source code.
+
+    The GNU Lesser General Public License v2.1 only license follows.
+
+    =====================================================================
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>xyz.elemental</groupId>
+        <artifactId>elemental-media-type</artifactId>
+        <version>7.5.0-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <artifactId>elemental-media-type-api</artifactId>
+
+    <name>Elemental Internet Media Type Resolver API</name>
+    <description>Internet Media Type Resolver API for Elemental</description>
+
+    <scm>
+        <connection>scm:git:https://github.com/evolvedbinary/elemental.git</connection>
+        <developerConnection>scm:git:https://github.com/evolvedbinary/elemental.git</developerConnection>
+        <url>scm:git:https://github.com/evolvedbinary/elemental.git</url>
+    </scm>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>${project.parent.relativePath}/../elemental-parent/FDB-backport-to-EDB-LGPL-21-ONLY-license.template.txt</header>
+                        </licenseSet>
+                    </licenseSets>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

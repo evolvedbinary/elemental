@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2014, Evolved Binary Ltd
+
+    This file was originally ported from FusionDB to Elemental by
+    Evolved Binary, for the benefit of the Elemental Open Source community.
+    Only the ported code as it appears in this file, at the time that
+    it was contributed to Elemental, was re-licensed under The GNU
+    Lesser General Public License v2.1 only for use in Elemental.
+
+    This license grant applies only to a snapshot of the code as it
+    appeared when ported, it does not offer or infer any rights to either
+    updates of this source code or access to the original source code.
+
+    The GNU Lesser General Public License v2.1 only license follows.
+
+    =====================================================================
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:mtm="http://ns.elemental.xyz/mediatype/configuration"
+    targetNamespace="http://ns.elemental.xyz/mediatype/configuration"
+    elementFormDefault="qualified"
+    version="1.1">
+    
+    <xs:annotation>
+        <xs:documentation>
+            Maps files of various Media Types to the type of storage
+            that should be used for persisting those files.
+        </xs:documentation>
+    </xs:annotation>
+    
+    <xs:element name="media-type-mappings">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="mtm:storage" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+        <xs:unique name="uniqueStorageTypes">
+            <xs:annotation>
+                <xs:documentation>Each type of storage should only appear once</xs:documentation>
+            </xs:annotation>
+            <xs:selector xpath="storage"/>
+            <xs:field xpath="@type"/>
+        </xs:unique>
+    </xs:element>
+    
+    <xs:element name="storage">
+        <xs:annotation>
+            <xs:documentation>The type of persistent storage to use for various Media Types</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="mtm:media-type" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="type" use="required" type="mtm:storageType"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="media-type">
+        <xs:annotation>
+            <xs:documentation>Matches a Media Type</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:string">
+                    <xs:attribute name="match" use="optional" type="mtm:matchType" default="full"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:simpleType name="storageType">
+        <xs:annotation>
+            <xs:documentation>Types of persistent storage</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="XML">
+                <xs:annotation>
+                    <xs:documentation>Native XML document storage within the database</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <!-- xs:enumeration value="HTML5">
+                <xs:annotation>
+                    <xs:documentation>Native HTML5 document storage within the database</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration -->
+            <!-- xs:enumeration value="JSON">
+                <xs:annotation>
+                    <xs:documentation>Native JSON document storage within the database</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration -->
+            <!-- xs:enumeration value="Markdown">
+                <xs:annotation>
+                    <xs:documentation>Native Markdown document storage within the database</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration -->
+            <!-- xs:enumeration value="Text">
+                <xs:annotation>
+                    <xs:documentation>Native Text document storage within the database</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration -->
+            <xs:enumeration value="Binary">
+                <xs:annotation>
+                    <xs:documentation>Binary document storage within the database</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="matchType">
+        <xs:annotation>
+            <xs:documentation>Different types of Media Type matching</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="full">
+                <xs:annotation>
+                    <xs:documentation>Media Type must exactly match the supplied value</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="starts-with">
+                <xs:annotation>
+                    <xs:documentation>Media Type(s) must start-with the supplied value</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="pattern">
+                <xs:annotation>
+                    <xs:documentation>Media Type(s) must match the supplied Java Regular Expression</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            
+        </xs:restriction>
+    </xs:simpleType>
+    
+</xs:schema>

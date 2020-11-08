@@ -99,8 +99,10 @@
         <junit.platform.version>6.0.0</junit.platform.version>
         <junit.jupiter.version>6.0.0</junit.jupiter.version>
         <objenesis.version>3.4</objenesis.version>
+        <jakarta.activation-api.version>2.1.4</jakarta.activation-api.version>
         <jaxb.api.version>4.0.4</jaxb.api.version>
         <jaxb.impl.version>4.0.6</jaxb.impl.version>
+        <slf4j.version>2.0.17</slf4j.version>
 
         <!-- Surefire parallel configuration -->
         <surefire.forkCount>1C</surefire.forkCount>
@@ -119,12 +121,89 @@
                 <artifactId>jsr305</artifactId>
                 <version>3.0.2</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.lacuna</groupId>
+                <artifactId>bifurcan</artifactId>
+                <version>0.2.0-rc1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.jcip</groupId>
+                <artifactId>jcip-annotations</artifactId>
+                <version>1.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.activation</groupId>
+                <artifactId>jakarta.activation-api</artifactId>
+                <version>${jakarta.activation-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.angus</groupId>
+                <artifactId>angus-activation</artifactId>
+                <version>${eclipse.angus-activation.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jaxb.api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-runtime</artifactId>
+                <version>${jaxb.impl.version}</version>
+                <scope>runtime</scope>
+                <exclusions>
+                    <exclusion>
+                        <!-- use newer Eclipse Angus Activation -->
+                        <groupId>com.sun.activation</groupId>
+                        <artifactId>jakarta.activation</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- test dependencies -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.jvnet.jaxb</groupId>
+                    <artifactId>jaxb-maven-plugin</artifactId>
+                    <version>4.0.12</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -475,6 +554,7 @@
                             <header>${project.parent.relativePath}/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
                                 <exclude>elemental-LGPL-21-ONLY-license.template.txt</exclude>
+                                <exclude>FDB-backport-to-EDB-LGPL-21-ONLY-license.template.txt</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

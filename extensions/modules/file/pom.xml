@@ -113,9 +113,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.angus</groupId>
-            <artifactId>angus-activation</artifactId>
-            <scope>runtime</scope>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -275,7 +275,7 @@
                                 <ignoredUnusedDeclaredDependency>org.eclipse.jetty:jetty-jmx:jar:${jetty.version}</ignoredUnusedDeclaredDependency>
 
                                 <!-- needed for running tests that use JAXB -->
-                                <ignoredUnusedDeclaredDependency>com.sun.xml.bind:jaxb-impl:jar:${jaxb.impl.version}</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.glassfish.jaxb:jaxb-runtime:jar:${jaxb.impl.version}</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
 
                             <ignoredNonTestScopedDependencies>
