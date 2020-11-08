@@ -1350,7 +1350,7 @@
                                 <exclude>ARC-BSD-3-license.template.txt</exclude>
                                 <exclude>BX-BSD-3-license.template.txt</exclude>
                                 <exclude>DBXML-10-license.template.txt</exclude>
-                                <exclude>FDB-backport-BSD-3-license.template.txt</exclude>
+                                <exclude>FDB-backport-to-existdb-BSD-3-license.template.txt</exclude>
                                 <exclude>src/test/resources/uk-towns.txt</exclude>
                                 <exclude>src/test/resources/**/*.bin</exclude>
                                 <exclude>src/test/resources/**/*.xar</exclude>
@@ -2141,7 +2141,7 @@ The original license statement is also included below.]]></preamble>
                             <!--
                                 FDB backport to LGPL 2.1-only licensed code
                             -->
-                            <header>${project.parent.relativePath}/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
+                            <header>${project.parent.relativePath}/FDB-backport-to-existdb-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/test/xquery/binary-value.xqm</include>
                                 <include>src/test/xquery/xquery3/postfix-expr.xqm</include>
@@ -2228,7 +2228,7 @@ The original license statement is also included below.]]></preamble>
                             <!--
                                 FDB backport to BSD-3 licensed code
                             -->
-                            <header>FDB-backport-BSD-3-license.template.txt</header>
+                            <header>FDB-backport-to-existdb-BSD-3-license.template.txt</header>
                             <includes>
                                 <include>src/main/java/org/exist/util/CodePointString.java</include>
                                 <include>src/test/java/org/exist/util/CodePointStringTest.java</include>
@@ -2243,7 +2243,7 @@ The original license statement is also included below.]]></preamble>
                             <multi>
                                 <preamble><![CDATA[NOTE: Where indicated, this file is in part based on code from
 The BaseX Team. The original license statement is also included below.]]></preamble>
-                                <header>FDB-backport-BSD-3-license.template.txt</header>
+                                <header>FDB-backport-to-existdb-BSD-3-license.template.txt</header>
                                 <header>BX-BSD-3-license.template.txt</header>
                             </multi>
                             <includes>
@@ -2326,7 +2326,6 @@ The BaseX Team. The original license statement is also included below.]]></pream
             <plugin>
                 <groupId>org.jvnet.jaxb</groupId>
                 <artifactId>jaxb-maven-plugin</artifactId>
-                <version>${jaxb.impl.version}</version>
                 <configuration>
                     <bindingDirectory>src/main/xjb</bindingDirectory>
                     <schemaDirectory>src/main/xsd</schemaDirectory>
