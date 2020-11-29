@@ -40,6 +40,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -62,7 +63,7 @@ public class RegistryFunctionsTest {
     public void outputMediaType() throws URISyntaxException, TransformerException, IOException, SAXException, SerializationAnnotationException {
 
         //test setup
-        final String internetMediaType = "application/octet-stream";
+        final String internetMediaType = MediaType.APPLICATION_OCTET_STREAM;
         final MediaTypeAnnotation mediaType = new MediaTypeAnnotation();
         mediaType.setName(SerializationAnnotationName.mediatype.getQName());
         mediaType.setLiterals(new Literal[] {

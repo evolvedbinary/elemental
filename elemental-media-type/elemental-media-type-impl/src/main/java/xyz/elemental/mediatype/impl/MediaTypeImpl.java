@@ -84,11 +84,23 @@ public class MediaTypeImpl implements MediaType {
     }
 
     /**
+     * Construct a new Media Type.
+     *
+     * @param identifier the Media Type identifier
+     * @param storageType the database storage that should be used for resources of this Media Type
+     *
+     * @return a media type builder.
+     */
+    public static MediaTypeImpl.Builder builder(final String identifier, final StorageType storageType) {
+        return Builder.forMediaType(identifier, storageType);
+    }
+
+    /**
      * Builder pattern which allows us to
      * ultimately construct an Immutable MediaTypeImpl.
      */
     @NotThreadSafe
-    static class Builder {
+    public static class Builder {
         private final String identifier;
         private final StorageType storageType;
         private final LinearSet<String> knownFileExtensions = new LinearSet<>();
@@ -114,7 +126,7 @@ public class MediaTypeImpl implements MediaType {
          * @param fileExtension a file extension
          * @return this
          */
-        Builder addFileExtension(final String fileExtension) {
+        public Builder addFileExtension(final String fileExtension) {
             knownFileExtensions.add(fileExtension);
             return this;
         }
@@ -124,7 +136,7 @@ public class MediaTypeImpl implements MediaType {
          *
          * @return an immutable MediaType.
          */
-        MediaType build() {
+        public MediaType build() {
             final String[] aryKnownFileExtensions = knownFileExtensions.size() > 0 ? knownFileExtensions.toArray(size -> new String[size]) : null;
             return new MediaTypeImpl(identifier, aryKnownFileExtensions, storageType);
         }

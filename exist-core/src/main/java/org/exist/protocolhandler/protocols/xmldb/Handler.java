@@ -53,7 +53,7 @@ import java.net.URLStreamHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.protocolhandler.Mode;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  *  A stream protocol handler knows how to make a connection for a particular
@@ -75,21 +75,21 @@ public class Handler extends URLStreamHandler {
     public static final String PATTERN      = "xmldb:[\\w]+:\\/\\/.*";
 
     private final Mode mode;
-    private final MimeTable mimeTable;
+    private final MediaTypeResolver mediaTypeResolver;
 
     /**
      * Creates a new instance of Handler
      *
      * @param mode Data buffer mode.
-     * @param mimeTable The MIME table.
+     * @param mediaTypeResolver The Internet Media Type resolver table.
      */
-    public Handler(final Mode mode, final MimeTable mimeTable) {
+    public Handler(final Mode mode, final MediaTypeResolver mediaTypeResolver) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Setup \"xmldb:\" handler");
         }
 
         this.mode = mode;
-        this.mimeTable = mimeTable;
+        this.mediaTypeResolver = mediaTypeResolver;
     }
     
     /**
@@ -139,9 +139,9 @@ public class Handler extends URLStreamHandler {
     protected URLConnection openConnection(final URL u) throws IOException {
         switch (mode) {
             case DISK:
-                return new EmbeddedURLConnection(threadGroup, u, mimeTable);
+                return new EmbeddedURLConnection(threadGroup, u, mediaTypeResolver);
             case MEMORY:
-                return new InMemoryURLConnection(threadGroup, u, mimeTable);
+                return new InMemoryURLConnection(threadGroup, u, mediaTypeResolver);
         }
         throw new IOException("unsupported mode "+ mode);
     }

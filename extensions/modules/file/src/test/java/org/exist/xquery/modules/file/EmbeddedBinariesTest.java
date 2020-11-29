@@ -56,7 +56,6 @@ import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.CompiledXQuery;
@@ -64,6 +63,7 @@ import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.*;
 import org.junit.ClassRule;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -86,7 +86,8 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
             try(final ManagedCollectionLock collectionLock = brokerPool.getLockManager().acquireCollectionWriteLock(filePath.removeLastSegment())) {
                 final Collection collection = broker.getOrCreateCollection(transaction, filePath.removeLastSegment());
 
-                broker.storeDocument(transaction, filePath.lastSegment(), new StringInputSource(content), MimeType.BINARY_TYPE, collection);
+                final MediaType binMediaType = brokerPool.getMediaTypeService().getMediaTypeResolver().forUnknown();
+                broker.storeDocument(transaction, filePath.lastSegment(), new StringInputSource(content), binMediaType, collection);
 
                 broker.saveCollection(transaction, collection);
             }

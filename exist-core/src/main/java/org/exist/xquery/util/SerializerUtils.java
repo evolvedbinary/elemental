@@ -62,6 +62,7 @@ import org.exist.xquery.functions.fn.FnModule;
 import org.exist.xquery.functions.map.AbstractMapType;
 import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.XMLConstants;
 import javax.xml.stream.XMLStreamConstants;
@@ -522,26 +523,26 @@ public class SerializerUtils {
         switch(method) {
             case "xml":
             case "microxml":
-                return new StringValue("application/xml");
+                return new StringValue(MediaType.APPLICATION_XML);
 
             case "xhtml":
-                return new StringValue("application/xhtml+xml");
+                return new StringValue(MediaType.APPLICATION_XHTML);
 
             case "json":
-                return new StringValue("application/json");
+                return new StringValue(MediaType.APPLICATION_JSON);
 
             case "jsonp":
-                return new StringValue("application/javascript");
+                return new StringValue(MediaType.TEXT_JAVASCRIPT);
 
             case "html":
-                return new StringValue("text/html");
+                return new StringValue(MediaType.TEXT_HTML);
 
             case "adaptive":
             case "text":
-                return new StringValue("text/plain");
+                return new StringValue(MediaType.TEXT_PLAIN);
 
             case "binary":
-                return new StringValue("application/octet-stream");
+                return new StringValue(MediaType.APPLICATION_OCTET_STREAM);
 
             default:
                 throw new UnsupportedOperationException("Unrecognised serialization method: " + method);

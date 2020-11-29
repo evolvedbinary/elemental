@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -55,7 +79,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.FileInputSource;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
@@ -68,6 +91,7 @@ import org.xml.sax.*;
 import org.xml.sax.helpers.XMLFilterImpl;
 
 import com.vividsolutions.jts.geom.Geometry;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.junit.Assert.*;
 
@@ -119,9 +143,10 @@ public class GMLIndexTest {
             final CollectionConfigurationManager mgr = pool.getConfigurationManager();
             mgr.addConfiguration(transaction, broker, testCollection, COLLECTION_CONFIG);
 
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
             for (int i = 0; i < FILES.length; i++) {
                 final URL url = GMLIndexTest.class.getResource("/" + FILES[i]);
-                broker.storeDocument(transaction, XmldbURI.create(FILES[i]), new FileInputSource(Paths.get(url.toURI())), MimeType.XML_TYPE, testCollection);
+                broker.storeDocument(transaction, XmldbURI.create(FILES[i]), new FileInputSource(Paths.get(url.toURI())), xmlMediaType, testCollection);
             }
 
             transaction.commit();

@@ -51,7 +51,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.protocolhandler.xmldb.XmldbURL;
 import org.exist.storage.io.BlockingInputStream;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  * Wrap XmlrpcUpload class into a runnable for XmlrpcOutputStream.
@@ -63,12 +63,12 @@ public class XmlrpcUploadRunnable implements Runnable {
     private final static Logger logger = LogManager.getLogger(XmlrpcUploadRunnable.class);
     private final XmldbURL url;
     private final BlockingInputStream bis;
-    private final MimeTable mimeTable;
+    private final MediaTypeResolver mediaTypeResolver;
 
-    public XmlrpcUploadRunnable(final XmldbURL url, final BlockingInputStream bis, final MimeTable mimeTable) {
+    public XmlrpcUploadRunnable(final XmldbURL url, final BlockingInputStream bis, final MediaTypeResolver mediaTypeResolver) {
         this.url = url;
         this.bis = bis;
-        this.mimeTable = mimeTable;
+        this.mediaTypeResolver = mediaTypeResolver;
     }
 
     /**
@@ -79,7 +79,7 @@ public class XmlrpcUploadRunnable implements Runnable {
         Exception exception = null;
         try {
             final XmlrpcUpload uploader = new XmlrpcUpload();
-            uploader.stream(url, bis, mimeTable);
+            uploader.stream(url, bis, mediaTypeResolver);
 
         } catch (IOException ex) {
             logger.error(ex);

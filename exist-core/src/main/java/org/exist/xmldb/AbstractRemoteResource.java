@@ -54,12 +54,10 @@ import java.util.zip.Inflater;
 
 import com.evolvedbinary.j8fu.lazy.LazyVal;
 
-import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.security.Permission;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileUtils;
-import org.exist.util.Leasable;
 import org.exist.util.io.ByteArrayContent;
 import org.exist.util.io.ContentFile;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
@@ -83,7 +81,7 @@ import static org.exist.util.io.InputStreamUtil.copy;
 public abstract class AbstractRemoteResource extends AbstractRemote
         implements EXistResource, ExtendedResource, Resource {
     protected final XmldbURI path;
-    private String mimeType;
+    private String mediaType;
     protected final Optional<String> type;
 
     // those are the different types of content this resource may have to deal with
@@ -106,7 +104,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
         } else {
             this.path = parent.getPathURI().append(documentName);
         }
-        this.mimeType = mimeType;
+        this.mediaType = mimeType;
         this.type = type;
     }
 
@@ -223,7 +221,12 @@ public abstract class AbstractRemoteResource extends AbstractRemote
 
     @Override
     public String getMimeType() {
-        return mimeType;
+        return getMediaType();
+    }
+
+    @Override
+    public String getMediaType() {
+        return mediaType;
     }
 
     @Override
@@ -290,8 +293,13 @@ public abstract class AbstractRemoteResource extends AbstractRemote
     }
 
     @Override
-    public void setMimeType(final String mimeType) {
-        this.mimeType = mimeType;
+    public void setMimeType(final String mediaType) {
+        setMediaType(mediaType);
+    }
+
+    @Override
+    public void setMediaType(final String mediaType) {
+        this.mediaType = mediaType;
     }
 
     public void setPermissions(final Permission perms) {

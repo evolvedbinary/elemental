@@ -62,13 +62,13 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.CachingFilterInputStreamInputSource;
 import org.exist.util.Configuration;
-import org.exist.util.MimeType;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.CachingFilterInputStream;
 import org.exist.util.io.FilterInputStreamCache;
 import org.exist.util.io.FilterInputStreamCacheFactory;
 import org.exist.xmldb.XmldbURI;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -150,9 +150,9 @@ public class InMemoryOutputStream extends OutputStream {
                 -> (String) broker.getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY), is);
              final CachingFilterInputStream cfis = new CachingFilterInputStream(cache)) {
 
-          final MimeType mime = db.getMediaTypeService().getMediaTypeResolver().getContentTypeFor(documentUri);
+          final MediaType mediaType = db.getMediaTypeService().getMediaTypeResolver().fromFileName(documentUri.lastSegmentString());
           try (final ManagedDocumentLock lock = lockManager.acquireDocumentWriteLock(documentUri)) {
-            broker.storeDocument(txn, documentUri, new CachingFilterInputStreamInputSource(cfis), mime, collection);
+            broker.storeDocument(txn, documentUri, new CachingFilterInputStreamInputSource(cfis), mediaType, collection);
           }
         }
 

@@ -50,14 +50,7 @@ import java.nio.file.Path;
  */
 public class MediaTypeResolverFactoryImpl implements MediaTypeResolverFactory {
 
-    /**
-     * For public use an instance should be obtained via a
-     * {@link java.util.ServiceLoader}.
-     *
-     * Intentionally set to package private to
-     * enable access for Unit Tests.
-     */
-    MediaTypeResolverFactoryImpl() {
+    public MediaTypeResolverFactoryImpl() {
     }
 
     @Override

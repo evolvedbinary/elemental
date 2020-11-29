@@ -43,8 +43,6 @@ import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.storage.BrokerPool;
 import org.exist.util.Configuration;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.util.io.CachingFilterInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.FilterInputStreamCache;
@@ -70,6 +68,10 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
+
+import javax.annotation.Nullable;
 
 /**
  *
@@ -165,8 +167,8 @@ class RestXqServiceImpl extends AbstractRestXqService {
                         contentType = contentType.substring(0, contentType.indexOf(";"));
                     }
 
-                    MimeType mimeType = getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentType(contentType);
-                    if (mimeType != null && !mimeType.isXMLType()) {
+                    @Nullable final MediaType mediaType = getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(contentType);
+                    if (mediaType != null && mediaType.getStorageType() != StorageType.XML) {
 
                         //binary data
                         try {

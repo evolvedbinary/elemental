@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,7 +53,6 @@ import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistWebServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.junit.*;
 import org.exist.EXistException;
@@ -43,6 +66,7 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.xml.sax.SAXException;
 import uk.ac.ic.doc.slurp.multilock.MultiLock;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.*;
@@ -97,7 +121,8 @@ public class GetXMLResourceNoLockTest {
             
             broker.saveCollection(transaction, collection);
 
-            broker.storeDocument(transaction, DOCUMENT_NAME_URI , new StringInputSource(EMPTY_BINARY_FILE.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            final MediaType txtMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.TEXT_PLAIN);
+            broker.storeDocument(transaction, DOCUMENT_NAME_URI , new StringInputSource(EMPTY_BINARY_FILE.getBytes(UTF_8)), txtMediaType, collection);
             
             transact.commit(transaction);
         }

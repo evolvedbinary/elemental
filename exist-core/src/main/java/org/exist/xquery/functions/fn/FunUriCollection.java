@@ -55,6 +55,7 @@ import org.exist.util.PatternFactory;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
+import xyz.elemental.mediatype.MediaType;
 
 import java.net.URISyntaxException;
 import java.util.*;
@@ -81,11 +82,11 @@ public class FunUriCollection extends BasicFunction {
                     "sequence of URIs are filtered. " +
                     "The parameter `content-type` may be used to determine the Internet Media Type (or generally " +
                     "whether XML, Binary, and/or (Sub) Collection) URIs that are returned in the result sequence; " +
-                    "the special values: 'application/vnd.existdb.collection' includes (Sub) Collections, " +
-                    "'application/vnd.existdb.document' includes any document, " +
-                    "'application/vnd.existdb.document+xml' includes only XML documents, and " +
-                    "'application/vnd.existdb.document+binary' includes only Binary documents. By default, " +
-                    "`content-type=application/vnd.existdb.collection,application/vnd.existdb.document` " +
+                    "the special values: '" + MediaType.APPLICATION_ELEMENTAL_COLLECTION + "' includes (Sub) Collections, " +
+                    "'" + MediaType.APPLICATION_ELEMENTAL_DOCUMENT + "' includes any document, " +
+                    "'" + MediaType.APPLICATION_ELEMENTAL_DOCUMENT_XML + "' includes only XML documents, and " +
+                    "'" + MediaType.APPLICATION_ELEMENTAL_DOCUMENT_BINARY + "' includes only Binary documents. By default, " +
+                    "`content-type=" + MediaType.APPLICATION_ELEMENTAL_COLLECTION + "," + MediaType.APPLICATION_ELEMENTAL_DOCUMENT + "` " +
                     "(i.e. all Collections and Documents). " +
                     "The parameter `stable` may be used to determine if the function is deterministic. " +
                     "By default `stable=yes` to ensure that the same results are returned by each call within the same " +
@@ -102,15 +103,16 @@ public class FunUriCollection extends BasicFunction {
         );
 
     private static final String KEY_CONTENT_TYPE = "content-type";
-    private static final String VALUE_CONTENT_TYPE_DOCUMENT = "application/vnd.existdb.document";
-    private static final String VALUE_CONTENT_TYPE_DOCUMENT_BINARY = "application/vnd.existdb.document+binary";
-    private static final String VALUE_CONTENT_TYPE_DOCUMENT_XML = "application/vnd.existdb.document+xml";
-    private static final String VALUE_CONTENT_TYPE_SUBCOLLECTION = "application/vnd.existdb.collection";
     private static final String[] VALUE_CONTENT_TYPES = {
-            VALUE_CONTENT_TYPE_DOCUMENT,
-            VALUE_CONTENT_TYPE_DOCUMENT_BINARY,
-            VALUE_CONTENT_TYPE_DOCUMENT_XML,
-            VALUE_CONTENT_TYPE_SUBCOLLECTION
+        MediaType.APPLICATION_ELEMENTAL_DOCUMENT,
+        MediaType.APPLICATION_ELEMENTAL_DOCUMENT_BINARY,
+        MediaType.APPLICATION_ELEMENTAL_DOCUMENT_XML,
+        MediaType.APPLICATION_ELEMENTAL_COLLECTION,
+
+        MediaType.APPLICATION_EXISTDB_DOCUMENT,
+        MediaType.APPLICATION_EXISTDB_DOCUMENT_BINARY,
+        MediaType.APPLICATION_EXISTDB_DOCUMENT_XML,
+        MediaType.APPLICATION_EXISTDB_COLLECTION
     };
 
     private static final String KEY_STABLE = "stable";
@@ -157,13 +159,20 @@ public class FunUriCollection extends BasicFunction {
                 result = context.getCachedUriCollectionResults().get(uriWithoutStableQueryString);
             } else {
                 final boolean binaryUrisIncluded = !queryStringMap.containsKey(KEY_CONTENT_TYPE) ||
-                        (queryStringMap.get(KEY_CONTENT_TYPE).equals(VALUE_CONTENT_TYPE_DOCUMENT) ||
-                         queryStringMap.get(KEY_CONTENT_TYPE).equals(VALUE_CONTENT_TYPE_DOCUMENT_BINARY));
+                        (queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_ELEMENTAL_DOCUMENT) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_ELEMENTAL_DOCUMENT_BINARY) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_EXISTDB_DOCUMENT) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_EXISTDB_DOCUMENT_BINARY));
+
                 final boolean subcollectionUrisIncluded = !queryStringMap.containsKey(KEY_CONTENT_TYPE) ||
-                        queryStringMap.get(KEY_CONTENT_TYPE).equals(VALUE_CONTENT_TYPE_SUBCOLLECTION);
+                        (queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_ELEMENTAL_COLLECTION) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_EXISTDB_COLLECTION));
+
                 final boolean xmlUrisIncluded = !queryStringMap.containsKey(KEY_CONTENT_TYPE) ||
-                        (queryStringMap.get(KEY_CONTENT_TYPE).equals(VALUE_CONTENT_TYPE_DOCUMENT) ||
-                                queryStringMap.get(KEY_CONTENT_TYPE).equals(VALUE_CONTENT_TYPE_DOCUMENT_XML));
+                        (queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_ELEMENTAL_DOCUMENT) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_ELEMENTAL_DOCUMENT_XML) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_EXISTDB_DOCUMENT) ||
+                        queryStringMap.get(KEY_CONTENT_TYPE).equals(MediaType.APPLICATION_EXISTDB_DOCUMENT_XML));
 
                 try (final Collection collection = context.getBroker().openCollection(uri, Lock.LockMode.READ_LOCK)) {
                     if (collection != null) {

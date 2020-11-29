@@ -121,6 +121,7 @@ import org.exist.xquery.update.Modification;
 import org.exist.xquery.util.SerializerUtils;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
+import xyz.elemental.mediatype.MediaType;
 
 import static com.evolvedbinary.j8fu.OptionalUtil.or;
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
@@ -2705,7 +2706,7 @@ public class XQueryContext implements BinaryValueManager, Context {
                         throw moduleLoadException("Module location hint URI '" + location + "' does not refer to anything.", location);
                     }
 
-                    if ((sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE) || !"application/xquery".equals(sourceDoc.getMimeType())) {
+                    if ((sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE) || !MediaType.APPLICATION_XQUERY.equals(sourceDoc.getMediaType())) {
                         throw moduleLoadException("Module location hint URI '" + location + "' does not refer to an XQuery.", location);
                     }
 

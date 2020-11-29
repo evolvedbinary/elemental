@@ -80,6 +80,7 @@ import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
 import org.xmlunit.matchers.CompareMatcher;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
@@ -842,17 +843,17 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         doc = testCollection.createResource(MODULE1_NAME, "BinaryResource");
         doc.setContent(module1);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(MODULE2_NAME, "BinaryResource");
         doc.setContent(module2);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(NAMESPACED_NAME, "XMLResource");
         doc.setContent(namespacedDocument);
-        ((EXistResource) doc).setMimeType("application/xml");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XML);
         testCollection.storeResource(doc);
 
         XPathQueryService service =
@@ -1001,32 +1002,32 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         doc = testCollection.createResource(MODULE1_NAME, "BinaryResource");
         doc.setContent(module1);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(MODULE3_NAME, "BinaryResource");
         doc.setContent(module3);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(MODULE4_NAME, "BinaryResource");
         doc.setContent(module4);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(FATHER_MODULE_NAME, "BinaryResource");
         doc.setContent(fatherModule);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(CHILD1_MODULE_NAME, "BinaryResource");
         doc.setContent(child1Module);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(CHILD2_MODULE_NAME, "BinaryResource");
         doc.setContent(child2Module);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         XPathQueryService service =
@@ -1121,7 +1122,7 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         Resource doc = testCollection.createResource(MODULE7_NAME, "BinaryResource");
         doc.setContent(module7);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
@@ -1210,7 +1211,7 @@ public class XQueryTest {
                 "import module namespace ext1 = \"http://import-external-classpath-library-module-test.com\" at \"resource:org/exist/xquery/external-classpath-library-module.xqm\";\n"
                 + "ext1:echo(" + timestamp + ")"
         );
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         final EXistXPathQueryService service = (EXistXPathQueryService) testCollection.getService("XPathQueryService", "1.0");
@@ -1233,7 +1234,7 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         Resource doc = testCollection.createResource(MODULE8_NAME, "BinaryResource");
         doc.setContent(module8);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
@@ -1256,12 +1257,12 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         Resource doc = testCollection.createResource(MODULE5_NAME, "BinaryResource");
         doc.setContent(module5);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         doc = testCollection.createResource(MODULE6_NAME, "BinaryResource");
         doc.setContent(module6);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
         XQueryService service = (XQueryService) testCollection.getService("XPathQueryService", "1.0");
         String query = "xquery version \"1.0\";\n" + "import module namespace foo=\"foo\" at \"" + URI + "/test/" + MODULE5_NAME + "\";\n" + "$foo:bar";
@@ -1996,7 +1997,7 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         doc = testCollection.createResource(module_name, "BinaryResource");
         doc.setContent(module);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         String query = "import module namespace tst = \"urn:test\"" +
@@ -2406,7 +2407,7 @@ public class XQueryTest {
         Collection testCollection = getTestCollection();
         doc = testCollection.createResource(module_name, "BinaryResource");
         doc.setContent(module);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         String query = "import module namespace dt = \"dt\" at" +
@@ -2834,7 +2835,7 @@ public class XQueryTest {
                         +"declare function a:selectionList() as element(ul) { "
                         +"<ul class=\"a\"/> "
                         +"};");
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         testCollection.storeResource(doc);
 
         String query =

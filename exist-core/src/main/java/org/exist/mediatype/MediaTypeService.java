@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2014, Evolved Binary Ltd
  *
- * This file was originally ported from FusionDB to eXist-db by
- * Evolved Binary, for the benefit of the eXist-db Open Source community.
+ * This file was originally ported from FusionDB to Elemental by
+ * Evolved Binary, for the benefit of the Elemental Open Source community.
  * Only the ported code as it appears in this file, at the time that
- * it was contributed to eXist-db, was re-licensed under The GNU
- * Lesser General Public License v2.1 only for use in eXist-db.
+ * it was contributed to Elemental, was re-licensed under The GNU
+ * Lesser General Public License v2.1 only for use in Elemental.
  *
  * This license grant applies only to a snapshot of the code as it
  * appeared when ported, it does not offer or infer any rights to either
@@ -39,7 +39,9 @@ package org.exist.mediatype;
 import org.exist.storage.BrokerPoolService;
 import org.exist.storage.BrokerPoolServiceException;
 import org.exist.util.Configuration;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
+
+import java.nio.file.Path;
 
 /**
  * Service for accessing the Media Type Resolver.
@@ -48,11 +50,15 @@ import org.exist.util.MimeTable;
  */
 public class MediaTypeService implements BrokerPoolService {
 
-    private MimeTable mediaTypeResolver;
+    private MediaTypeResolver mediaTypeResolver;
 
     @Override
     public void configure(final Configuration configuration) throws BrokerPoolServiceException {
-        this.mediaTypeResolver = MimeTable.getInstance();
+        final Path applicationConfigDir = configuration.getConfigFilePath().map(Path::getParent).orElse(null);
+        this.mediaTypeResolver = MediaTypeUtil.newMediaTypeResolver(applicationConfigDir);
+        if (this.mediaTypeResolver == null) {
+            throw new BrokerPoolServiceException("Unable to configure a suitable MediaTypeResolver");
+        }
     }
 
     /**
@@ -60,7 +66,7 @@ public class MediaTypeService implements BrokerPoolService {
      *
      * @return the media type resolver.
      */
-    public MimeTable getMediaTypeResolver() {
-        return mediaTypeResolver;
+    public MediaTypeResolver getMediaTypeResolver() {
+        return this.mediaTypeResolver;
     }
 }

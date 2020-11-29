@@ -67,16 +67,12 @@ import javax.xml.transform.TransformerException;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.xmlrpc.XmlRpcException;
 
-import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.Namespaces;
 import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.ExistSAXParserFactory;
-import org.exist.util.Leasable;
-import org.exist.util.MimeType;
 import org.exist.util.io.ContentFile;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
@@ -104,13 +100,7 @@ import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-import javax.xml.transform.TransformerException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,14 +109,6 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
-
-import java.util.Optional;
 
 public class RemoteXMLResource
         extends AbstractRemoteResource
@@ -212,7 +194,7 @@ public class RemoteXMLResource
             final Optional<String> id,
             final Optional<String> type)
             throws XMLDBException {
-        super(parent, docId, MimeType.XML_TYPE.getName(), type);
+        super(parent, docId, MediaType.APPLICATION_XML, type);
         this.handle = handle;
         this.pos = pos;
         this.id = id;

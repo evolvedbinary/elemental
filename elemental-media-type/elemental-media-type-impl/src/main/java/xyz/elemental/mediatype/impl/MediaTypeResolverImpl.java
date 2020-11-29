@@ -113,13 +113,6 @@ public class MediaTypeResolverImpl implements MediaTypeResolver {
                         mediaTypeBuilder.addFileExtension(fileExtension);
                         mutExtensionsIndex.put(fileExtension, mediaTypeBuilder);
                     }
-                } else {
-                    // present in extensionsIndex, can assume MediaType impl has this extension
-
-                    if (!mutIdentifiersIndex.contains(identifier)) {
-                        // present in extensionsIndex, but not present in identifiersIndex
-                        mutIdentifiersIndex.put(identifier, mediaTypeBuilder);
-                    }
                 }
             }
         }

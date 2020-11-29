@@ -64,7 +64,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.XmldbURI;
@@ -77,6 +76,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Tests the serializing of constructed in-memory fragments.
@@ -131,7 +131,8 @@ public class DOMIndexerTest {
                 final Txn txn = txnMgr.beginTransaction()) {
 
             try (final Collection collection = broker.getOrCreateCollection(txn, TestConstants.TEST_COLLECTION_URI)) {
-                broker.storeDocument(txn, TestConstants.TEST_XML_URI, new StringInputSource(XML), MimeType.XML_TYPE, collection);
+                final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(txn, TestConstants.TEST_XML_URI, new StringInputSource(XML), xmlMediaType, collection);
                 broker.flush();
                 broker.saveCollection(txn, collection);
             }

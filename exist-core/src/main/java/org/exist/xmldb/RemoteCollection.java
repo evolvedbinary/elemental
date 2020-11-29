@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -434,7 +458,7 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
         r.dateCreated = (Date) hash.get("created");
         r.dateModified = (Date) hash.get("modified");
         if (hash.containsKey("mime-type")) {
-            r.setMimeType((String) hash.get("mime-type"));
+            r.setMediaType((String) hash.get("mime-type"));
         }
         return r;
     }
@@ -521,7 +545,7 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
         } catch (final URISyntaxException e) {
             throw new XMLDBException(ErrorCodes.INVALID_URI, e);
         }
-        params.add(res.getMimeType());
+        params.add(res.getMediaType());
         params.add(1);
         if (res.getCreationTime() != null) {
             params.add(res.getCreationTime());
@@ -539,7 +563,7 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
         } catch (final URISyntaxException e) {
             throw new XMLDBException(ErrorCodes.INVALID_URI, e);
         }
-        params.add(res.getMimeType());
+        params.add(res.getMediaType());
         params.add(Boolean.TRUE);
         if (res.getCreationTime() != null) {
             params.add(res.getCreationTime());
@@ -653,8 +677,8 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
                 paramsEx.add(Boolean.TRUE);
                 if (res instanceof EXistResource) {
                     final EXistResource rxres = (EXistResource) res;
-                    params.add(rxres.getMimeType());
-                    paramsEx.add(rxres.getMimeType());
+                    params.add(rxres.getMediaType());
+                    paramsEx.add(rxres.getMediaType());
                     // This one is only for the new style!!!!
                     paramsEx.add((BinaryResource.RESOURCE_TYPE.equals(res.getResourceType()))
                             ? Boolean.FALSE : Boolean.TRUE);

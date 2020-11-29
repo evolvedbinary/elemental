@@ -56,9 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class MediaTypeResolverImplTest {
 
-    // TODO(AR) this file looks a lot like eXist-db's mime-types.xml -- https://docs.sdl.com/787645/584296/sdl-tridion-docs-14/adding-a-mime-type
-    // TODO(AR) investigate the above
-
     // TODO(AR) if an explicit content type is provided, e.g. HTTP PUT, store the mime type with the document data??? what if its not provided, lookup and store, or lookup on retrieval?
 
     private static MediaTypeMapper MEDIA_TYPE_MAPPER = null;
@@ -81,337 +78,337 @@ public class MediaTypeResolverImplTest {
     // <editor-fold desc="Media Type definitions which are consistent across resolvers">
     @Test
     public void allResolveAtomExtension() {
-        assertAllResolveFromFileName("something.atom", "application/atom+xml", new String[] {"atom"}, StorageType.XML);
+        assertAllResolveFromFileName("something.atom", MediaType.APPLICATION_ATOM, new String[] {"atom"}, StorageType.XML);
     }
 
     @Test
     public void allResolveCsvExtension() {
-        assertAllResolveFromFileName("something.csv", "text/csv", new String[] {"csv"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.csv", MediaType.TEXT_CSV, new String[] {"csv"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveDocxExtension() {
-        assertAllResolveFromFileName("something.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", new String[] {"docx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.docx", MediaType.APPLICATION_OPENXML_WORDPROCESSING, new String[] {"docx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveDtdExtension() {
-        assertAllResolveFromFileName("something.dtd", "application/xml-dtd", new String[] {"dtd"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.dtd", MediaType.APPLICATION_XML_DTD, new String[] {"dtd"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveGifExtension() {
-        assertAllResolveFromFileName("something.gif", "image/gif", new String[] {"gif"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.gif", MediaType.IMAGE_GIF, new String[] {"gif"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveGmlExtension() {
-        assertAllResolveFromFileName("something.gml", "application/gml+xml", new String[] {"gml"}, StorageType.XML);
+        assertAllResolveFromFileName("something.gml", MediaType.APPLICATION_GML, new String[] {"gml"}, StorageType.XML);
     }
 
     @Test
     public void allResolveHtmExtension() {
-        assertAllResolveFromFileName("something.htm", "text/html", new String[] {"htm", "html"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.htm", MediaType.TEXT_HTML, new String[] {"htm", "html"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveHtmlExtension() {
-        assertAllResolveFromFileName("something.html", "text/html", new String[] {"htm", "html"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.html", MediaType.TEXT_HTML, new String[] {"htm", "html"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJpegExtension() {
-        assertAllResolveFromFileName("something.jpeg", "image/jpeg", new String[] {"jpe", "jpg", "jpeg"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.jpeg", MediaType.IMAGE_JPEG, new String[] {"jpe", "jpg", "jpeg"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJpgExtension() {
-        assertAllResolveFromFileName("something.jpg", "image/jpeg", new String[] {"jpe", "jpg", "jpeg"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.jpg", MediaType.IMAGE_JPEG, new String[] {"jpe", "jpg", "jpeg"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJsExtension() {
-        assertAllResolveFromFileName("something.js", "text/javascript", new String[] {"js", "mjs"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.js", MediaType.TEXT_JAVASCRIPT, new String[] {"js", "mjs"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJsonExtension() {
-        assertAllResolveFromFileName("something.json", "application/json", new String[] {"json"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.json", MediaType.APPLICATION_JSON, new String[] {"json"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveMadsExtension() {
-        assertAllResolveFromFileName("something.mads", "application/mads+xml", new String[] {"mads"}, StorageType.XML);
+        assertAllResolveFromFileName("something.mads", MediaType.APPLICATION_MADS, new String[] {"mads"}, StorageType.XML);
     }
 
     @Test
     public void allResolveMetsExtension() {
-        assertAllResolveFromFileName("something.mets", "application/mets+xml", new String[] {"mets"}, StorageType.XML);
+        assertAllResolveFromFileName("something.mets", MediaType.APPLICATION_METS, new String[] {"mets"}, StorageType.XML);
     }
 
     @Test
     public void allResolveModsExtension() {
-        assertAllResolveFromFileName("something.mods", "application/mods+xml", new String[] {"mods"}, StorageType.XML);
+        assertAllResolveFromFileName("something.mods", MediaType.APPLICATION_MODS, new String[] {"mods"}, StorageType.XML);
     }
 
     @Test
     public void allResolveMrcxExtension() {
-        assertAllResolveFromFileName("something.mrcx", "application/marcxml+xml", new String[] {"mrcx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.mrcx", MediaType.APPLICATION_MARC, new String[] {"mrcx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveN3Extension() {
-        assertAllResolveFromFileName("something.n3", "text/n3", new String[] {"n3"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.n3", MediaType.TEXT_N3, new String[] {"n3"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveNcxExtension() {
-        assertAllResolveFromFileName("something.ncx", "application/x-dtbncx+xml", new String[] {"ncx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.ncx", MediaType.APPLICATION_NCX, new String[] {"ncx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOdtExtension() {
-        assertAllResolveFromFileName("something.odt", "application/vnd.oasis.opendocument.text", new String[] {"odt"}, StorageType.XML);
+        assertAllResolveFromFileName("something.odt", MediaType.APPLICATION_OPENDOCUMENT_TEXT, new String[] {"odt"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOdpExtension() {
-        assertAllResolveFromFileName("something.odp", "application/vnd.oasis.opendocument.presentation", new String[] {"odp"}, StorageType.XML);
+        assertAllResolveFromFileName("something.odp", MediaType.APPLICATION_OPENDOCUMENT_PRESENTATION, new String[] {"odp"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOdsExtension() {
-        assertAllResolveFromFileName("something.ods", "application/vnd.oasis.opendocument.spreadsheet", new String[] {"ods"}, StorageType.XML);
+        assertAllResolveFromFileName("something.ods", MediaType.APPLICATION_OPENDOCUMENT_SPREADSHEET, new String[] {"ods"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOpfExtension() {
-        assertAllResolveFromFileName("something.opf", "application/oebps-package+xml", new String[] {"opf"}, StorageType.XML);
+        assertAllResolveFromFileName("something.opf", MediaType.APPLICATION_OEBPS_PACKAGE, new String[] {"opf"}, StorageType.XML);
     }
 
     @Test
     public void allResolvePngExtension() {
-        assertAllResolveFromFileName("something.png", "image/png", new String[] {"png"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.png", MediaType.IMAGE_PNG, new String[] {"png"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolvePptxExtension() {
-        assertAllResolveFromFileName("something.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", new String[] {"pptx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.pptx", MediaType.APPLICATION_OPENXML_PRESENTATION, new String[] {"pptx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveRncExtension() {
-        assertAllResolveFromFileName("something.rnc", "application/relax-ng-compact-syntax", new String[] {"rnc"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.rnc", MediaType.APPLICATION_RELAXNG_COMPACT, new String[] {"rnc"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveRssExtension() {
-        assertAllResolveFromFileName("something.rss", "application/rss+xml", new String[] {"rss"}, StorageType.XML);
+        assertAllResolveFromFileName("something.rss", MediaType.APPLICATION_RSS, new String[] {"rss"}, StorageType.XML);
     }
 
     @Test
     public void allResolveSruExtension() {
-        assertAllResolveFromFileName("something.sru", "application/sru+xml", new String[] {"sru"}, StorageType.XML);
+        assertAllResolveFromFileName("something.sru", MediaType.APPLICATION_SRU, new String[] {"sru"}, StorageType.XML);
     }
 
     @Test
     public void allResolveTtlExtension() {
-        assertAllResolveFromFileName("something.ttl", "text/turtle", new String[] {"ttl"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.ttl", MediaType.TEXT_TURTLE, new String[] {"ttl"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveTxtExtension() {
-        assertAllResolveFromFileName("something.txt", "text/plain", new String[] {"txt", "def", "log", "in", "conf", "text", "list"}, StorageType.BINARY);
+        assertAllResolveFromFileName("something.txt", MediaType.TEXT_PLAIN, new String[] {"txt", "def", "log", "in", "conf", "text", "list"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveWsdlExtension() {
-        assertAllResolveFromFileName("something.wsdl", "application/wsdl+xml", new String[] {"wsdl"}, StorageType.XML);
+        assertAllResolveFromFileName("something.wsdl", MediaType.APPLICATION_WSDL, new String[] {"wsdl"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXhtExtension() {
-        assertAllResolveFromFileName("something.xht", "application/xhtml+xml", new String[] {"xht", "xhtml"}, StorageType.XML);
+        assertAllResolveFromFileName("something.xht", MediaType.APPLICATION_XHTML, new String[] {"xht", "xhtml"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXhtmlExtension() {
-        assertAllResolveFromFileName("something.xhtml", "application/xhtml+xml", new String[] {"xht", "xhtml"}, StorageType.XML);
+        assertAllResolveFromFileName("something.xhtml", MediaType.APPLICATION_XHTML, new String[] {"xht", "xhtml"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXlsxExtension() {
-        assertAllResolveFromFileName("something.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new String[] {"xlsx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.xlsx", MediaType.APPLICATION_OPENXML_SPREADSHEET, new String[] {"xlsx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXplExtension() {
-        assertAllResolveFromFileName("something.xpl", "application/xproc+xml", new String[] {"xpl"}, StorageType.XML);
+        assertAllResolveFromFileName("something.xpl", MediaType.APPLICATION_XPROC, new String[] {"xpl"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXsltExtension() {
-        assertAllResolveFromFileName("something.xslt", "application/xslt+xml", new String[] {"xslt"}, StorageType.XML);
+        assertAllResolveFromFileName("something.xslt", MediaType.APPLICATION_XSLT, new String[] {"xslt"}, StorageType.XML);
     }
 
     @Test
     public void allResolveAtomIdentifier() {
-        assertAllResolveFromIdentifier("application/atom+xml", new String[] {"atom"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_ATOM, new String[] {"atom"}, StorageType.XML);
     }
 
     @Test
     public void allResolveCsvIdentifier() {
-        assertAllResolveFromIdentifier("text/csv", new String[] {"csv"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.TEXT_CSV, new String[] {"csv"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveDocxIdentifier() {
-        assertAllResolveFromIdentifier("application/vnd.openxmlformats-officedocument.wordprocessingml.document", new String[] {"docx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_WORDPROCESSING, new String[] {"docx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveDtdIdentifier() {
-        assertAllResolveFromIdentifier("application/xml-dtd", new String[] {"dtd"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_XML_DTD, new String[] {"dtd"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveGifIdentifier() {
-        assertAllResolveFromIdentifier("image/gif", new String[] {"gif"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.IMAGE_GIF, new String[] {"gif"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveGmlIdentifier() {
-        assertAllResolveFromIdentifier("application/gml+xml", new String[] {"gml"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_GML, new String[] {"gml"}, StorageType.XML);
     }
 
     @Test
     public void allResolveHtmlIdentifier() {
-        assertAllResolveFromIdentifier("text/html", new String[] {"htm", "html"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.TEXT_HTML, new String[] {"htm", "html"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJpegIdentifier() {
-        assertAllResolveFromIdentifier("image/jpeg", new String[] {"jpe", "jpg", "jpeg"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.IMAGE_JPEG, new String[] {"jpe", "jpg", "jpeg"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJsIdentifier() {
-        assertAllResolveFromIdentifier("text/javascript", new String[] {"js", "mjs"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.TEXT_JAVASCRIPT, new String[] {"js", "mjs"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveJsonIdentifier() {
-        assertAllResolveFromIdentifier("application/json", new String[] {"json"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_JSON, new String[] {"json"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveMadsIdentifier() {
-        assertAllResolveFromIdentifier("application/mads+xml", new String[] {"mads"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_MADS, new String[] {"mads"}, StorageType.XML);
     }
 
     @Test
     public void allResolveMetsIdentifier() {
-        assertAllResolveFromIdentifier("application/mets+xml", new String[] {"mets"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_METS, new String[] {"mets"}, StorageType.XML);
     }
 
     @Test
     public void allResolveModsIdentifier() {
-        assertAllResolveFromIdentifier("application/mods+xml", new String[] {"mods"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_MODS, new String[] {"mods"}, StorageType.XML);
     }
 
     @Test
     public void allResolveMrcxIdentifier() {
-        assertAllResolveFromIdentifier("application/marcxml+xml", new String[] {"mrcx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_MARC, new String[] {"mrcx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveN3Identifier() {
-        assertAllResolveFromIdentifier("text/n3", new String[] {"n3"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.TEXT_N3, new String[] {"n3"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveNcxIdentifier() {
-        assertAllResolveFromIdentifier("application/x-dtbncx+xml", new String[] {"ncx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_NCX, new String[] {"ncx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOdtIdentifier() {
-        assertAllResolveFromIdentifier("application/vnd.oasis.opendocument.text", new String[] {"odt"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_TEXT, new String[] {"odt"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOdpIdentifier() {
-        assertAllResolveFromIdentifier("application/vnd.oasis.opendocument.presentation", new String[] {"odp"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_PRESENTATION, new String[] {"odp"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOdsIdentifier() {
-        assertAllResolveFromIdentifier("application/vnd.oasis.opendocument.spreadsheet", new String[] {"ods"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_SPREADSHEET, new String[] {"ods"}, StorageType.XML);
     }
 
     @Test
     public void allResolveOpfIdentifier() {
-        assertAllResolveFromIdentifier("application/oebps-package+xml", new String[] {"opf"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OEBPS_PACKAGE, new String[] {"opf"}, StorageType.XML);
     }
 
     @Test
     public void allResolvePngIdentifier() {
-        assertAllResolveFromIdentifier("image/png", new String[] {"png"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.IMAGE_PNG, new String[] {"png"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolvePptxIdentifier() {
-        assertAllResolveFromIdentifier("application/vnd.openxmlformats-officedocument.presentationml.presentation", new String[] {"pptx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_PRESENTATION, new String[] {"pptx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveRncIdentifier() {
-        assertAllResolveFromIdentifier("application/relax-ng-compact-syntax", new String[] {"rnc"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_RELAXNG_COMPACT, new String[] {"rnc"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveRssIdentifier() {
-        assertAllResolveFromIdentifier("application/rss+xml", new String[] {"rss"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_RSS, new String[] {"rss"}, StorageType.XML);
     }
 
     @Test
     public void allResolveSruIdentifier() {
-        assertAllResolveFromIdentifier("application/sru+xml", new String[] {"sru"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_SRU, new String[] {"sru"}, StorageType.XML);
     }
 
     @Test
     public void allResolveTtlIdentifier() {
-        assertAllResolveFromIdentifier("text/turtle", new String[] {"ttl"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.TEXT_TURTLE, new String[] {"ttl"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveTxtIdentifier() {
-        assertAllResolveFromIdentifier("text/plain", new String[] {"txt", "def", "log", "in", "conf", "text", "list"}, StorageType.BINARY);
+        assertAllResolveFromIdentifier(MediaType.TEXT_PLAIN, new String[] {"txt", "def", "log", "in", "conf", "text", "list"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveWsdlIdentifier() {
-        assertAllResolveFromIdentifier("application/wsdl+xml", new String[] {"wsdl"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_WSDL, new String[] {"wsdl"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXhtmlIdentifier() {
-        assertAllResolveFromIdentifier("application/xhtml+xml", new String[] {"xht", "xhtml"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_XHTML, new String[] {"xht", "xhtml"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXlsxIdentifier() {
-        assertAllResolveFromIdentifier("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new String[] {"xlsx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_SPREADSHEET, new String[] {"xlsx"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXplIdentifier() {
-        assertAllResolveFromIdentifier("application/xproc+xml", new String[] {"xpl"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_XPROC, new String[] {"xpl"}, StorageType.XML);
     }
 
     @Test
     public void allResolveXsltIdentifier() {
-        assertAllResolveFromIdentifier("application/xslt+xml", new String[] {"xslt"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_XSLT, new String[] {"xslt"}, StorageType.XML);
     }
     // </editor-fold>
 
@@ -419,7 +416,7 @@ public class MediaTypeResolverImplTest {
     // <editor-fold desc="Media Type definitions which are default only (e.g. sourced from Apache HTTPD)">
     @Test
     public void defaultResolveRdfExtension() {
-        assertDefaultResolveFromFileName("something.rdf", "application/rdf+xml", new String[] {"rdf"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.rdf", MediaType.APPLICATION_RDF_XML, new String[] {"rdf"}, StorageType.XML);
     }
 
     /**
@@ -429,7 +426,7 @@ public class MediaTypeResolverImplTest {
      */
     @Test
     public void defaultResolveSvgExtension() {
-        assertDefaultResolveFromFileName("something.svg", "image/svg+xml", new String[] {"svg", "svgz"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.svg", MediaType.IMAGE_SVG, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     /**
@@ -439,32 +436,32 @@ public class MediaTypeResolverImplTest {
      */
     @Test
     public void defaultResolveSvgzExtension() {
-        assertDefaultResolveFromFileName("something.svgz", "image/svg+xml", new String[] {"svg", "svgz"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.svgz", MediaType.IMAGE_SVG, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveTeiExtension() {
-        assertDefaultResolveFromFileName("something.tei", "application/tei+xml", new String[] {"tei", "teicorpus"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.tei", MediaType.APPLICATION_TEI, new String[] {"tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveTeicorpusExtension() {
-        assertDefaultResolveFromFileName("something.teicorpus", "application/tei+xml", new String[] {"tei", "teicorpus"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.teicorpus", MediaType.APPLICATION_TEI, new String[] {"tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveXmlExtension() {
-        assertDefaultResolveFromFileName("something.xml", "application/xml", new String[] {"xsl", "xml"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.xml", MediaType.APPLICATION_XML, new String[] {"xsl", "xml"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveXslExtension() {
-        assertDefaultResolveFromFileName("something.xsl", "application/xml", new String[] {"xsl", "xml"}, StorageType.XML);
+        assertDefaultResolveFromFileName("something.xsl", MediaType.APPLICATION_XML, new String[] {"xsl", "xml"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveRdfIdentifier() {
-        assertDefaultResolveFromIdentifier("application/rdf+xml", new String[] {"rdf"}, StorageType.XML);
+        assertDefaultResolveFromIdentifier(MediaType.APPLICATION_RDF_XML, new String[] {"rdf"}, StorageType.XML);
     }
 
     /**
@@ -473,17 +470,17 @@ public class MediaTypeResolverImplTest {
      */
     @Test
     public void defaultResolveSvgIdentifier() {
-        assertDefaultResolveFromIdentifier("image/svg+xml", new String[] {"svg", "svgz"}, StorageType.XML);
+        assertDefaultResolveFromIdentifier(MediaType.IMAGE_SVG, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveTeiIdentifier() {
-        assertDefaultResolveFromIdentifier("application/tei+xml", new String[] {"tei", "teicorpus"}, StorageType.XML);
+        assertDefaultResolveFromIdentifier(MediaType.APPLICATION_TEI, new String[] {"tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void defaultResolveXmlIdentifier() {
-        assertDefaultResolveFromIdentifier("application/xml", new String[] {"xsl", "xml"}, StorageType.XML);
+        assertDefaultResolveFromIdentifier(MediaType.APPLICATION_XML, new String[] {"xsl", "xml"}, StorageType.XML);
     }
     // </editor-fold>
 
@@ -491,207 +488,207 @@ public class MediaTypeResolverImplTest {
     // <editor-fold desc="Media Type definitions which are Application (e.g. FusionDB) specific">
     @Test
     public void applicationResolveDitaExtension() {
-        assertApplicationResolveFromFileName("something.dita", "application/dita+xml", new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.dita",MediaType.APPLICATION_DITA, new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveDitamapExtension() {
-        assertApplicationResolveFromFileName("something.ditamap", "application/dita+xml", new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.ditamap",MediaType.APPLICATION_DITA, new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveDitavalExtension() {
-        assertApplicationResolveFromFileName("something.ditaval", "application/dita+xml", new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.ditaval",MediaType.APPLICATION_DITA, new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveFoExtension() {
-        assertApplicationResolveFromFileName("something.fo", "application/xml",  new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.fo", MediaType.APPLICATION_XML,  new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveNvdlExtension() {
-        assertApplicationResolveFromFileName("something.nvdl", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.nvdl", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveOddExtension() {
-        assertApplicationResolveFromFileName("something.odd", "application/tei+xml", new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.odd", MediaType.APPLICATION_TEI, new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveOwlExtension() {
-        assertApplicationResolveFromFileName("something.owl", "application/rdf+xml", new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.owl", MediaType.APPLICATION_RDF_XML, new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveMdExtension() {
-        assertApplicationResolveFromFileName("something.md", "text/markdown", new String[] {"md"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.md", MediaType.TEXT_MARKDOWN, new String[] {"md"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveRdfExtension() {
-        assertApplicationResolveFromFileName("something.rdf", "application/rdf+xml", new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.rdf", MediaType.APPLICATION_RDF_XML, new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveRngExtension() {
-        assertApplicationResolveFromFileName("something.rng", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.rng", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveSchExtension() {
-        assertApplicationResolveFromFileName("something.sch", "application/schematron+xml", new String[] {"sch"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.sch", MediaType.APPLICATION_SCHEMATRON, new String[] {"sch"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveStxExtension() {
-        assertApplicationResolveFromFileName("something.stx", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.stx", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveSvgExtension() {
-        assertApplicationResolveFromFileName("something.svg", "image/svg+xml", new String[] {"svg"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.svg", MediaType.IMAGE_SVG, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveSvgzExtension() {
-        assertApplicationResolveFromFileName("something.svgz", "image/x.svg+gzip", new String[] {"svgz"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.svgz", MediaType.IMAGE_SVG_GZIP, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveTeiExtension() {
-        assertApplicationResolveFromFileName("something.tei", "application/tei+xml", new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.tei", MediaType.APPLICATION_TEI, new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveTeicorpusExtension() {
-        assertApplicationResolveFromFileName("something.teicorpus", "application/tei+xml", new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.teicorpus", MediaType.APPLICATION_TEI, new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXarExtension() {
-        assertApplicationResolveFromFileName("something.xar", "application/x.expath.xar+zip", new String[] {"xar"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xar", MediaType.APPLICATION_EXPATH_PACKAGE_ZIP, new String[] {"xar"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXconfExtension() {
-        assertApplicationResolveFromFileName("something.xconf", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xconf", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXmiExtension() {
-        assertApplicationResolveFromFileName("something.xmi", "application/vnd.xmi+xml", new String[] {"xmi"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xmi", MediaType.APPLICATION_XMI, new String[] {"xmi"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXmlExtension() {
-        assertApplicationResolveFromFileName("something.xml", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xml", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXmpExtension() {
-        assertApplicationResolveFromFileName("something.xmp", "application/rdf+xml", new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xmp", MediaType.APPLICATION_RDF_XML, new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXqExtension() {
-        assertApplicationResolveFromFileName("something.xq", "application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xq", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXqlExtension() {
-        assertApplicationResolveFromFileName("something.xql", "application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xql", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXqmExtension() {
-        assertApplicationResolveFromFileName("something.xqm", "application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xqm", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXqueryExtension() {
-        assertApplicationResolveFromFileName("something.xquery", "application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xquery", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXqwsExtension() {
-        assertApplicationResolveFromFileName("something.xqws", "application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xqws", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXqxExtension() {
-        assertApplicationResolveFromFileName("something.xqx", "application/xquery+xml", new String[] {"xqx"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xqx", MediaType.APPLICATION_XQUERY_XML, new String[] {"xqx"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXqyExtension() {
-        assertApplicationResolveFromFileName("something.xqy", "application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromFileName("something.xqy", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXsdExtension() {
-        assertApplicationResolveFromFileName("something.xsd", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xsd", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXslExtension() {
-        assertApplicationResolveFromFileName("something.xsl", "application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromFileName("something.xsl", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveDitaIdentifier() {
-        assertApplicationResolveFromIdentifier("application/dita+xml", new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_DITA, new String[] {"dita", "ditamap", "ditaval"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveMdIdentifier() {
-        assertApplicationResolveFromIdentifier("text/markdown", new String[] {"md"}, StorageType.BINARY);
+        assertApplicationResolveFromIdentifier(MediaType.TEXT_MARKDOWN, new String[] {"md"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveRdfIdentifier() {
-        assertApplicationResolveFromIdentifier("application/rdf+xml", new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_RDF_XML, new String[] {"xmp", "owl", "rdf"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveSchIdentifier() {
-        assertApplicationResolveFromIdentifier("application/schematron+xml", new String[] {"sch"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_SCHEMATRON, new String[] {"sch"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveSvgIdentifier() {
-        assertApplicationResolveFromIdentifier("image/svg+xml", new String[] {"svg"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.IMAGE_SVG, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveSvgzIdentifier() {
-        assertApplicationResolveFromIdentifier("image/x.svg+gzip", new String[] {"svgz"}, StorageType.BINARY);
+        assertApplicationResolveFromIdentifier(MediaType.IMAGE_SVG_GZIP, new String[] {"svg", "svgz"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveTeiIdentifier() {
-        assertApplicationResolveFromIdentifier("application/tei+xml", new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_TEI, new String[] {"odd", "tei", "teicorpus"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXmiIdentifier() {
-        assertApplicationResolveFromIdentifier("application/vnd.xmi+xml", new String[] {"xmi"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_XMI, new String[] {"xmi"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXmlIdentifier() {
-        assertApplicationResolveFromIdentifier("application/xml", new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
     }
 
     @Test
     public void applicationResolveXqueryIdentifier() {
-        assertApplicationResolveFromIdentifier("application/xquery", new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
     }
 
     @Test
     public void applicationResolveXqueryXIdentifier() {
-        assertApplicationResolveFromIdentifier("application/xquery+xml", new String[] {"xqx"}, StorageType.XML);
+        assertApplicationResolveFromIdentifier(MediaType.APPLICATION_XQUERY_XML, new String[] {"xqx"}, StorageType.XML);
     }
     // </editor-fold>
 
@@ -707,31 +704,34 @@ public class MediaTypeResolverImplTest {
         assertNotNull(defaultApplicationMimeTypes);
         final Path defaultApplicationTypesConfigDir = Paths.get(defaultApplicationMimeTypes.toURI()).getParent();
         final String packageNamePath = MediaTypeResolverImplTest.class.getPackage().getName().replace('.', '/');
+
         @Nullable final URL moreSpecificMimeTypes = MediaTypeResolverImplTest.class.getResource("/" + packageNamePath + "/test/levels/mime.types");
         assertNotNull(moreSpecificMimeTypes);
         final Path moreSpecificApplicationTypesConfigDir = Paths.get(moreSpecificMimeTypes.toURI()).getParent();
 
+        // NOTE(AR) moreSpecificApplicationTypesConfigDir is provided first so that it has highest priority
         final ApplicationMimetypesFileTypeMap mimetypesFileTypeMap = new ApplicationMimetypesFileTypeMap(
             moreSpecificApplicationTypesConfigDir,
             defaultApplicationTypesConfigDir);
 
-        assertEquals("application/xml", mimetypesFileTypeMap.getContentType("something.xadam"));
-        assertEquals("application/x.exist-collection-config+xml", mimetypesFileTypeMap.getContentType("something.xconf"));
-        assertEquals("application/xml", mimetypesFileTypeMap.getContentType("something.xml"));
-        assertEquals("application/xml", mimetypesFileTypeMap.getContentType("something.xsd"));
-        assertEquals("application/x.xsl+xml", mimetypesFileTypeMap.getContentType("something.xsl"));
+        assertEquals("test/extensible-markup-language", mimetypesFileTypeMap.getContentType("something.xadam"));
+        assertEquals("test/prs.existdb.collection-config+xml", mimetypesFileTypeMap.getContentType("something.xconf"));
+        assertEquals("test/extensible-markup-language", mimetypesFileTypeMap.getContentType("something.xml"));
+        assertEquals(MediaType.APPLICATION_XML, mimetypesFileTypeMap.getContentType("something.xsd"));
+        assertEquals("test/x.xsl+xml", mimetypesFileTypeMap.getContentType("something.xsl"));
 
         final MediaTypeResolverImpl specificMediaTypeResolver = new MediaTypeResolverImpl(mimetypesFileTypeMap, MEDIA_TYPE_MAPPER);
 
-        assertResolveFromFileName(specificMediaTypeResolver, "something.xadam", "application/xml", new String[] {"nvdl", "xml", "stx", "xsd", "fo", "rng", "xadam"}, StorageType.XML);
-        assertResolveFromFileName(specificMediaTypeResolver, "something.xconf", "application/x.exist-collection-config+xml", new String[] {"xconf"}, StorageType.XML);
-        assertResolveFromFileName(specificMediaTypeResolver, "something.xml", "application/xml", new String[] {"nvdl", "xml", "stx", "xsd", "fo", "rng", "xadam"}, StorageType.XML);
-        assertResolveFromFileName(specificMediaTypeResolver, "something.xsd", "application/xml", new String[] {"nvdl", "xml", "stx", "xsd", "fo", "rng", "xadam"}, StorageType.XML);
-        assertResolveFromFileName(specificMediaTypeResolver, "something.xsl", "application/x.xsl+xml", new String[] {"xsl"}, StorageType.XML);
+        assertResolveFromFileName(specificMediaTypeResolver, "something.xadam", "test/extensible-markup-language", new String[] {"xml", "xadam"}, StorageType.BINARY);
+        assertResolveFromFileName(specificMediaTypeResolver, "something.xconf", "test/prs.existdb.collection-config+xml", new String[] {"xconf"}, StorageType.XML);
+        assertResolveFromFileName(specificMediaTypeResolver, "something.xml", "test/extensible-markup-language", new String[] {"xml", "xadam"}, StorageType.BINARY);
+        assertResolveFromFileName(specificMediaTypeResolver, "something.xsd", MediaType.APPLICATION_XML, new String[] {"nvdl", "stx", "xsd", "fo", "rng"}, StorageType.XML);
+        assertResolveFromFileName(specificMediaTypeResolver, "something.xsl", "test/x.xsl+xml", new String[] {"xsl"}, StorageType.XML);
 
-        assertResolveFromIdentifier(specificMediaTypeResolver, "application/xml", new String[] {"nvdl", "xml", "stx", "xsd", "fo", "rng", "xadam"}, StorageType.XML);
-        assertResolveFromIdentifier(specificMediaTypeResolver, "application/x.exist-collection-config+xml", new String[] {"xconf"}, StorageType.XML);
-        assertResolveFromIdentifier(specificMediaTypeResolver, "application/x.xsl+xml", new String[] {"xsl"}, StorageType.XML);
+        assertResolveFromIdentifier(specificMediaTypeResolver, "test/extensible-markup-language", new String[] { "xml", "xadam" }, StorageType.BINARY);
+        assertResolveFromIdentifier(specificMediaTypeResolver, "test/prs.existdb.collection-config+xml", new String[] {"xconf"}, StorageType.XML);
+        assertResolveFromIdentifier(specificMediaTypeResolver, MediaType.APPLICATION_XML, new String[] {"nvdl", "stx", "xsd", "fo", "rng"}, StorageType.XML);
+        assertResolveFromIdentifier(specificMediaTypeResolver, "test/x.xsl+xml", new String[] {"xsl"}, StorageType.XML);
     }
 
     // <editor-fold desc="Checks for looking up unknown/invalid media types">

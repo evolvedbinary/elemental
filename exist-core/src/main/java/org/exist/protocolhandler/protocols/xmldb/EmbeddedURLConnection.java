@@ -58,7 +58,7 @@ import org.exist.protocolhandler.embedded.EmbeddedOutputStream;
 import org.exist.protocolhandler.xmldb.XmldbURL;
 import org.exist.protocolhandler.xmlrpc.XmlrpcInputStream;
 import org.exist.protocolhandler.xmlrpc.XmlrpcOutputStream;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  *  A URLConnection object manages the translation of a URL object into a
@@ -74,22 +74,22 @@ import org.exist.util.MimeTable;
 public class EmbeddedURLConnection extends URLConnection {
     private static final Logger LOG = LogManager.getLogger(EmbeddedURLConnection.class);
     private final ThreadGroup threadGroup;
-    private final MimeTable mimeTable;
+    private final MediaTypeResolver mediaTypeResolver;
 
     /**
      * Constructs a URL connection to the specified URL.
      *
      * @param threadGroup Thread group
      * @param url URL
-     * @param mimeTable The MIME table.
+     * @param mediaTypeResolver The Internet Media Type resolver.
      */
-    protected EmbeddedURLConnection(final ThreadGroup threadGroup, final URL url, final MimeTable mimeTable) {
+    protected EmbeddedURLConnection(final ThreadGroup threadGroup, final URL url, final MediaTypeResolver mediaTypeResolver) {
         super(url);
         if (LOG.isDebugEnabled()) {
             LOG.debug(url);
         }
         this.threadGroup = threadGroup;
-        this.mimeTable = mimeTable;
+        this.mediaTypeResolver = mediaTypeResolver;
         setDoInput(true);
         setDoOutput(true);
     }
@@ -131,7 +131,7 @@ public class EmbeddedURLConnection extends URLConnection {
         if(xmldbURL.isEmbedded()){
             outputstream = new EmbeddedOutputStream(xmldbURL);
         } else {
-            outputstream = new XmlrpcOutputStream(threadGroup, xmldbURL, mimeTable);
+            outputstream = new XmlrpcOutputStream(threadGroup, xmldbURL, mediaTypeResolver);
         }
         
         return outputstream;

@@ -68,6 +68,7 @@ import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.exist.samples.Samples.SAMPLES;
 import static org.junit.Assert.assertNotNull;
@@ -155,6 +156,8 @@ public class RecoverBinary2Test {
     
     private void storeFiles(final DBBroker broker, final Txn transaction, final Collection test2) throws IOException, EXistException, PermissionDeniedException, LockException, SAXException {
         // store some documents.
+        final MediaType binMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
+
         for (int j = 0; j < 10; j++) {
             for (final String modsFilename : Samples.SAMPLES.getModsXmlSampleNames()) {
                 final XmldbURI uri = test2.getURI().append(j + "_" + modsFilename);
@@ -162,7 +165,7 @@ public class RecoverBinary2Test {
                 try (final InputStream is = SAMPLES.getModsSample(modsFilename)) {
                     modsContent = InputStreamUtil.readAll(is);
                 }
-                broker.storeDocument(transaction, uri, new StringInputSource(modsContent), MimeType.BINARY_TYPE, test2);
+                broker.storeDocument(transaction, uri, new StringInputSource(modsContent), binMediaType, test2);
                 final BinaryDocument doc = (BinaryDocument) test2.getDocument(broker, uri);
                 assertNotNull(doc);
             }

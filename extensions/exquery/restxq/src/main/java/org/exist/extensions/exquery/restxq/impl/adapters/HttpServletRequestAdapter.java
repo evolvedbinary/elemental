@@ -40,6 +40,7 @@ import org.exist.util.io.FilterInputStreamCacheFactory;
 import org.exist.util.io.FilterInputStreamCacheFactory.FilterInputStreamCacheConfiguration;
 import org.exquery.http.HttpMethod;
 import org.exquery.http.HttpRequest;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  *
@@ -175,7 +176,7 @@ public class HttpServletRequestAdapter implements HttpRequest {
             return getGetParameters(key);
         }
 
-        if (request.getMethod().equals("POST") && request.getContentType() != null && request.getContentType().equals("application/x-www-form-urlencoded")) {
+        if (request.getMethod().equals("POST") && request.getContentType() != null && request.getContentType().equals(MediaType.APPLICATION_WWW_FORM_URLENCODED)) {
             if (formFields == null) {
 
                 try {

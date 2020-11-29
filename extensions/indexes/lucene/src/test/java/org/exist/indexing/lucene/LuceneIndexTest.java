@@ -90,6 +90,7 @@ import org.junit.*;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.exist.samples.Samples.SAMPLES;
 
@@ -1296,7 +1297,8 @@ public class LuceneIndexTest {
                 mgr.addConfiguration(transaction, broker, root, configuration);
             }
 
-            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(data), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(data), xmlMediaType, root);
 
             docs.add(root.getDocument(broker, XmldbURI.create(docName)));
             transact.commit(transaction);
@@ -1319,8 +1321,9 @@ public class LuceneIndexTest {
                 mgr.addConfiguration(transaction, broker, root, configuration);
             }
 
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
             for (final String sampleName : sampleNames) {
-                broker.storeDocument(transaction, XmldbURI.create(sampleName), new InputStreamSupplierInputSource(() -> SAMPLES.getShakespeareSample(sampleName)), MimeType.XML_TYPE, root);
+                broker.storeDocument(transaction, XmldbURI.create(sampleName), new InputStreamSupplierInputSource(() -> SAMPLES.getShakespeareSample(sampleName)), xmlMediaType, root);
                 docs.add(root.getDocument(broker, XmldbURI.create(sampleName)));
             }
             transact.commit(transaction);

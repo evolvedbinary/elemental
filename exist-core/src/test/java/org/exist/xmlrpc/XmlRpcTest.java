@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -32,7 +56,6 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.test.ExistWebServer;
 import org.exist.test.TestConstants;
 import org.exist.util.Compressor;
-import org.exist.util.MimeType;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
@@ -74,6 +97,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * JUnit test for XMLRPC interface methods.
@@ -147,7 +171,7 @@ public class XmlRpcTest {
         params.clear();
         params.add(XML_DATA.getBytes());
         params.add(TARGET_RESOURCE.toString());
-        params.add("application/xml");
+        params.add(MediaType.APPLICATION_XML);
         params.add(1);
 
         assertThat(xmlrpc.execute("parse", params)).isEqualTo(TRUE);
@@ -233,7 +257,7 @@ public class XmlRpcTest {
 
         params.set(0, MODULE_DATA.getBytes(UTF_8));
         params.set(1, MODULE_RESOURCE.toString());
-        params.set(2, MimeType.XQUERY_TYPE.getName());
+        params.set(2, MediaType.APPLICATION_XQUERY);
         params.add(TRUE);
         assertThat(xmlrpc.execute("storeBinary", params)).isEqualTo(TRUE);
 
@@ -341,7 +365,7 @@ public class XmlRpcTest {
         paramsEx.add(uploadedFileName);
         paramsEx.add(resURI);
         paramsEx.add(TRUE);
-        paramsEx.add("application/octet-stream");
+        paramsEx.add(MediaType.APPLICATION_OCTET_STREAM);
         paramsEx.add(FALSE);
         paramsEx.add(now);
         paramsEx.add(now);

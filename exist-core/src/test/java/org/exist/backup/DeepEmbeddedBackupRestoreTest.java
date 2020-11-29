@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -32,7 +56,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.XmldbURI;
@@ -43,6 +66,8 @@ import org.junit.rules.TemporaryFolder;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.XMLDBException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -123,6 +148,11 @@ public class DeepEmbeddedBackupRestoreTest {
         final List<ResourceInfo> documentInfos = new ArrayList<>();
 
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+
+        final MediaTypeResolver mediaTypeResolver = brokerPool.getMediaTypeService().getMediaTypeResolver();
+        final MediaType xmlMediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
+        final MediaType binMediaType = mediaTypeResolver.forUnknown();
+
         try (final Txn transaction = brokerPool.getTransactionManager().beginTransaction();
              final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
 
@@ -150,7 +180,7 @@ public class DeepEmbeddedBackupRestoreTest {
                                     // store XML document
                                     final XmldbURI xmlName = XmldbURI.create("doc_" + x + ".xml");
                                     final String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + EOL + "<position id=\"" + x + "\" d=\"" + d + "\" w=\"" + w + "\"/>";
-                                    broker.storeDocument(transaction, xmlName, new StringInputSource(xml), MimeType.XML_TYPE, sibCollection);
+                                    broker.storeDocument(transaction, xmlName, new StringInputSource(xml), xmlMediaType, sibCollection);
 
                                     final byte[] xmlData = xml.getBytes(UTF_8);
                                     final long xmlHash = hash64.hash(xmlData, 0, xmlData.length, XXHASH64_SEED);
@@ -159,7 +189,7 @@ public class DeepEmbeddedBackupRestoreTest {
                                     // store Binary document
                                     final XmldbURI binName = XmldbURI.create("doc_" + x + ".bin");
                                     final String bin = x + ":" + d + ":" + w;
-                                    broker.storeDocument(transaction, binName, new StringInputSource(bin.getBytes(UTF_8)), MimeType.BINARY_TYPE, sibCollection);
+                                    broker.storeDocument(transaction, binName, new StringInputSource(bin.getBytes(UTF_8)), binMediaType, sibCollection);
 
                                     final byte[] binData = bin.getBytes(UTF_8);
                                     final long binHash = hash64.hash(binData, 0, binData.length, XXHASH64_SEED);

@@ -46,8 +46,8 @@
 package org.exist.test.runner;
 
 import com.evolvedbinary.j8fu.lazy.LazyVal;
+import org.exist.mediatype.MediaTypeUtil;
 import org.exist.test.ExistEmbeddedServer;
-import org.exist.util.MimeTable;
 import org.exist.util.StringUtil;
 import org.exist.util.XMLFilenameFilter;
 import org.exist.util.XQueryFilenameFilter;
@@ -58,6 +58,7 @@ import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.ParentRunner;
 import org.junit.runners.model.*;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -71,6 +72,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.evolvedbinary.j8fu.Either.Left;
+import static com.evolvedbinary.j8fu.Either.Right;
 
 /**
  * Using <code>XSuite</code> as a runner allows you to manually
@@ -90,7 +94,7 @@ public class XSuite extends ParentRunner<Runner> {
     private static boolean DEFAULT_DISABLE_EXPATH_AUTO_DEPLOY = true;
     private static boolean DEFAULT_DATABASE_USE_TEMPORARY_STORAGE = true;
 
-    private static final LazyVal<MimeTable> mimeTable = new LazyVal<>(MimeTable::getInstance);
+    private static final LazyVal<MediaTypeResolver> MEDIA_TYPE_RESOLVER = new LazyVal<>(() -> MediaTypeUtil.newMediaTypeResolver(null));
 
     /**
      * Returns an empty suite.
@@ -290,9 +294,9 @@ public class XSuite extends ParentRunner<Runner> {
     }
 
     private static @Nullable Runner getRunner(final Path path, final boolean parallel) throws InitializationError {
-        if(XMLFilenameFilter.asPredicate(mimeTable.get()).test(path)) {
+        if (XMLFilenameFilter.asPredicate(MEDIA_TYPE_RESOLVER.get()).test(path)) {
             return new XMLTestRunner(path, parallel);
-        } else if(XQueryFilenameFilter.asPredicate(mimeTable.get()).test(path) && !path.getFileName().toString().equals("runTests.xql")) {
+        } else if (XQueryFilenameFilter.asPredicate(MEDIA_TYPE_RESOLVER.get()).test(path) && !path.getFileName().toString().equals("runTests.xql")) {
             return new XQueryTestRunner(path, parallel);
         } else {
             return null;

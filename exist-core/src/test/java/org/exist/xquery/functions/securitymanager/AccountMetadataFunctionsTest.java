@@ -31,7 +31,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
@@ -40,6 +39,7 @@ import org.exist.xquery.value.Sequence;
 import org.junit.Rule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -121,8 +121,10 @@ public class AccountMetadataFunctionsTest {
 
             final XmldbURI accountsCollectionUri = SecurityManager.SECURITY_COLLECTION_URI.append(RealmImpl.ID).append(SecurityManager.ACCOUNTS_COLLECTION_URI);
 
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+
             try (final Collection accountsCollection = broker.getCollection(accountsCollectionUri)) {
-                accountsCollection.storeDocument(transaction, broker, accountDocumentUri, new StringInputSource(accountDocument), MimeType.XML_TYPE);
+                accountsCollection.storeDocument(transaction, broker, accountDocumentUri, new StringInputSource(accountDocument), xmlMediaType);
             }
             transaction.commit();
         }

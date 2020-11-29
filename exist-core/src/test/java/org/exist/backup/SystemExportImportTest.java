@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -56,7 +80,6 @@ import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
 
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
@@ -68,6 +91,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.xml.sax.SAXException;
 import org.xmldb.api.base.XMLDBException;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -228,10 +252,13 @@ public class SystemExportImportTest {
             final CollectionConfigurationManager mgr = pool.getConfigurationManager();
             mgr.addConfiguration(transaction, broker, test, COLLECTION_CONFIG);
 
-            broker.storeDocument(transaction, doc01uri.lastSegment(), new StringInputSource(XML1), MimeType.XML_TYPE, test);
-            broker.storeDocument(transaction, doc02uri.lastSegment(), new StringInputSource(XML2), MimeType.XML_TYPE, test);
-            broker.storeDocument(transaction, doc03uri.lastSegment(), new StringInputSource(XML3), MimeType.XML_TYPE, test);
-            broker.storeDocument(transaction, doc11uri.lastSegment(), new StringInputSource(BINARY.getBytes(UTF_8)), MimeType.BINARY_TYPE, test);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            final MediaType binMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
+
+            broker.storeDocument(transaction, doc01uri.lastSegment(), new StringInputSource(XML1), xmlMediaType, test);
+            broker.storeDocument(transaction, doc02uri.lastSegment(), new StringInputSource(XML2), xmlMediaType, test);
+            broker.storeDocument(transaction, doc03uri.lastSegment(), new StringInputSource(XML3), xmlMediaType, test);
+            broker.storeDocument(transaction, doc11uri.lastSegment(), new StringInputSource(BINARY.getBytes(UTF_8)), binMediaType, test);
 
             transaction.commit();
         }

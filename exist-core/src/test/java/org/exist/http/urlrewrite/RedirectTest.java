@@ -31,6 +31,7 @@ import org.exist.xmldb.XmldbURI;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -143,7 +144,7 @@ public class RedirectTest extends AbstractHttpTest {
     public static void setup() throws IOException {
         final Request request = Request
             .Put(getRestUri(EXIST_WEB_SERVER) + TEST_COLLECTION + "/" + XQUERY_CONTROLLER_FILENAME)
-            .bodyString(TEST_CONTROLLER, ContentType.create("application/xquery"));
+            .bodyString(TEST_CONTROLLER, ContentType.create(MediaType.APPLICATION_XQUERY));
 
         final int statusCode = withHttpExecutor(EXIST_WEB_SERVER, executor ->
             executor.execute(request).returnResponse().getStatusLine().getStatusCode()

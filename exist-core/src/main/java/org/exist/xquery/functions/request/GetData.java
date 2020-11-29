@@ -58,7 +58,6 @@ import org.exist.http.servlets.RequestWrapper;
 import org.exist.dom.memtree.DocumentBuilderReceiver;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.util.Configuration;
-import org.exist.util.MimeType;
 import org.exist.util.io.CachingFilterInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.FilterInputStreamCache;
@@ -69,6 +68,8 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
 
 import javax.annotation.Nonnull;
 
@@ -128,8 +129,8 @@ public class GetData extends StrictRequestFunction {
                         contentType = contentType.substring(0, contentType.indexOf(';'));
                     }
 
-                    final MimeType mimeType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentType(contentType);
-                    if (mimeType != null && !mimeType.isXMLType()) {
+                    final MediaType mediaType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(contentType);
+                    if (mediaType != null && mediaType.getStorageType() != StorageType.XML) {
 
                         //binary data
                         result = BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), isRequest, this);

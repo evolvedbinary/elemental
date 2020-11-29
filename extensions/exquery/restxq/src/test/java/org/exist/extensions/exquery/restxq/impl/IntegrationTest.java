@@ -40,6 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,7 +63,7 @@ public class IntegrationTest {
 
     private static String TEST_COLLECTION = "/db/restxq/integration-test";
 
-    private static ContentType XQUERY_CONTENT_TYPE = ContentType.create("application/xquery", "UTF-8");
+    private static ContentType XQUERY_CONTENT_TYPE = ContentType.create(MediaType.APPLICATION_XQUERY, "UTF-8");
     private static String XQUERY1 =
             "xquery version \"3.0\";\n" +
             "\n" +

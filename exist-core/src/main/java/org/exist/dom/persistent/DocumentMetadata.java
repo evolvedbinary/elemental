@@ -95,12 +95,12 @@ public class DocumentMetadata implements ResourceMetadata {
 
     @Deprecated
     public String getMimeType() {
-        return doc.getMimeType();
+        return doc.getMediaType();
     }
 
     @Deprecated
     public void setMimeType(final String mimeType) {
-        doc.setMimeType(mimeType);
+        doc.setMediaType(mimeType);
     }
 
     @Deprecated
@@ -133,7 +133,7 @@ public class DocumentMetadata implements ResourceMetadata {
         final long created = istream.readLong();
         final long lastModified = istream.readLong();
         final int mimeTypeSymbolsIndex = istream.readInt();
-        final String mimeType = symbolTable.getMimeType(mimeTypeSymbolsIndex);
+        final String mediaType = symbolTable.getMimeType(mimeTypeSymbolsIndex);
         final int pageCount = istream.readInt();
         final int userLock = istream.readInt();
         final DocumentTypeImpl docType;
@@ -151,7 +151,7 @@ public class DocumentMetadata implements ResourceMetadata {
 
         doc.setCreated(created);
         doc.setLastModified(lastModified);
-        doc.setMimeType(mimeType);
+        doc.setMediaType(mediaType);
         doc.setPageCount(pageCount);
         doc.setUserLock(userLock);
         doc.setDocType(docType);

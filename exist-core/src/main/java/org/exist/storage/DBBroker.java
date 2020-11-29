@@ -86,6 +86,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import javax.xml.stream.XMLStreamException;
@@ -414,8 +415,30 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws TriggerException in case of Elemental trigger error
      * @throws EXistException general exception
      * @throws SAXException internal SAXException
+     * @deprecated Use {@link #storeDocument(Txn, XmldbURI, InputSource, MediaType, Collection)} instead.
      */
+    @Deprecated
     public abstract void storeDocument(Txn transaction, XmldbURI name, InputSource source, @Nullable MimeType mimeType, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
+
+    /**
+     * Stores a document.
+     * Since the process is dependent on the collection configuration,
+     * the collection acquires a write lock during the process.
+     *
+     * @param transaction The database transaction
+     * @param name        The name (without path) of the document
+     * @param source      The source of the content for the new document to store
+     * @param mediaType   The Internet Media Type of the document to store, or null if unknown.
+     * @param collection  The collection to store the document into
+     *
+     * @throws PermissionDeniedException if user has not sufficient rights
+     * @throws LockException if broker is locked
+     * @throws IOException in case of I/O errors
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
+     * @throws SAXException internal SAXException
+     */
+    public abstract void storeDocument(Txn transaction, XmldbURI name, InputSource source, @Nullable MediaType mediaType, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
 
     /**
      * Stores a document.
@@ -440,8 +463,37 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws TriggerException in case of Elemental trigger error
      * @throws EXistException general exception
      * @throws SAXException internal SAXException
+     *
+     * @deprecated Use {@link #storeDocument(Txn, XmldbURI, InputSource, MediaType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
+    @Deprecated
     public abstract void storeDocument(Txn transaction, XmldbURI name, InputSource source, @Nullable MimeType mimeType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
+
+    /**
+     * Stores a document.
+     * Since the process is dependent on the collection configuration,
+     * the collection acquires a write lock during the process.
+     *
+     * @param transaction       The database transaction
+     * @param name              The name (without path) of the document
+     * @param source            The source of the content for the new document to store
+     * @param mediaType         The Internet Media Type of the document to store, or null if unknown.
+     *                          If null, application/octet-stream will be used to store a binary document.
+     * @param createdDate       The created date to set for the document, or if null the date is set to 'now'
+     * @param lastModifiedDate  The lastModified date to set for the document, or if null the date is set to the {@code createdDate}
+     * @param permission        A specific permission to set on the document, or null for the default permission
+     * @param documentType      A document type declaration, or null if absent or a binary document is being stored
+     * @param xmlReader         A custom XML Reader (e.g. a HTML to XHTML converting reader), or null to use the default XML reader or if a binary document is being stored
+     * @param collection        The collection to store the document into
+     *
+     * @throws PermissionDeniedException if user has not sufficient rights
+     * @throws LockException if broker is locked
+     * @throws IOException in case of I/O errors
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
+     * @throws SAXException internal SAXException
+     */
+    public abstract void storeDocument(Txn transaction, XmldbURI name, InputSource source, @Nullable MediaType mediaType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
 
     /**
      * Stores a document.
@@ -460,8 +512,31 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws TriggerException in case of Elemental trigger error
      * @throws EXistException general exception
      * @throws SAXException internal SAXException
+     *
+     * @deprecated Use {@link #storeDocument(Txn, XmldbURI, Node, MediaType, Collection)} instead.
      */
+    @Deprecated
     public abstract void storeDocument(Txn transaction, XmldbURI name, Node node, @Nullable MimeType mimeType, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
+
+    /**
+     * Stores a document.
+     * Since the process is dependent on the collection configuration,
+     * the collection acquires a write lock during the process.
+     *
+     * @param transaction The database transaction
+     * @param name        The name (without path) of the document
+     * @param node        The DOM Node to store as a new document
+     * @param mediaType   The Internet Media Type of the document to store, or null if unknown.
+     * @param collection  The collection to store the document into
+     *
+     * @throws PermissionDeniedException if user has not sufficient rights
+     * @throws LockException if broker is locked
+     * @throws IOException in case of I/O errors
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
+     * @throws SAXException internal SAXException
+     */
+    public abstract void storeDocument(Txn transaction, XmldbURI name, Node node, @Nullable MediaType mediaType, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
 
     /**
      * Stores a document.
@@ -486,8 +561,37 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws TriggerException in case of Elemental trigger error
      * @throws EXistException general exception
      * @throws SAXException internal SAXException
+     *
+     * @deprecated Use {@link #storeDocument(Txn, XmldbURI, Node, MediaType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
+    @Deprecated
     public abstract void storeDocument(Txn transaction, XmldbURI name, Node node, @Nullable MimeType mimeType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
+
+    /**
+     * Stores a document.
+     * Since the process is dependent on the collection configuration,
+     * the collection acquires a write lock during the process.
+     *
+     * @param transaction       The database transaction
+     * @param name              The name (without path) of the document
+     * @param node              The DOM Node to store as a new document
+     * @param mediaType         The Internet Media Type of the document to store, or null if unknown.
+     *                          If null, application/octet-stream will be used to store a binary document.
+     * @param createdDate       The created date to set for the document, or if null the date is set to 'now'
+     * @param lastModifiedDate  The lastModified date to set for the document, or if null the date is set to the {@code createdDate}
+     * @param permission        A specific permission to set on the document, or null for the default permission
+     * @param documentType      A document type declaration, or null if absent or a binary document is being stored
+     * @param xmlReader         A custom XML Reader (e.g. a HTML to XHTML converting reader), or null to use the default XML reader or if a binary document is being stored
+     * @param collection        The collection to store the document into
+     *
+     * @throws PermissionDeniedException if user has not sufficient rights
+     * @throws LockException if broker is locked
+     * @throws IOException in case of I/O errors
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
+     * @throws SAXException internal SAXException
+     */
+    public abstract void storeDocument(Txn transaction, XmldbURI name, Node node, @Nullable MediaType mediaType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
 
     /**
      * Returns the configuration object used to initialize the current database

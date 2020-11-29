@@ -69,6 +69,7 @@ import org.exist.util.io.CloseNotifyingOutputStream;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 
@@ -152,10 +153,10 @@ public class EmbeddedOutputStream extends OutputStream {
                     throw new IOException("Resource " + documentUri.toString() + " is a collection.");
                 }
 
-                final MimeType mime = pool.getMediaTypeService().getMediaTypeResolver().getContentTypeFor(documentUri);
+                final MediaType mediaType = pool.getMediaTypeService().getMediaTypeResolver().fromFileName(documentUri.lastSegmentString());
                 final TransactionManager transact = pool.getTransactionManager();
                 try (final Txn txn = transact.beginTransaction()) {
-                    broker.storeDocument(txn, documentUri, new FileInputSource(tempFile), mime, collection);
+                    broker.storeDocument(txn, documentUri, new FileInputSource(tempFile), mediaType, collection);
 
                     txn.commit();
                 }

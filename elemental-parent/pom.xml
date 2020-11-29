@@ -309,6 +309,7 @@
                             <g>SLASHSTAR_STYLE</g>
                             <java>SLASHSTAR_STYLE</java>
                             <plist>XML_STYLE</plist>
+                            <types>SCRIPT_STYLE</types>
                             <xconf>XML_STYLE</xconf>
                             <xconf.init>XML_STYLE</xconf.init>
                             <xjb>XML_STYLE</xjb>

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,7 +50,6 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 
 import org.exist.test.TestConstants;
-import org.exist.util.MimeType;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmlrpc.XmlRpcTest;
 import org.junit.After;
@@ -43,6 +66,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -121,7 +145,7 @@ public class RemoteQueryTest extends RemoteDBTest {
         assertNotNull(xmlrpcCollection);
 
         Resource br = xmlrpcCollection.createResource(TestConstants.TEST_MODULE_URI.toString(), "BinaryResource");
-        ((EXistResource) br).setMimeType(MimeType.XQUERY_TYPE.getName());
+        ((EXistResource) br).setMediaType(MediaType.APPLICATION_XQUERY);
         br.setContent(XmlRpcTest.MODULE_DATA);
         xmlrpcCollection.storeResource(br);
 	}

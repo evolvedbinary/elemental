@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,6 +60,7 @@ import org.exist.util.FileUtils;
 import org.exist.util.XMLReaderPool;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -57,7 +82,7 @@ public class Restore {
     private static final byte[] ZIP_FILE_MAGIC_NUMBER = {0x50, 0x4B, 0x03, 0x04};
 
     public void restore(final DBBroker broker, @Nullable final Txn transaction, final String newAdminPass, final Path f,
-                        final RestoreListener listener, final boolean overwriteApps) throws EXistException, IOException, SAXException, PermissionDeniedException {
+                        final RestoreListener listener, final boolean overwriteApps, final MediaTypeResolver mediaTypeResolver) throws EXistException, IOException, SAXException, PermissionDeniedException {
         
         //set the admin password
         if (newAdminPass != null) {

@@ -55,7 +55,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.InputStreamSupplierInputSource;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
@@ -65,6 +64,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -101,7 +101,8 @@ public class PackageTriggerTest {
             try (final ManagedCollectionLock collectionLock = brokerPool.getLockManager().acquireCollectionWriteLock(xarUri.removeLastSegment())) {
                 final Collection collection = broker.getOrCreateCollection(transaction, xarUri.removeLastSegment());
 
-                broker.storeDocument(transaction, xarUri.lastSegment(), new InputStreamSupplierInputSource(() -> PackageTriggerTest.class.getResourceAsStream("/" + xarFile)), MimeType.EXPATH_PKG_TYPE, collection);
+                final MediaType pkgMediaType = brokerPool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_EXPATH_PACKAGE_ZIP);
+                broker.storeDocument(transaction, xarUri.lastSegment(), new InputStreamSupplierInputSource(() -> PackageTriggerTest.class.getResourceAsStream("/" + xarFile)), pkgMediaType, collection);
                 broker.saveCollection(transaction, collection);
             }
 
@@ -132,14 +133,14 @@ public class PackageTriggerTest {
 
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
 
-        // Create collection and store document to fire trigger
+        // Create collection
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
             final XQuery xquery = brokerPool.getXQueryService();
             final Sequence result = xquery.execute(broker, "xmldb:create-collection('/db','trigger-test')", null);
             Assert.assertEquals(1, result.getItemCount());
         }
 
-        // Create collection and store document to fire trigger
+        // Store document to fire trigger
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
             final XQuery xquery = brokerPool.getXQueryService();
             final Sequence result = xquery.execute(broker, "xmldb:store('/db/trigger-test', 'test.xml', <a>b</a>)", null);

@@ -75,7 +75,6 @@ import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
@@ -90,6 +89,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import javax.servlet.*;
@@ -258,7 +258,7 @@ public class XQueryURLRewrite extends HttpServlet {
 
                         outputProperties.setProperty(OutputKeys.INDENT, "yes");
                         outputProperties.setProperty(OutputKeys.ENCODING, UTF_8.name());
-                        outputProperties.setProperty(OutputKeys.MEDIA_TYPE, MimeType.XML_TYPE.getName());
+                        outputProperties.setProperty(OutputKeys.MEDIA_TYPE, MediaType.APPLICATION_XML);
 
                         final Sequence result = runQuery(broker, modifiedRequest, response, modelView, staticRewrite, outputProperties);
 
@@ -786,7 +786,7 @@ public class XQueryURLRewrite extends HttpServlet {
             }
 
             if (controllerDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
-                    !"application/xquery".equals(controllerDoc.getMimeType())) {
+                    !MediaType.APPLICATION_XQUERY.equals(controllerDoc.getMediaType())) {
                 LOG.warn("XQuery resource: {} is not an XQuery or declares a wrong mime-type", query);
                 return null;
             }
@@ -936,7 +936,7 @@ public class XQueryURLRewrite extends HttpServlet {
 
                     final DocumentImpl sourceDoc = lockedSourceDoc.getDocument();
                     if (sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
-                            !"application/xquery".equals(sourceDoc.getMimeType())) {
+                            !MediaType.APPLICATION_XQUERY.equals(sourceDoc.getMediaType())) {
                         throw new ServletException("XQuery resource: " + query + " is not an XQuery or " +
                                 "declares a wrong mime-type");
                     }

@@ -51,7 +51,6 @@ import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.storage.lock.Lock.LockMode;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
@@ -61,6 +60,9 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
+import xyz.elemental.mediatype.MediaType;
+
+import java.nio.file.Paths;
 
 import static org.exist.xquery.XPathException.execAndAddErrorIfMissing;
 
@@ -93,9 +95,9 @@ public class XMLDBGetMimeType extends BasicFunction {
 		
 		if(path.matches("^[a-z]+://.*")) {
 			//external
-			final MimeType mimeType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentTypeFor(path);
-			if(mimeType != null) {
-				return new StringValue(this, mimeType.getName());
+			final MediaType mediaType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromFileName(Paths.get(path));
+			if (mediaType != null) {
+				return new StringValue(this, mediaType.getIdentifier());
             }
 		} else {
 			//database
@@ -106,7 +108,7 @@ public class XMLDBGetMimeType extends BasicFunction {
 				// try to open the document and acquire a lock
 				try(final LockedDocument lockedDoc = context.getBroker().getXMLResource(pathUri, LockMode.READ_LOCK)) {
 					if (lockedDoc != null) {
-						return new StringValue(this, lockedDoc.getDocument().getMimeType());
+						return new StringValue(this, lockedDoc.getDocument().getMediaType());
 					}
 				}
 			} catch(final Exception e) {

@@ -93,6 +93,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.NamespaceSupport;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -572,10 +573,10 @@ public class SystemExport {
         }
 
         attr.addAttribute(Namespaces.EXIST_NS, "filename", "filename", "CDATA", Backup.encode(URIUtils.urlDecodeUtf8(doc.getFileURI())));
-        String mimeType = "application/xml";
+        String mimeType = MediaType.APPLICATION_XML;
 
-        if (doc.getMimeType() != null) {
-            mimeType = Backup.encode(doc.getMimeType());
+        if (doc.getMediaType() != null) {
+            mimeType = Backup.encode(doc.getMediaType());
         }
         attr.addAttribute(Namespaces.EXIST_NS, "mimetype", "mimetype", "CDATA", mimeType);
 

@@ -59,6 +59,7 @@ import java.util.*;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.annotation.Nullable;
 import javax.swing.ImageIcon;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -70,6 +71,7 @@ import javax.xml.transform.OutputKeys;
 import org.apache.tools.ant.DirectoryScanner;
 import org.exist.SystemProperties;
 import org.exist.dom.persistent.XMLUtil;
+import org.exist.mediatype.MediaTypeUtil;
 import org.exist.security.Account;
 import org.exist.security.Permission;
 import org.exist.security.SecurityManager;
@@ -104,7 +106,10 @@ import org.xmldb.api.base.*;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XUpdateQueryService;
-import se.softhouse.jargo.ArgumentException;
+import se.softhouse.jargo.ArgumentException;import xyz.elemental.mediatype.MediaType;
+
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.storage.serializers.EXistOutputKeys.OUTPUT_DOCTYPE;
@@ -223,7 +228,7 @@ public class InteractiveClient {
     private static final NamedThreadGroupFactory clientThreadGroupFactory = new NamedThreadGroupFactory("java-admin-client");
     private final ThreadGroup clientThreadGroup = clientThreadGroupFactory.newThreadGroup(null);
 
-    private final MimeTable mimeTable = MimeTable.getInstance();
+    private MediaTypeResolver mediaTypeResolver = null;
 
     /**
      * Display help on commands
@@ -1355,16 +1360,16 @@ public class InteractiveClient {
     private void storeBinary(final String fileName) throws XMLDBException {
         final Path file = Paths.get(fileName).normalize();
         if (Files.isReadable(file)) {
-            final MimeType mime = mimeTable.getContentTypeFor(FileUtils.fileName(file));
+            @Nullable final MediaType mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(file));
             final BinaryResource resource = (BinaryResource) current.createResource(FileUtils.fileName(file), BinaryResource.RESOURCE_TYPE);
             resource.setContent(file);
-            ((EXistResource) resource).setMimeType(mime == null ? "application/octet-stream" : mime.getName());
+            ((EXistResource) resource).setMediaType(mediaType == null ? mediaTypeResolver.forUnknown().getIdentifier() : mediaType.getIdentifier());
             current.storeResource(resource);
         }
     }
 
-    MimeTable getMediaTypeResolver() {
-        return mimeTable;
+    MediaTypeResolver getMediaTypeResolver() {
+        return mediaTypeResolver;
     }
 
     private synchronized boolean findRecursive(final Collection collection, final Path dir, final XmldbURI base) throws XMLDBException {
@@ -1373,7 +1378,7 @@ public class InteractiveClient {
         EXistCollectionManagementService mgtService;
         //The XmldbURIs here aren't really used...
         XmldbURI next;
-        MimeType mimeType;
+        @Nullable MediaType mediaType = null;
 
         try {
             final List<Path> files = FileUtils.list(dir);
@@ -1396,15 +1401,15 @@ public class InteractiveClient {
                         findRecursive(c, file, next);
                     } else {
                         final long start1 = System.currentTimeMillis();
-                        mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(file));
-                        if (mimeType == null) {
+                        mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(file));
+                        if (mediaType == null) {
                             messageln("File " + FileUtils.fileName(file) + " has an unknown suffix. Cannot determine file type.");
-                            mimeType = MimeType.BINARY_TYPE;
+                            mediaType = mediaTypeResolver.forUnknown();
                         }
                         message("storing document " + FileUtils.fileName(file) + " (" + i + " of " + files.size() + ") " + "...");
-                        document = collection.createResource(FileUtils.fileName(file), mimeType.getXMLDBType());
+                        document = collection.createResource(FileUtils.fileName(file), mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource");
                         document.setContent(file);
-                        ((EXistResource) document).setMimeType(mimeType.getName());
+                        ((EXistResource) document).setMediaType(mediaType.getIdentifier());
                         collection.storeResource(document);
                         ++filesCount;
                         messageln(" " + FileUtils.sizeQuietly(file) + " bytes in " + (System.currentTimeMillis() - start1) + "ms.");
@@ -1466,20 +1471,20 @@ public class InteractiveClient {
 
             final long start0 = System.currentTimeMillis();
             long bytes = 0;
-            MimeType mimeType;
+            @Nullable MediaType mediaType = null;
             for (int i = 0; i < files.size(); i++) {
                 if (Files.isDirectory(files.get(i))) {
                     continue;
                 }
                 final long start = System.currentTimeMillis();
-                mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(files.get(i)));
-                if (mimeType == null) {
-                    mimeType = MimeType.BINARY_TYPE;
+                mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(files.get(i)));
+                if (mediaType == null) {
+                    mediaType = mediaTypeResolver.forUnknown();
                 }
-                document = current.createResource(FileUtils.fileName(files.get(i)), mimeType.getXMLDBType());
+                document = current.createResource(FileUtils.fileName(files.get(i)), mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource");
                 message("storing document " + FileUtils.fileName(files.get(i)) + " (" + (i + 1) + " of " + files.size() + ") ...");
                 document.setContent(files.get(i));
-                ((EXistResource) document).setMimeType(mimeType.getName());
+                ((EXistResource) document).setMediaType(mediaType.getIdentifier());
                 current.storeResource(document);
                 messageln("done.");
                 messageln("parsing " + FileUtils.sizeQuietly(files.get(i)) + " bytes took " + (System.currentTimeMillis() - start) + "ms." + EOL);
@@ -1502,7 +1507,7 @@ public class InteractiveClient {
         EXistCollectionManagementService mgtService;
         //The XmldbURIs here aren't really used...
         XmldbURI next;
-        MimeType mimeType;
+        @Nullable MediaType mediaType = null;
         int i = 0;
         for (final Path file : files) {
             i++;
@@ -1534,15 +1539,15 @@ public class InteractiveClient {
                             break;
                         }
                     }
-                    mimeType = mimeTable.getContentTypeFor(localName);
-                    if (mimeType == null) {
+                    mediaType = mediaTypeResolver.fromFileName(localName);
+                    if (mediaType == null) {
                         messageln("File " + compressedName + " has an unknown suffix. Cannot determine file type.");
-                        mimeType = MimeType.BINARY_TYPE;
+                        mediaType = mediaTypeResolver.forUnknown();
                     }
                     message("storing document " + compressedName + " (" + i + " of " + files.size() + ") " + "...");
-                    document = collection.createResource(compressedName, mimeType.getXMLDBType());
+                    document = collection.createResource(compressedName, mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource");
                     document.setContent(isCompressed ? new GZIPInputSource(file) : file);
-                    ((EXistResource) document).setMimeType(mimeType.getName());
+                    ((EXistResource) document).setMediaType(mediaType.getIdentifier());
                     collection.storeResource(document);
                     ++filesCount;
                     messageln(" " + Files.size(file) + (isCompressed ? " compressed" : "") + " bytes in "
@@ -1609,7 +1614,7 @@ public class InteractiveClient {
 
         final long start0 = System.currentTimeMillis();
         long bytes = 0;
-        MimeType mimeType;
+        @Nullable MediaType mediaType = null;
         int i = 0;
         for (final Path p : files) {
             i++;
@@ -1629,15 +1634,15 @@ public class InteractiveClient {
                     break;
                 }
             }
-            mimeType = mimeTable.getContentTypeFor(localName);
-            if (mimeType == null) {
-                mimeType = MimeType.BINARY_TYPE;
+            mediaType = mediaTypeResolver.fromFileName(localName);
+            if (mediaType == null) {
+                mediaType = mediaTypeResolver.forUnknown();
             }
-            document = current.createResource(compressedName, mimeType.getXMLDBType());
+            document = current.createResource(compressedName, mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource");
             message("storing document " + compressedName + " (" + i
                     + " of " + Files.size(p) + ") ...");
             document.setContent(isCompressed ? new GZIPInputSource(p) : p);
-            ((EXistResource) document).setMimeType(mimeType.getName());
+            ((EXistResource) document).setMediaType(mediaType.getIdentifier());
             current.storeResource(document);
             messageln("done.");
             messageln("parsing " + Files.size(p) + (isCompressed ? " compressed" : "") + " bytes took "
@@ -1708,15 +1713,15 @@ public class InteractiveClient {
                 if (!ze.isDirectory()) {
                     final String localName = pathSteps[pathSteps.length - 1];
                     final long start = System.currentTimeMillis();
-                    MimeType mimeType = mimeTable.getContentTypeFor(localName);
-                    if (mimeType == null) {
-                        mimeType = MimeType.BINARY_TYPE;
+                    @Nullable MediaType mediaType = mediaTypeResolver.fromFileName(localName);
+                    if (mediaType == null) {
+                        mediaType = mediaTypeResolver.forUnknown();
                     }
-                    final Resource document = base.createResource(localName, mimeType.getXMLDBType());
+                    final Resource document = base.createResource(localName, mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource");
                     message("storing Zip-entry document " + localName + " (" + (number)
                             + " of " + zfile.size() + ") ...");
                     document.setContent(new ZipEntryInputSource(zfile, ze));
-                    ((EXistResource) document).setMimeType(mimeType.getName());
+                    ((EXistResource) document).setMediaType(mediaType.getIdentifier());
                     base.storeResource(document);
                     messageln("done.");
                     messageln("parsing " + ze.getSize() + " bytes took "
@@ -1832,20 +1837,18 @@ public class InteractiveClient {
             final long fileSize = FileUtils.sizeQuietly(file);
             upload.setCurrentSize(fileSize);
 
-            MimeType mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(file));
+            MediaType mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(file));
             // unknown mime type, here prefered is to do nothing
-            if (mimeType == null) {
-                upload.showMessage(file.toAbsolutePath() +
-                        " - unknown suffix. No matching mime-type found in : " +
-                        mimeTable.getSrc());
+            if (mediaType == null) {
+                upload.showMessage(file.toAbsolutePath() + " - unknown suffix. No matching mime-type found");
 
                 // if some one prefers to store it as binary by default, but dangerous
-                mimeType = MimeType.BINARY_TYPE;
+                mediaType = mediaTypeResolver.forUnknown();
             }
 
             try {
-                final Resource res = collection.createResource(filenameUri.toString(), mimeType.getXMLDBType());
-                ((EXistResource) res).setMimeType(mimeType.getName());
+                final Resource res = collection.createResource(filenameUri.toString(), mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource");
+                ((EXistResource) res).setMediaType(mediaType.getIdentifier());
                 res.setContent(file);
                 collection.storeResource(res);
                 ++filesCount;
@@ -2223,6 +2226,9 @@ public class InteractiveClient {
             }
         }
         configFile.ifPresent(value -> properties.setProperty(CONFIGURATION, value.toString()));
+
+        @Nullable final Path applicationConfigDir = configFile.map(Path::getParent).filter(Files::exists).orElse(null);
+        this.mediaTypeResolver = MediaTypeUtil.newMediaTypeResolver(applicationConfigDir);
 
         properties.putAll(loadClientProperties());
 

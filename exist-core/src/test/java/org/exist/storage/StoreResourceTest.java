@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.storage;
 
 import org.exist.EXistException;
@@ -39,7 +62,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.hamcrest.Matcher;
@@ -48,6 +70,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,8 +132,9 @@ public class StoreResourceTest {
              final Txn transaction = pool.getTransactionManager().beginTransaction();
              final Collection col = broker.openCollection(uri.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
 
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
 
-            broker.storeDocument(transaction, uri.lastSegment(), new StringInputSource(content), MimeType.XML_TYPE, col);
+            broker.storeDocument(transaction, uri.lastSegment(), new StringInputSource(content), xmlMediaType, col);
 
             transaction.commit();
         }
@@ -143,7 +167,8 @@ public class StoreResourceTest {
              final Txn transaction = pool.getTransactionManager().beginTransaction();
              final Collection col = broker.openCollection(uri.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
 
-            broker.storeDocument(transaction, uri.lastSegment(), new StringInputSource(content.getBytes(UTF_8)), MimeType.BINARY_TYPE, col);
+            final MediaType binMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
+            broker.storeDocument(transaction, uri.lastSegment(), new StringInputSource(content.getBytes(UTF_8)), binMediaType, col);
 
             transaction.commit();
         }
@@ -223,12 +248,14 @@ public class StoreResourceTest {
              final Collection collection = broker.openCollection(TEST_COLLECTION_URI, Lock.LockMode.WRITE_LOCK)) {
 
             final String u1d3xml = "<empty3/>";
-            broker.storeDocument(transaction, USER1_DOC1, new StringInputSource(u1d3xml), MimeType.XML_TYPE, collection);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, USER1_DOC1, new StringInputSource(u1d3xml), xmlMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_DOC1), USER1_DOC1_MODE);
             chgrp(broker, transaction, TEST_COLLECTION_URI.append(USER1_DOC1), GROUP1_NAME);
 
             final String u1d3bin = "bin3";
-            broker.storeDocument(transaction, USER1_BIN_DOC1, new StringInputSource(u1d3bin.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            final MediaType txtMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.TEXT_PLAIN);
+            broker.storeDocument(transaction, USER1_BIN_DOC1, new StringInputSource(u1d3bin.getBytes(UTF_8)), txtMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_BIN_DOC1), USER1_BIN_DOC1_MODE);
             chgrp(broker, transaction, TEST_COLLECTION_URI.append(USER1_BIN_DOC1), GROUP1_NAME);
 

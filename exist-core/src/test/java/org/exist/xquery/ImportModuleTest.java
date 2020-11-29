@@ -47,7 +47,6 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.Sequence;
@@ -59,6 +58,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -1417,7 +1417,8 @@ public class ImportModuleTest {
             for (final Tuple2<String, String> module : modules) {
                 final XmldbURI moduleName = XmldbURI.create(module._1);
 
-                broker.storeDocument(transaction, moduleName, new StringInputSource(module._2.getBytes(UTF_8)), MimeType.XQUERY_TYPE, collection);
+                final MediaType xqueryMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
+                broker.storeDocument(transaction, moduleName, new StringInputSource(module._2.getBytes(UTF_8)), xqueryMediaType, collection);
             }
         }
     }

@@ -35,7 +35,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-application/dita+xml                        dita
-application/x.exist-collection-config+xml   xconf
-application/xml                             xadam xml
-application/x.xsl+xml                       xsl
+test/dita+xml                             dita
+test/prs.existdb.collection-config+xml    xconf
+test/extensible-markup-language           xadam xml
+test/x.xsl+xml                            xsl

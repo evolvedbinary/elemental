@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -37,6 +61,9 @@ import org.exist.collections.Collection;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
+import xyz.elemental.mediatype.impl.MediaTypeImpl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.*;
@@ -50,14 +77,14 @@ public class StoreBinaryTest {
     @Test
     public void check_MimeType_is_preserved() throws EXistException, PermissionDeniedException, LockException, IOException, SAXException, DatabaseConfigurationException {
 
-        final String xqueryMimeType = "application/xquery";
+        final String xqueryMimeType = MediaType.APPLICATION_XQUERY;
         final String xqueryFilename = "script.xql";
         final String xquery = "current-dateTime()";
 
         //store the xquery document
         BinaryDocument binaryDoc = storeBinary(xqueryFilename, xquery, xqueryMimeType);
         assertNotNull(binaryDoc);
-        assertEquals(xqueryMimeType, binaryDoc.getMimeType());
+        assertEquals(xqueryMimeType, binaryDoc.getMediaType());
 
         //make a note of the binary documents uri
         final XmldbURI binaryDocUri = binaryDoc.getFileURI();
@@ -70,7 +97,7 @@ public class StoreBinaryTest {
         assertNotNull(binaryDoc);
 
         //check the mimetype has been preserved across database restarts
-        assertEquals(xqueryMimeType, binaryDoc.getMimeType());
+        assertEquals(xqueryMimeType, binaryDoc.getMediaType());
     }
 
     @ClassRule
@@ -117,7 +144,11 @@ public class StoreBinaryTest {
     		broker.saveCollection(transaction, root);
             assertNotNull(root);
 
-            root.storeDocument(transaction, broker, XmldbURI.create(name), new StringInputSource(data.getBytes(UTF_8)), new MimeType(mimeType, MimeType.BINARY));
+            MediaType binMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(mimeType);
+            if (binMediaType == null || binMediaType.getStorageType() != StorageType.BINARY) {
+                binMediaType = MediaTypeImpl.builder(mimeType, StorageType.BINARY).build();
+            }
+            root.storeDocument(transaction, broker, XmldbURI.create(name), new StringInputSource(data.getBytes(UTF_8)), binMediaType);
             binaryDoc = (BinaryDocument) root.getDocument(broker, XmldbURI.create(name));
 
             transact.commit(transaction);
