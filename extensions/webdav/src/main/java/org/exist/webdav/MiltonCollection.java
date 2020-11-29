@@ -56,6 +56,7 @@ import org.exist.webdav.ExistResource.Mode;
 import org.exist.webdav.exceptions.CollectionDoesNotExistException;
 import org.exist.webdav.exceptions.CollectionExistsException;
 import org.exist.xmldb.XmldbURI;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -439,7 +440,7 @@ public class MiltonCollection extends MiltonResource
 
     @Override
     public String getContentType(String accepts) {
-        return "application/xml";
+        return MediaType.APPLICATION_XML;
     }
 
     @Override

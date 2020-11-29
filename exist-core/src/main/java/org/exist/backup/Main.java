@@ -46,6 +46,7 @@
 package org.exist.backup;
 
 import org.exist.client.ClientFrame;
+import org.exist.mediatype.MediaTypeUtil;
 import org.exist.start.CompatibleJavaVersionCheck;
 import org.exist.start.StartException;
 import org.exist.util.ConfigurationHelper;
@@ -58,7 +59,9 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
 import org.xmldb.api.base.XMLDBException;
 import se.softhouse.jargo.*;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
@@ -223,12 +226,17 @@ public class Main {
             return;
         }
 
+        // load MediaTypeResolver
+        final Optional<Path> existHome = ConfigurationHelper.getExistHome();
+        @Nullable final Path applicationConfigDir = existHome.map(p -> p.resolve("etc")).filter(Files::exists).orElse(null);
+        @Nullable final MediaTypeResolver mediaTypeResolver = MediaTypeUtil.newMediaTypeResolver(applicationConfigDir);
+
         // process
         if (backupCollection.isPresent()) {
             String collection = backupCollection.get();
             if (collection.isEmpty()) {
                 if (guiMode) {
-                    final CreateBackupDialog dialog = new CreateBackupDialog(properties.getProperty(URI_PROP, DEFAULT_URI), properties.getProperty(USER_PROP, DEFAULT_USER), properties.getProperty(PASSWORD_PROP, DEFAULT_PASSWORD), Paths.get(preferences.get("directory.backup", System.getProperty("user.dir"))));
+                    final CreateBackupDialog dialog = new CreateBackupDialog(properties.getProperty(URI_PROP, DEFAULT_URI), properties.getProperty(USER_PROP, DEFAULT_USER), properties.getProperty(PASSWORD_PROP, DEFAULT_PASSWORD), Paths.get(preferences.get("directory.backup", System.getProperty("user.dir"))), mediaTypeResolver);
 
                     if (JOptionPane.showOptionDialog(null, dialog, "Create Backup", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null) == JOptionPane.YES_OPTION) {
                         collection = dialog.getCollection();

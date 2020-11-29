@@ -58,7 +58,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.TestDataGenerator;
 import org.junit.After;
@@ -67,6 +66,7 @@ import org.xml.sax.InputSource;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -183,11 +183,13 @@ public class RemoveCollectionTest {
                 try {
                     final Path[] files = generator.generate(broker, test, generateXQ);
 
+                    final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+
                     int j = 0;
                     for (final Iterator<DocumentImpl> i = test.iterator(broker); i.hasNext() && j < files.length; j++) {
                         final DocumentImpl doc = i.next();
                         final InputSource is = new InputSource(files[j].toUri().toASCIIString());
-                        broker.storeDocument(transaction, doc.getURI(), is, MimeType.XML_TYPE, test);
+                        broker.storeDocument(transaction, doc.getURI(), is, xmlMediaType, test);
                     }
                 } finally {
                     generator.releaseAll();
@@ -213,10 +215,11 @@ public class RemoveCollectionTest {
             final TestDataGenerator generator = new TestDataGenerator("xdb", COUNT);
             try {
                 final Path[] files = generator.generate(broker, test, generateXQ);
+                final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
                 for (final Path file : files) {
                     final InputSource is = new InputSource(file.toUri().toASCIIString());
 
-                    broker.storeDocument(transaction, XmldbURI.create(file.getFileName().toString()), is, MimeType.XML_TYPE, test);
+                    broker.storeDocument(transaction, XmldbURI.create(file.getFileName().toString()), is, xmlMediaType, test);
                 }
             } finally {
                 generator.releaseAll();

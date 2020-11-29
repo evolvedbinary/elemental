@@ -57,13 +57,14 @@ import javax.annotation.Nullable;
 
 import org.exist.storage.blob.BlobId;
 import org.exist.util.EXistInputSource;
-import org.exist.util.MimeType;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
 import org.w3c.dom.DocumentType;
 import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.modules.BinaryResource;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * @author wolf
@@ -77,11 +78,11 @@ public class RemoteBinaryResource
     private MessageDigest contentDigest = null;
 
     public RemoteBinaryResource(final RemoteCollection parent, final XmldbURI documentName) throws XMLDBException {
-        super(parent, documentName, MimeType.BINARY_TYPE.getName(), Optional.of("xs:base64Binary"));
+        super(parent, documentName, MediaType.APPLICATION_OCTET_STREAM, Optional.of("xs:base64Binary"));
     }
 
     public RemoteBinaryResource(final RemoteCollection parent, final XmldbURI documentName, final String type, final byte[] content) throws XMLDBException {
-        super(parent, documentName, MimeType.BINARY_TYPE.getName(), Optional.of(type));
+        super(parent, documentName, MediaType.APPLICATION_OCTET_STREAM, Optional.of(type));
         this.content = content;
     }
 

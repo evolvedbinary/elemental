@@ -35,15 +35,17 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-application/dita+xml            dita ditamap ditaval
-application/rdf+xml             xmp owl rdf
-application/schematron+xml      sch
-application/tei+xml             odd tei teicorpus
-application/vnd.xmi+xml         xmi
-application/x.expath.xar+zip    xar
-application/xml                 fo nvdl rng stx xconf xml xsd xsl
-application/xquery              xq xql xqm xquery xqws xqy
-application/xquery+xml          xqx
-image/svg+xml                   svg
-image/x.svg+gzip                svgz
-text/markdown                   md
+application/dita+xml                                 dita ditamap ditaval
+application/prs.existdb.collection-config+xml        xconf
+application/prs.expath.package+zip                   xar
+application/rdf+xml                                  xmp owl rdf
+application/schematron+xml                           sch
+application/tei+xml                                  odd tei teicorpus
+application/vnd.xmi+xml                              xmi
+application/xml                                      fo nvdl rng stx xconf xml xsd xsl
+application/xquery                                   xq xql xqm xquery xqws xqy
+application/xquery+xml                               xqx
+image/svg+xml                                        svg svgz
+# See: https://github.com/w3c/svgwg/issues/701
+# image/x.svg+gzip                                   svgz
+text/markdown                                        md

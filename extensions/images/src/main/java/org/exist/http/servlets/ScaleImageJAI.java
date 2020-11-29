@@ -56,6 +56,7 @@ import org.exist.util.MimeTable;
 import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.util.URIUtils;
+import xyz.elemental.mediatype.MediaType;
 
 import com.sun.media.jai.codec.FileSeekableStream;
 import com.sun.media.jai.codec.ImageCodec;
@@ -136,7 +137,7 @@ public class ScaleImageJAI extends HttpServlet {
 		
 		defaultMimeType = config.getInitParameter("mime-type");
 		if (defaultMimeType == null)
-			defaultMimeType = "image/jpeg";
+			defaultMimeType = MediaType.IMAGE_JPEG;
 		String cacheStr = config.getInitParameter("caching");
 		if (cacheStr != null)
 			caching = cacheStr.equalsIgnoreCase("yes") || cacheStr.equalsIgnoreCase("true");
@@ -199,7 +200,7 @@ public class ScaleImageJAI extends HttpServlet {
         
         MimeType mime;
         if (file == null)
-        	mime = MimeTable.getInstance().getContentType("image/png");
+        	mime = MimeTable.getInstance().getContentType(MediaType.IMAGE_PNG);
         else
         	mime = MimeTable.getInstance().getContentType(mimeParam);
         response.setContentType(mime.getName());
@@ -283,7 +284,7 @@ public class ScaleImageJAI extends HttpServlet {
     }
 
     private void writeImage(RenderedImage image, OutputStream os, MimeType mime) throws IOException {
-        if ("image/png".equals(mime.getName())) {
+        if (MediaType.IMAGE_PNG.equals(mime.getName())) {
             JAI.create("encode", image, os, "PNG", null);
         } else {
             JPEGEncodeParam params = new JPEGEncodeParam();

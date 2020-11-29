@@ -67,6 +67,7 @@ import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.exist.util.StringUtil.endsWith;
 import static org.exist.util.StringUtil.substringBeforeLast;
@@ -104,7 +105,7 @@ public class XQueryStartupTrigger implements StartupTrigger {
     private static final String XQUERY = "xquery";
     private static final String AUTOSTART_COLLECTION = "/db/system/autostart";
     private static final String[] XQUERY_EXTENSIONS = {".xq", ".xquery", ".xqy"};
-    private static final String REQUIRED_MIMETYPE = "application/xquery";
+    private static final String REQUIRED_MIMETYPE = MediaType.APPLICATION_XQUERY;
 
     @Override
     public void execute(DBBroker broker, final Txn transaction, Map<String, List<? extends Object>> params) {
@@ -208,7 +209,7 @@ public class XQueryStartupTrigger implements StartupTrigger {
         return (perms.getOwner().hasDbaRole()
                 && perms.getGroup().getName().equals(SecurityManager.DBA_GROUP)
                 && perms.getMode() == Permission.DEFAULT_SYSTEM_SECURITY_COLLECTION_PERM
-                && document.getMimeType().equals(REQUIRED_MIMETYPE));
+                && document.getMediaType().equals(REQUIRED_MIMETYPE));
 
     }
 

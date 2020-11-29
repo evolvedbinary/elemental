@@ -47,7 +47,6 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.Sequence;
@@ -55,6 +54,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -165,7 +165,8 @@ public class XQueryContextAttributesTest {
 
     private static DBSource storeQuery(final DBBroker broker, final Txn transaction, final XmldbURI uri, final InputSource source) throws IOException, PermissionDeniedException, SAXException, LockException, EXistException {
         try (final Collection collection = broker.openCollection(uri.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
-            broker.storeDocument(transaction, uri.lastSegment(), source, MimeType.XQUERY_TYPE, collection);
+            final MediaType xqueryMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
+            broker.storeDocument(transaction, uri.lastSegment(), source, xqueryMediaType, collection);
             final BinaryDocument doc = (BinaryDocument) collection.getDocument(broker, uri.lastSegment());
 
             return new DBSource(broker.getBrokerPool(), doc, false);

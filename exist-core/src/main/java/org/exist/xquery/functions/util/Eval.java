@@ -75,6 +75,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.xquery.FunctionDSL.*;
@@ -531,7 +532,7 @@ public class Eval extends BasicFunction {
                         throw new XPathException(this, "source for module " + location + " not found in database");
                     }
                     if (sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
-                            !"application/xquery".equals(sourceDoc.getMetadata().getMimeType())) {
+                            !MediaType.APPLICATION_XQUERY.equals(sourceDoc.getMetadata().getMimeType())) {
                         throw new XPathException(this, "source for module " + location + " is not an XQuery or " +
                         "declares a wrong mime-type");
                     }

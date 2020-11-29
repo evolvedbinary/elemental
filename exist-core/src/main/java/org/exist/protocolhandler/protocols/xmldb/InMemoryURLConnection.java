@@ -57,7 +57,7 @@ import org.exist.protocolhandler.embedded.InMemoryOutputStream;
 import org.exist.protocolhandler.xmldb.XmldbURL;
 import org.exist.protocolhandler.xmlrpc.XmlrpcInputStream;
 import org.exist.protocolhandler.xmlrpc.XmlrpcOutputStream;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  *  A URLConnection object manages the translation of a URL object into a
@@ -66,18 +66,18 @@ import org.exist.util.MimeTable;
 public class InMemoryURLConnection extends URLConnection {
     private static final Logger LOG = LogManager.getLogger(InMemoryURLConnection.class);
     private final ThreadGroup threadGroup;
-    private final MimeTable mimeTable;
+    private final MediaTypeResolver mediaTypeResolver;
 
     /**
      * Constructs a URL connection to the specified URL.
      * @param threadGroup Thread group
      * @param url URL
-     * @param mimeTable The MIME table.
+     * @param mediaTypeResolver The Media Type resolver
      */
-    protected InMemoryURLConnection(final ThreadGroup threadGroup, final URL url, final MimeTable mimeTable) {
+    protected InMemoryURLConnection(final ThreadGroup threadGroup, final URL url, final MediaTypeResolver mediaTypeResolver) {
         super(url);
         this.threadGroup = threadGroup;
-        this.mimeTable = mimeTable;
+        this.mediaTypeResolver = mediaTypeResolver;
 
         setDoInput(true);
         setDoOutput(true);
@@ -108,7 +108,7 @@ public class InMemoryURLConnection extends URLConnection {
         if(xmldbURL.isEmbedded()){
             return new InMemoryOutputStream(xmldbURL);
         } else {
-            return new XmlrpcOutputStream(threadGroup, xmldbURL, mimeTable);
+            return new XmlrpcOutputStream(threadGroup, xmldbURL, mediaTypeResolver);
         }
     }
 }

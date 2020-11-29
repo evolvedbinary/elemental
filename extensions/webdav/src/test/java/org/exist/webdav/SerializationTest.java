@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.webdav;
 
 import com.bradmcevoy.http.exceptions.BadRequestException;
@@ -35,6 +58,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -101,14 +125,14 @@ public class SerializationTest {
             final Resource resource = folder.child(docName);
             assertNotNull(resource);
             assertTrue(resource instanceof File);
-            assertEquals("application/xml", ((File) resource).contentType);
+            assertEquals(MediaType.APPLICATION_XML, ((File) resource).contentType);
             final java.io.File tempRetrieveFile = TEMP_FOLDER.newFile();
             resource.downloadTo(tempRetrieveFile, null);
             assertEquals(XML_WITH_DOCTYPE, Files.readString(tempRetrieveFile.toPath()));
         }
     }
 
-    @Test
+@Test
     public void getXmlDeclDefault() throws IOException, NotAuthorizedException, BadRequestException, HttpException, ConflictException, NotFoundException {
         final String docName = "test-with-xmldecl.xml";
         final HostBuilder builder = new HostBuilder();
@@ -134,7 +158,7 @@ public class SerializationTest {
             final Resource resource = folder.child(docName);
             assertNotNull(resource);
             assertTrue(resource instanceof File);
-            assertEquals("application/xml", ((File) resource).contentType);
+            assertEquals(MediaType.APPLICATION_XML, ((File) resource).contentType);
             final java.io.File tempRetrieveFile = TEMP_FOLDER.newFile();
             resource.downloadTo(tempRetrieveFile, null);
             assertEquals(XML_WITH_XMLDECL, Files.readString(tempRetrieveFile.toPath()));

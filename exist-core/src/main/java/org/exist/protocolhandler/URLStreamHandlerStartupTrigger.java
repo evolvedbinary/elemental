@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StartupTrigger;
 import org.exist.storage.txn.Txn;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import java.net.URL;
 import java.util.List;
@@ -87,14 +87,14 @@ public class URLStreamHandlerStartupTrigger implements StartupTrigger {
             }
         }
 
-        final MimeTable mimeTable = sysBroker.getBrokerPool().getMediaTypeService().getMediaTypeResolver();
-        registerStreamHandlerFactory(mode == null ? Mode.DISK : Mode.valueOf(mode.toUpperCase()), mimeTable);
+        final MediaTypeResolver mediaTypeResolver = sysBroker.getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+        registerStreamHandlerFactory(mode == null ? Mode.DISK : Mode.valueOf(mode.toUpperCase()), mediaTypeResolver);
     }
 
-    private void registerStreamHandlerFactory(final Mode mode, final MimeTable mimeTable) {
+    private void registerStreamHandlerFactory(final Mode mode, final MediaTypeResolver mediaTypeResolver) {
         if(registered.compareAndSet(false, true)) {
             try {
-                URL.setURLStreamHandlerFactory(new eXistURLStreamHandlerFactory(mode, mimeTable));
+                URL.setURLStreamHandlerFactory(new eXistURLStreamHandlerFactory(mode, mediaTypeResolver));
                 LOG.info("Successfully registered eXistURLStreamHandlerFactory.");
             } catch (final Error ex) {
                 LOG.warn("The JVM already has a URLStreamHandlerFactory registered, skipping...");

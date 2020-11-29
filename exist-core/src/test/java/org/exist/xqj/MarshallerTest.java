@@ -57,7 +57,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XPathException;
@@ -77,6 +76,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
@@ -188,7 +188,8 @@ public class MarshallerTest {
             final Collection root = broker.getOrCreateCollection(transaction, TEST_COLLECTION_URI);
             broker.saveCollection(transaction, root);
 
-            broker.storeDocument(transaction, XmldbURI.create("test.xml"), new StringInputSource(TEST_DOC), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create("test.xml"), new StringInputSource(TEST_DOC), xmlMediaType, root);
 
             transact.commit(transaction);
         }

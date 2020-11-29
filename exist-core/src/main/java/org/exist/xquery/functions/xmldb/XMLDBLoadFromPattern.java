@@ -54,8 +54,6 @@ import java.nio.file.Paths;
 import org.apache.tools.ant.DirectoryScanner;
 import org.exist.dom.QName;
 import org.exist.util.FileUtils;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.xmldb.EXistResource;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -71,6 +69,11 @@ import org.exist.xquery.value.ValueSequence;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.modules.BinaryResource;
+import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
 /**
  * @author wolf
@@ -144,13 +147,13 @@ public class XMLDBLoadFromPattern extends XMLDBAbstractCollectionManipulator {
             includes[i] = patternsSeq.itemAt(0).getStringValue();
         }
 
-        final MimeTable mimeTable = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+        final MediaTypeResolver mediaTypeResolver = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
 
         //determine resource type - xml or binary?
-        MimeType mimeTypeFromArgs = null;
+        MediaType mimeTypeFromArgs = null;
         if (getSignature().getArgumentCount() > 3 && args[3].hasOne()) {
             final String mimeTypeParam = args[3].getStringValue();
-            mimeTypeFromArgs = mimeTable.getContentType(mimeTypeParam);
+            mimeTypeFromArgs = mediaTypeResolver.fromString(mimeTypeParam);
             if (mimeTypeFromArgs == null) {
                 throw new XPathException(this, "Unknown mime type specified: " + mimeTypeParam);
             }
@@ -211,19 +214,20 @@ public class XMLDBLoadFromPattern extends XMLDBAbstractCollectionManipulator {
                     prevDir = relDir;
                 }
 
-                MimeType mimeType = mimeTypeFromArgs;
-                if (mimeType == null) {
-                    mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(file));
-                    if (mimeType == null) {
-                        mimeType = MimeType.BINARY_TYPE;
+                MediaType mediaType = mimeTypeFromArgs;
+                if (mediaType == null) {
+                    mediaType = mediaTypeResolver.fromFileName(file);
+                    if (mediaType == null) {
+                        mediaType = mediaTypeResolver.forUnknown();
                     }
                 }
 
                 //TODO  : these probably need to be encoded and checked for right mime type
-                final Resource resource = col.createResource(FileUtils.fileName(file), mimeType.getXMLDBType());
+                final Class<? extends Resource> type = mediaType.getStorageType() == StorageType.XML ? XMLResource.class : BinaryResource.class;
+                final Resource resource = col.createResource(FileUtils.fileName(file), type);
                 resource.setContent(file.toFile());
 
-                ((EXistResource) resource).setMimeType(mimeType.getName());
+                ((EXistResource) resource).setMediaType(mediaType.getIdentifier());
 
                 col.storeResource(resource);
 

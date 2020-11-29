@@ -50,7 +50,6 @@ import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xupdate.Modification;
@@ -62,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Test trigger to check if trigger configuration is working properly.
@@ -86,7 +86,8 @@ public class MessagesTrigger extends SAXTrigger implements DocumentTrigger {
                 // IMPORTANT: temporarily disable triggers on the collection.
                 // We would end up in infinite recursion if we don't do that
                 broker.setTriggersEnabled(false);
-                broker.storeDocument(transaction, docPath, new StringInputSource(TEMPLATE), MimeType.XML_TYPE, parent);
+                final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(transaction, docPath, new StringInputSource(TEMPLATE), xmlMediaType, parent);
                 this.doc = parent.getDocument(broker, docPath);
             }
 

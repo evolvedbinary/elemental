@@ -46,13 +46,14 @@
 package org.exist.backup;
 
 import org.exist.client.Messages;
-import org.exist.client.MimeTypeFileFilter;
+import org.exist.client.MediaTypeFileFilter;
 import org.exist.security.PermissionDeniedException;
-import org.exist.util.MimeTable;
 import org.exist.xmldb.XmldbURI;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import javax.swing.*;
 import java.awt.*;
@@ -74,12 +75,13 @@ public class CreateBackupDialog extends JPanel {
     final String passwd;
     Path backupDir;
     final String defaultSelectedCollection;
+    private final MediaTypeResolver mediaTypeResolver;
 
-    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir) throws HeadlessException {
-        this(uri, user, passwd, backupDir, null);
+    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir, final MediaTypeResolver mediaTypeResolver) throws HeadlessException {
+        this(uri, user, passwd, backupDir, null, mediaTypeResolver);
     }
 
-    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir, final String defaultSelectedCollection) throws HeadlessException {
+    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir, final String defaultSelectedCollection, final MediaTypeResolver mediaTypeResolver) throws HeadlessException {
         super(false);
 
         this.uri = uri;
@@ -87,6 +89,7 @@ public class CreateBackupDialog extends JPanel {
         this.passwd = passwd;
         this.backupDir = backupDir;
         this.defaultSelectedCollection = defaultSelectedCollection;
+        this.mediaTypeResolver = mediaTypeResolver;
 
         setupComponents();
         setSize(new Dimension(350, 200));
@@ -172,8 +175,8 @@ public class CreateBackupDialog extends JPanel {
         final JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        final MimeTable mimeTable = MimeTable.getInstance();
-        chooser.addChoosableFileFilter(new MimeTypeFileFilter(mimeTable, "application/zip"));
+        final MediaType mediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_ZIP);
+        chooser.addChoosableFileFilter(new MediaTypeFileFilter(mediaType));
         chooser.setSelectedFile(Paths.get("eXist-backup.zip").toFile());
         chooser.setCurrentDirectory(backupDir.toFile());
 

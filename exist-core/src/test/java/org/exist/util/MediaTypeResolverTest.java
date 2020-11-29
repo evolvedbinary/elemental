@@ -43,71 +43,61 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.client;
+package org.exist.util;
 
-import java.io.File;
-import java.util.Iterator;
+import org.exist.mediatype.MediaTypeUtil;
+import org.junit.jupiter.api.Test;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
-import java.util.List;
-import javax.swing.filechooser.FileFilter;
+import javax.annotation.Nullable;
 
-import org.exist.util.MimeTable;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * A FileFilter that filters for files based on their extension
- * Uses the filename extensions defined in mime-types.xml
+ * Test case for mime-type mapping.
+ * Tests the distribution edition of mime-types.xml
+ * as well as variants that exploit the default mime type feature
  * 
- *  Java 6 API has a similar FileNameExtensionFilter
+ * @author Peter Ciuffetti
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class MimeTypeFileFilter extends FileFilter {
-    
-    private String description = null;	
-    private List<String> extensions = null;
+public class MediaTypeResolverTest {
 
-    public MimeTypeFileFilter(final MimeTable mimeTable, final String mimeType) {
-        this.description = mimeTable.getContentType(mimeType).getDescription();
-        this.extensions = mimeTable.getAllExtensions(mimeType);
-    }
-	
-    @Override
-    public boolean accept(final File file) {
-        if(file.isDirectory()){ //permit directories to be viewed
-            return true;
-        }
+	/**
+	 * This test checks the behavior of Media Type Resolver
+	 * with respect to the distribution version of mime.types.
+	 */
+    @Test
+	public void distributionVersionOfMimeTypesXml() {
+        @Nullable final MediaTypeResolver mediaTypeResolver = MediaTypeUtil.newMediaTypeResolver(null);
 
-        final int extensionOffset = file.getName().lastIndexOf('.');	//do-not allow files without an extension
-        if(extensionOffset == -1) {
-            return false;
-        }
-		
-        //check the extension is that of a file as defined in mime-types.xml
-        final String fileExtension = file.getName().substring(extensionOffset).toLowerCase();
+		assertNotNull(mediaTypeResolver);
 
-        for(final String extension : extensions) {
-            if(fileExtension.equals(extension)) {
-                return true;
-            }
-        }
+		@Nullable MediaType mediaType;
 
-        return false;
-    }
-    
-    @Override
-    public String getDescription() {
-        final StringBuilder description = new StringBuilder(this.description);
+		mediaType = mediaTypeResolver.fromFileName("test.xml");
+		assertNotNull(mediaType);
+		assertEquals(MediaType.APPLICATION_XML, mediaType.getIdentifier());
+		assertEquals(StorageType.XML, mediaType.getStorageType());
 
-        description.append(" (");
+		mediaType = mediaTypeResolver.fromFileName("test.html");
+		assertNotNull(mediaType);
+		assertEquals(MediaType.TEXT_HTML, mediaType.getIdentifier());
+		assertEquals(StorageType.XML, mediaType.getStorageType());
 
-        for(final Iterator<String> itExtensions = extensions.iterator(); itExtensions.hasNext();) {
-            description.append(itExtensions.next());
-            if(itExtensions.hasNext()) {
-                description.append(' ');
-            }
-        }
+		mediaType = mediaTypeResolver.fromFileName("test.jpg");
+		assertNotNull(mediaType);
+		assertEquals(MediaType.IMAGE_JPEG, mediaType.getIdentifier());
+		assertEquals(StorageType.BINARY, mediaType.getStorageType());
 
-        description.append(")");
+		mediaType = mediaTypeResolver.fromFileName("foo");
+		assertNull(mediaType);
 
-        return description.toString();
-    }
+		mediaType = mediaTypeResolver.fromFileName("foo.bar");
+		assertNull(mediaType);
+	}
 }

@@ -67,6 +67,8 @@ import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
+import xyz.elemental.mediatype.MediaType;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -141,7 +143,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Except
     @Override
     protected void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws Exception {
         final HttpResponse response = executor.execute(Request.Put(getRestUrl() + filePath.toString())
-                .setHeader("Content-Type", "application/octet-stream")
+                .setHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM)
                 .bodyByteArray(content)
         ).returnResponse();
 

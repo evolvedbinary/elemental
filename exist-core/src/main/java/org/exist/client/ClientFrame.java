@@ -58,7 +58,6 @@ import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.SimpleACLPermissionAider;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.FileUtils;
-import org.exist.util.MimeTable;
 import org.exist.util.SystemExitCodes;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
@@ -73,7 +72,11 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.filechooser.FileFilter;
@@ -298,7 +301,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         // shell window
         doc = new DefaultStyledDocument();
         shell = new JTextPane(doc);
-        shell.setContentType("text/plain; charset=UTF-8"); //$NON-NLS-1$
+        shell.setContentType(MediaType.TEXT_PLAIN + "; charset=UTF-8"); //$NON-NLS-1$
         shell.setFont(new Font("Monospaced", Font.PLAIN, 12)); //$NON-NLS-1$
         shell.setMargin(new Insets(7, 5, 7, 5));
         shell.addKeyListener(this);
@@ -1053,7 +1056,8 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                 properties.getProperty(InteractiveClient.USER, SecurityManager.DBA_USER),
                 properties.getProperty(InteractiveClient.PASSWORD, null),
                 Paths.get(preferences.get("directory.backup", System.getProperty("user.home"))),
-                defaultSelectedCollection
+                defaultSelectedCollection,
+                client.getMediaTypeResolver()
         );
 
         if (JOptionPane.showOptionDialog(this, dialog, Messages.getString("ClientFrame.157"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null) == JOptionPane.YES_OPTION) {
@@ -1320,7 +1324,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                     final Resource res = collection.getResource(thisName.toString());
                     thisCreated = DATE_TIME_FORMATTER.format(res.getCreationTime());
                     thisModified = DATE_TIME_FORMATTER.format(res.getLastModificationTime());
-                    thisMimeType = ((EXistResource) res).getMimeType();
+                    thisMimeType = ((EXistResource) res).getMediaType();
                     if (res instanceof EXistBinaryResource) {
                         final MessageDigest messageDigest = ((EXistBinaryResource) res).getContentDigest(DigestType.BLAKE_256);
                         thisMessageDigestType = messageDigest.getDigestType().getCommonNames()[0];
@@ -1540,7 +1544,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                     try {
                         final Resource doc = client.retrieve(resource.getName(), properties.getProperty(OutputKeys.INDENT, "yes")); //$NON-NLS-1$
 
-                        if ("application/xquery".equals(((EXistResource) doc).getMimeType())) {
+                        if (MediaType.APPLICATION_XQUERY.equals(((EXistResource) doc).getMediaType())) {
                             final Collection collection = client.getCollection();
                             final QueryDialog dialog = new QueryDialog(client, collection, doc, properties);
                             dialog.setVisible(true);
@@ -1887,10 +1891,10 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     }
 
     static class BinaryFileFilter extends FileFilter {
-        private final MimeTable mimeTable;
+        private final MediaTypeResolver mediaTypeResolver;
 
-        public BinaryFileFilter(final MimeTable mimeTable) {
-            this.mimeTable = mimeTable;
+        public BinaryFileFilter(final MediaTypeResolver mediaTypeResolver) {
+            this.mediaTypeResolver = mediaTypeResolver;
         }
 
         @Override
@@ -1903,15 +1907,16 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             if (f.isDirectory()) {
                 return true;
             }
-            return !mimeTable.isXMLContent(f.getName());
+            @Nullable MediaType mediaType = mediaTypeResolver.fromFileName(f.toPath().getFileName());
+            return mediaType == null || mediaType.getStorageType() != StorageType.XML;
         }
     }
 
     static class XMLFileFilter extends FileFilter {
-        private final MimeTable mimeTable;
+        private final MediaTypeResolver mediaTypeResolver;
 
-        public XMLFileFilter(final MimeTable mimeTable) {
-            this.mimeTable = mimeTable;
+        public XMLFileFilter(final MediaTypeResolver mediaTypeResolver) {
+            this.mediaTypeResolver = mediaTypeResolver;
         }
 
         @Override
@@ -1924,7 +1929,8 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             if (f.isDirectory()) {
                 return true;
             }
-            return mimeTable.isXMLContent(f.getName());
+            @Nullable MediaType mediaType = mediaTypeResolver.fromFileName(f.toPath().getFileName());
+            return mediaType != null && mediaType.getStorageType() == StorageType.XML;
         }
     }
 
@@ -1979,7 +1985,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         private List<Path> getFilesUnix(final Transferable transferable) throws ClassNotFoundException, UnsupportedFlavorException, IOException, URISyntaxException {
 
             List<Path> files = null;
-            final DataFlavor unixFileDataFlavour = new DataFlavor("text/uri-list;class=java.lang.String");
+            final DataFlavor unixFileDataFlavour = new DataFlavor(MediaType.TEXT_URI_LIST + ";class=java.lang.String");
             final String data = (String) transferable.getTransferData(unixFileDataFlavour);
             for (final StringTokenizer st = new StringTokenizer(data, "\r\n"); st.hasMoreTokens(); ) {
                 final String token = st.nextToken().trim();

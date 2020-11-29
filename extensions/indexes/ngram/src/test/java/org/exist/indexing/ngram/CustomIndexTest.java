@@ -76,6 +76,7 @@ import org.exist.xupdate.XUpdateProcessor;
 import org.junit.*;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -653,10 +654,11 @@ public class CustomIndexTest {
 
             docs = new DefaultDocumentSet();
 
-            broker.storeDocument(transaction, XmldbURI.create("test_string.xml"), new StringInputSource(XML), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create("test_string.xml"), new StringInputSource(XML), xmlMediaType, root);
             docs.add(root.getDocument(broker, XmldbURI.create("test_string.xml")));
 
-            broker.storeDocument(transaction, XmldbURI.create("test_string2.xml"), new StringInputSource(XML2), MimeType.XML_TYPE, root);
+            broker.storeDocument(transaction, XmldbURI.create("test_string2.xml"), new StringInputSource(XML2), xmlMediaType, root);
             docs.add(root.getDocument(broker, XmldbURI.create("test_string2.xml")));
 
             transact.commit(transaction);

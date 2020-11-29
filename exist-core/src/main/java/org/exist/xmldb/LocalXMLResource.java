@@ -80,7 +80,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
-import org.exist.util.MimeType;
 import org.exist.util.serializer.DOMSerializer;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SAXSerializer;
@@ -98,6 +97,7 @@ import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
 
 import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.evolvedbinary.j8fu.tuple.Tuple3;
@@ -120,7 +120,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
     protected AtomicValue value = null;
 
     public LocalXMLResource(final Subject user, final BrokerPool brokerPool, final LocalCollection parent, final XmldbURI did) throws XMLDBException {
-        super(user, brokerPool, parent, did, MimeType.XML_TYPE.getName());
+        super(user, brokerPool, parent, did, MediaType.APPLICATION_XML);
         this.outputProperties = parent != null ? parent.getProperties() : null;
     }
 

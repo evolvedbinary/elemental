@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.exist.protocolhandler.xmldb.XmldbURL;
 import org.exist.storage.io.BlockingInputStream;
 import org.exist.storage.io.BlockingOutputStream;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  * Write document to remote database (using xmlrpc) using output stream.
@@ -68,13 +68,13 @@ public class XmlrpcOutputStream extends OutputStream {
      *
      * @param threadGroup the group for the threads created by this stream.
      * @param url         Location of document in database.
-     * @param mimeTable The MIME table.
+     * @param mediaTypeResolver The Internet Media Type resolver.
      */
-    public XmlrpcOutputStream(final ThreadGroup threadGroup, final XmldbURL url, final MimeTable mimeTable) {
+    public XmlrpcOutputStream(final ThreadGroup threadGroup, final XmldbURL url, final MediaTypeResolver mediaTypeResolver) {
         final BlockingInputStream bis = new BlockingInputStream();
         this.bos = bis.getOutputStream();
 
-        final Runnable runnable = new XmlrpcUploadRunnable(url, bis, mimeTable);
+        final Runnable runnable = new XmlrpcUploadRunnable(url, bis, mediaTypeResolver);
         final Thread thread = new Thread(threadGroup, runnable, threadGroup.getName() + ".xmlrpc.upload-" + uploadThreadId.getAndIncrement());
         thread.start();
     }

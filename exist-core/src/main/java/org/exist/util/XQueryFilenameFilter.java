@@ -45,6 +45,10 @@
  */
 package org.exist.util;
 
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
@@ -53,25 +57,25 @@ import java.util.function.Predicate;
 
 public class XQueryFilenameFilter implements FilenameFilter {
 
-    public static final String MEDIA_TYPE_APPLICATION_XQUERY = "application/xquery";
+    public static final String MEDIA_TYPE_APPLICATION_XQUERY = MediaType.APPLICATION_XQUERY;
 
-    private final MimeTable mimeTable;
+    private final MediaTypeResolver mediaTypeResolver;
 
-    public XQueryFilenameFilter(final MimeTable mimeTable) {
-        this.mimeTable = mimeTable;
+    public XQueryFilenameFilter(final MediaTypeResolver mediaTypeResolver) {
+        this.mediaTypeResolver = mediaTypeResolver;
     }
 
     @Override
     public boolean accept(final File dir, final String name) {
-        final MimeType mime = mimeTable.getContentTypeFor(name);
-        return mime != null && !mime.isXMLType() && mime.getName().equals(MEDIA_TYPE_APPLICATION_XQUERY);
+        final MediaType mediaType = mediaTypeResolver.fromFileName(name);
+        return mediaType != null && mediaType.getStorageType() == StorageType.BINARY && mediaType.getIdentifier().equals(MEDIA_TYPE_APPLICATION_XQUERY);
     }
 
-    public static Predicate<Path> asPredicate(final MimeTable mimeTable) {
+    public static Predicate<Path> asPredicate(final MediaTypeResolver mediaTypeResolver) {
         return path -> {
             if(!Files.isDirectory(path)) {
-                final MimeType mime = mimeTable.getContentTypeFor(FileUtils.fileName(path));
-                return mime != null && !mime.isXMLType() && mime.getName().equals(MEDIA_TYPE_APPLICATION_XQUERY);
+                final MediaType mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(path));
+                return mediaType != null && mediaType.getStorageType() == StorageType.BINARY && mediaType.getIdentifier().equals(MEDIA_TYPE_APPLICATION_XQUERY);
             }
             return false;
         };

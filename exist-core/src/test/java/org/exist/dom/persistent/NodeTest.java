@@ -56,11 +56,11 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
 import org.w3c.dom.*;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -264,8 +264,9 @@ public class NodeTest {
             root = broker.getOrCreateCollection(transaction, XmldbURI.create(XmldbURI.ROOT_COLLECTION + "/test"));
             assertNotNull(root);
             broker.saveCollection(transaction, root);
-            
-            broker.storeDocument(transaction, XmldbURI.create("test.xml"), new StringInputSource(XML), MimeType.XML_TYPE, root);
+
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create("test.xml"), new StringInputSource(XML), xmlMediaType, root);
             
             transact.commit(transaction);
         }

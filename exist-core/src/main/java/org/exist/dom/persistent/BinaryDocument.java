@@ -205,7 +205,7 @@ public class BinaryDocument extends DocumentImpl {
         // document attributes
         ostream.writeLong(created);
         ostream.writeLong(lastModified);
-        ostream.writeInt(pool.getSymbols().getMimeTypeId(mimeType));
+        ostream.writeInt(pool.getSymbols().getMimeTypeId(mediaType));
         ostream.writeInt(pageCount);
         ostream.writeInt(userLock);
         if (docType != null) {

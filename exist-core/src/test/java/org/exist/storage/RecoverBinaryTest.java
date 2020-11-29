@@ -46,13 +46,13 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.txn.Txn;
 import org.exist.util.FileInputSource;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.junit.Assert.assertEquals;
@@ -94,7 +94,9 @@ public class RecoverBinaryTest extends AbstractRecoverTest {
 
         final Path file = ((FileInputSource)data).getFile();
 
-        broker.storeDocument(transaction, XmldbURI.create(dbFilename), new FileInputSource(file), MimeType.BINARY_TYPE, collection);
+        final MediaType binMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
+
+        broker.storeDocument(transaction, XmldbURI.create(dbFilename), new FileInputSource(file), binMediaType, collection);
         final BinaryDocument doc = (BinaryDocument) collection.getDocument(broker, XmldbURI.create(dbFilename));
 
         assertNotNull(doc);

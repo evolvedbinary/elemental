@@ -236,7 +236,7 @@ public class MiltonDocument extends MiltonResource
 
     @Override
     public String getContentType(String accepts) {
-        return existDocument.getMimeType();
+        return existDocument.getMediaType();
     }
 
     @Override

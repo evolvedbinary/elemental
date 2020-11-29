@@ -60,7 +60,6 @@ import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.XMLReaderPool;
 import org.exist.util.sanity.SanityCheck;
@@ -69,6 +68,7 @@ import org.exist.xquery.Expression;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -155,7 +155,8 @@ public class CollectionConfigurationManager implements BrokerPoolService {
 
             broker.saveCollection(txn, confCol);
 
-            broker.storeDocument(txn, configurationDocumentName, new StringInputSource(config), MimeType.XML_TYPE, confCol);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(txn, configurationDocumentName, new StringInputSource(config), xmlMediaType, confCol);
 
             // broker.sync(Sync.MAJOR_SYNC);
         } catch (final CollectionConfigurationException e) {

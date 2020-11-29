@@ -53,14 +53,14 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.util.OSUtil;
 import org.exist.util.SystemExitCodes;
 import org.exist.xquery.TerminatedException;
 import se.softhouse.jargo.Argument;
 import se.softhouse.jargo.ArgumentException;
 import se.softhouse.jargo.CommandLineParser;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -442,12 +442,12 @@ public class ExportGUI extends javax.swing.JFrame {
                 if (f.isDirectory()) {
                     return (true);
                 }
-                final MimeType mime = pool.getMediaTypeService().getMediaTypeResolver().getContentTypeFor(f.getName());
+                final MediaType mediaType = pool.getMediaTypeService().getMediaTypeResolver().fromFileName(f.toPath());
 
-                if (mime == null) {
+                if (mediaType == null) {
                     return false;
                 }
-                return mime.isXMLType();
+                return mediaType.getStorageType() == StorageType.XML;
             }
 
             @Override

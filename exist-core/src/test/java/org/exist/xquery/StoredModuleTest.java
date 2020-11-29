@@ -66,6 +66,8 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
 import org.junit.*;
+import xyz.elemental.mediatype.MediaType;
+
 import static org.junit.Assert.*;
 
 /**
@@ -103,7 +105,7 @@ public class StoredModuleTest {
 
     private void writeModule(Collection collection, String modulename, String module) throws XMLDBException {
         BinaryResource res = collection.createResource(modulename, BinaryResource.class);
-        ((EXistResource) res).setMimeType("application/xquery");
+        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
         res.setContent(module.getBytes());
         collection.storeResource(res);
         collection.close();

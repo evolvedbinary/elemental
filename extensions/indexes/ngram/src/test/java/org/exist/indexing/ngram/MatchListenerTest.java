@@ -82,6 +82,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.Input;
 import org.xmlunit.matchers.CompareMatcher;
 import org.xmlunit.xpath.JAXPXPathEngine;
+import xyz.elemental.mediatype.MediaType;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -554,7 +555,8 @@ public class MatchListenerTest {
             final CollectionConfigurationManager mgr = pool.getConfigurationManager();
             mgr.addConfiguration(transaction, broker, root, config);
 
-            broker.storeDocument(transaction, XmldbURI.create("test_matches.xml"), new StringInputSource(xml), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create("test_matches.xml"), new StringInputSource(xml), xmlMediaType, root);
             
             transact.commit(transaction);
         }

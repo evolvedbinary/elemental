@@ -60,16 +60,13 @@ import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
 import org.exist.util.BinaryValueInputSource;
 import org.exist.util.LockException;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
-import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
@@ -328,15 +325,15 @@ public class EntryFunctions extends BasicFunction {
                         try (final Txn transaction = context.getBroker().getBrokerPool().getTransactionManager().beginTransaction()) {
 
                             try (final Collection collection = context.getBroker().openCollection(destPath.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
-                                final MimeType mimeType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentTypeFor(destPath.lastSegment());
+                                final MediaType mediaType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromFileName(destPath.lastSegmentString());
 
                                 if (data.get() instanceof BinaryValue) {
                                     // binary
                                     final BinaryValue binaryValue = (BinaryValue) data.get();
-                                    context.getBroker().storeDocument(transaction, destPath.lastSegment(), new BinaryValueInputSource(binaryValue), mimeType, collection);
+                                    context.getBroker().storeDocument(transaction, destPath.lastSegment(), new BinaryValueInputSource(binaryValue), mediaType, collection);
                                 } else {
                                     // XML
-                                    context.getBroker().storeDocument(transaction, destPath.lastSegment(), (Node)data.get(), mimeType, collection);
+                                    context.getBroker().storeDocument(transaction, destPath.lastSegment(), (Node)data.get(), mediaType, collection);
                                 }
                             }
                             transaction.commit();

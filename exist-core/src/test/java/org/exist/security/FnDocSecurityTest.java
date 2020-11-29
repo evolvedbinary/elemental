@@ -58,7 +58,6 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.SyntaxException;
 import org.exist.util.serializer.XQuerySerializer;
@@ -70,6 +69,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -287,7 +287,8 @@ public class FnDocSecurityTest {
 
     private static void createDocument(final DBBroker broker, final Txn transaction, final String collectionUri, final String docName, final String content, final String modeStr) throws PermissionDeniedException, LockException, SAXException, EXistException, IOException, SyntaxException {
         try (final Collection collection = broker.openCollection(XmldbURI.create(collectionUri), Lock.LockMode.WRITE_LOCK)) {
-            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(content), MimeType.XML_TYPE, collection);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(content), xmlMediaType, collection);
 
             PermissionFactory.chmod_str(broker, transaction, XmldbURI.create(collectionUri).append(docName), Optional.of(modeStr), Optional.empty());
         }

@@ -67,6 +67,7 @@ import org.exist.xquery.value.*;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.xqdoc.conversion.XQDocException;
+import xyz.elemental.mediatype.MediaType;
 
 public class Scan extends BasicFunction {
 
@@ -154,7 +155,7 @@ public class Scan extends BasicFunction {
                                 return Sequence.EMPTY_SEQUENCE;
                             }
                             if (doc.getResourceType() != DocumentImpl.BINARY_FILE ||
-                                    !doc.getMimeType().equals("application/xquery")) {
+                                    !doc.getMediaType().equals(MediaType.APPLICATION_XQUERY)) {
                                 throw new XPathException(this, "XQuery resource: " + uri + " is not an XQuery or " +
                                         "declares a wrong mime-type");
                             }

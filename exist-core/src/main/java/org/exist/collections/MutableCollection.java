@@ -92,6 +92,8 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
 
 import javax.annotation.Nullable;
 
@@ -1124,17 +1126,27 @@ public class MutableCollection implements Collection {
     }
 
     @Override
-    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable MimeType mimeType) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable final MimeType mimeType) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
         storeDocument(transaction, broker, name, source, mimeType, null, null, null, null, null);
     }
 
     @Override
-    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
-        if (mimeType == null) {
-            mimeType = MimeType.BINARY_TYPE;
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable final MediaType mediaType) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+        storeDocument(transaction, broker, name, source, mediaType, null, null, null, null, null);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable final MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+        storeDocument(transaction, broker, name, source, mimeType.toMediaType(), createdDate, lastModifiedDate, permission, documentType, xmlReader);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable MediaType mediaType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+        if (mediaType == null) {
+            mediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
         }
 
-        if (mimeType.isXMLType()) {
+        if (mediaType.getStorageType() == StorageType.XML) {
             // Store XML Document
 
             final BiConsumer2E<XMLReader, IndexInfo, SAXException, EXistException> validatorFn = (xmlReader1, validateIndexInfo) -> {
@@ -1157,7 +1169,7 @@ public class MutableCollection implements Collection {
                 }
             };
 
-            storeXmlDocument(transaction, broker, name, mimeType, createdDate, lastModifiedDate, permission, documentType, xmlReader, validatorFn, parserFn);
+            storeXmlDocument(transaction, broker, name, mediaType, createdDate, lastModifiedDate, permission, documentType, xmlReader, validatorFn, parserFn);
 
         } else {
             // Store Binary Document
@@ -1165,23 +1177,33 @@ public class MutableCollection implements Collection {
                 if (is == null) {
                     throw new IOException("storeDocument received a null InputStream when trying to store a Binary Document");
                 }
-                addBinaryResource(transaction, broker, name, is, mimeType.getName(), -1, createdDate, lastModifiedDate, permission);
+                addBinaryResource(transaction, broker, name, is, mediaType.getIdentifier(), -1, createdDate, lastModifiedDate, permission);
             }
         }
     }
 
     @Override
-    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable MimeType mimeType) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable final MimeType mimeType) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
         storeDocument(transaction, broker, name, node, mimeType, null, null, null, null, null);
     }
 
     @Override
-    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
-        if (mimeType == null) {
-            mimeType = MimeType.BINARY_TYPE;
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable final MediaType mediaType) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+        storeDocument(transaction, broker, name, node, mediaType, null, null, null, null, null);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable final MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+        storeDocument(transaction, broker, name, node, mimeType.toMediaType(), createdDate, lastModifiedDate, permission, documentType, xmlReader);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable MediaType mediaType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+        if (mediaType == null) {
+            mediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
         }
 
-        if (mimeType.isXMLType()) {
+        if (mediaType.getStorageType() == StorageType.XML) {
             // Store XML Document
             final BiConsumer2E<XMLReader, IndexInfo, SAXException, EXistException> validatorFn = (xmlReader1, validateIndexInfo) -> {
                 validateIndexInfo.setReader(xmlReader1, null);
@@ -1194,14 +1216,14 @@ public class MutableCollection implements Collection {
                 storeIndexInfo.getDOMStreamer().serialize(node, true);
             };
 
-            storeXmlDocument(transaction, broker, name, mimeType, createdDate, lastModifiedDate, permission, documentType, xmlReader, validatorFn, parserFn);
+            storeXmlDocument(transaction, broker, name, mediaType, createdDate, lastModifiedDate, permission, documentType, xmlReader, validatorFn, parserFn);
 
         } else {
             throw new EXistException("Cannot store DOM Node as a Binary Document to URI: " + getURI().append(name));
         }
     }
 
-    private void storeXmlDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader, final BiConsumer2E<XMLReader, IndexInfo, SAXException, EXistException> validatorFn, final BiConsumer2E<XMLReader, IndexInfo, SAXException, EXistException> parserFn) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
+    private void storeXmlDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final MediaType mediaType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, @Nullable final XMLReader xmlReader, final BiConsumer2E<XMLReader, IndexInfo, SAXException, EXistException> validatorFn, final BiConsumer2E<XMLReader, IndexInfo, SAXException, EXistException> parserFn) throws EXistException, PermissionDeniedException, SAXException, LockException, IOException {
         final CollectionConfiguration colconf = getConfiguration(broker);
 
         // borrow a default XML Reader if needed
@@ -1220,7 +1242,7 @@ public class MutableCollection implements Collection {
 
             // Phase 2 of 3 - Set the metadata for the document
             final DocumentImpl document = indexInfo.getDocument();
-            document.setMimeType(mimeType.getName());
+            document.setMediaType(mediaType.getIdentifier());
             if (createdDate != null) {
                 document.setCreated(createdDate.getTime());
                 if (lastModifiedDate == null) {
@@ -1832,7 +1854,7 @@ public class MutableCollection implements Collection {
     }
 
     private BinaryDocument addBinaryResource(final Database db, final Txn transaction, final DBBroker broker,
-            final BinaryDocument blob, final InputStream is, final String mimeType, @Deprecated final long size, final Date created,
+            final BinaryDocument blob, final InputStream is, final String mediaType, @Deprecated final long size, final Date created,
             final Date modified, @Nullable final Permission permission, final DBBroker.PreserveType preserve, final DocumentImpl oldDoc,
             final ManagedCollectionLock collectionLock) throws EXistException, PermissionDeniedException, LockException, TriggerException, IOException {
 
@@ -1846,7 +1868,7 @@ public class MutableCollection implements Collection {
             if (!broker.preserveOnCopy(preserve)) {
                 blob.copyOf(broker, blob, oldDoc);
             }
-            blob.setMimeType(mimeType == null ? MimeType.BINARY_TYPE.getName() : mimeType);
+            blob.setMediaType(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM);
             if (created != null) {
                 blob.setCreated(created.getTime());
             }

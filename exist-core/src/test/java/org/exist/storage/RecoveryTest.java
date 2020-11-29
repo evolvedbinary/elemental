@@ -80,6 +80,8 @@ import static org.junit.Assert.assertNull;
 import static org.exist.samples.Samples.SAMPLES;
 
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  * Test recovery after a forced database corruption.
@@ -125,6 +127,7 @@ public class RecoveryTest {
 
     private void storeAndCommit_removeNoCommit(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
+        final MediaTypeResolver mediaTypeResolver = pool.getMediaTypeService().getMediaTypeResolver();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             Collection test2;
@@ -139,9 +142,11 @@ public class RecoveryTest {
                 test2 = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2);
                 broker.saveCollection(transaction, test2);
 
-                broker.storeDocument(transaction, TestConstants.TEST_BINARY_URI, new StringInputSource("Some text data".getBytes(UTF_8)), MimeType.BINARY_TYPE, test2);
+                broker.storeDocument(transaction, TestConstants.TEST_BINARY_URI, new StringInputSource("Some text data".getBytes(UTF_8)), mediaTypeResolver.forUnknown(), test2);
                 binaryDocument = (BinaryDocument) test2.getDocument(broker, TestConstants.TEST_BINARY_URI);
                 assertNotNull(binaryDocument);
+
+                final MediaType xmlMediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
 
                 // store some documents. Will be replaced below
                 for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
@@ -149,7 +154,7 @@ public class RecoveryTest {
                     try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
                         sample = InputStreamUtil.readString(is, UTF_8);
                     }
-                    broker.storeDocument(transaction, XmldbURI.create(sampleName), new StringInputSource(sample), MimeType.XML_TYPE, test2);
+                    broker.storeDocument(transaction, XmldbURI.create(sampleName), new StringInputSource(sample), xmlMediaType, test2);
                 }
 
                 // replace some documents
@@ -158,10 +163,10 @@ public class RecoveryTest {
                     try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
                         sample = InputStreamUtil.readString(is, UTF_8);
                     }
-                    broker.storeDocument(transaction, XmldbURI.create(sampleName), new StringInputSource(sample), MimeType.XML_TYPE, test2);
+                    broker.storeDocument(transaction, XmldbURI.create(sampleName), new StringInputSource(sample), xmlMediaType, test2);
                 }
 
-                broker.storeDocument(transaction, XmldbURI.create("test_string.xml"), new StringInputSource(TEST_XML), MimeType.XML_TYPE, test2);
+                broker.storeDocument(transaction, XmldbURI.create("test_string.xml"), new StringInputSource(TEST_XML), xmlMediaType, test2);
 
                 //TODO : unlock the collection here ?
 

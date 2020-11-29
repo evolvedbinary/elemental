@@ -59,6 +59,7 @@ import org.apache.http.message.BasicHeader;
 import org.exist.test.ExistWebServer;
 import org.junit.ClassRule;
 import org.junit.Test;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -121,7 +122,7 @@ public class JmxRemoteTest {
             return Tuple(response.getStatusLine().getStatusCode(), response.getEntity().getContentType().getValue());
         });
 
-        assertEquals(Tuple(HttpStatus.SC_OK, "application/xml"), codeAndMediaType);
+        assertEquals(Tuple(HttpStatus.SC_OK, MediaType.APPLICATION_XML), codeAndMediaType);
     }
 
     private static <T> T withHttpClient(final FunctionE<HttpClient, T, IOException> fn) throws IOException {

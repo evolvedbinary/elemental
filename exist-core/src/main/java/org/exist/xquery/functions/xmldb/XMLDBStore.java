@@ -62,8 +62,6 @@ import org.apache.logging.log4j.Logger;
 
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.FileUtils;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.EXistResource;
@@ -87,6 +85,9 @@ import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
 import static org.exist.util.ByteOrderMark.stripXmlBom;
 import static org.exist.xquery.FunctionDSL.*;
@@ -166,25 +167,27 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
         }
 
         final Item item = args[2].itemAt(0);
-
-        final MimeTable mimeTable = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+        String strMimeType = MediaType.APPLICATION_XML;
+        final MediaTypeResolver mediaTypeResolver = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
 
         // determine the mime type
         final boolean storeAsBinary = isCalledAs(FS_STORE_BINARY_NAME);
-        MimeType mimeType = null;
+        MediaType mediaType = null;
         if (getSignature().getArgumentCount() == 4) {
-            final String strMimeType = args[3].getStringValue();
-            mimeType = mimeTable.getContentType(strMimeType);
+            strMimeType = args[3].getStringValue();
+            mediaType = mediaTypeResolver.fromString(strMimeType);
         }
 
-        if (mimeType == null && docName != null) {
-            mimeType = mimeTable.getContentTypeFor(docName);
+        if (mediaType == null && docName != null) {
+            mediaType = mediaTypeResolver.fromFileName(docName);
         }
 
-        if (mimeType == null) {
-            mimeType = (storeAsBinary || !Type.subTypeOf(item.getType(), Type.NODE)) ? MimeType.BINARY_TYPE : MimeType.XML_TYPE;
-        } else if (storeAsBinary) {
-            mimeType = new MimeType(mimeType.getName(), MimeType.BINARY);
+        if (mediaType == null) {
+            if (storeAsBinary || !Type.subTypeOf(item.getType(), Type.NODE)) {
+                mediaType = mediaTypeResolver.forUnknown();
+            } else {
+                mediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
+            }
         }
 
         String resourceId = null;
@@ -192,9 +195,9 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
             if (Type.subTypeOf(item.getType(), Type.JAVA_OBJECT)) {
                 final Object obj = ((JavaObjectValue) item).getObject();
                 if (obj instanceof java.io.File) {
-                    resourceId = loadFromFile(collection, ((java.io.File)obj).toPath(), docName, mimeType);
+                    resourceId = loadFromFile(collection, ((java.io.File)obj).toPath(), docName, storeAsBinary, mediaType);
                 } else if(obj instanceof java.nio.file.Path) {
-                    resourceId = loadFromFile(collection, (Path)obj, docName, mimeType);
+                    resourceId = loadFromFile(collection, (Path)obj, docName, storeAsBinary, mediaType);
                 } else {
                     LOGGER.error("Passed java object should be either a java.nio.file.Path or java.io.File");
                     throw new XPathException(this, "Passed java object should be either a java.nio.file.Path or java.io.File");
@@ -203,20 +206,21 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
             } else if (Type.subTypeOf(item.getType(), Type.ANY_URI)) {
                 try {
                     final URI uri = new URI(item.getStringValue());
-                    resourceId = loadFromURI(collection, uri, docName, mimeType);
+                    resourceId = loadFromURI(collection, uri, docName, storeAsBinary, mediaType);
+
                 } catch (final URISyntaxException e) {
                     LOGGER.error("Invalid URI: {}", item.getStringValue());
                     throw new XPathException(this, "Invalid URI: " + item.getStringValue(), e);
                 }
 
             } else {
-                try (Resource resource = getResource(mimeType, collection, docName)) {
+                try (final Resource resource = getResource(storeAsBinary, mediaType, collection, docName)) {
                     if (Type.subTypeOf(item.getType(), Type.STRING)) {
                         resource.setContent(stripXmlBom(item.getStringValue()));
                     } else if (item.getType() == Type.BASE64_BINARY) {
                         resource.setContent(((BinaryValue) item).toJavaObject());
                     } else if (Type.subTypeOf(item.getType(), Type.NODE)) {
-                        if (mimeType.isXMLType()) {
+                        if (!storeAsBinary) {
                             final ContentHandler handler = ((XMLResource) resource).setContentAsSAX();
                             handler.startDocument();
                             item.toSAX(context.getBroker(), handler, SERIALIZATION_PROPERTIES);
@@ -233,7 +237,7 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
                         LOGGER.error("Data should be either a node or a string");
                         throw new XPathException(this, "Data should be either a node or a string");
                     }
-                    ((EXistResource) resource).setMimeType(mimeType.getName());
+                    ((EXistResource) resource).setMediaType(mediaType.getIdentifier());
                     collection.storeResource(resource);
                     resourceId = resource.getId();
                 }
@@ -263,15 +267,15 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
         }
     }
 
-    private Resource getResource(MimeType mimeType, Collection collection, String docName) throws XMLDBException {
-        if (mimeType.isXMLType()) {
-            return collection.createResource(docName, XMLResource.class);
-        } else {
+    private Resource getResource(final boolean storeAsBinary, final MediaType mediaType, final Collection collection, final String docName) throws XMLDBException {
+        if (storeAsBinary || mediaType.getStorageType() == StorageType.BINARY) {
             return collection.createResource(docName, BinaryResource.class);
+        } else {
+            return collection.createResource(docName, XMLResource.class);
         }
     }
 
-    private String loadFromURI(final Collection collection, final URI uri, final String docName, final MimeType mimeType)
+    private String loadFromURI(final Collection collection, final URI uri, final String docName, final boolean storeAsBinary, final MediaType mediaType)
             throws XPathException {
         String resourceId;
         if ("file".equals(uri.getScheme())) {
@@ -283,7 +287,7 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
             if (!Files.isReadable(file)) {
                 throw new XPathException(this, "Cannot read path: " + path);
             }
-            resourceId = loadFromFile(collection, file, docName, mimeType);
+            resourceId = loadFromFile(collection, file, docName, storeAsBinary, mediaType);
 
         } else {
             final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
@@ -292,7 +296,7 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
                 temp = temporaryFileManager.getTemporaryFile();
                 try (final InputStream is = uri.toURL().openStream()) {
                     Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
-                    resourceId = loadFromFile(collection, temp, docName, mimeType);
+                    resourceId = loadFromFile(collection, temp, docName, storeAsBinary, mediaType);
                 } finally {
                     if(temp != null) {
                         temporaryFileManager.returnTemporaryFile(temp);
@@ -308,15 +312,15 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
         return resourceId;
     }
 
-    private String loadFromFile(final Collection collection, final Path file, String docName, final MimeType mimeType)
+    private String loadFromFile(final Collection collection, final Path file, String docName, final boolean storeAsBinary, final MediaType mediaType)
             throws XPathException {
         if (!Files.isDirectory(file)) {
             if (docName == null) {
                 docName = FileUtils.fileName(file);
             }
 
-            try (final Resource resource = getResource(mimeType, collection, docName)){
-                ((EXistResource) resource).setMimeType(mimeType.getName());
+            try (final Resource resource = getResource(storeAsBinary, mediaType, collection, docName)){
+                ((EXistResource) resource).setMediaType(mediaType.getIdentifier());
                 resource.setContent(file);
                 collection.storeResource(resource);
                 return resource.getId();

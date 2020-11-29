@@ -50,6 +50,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.Source;
 import java.io.IOException;
@@ -124,7 +125,8 @@ public class RecoverXmlTest extends AbstractRecoverTest {
             IOException, LockException {
         final XmldbURI docUri = XmldbURI.create(dbFilename);
         try {
-            broker.storeDocument(transaction, docUri, data, MimeType.XML_TYPE, collection);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, docUri, data, xmlMediaType, collection);
 
         } catch (final SAXException e) {
             throw new IOException(e);

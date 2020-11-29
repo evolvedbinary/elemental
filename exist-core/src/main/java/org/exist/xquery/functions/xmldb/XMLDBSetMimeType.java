@@ -56,8 +56,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
@@ -65,6 +63,8 @@ import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import static org.exist.xquery.XPathException.execAndAddErrorIfMissing;
 
@@ -93,7 +93,7 @@ public class XMLDBSetMimeType extends BasicFunction {
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
 
         // Get handle to Mime-type info
-        final MimeTable mimeTable = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+        final MediaTypeResolver mediaTypeResolver = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
 
         // Get first parameter
         final Expression expression = this;
@@ -112,42 +112,42 @@ public class XMLDBSetMimeType extends BasicFunction {
         }
 
         // Verify mime-type input
-        MimeType newMimeType = null;
+        MediaType newMediaType = null;
         if (args[1].isEmpty()) {
             // No input, use default mimetype
-            newMimeType = mimeTable.getContentTypeFor(pathParameter);
+            newMediaType = mediaTypeResolver.fromFileName(pathUri.lastSegmentString());
 
-            if (newMimeType == null) {
+            if (newMediaType == null) {
                 throw new XPathException(this, "Unable to determine mimetype for '" + pathParameter + "'");
             }
 
         } else {
             // Mimetype is provided, check if valid
-            newMimeType = mimeTable.getContentType(args[1].getStringValue());
+            newMediaType = mediaTypeResolver.fromString(args[1].getStringValue());
 
-            if (newMimeType == null) {
+            if (newMediaType == null) {
                 throw new XPathException(this, "mime-type '" + args[1].getStringValue() + "' is not supported.");
             }
         }
 
         // Get mime-type of resource
-        MimeType currentMimeType = getMimeTypeStoredResource(mimeTable, pathUri);
-        if (currentMimeType == null) {
+        MediaType currentMediaType = getMediaTypeStoredResource(mediaTypeResolver, pathUri);
+        if (currentMediaType == null) {
             // stored resource has no mime-type (unexpected situation)
             // fall back to document name
             logger.debug("Resource '{}' has no mime-type, retrieve from document name.", pathUri);
-            currentMimeType = mimeTable.getContentTypeFor(pathUri);
+            currentMediaType = mediaTypeResolver.fromFileName(pathUri.lastSegmentString());
             
             // if extension based lookup still fails
-            if (currentMimeType == null) {
+            if (currentMediaType == null) {
                 throw new XPathException(this, "Unable to determine mime-type from path '" + pathUri + "'.");
             }            
         } 
 
         // Check if mimeType are equivalent
         // in some cases value null is set, then allow to set to new value (repair action)
-        if (newMimeType.isXMLType() != currentMimeType.isXMLType() ) {
-            throw new XPathException(this, "New mime-type must be a " + currentMimeType.getXMLDBType() + " mime-type");
+        if (newMediaType.getStorageType() != currentMediaType.getStorageType()) {
+            throw new XPathException(this, "New mime-type must be a " + currentMediaType.getStorageType() + " mime-type");
         }
 
         // At this moment it is possible to update the mimetype
@@ -168,7 +168,7 @@ public class XMLDBSetMimeType extends BasicFunction {
 
             } else {
                 // set new mime-type
-                doc.setMimeType(newMimeType.getName());
+                doc.setMediaType(newMediaType.getIdentifier());
                 
                 // store meta data into database
                 broker.storeMetadata(txn, doc);
@@ -189,8 +189,8 @@ public class XMLDBSetMimeType extends BasicFunction {
      * Determine mimetype of currently stored resource. Copied from
      * get-mime-type.
      */
-    private MimeType getMimeTypeStoredResource(final MimeTable mimeTable, XmldbURI pathUri) throws XPathException {
-        MimeType returnValue = null;
+    private MediaType getMediaTypeStoredResource(final MediaTypeResolver mediaTypeResolver, XmldbURI pathUri) throws XPathException {
+        MediaType returnValue = null;
         try {
             // relative collection Path: add the current base URI
             pathUri = context.getBaseURI().toXmldbURI().resolveCollectionPath(pathUri);
@@ -207,8 +207,8 @@ public class XMLDBSetMimeType extends BasicFunction {
             if (doc == null) {
                 throw new XPathException(this, "Resource '" + pathUri + "' does not exist.");
             } else {
-                final String mimetype = doc.getMimeType();
-                returnValue = mimeTable.getContentType(mimetype);
+                final String mediaType = doc.getMediaType();
+                returnValue = mediaTypeResolver.fromString(mediaType);
             }
 
         } catch (final PermissionDeniedException ex) {

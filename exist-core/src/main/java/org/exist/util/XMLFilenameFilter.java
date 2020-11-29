@@ -45,6 +45,10 @@
  */
 package org.exist.util;
 
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
@@ -53,23 +57,23 @@ import java.util.function.Predicate;
 
 public class XMLFilenameFilter implements FilenameFilter {
 
-    private final MimeTable mimeTable;
+    private final MediaTypeResolver mediaTypeResolver;
 
-    public XMLFilenameFilter(final MimeTable mimeTable) {
-        this.mimeTable = mimeTable;
+    public XMLFilenameFilter(final MediaTypeResolver mediaTypeResolver) {
+        this.mediaTypeResolver = mediaTypeResolver;
     }
 
     @Override
     public boolean accept(final File dir, final String name) {
-        final MimeType mime = mimeTable.getContentTypeFor(name);
-        return mime != null && mime.isXMLType();
+        final MediaType mediaType = mediaTypeResolver.fromFileName(name);
+        return mediaType != null && mediaType.getStorageType() == StorageType.XML;
     }
 
-    public static Predicate<Path> asPredicate(final MimeTable mimeTable) {
+    public static Predicate<Path> asPredicate(final MediaTypeResolver mediaTypeResolver) {
         return path -> {
             if(!Files.isDirectory(path)) {
-                final MimeType mime = mimeTable.getContentTypeFor(FileUtils.fileName(path));
-                return mime != null && mime.isXMLType();
+                final MediaType mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(path));
+                return mediaType != null && mediaType.getStorageType() == StorageType.XML;
             }
             return false;
         };

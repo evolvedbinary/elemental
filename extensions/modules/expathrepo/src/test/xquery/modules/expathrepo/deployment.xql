@@ -1,4 +1,28 @@
 (:
+ : Elemental
+ : Copyright (C) 2024, Evolved Binary Ltd
+ :
+ : admin@evolvedbinary.com
+ : https://www.evolvedbinary.com | https://www.elemental.xyz
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; version 2.1.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :
+ : NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ :       The original license header is included below.
+ :
+ : =====================================================================
+ :
  : eXist-db Open Source Native XML Database
  : Copyright (C) 2001 The eXist-db Authors
  :
@@ -87,7 +111,7 @@ declare
     %test:assertEquals("ok", "true", "ok", "true", "true", "false")
 function deploy:install-uninstall() {
     let $zip := compression:zip($deploy:entries, false())
-    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0", $zip)
+    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0.xar", $zip)
     let $deployed := repo:install-and-deploy-from-db($stored)
     let $inList := exists(repo:list()[. = "http://exist-db.org/apps/dtest"])
     let $avail1 := exists(doc("/db/apps/dtest/test.xml")/*)
@@ -109,11 +133,11 @@ declare
     %test:assertEquals("ok", "ok", "ok", "true", "true", "true", "false")
 function deploy:no-overwrite-installed() {
     let $zip := compression:zip($deploy:entries, false())
-    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0", $zip)
+    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0.xar", $zip)
     let $deployed1 := repo:install-and-deploy-from-db($stored)
     let $avail1 := exists(doc("/db/apps/dtest/expath-pkg.xml")/*)
     let $zip := compression:zip($deploy:entries-overwrite, false())
-    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0", $zip)
+    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0.xar", $zip)
     let $deployed2 := repo:install-and-deploy-from-db($stored)
     let $avail2 := exists(doc("/db/apps/dtest/test.xml")/*)
     let $undeploy := repo:undeploy("http://exist-db.org/apps/dtest")
@@ -135,13 +159,13 @@ declare
     %test:assertEquals("ok", "ok", "true", "ok", "ok", "true", "true", "true", "false")
 function deploy:overwrite-installed() {
     let $zip := compression:zip($deploy:entries, false())
-    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0", $zip)
+    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0.xar", $zip)
     let $deployed1 := repo:install-and-deploy-from-db($stored)
     let $avail1 := exists(doc("/db/apps/dtest/expath-pkg.xml")/*)
     let $undeploy1 := repo:undeploy("http://exist-db.org/apps/dtest")
     let $remove1 := repo:remove("http://exist-db.org/apps/dtest")
     let $zip := compression:zip($deploy:entries-overwrite, false())
-    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0", $zip)
+    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0.xar", $zip)
     let $deployed2 := repo:install-and-deploy-from-db($stored)
     let $avail2 := exists(doc("/db/apps/dtest/test-new.xml")/*)
     let $undeploy2 := repo:undeploy("http://exist-db.org/apps/dtest")
@@ -165,7 +189,7 @@ declare
     %test:assertEquals("ok", "true", "false", "true", "ok", "true", "false")
 function deploy:install-uninstall-library() {
     let $zip := compression:zip($deploy:entries-library, false())
-    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0", $zip)
+    let $stored := xmldb:store("/db/deployment-test", "dtest-1.0.xar", $zip)
     let $deployed := repo:install-and-deploy-from-db($stored)
     let $inList := exists(repo:list()[. = "http://exist-db.org/apps/dtest"])
     (: Library packages are not deployed into the db :)

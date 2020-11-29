@@ -37,6 +37,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.util.UUIDGenerator;
 import org.junit.Test;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -60,21 +61,19 @@ public class WriteMessageTest {
     private static final String CHARSET = "UTF-8";
     private static final String XML_DOC1_NAME = "doc1.xml";
     private static final String XML_DOC1_CONTENT = "<uuid>" + UUIDGenerator.getUUIDversion4() + "</uuid>";
-    private static final SendEmailFunction.MailAttachment XML_DOC1_ATTACHMENT = new SendEmailFunction.MailAttachment(XML_DOC1_NAME, "application/xml", Base64.encodeBase64String(XML_DOC1_CONTENT.getBytes(UTF_8)));
+    private static final SendEmailFunction.MailAttachment XML_DOC1_ATTACHMENT = new SendEmailFunction.MailAttachment(XML_DOC1_NAME, MediaType.APPLICATION_XML, Base64.encodeBase64String(XML_DOC1_CONTENT.getBytes(UTF_8)));
     private static final String BIN_DOC1_NAME = "doc 1.bin";     // NOTE(AR) intentionally contains a space character to test correct encoding/decoding
     private static final byte[] BIN_DOC1_CONTENT = UUIDGenerator.getUUIDversion4().getBytes(UTF_8);
-    private static final SendEmailFunction.MailAttachment BIN_DOC1_ATTACHMENT = new SendEmailFunction.MailAttachment(BIN_DOC1_NAME, "application/octet-stream", Base64.encodeBase64String(BIN_DOC1_CONTENT));
+    private static final SendEmailFunction.MailAttachment BIN_DOC1_ATTACHMENT = new SendEmailFunction.MailAttachment(BIN_DOC1_NAME, MediaType.APPLICATION_OCTET_STREAM, Base64.encodeBase64String(BIN_DOC1_CONTENT));
     private static final String XHTML_11_DOCTYPE = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">";
     private static final String DEFAULT_TRANSFER_ENCODING = "8bit";
     private static final String BASE64_TRANSFER_ENCODING = "base64";
-    private static final String TEXT_HTML_CONTENT_TYPE = contentType("text/html", Tuple("charset", CHARSET));
-    private static final String TEXT_PLAIN_CONTENT_TYPE = contentType("text/plain", Tuple("charset", CHARSET));
+    private static final String TEXT_HTML_CONTENT_TYPE = contentType(MediaType.TEXT_HTML, Tuple("charset", CHARSET));
+    private static final String TEXT_PLAIN_CONTENT_TYPE = contentType(MediaType.TEXT_PLAIN, Tuple("charset", CHARSET));
     private static final String MULTIPART_BOUNDARY_PREFIX_1 = SendEmailFunction.multipartBoundaryPrefix(1);
     private static final String MULTIPART_BOUNDARY_PREFIX_2 = SendEmailFunction.multipartBoundaryPrefix(2);
-    private static final String MULTIPART_MIXED_CONTENT_TYPE = "multipart/mixed";
-    private static final String MULTIPART_ALTERNATIVE_CONTENT_TYPE = "multipart/alternative";
-    private static final String XML_DOC1_CONTENT_TYPE = contentType("application/xml", Tuple("name", XML_DOC1_NAME));
-    private static final String BIN_DOC1_CONTENT_TYPE = contentType("application/octet-stream", Tuple("name", BIN_DOC1_NAME));
+    private static final String XML_DOC1_CONTENT_TYPE = contentType(MediaType.APPLICATION_XML, Tuple("name", XML_DOC1_NAME));
+    private static final String BIN_DOC1_CONTENT_TYPE = contentType(MediaType.APPLICATION_OCTET_STREAM, Tuple("name", BIN_DOC1_NAME));
 
     private static final String FROM = "sender@place1.com";
     private static final String TO = "recipient@place2.com";
@@ -109,7 +108,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -142,7 +141,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -176,7 +175,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -246,7 +245,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -286,7 +285,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -327,7 +326,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -377,7 +376,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_ALTERNATIVE_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_ALTERNATIVE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -418,7 +417,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -428,7 +427,7 @@ public class WriteMessageTest {
 
         i = 0;
         final Part firstPart = parts[0];
-        assertMultipartContentTypeWithBoundary(MULTIPART_ALTERNATIVE_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_2, firstPart.headerLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_ALTERNATIVE, MULTIPART_BOUNDARY_PREFIX_2, firstPart.headerLines[i++]);
         i = 0;
         final Part[] firstPartParts = extractPartsFromPart(firstPart.bodyLines, i++, MULTIPART_BOUNDARY_PREFIX_2);
         assertEquals(2, firstPartParts.length);
@@ -474,7 +473,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -484,7 +483,7 @@ public class WriteMessageTest {
 
         i = 0;
         final Part firstPart = parts[0];
-        assertMultipartContentTypeWithBoundary(MULTIPART_ALTERNATIVE_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_2, firstPart.headerLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_ALTERNATIVE, MULTIPART_BOUNDARY_PREFIX_2, firstPart.headerLines[i++]);
         i = 0;
         final Part[] firstPartParts = extractPartsFromPart(firstPart.bodyLines, i++, MULTIPART_BOUNDARY_PREFIX_2);
         assertEquals(2, firstPartParts.length);
@@ -532,7 +531,7 @@ public class WriteMessageTest {
         final String[] messageLines = writeMessage(mail);
 
         int i = 0;
-        assertMultipartContentTypeWithBoundary(MULTIPART_MIXED_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_MIXED, MULTIPART_BOUNDARY_PREFIX_1, messageLines[i++]);
         final String[] messageBodyLines = extractMessageBody(messageLines, i);
         i = 0;
         assertEquals(SendEmailFunction.ERROR_MSG_NON_MIME_CLIENT, messageBodyLines[i++]);
@@ -542,7 +541,7 @@ public class WriteMessageTest {
 
         i = 0;
         final Part firstPart = parts[0];
-        assertMultipartContentTypeWithBoundary(MULTIPART_ALTERNATIVE_CONTENT_TYPE, MULTIPART_BOUNDARY_PREFIX_2, firstPart.headerLines[i++]);
+        assertMultipartContentTypeWithBoundary(MediaType.MULTIPART_ALTERNATIVE, MULTIPART_BOUNDARY_PREFIX_2, firstPart.headerLines[i++]);
         i = 0;
         final Part[] firstPartParts = extractPartsFromPart(firstPart.bodyLines, i++, MULTIPART_BOUNDARY_PREFIX_2);
         assertEquals(2, firstPartParts.length);

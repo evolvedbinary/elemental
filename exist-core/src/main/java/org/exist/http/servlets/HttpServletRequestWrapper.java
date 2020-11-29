@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,7 @@ import org.exist.util.IterableEnumeration;
 import org.exist.util.io.CachingFilterInputStream;
 import org.exist.util.io.FilterInputStreamCache;
 import org.exist.util.io.FilterInputStreamCacheFactory;
+import xyz.elemental.mediatype.MediaType;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -112,7 +137,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest, Closeable 
                 if (semicolon > 0) {
                     contentType = contentType.substring(0, semicolon).trim();
                 }
-                if ("application/x-www-form-urlencoded".equals(contentType)
+                if (MediaType.APPLICATION_WWW_FORM_URLENCODED.equals(contentType)
                         && request.getHeader("ContentType") == null) {
                     //Parse out parameters from the Content Body
                     parseContentBodyParameters();
@@ -283,7 +308,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest, Closeable 
         // If POST request AND there is some content AND its not a file upload
         if ("POST".equals(request.getMethod().toUpperCase())
                 && (request.getContentLength() > 0 || request.getContentLength() == -1)
-                && !request.getContentType().toUpperCase().startsWith("MULTIPART/")) {
+                && !request.getContentType().toLowerCase().startsWith("multipart/")) {
 
             // Also return the content parameters, these are not part
             // of the standard HttpServletRequest.toString() output

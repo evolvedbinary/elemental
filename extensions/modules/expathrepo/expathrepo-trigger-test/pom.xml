@@ -87,6 +87,12 @@
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
@@ -181,6 +187,7 @@
                                 <include>src/test/resources/conf.xml</include>
                                 <include>src/main/xar-resources/controller.xq</include>
                                 <include>src/main/java/org/exist/repo/ExampleModule.java</include>
+                                <include>src/main/java/org/exist/repo/ExampleTrigger.java</include>
                             </includes>
                         </licenseSet>
 
@@ -195,6 +202,7 @@
                                 <exclude>src/test/resources/conf.xml</exclude>
                                 <exclude>src/main/xar-resources/controller.xq</exclude>
                                 <exclude>src/main/java/org/exist/repo/ExampleModule.java</exclude>
+                                <exclude>src/main/java/org/exist/repo/ExampleTrigger.java</exclude>
                             </excludes>
                         </licenseSet>
 

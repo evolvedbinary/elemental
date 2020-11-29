@@ -51,7 +51,7 @@ import java.net.URLStreamHandlerFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.protocolhandler.protocols.xmldb.Handler;
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  * Factory class for creating custom stream handlers for the 'xmldb' protocol.
@@ -67,8 +67,8 @@ public class eXistURLStreamHandlerFactory implements URLStreamHandlerFactory {
 
     private final URLStreamHandler handler;
 
-    eXistURLStreamHandlerFactory(final Mode mode, final MimeTable mimeTable) {
-        this.handler = new Handler(mode, mimeTable);
+    eXistURLStreamHandlerFactory(final Mode mode, final MediaTypeResolver mediaTypeResolver) {
+        this.handler = new Handler(mode, mediaTypeResolver);
     }
 
     /**

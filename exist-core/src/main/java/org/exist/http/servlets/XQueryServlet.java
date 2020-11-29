@@ -59,12 +59,14 @@ import org.exist.security.internal.web.HttpAccount;
 import org.exist.source.*;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
-import org.exist.util.MimeTable;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -134,7 +136,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     public static final String ATTR_MODULE_LOAD_PATH = "xquery.module-load-path";
 
     public final static XmldbURI DEFAULT_URI = XmldbURI.EMBEDDED_SERVER_URI.append(XmldbURI.ROOT_COLLECTION_URI);
-    public final static String DEFAULT_CONTENT_TYPE = "text/html";
+    public final static String DEFAULT_CONTENT_TYPE = MediaType.TEXT_HTML;
     
     public final static String DRIVER = "org.exist.xmldb.DatabaseImpl";
     
@@ -430,8 +432,8 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                     }
                     
 					//Show the source of the XQuery
-                    //writeResourceAs(resource, broker, stylesheet, encoding, "text/plain", outputProperties, response);
-                    response.setContentType("text/plain; charset=" + getFormEncoding());
+                    //writeResourceAs(resource, broker, stylesheet, encoding, MediaType.TEXT_PLAIN, outputProperties, response);
+                    response.setContentType(MediaType.TEXT_PLAIN + "; charset=" + getFormEncoding());
                     output.write(source.getContent());
                     output.flush();
                     return;
@@ -600,8 +602,12 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     }
 
     private boolean isTextContent(final String mediaType) {
-        final MimeTable mimeTable = getPool().getMediaTypeService().getMediaTypeResolver();
-        return mimeTable.isTextContent(mediaType);
+        final MediaTypeResolver mediaTypeResolver = getPool().getMediaTypeService().getMediaTypeResolver();
+        @Nullable final MediaType mt = mediaTypeResolver.fromString(mediaType);
+        if (mt != null) {
+            return mt.getIdentifier().startsWith("text/") || mt.getIdentifier().endsWith("xquery") || mt.getStorageType() == StorageType.XML;
+        }
+        return false;
     }
 
     private String getSessionAttribute(HttpSession session, String attribute) {

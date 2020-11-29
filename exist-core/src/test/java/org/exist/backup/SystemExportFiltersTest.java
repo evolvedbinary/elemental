@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -39,13 +63,13 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.OutputKeys;
 import java.io.IOException;
@@ -113,7 +137,8 @@ public class SystemExportFiltersTest {
             storeXMLDocument(txn, broker, test, doc02uri.lastSegment(), XML2);
             storeXMLDocument(txn, broker, test, doc03uri.lastSegment(), XML3);
 
-            broker.storeDocument(txn, doc11uri.lastSegment(), new StringInputSource(BINARY.getBytes(UTF_8)), MimeType.BINARY_TYPE, test);
+            final MediaType binMediaType = pool.getMediaTypeService().getMediaTypeResolver().forUnknown();
+            broker.storeDocument(txn, doc11uri.lastSegment(), new StringInputSource(BINARY.getBytes(UTF_8)), binMediaType, test);
 
             txn.commit();
         }
@@ -206,6 +231,7 @@ public class SystemExportFiltersTest {
     }
 
     private static void storeXMLDocument(final Txn txn, final DBBroker broker, final Collection col, final XmldbURI name, final String data) throws LockException, SAXException, PermissionDeniedException, EXistException, IOException {
-        broker.storeDocument(txn, name, new StringInputSource(data), MimeType.XML_TYPE, col);
+        final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+        broker.storeDocument(txn, name, new StringInputSource(data), xmlMediaType, col);
     }
 }

@@ -33,7 +33,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.Item;
@@ -41,6 +40,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.XMLConstants;
 
@@ -332,8 +332,9 @@ public class ConvertTest {
              final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Collection testCollection = broker.getOrCreateCollection(transaction, TEST_COLLECTION_URI)) {
 
+            final MediaType xmlMediaType = brokerPool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
             final XmldbURI documentName = XmldbURI.create(UUID.randomUUID() + ".xml");
-            broker.storeDocument(transaction, documentName, inMemoryDocument, MimeType.XML_TYPE, testCollection);
+            broker.storeDocument(transaction, documentName, inMemoryDocument, xmlMediaType, testCollection);
 
             final  org.exist.dom.persistent.DocumentImpl persistentDocument = testCollection.getDocument(broker, documentName);
 
