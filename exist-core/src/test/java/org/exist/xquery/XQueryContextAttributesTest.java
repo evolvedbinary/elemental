@@ -166,7 +166,7 @@ public class XQueryContextAttributesTest {
             broker.storeDocument(transaction, uri.lastSegment(), source, xqueryMediaType, collection);
             final BinaryDocument doc = (BinaryDocument) collection.getDocument(broker, uri.lastSegment());
 
-            return new DBSource(broker, doc, false);
+            return new DBSource(broker.getBrokerPool(), doc, false);
         }
     }
 }

@@ -325,14 +325,14 @@ public class ExistRepository extends Observable implements BrokerPoolService {
         XmldbURI xqueryDbPath = XmldbURI.create("xmldb:exist:///db/system/repo/" + relXQueryPath);
         @Nullable Document doc = broker.getXMLResource(xqueryDbPath);
         if (doc != null && doc instanceof BinaryDocument) {
-            return new DBSource(broker, (BinaryDocument) doc, false);
+            return new DBSource(broker.getBrokerPool(), (BinaryDocument) doc, false);
         }
 
         // 2. attempt to locate it within an app
         xqueryDbPath = XmldbURI.create("xmldb:exist:///db/apps/" + relXQueryPath);
         doc = broker.getXMLResource(xqueryDbPath);
         if (doc != null && doc instanceof BinaryDocument) {
-            return new DBSource(broker, (BinaryDocument) doc, false);
+            return new DBSource(broker.getBrokerPool(), (BinaryDocument) doc, false);
         }
 
         return null;

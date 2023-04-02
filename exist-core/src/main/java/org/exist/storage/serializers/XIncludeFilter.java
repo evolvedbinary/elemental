@@ -433,7 +433,7 @@ public class XIncludeFilter implements Receiver {
             try {
                 Source source = null;
                 if (xpointer == null) {
-                    source = new DBSource(serializer.broker, (BinaryDocument) doc, true);
+                    source = new DBSource(serializer.broker.getBrokerPool(), (BinaryDocument) doc, true);
                 } else {
                     xpointer = checkNamespaces(xpointer);
                     source = new StringSource(xpointer);

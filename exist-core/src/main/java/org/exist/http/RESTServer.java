@@ -1582,7 +1582,7 @@ public class RESTServer {
             final Properties outputProperties, final String servletPath, final String pathInfo)
             throws XPathException, BadRequestException, PermissionDeniedException {
 
-        final Source source = new DBSource(broker, (BinaryDocument) resource, true);
+        final Source source = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, true);
 
         final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
             xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(resource.getCollection().getURI()).toString());
