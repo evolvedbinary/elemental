@@ -335,6 +335,12 @@
             </dependency>
 
             <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>1.18.2</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.exquery</groupId>
                 <artifactId>exquery-common</artifactId>
                 <version>${exquery.distribution.version}</version>
