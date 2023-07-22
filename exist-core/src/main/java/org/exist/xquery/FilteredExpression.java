@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,6 +53,8 @@ import org.exist.dom.memtree.NodeImpl;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.*;
 
+import javax.annotation.Nullable;
+
 /**
  * FilteredExpression represents a primary expression with a predicate. Examples:
  * for $i in (1 to 10)[$i mod 2 = 0], $a[1], (doc("test.xml")//section)[2]. Other predicate
@@ -38,17 +64,17 @@ import org.exist.xquery.value.*;
  */
 public class FilteredExpression extends AbstractExpression {
 
-    final protected Expression expression;
-    protected boolean abbreviated = false;
-    final protected List<Predicate> predicates = new ArrayList<>(2);
+    private final Expression expression;
+    private boolean abbreviated = false;
+    private final List<Predicate> predicates = new ArrayList<>(2);
     private Expression parent;
 
-    public FilteredExpression(XQueryContext context, Expression expr) {
+    public FilteredExpression(final XQueryContext context, final Expression expr) {
         super(context);
         this.expression = expr.simplify();
     }
 
-    public void addPredicate(Predicate pred) {
+    public void addPredicate(final Predicate pred) {
         predicates.add(pred);
     }
 
@@ -57,15 +83,14 @@ public class FilteredExpression extends AbstractExpression {
     }
 
     public Expression getExpression() {
-        if (expression instanceof PathExpr)
-            {return ((PathExpr)expression).getExpression(0);}
+        if (expression instanceof PathExpr) {
+            return ((PathExpr)expression).getExpression(0);
+        }
         return expression;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#analyze(org.exist.xquery.AnalyzeContextInfo)
-     */
-    public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
+    @Override
+    public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
         parent = contextInfo.getParent();
         contextInfo.setParent(this);
         expression.analyze(contextInfo);
@@ -80,28 +105,28 @@ public class FilteredExpression extends AbstractExpression {
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
-     */
-    public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
+    @Nullable
+    public Sequence eval(Sequence contextSequence, final Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {
             context.getProfiler().start(this);
-            context.getProfiler().message(this, Profiler.DEPENDENCIES,
-                "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
-            if (contextSequence != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES,
-                    "CONTEXT SEQUENCE", contextSequence);}
-            if (contextItem != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES,
-                    "CONTEXT ITEM", contextItem.toSequence());}
+            context.getProfiler().message(this, Profiler.DEPENDENCIES, "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
+            if (contextSequence != null) {
+                context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT SEQUENCE", contextSequence);
+            }
+            if (contextItem != null) {
+                context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());
+            }
         }
-        if (contextItem != null)
-            {contextSequence = contextItem.toSequence();}
-        Sequence result;
+
+        if (contextItem != null) {
+            contextSequence = contextItem.toSequence();
+        }
+
+        final Sequence result;
         final Sequence seq = expression.eval(contextSequence, contextItem);
-        if (seq.isEmpty())
-            {result = Sequence.EMPTY_SEQUENCE;}
-        else {
+        if (seq.isEmpty()) {
+            result = Sequence.EMPTY_SEQUENCE;
+        } else {
             final Predicate pred = predicates.get(0);
             context.setContextSequencePosition(0, seq);
             // If the current step is an // abbreviated step, we have to treat the predicate
@@ -137,16 +162,16 @@ public class FilteredExpression extends AbstractExpression {
                 result = processPredicate(contextSequence, seq);
             }
         }
-        if (context.getProfiler().isEnabled())
-            {context.getProfiler().end(this, "", result);} 
+        if (context.getProfiler().isEnabled()) {
+            context.getProfiler().end(this, "", result);
+        }
         return result;
     }
 
-    private Sequence processPredicate(Sequence contextSequence, Sequence seq) throws XPathException {
-
-        int line=-1;
-        int column=-1;
-        try { // Keep try-catch out of loop
+    private Sequence processPredicate(@Nullable Sequence contextSequence, Sequence seq) throws XPathException {
+        int line = -1;
+        int column = -1;
+        try {  // Keep try-catch out of loop
             for (final Predicate pred : predicates) {
                 line = pred.getLine();
                 column = pred.getColumn();
@@ -154,7 +179,7 @@ public class FilteredExpression extends AbstractExpression {
                 //subsequent predicates operate on the result of the previous one
                 contextSequence = null;
             }
-        } catch (XPathException ex){
+        } catch (final XPathException ex) {
             // Add location to exception
             ex.setLocation(line,column);
             throw ex;
@@ -162,16 +187,15 @@ public class FilteredExpression extends AbstractExpression {
         return seq;
     }
 
-    /* (non-Javadoc)
-    * @see org.exist.xquery.Expression#dump(org.exist.xquery.util.ExpressionDumper)
-    */
-    public void dump(ExpressionDumper dumper) {
+    @Override
+    public void dump(final ExpressionDumper dumper) {
         expression.dump(dumper);
         for (final Predicate pred : predicates) {
             pred.dump(dumper);
         }
     }
 
+    @Override
     public String toString() {
         final StringBuilder result = new StringBuilder();
         result.append(expression.toString());
@@ -181,17 +205,13 @@ public class FilteredExpression extends AbstractExpression {
         return result.toString();
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#returnsType()
-     */
+    @Override
     public int returnsType() {
         return expression.returnsType();
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#resetState()
-     */
-    public void resetState(boolean postOptimization) {
+    @Override
+    public void resetState(final boolean postOptimization) {
         super.resetState(postOptimization);
         expression.resetState(postOptimization);
         for (final Predicate pred : predicates) {
@@ -199,24 +219,21 @@ public class FilteredExpression extends AbstractExpression {
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.AbstractExpression#setPrimaryAxis(int)
-     */
-    public void setPrimaryAxis(int axis) {
+    @Override
+    public void setPrimaryAxis(final int axis) {
         expression.setPrimaryAxis(axis);
     }
 
+    @Override
     public int getPrimaryAxis() {
         return expression.getPrimaryAxis();
     }
 
-    public void setAbbreviated(boolean abbrev) {
-        abbreviated = abbrev;
+    public void setAbbreviated(final boolean abbreviated) {
+        this.abbreviated = abbreviated;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.AbstractExpression#getDependencies()
-     */
+    @Override
     public int getDependencies() {
         int deps = Dependency.CONTEXT_SET;
         deps |= expression.getDependencies();
@@ -226,10 +243,12 @@ public class FilteredExpression extends AbstractExpression {
         return deps;
     }
 
-    public void accept(ExpressionVisitor visitor) {
+    @Override
+    public void accept(final ExpressionVisitor visitor) {
         visitor.visitFilteredExpr(this);
     }
 
+    @Override
     public Expression getParent() {
         return parent;
     }

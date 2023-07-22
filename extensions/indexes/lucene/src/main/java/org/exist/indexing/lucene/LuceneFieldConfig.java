@@ -54,6 +54,7 @@ import org.exist.numbering.NodeId;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.StringUtil;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
@@ -132,8 +133,8 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
         }
 
         final String binaryStr = configElement.getAttribute(ATTR_BINARY);
-        if (StringUtils.isNotEmpty(binaryStr)) {
-            this.binary = StringUtils.equalsAnyIgnoreCase(binaryStr, "true", "yes");
+        if (StringUtil.notNullOrEmpty(binaryStr)) {
+            this.binary = binaryStr.equalsIgnoreCase("true") || binaryStr.equalsIgnoreCase("yes");
         }
     }
 

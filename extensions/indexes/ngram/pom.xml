@@ -149,6 +149,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/java/org/exist/indexing/ngram/CustomIndexTest.java</include>
                                 <include>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</include>
+                                <include>src/main/java/org/exist/indexing/ngram/NGramMatch.java</include>
                             </includes>
                         </licenseSet>
 
@@ -163,6 +164,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/java/org/exist/indexing/ngram/CustomIndexTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/ngram/NGramMatch.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
