@@ -120,7 +120,7 @@ public class LuceneMatch extends Match {
         if (other instanceof LuceneMatch) {
             final LuceneMatch lm = (LuceneMatch) other;
             return getNodeId().equals(lm.getNodeId())
-                    && query == lm.query;
+                    && query.equals(lm.query);
         } else {
             return false;
         }
