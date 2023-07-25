@@ -415,6 +415,10 @@ public abstract class Match implements Comparable<Match> {
 
     @Override
     public boolean equals(final Object other) {
+        if (other == this) {
+            return true;
+        }
+
         if (other instanceof Match) {
             final Match om = (Match) other;
             return om.matchTerm != null
@@ -424,7 +428,6 @@ public abstract class Match implements Comparable<Match> {
             return false;
         }
     }
-
 
     /**
      * Used to sort matches. Terms are compared by their string
