@@ -912,6 +912,7 @@
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
+                                <include>src/main/java/org/exist/xquery/CombiningExpression.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
                                 <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
@@ -1255,6 +1256,7 @@
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/CombiningExpression.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</exclude>
                                 <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
