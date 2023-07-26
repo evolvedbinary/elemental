@@ -123,8 +123,9 @@ public class LuceneMatch extends Match {
 
         if (other instanceof LuceneMatch) {
             final LuceneMatch lm = (LuceneMatch) other;
-            return getNodeId().equals(lm.getNodeId())
-                    && query.equals(lm.query);
+            return luceneDocId == lm.luceneDocId
+                    && query.equals(lm.query)
+                    && super.equals(lm);
         } else {
             return false;
         }
