@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,20 +30,37 @@
  */
 package org.exist.storage.cache;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.jcip.annotations.NotThreadSafe;
-
-import java.util.Iterator;
+import org.exist.storage.CacheManager;
 
 /**
  * This cache implementation always tries to keep the inner btree pages in
  * cache, while the leaf pages can be removed.
  */
 @NotThreadSafe
-public class BTreeCache<T extends BTreeCacheable> extends LRUCache<T> {
+public class BTreeCache<T extends BTreeCacheable> implements Cache<T> {
 
+    private final BTreeCacheLevel<T> innerPageCache;
+    private final BTreeCacheLevel<T> outerPageCache;
+
+    private final String name;
+
+    /**
+     * Create a new BTree cache
+     *
+     * TODO (AP) the size is misleading, because inner AND outer caches of the supplied size are created.
+     * We should spread the sizes. Is there a good rule of thumb for this ?
+     *
+     * @param name
+     * @param size
+     * @param growthFactor
+     * @param growthThreshold
+     * @param type
+     */
     public BTreeCache(final String name, final int size, final double growthFactor, final double growthThreshold, final CacheType type) {
-        super(name, size, growthFactor, growthThreshold, type);
+        this.name = name;
+        this.innerPageCache = new BTreeCacheLevel<>(name + "_inner", size, growthFactor, growthThreshold, type);
+        this.outerPageCache = new BTreeCacheLevel<>(name + "_outer", size, growthFactor, growthThreshold, type);
     }
 
     @Override
@@ -43,37 +69,102 @@ public class BTreeCache<T extends BTreeCacheable> extends LRUCache<T> {
     }
 
     @Override
-    public void add(final T item) {
-        map.put(item.getKey(), item);
-        if (map.size() >= max + 1) {
-            removeNext(item);
+    public T get(final T item) {
+        if (item.isInnerPage()) {
+            return innerPageCache.get(item);
+        } else {
+            return outerPageCache.get(item);
         }
     }
 
-    private void removeNext(final T item) {
-        boolean removed = false;
-        boolean mustRemoveInner = false;
-        Iterator<Long2ObjectMap.Entry<T>> iterator = map.fastEntrySetIterator();
-        do {
-            final Long2ObjectMap.Entry<T> next = iterator.next();
-            final T cached = next.getValue();
-            if(cached.allowUnload() && cached.getKey() != item.getKey() &&
-                    (mustRemoveInner || !cached.isInnerPage())) {
-                cached.sync(true);
-                map.remove(next.getLongKey());
-                removed = true;
-            } else {
-                if (!iterator.hasNext()) {
-                    // reset the iterator to the beginning
-                    iterator = map.fastEntrySetIterator();      // TODO(AR) this can cause a never ending loop potentially!
+    @Override
+    public T get(final long key) {
+        T result = innerPageCache.get(key);
+        if (result == null) {
+            result = outerPageCache.get(key);
+        }
+        return result;
+    }
 
-                    mustRemoveInner = true;
-                }
-            }
-        } while(!removed);
-        accounting.replacedPage(item);
-        if (growthFactor > 1.0 && accounting.resizeNeeded()) {
-            cacheManager.requestMem(this);
+    @Override
+    public void remove(final T item) {
+        if (item.isInnerPage()) {
+            innerPageCache.remove(item);
+        } else {
+            outerPageCache.remove(item);
+        }
+    }
+
+    @Override
+    public boolean hasDirtyItems() {
+        return innerPageCache.hasDirtyItems() || outerPageCache.hasDirtyItems();
+    }
+
+    @Override
+    public boolean flush() {
+        final boolean inner = innerPageCache.flush();
+        final boolean outer = outerPageCache.flush();
+        return inner && outer;
+    }
+
+    @Override
+    public int getBuffers() {
+        return innerPageCache.getBuffers() + outerPageCache.getBuffers();
+    }
+
+    @Override
+    public double getGrowthFactor() {
+        return innerPageCache.getGrowthFactor();  // NOTE(AP) same as outerPageCache
+    }
+
+    @Override
+    public void resize(final int newSize) {
+        innerPageCache.resize(newSize);
+        outerPageCache.resize(newSize);
+    }
+
+    @Override
+    public void setCacheManager(final CacheManager manager) {
+        innerPageCache.setCacheManager(manager);
+        outerPageCache.setCacheManager(manager);
+    }
+
+    @Override
+    public int getUsedBuffers() {
+        return innerPageCache.getUsedBuffers() + outerPageCache.getUsedBuffers();
+    }
+
+    @Override
+    public int getHits() {
+        return innerPageCache.getHits() + outerPageCache.getHits();
+    }
+
+    @Override
+    public int getFails() {
+        return innerPageCache.getFails() + outerPageCache.getFails();
+    }
+
+    @Override
+    public int getLoad() {
+        return innerPageCache.getLoad() + outerPageCache.getLoad();
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public CacheType getType() {
+        return innerPageCache.getType();  // NOTE(AP) same as outerPageCache
+    }
+
+    @Override
+    public void add(final T item) {
+        if (item.isInnerPage()) {
+            innerPageCache.add(item);
+        } else {
+            outerPageCache.add(item);
         }
     }
 }
