@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,13 +30,10 @@
  */
 package org.exist.xquery.functions.fn;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import net.sf.saxon.Configuration;
 import net.sf.saxon.functions.Replace;
 import net.sf.saxon.regex.RegularExpression;
 import org.exist.dom.QName;
+import org.exist.util.XmlRegexFactory;
 import org.exist.xquery.*;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.Sequence;
@@ -114,17 +120,11 @@ public class FunReplace extends BasicFunction {
     		final String pattern = args[1].itemAt(0).getStringValue();
 			final String replace = args[2].itemAt(0).getStringValue();
 
-			final Configuration config = context.getBroker().getBrokerPool().getSaxonConfiguration();
-
-			final List<String> warnings = new ArrayList<>(1);
-
 			try {
-				final RegularExpression regularExpression = config.compileRegularExpression(pattern, flags, "XP30", warnings);
+				final RegularExpression regularExpression = XmlRegexFactory.getInstance().getXmlRegex(context, pattern, flags);
 				if (regularExpression.matches("")) {
 					throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
 				}
-
-				//TODO(AR) cache the regular expression... might be possible through Saxon config
 
 				if (!hasLiteral(flags)) {
 					final String msg = Replace.checkReplacement(replace);
