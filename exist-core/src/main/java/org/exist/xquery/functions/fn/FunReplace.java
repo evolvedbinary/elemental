@@ -31,7 +31,6 @@
 package org.exist.xquery.functions.fn;
 
 import net.sf.saxon.functions.Replace;
-import net.sf.saxon.regex.RegularExpression;
 import org.exist.dom.QName;
 import org.exist.util.XmlRegexFactory;
 import org.exist.xquery.*;
@@ -122,8 +121,8 @@ public class FunReplace extends BasicFunction {
     		final String pattern = args[1].itemAt(0).getStringValue();
 			final String replace = args[2].itemAt(0).getStringValue();
 
-			final RegularExpression regularExpression = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
-			if (regularExpression.matches("")) {
+			final XmlRegexFactory.RegularExpressionEntry regularExpressionEntry = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
+			if (regularExpressionEntry.matchesEmpty()) {
 				throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
 			}
 
@@ -135,7 +134,7 @@ public class FunReplace extends BasicFunction {
 			}
 
 			try {
-				final CharSequence res = regularExpression.replace(string, replace);
+				final CharSequence res = regularExpressionEntry.getRegularExpression().replace(string, replace);
 				result = new StringValue(this, res.toString());
 			} catch (final net.sf.saxon.trans.XPathException e) {
 				throw XmlRegexFactory.translateRegexException(this, e);
