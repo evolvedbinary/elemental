@@ -30,13 +30,8 @@
  */
 package org.exist.xquery.functions.fn;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import net.sf.saxon.Configuration;
 import net.sf.saxon.om.Item;
 import net.sf.saxon.regex.RegexIterator;
-import net.sf.saxon.regex.RegularExpression;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.util.XmlRegexFactory;
@@ -137,13 +132,13 @@ public class FunAnalyzeString extends BasicFunction {
     }
 
     private void analyzeString(final MemTreeBuilder builder, final String input, String pattern, @Nullable final String flags) throws XPathException {
-        final RegularExpression regularExpression = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
-        if (regularExpression.matches("")) {
+        final XmlRegexFactory.RegularExpressionEntry regularExpressionEntry = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
+        if (regularExpressionEntry.matchesEmpty()) {
             throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
         }
 
         try {
-            final RegexIterator regexIterator = regularExpression.analyze(input);
+            final RegexIterator regexIterator = regularExpressionEntry.getRegularExpression().analyze(input);
             Item item;
             while ((item = regexIterator.next()) != null) {
                 if (regexIterator.isMatching()) {

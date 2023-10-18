@@ -522,7 +522,7 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
     }
 
     private boolean matchXmlRegex(final String string, final String pattern, @Nullable final String flags) throws XPathException {
-        final RegularExpression regex = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
+        final RegularExpression regex = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags).getRegularExpression();
         return regex.containsMatch(string);
     }
 
