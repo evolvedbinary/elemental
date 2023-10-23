@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,6 +38,7 @@ import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -3048,6 +3058,8 @@ public class DOMFile extends BTree implements Lockable {
         // set to true if the page has been removed from the cache
         boolean invalidated = false;
 
+        private final AtomicInteger lastFound = new AtomicInteger(0);
+
         DOMPage() {
             this.page = createNewPage();
             this.pageHeader = (DOMFilePageHeader) page.getPageHeader();
@@ -3093,10 +3105,33 @@ public class DOMFile extends BTree implements Lockable {
             }
         }
 
+        /**
+         * Optimize scanning for records in a page
+         * Based on the fact that we are looking for the same thing again,
+         * Or we are looking for something after the last thing.
+         *
+         * So, start the scan where we left off before.
+         *
+         * @param targetId the tuple id we are looking for in the page
+         *
+         * @return a record describing the tuple, if we found it, otherwise null
+         */
         RecordPos findRecord(final short targetId) {
-            final int dlen = pageHeader.getDataLength();
+            final int startScan = lastFound.get();
+            RecordPos rec = findRecordInRange(targetId, startScan, pageHeader.getDataLength());
+            if (rec == null) {
+                rec = findRecordInRange(targetId, 0, startScan);
+            }
+            if (rec != null) {
+                // start from here again next time; step back over the tuple id
+                lastFound.set(rec.offset - LENGTH_TID);
+            }
+            return rec;
+        }
+
+        RecordPos findRecordInRange(final short targetId, final int from, final int to) {
             RecordPos rec = null;
-            for (int pos = 0; pos < dlen;) {
+            for (int pos = from; pos < to;) {
                 final short tupleID = ByteConversion.byteToShort(data, pos);
                 pos += LENGTH_TID;
                 if (ItemId.matches(tupleID, targetId)) {
