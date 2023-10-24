@@ -1,27 +1,12 @@
 /*
- * Elemental
- * Copyright (C) 2024, Evolved Binary Ltd
+ * Copyright (C) 2014 Evolved Binary Ltd
  *
- * admin@evolvedbinary.com
- * https://www.evolvedbinary.com | https://www.elemental.xyz
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; version 2.1.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
  *       The original license header is included below.
  *
- * =====================================================================
+ * ----------------------------------------------------------------------------
  *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
@@ -76,6 +61,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -138,6 +124,11 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     private final Expression expression;
 
     private @Nullable WeakReference<Node> cachedNode = null;
+
+    /**
+     * Used to cache the result of {@link #atomize()}.
+     */
+    @Nullable private AtomicValue atomized = null;
 
     /**
      * Creates a new <code>NodeProxy</code> instance.
@@ -816,7 +807,10 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public AtomicValue atomize() throws XPathException {
-        return new UntypedAtomicValue(getNodeValue());
+        if (atomized == null) {
+            atomized = new UntypedAtomicValue(getNodeValue());
+        }
+        return atomized;
     }
 
     @Override
