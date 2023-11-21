@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,20 +30,20 @@
  */
 package org.exist.util.serializer;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Properties;
-
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.TransformerException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.exist.storage.serializers.EXistOutputKeys;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerException;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.Properties;
 
 public class IndentingXMLWriter extends XMLWriter {
 
@@ -42,7 +51,7 @@ public class IndentingXMLWriter extends XMLWriter {
 
     private boolean indent = false;
     private int indentAmount = 4;
-    private String indentChars = "                                                                                           ";
+    private char[] indentChars = new char[0];
     private int level = 0;
     private boolean afterTag = false;
     private boolean sameline = false;
@@ -224,12 +233,19 @@ public class IndentingXMLWriter extends XMLWriter {
         if (!indent || whitespacePreserve) {
             return;
         }
-        final int spaces = indentAmount * level;
-        while (spaces >= indentChars.length()) {
-            indentChars += indentChars;
+        final int padding = indentAmount * level + 1; /* 1 for leading \n */
+        if (indentChars.length < padding) {
+            indentChars = new char[padding + padding];
+            Arrays.fill(indentChars, ' ');
+            indentChars[0] = '\n';
         }
-        super.characters("\n");
-        super.characters(indentChars.subSequence(0, spaces));
+        try {
+            // aim is to use a single Writer.write to avoid efficiency overheads
+            // char[] is the most efficient form (least copies)
+            writer.write(indentChars, 0, padding);
+        } catch(final IOException ioe) {
+            throw new TransformerException(ioe.getMessage(), ioe);
+        }
         sameline = false;
     }
 
