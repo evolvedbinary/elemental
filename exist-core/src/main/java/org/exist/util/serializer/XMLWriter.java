@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -44,6 +53,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class XMLWriter implements SerializerWriter {
 
     private final static IllegalStateException EX_CHARSET_NULL = new IllegalStateException("Charset should never be null!");
+
+    private static final char[] NAMESPACE_FN_XMLNS_PREFIX = " xmlns:".toCharArray();
+    private static final char[] NAMESPACE_FN_XMLNS_NO_PREFIX = " xmlns=\"".toCharArray();
     
     protected final static Properties defaultProperties = new Properties();
     static {
@@ -292,21 +304,22 @@ public class XMLWriter implements SerializerWriter {
             }
 
             if(prefix != null && !prefix.isEmpty()) {
-                writer.write(' ');
-                writer.write("xmlns");
-                writer.write(':');
+                writer.write(NAMESPACE_FN_XMLNS_PREFIX);
                 writer.write(prefix);
                 writer.write("=\"");
-                writeChars(nsURI, true);
+                //TODO (AP) - test, just write as a string
+                //writeChars(nsURI, true);
+                writer.write(nsURI);
                 writer.write('"');
             } else {
                 if(defaultNamespace.equals(nsURI)) {
                     return;	
                 }
-                writer.write(' ');
-                writer.write("xmlns");
+                writer.write(NAMESPACE_FN_XMLNS_NO_PREFIX);
                 writer.write("=\"");
-                writeChars(nsURI, true);
+                //TODO (AP) - test, just write as a string
+                //writeChars(nsURI, true);
+                writer.write(nsURI);
                 writer.write('"');
                 defaultNamespace= nsURI;				
             }
@@ -348,7 +361,9 @@ public class XMLWriter implements SerializerWriter {
             }
             writer.write(qname.getLocalPart());
             writer.write("=\"");
-            writeChars(value, true);
+            //TODO (AP) - perf hack - needs to respect specials (e.g. precompute)
+            //writeChars(value, true);
+            writer.append(value);
             writer.write('"');
         } catch(final IOException ioe) {
             throw new TransformerException(ioe.getMessage(), ioe);
@@ -364,7 +379,7 @@ public class XMLWriter implements SerializerWriter {
             if(tagIsOpen) {
                 closeStartTag(false);
             }
-            writeChars(chars, false);
+            writer.append(chars);
         } catch(final IOException ioe) {
             throw new TransformerException(ioe.getMessage(), ioe);
         }
