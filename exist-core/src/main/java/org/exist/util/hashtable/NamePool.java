@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -40,16 +49,18 @@ public class NamePool {
         pool = new ConcurrentHashMap<>();
     }
 
+    private static String internNonNull(final String s) {
+        return s == null ? null : s.intern();
+    }
+
     public QName getSharedName(final QName name) {
         final WrappedQName wrapped = new WrappedQName(name);
-        final QName sharedName = pool.putIfAbsent(wrapped, name);
-        if (sharedName == null) {
-            // The name was not in the pool, return the name just added.
-            return name;
-        } else {
-            // The name was in the pool, return the shared name.
-            return sharedName;
-        }
+        return pool.computeIfAbsent(wrapped, _key ->
+            new QName(
+                internNonNull(name.getLocalPart()),
+                internNonNull(name.getNamespaceURI()),
+                internNonNull(name.getPrefix()),
+                name.getNameType()));
     }
 
     /**
