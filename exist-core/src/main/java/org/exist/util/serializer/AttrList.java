@@ -62,19 +62,27 @@ public class AttrList {
 		this(4);
 	}
 
-    public void addAttribute(QName name, String value) {
-        addAttribute(name, value, AttrImpl.CDATA);
-    }
+	public void addAttribute(QName name, String value) {
+		addAttribute(name, value, AttrImpl.CDATA);
+	}
 
-    public void addAttribute(QName name, String value, int attrType) {
-        addAttribute(name, value, attrType, null);
-    }
-    
-    public void addAttribute(QName name, String value, int attrType, NodeId nodeId) {
+	public void addAttributeNoIntern(QName name, String value) {
+		addAttributeNoIntern(name, value, AttrImpl.CDATA);
+	}
+
+	public void addAttribute(QName name, String value, int attrType) {
+		addAttribute(name, value.intern(), attrType, null);
+	}
+	public void addAttributeNoIntern(QName name, String value, int attrType) {
+		addAttribute(name, value, attrType, null);
+	}
+
+
+	public void addAttribute(QName name, String value, int attrType, NodeId nodeId) {
 		ensureCapacity();
         nodeIds[size] = nodeId;
 		names[size] = name;
-		values[size] = value.intern();
+		values[size] = value;
         type[size] = attrType;
         size++;
 	}
