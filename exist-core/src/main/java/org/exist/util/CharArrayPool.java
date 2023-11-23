@@ -1,29 +1,11 @@
 /*
- * eXist-db Open Source Native XML Database
- * Copyright (C) 2001 The eXist-db Authors
+ * Copyright (C) 2014 Evolved Binary Ltd
  *
- * info@exist-db.org
- * http://www.exist-db.org
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
  */
 package org.exist.util;
 
 import net.jcip.annotations.ThreadSafe;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A pool for char arrays.
@@ -38,50 +20,37 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CharArrayPool {
 
     private static final int POOL_SIZE = 128;
-    private static final int MAX = 128;
-    private static final ThreadLocal<char[][]> pools_ = new PoolThreadLocal();
-    private static final AtomicInteger slot_ = new AtomicInteger();
+    private static final int MIN_SIZE = 8;
+
+    private static final ThreadLocal<PoolContent> POOLS = ThreadLocal.withInitial(PoolContent::new);
 
     private CharArrayPool() {
     }
 
     public static char[] getCharArray(final int size) {
-        if (MAX > size) {
-            final char[][] pool = pools_.get();
-            for (int i = 0; i < pool.length; i++) {
-                if (pool[i] != null && pool[i].length == size) {
-                    final char[] b = pool[i];
-                    pool[i] = null;
-                    return b;
-                }
+        final PoolContent poolContent = POOLS.get();
+        if (POOL_SIZE > size) {
+            final int alloc = Math.max(size, MIN_SIZE);
+            final char[][] pool = poolContent.pool;
+            if (pool[alloc] != null) {
+                final char[] b = POOLS.get().pool[alloc];
+                pool[alloc] = null;
+                return b;
             }
         }
-        return new char[size];
+        return new char[Math.max(size, MIN_SIZE)];
     }
 
     public static void releaseCharArray(final char[] b) {
-        if (b == null || b.length > MAX) {
+        if (b == null || b.length > POOL_SIZE) {
             return;
         }
-        final char[][] pool = pools_.get();
-        for (int i = 0; i < pool.length; i++) {
-            if (pool[i] == null) {
-                pool[i] = b;
-                return;
-            }
-        }
+        final PoolContent poolContent = POOLS.get();
+        poolContent.pool[b.length] = b;
+     }
 
-        int s = slot_.incrementAndGet();
-        if (s < 0) {
-            s = -s;
-        }
-        pool[s % pool.length] = b;
+    private static class PoolContent {
+        final char[][] pool = new char[POOL_SIZE][];
     }
 
-    private static final class PoolThreadLocal extends ThreadLocal<char[][]> {
-        @Override
-        protected char[][] initialValue() {
-            return new char[POOL_SIZE][];
-        }
-    }
 }
