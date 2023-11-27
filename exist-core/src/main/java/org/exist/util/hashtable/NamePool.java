@@ -71,15 +71,30 @@ public class NamePool {
             if (qname.getNameType() != other.qname.getNameType()) {
                 return qname.getNameType() < other.qname.getNameType() ? Constants.INFERIOR : Constants.SUPERIOR;
             }
-            final int c;
-            if (qname.getNamespaceURI() == null) {
-                c = other.qname.getNamespaceURI() == null ? Constants.EQUAL : Constants.INFERIOR;
-            } else if (other.qname.getNamespaceURI() == null) {
-                c = Constants.SUPERIOR;
-            } else {
-                c = qname.getNamespaceURI().compareTo(other.qname.getNamespaceURI());
+            int c = Constants.EQUAL;
+            final String nsURI = qname.getNamespaceURI();
+            final String nsURIOther = other.qname.getNamespaceURI();
+            if (nsURI != nsURIOther) {
+                if (nsURI == null) {
+                    return Constants.INFERIOR;
+                } else if (nsURIOther == null) {
+                    return Constants.SUPERIOR;
+                } else {
+                    c = nsURI.compareTo(nsURIOther);
+                }
             }
-            return c == Constants.EQUAL ? qname.getLocalPart().compareTo(other.qname.getLocalPart()) : c;
+            if (c != Constants.EQUAL) {
+                return c;
+            }
+
+            final String local = qname.getLocalPart();
+            final String localOther = other.qname.getLocalPart();
+            if (local != localOther) {
+                return local.compareTo(localOther);
+            }
+            return Constants.EQUAL;
+
+            //TODO (AP) Why is prefix not in this comparison ? (it never was)
         }
 
         @Override
