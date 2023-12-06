@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -703,218 +712,19 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
             return( Sequence.EMPTY_SEQUENCE );
         }
 
-        //get the Sequence on the right
-        final Sequence rightSeq = getRight().eval(contextSequence, null);
-
-        //nothing on the right, so nothing to do
-        if( rightSeq.isEmpty() ) {
-
-            //Well, we might discuss this one ;-)
-            hasUsedIndex = true;
-            return( Sequence.EMPTY_SEQUENCE );
-        }
-
         //get the type of a possible index
         final int indexType = nodes.getIndexType();
 
-        //See if we have a range index defined on the nodes in this sequence
-        //remember that Type.ITEM means... no index ;-)
-        if( indexType != Type.ITEM ) {
+        final Expression rightExpr = getRight();
 
+        // try this first before evaluating rightSeq
+        // because we will throw away rightSeq if we don't have an index
+        // remember that Type.ITEM means... no index ;-)
+        if (indexType == Type.ITEM) {
+
+            //our key does not implement org.exist.storage.Indexable
             if( LOG.isTraceEnabled() ) {
-                LOG.trace("found an index of type: {}", Type.getTypeName(indexType));
-            }
-
-            boolean indexScan = false;
-            boolean indexMixed = false;
-            QName myContextQName = contextQName;
-            if( contextSequence != null ) {
-                final IndexFlags iflags     = checkForQNameIndex( idxflags, context, contextSequence, myContextQName );
-                boolean    indexFound = false;
-
-                if( !iflags.indexOnQName ) {
-                    // if myContextQName != null and no index is defined on
-                    // myContextQName, we don't need to scan other QName indexes
-                    // and can just use the generic range index
-                    indexFound   = myContextQName != null;
-
-                    if (iflags.partialIndexOnQName) {
-                        indexMixed = true;
-                    } else {
-                        // set myContextQName to null so the index lookup below is not
-                        // restricted to that QName
-                        myContextQName = null;
-                    }
-                }
-
-                if( !indexFound && ( myContextQName == null ) ) {
-
-                    // if there are some indexes defined on a qname,
-                    // we need to check them all
-                    if( iflags.hasIndexOnQNames ) {
-                        indexScan = true;
-                    }
-                    // else use range index defined on path by default
-                }
-            } else {
-                return( nodeSetCompare( nodes, contextSequence ) );
-            }
-
-            //Get the documents from the node set
-            final DocumentSet docs   = nodes.getDocumentSet();
-
-            //Holds the result
-            NodeSet           result = null;
-
-            //Iterate through the right hand sequence
-            for( final SequenceIterator itRightSeq = Atomize.atomize(rightSeq).iterate(); itRightSeq.hasNext(); ) {
-
-                //Get the index key
-                Item key = itRightSeq.nextItem();
-
-                //if key has truncation, convert it to string
-                if( truncation != StringTruncationOperator.NONE ) {
-
-                    if( !Type.subTypeOf( key.getType(), Type.STRING ) ) {
-                        LOG.info("Truncated key. Converted from {} to xs:string", Type.getTypeName(key.getType()));
-
-                        //truncation is only possible on strings
-                        key = key.convertTo( Type.STRING );
-                    }
-                }
-                //else if key is not the same type as the index
-                //TODO : use Type.isSubType() ??? -pb
-                else if( key.getType() != indexType ) {
-
-                    //try to convert the key to the index type
-                    try {
-                        key = key.convertTo( indexType );
-                    }
-                    catch( final XPathException xpe ) {
-                        //TODO : rethrow the exception ? -pb
-
-                        //Could not convert the key to a suitable type for the index, fallback to nodeSetCompare()
-                        if( context.getProfiler().isEnabled() ) {
-                            context.getProfiler().message( this, Profiler.OPTIMIZATION_FLAGS, "OPTIMIZATION FALLBACK", "Falling back to nodeSetCompare (" + xpe.getMessage() + ")" );
-                        }
-
-                        if( LOG.isTraceEnabled() ) {
-                            LOG.trace("Cannot convert key: {} to required index type: {}", Type.getTypeName(key.getType()), Type.getTypeName(indexType));
-                        }
-
-                        return( nodeSetCompare( nodes, contextSequence ) );
-                    }
-                }
-
-                // If key implements org.exist.storage.Indexable, we can use the index
-                if( key instanceof Indexable ) {
-
-                    if( LOG.isTraceEnabled() ) {
-                        LOG.trace("Checking if range index can be used for key: {}", key.getStringValue());
-                    }
-
-                    final Collator collator = ( ( collationArg != null ) ? getCollator( contextSequence ) : null );
-
-                    if( Type.subTypeOf( key.getType(), indexType ) ) {
-
-                        if( truncation == StringTruncationOperator.NONE ) {
-
-                            if( LOG.isTraceEnabled() ) {
-                                LOG.trace("Using range index for key: {}", key.getStringValue());
-                            }
-
-                            //key without truncation, find key
-                            context.getProfiler().message( this, Profiler.OPTIMIZATIONS, "OPTIMIZATION", "Using value index '" + context.getBroker().getValueIndex().toString() + "' to find key '" + Type.getTypeName( key.getType() ) + "(" + key.getStringValue() + ")'" );
-
-                            NodeSet ns;
-
-                            if( indexScan ) {
-                                ns = context.getBroker().getValueIndex().findAll( context.getWatchDog(), relation, docs, nodes, NodeSet.ANCESTOR, ( Indexable )key);
-                            } else {
-                                ns = context.getBroker().getValueIndex().find( context.getWatchDog(), relation, docs, nodes, NodeSet.ANCESTOR, myContextQName,
-                                        ( Indexable )key, indexMixed );
-                            }
-                            hasUsedIndex = true;
-
-                            if( result == null ) {
-                                result = ns;
-                            } else {
-                                result = result.union( ns );
-                            }
-
-                        } else {
-
-                            //key with truncation, match key
-                            if( LOG.isTraceEnabled() ) {
-                                context.getProfiler().message( this, Profiler.OPTIMIZATIONS, "OPTIMIZATION", "Using value index '" + context.getBroker().getValueIndex().toString() + "' to match key '" + Type.getTypeName( key.getType() ) + "(" + key.getStringValue() + ")'" );
-                            }
-
-                            if( LOG.isTraceEnabled() ) {
-                                LOG.trace("Using range index for key: {}", key.getStringValue());
-                            }
-
-                            try {
-                                NodeSet ns;
-
-                                final String  matchString = key.getStringValue();
-                                final int     matchType   = getMatchType( truncation );
-
-                                if( indexScan ) {
-                                    ns = context.getBroker().getValueIndex().matchAll( context.getWatchDog(), docs, nodes, NodeSet.ANCESTOR, matchString, matchType, 0, true, collator, truncation );
-                                } else {
-                                    ns = context.getBroker().getValueIndex().match( context.getWatchDog(), docs, nodes, NodeSet.ANCESTOR, matchString, myContextQName, matchType, collator, truncation );
-                                }
-
-                                hasUsedIndex = true;
-
-                                if( result == null ) {
-                                    result = ns;
-                                } else {
-                                    result = result.union( ns );
-                                }
-
-                            }
-                            catch( final EXistException e ) {
-                                throw( new XPathException( this, e ) );
-                            }
-                        }
-                    } else {
-
-                        //our key does is not of the correct type
-                        if( context.getProfiler().isEnabled() ) {
-                            context.getProfiler().message( this, Profiler.OPTIMIZATION_FLAGS, "OPTIMIZATION FALLBACK", "Falling back to nodeSetCompare (key is of type: " + Type.getTypeName( key.getType() ) + ") whereas index is of type '" + Type.getTypeName( indexType ) + "'" );
-                        }
-
-                        if( LOG.isTraceEnabled() ) {
-                            LOG.trace("Cannot use range index: key is of type: {}) whereas index is of type '{}", Type.getTypeName(key.getType()), Type.getTypeName(indexType));
-                        }
-
-                        return( nodeSetCompare( nodes, contextSequence ) );
-                    }
-                } else {
-
-                    //our key does not implement org.exist.storage.Indexable
-                    if( context.getProfiler().isEnabled() ) {
-                        context.getProfiler().message( this, Profiler.OPTIMIZATION_FLAGS, "OPTIMIZATION FALLBACK", "Falling back to nodeSetCompare (key is not an indexable type: " + key.getClass().getName() );
-                    }
-
-                    if( LOG.isTraceEnabled() ) {
-                        LOG.trace("Cannot use key which is of type '{}", key.getClass().getName());
-                    }
-
-                    return( nodeSetCompare( nodes, contextSequence ) );
-
-                }
-            }
-
-            if( context.getProfiler().traceFunctions() ) {
-                context.getProfiler().traceIndexUsage( context, PerformanceStats.RANGE_IDX_TYPE, this, PerformanceStats.BASIC_INDEX, System.currentTimeMillis() - start );
-            }
-            return( result );
-        } else {
-
-            if( LOG.isTraceEnabled() ) {
-                LOG.trace("No suitable index found for key: {}", rightSeq.getStringValue());
+                LOG.trace("No suitable index found for key: {}", rightExpr);
             }
 
             //no range index defined on the nodes in this sequence, so fallback to nodeSetCompare
@@ -924,8 +734,221 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
 
             return( nodeSetCompare( nodes, contextSequence ) );
         }
+
+        //get the Sequence on the right - worth evaluating at this stage, we know there is an index
+        final Sequence rightSeq = rightExpr.eval(contextSequence, null);
+
+        //nothing on the right, so nothing to do
+        if( rightSeq.isEmpty() ) {
+
+            //Well, we might discuss this one ;-)
+            hasUsedIndex = true;
+            return( Sequence.EMPTY_SEQUENCE );
+        }
+
+
+        //We have a range index defined on the nodes in this sequence
+        //remember that Type.ITEM means... no index ;-)
+        final Sequence result = indexedQuickNodeSetCompare(contextSequence, nodes, rightSeq, indexType);
+
+        if( context.getProfiler().traceFunctions() ) {
+            context.getProfiler().traceIndexUsage( context, PerformanceStats.RANGE_IDX_TYPE, this, PerformanceStats.BASIC_INDEX, System.currentTimeMillis() - start );
+        }
+        return( result );
     }
 
+    private Sequence indexedQuickNodeSetCompare( Sequence contextSequence, final NodeSet nodes, final Sequence rightSeq, final int indexType ) throws XPathException
+    {
+        //We have a range index defined on the nodes in this sequence
+        //remember that Type.ITEM means... no index ;-)
+        if( LOG.isTraceEnabled() ) {
+            LOG.trace("found an index of type: {}", Type.getTypeName(indexType));
+        }
+
+        boolean indexScan = false;
+        boolean indexMixed = false;
+        QName myContextQName = contextQName;
+        if( contextSequence != null ) {
+            final IndexFlags iflags     = checkForQNameIndex( idxflags, context, contextSequence, myContextQName );
+            boolean    indexFound = false;
+
+            if( !iflags.indexOnQName ) {
+                // if myContextQName != null and no index is defined on
+                // myContextQName, we don't need to scan other QName indexes
+                // and can just use the generic range index
+                indexFound   = myContextQName != null;
+
+                if (iflags.partialIndexOnQName) {
+                    indexMixed = true;
+                } else {
+                    // set myContextQName to null so the index lookup below is not
+                    // restricted to that QName
+                    myContextQName = null;
+                }
+            }
+
+            if( !indexFound && ( myContextQName == null ) ) {
+
+                // if there are some indexes defined on a qname,
+                // we need to check them all
+                if( iflags.hasIndexOnQNames ) {
+                    indexScan = true;
+                }
+                // else use range index defined on path by default
+            }
+        } else {
+            return( nodeSetCompare( nodes, contextSequence ) );
+        }
+
+        //Get the documents from the node set
+        final DocumentSet docs   = nodes.getDocumentSet();
+
+        //Holds the result
+        NodeSet           result = null;
+
+        //Iterate through the right hand sequence
+        for( final SequenceIterator itRightSeq = Atomize.atomize(rightSeq).iterate(); itRightSeq.hasNext(); ) {
+
+            //Get the index key
+            Item key = itRightSeq.nextItem();
+
+            //if key has truncation, convert it to string
+            if( truncation != StringTruncationOperator.NONE ) {
+
+                if( !Type.subTypeOf( key.getType(), Type.STRING ) ) {
+                    LOG.info("Truncated key. Converted from {} to xs:string", Type.getTypeName(key.getType()));
+
+                    //truncation is only possible on strings
+                    key = key.convertTo( Type.STRING );
+                }
+            }
+            //else if key is not the same type as the index
+            //TODO : use Type.isSubType() ??? -pb
+            else if( key.getType() != indexType ) {
+
+                //try to convert the key to the index type
+                try {
+                    key = key.convertTo( indexType );
+                }
+                catch( final XPathException xpe ) {
+                    //TODO : rethrow the exception ? -pb
+
+                    //Could not convert the key to a suitable type for the index, fallback to nodeSetCompare()
+                    if( context.getProfiler().isEnabled() ) {
+                        context.getProfiler().message( this, Profiler.OPTIMIZATION_FLAGS, "OPTIMIZATION FALLBACK", "Falling back to nodeSetCompare (" + xpe.getMessage() + ")" );
+                    }
+
+                    if( LOG.isTraceEnabled() ) {
+                        LOG.trace("Cannot convert key: {} to required index type: {}", Type.getTypeName(key.getType()), Type.getTypeName(indexType));
+                    }
+
+                    return( nodeSetCompare( nodes, contextSequence ) );
+                }
+            }
+
+            // If key implements org.exist.storage.Indexable, we can use the index
+            if( key instanceof Indexable ) {
+
+                if( LOG.isTraceEnabled() ) {
+                    LOG.trace("Checking if range index can be used for key: {}", key.getStringValue());
+                }
+
+                final Collator collator = ( ( collationArg != null ) ? getCollator( contextSequence ) : null );
+
+                if( Type.subTypeOf( key.getType(), indexType ) ) {
+
+                    if( truncation == StringTruncationOperator.NONE ) {
+
+                        if( LOG.isTraceEnabled() ) {
+                            LOG.trace("Using range index for key: {}", key.getStringValue());
+                        }
+
+                        //key without truncation, find key
+                        context.getProfiler().message( this, Profiler.OPTIMIZATIONS, "OPTIMIZATION", "Using value index '" + context.getBroker().getValueIndex().toString() + "' to find key '" + Type.getTypeName( key.getType() ) + "(" + key.getStringValue() + ")'" );
+
+                        NodeSet ns;
+
+                        if( indexScan ) {
+                            ns = context.getBroker().getValueIndex().findAll( context.getWatchDog(), relation, docs, nodes, NodeSet.ANCESTOR, ( Indexable )key);
+                        } else {
+                            ns = context.getBroker().getValueIndex().find( context.getWatchDog(), relation, docs, nodes, NodeSet.ANCESTOR, myContextQName,
+                                ( Indexable )key, indexMixed );
+                        }
+                        hasUsedIndex = true;
+
+                        if( result == null ) {
+                            result = ns;
+                        } else {
+                            result = result.union( ns );
+                        }
+
+                    } else {
+
+                        //key with truncation, match key
+                        if( LOG.isTraceEnabled() ) {
+                            context.getProfiler().message( this, Profiler.OPTIMIZATIONS, "OPTIMIZATION", "Using value index '" + context.getBroker().getValueIndex().toString() + "' to match key '" + Type.getTypeName( key.getType() ) + "(" + key.getStringValue() + ")'" );
+                        }
+
+                        if( LOG.isTraceEnabled() ) {
+                            LOG.trace("Using range index for key: {}", key.getStringValue());
+                        }
+
+                        try {
+                            NodeSet ns;
+
+                            final String  matchString = key.getStringValue();
+                            final int     matchType   = getMatchType( truncation );
+
+                            if( indexScan ) {
+                                ns = context.getBroker().getValueIndex().matchAll( context.getWatchDog(), docs, nodes, NodeSet.ANCESTOR, matchString, matchType, 0, true, collator, truncation );
+                            } else {
+                                ns = context.getBroker().getValueIndex().match( context.getWatchDog(), docs, nodes, NodeSet.ANCESTOR, matchString, myContextQName, matchType, collator, truncation );
+                            }
+
+                            hasUsedIndex = true;
+
+                            if( result == null ) {
+                                result = ns;
+                            } else {
+                                result = result.union( ns );
+                            }
+
+                        }
+                        catch( final EXistException e ) {
+                            throw( new XPathException( this, e ) );
+                        }
+                    }
+                } else {
+
+                    //our key does is not of the correct type
+                    if( context.getProfiler().isEnabled() ) {
+                        context.getProfiler().message( this, Profiler.OPTIMIZATION_FLAGS, "OPTIMIZATION FALLBACK", "Falling back to nodeSetCompare (key is of type: " + Type.getTypeName( key.getType() ) + ") whereas index is of type '" + Type.getTypeName( indexType ) + "'" );
+                    }
+
+                    if( LOG.isTraceEnabled() ) {
+                        LOG.trace("Cannot use range index: key is of type: {}) whereas index is of type '{}", Type.getTypeName(key.getType()), Type.getTypeName(indexType));
+                    }
+
+                    return( nodeSetCompare( nodes, contextSequence ) );
+                }
+            } else {
+
+                //our key does not implement org.exist.storage.Indexable
+                if( context.getProfiler().isEnabled() ) {
+                    context.getProfiler().message( this, Profiler.OPTIMIZATION_FLAGS, "OPTIMIZATION FALLBACK", "Falling back to nodeSetCompare (key is not an indexable type: " + key.getClass().getName() );
+                }
+
+                if( LOG.isTraceEnabled() ) {
+                    LOG.trace("Cannot use key which is of type '{}", key.getClass().getName());
+                }
+
+                return( nodeSetCompare( nodes, contextSequence ) );
+
+            }
+        }
+
+        return result;
+    }
 
     private int getMatchType( StringTruncationOperator truncation ) throws XPathException
     {
