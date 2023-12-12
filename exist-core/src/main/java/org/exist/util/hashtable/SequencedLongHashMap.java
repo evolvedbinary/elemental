@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -75,7 +84,7 @@ public class SequencedLongHashMap<V> {
      * @return the value associated with the key, or null if the key is absent
      */
     public @Nullable V get(final long key) {
-        return map.get(key);
+        return map.getAndMoveToLast(key);
     }
 
     /**
