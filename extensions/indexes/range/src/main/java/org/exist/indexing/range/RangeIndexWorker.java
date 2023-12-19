@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -518,7 +527,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public NodeSet query(int contextId, DocumentSet docs, NodeSet contextSet, List<QName> qnames, AtomicValue[] keys, RangeIndex.Operator operator, int axis) throws IOException, XPathException {
         return index.withSearcher(searcher -> {
             List<QName> definedIndexes = getDefinedIndexes(qnames);
-            NodeSet resultSet = new NewArrayNodeSet();
+            NodeSet resultSet = null;
             for (QName qname : definedIndexes) {
                 Query query;
                 String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
@@ -534,7 +543,12 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 final short nodeType = qname.getNameType() == ElementValue.ATTRIBUTE ? Node.ATTRIBUTE_NODE : Node
                         .ELEMENT_NODE;
 
-                resultSet.addAll(doQuery(contextId, docs, contextSet, axis, searcher.searcher, nodeType, query, null));
+                final NodeSet indexedResultSet = doQuery(contextId, docs, contextSet, axis, searcher.searcher, nodeType, query, null);
+                if (resultSet == null) {
+                    resultSet = indexedResultSet;
+                } else {
+                    resultSet.addAll(indexedResultSet);
+                }
             }
             return resultSet;
         });
