@@ -8,12 +8,10 @@ We follow a "Hub and Spoke" like development model; therefore you should fork ou
 eXist-db uses a [GitFlow](http://nvie.com/git-model)-like branching model for development.
 
 The names of each branch should reflect their purpose, the following branches may be of interest:
-* `develop` - the main line of development for the next version of eXist-db.
-* `master` - reflects the `tag` of the last released version of eXist-db.
+* `main` - the main line of development for the next version of eXist-db.
+* `gold` - reflects the `tag` of the last released version of eXist-db.
 
 There are also branches that enable us to backport hot-fixes and features to older major versions of eXist-db, so that we might release small updates occasionally.
-* `develop-4.x.x` - development of the 4.x.x version line of eXist-db, mostly now only used for hot-fixes.
-* `develop-5.x.x` - development of the 5.x.x version line of eXist-db.
 * `develop-6.x.x` - development of the 6.x.x version line of eXist-db.
 
 When contributing to eXist-db you should branch one of the development branches above, your branch should be named in one of two ways:
@@ -54,7 +52,7 @@ Our controlled list of commit labels that should be prefixed to each commit summ
 
 In addition any commit that addresses a GitHub issue, should have an additonal line in its commit after the summary and before any fuller explaination that takes this form:
 ```
-Closes https://github.com/eXist-db/exist/issues/<github-issue-number>
+Closes https://github.com/evolvedbinary/elemental/issues/<github-issue-number>
 ```
 
 ### Commit Message Example
@@ -63,13 +61,13 @@ For example, here is a correctly formatted commit message:
 ```
 [bugfix] Fix relative paths in EXPath classpath.txt files.
 
-Closes https://github.com/eXist-db/exist/issues/4901
+Closes https://github.com/eevolvedbinary/elemental/issues/4901
 We now store the path of Jar files in each EXPath Package's `.exist/classpath.txt` file relative to the package's `content/` sub-folder.
 ```
 
 ## Pull Requests and Code Review
 Pull requests are reviewed and tested before they're merged by the eXist-db Core Development Team.
-We have a policy around how pull requests are reviewed in a timely and fair manner. That policy is available here - [Community Code Review and Merge Policy for the exist-db/exist Git Repository](PR-CODE-REVIEW-POLICY.md). 
+We have a policy around how pull requests are reviewed in a timely and fair manner. That policy is available here - [Community Code Review and Merge Policy for the evolvedbinary/elemental Git Repository](PR-CODE-REVIEW-POLICY.md). 
 Worth restating, is the one "golden rule", even within the Core Team, **no developer should merge their own pull request**. This simple-but-important rule ensures that at least two people have considered the change.
 
 Although the following are taken from our [Developer Manifesto](http://www.exist-db.org/exist/apps/doc/devguide_manifesto.xml "eXist Project Developer Manifesto") and [Code Review Guide](http://www.exist-db.org/exist/apps/doc/devguide_codereview.xml "eXist Project Code Review Guide"), the main things that get a pull request accepted are:
@@ -105,7 +103,7 @@ Assuming the stable is `6.x.x` and the RC is `7.x.x`
 -   open a second PR from `6.x.x/feature/<name-of-my-feature>` against `develop-6.x.x` mentioning the original PR in the commit message
 
 ### Forward-port
-Works just as backport but with `feature/<name-of-my-feature>` and `develop`
+Works just as backport but with `feature/<name-of-my-feature>` and `main`
 
 
 ## Syncing a Fork
@@ -122,14 +120,14 @@ Lets say that you have a fork of eXist-db's GitHub repo, and you have been worki
 
 1.  If you have any un-committed changes you need to stash them using: `git stash save "changes before rebase"`.
 
-2.  If you have not added eXist-db's GitHub as an upstream remote, you need to do so once by running `git remote add upstream https://github.com/exist-db/exist.git`. You can view your existing remotes, by running `git remote -v`.
+2.  If you have not added eXist-db's GitHub as an upstream remote, you need to do so once by running `git remote add upstream https://github.com/evolvedbinary/elemental.git`. You can view your existing remotes, by running `git remote -v`.
 
 3.  You need to fetch the latest changes from eXist-db's GitHub: `git fetch upstream`. This will not yet change your local branches in any way.
 
-4.  You should first sync your `develop` branch with eXist-db's `develop` branch. As you always work in feature branches, this should a simple fast-forward by running: `git checkout develop` and then `git rebase upstream/develop`.
-    1.  If all goes well in (4) then you can push your `develop` branch to your remote server (e.g. GitHub) with `git push origin develop`.
+4.  You should first sync your `main` branch with eXist-db's `main` branch. As you always work in feature branches, this should a simple fast-forward by running: `git checkout main` and then `git rebase upstream/main`.
+    1.  If all goes well in (4) then you can push your `main` branch to your remote server (e.g. GitHub) with `git push origin main`.
 
-5.  You can then replay your work in your feature branch `feature/my-feature` atop the lastest changes from the `develop` branch by running: `git checkout feature/my-feature` and then `git rebase develop`.
+5.  You can then replay your work in your feature branch `feature/my-feature` atop the lastest changes from the `main` branch by running: `git checkout feature/my-feature` and then `git rebase main`.
     1.  Should you encounter any conflicts during (5) you can resolve them using `git mergetool` and then `git rebase --continue`.
     2.  If all goes well in (5), and take care to check your history is correct with `git log`, then you can force push your `feature/my-feature` branch to your remote server (e.g. GitHub) with `git push -f origin feature/my-feature`. *NOTE* the reason you need to use the `-f` to force the push is because the commit ids of your revisions will have changed after the rebase.
 
@@ -150,10 +148,10 @@ If you wish to contribute, the general approach using GitFlow AVH Edition is:
 -   Do your stuff! :-)
 -   Commit to your repo. We like small, atomic commits that don't mix concerns.
 -   **Do NOT** finish the `hotfix` or `feature` with GitFlow.
--   Make sure your branch is based on the latest eXist develop branch before making a pull request. This will ensure that we can easily merge in your changes. See [Syncing a Fork](#syncing-a-fork).
+-   Make sure your branch is based on the latest eXist-db `main` branch before making a pull request. This will ensure that we can easily merge in your changes. See [Syncing a Fork](#syncing-a-fork).
 -   Push your hotfix or feature branch to your GitHub using GitFlow: `git flow feature publish my-feature`.
--   Send us a pull request on GitHub from your branch to our develop branch.
--   Once the pull request is merged you can delete your branch, you need not finish or merge it, you will however want to sync your develop branch to bring back your changes. See [Syncing a Fork](#syncing-a-fork).
+-   Send us a pull request on GitHub from your branch to our `main` branch.
+-   Once the pull request is merged you can delete your branch, you need not finish or merge it, you will however want to sync your `main` branch to bring back your changes. See [Syncing a Fork](#syncing-a-fork).
 
 ### Our `git-flow init` settings
 When we started working with the eXist repo we needed to configure it for GitFlow:
@@ -162,9 +160,9 @@ When we started working with the eXist repo we needed to configure it for GitFlo
 $ git flow init
 
 Which branch should be used for bringing forth production releases?
-   - master
-Branch name for production releases: [master]
-Branch name for "next release" development: [develop]
+   - main
+Branch name for production releases: [gold]
+Branch name for "next release" development: [main]
 
 How to name your supporting branch prefixes?
 Feature branches? [feature/]
@@ -175,13 +173,13 @@ Version tag prefix? [] eXist-
 Hooks and filters directory? [.git/hooks]
 ```
 
-A new `develop` branch is created, and checked out.
+A new `main` branch is created, and checked out.
 
 Verify it like this:
 
 ```bash
 $ git status
-# On branch develop
+# On branch main
 ```
 
 As we have already started with GitFlow, when you run `git flow init`, you'll get slightly different prompts--but the same answers apply!
@@ -192,12 +190,12 @@ You **must** use the following settings:
 $ git flow init
 
 Which branch should be used for bringing forth production releases?
-   - develop
-Branch name for production releases: [] master
+   - main
+Branch name for production releases: [] gold
 
 Which branch should be used for integration of the "next release"?
-   - develop
-Branch name for "next release" development: [develop]
+   - main
+Branch name for "next release" development: [main]
 
 How to name your supporting branch prefixes?
 Feature branches? [feature/]

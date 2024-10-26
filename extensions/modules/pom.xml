@@ -39,9 +39,9 @@
     <description>eXist-db Extension XQuery Modules</description>
 
     <scm>
-        <connection>scm:git:https://github.com/exist-db/exist.git</connection>
-        <developerConnection>scm:git:https://github.com/exist-db/exist.git</developerConnection>
-        <url>scm:git:https://github.com/exist-db/exist.git</url>
+        <connection>scm:git:https://github.com/evolvedbinary/elemental.git</connection>
+        <developerConnection>scm:git:https://github.com/evolvedbinary/elemental.git</developerConnection>
+        <url>scm:git:https://github.com/evolvedbinary/elemental.git</url>
       <tag>HEAD</tag>
   </scm>
 
