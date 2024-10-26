@@ -1,6 +1,6 @@
 # eXist Versioning Scheme and Release Process
 
-![eXist Logo](https://github.com/eXist-db/exist/raw/develop/exist-jetty-config/src/main/resources/webapp/logo.jpg)
+![eXist Logo](https://github.com/evolvedbinary/elemental/raw/main/exist-jetty-config/src/main/resources/webapp/logo.jpg)
 
 ## Overview
 This document describes the Versioning Scheme and Release Process for eXist. These two topics are tightly connected, so both are covered in this document.
@@ -80,7 +80,7 @@ For example, the macOS disk image for the build from the SNAPSHOT pre-release ve
 
     * eXist-db-3.2.0-SNAPSHOT+20170507213722.dmg
 
-It is trivial for a developer to relate a timestamp back to a Git hash (by using the command `git rev-list -1 --before="$DATE" develop`), should they need to do so.
+It is trivial for a developer to relate a timestamp back to a Git hash (by using the command `git rev-list -1 --before="$DATE" main`), should they need to do so.
 
 ### Where the version number is stored
 
@@ -93,7 +93,7 @@ That version number is also copied into the `META-INF/MANIFEST.MF` file of any J
 
 ## Release Process
 
-This section details concrete steps for creating and publishing product releases. Each section here assumes you are starting with a clean Git checkout of the `develop` branch from [https://github.com/eXist-db/exist.git](https://github.com/eXist-db/exist.git).
+This section details concrete steps for creating and publishing product releases. Each section here assumes you are starting with a clean Git checkout of the `main` branch from [https://github.com/evolvedbinary/elemental.git](https://github.com/evolvedbinary/elemental.git).
 
 ### Initiating Semantic Versioning
 
@@ -109,7 +109,7 @@ Version 3.0.0 was released before Semantic Versioning. The following steps will 
 
 ### Preparing a Product Release
 
-Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 5.3.0.
+Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.4.0.
 You will require a system with:
 * macOS
 * JDK 8
@@ -119,7 +119,7 @@ You will require a system with:
 * A GPG key (for signing release artifacts)
 * A Java KeyStore with key (for signing IzPack Installer)
 * A valid Apple Developer Certificate (for signing Mac DMG)
-* A Github account and username / password or Github Personal access tokens (https://github.com/settings/tokens) with permission to publish Github releases to the eXist-db .org
+* A Github account and username / password or Github Personal access tokens (https://github.com/settings/tokens) with permission to publish Github releases to the eXist-db org
 
 1. You will need login credentials for the eXist-db organisation on:
     1. Sonatype OSS staging for Maven Central - https://oss.sonatype.org/
@@ -188,9 +188,9 @@ You will require a system with:
     </activeProfiles>
     ```
 
-3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone eXist-5.3.0.
+3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone eXist-6.4.0.
 
-4.  Make sure that you have the HEAD of `origin/develop` (or `upstream` if you are on a fork).
+4.  Make sure that you have the HEAD of `origin/main` (or `upstream` if you are on a fork).
 
 5.  Prepare the release, if you wish you can do a dry-run first by specifiying `-DdryRun=true`:
     ```
@@ -206,9 +206,9 @@ You will require a system with:
     [INFO] Executing: /bin/sh -c cd /Users/aretter/code/exist.maven && git status
     [INFO] Working directory: /Users/aretter/code/exist.maven
     [INFO] Checking dependencies and plugins for snapshots ...
-    What is the release version for "eXist-db"? (org.exist-db:exist) 5.3.0: :
-    What is SCM release tag or label for "eXist-db"? (org.exist-db:exist) eXist-5.3.0: :
-    What is the new development version for "eXist-db"? (org.exist-db:exist) 5.4.0-SNAPSHOT: :
+    What is the release version for "eXist-db"? (org.exist-db:exist) 6.4.0: :
+    What is SCM release tag or label for "eXist-db"? (org.exist-db:exist) eXist-6.4.0: :
+    What is the new development version for "eXist-db"? (org.exist-db:exist) 6.5.0-SNAPSHOT: :
     ```
 
 6.  Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven
@@ -217,19 +217,19 @@ Central (staging), Docker images to Docker Hub, and eXist-db distributions and i
     $ mvn -Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false -Darguments="-Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false" release:perform
     ```
 
-7.  Update the stable branch (`master`) of eXist-db to reflect the latest release:
+7.  Update the stable branch (`gold`) of eXist-db to reflect the latest release:
     ```
-    $ git push origin eXist-5.3.0:master
+    $ git push origin eXist-6.4.0:gold
     ```
 
 #### Publishing/Promoting the Product Release
-1.  Check that the new versions are visible on [Github](https://github.com/eXist-db/exist/releases).
+1.  Check that the new versions are visible on [Github](https://github.com/evolvedbinary/elemental/releases).
 
 2.  Check that the new versions are visible on [DockerHub](https://hub.docker.com/r/existdb/existdb).
 
 3.  Login to https://oss.sonatype.org and release the Maven artifacts to Maven central as described [here](https://central.sonatype.org/pages/releasing-the-deployment.html).
 
-4.  Update the Mac HomeBrew for eXist-db, see: [Releasing to Homebrew](https://github.com/eXist-db/exist/blob/develop/exist-versioning-release.md#releasing-to-homebrew).
+4.  Update the Mac HomeBrew for eXist-db, see: [Releasing to Homebrew](https://github.com/evolvedbinary/elemental/blob/main/exist-versioning-release.md#releasing-to-homebrew).
 
 5.  Edit the links for the downloads on the eXist website.
     1. `$ git clone https://github.com/exist-db/website.git`
@@ -240,13 +240,13 @@ Central (staging), Docker images to Docker Hub, and eXist-db distributions and i
    <div class="row">
      <div class="col-md-12">
          <h2 id="download">Download</h2>
-         <a href="https://github.com/eXist-db/exist/releases/tag/eXist-5.3.0">
+         <a href="https://github.com/evolvedbinary/elemental/releases/tag/eXist-6.4.0">
              <button class="btn btn-default download-btn stable" type="button">
                  <span class="status">Latest Release</span>
                  <span class="icon">
                      <i class="fa fa-download"/>
                  </span>
-                 <span class="exist-version">Version 5.3.0</span>
+                 <span class="exist-version">Version 6.4.0</span>
              </button>
          </a>
          <a href="https://hub.docker.com/r/evolvedbinary/exist-db/tags/">
@@ -255,7 +255,7 @@ Central (staging), Docker images to Docker Hub, and eXist-db distributions and i
                  <span class="icon">
                      <i class="fa fa-ship"/>
                  </span>
-                 <span class="exist-version">Version 5.3.0</span>
+                 <span class="exist-version">Version 6.4.0</span>
              </button>
          </a>
          <a href="https://github.com/exist-db/mvn-repo">
@@ -264,18 +264,18 @@ Central (staging), Docker images to Docker Hub, and eXist-db distributions and i
                  <span class="icon">
                      <i class="fa fa-github"/>
                  </span>
-                 <span class="exist-version">Version 5.3.0</span>
+                 <span class="exist-version">Version 6.4.0</span>
              </button>
          </a>
    ```
 
     3. Edit the file `expath-pkg.xml` and bump the version i.e. `version="4"` to reflect the new version.
 
-    4. Commit your change and push: `$ git commit index.html expath-pkg.xml -m "Update for eXist-5.3.0 website" && git push origin master`
+    4. Commit your change and push: `$ git commit index.html expath-pkg.xml -m "Update for eXist-6.4.0 website" && git push origin master`
 
-    5. Tag your release of the Website and push the tag: `$ git tag -s -m "Release tag for eXist 5.3.0 website" eXist-5.3.0 && git push origin eXist-5.3.0`.
+    5. Tag your release of the Website and push the tag: `$ git tag -s -m "Release tag for eXist 6.4.0 website" eXist-6.4.0 && git push origin eXist-6.4.0`.
 
-    6. Create a XAR for the website: `$ git checkout eXist-5.3.0 && ant`.
+    6. Create a XAR for the website: `$ git checkout eXist-6.4.0 && ant`.
 
     7. Visit http://www.exist-db.org/exist/apps/dashboard/index.html, login and upload the new `build/homepage.xar` file via the Package Manager.
 
@@ -283,9 +283,9 @@ Central (staging), Docker images to Docker Hub, and eXist-db distributions and i
 
     6.1. Warning: there is a know issue in Atomic-Wiki where your release notes might suddenly disappear. In case this happens your data is not lost but stored in  /db/apps/wiki/data/blogs/eXist/.md. You can rename it or move the content to a eXistdb<VERSION>.md file and create an according eXistdb<VERSION>.atom for it. Once these two files are available the blog entry will become visible on the eXist-db homepage and it will be visible in the eXist-db blog. 
 
-7.  Visit the GitHub releases page [https://github.com/eXist-db/exist/releases](https://github.com/eXist-db/exist/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
+7.  Visit the GitHub releases page [https://github.com/evolvedbinary/elemental/releases](https://github.com/evolvedbinary/elemental/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
 
-8.  Send an email to the `exist-open` mailing list announcing the release with a title similar to `[ANN] Release of eXist 5.3.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
+8.  Send an email to the `exist-open` mailing list announcing the release with a title similar to `[ANN] Release of eXist 6.4.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
 
 9.  Tweet about it using the `existdb` twitter account.
 
@@ -303,10 +303,10 @@ Central (staging), Docker images to Docker Hub, and eXist-db distributions and i
 
 **Terminology:** "Homebrew Cask" is the segment of Homebrew where pre-built binaries and GUI applications go, whereas the original "Homebrew" project is reserved for command-line utilities that can be built from source. Because the macOS version of eXist-db is released as an app bundle with GUI components, it is handled as a Homebrew Cask.
 
-When there is a new release of eXist, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of eXist-db to 5.3.0, use this command:
+When there is a new release of eXist, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of eXist-db to 6.4.0, use this command:
 
 ```
-brew bump-cask-pr --version 5.3.0 exist-db
+brew bump-cask-pr --version 6.4.0 exist-db
 ```
 
 This command will cause your local Homebrew installation to download the new version of eXist-db, calculate the installer's new SHA-256 fingerprint value, and construct a pull request under your GitHub account, like [this one](https://github.com/Homebrew/homebrew-cask/pull/107778). Once the pull request is submitted, continuous integration tests will run, and a member of the Homebrew community will review the PR. At times there is a backlog on the CI servers, but once tests pass, the community review is typically completed in a matter of hours.
@@ -349,7 +349,7 @@ eXist-db-setup-3.1.0.jar
 eXist-db-3.1.0.dmg
 ```
 
-Similarly the Maven artifacts that are (currently) manually produced (for https://github.com/exist-db/exist.git)  would be named like:
+Similarly, the Maven artifacts that are (currently) manually produced (for https://github.com/evolvedbinary/elemental.git)  would be named like:
 
 ```
 exist-core-3.1.0.jar
@@ -385,7 +385,7 @@ It is trivial for a developer to relate a timestamp back to a Git commit (by usi
 ## Future Considerations
 
 ### Release Candidates
-1.  While a release candidate is being tested, only bugfix patch PRs for that RC can be merged. We could consider a slightly more complex branch and release process to enable the `develop` branch to continue unrestricted.
+1.  While a release candidate is being tested, only bugfix patch PRs for that RC can be merged. We could consider a slightly more complex branch and release process to enable the `main` branch to continue unrestricted.
 
 ### Maven Compatibility
 The use of the `BUILD` label may have to be refined if we migrate to Maven. Maven Snapshots have two forms:

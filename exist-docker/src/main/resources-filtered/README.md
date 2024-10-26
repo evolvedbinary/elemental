@@ -1,12 +1,12 @@
 # ${project.description}
 ${project.description}
 
-[![Build Status](https://travis-ci.com/eXist-db/exist.png?branch=develop)](https://travis-ci.com/eXist-db/exist)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c5d7a02842dd4a3c85b1b2ad421b0d13)](https://www.codacy.com/app/eXist-db/exist?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=eXist-db/exist&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://github.com/evolvedbinary/elemental/actions/workflows/ci-build.yml/badge.svg?branch=main)](https://github.com/evolvedbinary/elemental/actions/workflows/ci-build.yml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolvedbinary/elemental&amp;utm_campaign=Badge_Grade)
 [![License](https://img.shields.io/badge/license-AGPL%203.1-orange.svg)](https://www.gnu.org/licenses/agpl-3.0.html)
-[![](https://images.microbadger.com/badges/image/existdb/existdb.svg)](https://microbadger.com/images/existdb/existdb "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/existdb/existdb.svg)](https://microbadger.com/images/existdb/existdb "Get your own version badge on microbadger.com")
-[![](https://images.microbadger.com/badges/commit/existdb/existdb.svg)](https://microbadger.com/images/existdb/existdb "Get your own commit badge on microbadger.com")
+[![](https://images.microbadger.com/badges/image/evolvedbinary/elemental.svg)](https://microbadger.com/images/evolvedbinary/elemental "Get your own image badge on microbadger.com")
+[![](https://images.microbadger.com/badges/version/evolvedbinary/elemental.svg)](https://microbadger.com/images/evolvedbinary/elemental "Get your own version badge on microbadger.com")
+[![](https://images.microbadger.com/badges/commit/evolvedbinary/elemental.svg)](https://microbadger.com/images/evolvedbinary/elemental "Get your own commit badge on microbadger.com")
 
 This module holds the source files for building a minimal docker image of the [exist-db](https://www.exist-db.org) xml 
 database, images are automatically updated as part of the build-test life-cycle. 
@@ -23,8 +23,8 @@ The images are based on Google Cloud Platform's ["Distroless" Docker Images](htt
 ## How to use
 Pre-build images are available on [DockerHub](https://hub.docker.com/r/existdb/existdb/). 
 There are two continuously updated channels:
-*   `release` for the stable releases based on the [`master` branch](https://github.com/eXist-db/exist/tree/master)
-*   `latest` for the latest commit to the [`develop` branch](https://github.com/eXist-db/exist/tree/develop).
+*   `release` for the stable releases based on the [`gold` branch](https://github.com/evolvedbinary/elemental/tree/gold)
+*   `latest` for the latest commit to the [`main` branch](https://github.com/evolvedbinary/elemental/tree/main).
 
 To download the image run:
 ```bash
