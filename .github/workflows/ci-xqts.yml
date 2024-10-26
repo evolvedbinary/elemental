@@ -50,7 +50,7 @@ jobs:
           retention-days: 14
           path: /tmp/xqts-output
       - name: Get Previous XQTS Logs Artifacts JSON
-        run: 'curl -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/exist-db/exist/actions/artifacts?name=xqts-logs > /tmp/previous-xqts-logs-artifacts.json'
+        run: 'curl -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/evolvedbinary/elemental/actions/artifacts?name=xqts-logs > /tmp/previous-xqts-logs-artifacts.json'
       - name: Extract Previous XQTS Logs Artifact JSON
         run: cat /tmp/previous-xqts-logs-artifacts.json | jq -r "[.artifacts[] | select(.workflow_run.head_branch == \"develop\")][1].archive_download_url" > /tmp/previous-xqts-logs-artifact.json
       - name: Get Previous XQTS Logs Artifact

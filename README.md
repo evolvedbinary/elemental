@@ -1,25 +1,27 @@
 <div align="center" id="logo">
 <a href="https://exist-db.org/" target="_blank">
-<img src="https://raw.githubusercontent.com/eXist-db/exist/develop/exist-jetty-config/src/main/resources/webapp/logo.jpg" alt="eXist Logo" width="333" height="132"></img>
+<img src="https://raw.githubusercontent.com/evolvedbinary/elemental/main/exist-jetty-config/src/main/resources/webapp/logo.jpg" alt="eXist Logo" width="333" height="132"></img>
 </a>
 </div>
 
 ## eXist-db Native XML Database
 
-[![Build Status](https://github.com/eXist-db/exist/actions/workflows/ci-build.yml/badge.svg?branch=develop)](https://github.com/eXist-db/exist/actions/workflows/ci-build.yml)
-[![Coverage Status](https://coveralls.io/repos/github/eXist-db/exist/badge.svg?branch=develop)](https://coveralls.io/github/eXist-db/exist?branch=develop)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/eXist-db/exist/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=eXist-db/exist&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://github.com/evolvedbinary/elemental/actions/workflows/ci-test.yml/badge.svg?branch=main)](https://github.com/evolvedbinary/elemental/actions/workflows/ci-test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/evolvedbinary/elemental/badge.svg?branch=main)](https://coveralls.io/github/evolvedbinary/elemental?branch=main)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolvedbinary/elemental&amp;utm_campaign=Badge_Grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eXist-db_exist&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eXist-db_exist)
 [![Java 17](https://img.shields.io/badge/java-17-blue.svg)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-LGPL%202.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
-[![Download](https://img.shields.io/github/v/release/eXist-db/exist.svg)](https://github.com/eXist-db/exist/releases/)
+[![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.exist-db/exist/badge.svg)](https://search.maven.org/search?q=g:org.exist-db)
 [![Slack](https://img.shields.io/badge/exist--db-slack-3e103f.svg)](https://exist-db.slack.com)
-<a href="https://opencollective.com/existdb#backer">
-		<img src="https://opencollective.com/existdb/backers/badge.svg">
-	</a>
 
 [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-%235e0d73.svg)](https://contributor-covenant.org/version/1/4/)
+
+---
+**NOTE**: Elemental was seeded from a fork of eXist-db's git `develop` branch, commit: `adaa276b9cfcaaeb4ee03ee3822ab882e6779f77` (Fri Oct 25 21:27:35 2024 +0200). The Git history was then rewritten to remove many historic files that we no longer need. This resulted in our commit: [`e065a83bf4dc94abfeebcc353cbfbd496976f440`](https://github.com/evolvedbinary/elemental/commit/e065a83bf4dc94abfeebcc353cbfbd496976f440).
+
+---
 
 eXist-db is a high-performance open source native XML database—a NoSQL document database and application platform built entirely around XML technologies. The main homepage for eXist-db can be found at [exist-db.org](https://exist-db.org "eXist Homepage"). This is the GitHub repository of eXist source code, and this page links to resources for downloading, building, and contributing to eXist-db, below.
 
@@ -39,12 +41,12 @@ The notes of past Community Calls are located [here](https://drive.google.com/dr
 -   **Documentation:** [https://exist-db.org/exist/apps/doc](https://exist-db.org/exist/apps/doc)
 -   **Book:** [https://www.oreilly.com/library/view/exist/9781449337094/](https://www.oreilly.com/library/view/exist/9781449337094/)
 -   **Packages:** [https://exist-db.org/exist/apps/public-repo](https://exist-db.org/exist/apps/public-repo)
--   **Source code:** [https://github.com/eXist-db/exist](https://github.com/eXist-db/exist)
--   **Git clone URL:** `git://github.com/eXist-db/exist.git`
+-   **Source code:** [https://github.com/evolvedbinary/elemental](https://github.com/evolvedbinary/elemental)
+-   **Git clone URL:** `git://github.com/evolvedbinary/elemental.git`
 -   **Mailing list:** [https://lists.sourceforge.net/lists/listinfo/exist-open](https://lists.sourceforge.net/lists/listinfo/exist-open)
 -   **Slack:** [https://exist-db.slack.com](https://join.slack.com/t/exist-db/shared_invite/enQtNjQ4MzUyNTE4MDY3LWNkYjZjMmZkNWQ5MDBjODQ3OTljNjMyODkwNmY1MzQwNjUwZjMzZTY1MGJkMjY5NDFhOWZjMDZiMDdhMzY4NGY)
 
-New developers may find the notes in [BUILD.md](https://github.com/eXist-db/exist/blob/develop/BUILD.md) and [CONTRIBUTING.md](https://github.com/eXist-db/exist/blob/develop/CONTRIBUTING.md) helpful to start using and sharing your work with the eXist community.
+New developers may find the notes in [BUILD.md](https://github.com/evolvedbinary/elemental/blob/main/BUILD.md) and [CONTRIBUTING.md](https://github.com/evolvedbinary/elemental/blob/main/CONTRIBUTING.md) helpful to start using and sharing your work with the eXist community.
 
 ## Credits
 
