@@ -1,13 +1,13 @@
 ---
 name: Bug report
-about: Thank you for reporting your issue and helping us to improve!
+about: Thank you for helping us to improve Elemental by reporting a bug.
 title: "[BUG]"
 labels: ''
 assignees: ''
 
 ---
 
-> To be able to better understand you problem, please add as much information as possible to this ticket. Always test your bugs against the latest stable release of exist. We cannot provide support for older versions here on GitHub. If the version of eXist that is experiencing the issue is more than 1 major version behind the most recent release, please consider posting a question on our mailing list. 
+> To be able to better understand you problem, please add as much information as possible to this ticket. Please also test your bugs against the latest stable release of Elemental to check whether it has already been fixed.
 
 
 **Describe the bug**
@@ -17,29 +17,30 @@ A clear and concise description of what the bug is.
 A clear and concise description of what you expected to happen.
 
 **To Reproduce**
-> The *best* way is to provide an [SSCCE (Short, Self Contained, Correct (Compilable), Example)](http://sscce.org/). One type of SSCCE could be a small test which reproduces the issue and can be run without dependencies. The [XQSuite - Annotation-based Test Framework for XQuery](http://exist-db.org/exist/apps/doc/xqsuite.xml) makes it very easy for you to create tests. These tests can be executed from the [eXide editor](http://exist-db.org/exist/apps/eXide/index.html) (XQuery - Run as Test)
+> The *best* way is to provide an [SSCCE (Short, Self Contained, Correct (Compilable), Example)](http://sscce.org/). One type of SSCCE could be a small test which reproduces the issue and can be run without dependencies. The [XQSuite - Annotation-based Test Framework for XQuery](http://exist-db.org/exist/apps/doc/xqsuite.xml) makes it very easy for you to create tests. These tests can be executed from the [eXide editor](http://exist-db.org/exist/apps/eXide/index.html) `XQuery` > `Run as Test`.
 
-```Xquery
+```xquery
 xquery version "3.1";
 
 module namespace t="http://exist-db.org/xquery/test";
 
 declare namespace test="http://exist-db.org/xquery/xqsuite";
 
-<!--  replace root with your data -->
+(: Replace root with your data :)
 declare variable $t:XML := document {
-<root/>
+    <root/>
 };
 
-<!--  replace index config if needed -->
-declare variable $t:xconf :=
+(: Replace index config if needed :)
+declare variable $t:xconf := document {
     <collection xmlns="http://exist-db.org/collection-config/1.0">
-    <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
-        <fulltext default="none" attributes="false"/>
-    </index>
-</collection>;
+        <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <fulltext default="none" attributes="false"/>
+        </index>
+    </collection>
+};
 
-<!--  collections and indexes can be configured here  -->
+(: Collections and Indexes can be configured here :)
 declare
     %test:setUp
 function t:setup() {
@@ -60,33 +61,33 @@ function t:tearDown() {
     xmldb:remove("/db/system/config/db/test")
 };
 
-<-- Adjust to your reported issue -->
+(: Adjust to your reported issue :)
 declare
-    %test:assertTrue
-function t:test() {
+    %test:assertEquals(1)
+function t:test-1() {
     let $test-data := collection('/db/test')
     for $result in $test-data//root
     return
-       count($result) eq 1
+       count($result)
 };
 ```
 
-If the above isn't working, please tell us the exact steps you took when you encountered the problem:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+If the above isn't working, please tell us the exact steps you took when you encountered the problem, e.g.
+1. Go to ...
+2. Click on ...
+3. Scroll down to ...
+4. Results in the error ...
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
 **Context (please always complete the following information)**
-One option is to use [xst](https://www.npmjs.com/package/@existdb/xst), and copy and paste the output produced by running `xst info` here:**
 
- - Build: [eXist-6.1.0]
- - Java: [1.8.0_352]
- - OS: [Mac OS X 12.6.2]
+* Version: [Elemental 6.3.1]
+* Java: [1.8.0_352]
+* OS: [macOS X 12.6.2]
 
 **Additional context**
-- How is eXist-db installed? [e.g. JAR installer, DMG, … ]
-- Any custom changes in e.g. `conf.xml`?
+
+* How is Elemental installed? [e.g. JAR installer, DMG, … ]
+* Any custom changes in e.g. `conf.xml`?

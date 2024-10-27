@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.test.runner;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
@@ -63,7 +86,7 @@ import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
 
 /**
  * A JUnit test runner which can run the XML formatter XQuery tests
- * of eXist-db using $EXIST_HOME/src/org/exist/xquery/lib/test.xq.
+ * using $EXIST_HOME/src/org/exist/xquery/lib/test.xq.
  *
  * @author Adam Retter
  */
@@ -222,7 +245,7 @@ public class XMLTestRunner extends AbstractTestRunner {
         xr.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
         xr.setFeature(FEATURE_SECURE_PROCESSING, true);
 
-        // we have to use eXist-db's SAXAdapter, otherwise un-referenced namespaces as used by xpath assertions may be stripped by Xerces.
+        // we have to use SAXAdapter, otherwise un-referenced namespaces as used by xpath assertions may be stripped by Xerces.
         final SAXAdapter adapter = new SAXAdapter((Expression) null);
         xr.setContentHandler(adapter);
         xr.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);

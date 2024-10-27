@@ -126,7 +126,7 @@
         - minDiskSpace:
             The amount of disk space (in megabytes) which should be available for
             the database to continue operations. If free disk space goes below
-            the configured limit, eXist-db will flush all buffers to disk and
+            the configured limit, Elemental will flush all buffers to disk and
             switch to read-only mode in order to prevent potential data loss. 
             Set the limit large enough to allow all pending operations to 
             complete. Set to -1 to disable. The default is 1 gigabyte.

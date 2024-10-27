@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -22,13 +46,24 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<izpack:userinput xmlns:izpack="http://izpack.org/schema/userinput" version="5.0">
+<izpack:userinput
+        xmlns:izpack="https://izpack.github.io/schema/userinput"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://izpack.github.io/schema/userinput https://izpack.org/schema/5.0/izpack-userinput-5.0.xsd"
+        version="5.0">
+
     <panel id="DataDirPanel">
         <field size="1.33" bold="false" txt="Set Data Directory" align="left"
             type="title"/>
         <field
-            txt="Please select a directory where eXist-db will keep its data files. On Windows, this should be outside the 'Program Files' directory. Please make sure eXist can write to the directory it is installed in."
+            txt="Please select a directory where Elemental will keep its data files."
             align="left" type="staticText"/>
+        <field
+                txt="On Windows, this should be outside the 'Program Files' directory."
+                align="left" type="staticText"/>
+        <field
+                txt="Please make sure Elemental can write to the directory it is installed in."
+                align="left" type="staticText"/>
         <field variable="dataDir" align="center" type="dir">
             <spec create="false" mustExist="false" set="$DATA_DIR" size="20"
                 txt="Data dir: "/>
@@ -39,9 +74,8 @@
             type="title"/ -->
         <field size="1.33" bold="false" txt="Set Admin Password" align="left"
             type="title"/>
-        <field align="left" variable="adminPasswd" type="password" omitFromAuto="false">
-            <description txt="Please enter a password for user 'admin', the database administrator:"
-                align="left"/>
+        <field align="left" variable="adminPasswd" type="password">
+            <description txt="Please enter a password for user 'admin', the database administrator:"/>
             <spec>
                 <pwd set="" size="20" txt="Enter password: "/>
                 <pwd set="" size="20" txt="Retype password: "/>
@@ -51,12 +85,12 @@
         </field>
         <!-- field align="bottom" type="divider"/>
         <field type="space"/>
-        <field type="text" variable="MAX_MEMORY">
-          <description align="left" txt="Configure the maximum amount of memory to be used by eXist-db. The recommended minimum memory setting is 1024m. If your machine has enough memory, using 2048m should be sufficient for most data sets. Note: 1200m is usually the limit on 32-bit systems."/>
+        <field type="text" align="left" variable="MAX_MEMORY">
+          <description txt="Configure the maximum amount of memory to be used by Elemental. The recommended minimum memory setting is 1024m. If your machine has enough memory, using 2048m should be sufficient for most data sets. Note: 1200m is usually the limit on 32-bit systems."/>
           <spec txt="Maximum memory in MB:" size="5" set="2048"/>
         </field>
-        <field type="text" variable="cacheSize">
-            <description align="left" txt="Configure the amount of memory to be reserved for internal caches. If the maximum memory is set above to 1024m, 128m is a good value; for 2048m, use 256m; for 512m, not more than 64mb. Too small settings may lead to bad upload/indexing performance."/>
+        <field type="text" align="left" variable="cacheSize">
+            <description txt="Configure the amount of memory to be reserved for internal caches. If the maximum memory is set above to 1024m, 128m is a good value; for 2048m, use 256m; for 512m, not more than 64mb. Too small settings may lead to bad upload/indexing performance."/>
           <spec txt="Cache memory in MB:" size="5" set="256"/>
         </field -->
     </panel>

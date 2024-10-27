@@ -42,7 +42,7 @@ Next, you need to register the servlet in EXIST_HOME/webapp/WEB-INF/web.xml as f
 </servlet>
 
 where "output-dir" should point to an existing directory on your server. To use 
-the servlet from eXist, make sure your 
+the servlet from Elemental, make sure your 
 EXIST_HOME/webapp/WEB-INF/controller-config.xml has a mapping:
 
 <forward pattern="/images" servlet="ScaleImageJAI"/>
@@ -50,7 +50,7 @@ EXIST_HOME/webapp/WEB-INF/controller-config.xml has a mapping:
 Usage
 -----
 
-After restarting eXist, you should be able to access any image stored in the db
+After restarting Elemental, you should be able to access any image stored in the db
 with an URL like this:
 
 http://localhost:8080/exist/images/scale/path/to/image.tif?s=512

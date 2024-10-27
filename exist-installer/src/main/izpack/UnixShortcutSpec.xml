@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -22,13 +46,17 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<izpack:shortcuts xmlns:izpack="http://izpack.org/schema/shortcuts" version="5.0">
-    <programGroup defaultName="eXist-db XML Database" location="applications"/>
+<izpack:shortcuts
+        xmlns:izpack="https://izpack.github.io/schema/shortcuts"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://izpack.github.io/schema/shortcuts https://izpack.org/schema/5.0/izpack-shortcuts-5.0.xsd"
+        version="5.0">
+
+    <programGroup defaultName="Elemental" location="applications"/>
 
     <shortcut
-            name="eXist-db Database"
-            genericName="eXist-db"
-            description="eXist-db XML Database Launcher"
+            name="Elemental"
+            description="Elemental Launcher"
             type="Application"
             encoding="UTF-8"
             target="$INSTALL_PATH/bin/launcher.sh"
@@ -36,11 +64,10 @@
             terminal="false"
             programGroup="yes"
             iconFile="$INSTALL_PATH/lib/icon.png"
-            desktop="yes"
-            startupNotify="true"/>
+            desktop="yes"/>
 
-    <shortcut name="Uninstall eXist-db"
-              description="Uninstall eXist-db"
+    <shortcut name="Uninstall Elemental"
+              description="Uninstall Elemental"
               type="Application"
               encoding="UTF-8"
               target="$JAVA_HOME/bin/java"

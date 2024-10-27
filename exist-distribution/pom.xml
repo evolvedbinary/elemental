@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -26,7 +50,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.exist-db</groupId>
+        <groupId>xyz.elemental.fork.org.exist-db</groupId>
         <artifactId>exist-parent</artifactId>
         <version>6.4.0-SNAPSHOT</version>
         <relativePath>../exist-parent</relativePath>
@@ -46,13 +70,13 @@
   </scm>
 
     <properties>
-        <assemble.dir>${project.build.directory}/${project.artifactId}-${project.version}-dir</assemble.dir>
+        <assemble.dir>${project.build.directory}/elemental-${project.version}-dir</assemble.dir>
         <public.xar.repo.uri>http://exist-db.org/exist/apps/public-repo</public.xar.repo.uri>
         <expath.pkg.dir>${project.build.directory}/expath-pkgs</expath.pkg.dir>
-        <mac.bundle.dir>${project.build.directory}/${project.artifactId}-${project.version}.app</mac.bundle.dir>
+        <mac.bundle.dir>${project.build.directory}/elemental-${project.version}.app</mac.bundle.dir>
         <mac.bundle.resources.dir>${mac.bundle.dir}/Contents/Resources</mac.bundle.resources.dir>
         <mac.bundle.java.dir>${mac.bundle.dir}/Contents/Java</mac.bundle.java.dir>
-        <mac.dmg>${project.build.directory}/eXist-db-${project.version}.dmg</mac.dmg>
+        <mac.dmg>${project.build.directory}/elemental-${project.version}.dmg</mac.dmg>
         <mac.codesign.identity>Developer ID Application: Evolved Binary Ltd</mac.codesign.identity>
     </properties>
 
@@ -319,52 +343,73 @@
 
     <build>
 
+        <resources>
+            <resource>
+                <directory>src/dmgbuild</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/dashboard</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <licenseSets>
                         <licenseSet>
-                            <!--
-                                eXist-db's License
-                            -->
-                            <header>${project.parent.relativePath}/LGPL-21-license.template.txt</header>
-                            <excludes>
-                                <exclude>LGPL-21-license.txt</exclude>
-                                <exclude>src/app/entitlements.plist</exclude>
-                                <exclude>src/appbundler/**</exclude>
-                                <exclude>src/dmg/**</exclude>
-                                <exclude>src/main/config/**</exclude>  <!-- config files shipped with eXist-db don't need copyright headers -->
-                                <exclude>src/main/scripts/codesign-jansi-mac.sh</exclude>
-                                <exclude>src/main/xslt/configure_9_3.dtd</exclude>
-                                <exclude>src/main/xslt/web-app_3_1.xsd</exclude>
-                                <exclude>src/main/xslt/javaee_web_services_client_1_4.xsd</exclude>
-                                <exclude>src/main/xslt/jsp_2_3.xsd</exclude>
-                                <exclude>src/main/xslt/xml.xsd</exclude>
-                                <exclude>src/main/xslt/web-common_3_1.xsd</exclude>
-                                <exclude>src/main/xslt/javaee_7.xsd</exclude>
-                            </excludes>
-                        </licenseSet>
-
-                        <licenseSet>
-                            <!--
-                                FDB backport to LGPL 2.1-only licensed code
-                            -->
-                            <header>${project.parent.relativePath}/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
-                            <includes>
-                                <include>src/main/scripts/codesign-jansi-mac.sh</include>
-                            </includes>
-                        </licenseSet>
-
-                        <licenseSet>
-                            <!--
-                                FDB backport to LGPL 2.1-only licensed code (XML)
-                            -->
-                            <header>${project.parent.relativePath}/FDB-backport-LGPL-21-ONLY-license.xml.template.txt</header>
+                            <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/app/entitlements.plist</include>
+                                <include>src/dmgbuild/settings.py</include>
+                                <include>src/main/scripts/codesign-jansi-mac.sh</include>
+                                <include>src/main/scripts/create-dmg-mac.sh</include>
                             </includes>
+                            <excludes>
+                                <exclude>src/main/config/**</exclude>  <!-- config files in the distribution don't need copyright headers -->
+                            </excludes>
+                        </licenseSet>
+                        <licenseSet>
+                            <multi>
+                                <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                                <separator><![CDATA[NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+      The original license header is included below.
+
+=====================================================================
+                                ]]></separator>
+                                <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            </multi>
+                            <includes>
+                                <include>pom.xml</include>
+                                <include>src/assembly/**</include>
+                                <include>src/main/scripts/create-dmg-unix.sh</include>
+                                <include>src/main/xslt/**</include>
+                            </includes>
+                            <excludes>
+                                <exclude>src/main/config/**</exclude>  <!-- config files in the distribution don't need copyright headers -->
+                                <exclude>src/main/xslt/configure_9_3.dtd</exclude>
+                                <exclude>src/main/xslt/javaee_7.xsd</exclude>
+                                <exclude>src/main/xslt/javaee_web_services_client_1_4.xsd</exclude>
+                                <exclude>src/main/xslt/jsp_2_3.xsd</exclude>
+                                <exclude>src/main/xslt/web-app_3_1.xsd</exclude>
+                                <exclude>src/main/xslt/web-common_3_1.xsd</exclude>
+                                <exclude>src/main/xslt/xml.xsd</exclude>
+                            </excludes>
                         </licenseSet>
 
                     </licenseSets>
@@ -547,9 +592,9 @@
                                     <dir>${assemble.dir}/etc/jetty</dir>
                                     <includes>
                                         <include>jetty-deploy.xml</include>
-                                        <include>webapps/exist-webapp-context.xml</include>
+                                        <include>webapps/elemental-webapp-context.xml</include>
                                         <include>standalone-jetty-deploy.xml</include>
-                                        <include>standalone-webapps/exist-webapp-context.xml</include>
+                                        <include>standalone-webapps/elemental-webapp-context.xml</include>
                                         <include>jetty-ssl-context.xml</include>
                                     </includes>
                                     <stylesheet>src/main/xslt/jetty-deploy.xslt</stylesheet>
@@ -589,9 +634,9 @@
                                     <dir>${mac.bundle.resources.dir}/etc/jetty</dir>
                                     <includes>
                                         <include>jetty-deploy.xml</include>
-                                        <include>webapps/exist-webapp-context.xml</include>
+                                        <include>webapps/elemental-webapp-context.xml</include>
                                         <include>standalone-jetty-deploy.xml</include>
-                                        <include>standalone-webapps/exist-webapp-context.xml</include>
+                                        <include>standalone-webapps/elemental-webapp-context.xml</include>
                                         <include>jetty-ssl-context.xml</include>
                                     </includes>
                                     <stylesheet>src/main/xslt/jetty-deploy.xslt</stylesheet>
@@ -666,7 +711,7 @@
                 <executions>
                     <execution>
                         <id>fetch-xars</id>
-                        <phase>package</phase>
+                        <phase>generate-resources</phase>
                         <goals>
                             <goal>resolve</goal>
                         </goals>
@@ -703,6 +748,66 @@
                                     <abbrev>templating</abbrev>
                                 </package>
                             </packages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Replace the eXist-db logo with the Elemental logo in the Dashboard XAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>unzip-dashboard</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar"/>
+                                <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
+                                <unzip src="${dashboard-xar-path}" dest="${expath.pkg.dir}-dashboard-staging/">
+                                    <patternset>
+                                        <exclude name="resources/images/existdb.png"/>
+                                        <exclude name="resources/images/existdb-web.svg"/>
+                                        <exclude name="resources/images/x.svg"/>
+                                    </patternset>
+                                </unzip>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>patch-dashboard</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <replace file="${expath.pkg.dir}-dashboard-staging/existdb-dashboard.html" token="existdb-web.svg" value="elemental-web.svg"/>
+                                <loadfile property="elemental-web-svg" srcFile="${project.build.outputDirectory}/elemental-web.svg"/>
+                                <replaceregexp file="${expath.pkg.dir}-dashboard-staging/bower_components/existdb-launcher/existdb-branding.html" match="&lt;svg.+&lt;/svg&gt;" replace="${elemental-web-svg}"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-patched-dashboard</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar"/>
+                                <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
+                                <zip destfile="${dashboard-xar-path}">
+                                    <fileset dir="${expath.pkg.dir}-dashboard-staging"/>
+                                    <zipfileset dir="${project.build.outputDirectory}" includes="elemental-web.svg" fullpath="resources/images/elemental-web.svg"/>
+                                </zip>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -791,7 +896,7 @@
                             <systemProperty>exist.jetty.config=@BASEDIR@/etc/jetty/standard.enabled-jetty-configs</systemProperty>
                         </systemProperties>
                     </defaultJvmSettings>
-                    <licenseHeaderFile>LGPL-21-license.txt</licenseHeaderFile>
+                    <licenseHeaderFile>elemental-LGPL-21-ONLY-license.txt</licenseHeaderFile>
                 </configuration>
                 <executions>
                     <execution>
@@ -1027,6 +1132,7 @@
                 </executions>
                 <configuration>
                     <skipAssembly>false</skipAssembly>  <!-- Can be overridden by profile skip-build-dist-archives -->
+                    <finalName>elemental-${project.version}</finalName>
                     <attach>false</attach>
                     <tarLongFileMode>gnu</tarLongFileMode>
                     <descriptors>
@@ -1042,22 +1148,23 @@
                 <version>3.0.0</version>
                 <executions>
                     <execution>
-                        <id>exist-db-mac-app</id>
+                        <id>elemental-mac-app</id>
                         <phase>package</phase>
                         <goals>
                             <goal>bundle</goal>
                         </goals>
                         <configuration>
-                            <displayName>eXist-db</displayName>
+                            <name>elemental-${project.version}</name>
+                            <displayName>Elemental</displayName>
                             <identifier>org.exist.start.Main</identifier>
                             <mainClassName>org.exist.start.Main</mainClassName>
-                            <executableName>eXist-JavaAppLauncher</executableName>
+                            <executableName>elemental-JavaAppLauncher</executableName>
                             <jvmRequired>1.8</jvmRequired>
                             <minimumSystemVersion>10.9</minimumSystemVersion>
                             <version>${project.version}</version>
                             <shortVersion>${project.version}</shortVersion>
-                            <icon>icon.icns</icon>
-                            <copyright>${project.inceptionYear} The eXist-db Project</copyright>
+                            <icon>elemental.icns</icon>
+                            <copyright>${copyright.string}</copyright>
                             <applicationCategory>public.app-category.developer-tools</applicationCategory>
                             <additionalResourcePaths>
                                 <fileSet>
@@ -1080,7 +1187,7 @@
                                 <option>-Dexist.configurationFile=$APP_ROOT/Contents/Resources/etc/conf.xml</option>
                                 <option>-Djetty.home=$APP_ROOT/Contents/Resources</option>
                                 <option>-Dexist.jetty.config=$APP_ROOT/Contents/Resources/etc/jetty/standard.enabled-jetty-configs</option>
-                                <option>-Xdock:name=eXist-db</option>
+                                <option>-Xdock:name=Elemental</option>
                                 <option>-Dapple.laf.useScreenMenuBar=true</option>
                             </options>
                             <explicitClassPath>false</explicitClassPath>
@@ -1200,11 +1307,8 @@
                                 <configuration>
                                     <executable>${project.basedir}/src/main/scripts/create-dmg-mac.sh</executable>
                                     <arguments>
-                                        <argument>${mac.bundle.dir}</argument>
-                                        <argument>eXist-db</argument>
-                                        <argument>${project.basedir}/src/dmg/background.png</argument>
-                                        <argument>${project.basedir}/src/dmg/VolumeIcon.icns</argument>
-                                        <argument>${project.basedir}/src/dmg/App_DS_Store</argument>
+                                        <argument>${project.build.outputDirectory}/settings.py</argument>
+                                        <argument>Elemental</argument>
                                         <argument>${mac.dmg}</argument>
                                     </arguments>
                                 </configuration>
@@ -1245,7 +1349,7 @@
                                     <executable>${project.basedir}/src/main/scripts/create-dmg-unix.sh</executable>
                                     <arguments>
                                         <argument>${mac.bundle.dir}</argument>
-                                        <argument>eXist-db</argument>
+                                        <argument>Elemental</argument>
                                         <argument>${project.basedir}/src/dmg/background.png</argument>
                                         <argument>${project.basedir}/src/dmg/VolumeIcon.icns</argument>
                                         <argument>${project.basedir}/src/dmg/App_DS_Store</argument>
@@ -1307,11 +1411,11 @@
                                         <argument>submit</argument>
                                         <argument>--verbose</argument>
                                         <argument>--apple-id</argument>
-                                        <argument>${existdb.release.notarize.apple-id}</argument>
+                                        <argument>${elemental.release.notarize.apple-id}</argument>
                                         <argument>--team-id</argument>
-                                        <argument>${existdb.release.notarize.team-id}</argument>
+                                        <argument>${elemental.release.notarize.team-id}</argument>
                                         <argument>--password</argument>
-                                        <argument>${existdb.release.notarize.password}</argument>
+                                        <argument>${elemental.release.notarize.password}</argument>
                                         <argument>${mac.dmg}</argument>
                                     </arguments>
                                 </configuration>
@@ -1325,7 +1429,7 @@
 
         <profile>
             <!-- NOTE: this is activated by the maven-release-plugin -->
-            <id>exist-release</id>
+            <id>elemental-release</id>
             <build>
                 <plugins>
                     <!-- This is needed in a profile to workaround https://github.com/jutzig/github-release-plugin/issues/50 -->
@@ -1342,19 +1446,21 @@
                                 <inherited>false</inherited>
                                 <configuration>
                                     <description>
-                                        Release Notes: https://exist-db.org/exist/apps/wiki/blogs/eXist/exist${project.version}
+                                        Elemental version ${project.version}
 
-                                        Maven Central: https://search.maven.org/search?q=g:org.exist-db
+                                        Docker Image: evolvedbinary/elemental:${project.version}
+                                        Maven Central: https://search.maven.org/search?q=g:xyz.elemental
+                                        Website: ${project.url}
                                     </description>
-                                    <releaseName>eXist-db ${project.version}</releaseName>
-                                    <tag>eXist-${project.version}</tag>
+                                    <releaseName>Elemental ${project.version}</releaseName>
+                                    <tag>elemental-${project.version}</tag>
                                     <fileSets>
                                         <fileSet>
                                             <directory>${project.build.directory}</directory>
                                             <includes>
-                                                <include>eXist-db-${project.version}.dmg</include>
-                                                <include>${project.artifactId}-${project.version}-unix.tar.bz2</include>
-                                                <include>${project.artifactId}-${project.version}-win.zip</include>
+                                                <include>elemental-${project.version}.dmg</include>
+                                                <include>elemental-${project.version}-unix.tar.bz2</include>
+                                                <include>elemental-${project.version}-win.zip</include>
                                             </includes>
                                         </fileSet>
                                     </fileSets>

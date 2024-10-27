@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -387,8 +411,8 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     public abstract void storeDocument(Txn transaction, XmldbURI name, InputSource source, @Nullable MimeType mimeType, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -413,8 +437,8 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     public abstract void storeDocument(Txn transaction, XmldbURI name, InputSource source, @Nullable MimeType mimeType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -433,8 +457,8 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     public abstract void storeDocument(Txn transaction, XmldbURI name, Node node, @Nullable MimeType mimeType, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -459,8 +483,8 @@ public abstract class DBBroker implements AutoCloseable {
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of Elemental trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     public abstract void storeDocument(Txn transaction, XmldbURI name, Node node, @Nullable MimeType mimeType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader, Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;

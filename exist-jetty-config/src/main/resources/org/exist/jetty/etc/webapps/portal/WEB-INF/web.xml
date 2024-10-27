@@ -6,6 +6,6 @@
    metadata-complete="false"
    version="3.1">
 
-  <display-name>eXist-db portal</display-name>
+  <display-name>Elemental portal</display-name>
   <description>Provides an entry point for the / root context</description>
 </web-app>

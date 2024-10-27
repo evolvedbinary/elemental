@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -1281,7 +1281,7 @@ public class ImportModuleTest {
     /**
      * Checks that XQST0093 is raised if there exists a sequence of modules M1 ... Mi ... M1.
      */
-    @Ignore("eXist-db does not have cyclic import checks, but it should!")
+    @Ignore("Elemental does not have cyclic import checks, but it should!")
     @Test
     public void cyclic1() throws EXistException, IOException, PermissionDeniedException, LockException, SAXException {
         final String module1 =
@@ -1342,7 +1342,7 @@ public class ImportModuleTest {
     /**
      * Checks that XQST0093 is raised if there exists a sequence of modules M1 ... Mi ... M1.
      */
-    @Ignore("eXist-db does not have cyclic import checks, but it should!")
+    @Ignore("Elemental does not have cyclic import checks, but it should!")
     @Test
     public void cyclic2() throws EXistException, IOException, PermissionDeniedException, LockException, SAXException {
         final String module1 =

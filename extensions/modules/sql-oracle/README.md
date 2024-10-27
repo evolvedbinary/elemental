@@ -1,5 +1,5 @@
-Oracle module for eXist-db
-==========================
+Oracle module for Elemental
+===========================
 
 This module requires registration with Oracle to be able to access
 the Oracle Maven repository when obtaining the Oracle JDBC driver.

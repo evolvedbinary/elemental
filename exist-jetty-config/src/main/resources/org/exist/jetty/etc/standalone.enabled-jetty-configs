@@ -1,8 +1,8 @@
-### This file controls which jetty config files will be loaded by eXist
+### This file controls which jetty config files will be loaded by Elemental
 # Note that the order of the configurations listen in this file is important,
 # dependency load order between the config files must be respected.
 #
-# Dependency load order can be determined from interogating a clean jetty
+# Dependency load order can be determined from interrogating a clean jetty
 # base with the desired modules enabled...
 # see: http://stackoverflow.com/questions/37846079/nullpointerexception-in-requestlogcollection-jetty-9-3-9#37932579
 

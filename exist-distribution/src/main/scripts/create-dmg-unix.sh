@@ -1,5 +1,29 @@
 #!/usr/bin/env bash
 #
+# Elemental
+# Copyright (C) 2024, Evolved Binary Ltd
+#
+# admin@evolvedbinary.com
+# https://www.evolvedbinary.com | https://www.elemental.xyz
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; version 2.1.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+#       The original license header is included below.
+#
+# =====================================================================
+#
 # eXist-db Open Source Native XML Database
 # Copyright (C) 2001 The eXist-db Authors
 #
@@ -72,10 +96,9 @@ sudo mount -o loop,uid=$username $tmp_dmg.dmg $tmp_dmg_mount
 cp -r $final_app_dir $tmp_dmg_mount
 
 # Copy the background, the volume icon and DS_Store files
-mkdir -p $tmp_dmg_mount/$2/.DropDMGBackground
-cp $3 $tmp_dmg_mount/$2/.DropDMGBackground/
-cp $4 $tmp_dmg_mount/$2/.VolumeIcon.icns
-cp $5 $tmp_dmg_mount/$2/.DS_Store
+cp "${3}" "${tmp_dmg_mount}/${2}/.$(basename $3)"
+cp "${4}" "${tmp_dmg_mount}/${2}/.VolumeIcon.icns"
+cp "${5}" "${tmp_dmg_mount}/${2}/.DS_Store"
 
 # Add a symbolic link to the Applications directory
 ln -s /Applications $tmp_dmg_mount/$2/Applications

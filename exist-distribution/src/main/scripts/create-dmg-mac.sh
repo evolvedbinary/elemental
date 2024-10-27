@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 #
-# eXist-db Open Source Native XML Database
-# Copyright (C) 2001 The eXist-db Authors
+# Elemental
+# Copyright (C) 2024, Evolved Binary Ltd
 #
-# info@exist-db.org
-# http://www.exist-db.org
+# admin@evolvedbinary.com
+# https://www.evolvedbinary.com | https://www.elemental.xyz
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
+# License as published by the Free Software Foundation; version 2.1.
 #
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -21,64 +20,29 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+## Uses dmgbuild (https://github.com/al45tair/dmgbuild) to build a DMG file
 
-# $1 is .app dir
+# $1 is the path to settings.py for dmgbuild
 # $2 is app name e.g. VolName
-# $3 is background image
-# $4 is Volume icons
-# $5 is DS_Store
-# $6 is the output DMG file path and name
+# $3 is the output DMG file path and name
+dmgbuild_settings_py=$1
+volname=$2
+output_dmg=$3
 
-set -e
 set -x
 
-# cleanup any previous DMG before creating a new DMG
-if [[ -f "${6}" ]]; then
+# cleanup any previous DMG file before creating a new DMG image
+if [[ -f "${output_dmg}" ]]; then
     echo "Removing previous DMG"
-    rm -v "${6}"
+    rm -v "${output_dmg}"
 fi
 
-tmp_dmg=/tmp/$2-dmg-tmp
-tmp_dmg_mount=$tmp_dmg-mount
-
-final_app_dir="$(dirname "$1")/$2.app"
-
-# Copy the produced .app to `volname`.app
-cp -r $1 $final_app_dir
-
-# Create a temporary Disk Image
-/usr/bin/hdiutil create -fs HFS+ -srcfolder $final_app_dir -volname $2 -ov $tmp_dmg -format UDRW
-
-# Attach the temporary image
-/usr/bin/hdiutil attach $tmp_dmg.dmg -mountroot $tmp_dmg_mount
-
-# Copy the background, the volume icon and DS_Store files
-mkdir -p $tmp_dmg_mount/$2/.DropDMGBackground
-cp $3 $tmp_dmg_mount/$2/.DropDMGBackground/
-cp $4 $tmp_dmg_mount/$2/.VolumeIcon.icns
-cp $5 $tmp_dmg_mount/$2/.DS_Store
-
-# Indicate that we want a custom icon
-if [[ -f "/Applications/Xcode.app/Contents/Developer/Tools/SetFile" ]]; then
-    /Applications/Xcode.app/Contents/Developer/Tools/SetFile -a -c $tmp_dmg_mount/$2
-else
-    /usr/bin/SetFile -a -c $tmp_dmg_mount/$2
+# Make sure that dmgbuild is installed
+if ! pip show dmgbuild > /dev/null 2>&1; then
+  yes | pip install dmgbuild
 fi
 
-# Add a symbolic link to the Applications directory
-ln -s /Applications $tmp_dmg_mount/$2/Applications
+set -e
 
-# Detach the temporary image
-/usr/bin/hdiutil detach $tmp_dmg_mount/$2
-
-# Compress it to a new image
-/usr/bin/hdiutil convert $tmp_dmg.dmg -format UDZO -o $6
-
-# Delete the temporary image
-rm $tmp_dmg.dmg
-
-# Delete the mount point
-rm -r $tmp_dmg_mount
-
-# Delete the copied `volname`.app used for the DMG
-rm -r $final_app_dir
+# Build a new DMG image
+dmgbuild -s ${dmgbuild_settings_py} "${volname}" "${output_dmg}"

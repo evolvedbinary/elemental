@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -50,10 +74,9 @@ import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_MIN_MEM;
 
 /**
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author wolf
  */
-
-
 public class ConfigurationDialog extends JDialog {
 
     private final Consumer<Boolean> callback;
@@ -70,16 +93,16 @@ public class ConfigurationDialog extends JDialog {
      */
     public ConfigurationDialog(Consumer<Boolean> callback) {
         setModal(true);
-        setTitle("eXist-db System Configuration");
+        setTitle("Elemental System Configuration");
 
         initComponents();
 
         this.callback = callback;
         
         final Properties launcherProperties = ConfigurationUtility.loadProperties();
-        final int maxMemProp = Integer.parseInt(launcherProperties.getProperty(LAUNCHER_PROPERTY_MAX_MEM, "2048"));
+        final int maxMemProp = Integer.parseInt(launcherProperties.getProperty(LAUNCHER_PROPERTY_MAX_MEM, "4096"));
         maxMemory.setValue(maxMemProp);
-        final int minMemProp = Integer.parseInt(launcherProperties.getProperty(LAUNCHER_PROPERTY_MIN_MEM, "64"));
+        final int minMemProp = Integer.parseInt(launcherProperties.getProperty(LAUNCHER_PROPERTY_MIN_MEM, "512"));
         minMemory.setValue(minMemProp);
         
         try {
@@ -125,7 +148,7 @@ public class ConfigurationDialog extends JDialog {
             lbStartupWarn.setVisible(true);
 
             if (SystemUtils.IS_OS_MAC_OSX) {
-                Path dir = Paths.get(System.getProperty("user.home")).resolve("Library").resolve("Application Support").resolve("org.exist");
+                Path dir = Paths.get(System.getProperty("user.home")).resolve("Library").resolve("Application Support").resolve("xyz.elemental");
                 dataDir.setText(dir.toAbsolutePath().toString());
             }
         } else {
@@ -146,7 +169,7 @@ public class ConfigurationDialog extends JDialog {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        lbExistLogo = new javax.swing.JLabel();
+        lbElementalLogo = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
         minMemory = new javax.swing.JSpinner();
         jLabel2 = new javax.swing.JLabel();
@@ -177,16 +200,16 @@ public class ConfigurationDialog extends JDialog {
         httpPort = new javax.swing.JSpinner();
         sslPort = new javax.swing.JSpinner();
 
-        setTitle("eXist-db Configuration");
+        setTitle("Elemental Configuration");
         getContentPane().setLayout(new java.awt.GridBagLayout());
 
-        lbExistLogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/exist/client/icons/x.png"))); // NOI18N
+        lbElementalLogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/exist/client/icons/elemental-device.png"))); // NOI18N
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridheight = 6;
         gridBagConstraints.insets = new java.awt.Insets(0, 16, 0, 6);
-        getContentPane().add(lbExistLogo, gridBagConstraints);
+        getContentPane().add(lbElementalLogo, gridBagConstraints);
 
         jLabel1.setText("Min Memory");
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -279,7 +302,7 @@ public class ConfigurationDialog extends JDialog {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         getContentPane().add(collectionCache, gridBagConstraints);
 
-        jLabel8.setText("<html>Memory settings only become effective after restart and only apply when eXist-db is started via the system tray launcher.</html>");
+        jLabel8.setText("<html>Memory settings only become effective after restart and only apply when Elemental is started via the system tray launcher.</html>");
         jLabel8.setPreferredSize(new java.awt.Dimension(280, 48));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 4;
@@ -301,7 +324,7 @@ public class ConfigurationDialog extends JDialog {
         getContentPane().add(lbCurrentUsage, gridBagConstraints);
 
         lbStartupMsg.setFont(lbStartupMsg.getFont().deriveFont(lbStartupMsg.getFont().getStyle() & ~java.awt.Font.BOLD));
-        lbStartupMsg.setText("<html>It seems you are starting eXist-db for the first time. Please configure your memory settings below.</html>");
+        lbStartupMsg.setText("<html>It seems you are starting Elemental for the first time. Please configure your memory settings below.</html>");
         lbStartupMsg.setMinimumSize(new java.awt.Dimension(60, 64));
         lbStartupMsg.setPreferredSize(new java.awt.Dimension(300, 32));
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -662,7 +685,7 @@ public class ConfigurationDialog extends JDialog {
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel lbCurrentUsage;
-    private javax.swing.JLabel lbExistLogo;
+    private javax.swing.JLabel lbElementalLogo;
     private javax.swing.JLabel lbStartupMsg;
     private javax.swing.JLabel lbStartupWarn;
     private javax.swing.JSpinner maxMemory;

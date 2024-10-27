@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -82,10 +106,13 @@ import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
 import static org.exist.util.FileUtils.humanSize;
 
 /**
- * Main frame of the eXist GUI
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ *
+ * Main frame of the Elemental Java Admin client GUI
  */
 public class ClientFrame extends JFrame implements WindowFocusListener, KeyListener, ActionListener, MouseListener {
 
@@ -108,7 +135,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
 
     public static final String MULTIPLE_INDICATOR = "[...]";
     private static final String NON_APPLICABLE = "N/A";
-    private static final String COLLECTION_MIME_TYPE = "exist/collection";
+    private static final String COLLECTION_MIME_TYPE = "elemental/collection";
 
     private int commandStart = 0;
 
@@ -130,7 +157,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     /**
      * Constructor.
      *
-     * @param client Existdb client
+     * @param client Elemental client
      * @param path Database connection URL.
      * @param properties Configuration items.
      * @throws java.awt.HeadlessException Environment  does not support a keyboard, display, or mouse.
@@ -143,7 +170,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         this.processRunnable = new ProcessRunnable();
         this.processThread = client.newClientThread("process", processRunnable);
 
-        this.setIconImage(InteractiveClient.getExistIcon(getClass()).getImage());
+        this.setIconImage(InteractiveClient.getElementalIcon(getClass()).getImage());
 
         setupComponents();
         addWindowListener(new WindowAdapter() {
@@ -179,7 +206,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             try {
                 client.reloadCollection();
             } catch (final XMLDBException e1) {
-                //TODO report message
+                showErrorMessage(e1.getMessage(), e1);
             }
         });
         toolbar.add(button);
@@ -476,7 +503,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             try {
                 client.getResources();
             } catch (final XMLDBException e1) {
-                //TODO report error
+                showErrorMessage(e1.getMessage(), e1);
             }
         });
         optionsMenu.add(check);
@@ -490,7 +517,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             try {
                 client.getResources();
             } catch (final XMLDBException e1) {
-                //TODO report error
+                showErrorMessage(e1.getMessage(), e1);
             }
         });
         optionsMenu.add(check);
@@ -546,14 +573,15 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         final String pathString = path.getCollectionPath();
         try {
             commandStart = doc.getLength();
-            doc.insertString(commandStart, Messages.getString("ClientFrame.91"), promptAttrs); //$NON-NLS-1$
-            commandStart += 6;
+            final String prompt = Messages.getString("ClientFrame.91");
+            doc.insertString(commandStart, prompt, promptAttrs); //$NON-NLS-1$
+            commandStart += prompt.length();
             doc.insertString(commandStart, pathString + '>', promptAttrs);
             commandStart += pathString.length() + 1;
             doc.insertString(commandStart++, Messages.getString("ClientFrame.92"), defaultAttrs); //$NON-NLS-1$
             shell.setCaretPosition(commandStart);
         } catch (final BadLocationException e) {
-            //TODO show error
+            showErrorMessage(e.getMessage(), e);
         }
     }
 
@@ -569,7 +597,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             shell.setCaretPosition(commandStart);
 
         } catch (final BadLocationException e) {
-            //TODO show error
+            showErrorMessage(e.getMessage(), e);
         }
     }
 
@@ -1513,7 +1541,8 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     }
 
     private void AboutAction() {
-        JOptionPane.showMessageDialog(this, client.getNotice());
+        final Icon icon = InteractiveClient.getElementalIcon(getClass());
+        JOptionPane.showMessageDialog(this, client.getNotice(), "About", INFORMATION_MESSAGE, icon);
     }
 
     class TableMouseListener extends MouseAdapter {
@@ -1724,7 +1753,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
 
         final ConnectionDialog connectionDialog = new ConnectionDialog(null, true, defaultConnectionSettings, Boolean.parseBoolean(props.getProperty(InteractiveClient.LOCAL_MODE, InteractiveClient.LOCAL_MODE_DEFAULT)), Boolean.parseBoolean(props.getProperty(InteractiveClient.NO_EMBED_MODE, InteractiveClient.NO_EMBED_MODE_DEFAULT)));
 
-        connectionDialog.setTitle(SystemProperties.getInstance().getSystemProperty("product-name", "eXist-db") + " " + SystemProperties.getInstance().getSystemProperty("product-version", "unknown") + " Database Login");
+        connectionDialog.setTitle(SystemProperties.getInstance().getSystemProperty("product-name", "Elemental") + " " + SystemProperties.getInstance().getSystemProperty("product-version", "unknown") + " Database Login");
 
         connectionDialog.addDialogCompleteWithResponseCallback(connection -> {
             properties.setProperty(InteractiveClient.USER, connection.getUsername());

@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -960,7 +960,7 @@ public abstract class AbstractJournalTest<T> {
      * The problem with the above schedule, after crash, the recovery will never set
      * key "A" to value "null", which it likely should.
      *
-     * eXist-db performs the following recovery:
+     * Performs the following recovery:
      *
      * R1. redo schedule step 5: A=y
      * R2. redo schedule step 7: A=null
@@ -1059,7 +1059,7 @@ public abstract class AbstractJournalTest<T> {
      * The problem with the above schedule, after crash, the recovery will never set
      * key "A" to value "null", which it likely should.
      *
-     * eXist-db performs the following recovery:
+     * Performs the following recovery:
      *
      * R1. redo schedule step 5: A=y
      * R2. redo schedule step 7: A=null

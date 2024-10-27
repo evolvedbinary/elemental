@@ -250,7 +250,7 @@
                             <db:section>
                                 <db:title>Add a Security Group to an LDAP Account Principal</db:title>
                                 <db:para>Will add the named group to the LDAP Account.</db:para>
-                                <db:para>The group name can either be simple like 'guest', in which-case it will be resolved against the internal eXist-db security realm, or it can be postfixed with the realm e.g. 'project-users@other-realm.com', the postfix will be used to determine the realm to resolve the group against.</db:para>
+                                <db:para>The group name can either be simple like 'guest', in which-case it will be resolved against the internal Elemental security realm, or it can be post-fixed with the realm e.g. 'project-users@other-realm.com', the postfix will be used to determine the realm to resolve the group against.</db:para>
                             </db:section>
                         </xs:documentation>
                     </xs:annotation>
@@ -437,7 +437,7 @@
     
     <xs:simpleType name="metadataKeyType">
         <xs:annotation>
-            <xs:documentation>Metadata Attribute Keys supported by eXist-db for retrieval from LDAP</xs:documentation>
+            <xs:documentation>Metadata Attribute Keys supported by Elemental for retrieval from LDAP</xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:anyURI">
             <xs:enumeration value="http://axschema.org/namePerson"/>
@@ -449,7 +449,7 @@
 
     <xs:simpleType name="metadataAttributeType">
         <xs:annotation>
-            <xs:documentation>Metadata Attributes supported by eXist-db for retrieval from LDAP</xs:documentation>
+            <xs:documentation>Metadata Attributes supported by Elemental for retrieval from LDAP</xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string"/>
     </xs:simpleType>

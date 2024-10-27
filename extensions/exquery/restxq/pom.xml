@@ -30,10 +30,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.exist-db</groupId>
-        <artifactId>exist-parent</artifactId>
+        <groupId>xyz.elemental.fork.org.exist-db</groupId>
+        <artifactId>exist-exquery</artifactId>
         <version>6.4.0-SNAPSHOT</version>
-        <relativePath>../../../exist-parent</relativePath>
+        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>exist-restxq</artifactId>
@@ -59,7 +59,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.exist-db</groupId>
+            <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -194,7 +194,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.exist-db</groupId>
+            <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-expath</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -220,17 +220,67 @@
                 <configuration>
                     <licenseSets>
                         <licenseSet>
+                            <!--
+                                Elemental License - (LGPL 2.1 only)
+                            -->
+                            <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
+                            </excludes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                Combined: Elemental License (LGPL 2.1 only) + eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <multi>
+                                <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                                <separator><![CDATA[NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+      The original license header is included below.
+
+=====================================================================
+                                        ]]></separator>
+                                <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            </multi>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
+                            </excludes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
+                            </excludes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                RESTXQ License (BSD 3-clause)
+                            -->
                             <header>com/mycila/maven/plugin/license/templates/BSD-3.txt</header>
                             <properties>
                                 <owner>Adam Retter</owner>
-                                <project.inceptionYear>2001</project.inceptionYear>
+                                <year>2001</year>
                             </properties>
-                            <excludes>
-                                <exclude>**/log4j2.xml</exclude>
-                                <exclude>**/conf.xml</exclude>
-                            </excludes>
+                            <includes>
+                                <include>pom.xml</include>
+                                <include>src/**</include>
+                            </includes>
                         </licenseSet>
+
                     </licenseSets>
+
+                    <headerDefinitions>
+                        <headerDefinition>${project.parent.relativePath}/../../exist-parent/xquery-license-style.xml</headerDefinition>
+                    </headerDefinitions>
+
                 </configuration>
             </plugin>
             <plugin>

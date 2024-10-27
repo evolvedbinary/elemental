@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,8 +57,6 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -43,9 +65,7 @@ import java.util.ArrayList;
 /**
  * Dialog for viewing and editing Indexes in the Admin Client 
  * 
- * @author <a href="mailto:adam.retter@devon.gov.uk">Adam Retter</a>
- * @serial 2006-03-12
- * @version 1.0
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 class IndexDialog extends JFrame {
 
@@ -77,7 +97,7 @@ class IndexDialog extends JFrame {
 	{
 		super(title);
 		this.client = client;
-        this.setIconImage(InteractiveClient.getExistIcon(getClass()).getImage());		
+        this.setIconImage(InteractiveClient.getElementalIcon(getClass()).getImage());
 		//capture the frame's close event
 		final WindowListener windowListener = new WindowAdapter()
 		{

@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -476,7 +476,7 @@ public class TransactionManager implements BrokerPoolService {
 
     /**
      * @deprecated This mixes concerns and should not be here!
-     * @param broker the  eXist-db DBBroker
+     * @param broker the DBBroker
      * @throws IOException in response to an I/O error
      */
     @Deprecated

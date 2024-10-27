@@ -1,5 +1,29 @@
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -31,21 +55,30 @@
 				background-color: #ffffff;
 			}
 			h1 {
-				color: #4c4c4c;
+				color: black;
 				font-size: 16pt;
+				font-weight: bold;
+			}
+			h1 {
+				color: #4c4c4c;
+				font-size: 14pt;
+				font-weight: bold;
 			}
 			img {
 				display: block;
-				margin: 10px 50px;
+				margin: 2em;
 			}
 			#divMijloc { margin: 20px 10px; margin-right: auto; text-align:center; }
 		</style>
 	</head>
 	<body>
-		<center><img src="logo"/></center>
-		<div id="divMijloc">
-			<h1>Welcome to the ${APP_NAME} ${APP_VER} Installer!</h1>
-			<h1>For more information about ${APP_NAME}, visit <a href="${APP_URL}">${APP_URL}</a>!</h1>
+		<div>
+			<br/>
+			<center><img src="logo" width="75%"/></center>
+			<div id="divMijloc">
+				<h1>Welcome to the ${APP_NAME} ${APP_VER} Installer!</h1>
+				<h2>For more information about ${APP_NAME}, visit: <a href="https://www.elemental.xyz">www.elemental.xyz</a></h2>
+			</div>
 		</div>
 	</body>
 </html>
