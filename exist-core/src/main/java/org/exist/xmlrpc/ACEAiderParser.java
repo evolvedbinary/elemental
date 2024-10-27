@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *

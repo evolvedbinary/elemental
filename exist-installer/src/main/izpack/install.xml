@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -22,17 +46,18 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<izpack:installation version="5.0"
-                     xmlns:izpack="http://izpack.org/schema/installation"
-                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                     xsi:schemaLocation="http://izpack.org/schema/installation http://izpack.org/schema/5.0/izpack-installation-5.0.xsd">
+<izpack:installation
+        xmlns:izpack="https://izpack.github.io/schema/installation"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://izpack.github.io/schema/installation https://izpack.org/schema/5.0/izpack-installation-5.0.xsd"
+        version="5.0">
 
     <logging>
         <log-file mkdirs="true" pattern="$INSTALL_PATH/logs/izpack-install-%u.log"/>
     </logging>
 
     <info>
-        <appname>eXist-db</appname>
+        <appname>Elemental</appname>
         <appversion>@{izpack.installation.info.appversion}</appversion>
         <url>@{izpack.installation.info.url}</url>
         <authors>
@@ -61,7 +86,7 @@
     </locale>
 
     <resources>
-        <res id="Installer.image" src="@{izpack.resources.target}/installer-logo.png"/>
+        <res id="Installer.image" src="@{izpack.resources.target}/installer-logo-vertical.png"/>
         <res id="shortcutSpec.xml" src="@{izpack.resources.target}/shortcutSpec.xml"/>
         <res id="Unix_shortcutSpec.xml" src="@{izpack.resources.target}/UnixShortcutSpec.xml"/>
         <res id="HTMLInfoPanel.info" src="@{izpack.resources.target}/readme.html"/>
@@ -69,7 +94,7 @@
         <res id="ProcessPanel.Spec.xml" src="@{izpack.resources.target}/jobs.xml"/>
         <res id="HTMLInfoPanel.start" src="@{izpack.resources.target}/start.html"/>
         <res id="CustomLangPack.xml_eng" src="@{izpack.resources.target}/custom.eng.xml"/>
-        <res id="logo" src="etc/webapp/logo.jpg"/>
+        <res id="logo" src="@{izpack.resources.target}/installer-device-logo.png"/>
     </resources>
 
     <natives>
@@ -129,7 +154,7 @@
         </pack>
 
         <pack name="Server" required="true" installGroups="Group1">
-            <description>Everything needed for the eXist-db database</description>
+            <description>Everything needed for Elemental</description>
             <fileset targetdir="$INSTALL_PATH" dir=".">
                 <include name="CONTRIBUTING.md"/>
                 <include name="README.md"/>

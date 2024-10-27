@@ -1,56 +1,55 @@
 <div align="center" id="logo">
-<a href="https://exist-db.org/" target="_blank">
-<img src="https://raw.githubusercontent.com/evolvedbinary/elemental/main/exist-jetty-config/src/main/resources/webapp/logo.jpg" alt="eXist Logo" width="333" height="132"></img>
+<a href="https://www.elemental.xyz" target="_blank">
+<img src="https://www.elemental.xyz/images/elemental-logo-horizontal-light.png" alt="Elemental logo"></img>
 </a>
 </div>
 
-## eXist-db Native XML Database
+## Elemental - Native XML Database
 
 [![Build Status](https://github.com/evolvedbinary/elemental/actions/workflows/ci-test.yml/badge.svg?branch=main)](https://github.com/evolvedbinary/elemental/actions/workflows/ci-test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/evolvedbinary/elemental/badge.svg?branch=main)](https://coveralls.io/github/evolvedbinary/elemental?branch=main)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolvedbinary/elemental&amp;utm_campaign=Badge_Grade)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eXist-db_exist&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eXist-db_exist)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=evolvedbinary_elemental&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=evolvedbinary_elemental)
 [![Java 17](https://img.shields.io/badge/java-17-blue.svg)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-LGPL%202.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
 [![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.exist-db/exist/badge.svg)](https://search.maven.org/search?q=g:org.exist-db)
-[![Slack](https://img.shields.io/badge/exist--db-slack-3e103f.svg)](https://exist-db.slack.com)
-
-[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-%235e0d73.svg)](https://contributor-covenant.org/version/1/4/)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/xyz.elemental/elemental/badge.svg)](https://search.maven.org/search?q=g:xyz.elemental)
+[![Slack](https://img.shields.io/badge/elemental-slack-3e103f.svg)](https://join.slack.com/t/elemental-xyz/shared_invite/zt-3290ginoh-lWocaoR3UMw7jghfrt~kFA)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-%235e0d73.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html)
 
 ---
 **NOTE**: Elemental was seeded from a fork of eXist-db's git `develop` branch, commit: `adaa276b9cfcaaeb4ee03ee3822ab882e6779f77` (Fri Oct 25 21:27:35 2024 +0200). The Git history was then rewritten to remove many historic files that we no longer need. This resulted in our commit: [`e065a83bf4dc94abfeebcc353cbfbd496976f440`](https://github.com/evolvedbinary/elemental/commit/e065a83bf4dc94abfeebcc353cbfbd496976f440).
 
 ---
 
-eXist-db is a high-performance open source native XML database—a NoSQL document database and application platform built entirely around XML technologies. The main homepage for eXist-db can be found at [exist-db.org](https://exist-db.org "eXist Homepage"). This is the GitHub repository of eXist source code, and this page links to resources for downloading, building, and contributing to eXist-db, below.
+Elemental is a high-performance open source native XML database—a NoSQL document database and application platform built entirely around XML technologies. The main homepage for Elemental can be found at [elemental.xyz](https://www.elemental.xyz "Elemental Website"). This is the GitHub repository of Elemental source code, and this page links to resources for downloading, building, and contributing to Elemental, below.
 
-The eXist-db community has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) [Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct).
+The Elemental community has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 
-## Open Community Calls
-We hold an open Community Call each week on Monday, from 19:30-20:30 CET. The meetings are posted to this [public Google Calendar](https://calendar.google.com/calendar/u/0?cid=OHVnNmtwcnFnNWNvNmRwZGZxc2FrY283MWtAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ). 
+## Help and Support
 
-If you wish to participate, please join the #community channel on our Slack workspace (invitation link below). Pinned to that channel is a link to the upcoming meeting's agenda, which contains the link to the call, as well as a link to timeanddate.com to look up the time of the meeting for your local time zone. 
-
-The notes of past Community Calls are located [here](https://drive.google.com/drive/folders/0B4NLNdpw86LPc2JsV294NDFfTjQ?resourcekey=0-NQPHfHbtiDuZULNDi06dbA&usp=sharing).
+The best place to seek help or support is in our public [Slack](https://join.slack.com/t/elemental-xyz/shared_invite/zt-3290ginoh-lWocaoR3UMw7jghfrt~kFA) channel, or on our [Mailing List](https://groups.google.com/u/1/a/elemental.xyz/g/users).
 
 ## Resources
 
--   **Homepage:** [https://exist-db.org](https://exist-db.org)
--   **Binaries:** [https://exist-db.org/exist/apps/homepage/index.html#download](https://exist-db.org/exist/apps/homepage/index.html#download)
--   **Documentation:** [https://exist-db.org/exist/apps/doc](https://exist-db.org/exist/apps/doc)
+-   **Homepage:** [https://www.elemental.xyz](https://www.elemental.xyz)
+-   **Binaries:** [https://www.elemental.xyz/downloads](https://www.elemental.xyz/downloads)
+-   **Documentation:** [https://www.elemental.xyz/documentation](https://www.elemental.xyz/documentation)
 -   **Book:** [https://www.oreilly.com/library/view/exist/9781449337094/](https://www.oreilly.com/library/view/exist/9781449337094/)
 -   **Packages:** [https://exist-db.org/exist/apps/public-repo](https://exist-db.org/exist/apps/public-repo)
 -   **Source code:** [https://github.com/evolvedbinary/elemental](https://github.com/evolvedbinary/elemental)
 -   **Git clone URL:** `git://github.com/evolvedbinary/elemental.git`
--   **Mailing list:** [https://lists.sourceforge.net/lists/listinfo/exist-open](https://lists.sourceforge.net/lists/listinfo/exist-open)
--   **Slack:** [https://exist-db.slack.com](https://join.slack.com/t/exist-db/shared_invite/enQtNjQ4MzUyNTE4MDY3LWNkYjZjMmZkNWQ5MDBjODQ3OTljNjMyODkwNmY1MzQwNjUwZjMzZTY1MGJkMjY5NDFhOWZjMDZiMDdhMzY4NGY)
+-   **Mailing list:** [https://groups.google.com/u/1/a/elemental.xyz/g/users](https://groups.google.com/u/1/a/elemental.xyz/g/users)
+-   **LinkedIn:** [https://www.linkedin.com/groups/10070373/](https://www.linkedin.com/groups/10070373/)
+-   **Slack:** [https://elemental-xyz.slack.com](https://join.slack.com/t/elemental-xyz/shared_invite/zt-3290ginoh-lWocaoR3UMw7jghfrt~kFA)
 
-New developers may find the notes in [BUILD.md](https://github.com/evolvedbinary/elemental/blob/main/BUILD.md) and [CONTRIBUTING.md](https://github.com/evolvedbinary/elemental/blob/main/CONTRIBUTING.md) helpful to start using and sharing your work with the eXist community.
+
+
+New developers may find the notes in [BUILD.md](https://github.com/evolvedbinary/elemental/blob/main/BUILD.md) and [CONTRIBUTING.md](https://github.com/evolvedbinary/elemental/blob/main/CONTRIBUTING.md) helpful to start using and sharing your work with the Elemental community.
 
 ## Credits
 
-The eXist-db developers use the YourKit Java Profiler.
+The Elemental developers use the YourKit Java Profiler.
 
 <img src="https://www.yourkit.com/images/yklogo.png" alt="YourKit Logo"/>
 
@@ -58,7 +57,3 @@ YourKit kindly supports open source projects with its full-featured Java Profile
 YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>
 and <a href="https://www.yourkit.com/.net/profiler/">YourKit .NET Profiler</a>,
 innovative and intelligent tools for profiling Java and .NET applications.
-
-![sauce-labs_horiz_red-grey_rgb_200x28](https://user-images.githubusercontent.com/6205362/49570521-27bcc400-f937-11e8-9bfd-1a3ffc721d3d.png)
-
-Cross-browser Testing Platform and Open Source <3 Provided by [Sauce Labs](https://saucelabs.com)

@@ -5,7 +5,7 @@
         <Property name="rollover.max.size">10MB</Property>
         <Property name="rollover.max">14</Property>
         <Property name="rollover.file.pattern">%d{yyyyMMddHHmmss}</Property>
-        <Property name="exist.file.pattern">%d [%t] %-5p (%F [%M]:%L) - %m %n</Property>
+        <Property name="elemental.file.pattern">%d [%t] %-5p (%F [%M]:%L) - %m %n</Property>
     </Properties>
     
     <Appenders>
@@ -14,15 +14,15 @@
             <PatternLayout pattern="%d{DATE} [%t] %-5p (%F [%M]:%L) - %m %n"/>
         </Console>
         
-        <RollingRandomAccessFile name="exist.core" filePattern="${logs}/exist.${rollover.file.pattern}.log.gz" fileName="${logs}/exist.log">
+        <RollingRandomAccessFile name="elemental.core" filePattern="${logs}/elemental.${rollover.file.pattern}.log.gz" fileName="${logs}/elemental.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="exist.locks" filePattern="${logs}/locks.${rollover.file.pattern}.log.gz" fileName="${logs}/locks.log">
+        <RollingRandomAccessFile name="elemental.locks" filePattern="${logs}/locks.${rollover.file.pattern}.log.gz" fileName="${logs}/locks.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
@@ -30,7 +30,7 @@
             <PatternLayout pattern="%d %-5p - %m %n"/>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="exist.ensurelocking" filePattern="${logs}/locks.${rollover.file.pattern}.log.gz" fileName="${logs}/ensure-locking.log">
+        <RollingRandomAccessFile name="elemental.ensurelocking" filePattern="${logs}/locks.${rollover.file.pattern}.log.gz" fileName="${logs}/ensure-locking.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
@@ -38,84 +38,76 @@
             <PatternLayout pattern="%d %-5p - %m %n"/>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="exist.xmldb" filePattern="${logs}/xmldb.${rollover.file.pattern}.log.gz" fileName="${logs}/xmldb.log">
+        <RollingRandomAccessFile name="elemental.xmldb" filePattern="${logs}/xmldb.${rollover.file.pattern}.log.gz" fileName="${logs}/xmldb.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="exist.xmlrpc" filePattern="${logs}/xmlrpc.${rollover.file.pattern}.log.gz" fileName="${logs}/xmlrpc.log">
+        <RollingRandomAccessFile name="elemental.xmlrpc" filePattern="${logs}/xmlrpc.${rollover.file.pattern}.log.gz" fileName="${logs}/xmlrpc.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.urlrewrite" filePattern="${logs}/urlrewrite.${rollover.file.pattern}.log.gz" fileName="${logs}/urlrewrite.log">
+        <RollingRandomAccessFile name="elemental.urlrewrite" filePattern="${logs}/urlrewrite.${rollover.file.pattern}.log.gz" fileName="${logs}/urlrewrite.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.profiling" filePattern="${logs}/profile.${rollover.file.pattern}.log.gz" fileName="${logs}/profile.log">
+        <RollingRandomAccessFile name="elemental.profiling" filePattern="${logs}/profile.${rollover.file.pattern}.log.gz" fileName="${logs}/profile.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.scheduler" filePattern="${logs}/scheduler.${rollover.file.pattern}.log.gz" fileName="${logs}/scheduler.log">
+        <RollingRandomAccessFile name="elemental.scheduler" filePattern="${logs}/scheduler.${rollover.file.pattern}.log.gz" fileName="${logs}/scheduler.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.ehcache" filePattern="${logs}/ehcache.${rollover.file.pattern}.log.gz" fileName="${logs}/ehcache.log">
+        <RollingRandomAccessFile name="elemental.ehcache" filePattern="${logs}/ehcache.${rollover.file.pattern}.log.gz" fileName="${logs}/ehcache.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.betterform" filePattern="${logs}/betterform.${rollover.file.pattern}.log.gz" fileName="${logs}/betterform.log">
+        <RollingRandomAccessFile name="elemental.restxq" filePattern="${logs}/restxq.${rollover.file.pattern}.log.gz" fileName="${logs}/restxq.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.restxq" filePattern="${logs}/restxq.${rollover.file.pattern}.log.gz" fileName="${logs}/restxq.log">
+        <RollingRandomAccessFile name="elemental.backup" filePattern="${logs}/backup.${rollover.file.pattern}.log.gz" fileName="${logs}/backup.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.backup" filePattern="${logs}/backup.${rollover.file.pattern}.log.gz" fileName="${logs}/backup.log">
+        <RollingRandomAccessFile name="elemental.statistics" filePattern="${logs}/statistics.${rollover.file.pattern}.log.gz" fileName="${logs}/statistics.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
-        </RollingRandomAccessFile>
-        
-        <RollingRandomAccessFile name="exist.statistics" filePattern="${logs}/statistics.${rollover.file.pattern}.log.gz" fileName="${logs}/statistics.log">
-            <Policies>
-                <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
-            </Policies>
-            <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="expath.repo" filePattern="${logs}/expath-repo.${rollover.file.pattern}.log.gz" fileName="${logs}/expath-repo.log">
@@ -123,15 +115,15 @@
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
-        <RollingRandomAccessFile name="exist.launcher" filePattern="${logs}/launcher.${rollover.file.pattern}.log.gz" fileName="${logs}/launcher.log">
+        <RollingRandomAccessFile name="elemental.launcher" filePattern="${logs}/launcher.${rollover.file.pattern}.log.gz" fileName="${logs}/launcher.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
-            <PatternLayout pattern="${exist.file.pattern}"/>
+            <PatternLayout pattern="${elemental.file.pattern}"/>
         </RollingRandomAccessFile>
         
     </Appenders>
@@ -139,95 +131,90 @@
     <Loggers>
 
         <Logger name="org.exist.storage.lock.LockTable" additivity="false" level="info">    <!-- set to level="trace" to see lock activity -->
-            <AppenderRef ref="exist.locks"/>
+            <AppenderRef ref="elemental.locks"/>
         </Logger>
 
         <Logger name="org.exist.storage.lock.EnsureLockingAspect" additivity="false" level="trace">
-            <AppenderRef ref="exist.ensurelocking"/>
+            <AppenderRef ref="elemental.ensurelocking"/>
         </Logger>
 
         <Logger name="org.exist.util.sanity.SanityCheck" additivity="false" level="info">    <!-- set to level="trace" to enable all sanity check logging -->
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
 
         <Logger name="org.exist.jetty.JettyStart" additivity="false" level="trace">
             <AppenderRef ref="STDOUT"/>
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
         
         <Logger name="org.exist.jetty.StandaloneServer" additivity="false" level="trace">
             <AppenderRef ref="STDOUT"/>
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
         
         <Logger name="xquery.profiling" additivity="false" level="trace">
-            <AppenderRef ref="exist.profiling"/>
+            <AppenderRef ref="elemental.profiling"/>
         </Logger>
         
         <Logger name="org.exist.statistics" additivity="false" level="debug">
-            <AppenderRef ref="exist.core"/>
-            <AppenderRef ref="exist.statistics"/> 
+            <AppenderRef ref="elemental.core"/>
+            <AppenderRef ref="elemental.statistics"/>
         </Logger>
         
         <Logger name="org.exist.backup.SystemExport" additivity="false" level="trace">
-            <AppenderRef ref="exist.backup"/>
+            <AppenderRef ref="elemental.backup"/>
         </Logger>
         
         <Logger name="org.exist.xmldb" additivity="false" level="info">
-            <AppenderRef ref="exist.xmldb"/>
+            <AppenderRef ref="elemental.xmldb"/>
         </Logger>
         
         <Logger name="org.exist.xmlrpc" additivity="false" level="info">
-            <AppenderRef ref="exist.xmlrpc"/>
+            <AppenderRef ref="elemental.xmlrpc"/>
         </Logger>
 
         <Logger name="org.apache.xmlrpc" additivity="false" level="info">
-            <AppenderRef ref="exist.xmlrpc"/>
+            <AppenderRef ref="elemental.xmlrpc"/>
         </Logger>
         
         <Logger name="org.exist.http.urlrewrite" additivity="false" level="info">
             <!-- set to "trace" to get detailed info on URL rewriting -->
-            <AppenderRef ref="exist.urlrewrite"/>
+            <AppenderRef ref="elemental.urlrewrite"/>
         </Logger>
         
         <Logger name="org.exist.extensions.exquery.restxq" additivity="false" level="info">
-            <AppenderRef ref="exist.restxq"/>
+            <AppenderRef ref="elemental.restxq"/>
         </Logger>
 
         <Logger name="org.eclipse.jetty" additivity="false" level="info">
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
         
         <Logger name="httpclient" additivity="false" level="info">
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
         
         <Logger name="net.sf.ehcache" additivity="false" level="info">
-            <AppenderRef ref="exist.ehcache"/>
+            <AppenderRef ref="elemental.ehcache"/>
         </Logger>
         
         <!-- Milton WebDAV framework -->
         <Logger name="com.bradmcevoy" additivity="false" level="info">
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
         
         <!-- Apache Axis: 'debug' produces a large amount of debugging output -->
         <Logger name="org.apache" additivity="false" level="off">
-            <AppenderRef ref="exist.core"/>
+            <AppenderRef ref="elemental.core"/>
         </Logger>
         
         <!-- Quartz scheduler -->
         <Logger name="org.quartz" additivity="false" level="info">
-            <AppenderRef ref="exist.scheduler"/>
+            <AppenderRef ref="elemental.scheduler"/>
         </Logger>
         
         <Logger name="org.exist.storage.SystemTask" additivity="false" level="debug">
-            <AppenderRef ref="exist.scheduler"/>
-        </Logger>
-        
-        <!-- betterFORM extension -->
-        <Logger name="de.betterform" additivity="false" level="warn">
-            <AppenderRef ref="exist.betterform"/>
+            <AppenderRef ref="elemental.scheduler"/>
         </Logger>
 
         <!-- expath pkg repo -->
@@ -238,11 +225,11 @@
             <AppenderRef ref="expath.repo"/>
         </Logger>
         <Logger name="org.exist.launcher" additivity="false" level="warn">
-            <AppenderRef ref="exist.launcher"/>
+            <AppenderRef ref="elemental.launcher"/>
         </Logger>
         
         <Root level="info">
-            <AppenderRef ref="exist.core"></AppenderRef>
+            <AppenderRef ref="elemental.core"></AppenderRef>
         </Root>
         
     </Loggers>

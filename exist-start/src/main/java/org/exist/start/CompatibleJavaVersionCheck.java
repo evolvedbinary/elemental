@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -42,7 +66,7 @@ public class CompatibleJavaVersionCheck {
             "%n" +
             "OpenJDK versions 12 through 15.0.1 suffer from a critical%n" +
             " bug in the JIT C2 compiler that will cause data loss in%n" +
-            "eXist-db.%n" +
+            "Elemental.%n" +
             "%n" +
             "The problem has been reported to the OpenJDK community.%n" +
             "%n" +
@@ -52,17 +76,16 @@ public class CompatibleJavaVersionCheck {
             "%n" +
             "The detected version of Java on your system is: %s.%n" +
             "%n" +
-            "To prevent potential data loss, eXist-db will not be started.%n" +
-            "To start eXist-db, we recommend using Java 8 or 11.%n" +
+            "To prevent potential data loss, Elemental will not be started.%n" +
+            "To start Elemental, we recommend using Java 8 or 11.%n" +
             "*****************************************************";
 
     private static final Optional<String> RUNTIME_JAVA_VERSION = Optional.ofNullable(System.getProperty("java.version"));
 
     /**
-     * Checks that the runtime version of Java is compatible
-     * with eXist-db.
+     * Checks that the runtime version of Java is compatible.
      *
-     * @throws StartException if the runtime version of Java is incompatible with eXist-db.
+     * @throws StartException if the runtime version of Java is incompatible.
      */
     public static void checkForCompatibleJavaVersion() throws StartException {
         checkForCompatibleJavaVersion(RUNTIME_JAVA_VERSION);

@@ -5,21 +5,20 @@ To be able to better understand you problem or suggestion, please add as much in
 Please fill in the following sections:
 
 ### What is the problem
-> Describe exactly what you see (e.g. an output of an XQuery) 
+> Describe exactly what you see (e.g. the output of an XQuery) 
 
 ### What did you expect
-> Describe what you expected to happen. Add for example a reference to a [specification](https://www.w3.org/TR/xquery-3/).
+> Describe what you expected to happen. Add for example a reference to a [specification](https://www.w3.org/TR/xquery-31/).
 
 ### Describe how to reproduce or add a test
-> Describe how we can can reproduce the problem.
+> Describe how we can reproduce the problem.
 
-> The *best* way is to provide an [SSCCE (Short, Self Contained, Correct (Compilable), Example)](http://sscce.org/). One type of SSCCE could be a small test which reproduces the issue and can be run without dependencies. The [XQSuite - Annotation-based Test Framework for XQuery](http://exist-db.org/exist/apps/doc/xqsuite.xml) makes it very easy for you to create tests. These tests can be executed from the [eXide editor](http://exist-db.org/exist/apps/eXide/index.html) (XQuery - Run as Test)
+> The *best* way is to provide an [SSCCE (Short, Self Contained, Correct (Compilable), Example)](http://sscce.org/). One type of SSCCE could be a small test which reproduces the issue and can be run without dependencies. The [XQSuite - Annotation-based Test Framework for XQuery](http://exist-db.org/exist/apps/doc/xqsuite.xml) makes it easy for you to create tests. These tests can be executed from the [eXide editor](http://exist-db.org/exist/apps/eXide/index.html) via `XQuery` > `Run as Test`.
 
 ### Context information
-Please always add the following information
-- eXist-db version + Git Revision hash e.g. eXist-db 3.0 /  acd0c14 
-- Java version (e.g. Java8u121)
-- Operating system (Windows 7, Linux, MacOs)
-- 32 or 64 bit
-- How is eXist-db installed? (JAR installer, DMG, .tar.gz/.zip distribution, clone from GitHub)
-- Any custom changes in e.g. conf.xml
+Please always add the following information:
+- Elemental version + Git Revision hash e.g. Elemental 6.3.1 / 31fc2c1 
+- Java version (e.g. Java 8u121)
+- Operating system (Windows 11, Linux, macOS)
+- How is Elemental installed? (JAR installer, DMG, .tar.gz/.zip distribution, clone from GitHub)
+- Any custom config changes in e.g. conf.xml

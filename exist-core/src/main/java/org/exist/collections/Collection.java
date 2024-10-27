@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -590,7 +614,7 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
+     * @throws TriggerException in case of trigger error
      */
     void removeResource(Txn transaction, DBBroker broker, DocumentImpl doc)
             throws PermissionDeniedException, LockException, IOException, TriggerException;
@@ -604,7 +628,7 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
+     * @throws TriggerException in case of trigger error
      */
     void removeXMLResource(Txn transaction, DBBroker broker, XmldbURI name)
             throws PermissionDeniedException, TriggerException, LockException, IOException;
@@ -617,7 +641,7 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @param name        the name (without path) of the document
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
-     * @throws TriggerException in case of eXist-db trigger error
+     * @throws TriggerException in case of trigger error
      */
     void removeBinaryResource(Txn transaction, DBBroker broker, XmldbURI name)
             throws PermissionDeniedException, LockException, TriggerException;
@@ -630,7 +654,7 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @param doc         the document to remove
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
-     * @throws TriggerException in case of eXist-db trigger error
+     * @throws TriggerException in case of trigger error
      */
     void removeBinaryResource(Txn transaction, DBBroker broker, DocumentImpl doc)
             throws PermissionDeniedException, LockException, TriggerException;
@@ -651,8 +675,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     void storeDocument(Txn transaction, DBBroker broker, XmldbURI name, InputSource source, @Nullable MimeType mimeType) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -679,8 +703,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     void storeDocument(Txn transaction, DBBroker broker, XmldbURI name, InputSource source, @Nullable MimeType mimeType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -701,8 +725,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     void storeDocument(Txn transaction, DBBroker broker, XmldbURI name, Node node, @Nullable MimeType mimeType) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -729,8 +753,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      */
     void storeDocument(Txn transaction, DBBroker broker, XmldbURI name, Node node, @Nullable MimeType mimeType, @Nullable Date createdDate, @Nullable Date lastModifiedDate, @Nullable Permission permission, @Nullable DocumentType documentType, @Nullable XMLReader xmlReader) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException;
@@ -751,8 +775,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -779,8 +803,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -805,8 +829,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -831,8 +855,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, Node, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -854,8 +878,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      *
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -878,8 +902,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      *
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked*
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -901,8 +925,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      *
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -924,8 +948,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      *
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      * @throws SAXException internal SAXException
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, Node, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
@@ -946,7 +970,7 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
+     * @throws TriggerException in case of trigger error
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
@@ -976,8 +1000,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception*
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception*
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
@@ -1009,8 +1033,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception*
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception*
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
@@ -1038,8 +1062,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      *
      * @deprecated Use {@link #addBinaryResource(Txn, DBBroker, XmldbURI, InputStream, String, long)}
      */
@@ -1068,8 +1092,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      *
      * @deprecated Use {@link #addBinaryResource(Txn, DBBroker, BinaryDocument, InputStream, String, long, Date, Date)}
      */
@@ -1098,8 +1122,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
@@ -1130,8 +1154,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */
@@ -1165,8 +1189,8 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws PermissionDeniedException if user has not sufficient rights
      * @throws LockException if broker is locked
      * @throws IOException in case of I/O errors
-     * @throws TriggerException in case of eXist-db trigger error
-     * @throws EXistException general eXist-db exception
+     * @throws TriggerException in case of trigger error
+     * @throws EXistException general exception
      *
      * @deprecated Use {@link DBBroker#storeDocument(Txn, XmldbURI, InputSource, MimeType, Date, Date, Permission, DocumentType, XMLReader, Collection)} instead.
      */

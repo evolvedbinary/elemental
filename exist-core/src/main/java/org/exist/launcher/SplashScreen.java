@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -34,7 +58,7 @@ import java.util.Observer;
 import org.exist.SystemProperties;
 
 /**
- * Display a splash screen showing the eXist-db logo and a status line.
+ * Display a splash screen showing the logo and a status line.
  *
  * @author Wolfgang Meier
  */
@@ -56,7 +80,7 @@ public class SplashScreen extends JFrame implements Observer, Comparable {
         getContentPane().setBackground(new Color(255, 255, 255, 255));
 
         final URL imageURL = SplashScreen.class.getResource("logo.png");
-        final ImageIcon icon = new ImageIcon(imageURL, "eXist-db Logo");
+        final ImageIcon icon = new ImageIcon(imageURL, "Elemental Logo");
         getContentPane().setLayout(new BorderLayout());
 
         // add the image label
@@ -116,17 +140,17 @@ public class SplashScreen extends JFrame implements Observer, Comparable {
             setVisible(false);
             launcher.signalStarted();
         } else if (BrokerPool.SIGNAL_STARTUP.equals(arg)) {
-            setStatus("Starting eXist-db ...");
+            setStatus("Starting Elemental ...");
         } else if (BrokerPool.SIGNAL_ABORTED.equals(arg)) {
             setVisible(false);
             launcher.showMessageAndExit("Startup aborted",
-                "eXist-db detected an error during recovery. This may not be fatal, " +
+                "Elemental detected an error during recovery. This may not be fatal, " +
                 "but to avoid possible damage, the db will now stop. Please consider " +
                 "running a consistency check via the export tool and create " +
                 "a backup if problems are reported. The db should come up again if you restart " +
                 "it.", true);
         } else if (BrokerPool.SIGNAL_WRITABLE.equals(arg)) {
-            setStatus("eXist-db is up. Waiting for web server ...");
+            setStatus("Elemental is up. Waiting for web server ...");
         } else if (JettyStart.SIGNAL_ERROR.equals(arg)) {
             setVisible(false);
             launcher.showMessageAndExit("Error Occurred",

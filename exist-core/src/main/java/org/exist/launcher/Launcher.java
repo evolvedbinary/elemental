@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -61,10 +85,11 @@ import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_NEVER_IN
 import static org.exist.util.ThreadUtils.newGlobalThread;
 
 /**
- * A launcher for the eXist-db server integrated with the desktop.
+ * A launcher for the Elemental server integrated with the desktop.
  * Shows a splash screen during startup and registers a tray icon
  * in the system bar.
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Wolfgang Meier
  */
 public class Launcher extends Observable implements Observer {
@@ -156,7 +181,7 @@ public class Launcher extends Observable implements Observer {
                 serviceLock.lock();
                 try {
                     if (serviceManager != null && serviceManager.isInstalled()) {
-                        splash.setStatus("eXist-db is already installed as service! Attaching to it ...");
+                        splash.setStatus("Elemental is already installed as service! Attaching to it ...");
                         final Timer timer = new Timer(3000, (event) -> splash.setVisible(false));
                         timer.setRepeats(false);
                         timer.start();
@@ -200,7 +225,7 @@ public class Launcher extends Observable implements Observer {
                     jetty.get().run(args, splash);
                 }
             } catch (final Exception e) {
-                showMessageAndExit("Error Occurred", "An error occurred during eXist-db startup. Please check console output and logs.", true);
+                showMessageAndExit("Error Occurred", "An error occurred during Elemental startup. Please check console output and logs.", true);
                 System.exit(SystemExitCodes.CATCH_ALL_GENERAL_ERROR_EXIT_CODE);
             } finally {
                 serviceLock.unlock();
@@ -218,7 +243,7 @@ public class Launcher extends Observable implements Observer {
         BufferedImage image = null;
         try {
             image = ImageIO.read(getClass().getResource("icon32.png"));
-            trayIcon = new TrayIcon(image.getScaledInstance(iconDim.width, iconDim.height, Image.SCALE_SMOOTH), "eXist-db Launcher");
+            trayIcon = new TrayIcon(image.getScaledInstance(iconDim.width, iconDim.height, Image.SCALE_SMOOTH), "Elemental Launcher");
         } catch (final IOException e) {
             showMessageAndExit("Launcher failed", "Failed to read system tray icon.", false);
         }
@@ -266,13 +291,13 @@ public class Launcher extends Observable implements Observer {
                 serviceLock.lock();
                 try {
                     if (serviceManager != null && serviceManager.isInstalled()) {
-                        showTrayInfoMessage("Starting the eXist-db service. Please wait...");
+                        showTrayInfoMessage("Starting the Elemental service. Please wait...");
                         try {
                             serviceManager.start();
                             updateGuiServiceState();
-                            showTrayInfoMessage("eXist-db service started");
+                            showTrayInfoMessage("Elemental service started");
                         } catch (final ServiceManagerException e) {
-                            showTrayErrorMessage("Starting eXist-db service failed" + e.getMessage());
+                            showTrayErrorMessage("Starting Elemental; service failed" + e.getMessage());
                             JOptionPane.showMessageDialog(null, "Failed to start service: " + e.getMessage(), "Starting Service Failed", JOptionPane.ERROR_MESSAGE);
                         }
                     } else if (jetty.isPresent()) {
@@ -282,7 +307,7 @@ public class Launcher extends Observable implements Observer {
                             } else {
                                 server.run(new String[]{jettyConfig.toAbsolutePath().toString()}, null);
                                 if (server.isStarted()) {
-                                    showTrayInfoMessage("eXist-db server running on port " + server.getPrimaryPort());
+                                    showTrayInfoMessage("Elemental server running on port " + server.getPrimaryPort());
                                 }
                             }
                             updateGuiServiceState();
@@ -303,14 +328,14 @@ public class Launcher extends Observable implements Observer {
                     if (jetty.isPresent()) {
                         jetty.get().shutdown();
                         updateGuiServiceState();
-                        showTrayInfoMessage("eXist-db stopped");
+                        showTrayInfoMessage("Elemental stopped");
                     } else if (serviceManager != null && serviceManager.isRunning()) {
                         try {
                             serviceManager.stop();
                             updateGuiServiceState();
-                            showTrayInfoMessage("eXist-db service stopped");
+                            showTrayInfoMessage("Elemental service stopped");
                         } catch (final ServiceManagerException e) {
-                            showTrayErrorMessage("Stopping eXist-db service failed: " + e.getMessage());
+                            showTrayErrorMessage("Stopping Elemental service failed: " + e.getMessage());
                             JOptionPane.showMessageDialog(null, "Failed to stop service: " + e.getMessage(), "Stopping Service Failed", JOptionPane.ERROR_MESSAGE);
                         }
                     }
@@ -382,7 +407,7 @@ public class Launcher extends Observable implements Observer {
                 }
                 if (desktop.isSupported(Desktop.Action.OPEN)) {
                     popup.addSeparator();
-                    item = new MenuItem("Open exist.log");
+                    item = new MenuItem("Open elemental.log");
                     popup.add(item);
                     item.addActionListener(new LogActionListener());
                 }
@@ -412,7 +437,7 @@ public class Launcher extends Observable implements Observer {
         try {
             jetty.ifPresent(server -> {
                 if (server.isStarted()) {
-                    showTrayInfoMessage("Stopping eXist-db...");
+                    showTrayInfoMessage("Stopping Elemental...");
                     server.shutdown();
                 }
             });
@@ -421,7 +446,7 @@ public class Launcher extends Observable implements Observer {
             if (serviceManager == null) {
                 showTrayWarningMessage("It is not possible to use Service installation on this platform");
             } else {
-                showTrayInfoMessage("Installing service and starting eXist-db...");
+                showTrayInfoMessage("Installing service and starting Elemental...");
 
                 try {
                     serviceManager.install();
@@ -635,9 +660,9 @@ public class Launcher extends Observable implements Observer {
                 SwingUtilities.invokeLater(() -> {
                     final int installServiceResult = JOptionPane.showOptionDialog(
                             splash,
-                            "It is recommended to run eXist-db as a service on " +
+                            "It is recommended to run Elemental as a service on " +
                                     "Windows.\nNot doing so may lead to data loss if you shutdown the computer before " +
-                                    "eXist-db.\n\nWould you like to install the service?",
+                                    "Elemental.\n\nWould you like to install the service?",
                             "Install as Service?",
                             JOptionPane.YES_NO_CANCEL_OPTION,
                             JOptionPane.QUESTION_MESSAGE,
@@ -667,7 +692,7 @@ public class Launcher extends Observable implements Observer {
 
     void signalShutdown() {
         if (tray != null) {
-            trayIcon.setToolTip("eXist-db server stopped");
+            trayIcon.setToolTip("Elemental server stopped");
             if (!isInstallingService) {
                 startItem.setEnabled(true);
                 stopItem.setEnabled(false);
@@ -862,7 +887,7 @@ public class Launcher extends Observable implements Observer {
             final Desktop desktop = Desktop.getDesktop();
             final Optional<Path> home = ConfigurationHelper.getExistHome();
 
-            final Path logFile = FileUtils.resolve(home, "logs/exist.log");
+            final Path logFile = FileUtils.resolve(home, "logs/elemental.log");
 
             if (!Files.isReadable(logFile)) {
                 showTrayErrorMessage("Log file not found: " + logFile.toAbsolutePath().normalize().toString());

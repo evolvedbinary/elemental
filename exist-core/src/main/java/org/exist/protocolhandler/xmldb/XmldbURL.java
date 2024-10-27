@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.protocolhandler.xmldb;
 
 import java.net.MalformedURLException;
@@ -340,9 +363,9 @@ public class XmldbURL {
     }
     
     /**
-     * Get eXist instance name.
+     * Get instance name.
      *
-     * @return eXist-db instance name, at this moment fixed to exist
+     * @return instance name, at this moment fixed to 'exist'
      */
     public String getInstanceName() {
         return "exist";  // No other choice
@@ -359,9 +382,9 @@ public class XmldbURL {
     }
     
     /**
-     * Get information wether URL is an embedded URL.
+     * Get information whether URL is an embedded URL.
      *
-     * @return TRUE when URL refers to resource in embedded eXist-db.
+     * @return TRUE when URL refers to an embedded resource
      */
     public boolean isEmbedded(){
         return (getHost()==null);

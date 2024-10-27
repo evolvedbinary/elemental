@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    eXist-db Open Source Native XML Database
-    Copyright (C) 2001 The eXist-db Authors
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
 
-    info@exist-db.org
-    http://www.exist-db.org
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+    License as published by the Free Software Foundation; version 2.1.
 
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -26,17 +25,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.exist-db</groupId>
-        <artifactId>exist-parent</artifactId>
+        <groupId>xyz.elemental</groupId>
+        <artifactId>elemental-parent</artifactId>
         <version>7.0.0-SNAPSHOT</version>
-        <relativePath>exist-parent</relativePath>
+        <relativePath>elemental-parent</relativePath>
     </parent>
 
-    <artifactId>exist</artifactId>
+    <artifactId>elemental</artifactId>
     <packaging>pom</packaging>
 
-    <name>eXist-db</name>
-    <description>eXist-db multi-module project</description>
+    <name>Elemental</name>
+    <description>Elemental multi-module project</description>
 
     <scm>
         <connection>scm:git:https://github.com/evolvedbinary/elemental.git</connection>
@@ -46,6 +45,7 @@
   </scm>
 
     <modules>
+        <module>elemental-parent</module>
         <module>exist-parent</module>
         <module>exist-ant</module>
         <module>exist-core</module>
@@ -61,10 +61,18 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>${project.parent.relativePath}/elemental-LGPL-21-ONLY-license.template.txt</header>
+                            <includes>
+                                <!-- NOTE(AR) we only check ourself as every other Maven module will be checked separately -->
+                                <include>pom.xml</include>
+                            </includes>
+                        </licenseSet>
+                    </licenseSets>
                 </configuration>
             </plugin>
         </plugins>

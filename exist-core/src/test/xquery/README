@@ -1,6 +1,6 @@
-eXist-db XQuery Smoke Test
---------------------------
+Elemental XQuery Test Suites
+----------------------------
 
-These tests should be run with main test target to ensure that XQuery is running as intended.
+These tests should be run from the main test target to ensure that XQuery is running as intended.
 
 New functionality expressed as XQuery extension functions should always be accompanied by a test suite.

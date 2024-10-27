@@ -31,7 +31,7 @@ import org.exquery.xdm.type.AbstractTypedValue;
 import org.exquery.xquery.Type;
 
 /**
- * eXist-db String Typed Value
+ * String Typed Value
  *
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */

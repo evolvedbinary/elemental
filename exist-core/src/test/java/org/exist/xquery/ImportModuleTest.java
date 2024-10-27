@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -1277,7 +1277,7 @@ public class ImportModuleTest {
     }
 
     /**
-     * Check that for XQuery 1.0. eXist-db raises XQTS0093 error when there exists a sequence of library modules MM -> LM1 -> LM2 -> LM1.
+     * Check that for XQuery 1.0 the error XQTS0093 is raised when there exists a sequence of library modules MM -> LM1 -> LM2 -> LM1.
      *
      * See issue <a href="https://github.com/eXist-db/exist/pull/4996">#4996</a>.
      * See the XQuery 1.0 spec. section: <a href="https://www.w3.org/TR/2010/REC-xquery-20101214/#id-module-import">4.11 Module Import</a>
@@ -1341,7 +1341,7 @@ public class ImportModuleTest {
     }
 
     /**
-     * Check that for XQuery 3.1 eXist-db executes the query even when there exists a sequence of library modules MM -> LM1 -> LM2 -> LM1.
+     * Check that for XQuery 3.1 we can execute a query even when there exists a sequence of library modules MM -> LM1 -> LM2 -> LM1.
      *
      * See issue <a href="https://github.com/eXist-db/exist/pull/4996">#4996</a>.
      * See the XQuery 3.1 spec. section: <a href="https://www.w3.org/TR/xquery-31/#id-module-handling-cycles">4.12.4 Cycles</a>

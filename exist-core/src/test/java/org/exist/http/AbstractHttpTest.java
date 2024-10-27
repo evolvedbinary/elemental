@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.http;
 
 import com.evolvedbinary.j8fu.function.FunctionE;
@@ -41,7 +64,7 @@ public abstract class AbstractHttpTest {
     /**
      * Get the Server URI.
      *
-     * @param existWebServer the eXist-db Web Server.
+     * @param existWebServer the Web Server.
      *
      * @return the Server URI.
      */
@@ -52,7 +75,7 @@ public abstract class AbstractHttpTest {
     /**
      * Get the URI of the Server's REST end-point.
      *
-     * @param existWebServer the eXist-db Web Server.
+     * @param existWebServer the Web Server.
      *
      * @return the URI of the Server's REST end-point.
      */
@@ -63,7 +86,7 @@ public abstract class AbstractHttpTest {
     /**
      * Get the URI of the Server's Apps end-point.
      *
-     * @param existWebServer the eXist-db Web Server.
+     * @param existWebServer the Web Server.
      *
      * @return the URI of the Server's Apps end-point.
      */
@@ -94,7 +117,7 @@ public abstract class AbstractHttpTest {
      * Execute a function with a HTTP Executor.
      *
      * @param <T> the return type of the <code>fn</code> function.
-     * @param existWebServer the eXist-db Web Server.
+     * @param existWebServer the Web Server.
      * @param fn the function which accepts the HTTP Executor.
      *
      * @return the result of the <code>fn</code> function.

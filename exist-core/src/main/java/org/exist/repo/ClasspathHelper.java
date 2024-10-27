@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -107,23 +131,24 @@ public class ClasspathHelper implements BrokerPoolService {
     }
 
     private static boolean isCompatible(final Package pkg) throws PackageException {
-        // determine the eXist-db version this package is compatible with
+        // determine the Elemental version this package is compatible with
         final Collection<ProcessorDependency> processorDeps = pkg.getProcessorDeps();
-        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0");
-        PackageLoader.Version requiresExistVersion = null;
+        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0.0");
+        final String eXistCompatibleProcVersion = SystemProperties.getInstance().getSystemProperty("exist-db-expath-pkg-compatible-version", "6.3.0");
+        PackageLoader.Version requiresProcessorVersion = null;
         for (final ProcessorDependency dependency: processorDeps) {
-            if (Deployment.PROCESSOR_NAME.equals(dependency.getProcessor())) {
+            if (Deployment.PROCESSOR_NAME.equals(dependency.getProcessor()) || Deployment.EXIST_PROCESSOR_NAME.equals(dependency.getProcessor())) {
                 if (dependency.getSemver() != null) {
-                    requiresExistVersion = new PackageLoader.Version(dependency.getSemver(), true);
+                    requiresProcessorVersion = new PackageLoader.Version(dependency.getSemver(), true);
                 } else if (dependency.getSemverMax() != null || dependency.getSemverMin() != null) {
-                    requiresExistVersion = new PackageLoader.Version(dependency.getSemverMin(), dependency.getSemverMax());
+                    requiresProcessorVersion = new PackageLoader.Version(dependency.getSemverMin(), dependency.getSemverMax());
                 } else if (dependency.getVersions() != null) {
-                    requiresExistVersion = new PackageLoader.Version(dependency.getVersions(), false);
+                    requiresProcessorVersion = new PackageLoader.Version(dependency.getVersions(), false);
                 }
                 break;
             }
         }
-        if (requiresExistVersion == null) {
+        if (requiresProcessorVersion == null) {
 
             // does the package contain XQuery Module(s) implemented in Java?
             final ExistPkgInfo existPkgInfo = (ExistPkgInfo) pkg.getInfo("exist");
@@ -139,22 +164,23 @@ public class ClasspathHelper implements BrokerPoolService {
             }
 
             /*
-                There are eXist-db Java modules in the package,
+                There are Elemental Java modules in the package,
                 but the package does not declare which version
-                of eXist-db (the processor) that it depends upon,
+                of Elemental (the processor) that it depends upon,
                 therefore we assume it is incompatible.
 
-                NOTE - In older versions of eXist-db, if the package
+                NOTE - In older versions of Elemental, if the package
                 did not declare a dependency on a specific processor
                 version, we would check whether the version of
-                eXist-db was between 1.4.0 and 2.2.1
-                (inclusive). As we are now past eXist-db version
+                Elemental was between 1.4.0 and 2.2.1
+                (inclusive). As we are now past Elemental version
                 5.2.0, that would always return false!
              */
             return false;
 
         } else {
-            return requiresExistVersion.getDependencyVersion().isCompatible(procVersion);
+            return requiresProcessorVersion.getDependencyVersion().isCompatible(procVersion)
+                || requiresProcessorVersion.getDependencyVersion().isCompatible(eXistCompatibleProcVersion);
         }
     }
 

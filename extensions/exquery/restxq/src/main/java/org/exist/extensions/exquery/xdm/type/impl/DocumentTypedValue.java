@@ -31,7 +31,7 @@ import org.exquery.xquery.Type;
 import org.w3c.dom.Document;
 
 /**
- * eXist-db document() Typed value
+ * document() Typed value
  *
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */

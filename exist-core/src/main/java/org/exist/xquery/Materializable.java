@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -58,7 +58,7 @@ public interface Materializable {
      * parameter will be set to the current item. Otherwise, the eval method will only be called
      * once for the whole context sequence and <b>contextItem</b> will be null.
      *
-     * eXist-db tries to process the entire context set in one, single step whenever
+     * Tries to process the entire context set in one, single step whenever
      * possible. Thus, most classes only expect context to contain a list of
      * nodes which represents the current context of the expression.
      *

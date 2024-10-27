@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -986,7 +1010,7 @@ public class XQueryFunctionsTest {
     public void base64BinaryCast() throws XMLDBException, URISyntaxException {
         final String TEST_BINARY_COLLECTION = "testBinary";
         final String TEST_COLLECTION = "/db/" + TEST_BINARY_COLLECTION;
-        final String BINARY_RESOURCE_FILENAME = "logo.jpg";
+        final String BINARY_RESOURCE_FILENAME = "logo.png";
         final String XML_RESOURCE_FILENAME = "logo.xml";
 
         //create a test collection
@@ -994,7 +1018,7 @@ public class XQueryFunctionsTest {
         Collection testCollection = colService.createCollection(TEST_BINARY_COLLECTION);
         assertNotNull(testCollection);
 
-        final Path fLogo = Paths.get(getClass().getResource("value/logo.jpg").toURI());
+        final Path fLogo = Paths.get(getClass().getResource("value/logo.png").toURI());
 
         //store the eXist logo in the test collection
         BinaryResource br = testCollection.createResource(BINARY_RESOURCE_FILENAME, BinaryResource.class);

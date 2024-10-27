@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -99,6 +123,7 @@ import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 /**
  * Command-line client based on the XML:DB API.
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author wolf
  */
 public class InteractiveClient {
@@ -1040,7 +1065,7 @@ public class InteractiveClient {
                         command.append(lastLine);
                     }
                 } catch (final UserInterruptException e) {
-                    //TODO report error?
+                    errorln("Interrupted by user: " + e.getMessage());
                 }
                 final String xupdate = "<xu:modifications version=\"1.0\" "
                         + "xmlns:xu=\"http://www.xmldb.org/xupdate\">"
@@ -1157,16 +1182,18 @@ public class InteractiveClient {
         }
 
         final String xpathCopy = xpath;
-        getTraceWriter().ifPresent(writer -> {
+        final Optional<Writer> maybeWriter = getTraceWriter();
+        if (maybeWriter.isPresent()) {
+            final Writer writer = maybeWriter.get();
             try {
                 writer.write("<query>");
                 writer.write(xpathCopy);
                 writer.write("</query>");
                 writer.write(EOL);
             } catch (final IOException e) {
-                //TODO report error?
+                throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e);
             }
-        });
+        }
 
         String sortBy = null;
         final int p = xpath.indexOf(" sort by ");
@@ -2077,7 +2104,7 @@ public class InteractiveClient {
     public boolean run() throws Exception {
         this.path = options.setCol.orElse(XmldbURI.ROOT_COLLECTION_URI);
 
-        // get eXist home
+        // get Elemental home
         final Optional<Path> home = ConfigurationHelper.getExistHome();
 
         // get default configuration filename from the driver class and set it in properties
@@ -2099,8 +2126,8 @@ public class InteractiveClient {
             return false;
         }
 
-        historyFile = home.map(h -> h.resolve(".exist_history")).orElse(Paths.get(".exist_history"));
-        queryHistoryFile = home.map(h -> h.resolve(".exist_query_history")).orElse(Paths.get(".exist_query_history"));
+        historyFile = home.map(h -> h.resolve(".elemental_jac_history")).orElse(Paths.get(".elemental_jac_history"));
+        queryHistoryFile = home.map(h -> h.resolve(".elemental_jac_query_history")).orElse(Paths.get(".elemental_jac_query_history"));
         readQueryHistory();
 
         if (interactive) {
@@ -2382,10 +2409,10 @@ public class InteractiveClient {
         while (cont) {
             try {
                 if ("true".equals(properties.getProperty(COLORS))) {
-                    line = console.readLine(ANSI_CYAN + "exist:" + path + "> "
+                    line = console.readLine(ANSI_CYAN + "elemental:" + path + "> "
                             + ANSI_WHITE);
                 } else {
-                    line = console.readLine("exist:" + path + "> ");
+                    line = console.readLine("elemental:" + path + "> ");
                 }
                 if (line != null) {
                     cont = process(line);
@@ -2456,18 +2483,18 @@ public class InteractiveClient {
 
     String getNotice(BinaryOperator<String> propertyAction) {
         final StringBuilder builder = new StringBuilder();
-        builder.append(propertyAction.apply("product-name", "eXist-db"));
+        builder.append(propertyAction.apply("product-name", "Elemental"));
         builder.append(" version ");
         builder.append(propertyAction.apply("product-version", "unknown"));
         final String gitCommitId = propertyAction.apply("git-commit", "");
         if (!gitCommitId.isEmpty()) {
             builder.append(" (").append(gitCommitId).append(")");
         }
-        builder.append(", Copyright (C) 2001-");
+        builder.append(", Copyright (C) 2024-");
         builder.append(Calendar.getInstance().get(Calendar.YEAR));
-        builder.append(" The eXist-db Project");
+        builder.append(" Evolved Binary Ltd");
         builder.append(EOL);
-        builder.append("eXist-db comes with ABSOLUTELY NO WARRANTY.");
+        builder.append("Elemental comes with ABSOLUTELY NO WARRANTY.");
         builder.append(EOL);
         builder.append("This is free software, and you are welcome to redistribute it");
         builder.append(EOL);
@@ -2628,7 +2655,7 @@ public class InteractiveClient {
         return sysProperties;
     }
 
-    public static ImageIcon getExistIcon(final Class clazz) {
-        return new javax.swing.ImageIcon(clazz.getResource("/org/exist/client/icons/x.png"));
+    public static ImageIcon getElementalIcon(final Class clazz) {
+        return new javax.swing.ImageIcon(clazz.getResource("/org/exist/client/icons/elemental-device.png"));
     }
 }
