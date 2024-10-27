@@ -1412,16 +1412,15 @@
                                     <useMavenLogger>true</useMavenLogger>
                                     <executable>/usr/bin/xcrun</executable>
                                     <arguments>
-                                        <argument>altool</argument>
-                                        <argument>--notarize-app</argument>
+                                        <argument>notarytool</argument>
+                                        <argument>submit</argument>
                                         <argument>--verbose</argument>
-                                        <argument>--primary-bundle-id</argument>
-                                        <argument>xyz.elemental</argument>
-                                        <argument>--username</argument>
-                                        <argument>${elemental.release.notarize.username}</argument>
+                                        <argument>--apple-id</argument>
+                                        <argument>${elemental.release.notarize.apple-id}</argument>
+                                        <argument>--team-id</argument>
+                                        <argument>${elemental.release.notarize.team-id}</argument>
                                         <argument>--password</argument>
                                         <argument>${elemental.release.notarize.password}</argument>
-                                        <argument>--file</argument>
                                         <argument>${mac.dmg}</argument>
                                     </arguments>
                                 </configuration>
