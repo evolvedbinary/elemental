@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.protocolhandler.xmlrpc;
 
 import java.io.IOException;
@@ -40,12 +63,12 @@ import org.exist.util.MimeType;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Write document using XMLRPC to remote database and read the data 
+ * Write document using XML-RPC to remote database and read the data
  * from an input stream.
  * 
- * Sends a document to an eXist-db server using XMLRPC. The document can be
+ * Sends a document to the server using XML-RPC. The document can be
  * either XML or non-XML (binary). Chunked means that the document is send 
- * as smaller parts to the server, the servler glues the parts together. There
+ * as smaller parts to the server, the servlet glues the parts together. There
  * is no limitation on the size of the documents that can be transported.
  *
  * @author Dannes Wessels
@@ -55,10 +78,10 @@ public class XmlrpcUpload {
     private final static Logger LOG = LogManager.getLogger(XmlrpcUpload.class);
     
     /**
-     * Write data from a (input)stream to the specified XMLRPC url and leave
+     * Write data from a (input)stream to the specified XML-RPC url and leave
      * the input stream open.
      * 
-     * @param xmldbURL URL pointing to location on eXist-db server.
+     * @param xmldbURL URL pointing to location on the server.
      * @param is Document stream
      * @throws IOException When something is wrong.
      */

@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -64,7 +64,7 @@ import java.util.function.Consumer;
  * manipulating Collection sub-trees.
  *
  * The locking protocol for Documents is entirely flat, and is unrelated to Collection locking.
- * Deadlocks can still occur between Collections and Documents in eXist-db (as they could in the past).
+ * Deadlocks can still occur between Collections and Documents (as they could in the past).
  * If it becomes necessary to eliminate such Collection/Document deadlock scenarios, Document locks
  * could be acquired using the same protocol as Collection locks (as really they are all just URI paths in a hierarchy)!
  *
@@ -715,12 +715,12 @@ public class LockManager {
 
     /**
      * Gets a configuration option from a (legacy) System Property
-     * or if that is not set, then from an eXist-db Configuration file
+     * or if that is not set, then from a Configuration file
      * property.
      *
      * @param legacyPropertyName name of the legacy system property
-     * @param configuration eXist-db configuration
-     * @param configProperty name of an eXist-db configuration property
+     * @param configuration configuration
+     * @param configProperty name of a configuration property
      * @param defaultValue the default value if no system property of config property is found.
      *
      * @return the value of the property
@@ -736,11 +736,10 @@ public class LockManager {
     }
 
     /**
-     * Gets a configuration option from an eXist-db Configuration file
-     * property.
+     * Gets a configuration option from the Configuration file property.
      *
-     * @param configuration eXist-db configuration
-     * @param configProperty name of an eXist-db configuration property
+     * @param configuration configuration
+     * @param configProperty name of a configuration property
      * @param defaultValue the default value if no system property of config property is found.
      *
      * @return the value of the property
@@ -756,12 +755,12 @@ public class LockManager {
 
     /**
      * Gets a configuration option from a (legacy) System Property
-     * or if that is not set, then from an eXist-db Configuration file
+     * or if that is not set, then from a Configuration file
      * property.
      *
      * @param legacyPropertyName name of the legacy system property
-     * @param configuration eXist-db configuration
-     * @param configProperty name of an eXist-db configuration property
+     * @param configuration configuration
+     * @param configProperty name of a configuration property
      * @param defaultValue the default value if no system property of config property is found.
      *
      * @return the value of the property

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn;
 
 import org.exist.collections.Collection;
@@ -51,7 +74,7 @@ public class FunUriCollection extends BasicFunction {
     private static final FunctionParameterSequenceType ARG = optParam("arg", Type.STRING,
             "An xs:string identifying a URI Collection. " +
                     "The argument is interpreted as either an absolute xs:anyURI, or a relative xs:anyURI resolved " +
-                    "against the base-URI property from the static context. In eXist-db this function consults the " +
+                    "against the base-URI property from the static context. In Elemental this function consults the " +
                     "query hierarchy of the database. Query String parameters may be provided to " +
                     "control the URIs returned by this function. " +
                     "The parameter `match` may be used to provide a Regular Expression against which the result " +

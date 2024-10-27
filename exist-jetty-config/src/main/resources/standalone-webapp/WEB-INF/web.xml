@@ -13,8 +13,8 @@
     metadata-complete="false"
     version="5.0">
 
-    <description>eXist-db – Open Source Native XML Database</description>
-    <display-name>eXist-db XML Database</display-name>
+    <description>Elemental - NoSQL Database</description>
+    <display-name>Elemental</display-name>
 
     <!--
         RpcServlet provides XML-RPC access to eXist

@@ -31,7 +31,7 @@ import org.exist.xquery.value.BinaryValue;
 import org.exquery.xdm.type.AbstractTypedValue;
 
 /**
- * eXist-db xs:base64Binary and xs:hexBinary Typed Values
+ * xs:base64Binary and xs:hexBinary Typed Values
  *
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */

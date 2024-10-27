@@ -12,8 +12,8 @@
     metadata-complete="false"
     version="5.0">
 
-    <description>eXist Open Source Native XML Database</description>
-    <display-name>eXist XML Database</display-name>
+    <description>Elemental - NoSQL Database</description>
+    <display-name>Elemental</display-name>
 
     <!--
 	 | ScaleImageJAI servlet: scale images on the fly and cache

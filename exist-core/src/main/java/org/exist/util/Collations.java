@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -575,7 +599,7 @@ public class Collations {
 
         if(!fallback) {
             //TODO(AR) how to disable fallback in ICU?
-            logger.warn("eXist-db does not yet support disabling collation fallback");
+            logger.warn("Elemental does not yet support disabling collation fallback");
         }
 
         if(version != null) {
@@ -588,7 +612,7 @@ public class Collations {
             }
 
             if(collator.getVersion().compareTo(versionInfo) < 0) {
-                throw new XPathException(expression, "Requested UCA Collation version: " + version + ", however eXist-db only has ICU UCA: " + collator.getVersion().toString());
+                throw new XPathException(expression, "Requested UCA Collation version: " + version + ", however Elemental only has ICU UCA: " + collator.getVersion().toString());
             }
         }
 
@@ -621,7 +645,7 @@ public class Collations {
                     break;
 
                 default:
-                    final String msg = "eXist-db only supports Collation strengths of 'identical', 'primary', 'secondary', 'tertiary' or 'quaternary', requested: " + strength;
+                    final String msg = "Elemental only supports Collation strengths of 'identical', 'primary', 'secondary', 'tertiary' or 'quaternary', requested: " + strength;
                     logger.error(msg);
                     throw new XPathException(expression, ErrorCodes.FOCH0002, msg);
 
@@ -647,7 +671,7 @@ public class Collations {
                     break;
 
                 default:
-                    final String msg = "eXist-db only supports Collation maxVariables of 'space', 'punct', 'symbol', or 'currency', requested: " + maxVariable;
+                    final String msg = "Elemental only supports Collation maxVariables of 'space', 'punct', 'symbol', or 'currency', requested: " + maxVariable;
                     logger.error(msg);
                     throw new XPathException(expression, ErrorCodes.FOCH0002, msg);
             }
@@ -761,7 +785,7 @@ public class Collations {
             case "currency" -> Collator.ReorderCodes.CURRENCY;
             case "digit" -> Collator.ReorderCodes.DIGIT;
             default -> {
-                logger.warn("eXist-db does not support the collation reorderCode: {}", reorderCode);
+                logger.warn("Elemental does not support the collation reorderCode: {}", reorderCode);
                 yield -1;
             }
         };

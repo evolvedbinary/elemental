@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -79,7 +103,7 @@ public interface DocumentTrigger extends Trigger {
      * This method is called once before the database will actually parse the input data. You may take any action
      * here, using the supplied broker instance.
      * 
-     * @param broker eXist-db DBBroker
+     * @param broker the DBBroker
      * @param txn transaction
      * @param uri the uri
      * @throws TriggerException in case of an error
@@ -90,7 +114,7 @@ public interface DocumentTrigger extends Trigger {
      * This method is called after the operation completed. At this point, the document has already
      * been stored.
      *
-     * @param broker eXist-db DBBroker
+     * @param broker the DBBroker
      * @param txn transaction
      * @param document stored document
      * @throws TriggerException in case of an error

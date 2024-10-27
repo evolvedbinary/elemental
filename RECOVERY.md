@@ -21,9 +21,9 @@ for available command-line options.
 
 To recover from a corrupted index, perform the following steps:
 
-1. Stop the running eXist database instance
-2. Change into directory `$EXIST_HOME/data` or another directory you specified
-   as data directory in the configuration (`$EXIST_HOME/etc/conf.xml`).
+1. Stop the running Elemental database instance
+2. Change into directory `$ELEMENTAL_HOME/data` or another directory you specified
+   as data directory in the configuration (`$ELEMENTAL_HOME/etc/conf.xml`).
 3. Delete
    the following resources:
    - All ".dbx" files EXCEPT blob.dbx, collections.dbx, dom.dbx, and symbols.dbx
@@ -31,7 +31,7 @@ To recover from a corrupted index, perform the following steps:
    - All ".log" transaction log files
    - The "lucene" and "range" directories
 4. Trigger a reindex in order to reconstruct the secondary indexes, via the
-   eXist-db XQuery function `xmldb:reindex("/db")`. This can be executed directly
+   XQuery function `xmldb:reindex("/db")`. This can be executed directly
    via the Java admin client, or, alternatively, on the command line via the
    following command:
 
@@ -49,7 +49,7 @@ e.g., for supplying a username and password.
 To completely wipe a database—for example, in order to restore a backup onto
 a clean database—perform the following steps:
 
-1. Stop the running eXist database instance
+1. Stop the running Elemental database instance
 2. Delete all files and directories from the "data" directory
 
 > Note that restoring from a backup (or parts of it) does not automatically

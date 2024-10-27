@@ -1,5 +1,29 @@
-<?xml version="1.0" encoding="iso-8859-1" standalone="yes" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
 
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
@@ -25,10 +49,11 @@
 
 <!-- The English langpack -->
 
-<izpack:langpack version="5.0"
-                 xmlns:izpack="http://izpack.org/schema/langpack"
-                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                 xsi:schemaLocation="http://izpack.org/schema/langpack http://izpack.org/schema/5.0/izpack-langpack-5.0.xsd">
+<izpack:langpack
+        xmlns:izpack="https://izpack.github.io/schema/langpack"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://izpack.github.io/schema/langpack https://izpack.org/schema/5.0/izpack-langpack-5.0.xsd"
+        version="5.0">
 
     <!-- Heading messages START -->
     <str id="CheckedHelloPanel.headline" txt="Welcome"/>
@@ -95,13 +120,13 @@
     <str id="PrinterSelectPanel.select_printer" txt="Select the printer to use for initial setup and testing."/>
 
     <!-- InfoPanel strings -->
-    <str id="InfoPanel.info" txt=""/>
+    <str id="HTMLInfoPanel.start" txt="Elemental"/>
 
     <!-- PathInputPanel strings -->
     <str id="PathInputPanel.required" txt="The chosen directory should exist."/>
     <str id="PathInputPanel.required.forModificationInstallation" txt="The chosen directory should exist."/>
     <str id="PathInputPanel.notValid" txt="The chosen directory does not contain the required product."/>
-    <str id="PathInputPanel.extendedIntro" txt="On Windows Vista and Windows 7, please do not install eXist-db into the 'Program Files' directory unless you have deactivated UAC or plan to always run eXist-db in privileged mode."/>
+    <str id="PathInputPanel.extendedIntro" txt="On Windows Vista and Windows 7, please do not install Elemental into the 'Program Files' directory unless you have deactivated UAC or plan to always run Elemental in privileged mode."/>
 
 		<!-- TargetPanel strings -->
     <str id="TargetPanel.info" txt="Select the installation path: "/>

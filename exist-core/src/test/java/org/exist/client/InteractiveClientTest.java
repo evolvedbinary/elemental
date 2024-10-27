@@ -226,15 +226,15 @@ class InteractiveClientTest {
     void getNotice() {
         BinaryOperator<String> propertyAction = createMock(BinaryOperator.class);
 
-        expect(propertyAction.apply("product-name", "eXist-db")).andReturn("eXist-db");
+        expect(propertyAction.apply("product-name", "Elemental")).andReturn("Elemental");
         expect(propertyAction.apply("product-version", "unknown")).andReturn("testVersion");
         expect(propertyAction.apply("git-commit", "")).andReturn("gitCommitId");
 
         replay(collection, mgtService, perm, resource, clientFrame, account, group, propertyAction);
 
-        String expected = "eXist-db version testVersion (gitCommitId), Copyright (C) 2001-" +
-                Calendar.getInstance().get(Calendar.YEAR) + " The eXist-db Project" + EOL +
-                "eXist-db comes with ABSOLUTELY NO WARRANTY." + EOL +
+        String expected = "Elemental version testVersion (gitCommitId), Copyright (C) 2024-" +
+                Calendar.getInstance().get(Calendar.YEAR) + " Evolved Binary Ltd" + EOL +
+                "Elemental comes with ABSOLUTELY NO WARRANTY." + EOL +
                 "This is free software, and you are welcome to redistribute it" + EOL +
                 "under certain conditions; for details read the license file." + EOL;
         assertThat(client.getNotice(propertyAction)).isNotNull().isEqualTo(expected);

@@ -1,5 +1,29 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
 
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
@@ -27,10 +51,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.exist-db</groupId>
-        <artifactId>exist-parent</artifactId>
+        <groupId>xyz.elemental.fork.org.exist-db</groupId>
+        <artifactId>exist-modules</artifactId>
         <version>7.0.0-SNAPSHOT</version>
-        <relativePath>../../../../exist-parent</relativePath>
+        <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>exist-expathrepo-trigger-test</artifactId>
@@ -48,14 +72,17 @@
 
     <properties>
         <!-- used in the EXPath Package Descriptor -->
+        <package-title>${project.name}</package-title>
         <package-name>https://my-organisation.com/exist-db/app</package-name>
+        <package-abbrev>${project.artifactId}</package-abbrev>
+        <package-final-name>${project.artifactId}-${project.version}</package-final-name>
         <example.module.namespace>https://my-organisation.com/exist-db/ns/app/my-java-module</example.module.namespace>
         <example.module.java.classname>ExampleModule</example.module.java.classname>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.exist-db</groupId>
+            <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -118,6 +145,66 @@
         </resources>
 
         <plugins>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseSets>
+                        <licenseSet>
+                            <!--
+                                Elemental License - (LGPL 2.1 only)
+                            -->
+                            <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
+                                <exclude>xar-assembly.xml</exclude>
+                            </excludes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                Combined: Elemental License (LGPL 2.1 only) + eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <multi>
+                                <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                                <separator><![CDATA[NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+      The original license header is included below.
+
+=====================================================================
+                                        ]]></separator>
+                                <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            </multi>
+                            <includes>
+                                <include>pom.xml</include>
+                                <include>src/main/java/org/exist/repo/ExampleModule.java</include>
+                                <include>src/test/resources/conf.xml</include>
+                                <include>xar-assembly.xml</include>
+                            </includes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/main/java/org/exist/repo/ExampleModule.java</exclude>
+                                <exclude>src/test/resources/conf.xml</exclude>
+                                <exclude>xar-assembly.xml</exclude>
+                            </excludes>
+                        </licenseSet>
+
+                    </licenseSets>
+
+                    <headerDefinitions>
+                        <headerDefinition>${project.parent.relativePath}/../../exist-parent/xquery-license-style.xml</headerDefinition>
+                    </headerDefinitions>
+
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>ro.kuberam.maven.plugins</groupId>
                 <artifactId>kuberam-expath-plugin</artifactId>

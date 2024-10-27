@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -62,7 +62,7 @@ import java.util.function.Supplier;
  * Typically this is envisaged only being used for development or debugging purposes, and is unlikely to be compiled
  * into a production application as the reflection overhead would likely be too much of a performance drain.
  *
- * When compiled into eXist-db, the aspect may be disabled by setting the system
+ * When compiled in the aspect may be disabled by setting the system
  * property `exist.ensurelocking.disabled=true`.
  *
  * Throws a LockException(s) if the appropriate locks are not held and

@@ -13,7 +13,7 @@
  *
  * The GNU Lesser General Public License v2.1 only license follows.
  *
- * ---------------------------------------------------------------------
+ * =====================================================================
  *
  * Copyright (C) 2014, Evolved Binary Ltd
  *
@@ -170,7 +170,7 @@ public class BlobStoreDumpTool {
                         && buffer.get() == BLOB_STORE_MAGIC_NUMBER[3];
 
         if (!validMagic) {
-            throw new IOException("File was not recognised as a valid eXist-db Blob Store: "
+            throw new IOException("File was not recognised as a valid Elemental Blob Store: "
                     + persistentFile.toAbsolutePath().toString());
         }
 

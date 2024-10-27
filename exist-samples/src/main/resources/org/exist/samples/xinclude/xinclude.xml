@@ -2,6 +2,30 @@
 <?xml-stylesheet href="db2html.xsl" type="text/xsl"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -25,7 +49,7 @@
 -->
 <book xmlns:xi="http://www.w3.org/2001/XInclude">
     <bookinfo>
-        <graphic fileref="logo.jpg"/>
+        <graphic fileref="logo.png"/>
         <style href="styles/default-style.css"/>
         <title>Open Source XML Database</title>
         <author>
@@ -44,13 +68,13 @@
     <chapter>
         <title>XInclude Examples</title>
 
-        <para>Beginning with version 0.9, eXist comes with partial support for the XInclude
+        <para>Beginning with version 0.9, eXist-db comes with partial support for the XInclude
             standard. If configured (as is the default), eXist's XML serializer will scan all XML
             fragments for XInclude tags. Basically, the XInclude processor is implemented as a
             filter which sits between the serializer's output event stream and the receiver. If it
             finds an XInclude element, it will try to expand it. The current element in the stream
             is replaced by the result of the XInclude operation. XInclude processing is thus applied
-            whenever eXist serializes an XML fragment, be it a document, the result of an XQuery or
+            whenever eXist-db serializes an XML fragment, be it a document, the result of an XQuery or
             an XSLT stylesheet.</para>
 
         <para>eXist's support for XInclude is not complete. You cannot include raw text, just XML.
@@ -58,14 +82,14 @@
             (points and ranges) are not supported. Since version 1.2, the
             <sgmltag>xi:fallback</sgmltag> element is implemented properly.</para>
 
-        <para>Another common misunderstanding: eXist expands XIncludes at serialization time, which
+        <para>Another common misunderstanding: eXist-db expands XIncludes at serialization time, which
             means that the query engine will see the XInclude tags <emphasis>before</emphasis> they
             are expanded. You cannot query across XIncludes - unless you create your own code (e.g.
             an XQuery function) for it. We would certainly like to support queries over xincluded
             content in the future though.</para>
 
-        <para>Why do we need XInclude? One reason is that eXist does not preserve entity
-            declarations. Entities are resolved by the XML parser, so eXist just sees the expanded
+        <para>Why do we need XInclude? One reason is that eXist-db does not preserve entity
+            declarations. Entities are resolved by the XML parser, so eXist-db just sees the expanded
             text, not the entity itself. However, external entities are handy if you want to include
             a given fragment at several locations in different files. For example, the navigation
             sidebar at the left will probably be used by several documents throughout a site, so it
@@ -238,17 +262,17 @@ declare variable $var2 external;</synopsis>
 			<title>Including resources from external URIs or the file system</title>
 
 			<para>Beginning with version 1.3, if the URI in the href attribute specifies 
-			a known scheme (like http: or file:), eXist will try to load it as an external 
+			a known scheme (like http: or file:), eXist-db will try to load it as an external 
 			resource. For example:</para>
 
 			<synopsis language="xml">&lt;xi:include href="http://localhost:8080/exist/rest/db/xinclude/disclaimer.xml"/&gt;</synopsis>
 
 			<para>Should load "disclaimer.xml" via HTTP (assuming that the URL is correct
-			and you are using the default eXist setup):</para>
+			and you are using the default eXist-db setup):</para>
 
 			<synopsis language="xml">
 				<xi:include href="http://demo.exist-db.org/rest/db/xinclude/disclaimer.xml">
-                	<xi:fallback><p>Included url not found! Example assumes eXist is running at
+                	<xi:fallback><p>Included url not found! Example assumes eXist-db is running at
 					http://localhost:8080/exist/</p></xi:fallback>
 				</xi:include>
 			</synopsis>
@@ -273,7 +297,7 @@ declare variable $var2 external;</synopsis>
 			<synopsis language="xml">
 				<xi:include href="http://demo.exist-db.org/rest/db/xinclude/disclaimer.xml"
 					xpointer="xpointer(//comment:comment)xmlns(comment=http://test.org)">
-					<xi:fallback><p>Included URL not found! Example assumes eXist is running at
+					<xi:fallback><p>Included URL not found! Example assumes eXist-db is running at
 					http://localhost:8080/exist/</p></xi:fallback>
 				</xi:include>
 			</synopsis>

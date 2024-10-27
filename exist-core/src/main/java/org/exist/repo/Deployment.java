@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -76,7 +100,8 @@ public class Deployment {
 
     private final static Logger LOG = LogManager.getLogger(Deployment.class);
 
-    public final static String PROCESSOR_NAME = "http://exist-db.org";
+    public final static String PROCESSOR_NAME = "http://elemental.xyz";
+    public final static String EXIST_PROCESSOR_NAME = "http://exist-db.org";
 
     private final static String REPO_NAMESPACE = "http://exist-db.org/xquery/repo";
     private final static String PKG_NAMESPACE = "http://expath.org/ns/pkg";
@@ -213,6 +238,8 @@ public class Deployment {
 
                     if (processor != null && processor.equals(PROCESSOR_NAME) && version != null) {
                         checkProcessorVersion(version);
+                    } else if (processor != null && processor.equals(EXIST_PROCESSOR_NAME) && version != null) {
+                        checkExistDbProcessorVersion(version);
                     } else if (pkgName != null) {
                         LOG.info("Package {} depends on {}", name, pkgName);
                         boolean isInstalled = false;
@@ -283,12 +310,23 @@ public class Deployment {
     }
 
     private void checkProcessorVersion(final PackageLoader.Version version) throws PackageException {
-        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0");
+        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0.0");
 
         final DependencyVersion depVersion = version.getDependencyVersion();
         if (!depVersion.isCompatible(procVersion)) {
-            throw new PackageException("Package requires eXist-db version " + version.toString() + ". " +
+            throw new PackageException("Package requires Elemental version: " + version + ". " +
                 "Installed version is " + procVersion);
+        }
+    }
+
+    private void checkExistDbProcessorVersion(final PackageLoader.Version version) throws PackageException {
+        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0.0");
+        final String eXistCompatibleProcVersion = SystemProperties.getInstance().getSystemProperty("exist-db-expath-pkg-compatible-version", "6.3.0");
+
+        final DependencyVersion depVersion = version.getDependencyVersion();
+        if (!depVersion.isCompatible(eXistCompatibleProcVersion)) {
+            throw new PackageException("Package requires eXist-db version: " + version + ". " +
+                    "Installed version is Elemental: " + procVersion + ", with compatibility for eXist-db version: " + eXistCompatibleProcVersion);
         }
     }
 

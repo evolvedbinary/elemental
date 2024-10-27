@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -26,7 +50,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.exist-db</groupId>
+        <groupId>xyz.elemental.fork.org.exist-db</groupId>
         <artifactId>exist-parent</artifactId>
         <version>7.0.0-SNAPSHOT</version>
         <relativePath>../exist-parent</relativePath>
@@ -156,7 +180,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.exist-db</groupId>
+            <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-start</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -300,7 +324,7 @@
         <dependency>
             <groupId>org.exist-db.thirdparty.xerces</groupId>
             <artifactId>xercesImpl</artifactId>
-            <version>2.12.2</version>
+            <version>${xerces.version}</version>
             <classifier>jdk14-xml-schema-1.1</classifier>
             <exclusions>
                 <exclusion> <!-- conflicts with Java 17's javax.xml module -->
@@ -545,13 +569,13 @@
 
         <!-- test dependencies -->
         <dependency>
-            <groupId>org.exist-db</groupId>
+            <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-jetty-config</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.exist-db</groupId>
+            <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-samples</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -694,9 +718,128 @@
 
                         <licenseSet>
                             <!--
-                                eXist-db's License
+                                Elemental License - (LGPL 2.1 only)
                             -->
-                            <header>${project.parent.relativePath}/LGPL-21-license.template.txt</header>
+                            <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                            <includes>
+                                <include>project-suppression.xml</include>
+                            </includes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                               Combined: Elemental License (LGPL 2.1 only) + eXist-db License (LGPL 2.1 or later)
+                           -->
+                            <multi>
+                                <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                                <separator><![CDATA[NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+      The original license header is included below.
+
+=====================================================================
+                                ]]></separator>
+                                <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            </multi>
+                            <includes>
+                                <include>pom.xml</include>
+                                <include>src/test/resources/log4j2.xml</include>
+                                <include>src/test/resources-filtered/conf.xml</include>
+                                <include>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</include>
+                                <include>src/test/resources-filtered/org/exist/xquery/functions/transform/conf.xml</include>
+                                <include>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</include>
+                                <include>src/main/java/org/exist/client/ClientFrame.java</include>
+                                <include>src/main/java/org/exist/client/Connection.java</include>
+                                <include>src/main/java/org/exist/client/ConnectionDialog.java</include>
+                                <include>src/main/java/org/exist/client/DocumentView.java</include>
+                                <include>src/main/java/org/exist/client/IndexDialog.java</include>
+                                <include>src/main/java/org/exist/client/InteractiveClient.java</include>
+                                <include>src/main/java/org/exist/client/QueryDialog.java</include>
+                                <include>src/main/java/org/exist/client/TriggersDialog.java</include>
+                                <include>src/main/java/org/exist/client/UploadDialog.java</include>
+                                <include>src/main/java/org/exist/client/security/AccessControlEntryDialog.java</include>
+                                <include>src/main/java/org/exist/client/security/EditPropertiesDialog.java</include>
+                                <include>src/main/java/org/exist/client/security/UserDialog.java</include>
+                                <include>src/main/java/org/exist/client/security/UserManagerDialog.java</include>
+                                <include>src/main/java/org/exist/collections/Collection.java</include>
+                                <include>src/main/java/org/exist/collections/CollectionConfigurationManager.java</include>
+                                <include>src/main/java/org/exist/collections/triggers/CollectionTrigger.java</include>
+                                <include>src/main/java/org/exist/collections/triggers/DocumentTrigger.java</include>
+                                <include>src/main/java/org/exist/config/Configuration.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/DocumentImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/DocumentSet.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/SymbolTable.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/VirtualNodeSet.java</include>
+                                <include>src/main/java/org/exist/http/servlets/XSLTServlet.java</include>
+                                <include>src/main/java/org/exist/indexing/Index.java</include>
+                                <include>src/main/java/org/exist/indexing/IndexManager.java</include>
+                                <include>src/main/java/org/exist/jetty/JettyStart.java</include>
+                                <include>src/main/java/org/exist/jetty/WebAppContext.java</include>
+                                <include>src/main/java/org/exist/launcher/ConfigurationDialog.java</include>
+                                <include>src/main/java/org/exist/launcher/ConfigurationUtility.java</include>
+                                <include>src/main/java/org/exist/launcher/Launcher.java</include>
+                                <include>src/main/java/org/exist/launcher/LauncherWrapper.java</include>
+                                <include>src/main/java/org/exist/launcher/SplashScreen.java</include>
+                                <include>src/main/java/org/exist/launcher/WindowsServiceManager.java</include>
+                                <include>src/main/java/org/exist/management/impl/ExistMBean.java</include>
+                                <include>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</include>
+                                <include>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</include>
+                                <include>src/main/java/org/exist/repo/ClasspathHelper.java</include>
+                                <include>src/main/java/org/exist/repo/Deployment.java</include>
+                                <include>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</include>
+                                <include>src/main/java/org/exist/security/SecurityManager.java</include>
+                                <include>src/main/java/org/exist/security/internal/AccountImpl.java</include>
+                                <include>src/main/java/org/exist/source/Source.java</include>
+                                <include>src/main/java/org/exist/source/SourceFactory.java</include>
+                                <include>src/main/java/org/exist/storage/BrokerFactory.java</include>
+                                <include>src/main/java/org/exist/storage/BrokerPool.java</include>
+                                <include>src/main/java/org/exist/storage/DBBroker.java</include>
+                                <include>src/main/java/org/exist/storage/IndexSpec.java</include>
+                                <include>src/main/java/org/exist/storage/Indexable.java</include>
+                                <include>src/main/java/org/exist/storage/NativeBroker.java</include>
+                                <include>src/main/java/org/exist/storage/lock/FileLock.java</include>
+                                <include>src/main/java/org/exist/storage/recovery/RecoveryManager.java</include>
+                                <include>src/main/java/org/exist/storage/sync/SyncTask.java</include>
+                                <include>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</include>
+                                <include>src/main/java/org/exist/test/runner/XMLTestRunner.java</include>
+                                <include>src/main/java/org/exist/test/runner/XQueryTestRunner.java</include>
+                                <include>src/main/java/org/exist/test/runner/XSuite.java</include>
+                                <include>src/main/java/org/exist/util/Collations.java</include>
+                                <include>src/main/java/org/exist/util/crypto/digest/DigestType.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
+                                <include>src/main/java/org/exist/xquery/value/Type.java</include>
+                                <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
+                                <include>src/main/resources-filtered/org/exist/system.properties</include>
+                                <include>src/main/resources/org/exist/client/messages.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_es_ES.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_fr_FR.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_it_IT.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_nb_NO.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_nl_NL.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_no.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_ru_RU.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_sv_SE.properties</include>
+                                <include>src/main/resources/org/exist/client/messages_zh_CN.properties</include>
+                                <include>src/main/resources/org/exist/launcher/ConfigurationDialog.form</include>
+                                <include>src/test/java/org/exist/http/AbstractHttpTest.java</include>
+                                <include>src/test/java/org/exist/http/RESTServiceTest.java</include>
+                                <include>src/test/java/org/exist/management/JmxRemoteTest.java</include>
+                                <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</include>
+                                <include>src/test/resources/org/exist/validation/catalog.xml</include>
+                                <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/test/xquery/util/util.xml</include>
+                            </includes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <header>${project.parent.relativePath}/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>ARC-BSD-3-license.template.txt</exclude>
                                 <exclude>BX-BSD-3-license.template.txt</exclude>
@@ -713,7 +856,101 @@
                                 <!--
                                     Already under LGPL 2.1, but with a different Copyright
                                 -->
+                                <exclude>pom.xml</exclude>
+                                <exclude>project-suppression.xml</exclude>
+                                <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/resources-filtered/conf.xml</exclude>
+                                <exclude>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</exclude>
+                                <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/conf.xml</exclude>
+                                <exclude>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</exclude>
+                                <exclude>src/main/java/org/exist/client/ClientFrame.java</exclude>
+                                <exclude>src/main/java/org/exist/client/Connection.java</exclude>
+                                <exclude>src/main/java/org/exist/client/ConnectionDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/DocumentView.java</exclude>
+                                <exclude>src/main/java/org/exist/client/IndexDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/InteractiveClient.java</exclude>
+                                <exclude>src/main/java/org/exist/client/QueryDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/TriggersDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/UploadDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/security/AccessControlEntryDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/security/EditPropertiesDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/security/UserDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/client/security/UserManagerDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/Collection.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/CollectionConfigurationManager.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/triggers/CollectionTrigger.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/triggers/DocumentTrigger.java</exclude>
+                                <exclude>src/main/java/org/exist/config/Configuration.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/DocumentImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/DocumentSet.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/SymbolTable.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/VirtualNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/XMLDeclarationImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/http/servlets/XSLTServlet.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/Index.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/IndexManager.java</exclude>
+                                <exclude>src/main/java/org/exist/jetty/JettyStart.java</exclude>
+                                <exclude>src/main/java/org/exist/jetty/WebAppContext.java</exclude>
+                                <exclude>src/main/java/org/exist/launcher/ConfigurationDialog.java</exclude>
+                                <exclude>src/main/java/org/exist/launcher/ConfigurationUtility.java</exclude>
+                                <exclude>src/main/java/org/exist/launcher/Launcher.java</exclude>
+                                <exclude>src/main/java/org/exist/launcher/LauncherWrapper.java</exclude>
+                                <exclude>src/main/java/org/exist/launcher/SplashScreen.java</exclude>
+                                <exclude>src/main/java/org/exist/launcher/WindowsServiceManager.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/ExistMBean.java</exclude>
+                                <exclude>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</exclude>
+                                <exclude>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</exclude>
+                                <exclude>src/main/java/org/exist/repo/ClasspathHelper.java</exclude>
+                                <exclude>src/main/java/org/exist/repo/Deployment.java</exclude>
+                                <exclude>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
+                                <exclude>src/main/java/org/exist/security/internal/AccountImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/source/Source.java</exclude>
+                                <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/BrokerFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/BrokerPool.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/DBBroker.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/FluentBrokerAPI.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/IndexSpec.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/Indexable.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/NativeBroker.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/lock/FileLock.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/sync/SyncTask.java</exclude>
+                                <exclude>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/XMLTestRunner.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/XQueryTestRunner.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/XSuite.java</exclude>
+                                <exclude>src/main/java/org/exist/util/Collations.java</exclude>
+                                <exclude>src/main/java/org/exist/util/crypto/digest/DigestType.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
+                                <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
+                                <exclude>src/main/resources-filtered/org/exist/system.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_es_ES.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_fr_FR.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_it_IT.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_nb_NO.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_nl_NL.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_no.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_ru_RU.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_sv_SE.properties</exclude>
+                                <exclude>src/main/resources/org/exist/client/messages_zh_CN.properties</exclude>
+                                <exclude>src/main/resources/org/exist/launcher/ConfigurationDialog.form</exclude>
+                                <exclude>src/test/java/org/exist/http/AbstractHttpTest.java</exclude>
+                                <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
+                                <exclude>src/test/java/org/exist/management/JmxRemoteTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</exclude>
+                                <exclude>src/test/resources/org/exist/validation/catalog.xml</exclude>
+                                <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/test/xquery/util/util.xml</exclude>
                                 <exclude>src/main/java/org/exist/resolver/ResolverFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/resolver/XercesXmlResolverAdapter.java</exclude>
                                 <exclude>src/main/java/org/exist/util/UTF8.java</exclude>
@@ -721,6 +958,7 @@
                                 <exclude>src/main/java/org/exist/storage/blob/**</exclude>
                                 <exclude>src/test/java/org/exist/storage/blob/**</exclude>
                                 <exclude>src/main/java/org/exist/storage/journal/JournalManager.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/journal/JournalReader.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/AbstractRecoverTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoverBinaryTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoverXmlTest.java</exclude>
@@ -840,7 +1078,7 @@
                             <multi>
                                 <preamble><![CDATA[NOTE: This file is in part based on code from The dbXML Group.
 The original license statement is also included below.]]></preamble>
-                                <header>${project.parent.relativePath}/LGPL-21-license.template.txt</header>
+                                <header>${project.parent.relativePath}/existdb-LGPL-21-license.template.txt</header>
                                 <header>DBXML-10-license.template.txt</header>
                             </multi>
                             <includes>
@@ -888,6 +1126,7 @@ The original license statement is also included below.]]></preamble>
                                 <include>src/main/java/org/exist/storage/blob/**</include>
                                 <include>src/test/java/org/exist/storage/blob/**</include>
                                 <include>src/main/java/org/exist/storage/journal/JournalManager.java</include>
+                                <include>src/main/java/org/exist/storage/journal/JournalReader.java</include>
                                 <include>src/test/java/org/exist/storage/AbstractRecoverTest.java</include>
                                 <include>src/test/java/org/exist/storage/RecoverBinaryTest.java</include>
                                 <include>src/test/java/org/exist/storage/RecoverXmlTest.java</include>
