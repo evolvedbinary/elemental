@@ -185,7 +185,7 @@ public class ApacheFopProcessorAdapter implements ProcessorAdapter {
     private ResourceResolver getResourceResolver(final DBBroker broker, final String baseUri) {
         final ResourceResolverFactory.SchemeAwareResourceResolverBuilder builder = ResourceResolverFactory.createSchemeAwareResourceResolverBuilder(ResourceResolverFactory.createDefaultResourceResolver());
         final URIResolverAdapter uriResolver = new URIResolverAdapter(
-                new EXistURISchemeURIResolver(new EXistURIResolver(broker.getBrokerPool(), baseUri))
+                new EXistURISchemeURIResolver(new EXistURIResolver(broker.getBrokerPool(), baseUri, true))
         );
         builder.registerResourceResolverForScheme("exist", uriResolver);
         builder.registerResourceResolverForScheme("http", uriResolver);

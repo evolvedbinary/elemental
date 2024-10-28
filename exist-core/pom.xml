@@ -744,7 +744,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</include>
-                                <include>src/test/resources-filtered/org/exist/xquery/functions/transform/conf.xml</include>
+                                <include>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</include>
                                 <include>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</include>
                                 <include>src/main/java/org/exist/client/ClientFrame.java</include>
                                 <include>src/main/java/org/exist/client/Connection.java</include>
@@ -828,7 +828,9 @@
                                 <include>src/test/java/org/exist/management/JmxRemoteTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</include>
                                 <include>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</include>
+                                <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
                                 <include>src/test/resources/org/exist/validation/catalog.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/test/xquery/util/util.xml</include>
@@ -861,7 +863,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</exclude>
-                                <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/conf.xml</exclude>
+                                <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</exclude>
                                 <exclude>src/main/java/org/exist/client/ClientFrame.java</exclude>
                                 <exclude>src/main/java/org/exist/client/Connection.java</exclude>
@@ -947,7 +949,9 @@
                                 <exclude>src/test/java/org/exist/management/JmxRemoteTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
                                 <exclude>src/test/resources/org/exist/validation/catalog.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
                                 <exclude>src/test/xquery/util/util.xml</exclude>
