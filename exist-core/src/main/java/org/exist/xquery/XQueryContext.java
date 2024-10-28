@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -594,15 +618,21 @@ public class XQueryContext implements BinaryValueManager, Context {
 
             try {
 
-                // see if the src exists in the database and if so, use that instead
-                Source src = repo.get().resolveStoredXQueryModuleFromDb(getBroker(), resolved);
-                if (src != null) {
-                    // NOTE(AR) set the location of the module to import relative to this module's load path - so that transient imports of the imported module will resolve correctly!
-                    location = Paths.get(XmldbURI.create(moduleLoadPath).getCollectionPath()).relativize(Paths.get(((DBSource)src).getDocumentPath().getCollectionPath())).toString();
-                } else {
-                    // else, fallback to the one from the filesystem
-                    src = new FileSource(resolved, false);
-                }
+                    // see if the src exists in the database and if so, use that instead
+                    Source src = repo.get().resolveStoredXQueryModuleFromDb(getBroker(), resolved);
+                    if (src != null) {
+                        // NOTE(AR) set the location of the module to import relative to this module's load path - so that transient imports of the imported module will resolve correctly!
+                        final Path srcCollectionPath = Paths.get(((DBSource)src).getDocumentPath().getCollectionPath());
+                        if (srcCollectionPath.isAbsolute()) {
+                            location = srcCollectionPath.toString();
+                        } else {
+                            final Path moduleLoadPathCollectionPath = Paths.get(XmldbURI.create(moduleLoadPath).getCollectionPath());
+                            location = moduleLoadPathCollectionPath.relativize(srcCollectionPath).toString();
+                        }
+                    } else {
+                        // else, fallback to the one from the filesystem
+                        src = new FileSource(resolved, false);
+                    }
 
                 // build a module object from the source
                 final ExternalModule module = compileOrBorrowModule(namespace, prefix, location, src);
