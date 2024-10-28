@@ -758,6 +758,7 @@
                                 <include>src/main/java/org/exist/test/runner/XSuite.java</include>
                                 <include>src/main/java/org/exist/util/Collations.java</include>
                                 <include>src/main/java/org/exist/util/crypto/digest/DigestType.java</include>
+                                <include>src/main/java/org/exist/webstart/JnlpJarFiles.java</include>
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
@@ -878,6 +879,7 @@
                                 <exclude>src/main/java/org/exist/test/runner/XSuite.java</exclude>
                                 <exclude>src/main/java/org/exist/util/Collations.java</exclude>
                                 <exclude>src/main/java/org/exist/util/crypto/digest/DigestType.java</exclude>
+                                <exclude>src/main/java/org/exist/webstart/JnlpJarFiles.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
