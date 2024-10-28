@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,21 +45,18 @@
  */
 package org.exist.xquery.functions.transform;
 
-import org.exist.config.TwoDatabasesTest;
-import org.exist.repo.AutoDeploymentTrigger;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.*;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static com.ibm.icu.impl.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -48,9 +69,9 @@ public class TransformFromPkgTest {
         final String packagePath = TransformFromPkgTest.class.getPackage().getName().replace('.', separator);
 
         try {
-            return Paths.get(loader.getResource(packagePath + separator + "conf.xml").toURI());
+            return Paths.get(loader.getResource(packagePath + separator + "transform-from-pkg-test.conf.xml").toURI());
         } catch (final URISyntaxException e) {
-            fail(e);
+            fail(e.getMessage());
             return null;
         }
     }

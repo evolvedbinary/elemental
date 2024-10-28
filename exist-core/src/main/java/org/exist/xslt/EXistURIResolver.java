@@ -50,6 +50,7 @@ import java.lang.reflect.Array;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import javax.annotation.Nullable;
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.URIResolver;
@@ -69,7 +70,9 @@ import org.exist.xmldb.XmldbURI;
 
 /**
  * Implementation of URIResolver which
- * will resolve paths from the eXist database
+ * will resolve paths from the Elemental database
+ * if they cannot be found we can optionally fallback
+ * to returning a StreamSource from a URL
  */
 public class EXistURIResolver implements URIResolver {
 
@@ -77,10 +80,16 @@ public class EXistURIResolver implements URIResolver {
 
   final BrokerPool db;
   final String basePath;
+  final boolean fallbackToUrlStreamSource;
 
   public EXistURIResolver(final BrokerPool db, final String docPath) {
+    this(db, docPath, false);
+  }
+
+  public EXistURIResolver(final BrokerPool db, final String docPath, final boolean fallbackToUrlStreamSource) {
     this.db = db;
     this.basePath = normalize(docPath);
+    this.fallbackToUrlStreamSource = fallbackToUrlStreamSource;
     if (LOG.isDebugEnabled()) {
       LOG.debug("EXistURIResolver base path set to {}", basePath);
     }
@@ -146,7 +155,7 @@ public class EXistURIResolver implements URIResolver {
   }
 
   @Override
-  public Source resolve(final String href, String base) throws TransformerException {
+  public @Nullable Source resolve(final String href, String base) throws TransformerException {
     String path;
 
     if (href.isEmpty()) {
@@ -183,8 +192,12 @@ public class EXistURIResolver implements URIResolver {
     if (path.startsWith("/")) {
       path = normalizePath(path);
       return databaseSource(path);
-    } else {
+
+    } else if (fallbackToUrlStreamSource) {
       return urlSource(path);
+
+    } else {
+      return null;
     }
   }
 
