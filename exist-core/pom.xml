@@ -723,6 +723,8 @@
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>project-suppression.xml</include>
+                                <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
+                                <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                             </includes>
                         </licenseSet>
 
@@ -807,6 +809,7 @@
                                 <include>src/main/java/org/exist/webstart/JnlpJarFiles.java</include>
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
+                                <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
@@ -864,6 +867,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</exclude>
+                                <exclude>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</exclude>
                                 <exclude>src/main/java/org/exist/client/ClientFrame.java</exclude>
@@ -929,6 +933,8 @@
                                 <exclude>src/main/java/org/exist/webstart/JnlpJarFiles.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
