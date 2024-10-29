@@ -5,7 +5,7 @@ ${project.description}
 
 This module holds the source files for building a minimal docker image of the [Elemental](https://www.elemental.xyz)
 NoSQL Database. Images are automatically updated as part of the build-test life-cycle. 
-These images are based on Google Cloud Platform's ["Distroless" Docker Images](https://github.com/GoogleCloudPlatform/distroless).
+These images are based on Chainguard's ["Distroless" Docker Images](https://edu.chainguard.dev/chainguard/chainguard-images/about/getting-started-distroless/).
 
 
 ## Requirements

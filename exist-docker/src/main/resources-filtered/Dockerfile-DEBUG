@@ -18,46 +18,26 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
-# NOTE: Parts of this file contain code from 'The eXist-db Authors'.
-#       The original license header is included below.
-#
-# =====================================================================
-#
-# eXist-db Open Source Native XML Database
-# Copyright (C) 2001 The eXist-db Authors
-#
-# info@exist-db.org
-# http://www.exist-db.org
-#
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-#
 
-# Use JDK 8 in Debian Stretch (as our production image gcr.io/distroless/java:8 is based on Debian Stretch with just a JRE)
-FROM debian:stretch-slim
-RUN echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list
-RUN echo "deb http://archive.debian.org/debian stretch-backports main" >> /etc/apt/sources.list
-RUN apt-get update && apt-get -y dist-upgrade
-RUN apt-get install -y openjdk-8-jdk-headless
-RUN apt-get install -y expat fontconfig     # Install tools required by FOP
+# Use Chainguard Wolfi
+FROM cgr.dev/chainguard/wolfi-base
+
+RUN apk update && apk upgrade
+# Install dependencies needed for JDK
+RUN apk add zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
+# Install latest JDK
+RUN apk add openjdk-8
+
+# Switch to nonroot user
+USER nonroot
 
 # Copy Elemental
 COPY LICENSE /elemental/LICENSE
 COPY autodeploy /elemental/autodeploy
 COPY etc /elemental/etc
 COPY lib /elemental/lib
-COPY logs /elemental/logs
+COPY --chown=nonroot logs /elemental/logs
+COPY --chown=nonroot logs /elemental/data
 
 # Build-time metadata as defined at http://label-schema.org
 # and used by autobuilder @hooks/build
@@ -78,27 +58,15 @@ ARG MAX_BROKER
 ARG JVM_MAX_RAM_PERCENTAGE
 ARG JVM_JDWP_SUSPEND
 
-ENV ELEMENTAL_HOME "/elemental"
-ENV EXIST_HOME "/elemental"
-ENV CLASSPATH=/elemental/lib/${elemental.uber.jar.filename}
+ENV ELEMENTAL_HOME="/elemental"
+ENV EXIST_HOME="/elemental"
+ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
-ENV JAVA_TOOL_OPTIONS \
-  -Dfile.encoding=UTF8 \
-  -Dsun.jnu.encoding=UTF-8 \
-  -Djava.awt.headless=true \
-  -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M \
-  -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} \
-  -Dlog4j.configurationFile=/elemental/etc/log4j2.xml \
-  -Dexist.home=/elemental \
-  -Dexist.configurationFile=/elemental/etc/conf.xml \
-  -Djetty.home=/elemental \
-  -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs \
-  -XX:+UseG1GC \
-  -XX:+UseStringDeduplication \
-  -XX:+UseContainerSupport \
-  -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE:-75.0} \
-  -XX:+ExitOnOutOfMemoryError \
-  -agentlib:jdwp=transport=dt_socket,server=y,suspend=${JVM_JDWP_SUSPEND:-n},address=5005
+ENV JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk"
+
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE:-75.0} -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=${JVM_JDWP_SUSPEND:-n},address=5005"
+
+ENV PATH="/usr/lib/jvm/java-1.8-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 HEALTHCHECK CMD [ "java", \
     "org.exist.start.Main", "client", \

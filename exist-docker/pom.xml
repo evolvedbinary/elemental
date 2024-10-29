@@ -107,7 +107,10 @@
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
+                                <exclude>src/assembly/**</exclude>
+                                <exclude>src/main/xslt/**</exclude>
+                                <exclude>src/test/**</exclude>
+                                <exclude>**.md</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -126,11 +129,7 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
-                                <include>src/main/resources-filtered/**</include>
                             </includes>
-                            <excludes>
-                                <exclude>**.md</exclude>
-                            </excludes>
                         </licenseSet>
 
                         <licenseSet>
