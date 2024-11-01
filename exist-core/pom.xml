@@ -724,6 +724,7 @@
                             <includes>
                                 <include>project-suppression.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
+                                <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                             </includes>
                         </licenseSet>
@@ -813,6 +814,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
+                                <include>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
                                 <include>src/main/resources-filtered/org/exist/system.properties</include>
@@ -938,6 +940,8 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/resources-filtered/org/exist/system.properties</exclude>
