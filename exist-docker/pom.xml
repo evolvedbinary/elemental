@@ -280,37 +280,53 @@
                         <image>
                             <name>evolvedbinary/elemental:%v</name>
                             <alias>elemental</alias>
+                            <registry>docker.io</registry>
                             <build>
                                 <tags>
                                     <tag>${docker.tag}</tag>
                                 </tags>
                                 <dockerFile>${project.build.outputDirectory}/Dockerfile</dockerFile>
                                 <contextDir>${assemble.dir}</contextDir>
+                                <buildx>
+                                    <platforms>
+                                        <platform>linux/amd64</platform>
+                                        <platform>linux/arm64</platform>
+<!--                                        <platform>linux/ppc64le</platform>-->
+                                    </platforms>
+                                </buildx>
                             </build>
                         </image>
                         <image>
                             <name>evolvedbinary/elemental:%v-DEBUG</name>
                             <alias>elemental-debug</alias>
+                            <registry>docker.io</registry>
                             <build>
                                 <tags>
                                     <tag>${docker.debug.tag}</tag>
                                 </tags>
                                 <dockerFile>${project.build.outputDirectory}/Dockerfile-DEBUG</dockerFile>
                                 <contextDir>${assemble.dir}</contextDir>
+                                <buildx>
+                                    <platforms>
+                                        <platform>linux/amd64</platform>
+                                        <platform>linux/arm64</platform>
+<!--                                        <platform>linux/ppc64le</platform>-->
+                                    </platforms>
+                                </buildx>
                             </build>
                         </image>
                     </images>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>build image</id>
+                        <id>build-image</id>
                         <phase>package</phase>
                         <goals>
                             <goal>build</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>push image to registry</id>
+                        <id>push-image</id>
                         <phase>deploy</phase>
                         <goals>
                             <goal>push</goal>
