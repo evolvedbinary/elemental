@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -51,7 +60,7 @@ public class RangeQueryRewriter extends QueryRewriter {
 
         @Nullable final Predicate[] preds = locationStep.getPredicates();
         if (preds != null) {
-            final Expression parentExpr = locationStep.getParentExpression();
+            final Expression parentExpr = locationStep.getParent();
             if ((parentExpr instanceof RewritableExpression)) {
                 // Step 1: replace all optimizable expressions within predicates with
                 // calls to the range functions. If those functions are used or not will
@@ -255,7 +264,7 @@ public class RangeQueryRewriter extends QueryRewriter {
     }
 
     protected static List<LocationStep> getPrecedingSteps(LocationStep current) {
-        Expression parentExpr = current.getParentExpression();
+        Expression parentExpr = current.getParent();
         if (!(parentExpr instanceof RewritableExpression)) {
             return null;
         }

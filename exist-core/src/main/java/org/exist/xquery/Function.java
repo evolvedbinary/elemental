@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -68,11 +77,6 @@ public abstract class Function extends PathExpr {
      * The signature of the function.
      */
     private FunctionSignature mySignature;
-
-    /**
-     * The parent expression from which this function is called.
-     */
-    private Expression parent;
 
     /**
      * Flag to indicate if argument types are statically checked.
@@ -191,16 +195,6 @@ public abstract class Function extends PathExpr {
      */
     public void setParent(final Expression parent) {
         this.parent = parent;
-    }
-
-    /**
-     * Returns the expression from which this function gets called.
-     *
-     * @return the parent expression
-     */
-    @Override
-    public Expression getParent() {
-        return parent;
     }
 
     /**
@@ -394,6 +388,7 @@ public abstract class Function extends PathExpr {
 
     @Override
     public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
+        this.parent = contextInfo.getParent();
         inPredicate = (contextInfo.getFlags() & IN_PREDICATE) > 0;
         unordered = (contextInfo.getFlags() & UNORDERED) > 0;
         contextId = contextInfo.getContextId();
