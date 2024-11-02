@@ -159,11 +159,9 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.BinaryOp#analyze(org.exist.xquery.AnalyzeContextInfo)
-     */
-    public void analyze( AnalyzeContextInfo contextInfo ) throws XPathException
-    {
+    @Override
+    public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
+        this.parent = contextInfo.getParent();
         contextInfo.addFlag( NEED_INDEX_INFO );
         contextInfo.setParent( this );
         super.analyze( contextInfo );
