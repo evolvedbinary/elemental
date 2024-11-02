@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -60,12 +69,8 @@ public abstract class BinaryOp extends PathExpr {
     	getRight().setContextDocSet(contextSet);
     }
     
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.exist.xquery.PathExpr#analyze(org.exist.xquery.Expression)
-     */
-    public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
+    @Override
+    public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
     	inPredicate = (contextInfo.getFlags() & IN_PREDICATE) != 0;
     	contextId = contextInfo.getContextId();
     	inWhereClause = (contextInfo.getFlags() & IN_WHERE_CLAUSE) != 0;
