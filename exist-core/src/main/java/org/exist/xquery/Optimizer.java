@@ -77,8 +77,14 @@ public class Optimizer extends DefaultExpressionVisitor {
 
     public Optimizer(final XQueryContext context) {
         this.context = context;
+        final List<QueryRewriter> defaultRewriters = Arrays.asList(
+                new PositionalPredicateRewriter(context)
+        );
+        this.rewriters = new ArrayList<>(defaultRewriters);
         final DBBroker broker = context.getBroker();
-        this.rewriters = broker != null ? broker.getIndexController().getQueryRewriters(context) : Collections.emptyList();
+        if (broker != null) {
+            rewriters.addAll(broker.getIndexController().getQueryRewriters(context));
+        }
     }
 
     public boolean hasOptimized() {
@@ -165,37 +171,6 @@ public class Optimizer extends DefaultExpressionVisitor {
             final RewritableExpression path = (RewritableExpression) parent;
             path.replace(locationStep, extension);
         }
-    }
-
-    /**
-     * Test whether we can optimise position() withing a predicate to a POSITIONAL version of a predicate.
-     *
-     * @param predicate the predicate to test
-     *
-     * @return the inner expr to be replaced and the literal value to replace it with if it can be optimised, null otherwise.
-     */
-    private @Nullable Tuple2<Expression, LiteralValue> canOptimizeToPositionalPredicate(final Predicate predicate) {
-        if (predicate.getSubExpressionCount() == 1) {
-            final Expression predInnerExpr = predicate.getSubExpression(0);
-            if (predInnerExpr instanceof final ValueComparison valueComparison && valueComparison.getRelation() == Constants.Comparison.EQ) {
-                final Expression left = valueComparison.getLeft();
-                final Expression right = valueComparison.getRight();
-
-                if (left instanceof final InternalFunctionCall leftInternalFunctionCall && leftInternalFunctionCall.getFunction() instanceof FunPosition
-                        && right instanceof final LiteralValue rightLiteralValue && rightLiteralValue.returnsType() == Type.INTEGER) {
-
-                    // NOTE(AR) if the predicate is like [position() eq 1] or [position() = 1] then we could rewrite it to [1]
-                    return Tuple(predInnerExpr, rightLiteralValue);
-
-                } else if (left instanceof final LiteralValue leftLiteralValue && leftLiteralValue.returnsType() == Type.INTEGER
-                        && right instanceof final InternalFunctionCall rightInternalFunctionCall && rightInternalFunctionCall.getFunction() instanceof FunPosition) {
-
-                    // NOTE(AR) if the predicate is like [1 eq position()]  or [1 = position()] then we could rewrite it to [1]
-                    return Tuple(predInnerExpr, leftLiteralValue);
-                }
-            }
-        }
-        return null;
     }
 
     @Override
@@ -348,30 +323,6 @@ public class Optimizer extends DefaultExpressionVisitor {
     @Override
     public void visitPredicate(final Predicate predicate) {
         ++predicates;
-
-        // NOTE(AR) try and optimise position() withing a predicate to a POSITIONAL version of a predicate
-        @Nullable final Tuple2<Expression, LiteralValue> predOptimizableInnerExpr = canOptimizeToPositionalPredicate(predicate);
-        if (predOptimizableInnerExpr != null) {
-            try {
-                // Replace the predicates expression with a literal number
-
-                predicate.replace(predOptimizableInnerExpr._1, predOptimizableInnerExpr._2);
-
-                // traverse to outermost predicate and then call analyze! to make sure execution mode is correct
-                Expression parentExpr = predicate;
-                Predicate outermostPredicate = predicate;
-                while ((parentExpr = parentExpr.getParent()) != null) {
-                    if (parentExpr instanceof final Predicate parentPredicate) {
-                        outermostPredicate = parentPredicate;
-                    }
-                }
-                outermostPredicate.analyze(new AnalyzeContextInfo(outermostPredicate.getParent(), 0));
-
-            } catch (final XPathException e) {
-                LOG.warn("Failed to optimize expression within predicate: {}: {}", predOptimizableInnerExpr, e.getMessage(), e);
-            }
-        }
-
         super.visitPredicate(predicate);
         --predicates;
     }
