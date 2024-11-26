@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -143,9 +167,11 @@ public class FunXmlToJson extends BasicFunction {
                         }
                         switch (reader.getLocalName()) {
                             case "array":
+                                checkNamespace(reader.getNamespaceURI());
                                 jsonGenerator.writeStartArray();
                                 break;
                             case "map":
+                                checkNamespace(reader.getNamespaceURI());
                                 mapkeyArrayList.add(stackSeparator);
                                 jsonGenerator.writeStartObject();
                                 break;
@@ -161,6 +187,7 @@ public class FunXmlToJson extends BasicFunction {
                         final String tempString = tempStringBuilder.toString();
                         switch (reader.getLocalName()) {
                             case "array":
+                                checkNamespace(reader.getNamespaceURI());
                                 jsonGenerator.writeEndArray();
                                 break;
                             case "boolean":
@@ -168,6 +195,7 @@ public class FunXmlToJson extends BasicFunction {
                                 jsonGenerator.writeBoolean(tempBoolean);
                                 break;
                             case "map":
+                                checkNamespace(reader.getNamespaceURI());
                                 while (!mapkeyArrayList.isEmpty() && mapkeyArrayList.remove(mapkeyArrayList.size() - 1) != stackSeparator) {
                                 }
                                 jsonGenerator.writeEndObject();
@@ -244,5 +272,12 @@ public class FunXmlToJson extends BasicFunction {
         }
         unescapedJsonString = unescapedJsonStringBuilder.toString();
         return unescapedJsonString;
+    }
+
+    private void checkNamespace(final String namespaceUri) throws XPathException {
+        if (!Function.BUILTIN_FUNCTION_NS.equals(namespaceUri)) {
+//            throw new XPathException(this, ErrorCodes.FOJS0006, "Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + Function.BUILTIN_FUNCTION_NS);
+            LOG.warn(ErrorCodes.FOJS0006.getErrorQName() + ": Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + Function.BUILTIN_FUNCTION_NS);
+        }
     }
 }
