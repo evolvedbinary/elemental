@@ -725,6 +725,7 @@
                                 <include>project-suppression.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                             </includes>
                         </licenseSet>
@@ -834,6 +835,7 @@
                                 <include>src/test/java/org/exist/management/JmxRemoteTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunXmlToJson.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</include>
                                 <include>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
@@ -938,6 +940,8 @@
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunXmlToJson.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</exclude>
