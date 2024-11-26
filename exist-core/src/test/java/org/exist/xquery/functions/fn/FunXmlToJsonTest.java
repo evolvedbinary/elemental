@@ -22,7 +22,6 @@ package org.exist.xquery.functions.fn;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.xmldb.api.base.XMLDBException;
 
@@ -50,7 +49,6 @@ public class FunXmlToJsonTest {
         assertEquals("[\"Curly\",\"Larry\",\"Moe\"]", result);
     }
 
-    @Ignore("Enable in FunXmlToJson#checkNamespace(String) see: https://github.com/eXist-db/exist/issues/5543")
     @Test
     public void arrayOutsideFnNs() {
         final String query =
@@ -84,9 +82,8 @@ public class FunXmlToJsonTest {
         assertEquals("{\"Fruit\":\"Apple\",\"Vegetable\":\"Carrot\"}", result);
     }
 
-    @Ignore("Enable in FunXmlToJson#checkNamespace(String) see: https://github.com/eXist-db/exist/issues/5543")
     @Test
-    public void mapOutsideFnNs() throws XMLDBException {
+    public void mapOutsideFnNs() {
         final String query =
             "fn:xml-to-json(\n" +
                 "  <map>\n" +
