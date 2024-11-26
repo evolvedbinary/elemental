@@ -276,8 +276,7 @@ public class FunXmlToJson extends BasicFunction {
 
     private void checkNamespace(final String namespaceUri) throws XPathException {
         if (!Function.BUILTIN_FUNCTION_NS.equals(namespaceUri)) {
-//            throw new XPathException(this, ErrorCodes.FOJS0006, "Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + Function.BUILTIN_FUNCTION_NS);
-            LOG.warn(ErrorCodes.FOJS0006.getErrorQName() + ": Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + Function.BUILTIN_FUNCTION_NS);
+            throw new XPathException(this, ErrorCodes.FOJS0006, "Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + Function.BUILTIN_FUNCTION_NS);
         }
     }
 }
