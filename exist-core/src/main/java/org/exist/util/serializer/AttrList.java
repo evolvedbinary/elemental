@@ -62,23 +62,23 @@ public class AttrList {
 		this(4);
 	}
 
-	public void addAttribute(QName name, String value) {
+	public void addAttribute(final QName name, final String value) {
 		addAttribute(name, value, AttrImpl.CDATA);
 	}
 
-	public void addAttributeNoIntern(QName name, String value) {
+	public void addAttributeNoIntern(final QName name, final String value) {
 		addAttributeNoIntern(name, value, AttrImpl.CDATA);
 	}
 
-	public void addAttribute(QName name, String value, int attrType) {
+	public void addAttribute(final QName name, final String value, final int attrType) {
 		addAttribute(name, value.intern(), attrType, null);
 	}
-	public void addAttributeNoIntern(QName name, String value, int attrType) {
+	public void addAttributeNoIntern(final QName name, final String value, final int attrType) {
 		addAttribute(name, value, attrType, null);
 	}
 
 
-	public void addAttribute(QName name, String value, int attrType, NodeId nodeId) {
+	public void addAttribute(final QName name, final String value, final int attrType, final NodeId nodeId) {
 		ensureCapacity();
         nodeIds[size] = nodeId;
 		names[size] = name;
@@ -91,44 +91,45 @@ public class AttrList {
 		return size;
 	}
 	
-	public QName getQName(int pos) {
+	public QName getQName(final int pos) {
 		return names[pos];
 	}
 
-    public NodeId getNodeId(int pos) {
+    public NodeId getNodeId(final int pos) {
         return nodeIds[pos];
     }
     
-	public String getValue(int pos) {
+	public String getValue(final int pos) {
 		return values[pos];
 	}
 	
-	public String getValue(QName name) {
-		for(int i = 0; i < size; i++) {
-			if(names[i].equals(name))
-				{return values[i];}
+	public String getValue(final QName name) {
+		for (int i = 0; i < size; i++) {
+			if (names[i].equals(name)) {
+				return values[i];
+			}
 		}
 		return null;
 	}
 
-    public int getType(int pos) {
+    public int getType(final int pos) {
         return type[pos];
     }
     
     private void ensureCapacity() {
-		if(size == names.length) {
+		if (size == names.length) {
 			// resize
 			final int newSize = names.length * 3 / 2;
-            NodeId[] tnodeIds = new NodeId[newSize];
+            final NodeId[] tnodeIds = new NodeId[newSize];
             System.arraycopy(nodeIds, 0, tnodeIds, 0, nodeIds.length);
 
-			QName[] tnames = new QName[newSize];
+			final QName[] tnames = new QName[newSize];
 			System.arraycopy(names, 0, tnames, 0, names.length);
 			
-			String[] tvalues = new String[newSize];
+			final String[] tvalues = new String[newSize];
 			System.arraycopy(values, 0, tvalues, 0, values.length);
 
-            int[] ttype = new int[newSize];
+            final int[] ttype = new int[newSize];
             System.arraycopy(type, 0, ttype, 0, type.length);
 
             nodeIds = tnodeIds;
