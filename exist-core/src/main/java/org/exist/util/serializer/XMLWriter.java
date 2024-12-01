@@ -360,9 +360,7 @@ public class XMLWriter implements SerializerWriter {
             }
             writer.write(qname.getLocalPart());
             writer.write("=\"");
-            //TODO (AP) - perf hack - needs to respect specials (e.g. precompute)
-            //writeChars(value, true);
-            writer.append(value);
+            writeChars(value, true);
             writer.write('"');
         } catch(final IOException ioe) {
             throw new TransformerException(ioe.getMessage(), ioe);
