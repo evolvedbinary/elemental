@@ -1,27 +1,12 @@
 /*
- * Elemental
- * Copyright (C) 2024, Evolved Binary Ltd
+ * Copyright (C) 2014 Evolved Binary Ltd
  *
- * admin@evolvedbinary.com
- * https://www.evolvedbinary.com | https://www.elemental.xyz
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; version 2.1.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
  *       The original license header is included below.
  *
- * =====================================================================
+ * ----------------------------------------------------------------------------
  *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
@@ -54,6 +39,7 @@ import net.sf.saxon.regex.RegexIterator;
 import net.sf.saxon.regex.RegularExpression;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.util.XmlRegexFactory;
 import org.exist.xquery.*;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.FunctionReturnSequenceType;
@@ -63,6 +49,7 @@ import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 
 /**
@@ -71,6 +58,8 @@ import javax.xml.XMLConstants;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class FunAnalyzeString extends BasicFunction {
+
+    private static final XmlRegexFactory XML_REGEX_FACTORY = XmlRegexFactory.getInstance();
 
     private final static QName fnAnalyzeString = new QName("analyze-string", FnModule.NAMESPACE_URI);
 
@@ -133,7 +122,7 @@ public class FunAnalyzeString extends BasicFunction {
             }
             if (input != null && !input.isEmpty()) {
                 final String pattern = args[1].itemAt(0).getStringValue();
-                String flags = "";
+                @Nullable String flags = null;
                 if (args.length == 3) {
                     flags = args[2].itemAt(0).getStringValue();
                 }
@@ -147,19 +136,13 @@ public class FunAnalyzeString extends BasicFunction {
         }
     }
 
-    private void analyzeString(final MemTreeBuilder builder, final String input, String pattern, final String flags) throws XPathException {
-        final Configuration config = context.getBroker().getBrokerPool().getSaxonConfiguration();
-
-        final List<String> warnings = new ArrayList<>(1);
+    private void analyzeString(final MemTreeBuilder builder, final String input, String pattern, @Nullable final String flags) throws XPathException {
+        final RegularExpression regularExpression = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
+        if (regularExpression.matches("")) {
+            throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
+        }
 
         try {
-            final RegularExpression regularExpression = config.compileRegularExpression(pattern, flags, "XP30", warnings);
-            if (regularExpression.matches("")) {
-                throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
-            }
-
-            //TODO(AR) cache the regular expression... might be possible through Saxon config
-
             final RegexIterator regexIterator = regularExpression.analyze(input);
             Item item;
             while ((item = regexIterator.next()) != null) {
@@ -169,21 +152,8 @@ public class FunAnalyzeString extends BasicFunction {
                     nonMatch(builder, item);
                 }
             }
-
-            for (final String warning : warnings) {
-                LOG.warn(warning);
-            }
         } catch (final net.sf.saxon.trans.XPathException e) {
-            switch (e.getErrorCodeLocalPart()) {
-                case "FORX0001":
-                    throw new XPathException(this, ErrorCodes.FORX0001, e.getMessage());
-                case "FORX0002":
-                    throw new XPathException(this, ErrorCodes.FORX0002, e.getMessage());
-                case "FORX0003":
-                    throw new XPathException(this, ErrorCodes.FORX0003, e.getMessage());
-                default:
-                    throw new XPathException(this, e.getMessage());
-            }
+           throw XmlRegexFactory.translateRegexException(this, e);
         }
     }
     
@@ -196,7 +166,7 @@ public class FunAnalyzeString extends BasicFunction {
             }
 
             @Override
-            public void onGroupStart(final int groupNumber) throws net.sf.saxon.trans.XPathException {
+            public void onGroupStart(final int groupNumber) {
                 final AttributesImpl attributes = new AttributesImpl();
                 attributes.addAttribute("", QN_NR.getLocalPart(), QN_NR.getLocalPart(), "int", Integer.toString(groupNumber));
 
@@ -204,7 +174,7 @@ public class FunAnalyzeString extends BasicFunction {
             }
 
             @Override
-            public void onGroupEnd(final int groupNumber) throws net.sf.saxon.trans.XPathException {
+            public void onGroupEnd(final int groupNumber) {
                 builder.endElement();
             }
         });
