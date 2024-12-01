@@ -40,6 +40,8 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
 
+import javax.annotation.Nullable;
+
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.regex.RegexUtil.*;
 
@@ -48,6 +50,8 @@ import static org.exist.xquery.regex.RegexUtil.*;
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
 public class FunReplace extends BasicFunction {
+
+	private static final XmlRegexFactory XML_REGEX_FACTORY = XmlRegexFactory.getInstance();
 
 	private static final QName FS_REPLACE_NAME = new QName("replace", Function.BUILTIN_FUNCTION_NS);
 
@@ -110,44 +114,31 @@ public class FunReplace extends BasicFunction {
 		if (stringArg.isEmpty()) {
 			result = StringValue.EMPTY_STRING;
 		} else {
-			final String flags;
+			@Nullable String flags = null;
 			if (args.length == 4) {
-				flags =	args[3].itemAt(0).getStringValue();
-			} else {
-				flags = "";
+				flags = args[3].itemAt(0).getStringValue();
 			}
     		final String string = stringArg.getStringValue();
     		final String pattern = args[1].itemAt(0).getStringValue();
 			final String replace = args[2].itemAt(0).getStringValue();
 
-			try {
-				final RegularExpression regularExpression = XmlRegexFactory.getInstance().getXmlRegex(context, pattern, flags);
-				if (regularExpression.matches("")) {
-					throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
-				}
+			final RegularExpression regularExpression = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
+			if (regularExpression.matches("")) {
+				throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
+			}
 
-				if (!hasLiteral(flags)) {
-					final String msg = Replace.checkReplacement(replace);
-					if (msg != null) {
-						throw new XPathException(this, ErrorCodes.FORX0004, msg);
-					}
+			if (!hasLiteral(flags)) {
+				final String msg = Replace.checkReplacement(replace);
+				if (msg != null) {
+					throw new XPathException(this, ErrorCodes.FORX0004, msg);
 				}
+			}
+
+			try {
 				final CharSequence res = regularExpression.replace(string, replace);
 				result = new StringValue(this, res.toString());
-
 			} catch (final net.sf.saxon.trans.XPathException e) {
-				switch (e.getErrorCodeLocalPart()) {
-					case "FORX0001":
-						throw new XPathException(this, ErrorCodes.FORX0001, e.getMessage());
-					case "FORX0002":
-						throw new XPathException(this, ErrorCodes.FORX0002, e.getMessage());
-					case "FORX0003":
-						throw new XPathException(this, ErrorCodes.FORX0003, e.getMessage());
-					case "FORX0004":
-						throw new XPathException(this, ErrorCodes.FORX0004, e.getMessage());
-					default:
-						throw new XPathException(this, e.getMessage());
-				}
+				throw XmlRegexFactory.translateRegexException(this, e);
 			}
         }
         

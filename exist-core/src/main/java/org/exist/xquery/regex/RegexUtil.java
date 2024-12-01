@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -50,35 +59,39 @@ public class RegexUtil {
      */
     public static int parseFlags(final Expression context, @Nullable final String strFlags) throws XPathException {
         int flags = 0;
-        if(strFlags != null) {
-            for (int i = 0; i < strFlags.length(); i++) {
-                final char ch = strFlags.charAt(i);
-                switch (ch) {
-                    case 'm':
-                        flags |= Pattern.MULTILINE;
-                        break;
+        if (strFlags == null) {
+            return flags;
+        }
 
-                    case 'i':
-                        flags = flags | Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
-                        break;
 
-                    case 'x':
-                        flags |= Pattern.COMMENTS;
-                        break;
+        for (int i = 0; i < strFlags.length(); i++) {
+            final char ch = strFlags.charAt(i);
+            switch (ch) {
+                case 'm':
+                    flags |= Pattern.MULTILINE;
+                    break;
 
-                    case 's':
-                        flags |= Pattern.DOTALL;
-                        break;
+                case 'i':
+                    flags = flags | Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
+                    break;
 
-                    case 'q':
-                        flags |= Pattern.LITERAL;
-                        break;
+                case 'x':
+                    flags |= Pattern.COMMENTS;
+                    break;
 
-                    default:
-                        throw new XPathException(context, ErrorCodes.FORX0001, "Invalid regular expression flag: " + ch, new StringValue(String.valueOf(ch)));
-                }
+                case 's':
+                    flags |= Pattern.DOTALL;
+                    break;
+
+                case 'q':
+                    flags |= Pattern.LITERAL;
+                    break;
+
+                default:
+                    throw new XPathException(context, ErrorCodes.FORX0001, "Invalid regular expression flag: " + ch, new StringValue(String.valueOf(ch)));
             }
         }
+
         return flags;
     }
 
@@ -100,8 +113,8 @@ public class RegexUtil {
      *
      * @return true if the literal flag is set
      */
-    public static boolean hasLiteral(final String flags) {
-        return flags.contains("q");
+    public static boolean hasLiteral(@Nullable final String flags) {
+        return flags != null && flags.contains("q");
     }
 
     /**
