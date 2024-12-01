@@ -57,6 +57,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.sf.saxon.regex.RegularExpression;
 
+import javax.annotation.Nullable;
+
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.functions.fn.FnModule.functionSignatures;
 import static org.exist.xquery.regex.RegexUtil.*;
@@ -69,6 +71,8 @@ import static org.exist.xquery.regex.RegexUtil.*;
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
 public final class FunMatches extends Function implements Optimizable, IndexUseReporter {
+
+    private static final XmlRegexFactory XML_REGEX_FACTORY = XmlRegexFactory.getInstance();
 
     private static final FunctionParameterSequenceType FS_PARAM_INPUT = optParam("input", Type.STRING, "The input string");
     private static final FunctionParameterSequenceType FS_PARAM_PATTERN = param("pattern", Type.STRING, "The pattern");
@@ -504,11 +508,9 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
     private Sequence evalGeneric(final Sequence contextSequence, final Item contextItem, final Sequence input) throws XPathException {
         final String string = input.getStringValue();
 
-        final String xmlRegexFlags;
+        @Nullable String xmlRegexFlags = null;
         if (getSignature().getArgumentCount() == 3) {
             xmlRegexFlags = getArgument(2).eval(contextSequence, contextItem).getStringValue();
-        } else {
-            xmlRegexFlags = "";
         }
 
         final String pattern = getArgument(1).eval(contextSequence, contextItem).getStringValue();
@@ -520,19 +522,9 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
         }
     }
 
-    private boolean matchXmlRegex(final String string, final String pattern, final String flags) throws XPathException {
-        try {
-            RegularExpression regex = XmlRegexFactory.getInstance().getXmlRegex(context, pattern, flags);
-            return regex.containsMatch(string);
-
-        } catch (final net.sf.saxon.trans.XPathException e) {
-            switch (e.getErrorCodeLocalPart()) {
-                case "FORX0001" -> throw new XPathException(this, ErrorCodes.FORX0001, "Invalid regular expression: " + e.getMessage(), new StringValue(this, pattern), e);
-                case "FORX0002" -> throw new XPathException(this, ErrorCodes.FORX0002, "Invalid regular expression: " + e.getMessage(), new StringValue(this, pattern), e);
-                // no FORX0003 here since fn:matches is allowed to match an empty string
-                default -> throw new XPathException(this, ErrorCodes.ERROR, e.getMessage(), new StringValue(this, pattern), e);
-            }
-        }
+    private boolean matchXmlRegex(final String string, final String pattern, @Nullable final String flags) throws XPathException {
+        final RegularExpression regex = XML_REGEX_FACTORY.getXmlRegex(this, pattern, flags);
+        return regex.containsMatch(string);
     }
 
     /**
