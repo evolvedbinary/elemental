@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,7 +45,10 @@ import org.exist.dom.QName;
 import org.exist.dom.persistent.TextImpl;
 import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
+import org.exist.storage.dom.ManualLockNodeIterator;
+import org.exist.storage.lock.ManagedLock;
 import org.exist.util.Configuration;
+import org.exist.util.LockException;
 import org.exist.util.serializer.AttrList;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.Node;
@@ -48,6 +60,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.exist.storage.dom.INodeIterator;
@@ -95,8 +108,11 @@ public class NativeSerializer extends Serializer {
             documentStarted = true;
         }
 
-        try(final INodeIterator domIter = broker.getNodeIterator(p)) {
+        try (final ManualLockNodeIterator domIter = broker.getManualLockNodeIterator(p);
+             final ManagedLock<ReentrantLock> domIterLock = domIter.acquireReadLock()) {
             serializeToReceiver(null, domIter, p.getOwnerDocument(), checkAttributes, p.getMatches(), new TreeSet<>());
+        } catch (final LockException e) {
+            throw new SAXException(e.getMessage(), e);
         } catch(final IOException e) {
             LOG.warn("Unable to close node iterator", e);
         }
@@ -124,15 +140,29 @@ public class NativeSerializer extends Serializer {
         }
 
         // iterate through children
-        for (int i = 0; i < children.getLength(); i++) {
-            final IStoredNode<?> node = (IStoredNode<?>) children.item(i);
-            try(final INodeIterator domIter = broker.getNodeIterator(node)) {
-                domIter.next();
-                final NodeProxy p = new NodeProxy(null, node);
-                serializeToReceiver(node, domIter, (DocumentImpl) node.getOwnerDocument(),
+        ManagedLock<ReentrantLock> domIterLock = null;
+        try {
+            for (int i = 0; i < children.getLength(); i++) {
+                final IStoredNode<?> node = (IStoredNode<?>) children.item(i);
+                try (final ManualLockNodeIterator domIter = broker.getManualLockNodeIterator(node)) {
+
+                    if (domIterLock == null) {
+                        domIterLock = domIter.acquireReadLock();
+                    }
+
+                    domIter.next();
+                    final NodeProxy p = new NodeProxy(null, node);
+                    serializeToReceiver(node, domIter, (DocumentImpl) node.getOwnerDocument(),
                         true, p.getMatches(), new TreeSet<>());
-            } catch(final IOException ioe) {
-                LOG.warn("Unable to close node iterator", ioe);
+                } catch (final IOException ioe) {
+                    LOG.warn("Unable to close node iterator", ioe);
+                }
+            }
+        } catch (final LockException e) {
+            throw new SAXException(e.getMessage(), e);
+        } finally {
+            if (domIterLock != null) {
+                domIterLock.close();
             }
         }
 
