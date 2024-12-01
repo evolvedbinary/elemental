@@ -1,27 +1,12 @@
 /*
- * Elemental
- * Copyright (C) 2024, Evolved Binary Ltd
+ * Copyright (C) 2014 Evolved Binary Ltd
  *
- * admin@evolvedbinary.com
- * https://www.evolvedbinary.com | https://www.elemental.xyz
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; version 2.1.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
  *       The original license header is included below.
  *
- * =====================================================================
+ * ----------------------------------------------------------------------------
  *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
@@ -62,7 +47,9 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.stax.IEmbeddedXMLStreamReader;
 import org.exist.storage.btree.BTreeCallback;
+import org.exist.storage.dom.GranularNodeIterator;
 import org.exist.storage.dom.INodeIterator;
+import org.exist.storage.dom.ManualLockNodeIterator;
 import org.exist.storage.lock.EnsureLocked;
 import org.exist.storage.lock.EnsureUnlocked;
 import org.exist.storage.lock.Lock.LockMode;
@@ -403,7 +390,7 @@ public interface DBBroker extends AutoCloseable {
     Configuration getConfiguration();
 
     /**
-     * Return a {@link org.exist.storage.dom.NodeIterator} starting at the
+     * Return a {@link GranularNodeIterator} starting at the
      * specified node.
      * 
      * @param node the NodeHandle
@@ -411,6 +398,16 @@ public interface DBBroker extends AutoCloseable {
      * @throws RuntimeException not implemented
      */
     INodeIterator getNodeIterator(NodeHandle node) throws RuntimeException;
+
+    /**
+     * Return a {@link ManualLockNodeIterator} starting at the
+     * specified node.
+     *
+     * @param node the NodeHandle
+     * @return ManualLockNodeIterator of node.
+     * @throws RuntimeException not implemented
+     */
+    ManualLockNodeIterator getManualLockNodeIterator(NodeHandle node) throws RuntimeException;
 
     /**
      * Return the document stored at the specified path. The path should be
