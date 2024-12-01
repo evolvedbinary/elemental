@@ -1,27 +1,12 @@
 /*
- * Elemental
- * Copyright (C) 2024, Evolved Binary Ltd
+ * Copyright (C) 2014 Evolved Binary Ltd
  *
- * admin@evolvedbinary.com
- * https://www.evolvedbinary.com | https://www.elemental.xyz
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; version 2.1.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
  *       The original license header is included below.
  *
- * =====================================================================
+ * ----------------------------------------------------------------------------
  *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
@@ -62,11 +47,14 @@ import org.exist.stax.IEmbeddedXMLStreamReader;
 import org.exist.storage.*;
 import org.exist.storage.btree.Value;
 import org.exist.storage.dom.INodeIterator;
+import org.exist.storage.dom.ManualLockNodeIterator;
+import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ByteArrayPool;
 import org.exist.util.ByteConversion;
+import org.exist.util.LockException;
 import org.exist.util.UTF8;
 import org.exist.util.pool.NodePool;
 import org.exist.xmldb.XmldbURI;
@@ -84,6 +72,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import static org.exist.dom.QName.Validity.ILLEGAL_FORMAT;
@@ -848,8 +837,9 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     public NamedNodeMap getAttributes() {
         final org.exist.dom.NamedNodeMapImpl map = new NamedNodeMapImpl(ownerDocument, true);
         if(hasAttributes()) {
-            try(final DBBroker broker = ownerDocument.getBrokerPool().getBroker();
-                final INodeIterator iterator = broker.getNodeIterator(this)) {
+            try (final DBBroker broker = ownerDocument.getBrokerPool().getBroker();
+                final ManualLockNodeIterator iterator = broker.getManualLockNodeIterator(this);
+                final ManagedLock<ReentrantLock> iteratorLock = iterator.acquireReadLock()) {
 
                 iterator.next();    // skip self
                 final int childCount = getChildCount();
@@ -864,7 +854,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
                     }
                     map.setNamedItem(next);
                 }
-            } catch(final EXistException | IOException e) {
+            } catch(final EXistException | IOException | LockException e) {
                 LOG.warn("Exception while retrieving attributes: {}", e.getMessage());
             }
         }
@@ -882,11 +872,12 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     }
 
     private AttrImpl findAttribute(final String qname) {
-        try(final DBBroker broker  = ownerDocument.getBrokerPool().getBroker();
-                final INodeIterator iterator = broker.getNodeIterator(this)) {
+        try (final DBBroker broker  = ownerDocument.getBrokerPool().getBroker();
+                final ManualLockNodeIterator iterator = broker.getManualLockNodeIterator(this);
+                final ManagedLock<ReentrantLock> iteratorLock = iterator.acquireReadLock()) {
             iterator.next();
             return findAttribute(qname, iterator, this);
-        } catch(final EXistException | IOException e) {
+        } catch(final EXistException | IOException | LockException e) {
             LOG.warn("Exception while retrieving attributes: {}", e.getMessage());
         }
         return null;
@@ -909,10 +900,11 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
 
     private AttrImpl findAttribute(final QName qname) {
         try(final DBBroker broker = ownerDocument.getBrokerPool().getBroker();
-                final INodeIterator iterator = broker.getNodeIterator(this)) {
+                final ManualLockNodeIterator iterator = broker.getManualLockNodeIterator(this);
+                final ManagedLock<ReentrantLock> iteratorLock = iterator.acquireReadLock()) {
             iterator.next();
             return findAttribute(qname, iterator, this);
-        } catch(final EXistException | IOException e) {
+        } catch(final EXistException | IOException | LockException e) {
             LOG.warn("Exception while retrieving attributes: {}", e.getMessage());
         }
         return null;
@@ -1068,7 +1060,8 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
         }
 
         try(final DBBroker broker = ownerDocument.getBrokerPool().getBroker();
-                final INodeIterator iterator = broker.getNodeIterator(this)) {
+                final ManualLockNodeIterator iterator = broker.getManualLockNodeIterator(this);
+                final ManagedLock<ReentrantLock> iteratorLock = iterator.acquireReadLock()) {
             iterator.next();
             IStoredNode next;
             for(int i = 0; i < getChildCount(); i++) {
@@ -1077,7 +1070,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
                     return next;
                 }
             }
-        } catch(final EXistException | IOException e) {
+        } catch(final EXistException | IOException | LockException e) {
             LOG.warn("Exception while retrieving child node: {}", e.getMessage(), e);
         }
         return null;

@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +30,7 @@
  */
 package org.exist.storage.dom;
 
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.persistent.DocumentImpl;
@@ -32,31 +42,22 @@ import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.btree.Paged.Page;
-import org.exist.storage.lock.LockManager;
-import org.exist.storage.lock.ManagedLock;
 import org.exist.util.ByteConversion;
-import org.exist.util.FileUtils;
-import org.exist.util.LockException;
 import org.exist.util.sanity.SanityCheck;
 
 import java.io.IOException;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.exist.dom.persistent.NodeHandle;
 
 /**
  * Class NodeIterator is used to iterate over nodes in the DOM storage.
- * This implementation locks the DOM file to read the node and unlocks
- * it afterwards. It is thus safer than DOMFileIterator, since the node's
- * value will not change. 
- * 
- * @author wolf
  */
-public final class NodeIterator implements INodeIterator {
+@NotThreadSafe
+public abstract class AbstractNodeIterator implements INodeIterator {
 
-    private final static Logger LOG = LogManager.getLogger(NodeIterator.class);
+    private static final Logger LOG = LogManager.getLogger(AbstractNodeIterator.class);
 
-    private DOMFile db = null;
+    protected DOMFile db = null;
     private NodeHandle node; //= null;
     private DocumentImpl doc = null;
     private int offset;
@@ -64,18 +65,15 @@ public final class NodeIterator implements INodeIterator {
     private DOMFile.DOMPage page = null;
     private long pageNum;
     private long startAddress = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
-    private DBBroker broker;
-    private final LockManager lockManager;
+    protected DBBroker broker;
     private boolean useNodePool = false;
 
-    public NodeIterator(DBBroker broker, DOMFile db, NodeHandle node, boolean poolable)
-            throws BTreeException, IOException {
+    public AbstractNodeIterator(final DBBroker broker, final DOMFile db, final NodeHandle node, final boolean poolable) {
         this.db = db;
         this.doc = node.getOwnerDocument();
         this.useNodePool = poolable;
         this.node = node;
         this.broker = broker;
-        this.lockManager = broker.getBrokerPool().getLockManager();
     }
 
     /**
@@ -95,7 +93,7 @@ public final class NodeIterator implements INodeIterator {
      */
     @Override
     public boolean hasNext() {
-        try(final ManagedLock<ReentrantLock> domFileLock = lockManager.acquireBtreeReadLock(db.getLockName())) {
+        try {
             db.setOwnerObject(broker);
             if (gotoNextPosition()) {
                 db.addToBuffer(page);
@@ -108,10 +106,6 @@ public final class NodeIterator implements INodeIterator {
                     //Mmmmh... strange -pb
                     {return true;}
             }
-        } catch (final LockException e) {
-            LOG.warn("Failed to acquire read lock on {}", FileUtils.fileName(db.getFile()));
-            //TODO : throw exception here ? -pb
-            return false;
         } catch (final BTreeException | IOException e) {
             LOG.warn(e);
             //TODO : throw exception here ? -pb
@@ -124,7 +118,7 @@ public final class NodeIterator implements INodeIterator {
      */
     @Override
     public IStoredNode next() {
-        try(final ManagedLock<ReentrantLock> domFileLock = lockManager.acquireBtreeReadLock(db.getLockName())) {
+        try {
             db.setOwnerObject(broker);
             IStoredNode nextNode = null;
             if (gotoNextPosition()) {
@@ -220,10 +214,6 @@ public final class NodeIterator implements INodeIterator {
                 } while (nextNode == null);
             }
             return nextNode;
-        } catch (final LockException e) {
-            LOG.warn("Failed to acquire read lock on {}", FileUtils.fileName(db.getFile()));
-            //TODO : throw exception here ? -pb
-            return null;
         } catch (final BTreeException | IOException e) {
             LOG.error(e.getMessage(), e);
             //TODO : re-throw exception ? -pb
