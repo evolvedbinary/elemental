@@ -3058,7 +3058,7 @@ public class DOMFile extends BTree implements Lockable {
         // set to true if the page has been removed from the cache
         boolean invalidated = false;
 
-        private final AtomicInteger lastFound = new AtomicInteger(0);
+        private final ThreadLocal<Integer> lastFound = ThreadLocal.withInitial(() -> 0);
 
         DOMPage() {
             this.page = createNewPage();
