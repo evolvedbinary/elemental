@@ -329,7 +329,6 @@ public class XMLWriter implements SerializerWriter {
                     return;	
                 }
                 writer.write(NAMESPACE_FN_XMLNS_NO_PREFIX);
-                writer.write("=\"");
                 //TODO (AP) - test, just write as a string
                 //writeChars(nsURI, true);
                 writer.write(nsURI);
