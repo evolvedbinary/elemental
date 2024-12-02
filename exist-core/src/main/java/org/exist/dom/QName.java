@@ -81,9 +81,11 @@ public class QName implements Comparable<QName> {
     private static final Pattern PTN_CLARK_NOTATION = Pattern.compile("\\{([^&{}]*)}([^&{}:]+)");
     private static final Pattern PTN_EQ_NAME_NOTATION = Pattern.compile("Q" + PTN_CLARK_NOTATION);
 
-    private final String localPart;
-    private final String namespaceURI;
-    private final String prefix;
+    private String localPart;
+    private String namespaceURI;
+    private String prefix;
+
+    private boolean interned = false;
 
     //TODO : use ElementValue.UNKNOWN and type explicitly ?
     private final byte nameType; // = ElementValue.ELEMENT;
@@ -519,6 +521,27 @@ public class QName implements Comparable<QName> {
         }
 
         return result;
+    }
+
+    /**
+     * String intern the strings behind this QName.
+     *
+     * @return this
+     */
+    public QName intern() {
+        if (!interned) {
+            if (localPart != null) {
+                this.localPart = localPart.intern();
+            }
+            if (namespaceURI != null) {
+                this.namespaceURI = namespaceURI.intern();
+            }
+            if (prefix != null) {
+                this.prefix = prefix.intern();
+            }
+            interned = true;
+        }
+        return this;
     }
 
     public static byte isQName(final String name) {

@@ -54,13 +54,9 @@ public class NamePool {
     }
 
     public QName getSharedName(final QName name) {
-        final WrappedQName wrapped = new WrappedQName(name);
-        return pool.computeIfAbsent(wrapped, _key ->
-            new QName(
-                internNonNull(name.getLocalPart()),
-                internNonNull(name.getNamespaceURI()),
-                internNonNull(name.getPrefix()),
-                name.getNameType()));
+        final QName internedName = name.intern();
+        final WrappedQName wrapped = new WrappedQName(internedName);
+        return pool.computeIfAbsent(wrapped, _key -> internedName);
     }
 
     /**
