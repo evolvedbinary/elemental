@@ -78,9 +78,11 @@ public class QName implements Comparable<QName> {
     public static final QName DOCTYPE_QNAME = EMPTY_QNAME;
 
 
-    private final String localPart;
-    private final String namespaceURI;
-    private final String prefix;
+    private String localPart;
+    private String namespaceURI;
+    private String prefix;
+
+    private boolean interned = false;
 
     //TODO : use ElementValue.UNKNOWN and type explicitly ?
     private final byte nameType; // = ElementValue.ELEMENT;
@@ -532,6 +534,27 @@ public class QName implements Comparable<QName> {
         }
 
         return result;
+    }
+
+    /**
+     * String intern the strings behind this QName.
+     *
+     * @return this
+     */
+    public QName intern() {
+        if (!interned) {
+            if (localPart != null) {
+                this.localPart = localPart.intern();
+            }
+            if (namespaceURI != null) {
+                this.namespaceURI = namespaceURI.intern();
+            }
+            if (prefix != null) {
+                this.prefix = prefix.intern();
+            }
+            interned = true;
+        }
+        return this;
     }
 
     public static final byte isQName(final String name) {
