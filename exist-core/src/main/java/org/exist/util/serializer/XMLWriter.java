@@ -389,7 +389,7 @@ public class XMLWriter implements SerializerWriter {
             if(tagIsOpen) {
                 closeStartTag(false);
             }
-            writer.append(chars);
+            writeChars(chars, false);
         } catch(final IOException ioe) {
             throw new TransformerException(ioe.getMessage(), ioe);
         }
