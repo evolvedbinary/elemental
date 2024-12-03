@@ -637,9 +637,7 @@ public class XMLWriter implements SerializerWriter {
     }
 
     private void writeCharSeq(final CharSequence ch, final int start, final int end) throws IOException {
-        for(int i = start; i < end; i++) {
-            writer.write(ch.charAt(i));
-        }
+        writer.append(ch, start, end);
     }
 
     protected void writeCharacterReference(final char charval) throws IOException {
