@@ -51,7 +51,7 @@ public class IndentingXMLWriter extends XMLWriter {
 
     private boolean indent = false;
     private int indentAmount = 4;
-    private char[] indentChars = new char[0];
+    private char[] indentChars = new char[] {'>', '\n', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};  // NOTE(AR) prepare initially for 8 levels of indentation
     private int level = 0;
     private boolean afterTag = false;
     private boolean sameline = false;
@@ -233,16 +233,20 @@ public class IndentingXMLWriter extends XMLWriter {
         if (!indent || whitespacePreserve) {
             return;
         }
-        final int padding = indentAmount * level + 1; /* 1 for leading \n */
+
+        final int padding = (indentAmount * level) + 2;  // 1 for leading '>' and '\n'
         if (indentChars.length < padding) {
             indentChars = new char[padding + padding];
             Arrays.fill(indentChars, ' ');
-            indentChars[0] = '\n';
+            indentChars[0] = '>';
+            indentChars[1] = '\n';
         }
+
         try {
             // aim is to use a single Writer.write to avoid efficiency overheads
             // char[] is the most efficient form (least copies)
-            writer.write(indentChars, 0, padding);
+            writer.write(indentChars, tagIsOpen ? 0 : 1, tagIsOpen ? padding : padding - 1);
+            tagIsOpen = false;
         } catch(final IOException ioe) {
             throw new TransformerException(ioe.getMessage(), ioe);
         }
