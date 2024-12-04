@@ -63,6 +63,24 @@ public class XMLWriter implements SerializerWriter {
         defaultProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "no");
     }
 
+    // the largest special char we have to worry about is '>' (ASCII code 62 (decimal)), the char that comes after that is '?' (ASCII code 63 (decimal))
+    private static final BitSet TEXT_SPECIAL_CHARS = new BitSet('?');
+    private static final BitSet ATTR_SPECIAL_CHARS = new BitSet('?');
+    static {
+        TEXT_SPECIAL_CHARS.set('<');
+        TEXT_SPECIAL_CHARS.set('>');
+//        TEXT_SPECIAL_CHARS('\r');
+        TEXT_SPECIAL_CHARS.set('&');
+
+        ATTR_SPECIAL_CHARS.set('<');
+        ATTR_SPECIAL_CHARS.set('>');
+        ATTR_SPECIAL_CHARS.set('\r');
+        ATTR_SPECIAL_CHARS.set('\n');
+        ATTR_SPECIAL_CHARS.set('\t');
+        ATTR_SPECIAL_CHARS.set('&');
+        ATTR_SPECIAL_CHARS.set('"');
+    }
+
     protected Writer writer = null;
 
     protected CharacterSet charSet;
@@ -79,10 +97,6 @@ public class XMLWriter implements SerializerWriter {
 
     private final char[] charref = new char[10];
 
-    private static final boolean[] textSpecialChars;
-
-    private static final boolean[] attrSpecialChars;
-
     private String defaultNamespace = "";
 
     /**
@@ -98,24 +112,12 @@ public class XMLWriter implements SerializerWriter {
     private LazyVal<Set<QName>> cdataSectionElements = new LazyVal<>(this::parseCdataSectionElementNames);
     private boolean cdataSetionElement = false;
 
-    static {
-        textSpecialChars = new boolean[128];
-        Arrays.fill(textSpecialChars, false);
-        textSpecialChars['<'] = true;
-        textSpecialChars['>'] = true;
-        // textSpecialChars['\r'] = true;
-        textSpecialChars['&'] = true;
-
-        attrSpecialChars = new boolean[128];
-        Arrays.fill(attrSpecialChars, false);
-        attrSpecialChars['<'] = true;
-        attrSpecialChars['>'] = true;
-        attrSpecialChars['\r'] = true;
-        attrSpecialChars['\n'] = true;
-        attrSpecialChars['\t'] = true;
-        attrSpecialChars['&'] = true;
-        attrSpecialChars['"'] = true;
-    }
+    /**
+     * Buffer for use in {@link #writeChars(CharSequence, boolean)}.
+     */
+    private static final int WRITE_CHARS_BUFFER_SIZE = 1024;
+    private final char[] writeCharsBuffer = new char[WRITE_CHARS_BUFFER_SIZE];
+    private int writeCharsBufferIdx = 0;
 
     public XMLWriter() {
         charSet = CharacterSet.getCharacterSet(UTF_8.name());
@@ -573,66 +575,70 @@ public class XMLWriter implements SerializerWriter {
     protected boolean needsEscape(final char ch) {
     	return true;
     }
-    
-    protected void writeChars(final CharSequence s, final boolean inAttribute) throws IOException {
-        final boolean[] specialChars = inAttribute ? attrSpecialChars : textSpecialChars;
-        char ch = 0;
+
+    void writeChars(final CharSequence s, final boolean inAttribute) throws IOException {
+        final BitSet specialChars = inAttribute ? ATTR_SPECIAL_CHARS : TEXT_SPECIAL_CHARS;
+
+        char c;
+        boolean specialChar = false;
         final int len = s.length();
-        int pos = 0, i;
-        while(pos < len) {
-            i = pos;
-            while(i < len) {
-                ch = s.charAt(i);
-                if(ch < 128) {
-                    if(specialChars[ch]) {
-                        break;
-                    } else {
-                        i++;
-                    }
-                } else if(!charSet.inCharacterSet(ch)) {
-                    break;
-                } else {
-                    i++;
-                }
-            }
-            writeCharSeq(s, pos, i);
-            // writer.write(s.subSequence(pos, i).toString());
-            
-            if (i >= len) {
-                return;
-            }
-            
-            if(needsEscape(ch)) {
-                switch(ch) {
-                    case '<':
-                        writer.write("&lt;");
-                        break;
-                    case '>':
-                        writer.write("&gt;");
-                        break;
-                    case '&':
-                        writer.write("&amp;");
-                        break;
-                    case '\r':
-                        writer.write("&#xD;");
-                        break;
-                    case '\n':
-                        writer.write("&#xA;");
-                        break;
-                    case '\t':
-                        writer.write("&#x9;");
-                        break;
-                    case '"':
-                        writer.write("&#34;");
-                        break;
-                    default:
-                        writeCharacterReference(ch);
-                }
+        for (int i = 0; i < len; i++) {
+            c = s.charAt(i);
+
+            // the largest special char we have to worry about is '>' (ASCII code 62 (decimal)), the char that comes after that is '?' (ASCII code 63 (decimal))
+            if (('?' > c && specialChars.get(c)) || !charSet.inCharacterSet(c)) {
+                // character is special and needs to be escaped, or character is not in expected character set
+                specialChar = true;
             } else {
-                writer.write(ch);
+                // normal character
+                writeCharsBuffer[writeCharsBufferIdx++] = c;
             }
-            
-            pos = ++i;
+
+            if (specialChar || WRITE_CHARS_BUFFER_SIZE == writeCharsBufferIdx) {
+                // encountered a special char, or buffer is full, in either case we flush the buffer
+                writer.write(writeCharsBuffer, 0, writeCharsBufferIdx); // write the buffer
+                writeCharsBufferIdx = 0;  // reset the buffer
+            }
+
+            if (specialChar) {
+                if (needsEscape(c)) {
+                    switch (c) {
+                        case '<':
+                            writer.write("&lt;");
+                            break;
+                        case '>':
+                            writer.write("&gt;");
+                            break;
+                        case '&':
+                            writer.write("&amp;");
+                            break;
+                        case '\r':
+                            writer.write("&#xD;");
+                            break;
+                        case '\n':
+                            writer.write("&#xA;");
+                            break;
+                        case '\t':
+                            writer.write("&#x9;");
+                            break;
+                        case '"':
+                            writer.write("&#34;");
+                            break;
+                        default:
+                            writeCharacterReference(c);
+                    }
+                } else {
+                    writer.write(c);
+                }
+
+                specialChar = false;  // reset specialChar flag
+            }
+        }
+
+        // flush out anything left in the buffer
+        if (writeCharsBufferIdx > 0) {
+            writer.write(writeCharsBuffer, 0, writeCharsBufferIdx); // write the buffer
+            writeCharsBufferIdx = 0;  // reset the buffer for use next time
         }
     }
 

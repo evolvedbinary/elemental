@@ -37,10 +37,20 @@ public class XMLWriterTest {
     }
 
     @Test
-    public void writeChars() throws IOException {
+    public void writeChars1() throws IOException {
         final String inputText = "Enter Priest, &c. in procession; the Corpse of OPHELIA, LAERTES and Mourners following; KING CLAUDIUS, QUEEN GERTRUDE, their trains, &c";
         final String expectedText = inputText.replace("&", "&amp;");
+        writeChars(inputText, expectedText);
+    }
 
+    @Test
+    public void writeChars2() throws IOException {
+        final String inputText = "<a><b></a>";
+        final String expectedText = inputText.replace("<", "&lt;").replace(">", "&gt;");
+        writeChars(inputText, expectedText);
+    }
+
+    private void writeChars(final String inputText, final String expectedText) throws IOException {
         try (final StringBuilderWriter writer = new StringBuilderWriter()) {
             final XMLWriter xmlWriter = new XMLWriter(writer);
 
