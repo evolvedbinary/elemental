@@ -6,7 +6,6 @@
 package org.exist.util.serializer;
 
 import org.junit.jupiter.api.Test;
-//import org.xml.sax.helpers.NamespaceSupport;
 
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
@@ -16,6 +15,7 @@ public class NamespaceSupportTest {
     @Test
     public void pushAndPop() {
         final NamespaceSupport nsSupport = new NamespaceSupport();
+        nsSupport.pushContext();
         assertThat(nsSupport.getURI("xml"), equalTo("http://www.w3.org/XML/1998/namespace"));
         assertThat(nsSupport.getURI(""), equalTo(null));
         nsSupport.declarePrefix("", "http://www.w3.org/XML/2023/empty1");
@@ -35,6 +35,7 @@ public class NamespaceSupportTest {
         assertThat(nsSupport.getURI(""), equalTo("http://www.w3.org/XML/2023/empty1"));
         assertThat(nsSupport.getURI("testprefix"), equalTo("http://www.w3.org/XML/2023/testprefix1"));
         assertThat(nsSupport.getURI("level2"), equalTo(null));
+        nsSupport.popContext();
     }
 
 }

@@ -5,57 +5,96 @@
  */
 package org.exist.util.serializer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import javax.annotation.Nullable;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE;
+import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
+import static javax.xml.XMLConstants.XML_NS_PREFIX;
+import static javax.xml.XMLConstants.XML_NS_URI;
 
 /**
  * Inadequately tested drop-in replacement for NamespaceSupport
  *
  * Performance improved because we already assume strings are {@code intern()-ed}
+ * and therefore we use a HashMap which compares the keys based on identity.
  */
-public class NamespaceSupport {
+public class NamespaceSupport /* implements NamespaceContext */ {
 
-    private final static List<HashMap<String, String>> stack = new ArrayList<>();
-    static {
-        stack.add(new HashMap<>());
-    }
+    @Nullable private Deque<Map<String, String>> stack = null;
 
-    private final static String XML = "xml";
-    private final static String XMLNS = "xmlns";
-
-    private final static String XML_URI = "http://www.w3.org/XML/1998/namespace";
-    public void reset() {
-    }
-
-    public String getURI(String prefix) {
-        if (XML.equals(prefix)) {
-            return XML_URI;
+//    @Override
+    public void pushContext() {
+        if (stack == null) {
+            stack = new ArrayDeque<>();
         }
-        for (int i = stack.size() -1; i >= 0; i--) {
-            final String result = stack.get(i).get(prefix);
-            if (result != null) {
-                return result;
+        stack.addFirst(new IdentityHashMap<>());
+    }
+
+//    @Override
+    public void popContext() {
+        if (stack == null || stack.isEmpty()) {
+            throw new IllegalStateException("No namespace context");
+        }
+        stack.removeFirst();
+    }
+
+//    @Override
+    public @Nullable String getURI(String prefix) {
+        if (XML_NS_PREFIX.equals(prefix)) {
+            return XML_NS_URI;
+        }
+
+        if (XMLNS_ATTRIBUTE.equals(prefix)) {
+            return XMLNS_ATTRIBUTE_NS_URI;
+        }
+
+        @Nullable String uri = null;
+        if (stack != null) {
+
+            prefix = prefix.intern();  // TODO(AR) if we can be 100% sure that all `prefix` are already interned then we could remove this...
+
+            for (final Map<String, String> context : stack) {
+                uri = context.get(prefix);
+                if (uri != null) {
+                    break;
+                }
             }
         }
-        return null;
+
+        return uri;
     }
 
-    public void pushContext() {
-        stack.add(new HashMap<>());
-    }
 
-    public boolean declarePrefix(String elemPrefix, String namespaceURI) {
-        if (XML.equals(elemPrefix) || XMLNS.equals(elemPrefix)) {
+//    @Override
+    public boolean declarePrefix(@Nullable String prefix, final String uri) {
+        if (XML_NS_PREFIX.equals(prefix) || XMLNS_ATTRIBUTE.equals(prefix)) {
             return false;
         }
-        stack.get(stack.size() - 1).put(elemPrefix, namespaceURI);
+
+        if (stack == null || stack.isEmpty()) {
+            throw new IllegalStateException("No namespace context");
+        }
+
+        if (prefix == null) {
+            prefix = "";
+        } else {
+            prefix = prefix.intern();  // TODO(AR) if we can be 100% sure that all `prefix` are already interned then we could remove this...
+        }
+
+        stack.peekFirst().put(prefix, uri);
+
         return true;
     }
 
-    public void popContext() {
-        if (stack.size() > 1) {
-            stack.remove(stack.size() - 1);
+//    @Override
+    public void reset() {
+        if (stack != null) {
+            stack.clear();
         }
     }
 }
