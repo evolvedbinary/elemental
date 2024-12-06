@@ -3218,6 +3218,9 @@ public class DOMFile extends BTree implements Lockable {
         void setDirty(final boolean dirty) {
             saved = !dirty;
             page.getPageHeader().setDirty(dirty);
+            if (dirty) {
+                lastFound.set(0);
+            }
         }
 
         private void load(final Page page) {
