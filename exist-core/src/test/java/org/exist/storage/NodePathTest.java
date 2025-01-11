@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -90,6 +99,12 @@ public class NodePathTest {
         assertEquals("/a/b/c/d", path.toString());
         path.append(new NodePath(null, "/1/2/3"));
         assertEquals("/a/b/c/d/1/2/3", path.toString());
+
+        path = new NodePath();
+        path.addComponent(NodePath.SKIP);
+        path.addComponent(new QName("lemma", "", "", ElementValue.ATTRIBUTE));
+        assertEquals("//@lemma", path.toString());
+
     }
 
     @Test
@@ -108,6 +123,10 @@ public class NodePathTest {
         assertEquals("/a/b/c/d", path.toString());
         path.append(new NodePath(null, "/1/2/3"));
         assertEquals("/a/b/c/d/1/2/3", path.toString());
+
+        path = new NodePath(NodePath.SKIP);
+        path.addComponent(new QName("lemma", "", "", ElementValue.ATTRIBUTE));
+        assertEquals("//@lemma", path.toString());
     }
 
     @Test

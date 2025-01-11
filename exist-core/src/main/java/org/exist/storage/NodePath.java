@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -242,12 +251,21 @@ public class NodePath implements Comparable<NodePath> {
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder();
+        boolean prevSkip = false;
         for (int i = 0; i < pos; i++) {
-        	buf.append("/");
-            if (components[i].getNameType() == ElementValue.ATTRIBUTE) {
+            final QName component = components[i];
+            if (component != NodePath.SKIP && !component.equals(NodePath.SKIP)) {
+                if (!prevSkip) {
+                    buf.append("/");
+                }
+                prevSkip = false;
+            } else {
+                prevSkip = true;
+            }
+            if (component.getNameType() == ElementValue.ATTRIBUTE) {
                 buf.append("@");
             }
-            buf.append(components[i]);
+            buf.append(component);
         }
         return buf.toString();
     }
