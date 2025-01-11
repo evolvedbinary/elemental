@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,14 +36,14 @@ import org.exist.storage.NodePath;
 
 public class RangeIndexDoc {
 
-    private NodeId nodeId;
-    private QName qname;
-    private NodePath path;
-    private TextCollector collector;
-    private RangeIndexConfigElement config;
+    private final NodeId nodeId;
+    private final QName qname;
+    private final NodePath path;
+    private final TextCollector collector;
+    private final RangeIndexConfigElement config;
     private long address = -1;
 
-    public RangeIndexDoc(NodeId nodeId, QName qname, NodePath path, TextCollector collector, RangeIndexConfigElement config) {
+    public RangeIndexDoc(final NodeId nodeId, final QName qname, final NodePath path, final TextCollector collector, final RangeIndexConfigElement config) {
         this.nodeId = nodeId;
         this.qname = qname;
         this.path = path;
@@ -42,7 +51,7 @@ public class RangeIndexDoc {
         this.config = config;
     }
 
-    public void setAddress(long address) {
+    public void setAddress(final long address) {
         this.address = address;
     }
 

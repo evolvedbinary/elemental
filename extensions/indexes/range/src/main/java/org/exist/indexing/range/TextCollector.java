@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,17 +32,18 @@ package org.exist.indexing.range;
 
 import org.exist.dom.persistent.AttrImpl;
 import org.exist.dom.persistent.AbstractCharacterData;
-import org.exist.dom.QName;
+import org.exist.dom.persistent.ElementImpl;
 import org.exist.storage.NodePath;
 import org.exist.util.XMLString;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public interface TextCollector {
 
-    void startElement(QName qname, NodePath path);
+    void startElement(ElementImpl element, NodePath path);
 
-    void endElement(QName qname, NodePath path);
+    void endElement(ElementImpl element, NodePath path);
 
     void characters(AbstractCharacterData text, NodePath path);
 
@@ -41,7 +51,7 @@ public interface TextCollector {
 
     int length();
 
-    List<Field> getFields();
+    @Nullable List<Field> getFields();
 
     boolean hasFields();
 
