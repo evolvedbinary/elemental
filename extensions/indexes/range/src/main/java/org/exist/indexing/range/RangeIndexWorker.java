@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -69,6 +78,7 @@ import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
@@ -87,7 +97,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public static final String FIELD_ADDRESS = "address";
     public static final String FIELD_ID = "id";
 
-    private static Set<String> LOAD_FIELDS = new TreeSet<>();
+    private static final Set<String> LOAD_FIELDS = new TreeSet<>();
     static {
         LOAD_FIELDS.add(FIELD_DOC_ID);
         LOAD_FIELDS.add(FIELD_NODE_ID);
@@ -99,13 +109,13 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private DocumentImpl currentDoc;
     private ReindexMode mode = ReindexMode.STORE;
     private List<RangeIndexDoc> nodesToWrite;
-    private Set<NodeId> nodesToRemove = null;
-    private RangeIndexConfig config = null;
-    private RangeIndexListener listener = new RangeIndexListener();
-    private Deque<TextCollector> contentStack = null;
+    private @Nullable Set<NodeId> nodesToRemove = null;
+    private @Nullable RangeIndexConfig config = null;
+    private final RangeIndexListener listener = new RangeIndexListener();
+    private @Nullable Deque<TextCollector> contentStack = null;
     private int cachedNodesSize = 0;
 
-    private int maxCachedNodesSize = 4096 * 1024;
+    private static final int MAX_CACHED_NODES_SIZE = 4096 * 1024;
 
     public RangeIndexWorker(RangeIndex index, DBBroker broker) {
         this.index = index;
@@ -155,12 +165,12 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
         }
         if (operator == RangeIndex.Operator.EQ) {
-            return new TermQuery(new Term(field, RangeIndexConfigElement.convertToBytes(content)));
+            return new TermQuery(new Term(field, BasicRangeIndexConfigElement.convertToBytes(content)));
         }
         if (operator == RangeIndex.Operator.NE) {
             final BooleanQuery nq = new BooleanQuery();
             nq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-            nq.add(new TermQuery(new Term(field, RangeIndexConfigElement.convertToBytes(content))), BooleanClause.Occur.MUST_NOT);
+            nq.add(new TermQuery(new Term(field, BasicRangeIndexConfigElement.convertToBytes(content))), BooleanClause.Occur.MUST_NOT);
             return nq;
         }
         final boolean includeUpper = operator == RangeIndex.Operator.LE;
@@ -197,14 +207,14 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     return NumericRangeQuery.newFloatRange(field, (float) ((NumericValue) content).getDouble(), null, includeLower, includeUpper);
                 }
             case Type.DATE:
-                long dl = RangeIndexConfigElement.dateToLong((DateValue) content);
+                long dl = BasicRangeIndexConfigElement.dateToLong((DateValue) content);
                 if (operator == RangeIndex.Operator.LT || operator == RangeIndex.Operator.LE) {
                     return NumericRangeQuery.newLongRange(field, null, dl, includeLower, includeUpper);
                 } else {
                     return NumericRangeQuery.newLongRange(field, dl, null, includeLower, includeUpper);
                 }
             case Type.TIME:
-                long tl = RangeIndexConfigElement.timeToLong((TimeValue) content);
+                long tl = BasicRangeIndexConfigElement.timeToLong((TimeValue) content);
                 if (operator == RangeIndex.Operator.LT || operator == RangeIndex.Operator.LE) {
                     return NumericRangeQuery.newLongRange(field, null, tl, includeLower, includeUpper);
                 } else {
@@ -213,7 +223,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             case Type.DATE_TIME:
             default:
                 if (type == Type.DATE_TIME) {
-                    key = RangeIndexConfigElement.convertToBytes(content);
+                    key = BasicRangeIndexConfigElement.convertToBytes(content);
                 }
                 if (operator == RangeIndex.Operator.LT || operator == RangeIndex.Operator.LE) {
                     return new TermRangeQuery(field, null, key, includeLower, includeUpper);
@@ -437,13 +447,14 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    protected void indexText(NodeHandle nodeHandle, QName qname, NodePath path, RangeIndexConfigElement config, TextCollector collector) {
-        RangeIndexDoc pending = new RangeIndexDoc(nodeHandle.getNodeId(), qname, path, collector, config);
+    protected void indexText(final NodeHandle nodeHandle, final QName qname, final NodePath path, final RangeIndexConfigElement config, final TextCollector collector) {
+        final RangeIndexDoc pending = new RangeIndexDoc(nodeHandle.getNodeId(), qname, path.copy(), collector, config);
         pending.setAddress(nodeHandle.getInternalAddress());
         nodesToWrite.add(pending);
         cachedNodesSize += collector.length();
-        if (cachedNodesSize > maxCachedNodesSize)
+        if (cachedNodesSize > MAX_CACHED_NODES_SIZE) {
             write();
+        }
     }
 
     private void write() {
@@ -454,20 +465,22 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             writer = index.getWriter();
 
             // docId and nodeId are stored as doc value
-            IntDocValuesField fDocId = new IntDocValuesField(FIELD_DOC_ID, 0);
-            BinaryDocValuesField fNodeId = new BinaryDocValuesField(FIELD_NODE_ID, new BytesRef(8));
-            BinaryDocValuesField fAddress = new BinaryDocValuesField(FIELD_ADDRESS, new BytesRef(8));
+            final IntDocValuesField fDocId = new IntDocValuesField(FIELD_DOC_ID, 0);
+            final BinaryDocValuesField fNodeId = new BinaryDocValuesField(FIELD_NODE_ID, new BytesRef(8));
+            final BinaryDocValuesField fAddress = new BinaryDocValuesField(FIELD_ADDRESS, new BytesRef(8));
+
             // docId also needs to be indexed
-            IntField fDocIdIdx = new IntField(FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
-            for (RangeIndexDoc pending : nodesToWrite) {
-                Document doc = new Document();
+            final IntField fDocIdIdx = new IntField(FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
+
+            for (final RangeIndexDoc pending : nodesToWrite) {
+                final Document doc = new Document();
 
                 fDocId.setIntValue(currentDoc.getDocId());
                 doc.add(fDocId);
 
                 // store the node id
-                int nodeIdLen = pending.getNodeId().size();
-                byte[] data = new byte[nodeIdLen + 2];
+                final int nodeIdLen = pending.getNodeId().size();
+                final byte[] data = new byte[nodeIdLen + 2];
                 ByteConversion.shortToByte((short) pending.getNodeId().units(), data, 0);
                 pending.getNodeId().serialize(data, 2);
                 fNodeId.setBytesValue(data);
@@ -479,34 +492,44 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
 
                 // add separate index for node id
-                byte[] idData = new byte[nodeIdLen + 4];
+                final byte[] idData = new byte[nodeIdLen + 4];
                 ByteConversion.intToByteH(currentDoc.getDocId(), idData, 0);
                 pending.getNodeId().serialize(idData, 4);
-                BinaryTokenStream bts = new BinaryTokenStream(new BytesRef(idData));
-                Field fNodeIdIdx = new Field(FIELD_ID, bts, LuceneIndexWorker.TYPE_NODE_ID);
+                final BinaryTokenStream bts = new BinaryTokenStream(new BytesRef(idData));
+                final Field fNodeIdIdx = new Field(FIELD_ID, bts, LuceneIndexWorker.TYPE_NODE_ID);
                 doc.add(fNodeIdIdx);
 
-                for (TextCollector.Field field : pending.getCollector().getFields()) {
-                    String contentField;
-                    if (field.isNamed())
-                        contentField = field.getName();
-                    else
-                        contentField = LuceneUtil.encodeQName(pending.getQName(), index.getBrokerPool().getSymbols());
-                    Field fld = pending.getConfig().convertToField(contentField, field.getContent().toString());
-                    if (fld != null) {
-                        doc.add(fld);
+                final List<TextCollector.Field> fields = pending.getCollector().getFields();
+                if (fields != null) {
+                    for (final TextCollector.Field field : fields) {
+                        final String contentField;
+                        if (field.isNamed()) {
+                            contentField = field.getName();
+                        } else {
+                            contentField = LuceneUtil.encodeQName(pending.getQName(), index.getBrokerPool().getSymbols());
+                        }
+                        Field fld = null;
+                        if (pending.getConfig() instanceof BasicRangeIndexConfigElement) {
+                            fld = ((BasicRangeIndexConfigElement) pending.getConfig()).convertToField(contentField, field.getContent());
+                        }
+                        if (fld != null) {
+                            doc.add(fld);
+                        }
                     }
                 }
                 fDocIdIdx.setIntValue(currentDoc.getDocId());
                 doc.add(fDocIdIdx);
 
-                Analyzer analyzer = pending.getConfig().getAnalyzer();
+                Analyzer analyzer = null;
+                if (pending.getConfig() instanceof BasicRangeIndexConfigElement) {
+                    analyzer = ((BasicRangeIndexConfigElement) pending.getConfig()).getAnalyzer();
+                }
                 if (analyzer == null) {
                     analyzer = config.getDefaultAnalyzer();
                 }
                 writer.addDocument(doc, analyzer);
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             LOG.warn("An exception was caught while indexing document: {}", e.getMessage(), e);
         } finally {
             index.releaseWriter(writer);
@@ -799,23 +822,23 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private class RangeIndexListener extends AbstractStreamListener {
 
         @Override
-        public void startElement(Txn transaction, ElementImpl element, NodePath path) {
+        public void startElement(final Txn transaction, final ElementImpl element, final NodePath path) {
             if (mode == ReindexMode.STORE && config != null) {
                 if (contentStack != null) {
                     for (final TextCollector extractor : contentStack) {
-                        extractor.startElement(element.getQName(), path);
+                        extractor.startElement(element, path);
                     }
                 }
-                Iterator<RangeIndexConfigElement> configIter = config.getConfig(path);
+                final Iterator<RangeIndexConfigElement> configIter = config.getConfig(path);
                 if (configIter != null) {
                     if (contentStack == null) {
                         contentStack = new ArrayDeque<>();
                     }
                     while (configIter.hasNext()) {
-                        RangeIndexConfigElement configuration = configIter.next();
+                        final RangeIndexConfigElement configuration = configIter.next();
                         if (configuration.match(path)) {
-                            TextCollector collector = configuration.getCollector(path);
-                            collector.startElement(element.getQName(), path);
+                            TextCollector collector = configuration.newCollector(path);
+                            collector.startElement(element, path);
                             contentStack.push(collector);
                         }
                     }
@@ -825,7 +848,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
 
         @Override
-        public void attribute(Txn transaction, AttrImpl attrib, NodePath path) {
+        public void attribute(final Txn transaction, final AttrImpl attrib, final NodePath path) {
             path.addComponent(attrib.getQName());
             if (contentStack != null) {
                 for (final TextCollector collector : contentStack) {
@@ -833,16 +856,17 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
             }
             Iterator<RangeIndexConfigElement> configIter = null;
-            if (config != null)
+            if (config != null) {
                 configIter = config.getConfig(path);
+            }
             if (mode != ReindexMode.REMOVE_ALL_NODES && configIter != null) {
                 if (mode == ReindexMode.REMOVE_SOME_NODES) {
                     nodesToRemove.add(attrib.getNodeId());
                 } else {
                     while (configIter.hasNext()) {
-                        RangeIndexConfigElement configuration = configIter.next();
+                        final RangeIndexConfigElement configuration = configIter.next();
                         if (configuration.match(path)) {
-                            SimpleTextCollector collector = new SimpleTextCollector(attrib.getValue());
+                            final SimpleTextCollector collector = new SimpleTextCollector(attrib.getValue());
                             indexText(attrib, attrib.getQName(), path, configuration, collector);
                         }
                     }
@@ -857,23 +881,25 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             if (config != null) {
                 if (mode == ReindexMode.STORE && contentStack != null) {
                     for (final TextCollector extractor : contentStack) {
-                        extractor.endElement(element.getQName(), path);
+                        extractor.endElement(element, path);
                     }
                 }
-                Iterator<RangeIndexConfigElement> configIter = config.getConfig(path);
+                final Iterator<RangeIndexConfigElement> configIter = config.getConfig(path);
                 if (mode != ReindexMode.REMOVE_ALL_NODES && configIter != null) {
                     if (mode == ReindexMode.REMOVE_SOME_NODES) {
                         nodesToRemove.add(element.getNodeId());
                     } else {
                         while (configIter.hasNext()) {
-                            RangeIndexConfigElement configuration = configIter.next();
+                            final RangeIndexConfigElement configuration = configIter.next();
                             boolean match = configuration.match(path);
                             if (match) {
                                 final TextCollector collector = contentStack.pop();
                                 match = collector instanceof ComplexTextCollector
                                         ? match && ((ComplexTextCollector)collector).getConfig().matchConditions(element)
                                         : match;
-                                if (match) indexText(element, element.getQName(), path, configuration, collector);
+                                if (match) {
+                                    indexText(element, element.getQName(), path, configuration, collector);
+                                }
                             }
                         }
                     }

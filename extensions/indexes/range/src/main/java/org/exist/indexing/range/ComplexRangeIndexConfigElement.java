@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,40 +42,48 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
-public class ComplexRangeIndexConfigElement extends RangeIndexConfigElement {
+public class ComplexRangeIndexConfigElement extends BasicRangeIndexConfigElement {
 
     public static final Comparator<ComplexRangeIndexConfigElement> NUM_CONDITIONS_COMPARATOR =
             Comparator.comparingInt(ComplexRangeIndexConfigElement::getNumberOfConditions).reversed();
-
-
     public final static String FIELD_ELEMENT = "field";
     public final static String CONDITION_ELEMENT = "condition";
-
     private static final Logger LOG = LogManager.getLogger(ComplexRangeIndexConfigElement.class);
 
-    private Map<String, RangeIndexConfigField> fields = new HashMap<>();
+    private @Nullable Map<String, RangeIndexConfigField> fields = null;
+    private @Nullable List<RangeIndexConfigCondition> conditions = null;
 
-
-    protected ArrayList<RangeIndexConfigCondition> conditions = new ArrayList<>();
-    public ArrayList<RangeIndexConfigCondition> getConditions() {
+    public @Nullable List<RangeIndexConfigCondition> getConditions() {
         return conditions;
     }
-    public int getNumberOfConditions() { return conditions.size(); }
 
+    public int getNumberOfConditions() {
+        if (conditions == null) {
+            return 0;
+        }
+        return conditions.size();
+    }
 
     public ComplexRangeIndexConfigElement(final Element node, final NodeList children, final Map<String, String> namespaces)
             throws DatabaseConfigurationException {
         super(node, namespaces);
 
         for (int i = 0; i < children.getLength(); i++) {
-            Node child = children.item(i);
+            final Node child = children.item(i);
             if (child.getNodeType() == Node.ELEMENT_NODE) {
                 if (FIELD_ELEMENT.equals(child.getLocalName())) {
-                    RangeIndexConfigField field = new RangeIndexConfigField(path, (Element) child, namespaces);
+                    final RangeIndexConfigField field = new RangeIndexConfigField(path, (Element) child, namespaces);
+                    if (fields == null) {
+                        fields = new HashMap<>();
+                    }
                     fields.put(field.getName(), field);
                 } else if (CONDITION_ELEMENT.equals(child.getLocalName())){
+                    if (conditions == null) {
+                        conditions = new ArrayList<>();
+                    }
                     conditions.add(new RangeIndexConfigAttributeCondition((Element) child, path));
                 } else if (FILTER_ELEMENT.equals(child.getLocalName())) {
                     analyzer.addFilter((Element) child);
@@ -78,23 +95,21 @@ public class ComplexRangeIndexConfigElement extends RangeIndexConfigElement {
     }
 
     @Override
-    public boolean isComplex() {
-        return true;
-    }
-
-    @Override
-    public boolean isCaseSensitive(String fieldName) {
-        for (RangeIndexConfigField field: fields.values()) {
-            if(fieldName != null && fieldName.equals(field.getName())) {
-                return field.isCaseSensitive();
+    public boolean isCaseSensitive(final String fieldName) {
+        if (fields != null) {
+            for (final RangeIndexConfigField field : fields.values()) {
+                if (fieldName != null && fieldName.equals(field.getName())) {
+                    return field.isCaseSensitive();
+                }
             }
         }
+
         return caseSensitive;
     }
 
     @Override
-    public boolean match(NodePath other) {
-        if (isQNameIndex) {
+    public boolean match(final NodePath other) {
+        if (qnameIndex) {
             final QName qn1 = path.getLastComponent();
             final QName qn2 = other.getLastComponent();
             return qn1.getNameType() == qn2.getNameType() && qn2.equals(qn1);
@@ -103,73 +118,86 @@ public class ComplexRangeIndexConfigElement extends RangeIndexConfigElement {
     }
 
     @Override
-    public boolean find(NodePath other) {
-        return (getField(other) != null);
+    public boolean find(final NodePath other) {
+        return getField(other) != null;
     }
 
     @Override
-    public TextCollector getCollector(NodePath path) {
+    public TextCollector newCollector(final NodePath path) {
         return new ComplexTextCollector(this, path);
     }
 
     @Override
-    public Analyzer getAnalyzer(String fieldName) {
-        if (fields.containsKey(fieldName)) {
+    public Analyzer getAnalyzer(final String fieldName) {
+        if (fields != null && fields.containsKey(fieldName)) {
             return analyzer;
         }
         return null;
     }
 
-    public RangeIndexConfigField getField(NodePath path) {
-        for (RangeIndexConfigField field: fields.values()) {
-            if (field.match(path))
-                return field;
+    public @Nullable RangeIndexConfigField getField(final NodePath path) {
+        if (fields != null) {
+            for (final RangeIndexConfigField field : fields.values()) {
+                if (field.match(path)) {
+                    return field;
+                }
+            }
         }
         return null;
     }
 
-    public RangeIndexConfigField getField(NodePath parentPath, NodePath path) {
-        for (RangeIndexConfigField field: fields.values()) {
-            if (field.match(parentPath, path))
-                return field;
+    public @Nullable RangeIndexConfigField getField(final NodePath parentPath, final NodePath path) {
+        if (fields != null) {
+            for (final RangeIndexConfigField field : fields.values()) {
+                if (field.match(parentPath, path)) {
+                    return field;
+                }
+            }
         }
         return null;
     }
 
     @Override
-    public int getType(String fieldName) {
-        RangeIndexConfigField field = fields.get(fieldName);
-        if (field != null) {
-            return field.getType();
+    public int getType(final String fieldName) {
+        if (fields != null) {
+            final RangeIndexConfigField field = fields.get(fieldName);
+            if (field != null) {
+                return field.getType();
+            }
         }
         return Type.ITEM;
     }
 
     @Override
-    public org.exist.indexing.range.conversion.TypeConverter getTypeConverter(String fieldName) {
-        RangeIndexConfigField field = fields.get(fieldName);
-        if (field != null) {
-            return field.getTypeConverter();
+    public org.exist.indexing.range.conversion.TypeConverter getTypeConverter(final String fieldName) {
+        if (fields != null) {
+            final RangeIndexConfigField field = fields.get(fieldName);
+            if (field != null) {
+                return field.getTypeConverter();
+            }
         }
         return null;
     }
 
-    public boolean matchConditions(Node node) {
-        for (RangeIndexConfigCondition condition : conditions) {
-            if (!condition.matches(node))
-                return false;
+    public boolean matchConditions(final Node node) {
+        if (conditions != null) {
+            for (final RangeIndexConfigCondition condition : conditions) {
+                if (!condition.matches(node)) {
+                    return false;
+                }
+            }
         }
-
         return true;
     }
 
-    public boolean findCondition(Predicate predicate) {
-        for (RangeIndexConfigCondition condition : conditions) {
-            if (condition.find(predicate))
-                return true;
+    public boolean findCondition(final Predicate predicate) {
+        if (conditions != null) {
+            for (final RangeIndexConfigCondition condition : conditions) {
+                if (condition.find(predicate)) {
+                    return true;
+                }
+            }
         }
-
         return false;
     }
-
 }

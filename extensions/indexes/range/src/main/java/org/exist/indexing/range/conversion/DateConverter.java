@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,7 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
-import org.exist.indexing.range.RangeIndexConfigElement;
+import org.exist.indexing.range.BasicRangeIndexConfigElement;
 import org.exist.xquery.value.DateValue;
 import org.exist.xquery.value.TimeUtils;
 
@@ -68,7 +77,7 @@ public class DateConverter implements TypeConverter {
                 }
                 dv = new DateValue(content);
             }
-            final long dl = RangeIndexConfigElement.dateToLong(dv);
+            final long dl = BasicRangeIndexConfigElement.dateToLong(dv);
             return new LongField(fieldName, dl, LongField.TYPE_NOT_STORED);
         } catch (Exception e) {
             // wrong type: ignore
