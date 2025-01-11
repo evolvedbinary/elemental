@@ -114,6 +114,15 @@ public class NodePath implements Comparable<NodePath> {
     	addComponent(qname);
     }
 
+    /**
+     * Make a copy of this object.
+     *
+     * @return the new NodePath
+     */
+    public NodePath copy() {
+        return new NodePath(this);
+    }
+
     public void setIncludeDescendants(final boolean includeDescendants) {
         this.includeDescendants = includeDescendants;
     }
