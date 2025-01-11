@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -35,6 +44,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 public class RangeIndexConfig {
@@ -48,31 +58,33 @@ public class RangeIndexConfig {
 
     private static final Logger LOG = LogManager.getLogger(RangeIndexConfig.class);
 
-    private Map<QName, RangeIndexConfigElement> paths = new TreeMap<>();
+    private final Map<QName, RangeIndexConfigElement> paths;
 
     private Analyzer analyzer;
 
-    private PathIterator iterator = new PathIterator();
+    private final PathIterator iterator = new PathIterator();
 
     public RangeIndexConfig() {
         // default analyzer
-        analyzer = new KeywordAnalyzer();
+        this.analyzer = new KeywordAnalyzer();
+        this.paths = new TreeMap<>();
     }
 
-    public RangeIndexConfig(NodeList configNodes, Map<String, String> namespaces) {
+    public RangeIndexConfig(final NodeList configNodes, final Map<String, String> namespaces) {
+        this.paths = new TreeMap<>();
         parse(configNodes, namespaces);
     }
 
-    public RangeIndexConfig(RangeIndexConfig other) {
+    public RangeIndexConfig(final RangeIndexConfig other) {
         this.paths = other.paths;
         this.analyzer = other.analyzer;
     }
 
     /* find one simple configuration for path */
-    public RangeIndexConfigElement find(NodePath path) {
+    public RangeIndexConfigElement find(final NodePath path) {
         for (RangeIndexConfigElement rice : paths.values()) {
             do {
-                if (rice.find(path) && !rice.isComplex()) {
+                if (rice.find(path) && !(rice instanceof ComplexRangeIndexConfigElement)) {
                     return rice;
                 }
                 rice = rice.getNext();
@@ -82,12 +94,11 @@ public class RangeIndexConfig {
     }
 
     /* find all complex configurations for path (that might have different conditions) */
-    public List<ComplexRangeIndexConfigElement> findAll(NodePath path) {
-        ArrayList<ComplexRangeIndexConfigElement> rices = new ArrayList<>();
-
+    public List<ComplexRangeIndexConfigElement> findAll(final NodePath path) {
+        final List<ComplexRangeIndexConfigElement> rices = new ArrayList<>();
         for (RangeIndexConfigElement rice : paths.values()) {
             do {
-                if (rice.find(path) && rice.isComplex()) {
+                if (rice.find(path) && rice instanceof ComplexRangeIndexConfigElement) {
                     rices.add((ComplexRangeIndexConfigElement)rice);
                 }
 
@@ -97,48 +108,50 @@ public class RangeIndexConfig {
         return rices;
     }
 
-    private void parse(NodeList configNodes, Map<String, String> namespaces) {
+    private void parse(final NodeList configNodes, final Map<String, String> namespaces) {
         // default analyzer
-        analyzer = new KeywordAnalyzer();
-        for(int i = 0; i < configNodes.getLength(); i++) {
-            Node node = configNodes.item(i);
+        this.analyzer = new KeywordAnalyzer();
+        for (int i = 0; i < configNodes.getLength(); i++) {
+            final Node node = configNodes.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE && CONFIG_ROOT.equals(node.getLocalName())) {
                 parseChildren(node.getChildNodes(), namespaces);
             }
         }
     }
 
-    private void parseChildren(NodeList configNodes, Map<String, String> namespaces) {
-        Node node;
-        for(int i = 0; i < configNodes.getLength(); i++) {
-            node = configNodes.item(i);
-            if(node.getNodeType() == Node.ELEMENT_NODE && CREATE_ELEM.equals(node.getLocalName())) {
-                try {
-                    NodeList fields = getFieldsAndConditions((Element) node);
-                    RangeIndexConfigElement newConfig;
-                    if (fields.getLength() > 0) {
-                        newConfig = new ComplexRangeIndexConfigElement((Element) node, fields, namespaces);
-                    } else {
-                        newConfig = new RangeIndexConfigElement((Element) node, namespaces);
+    private void parseChildren(final NodeList configNodes, final Map<String, String> namespaces) {
+        for (int i = 0; i < configNodes.getLength(); i++) {
+            final Node node = configNodes.item(i);
+            try {
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    RangeIndexConfigElement newConfig = null;
+                    if (CREATE_ELEM.equals(node.getLocalName())) {
+                        final NodeList fields = getFieldsAndConditions((Element) node);
+                        if (fields.getLength() > 0) {
+                            newConfig = new ComplexRangeIndexConfigElement((Element) node, fields, namespaces);
+                        } else {
+                            newConfig = new BasicRangeIndexConfigElement((Element) node, namespaces);
+                        }
                     }
-                    RangeIndexConfigElement idxConf = paths.get(newConfig.getNodePath().getLastComponent());
+
+                    final RangeIndexConfigElement idxConf = paths.get(newConfig.getNodePath().getLastComponent());
                     if (idxConf == null) {
                         paths.put(newConfig.getNodePath().getLastComponent(), newConfig);
                     } else {
                         idxConf.add(newConfig);
                     }
-                } catch (final DatabaseConfigurationException e) {
-                    String uri = null;
-                    final Document doc = node.getOwnerDocument();
-                    if(doc != null) {
-                        uri = doc.getDocumentURI();
-                    }
+                }
+            } catch (final DatabaseConfigurationException e) {
+                String uri = null;
+                final Document doc = node.getOwnerDocument();
+                if(doc != null) {
+                    uri = doc.getDocumentURI();
+                }
 
-                    if(uri != null) {
-                        LOG.error("Invalid range index configuration (" + uri + "): " + e.getMessage());
-                    } else {
-                        LOG.error("Invalid range index configuration: " + e.getMessage());
-                    }
+                if(uri != null) {
+                    LOG.error("Invalid range index configuration (" + uri + "): " + e.getMessage());
+                } else {
+                    LOG.error("Invalid range index configuration: " + e.getMessage());
                 }
             }
         }
@@ -148,17 +161,17 @@ public class RangeIndexConfig {
         return analyzer;
     }
 
-    public Analyzer getAnalyzer(QName qname, String fieldName) {
+    public Analyzer getAnalyzer(final QName qname, final String fieldName) {
         Analyzer analyzer = null;
         if (qname != null) {
-            RangeIndexConfigElement idxConf = paths.get(qname);
-            if (idxConf != null) {
-                analyzer = idxConf.getAnalyzer(null);
+            final RangeIndexConfigElement idxConf = paths.get(qname);
+            if (idxConf instanceof BasicRangeIndexConfigElement) {
+                analyzer = ((BasicRangeIndexConfigElement) idxConf).getAnalyzer(null);
             }
         } else {
-            for (RangeIndexConfigElement idxConf: paths.values()) {
-                if (idxConf.isComplex()) {
-                    analyzer = idxConf.getAnalyzer(fieldName);
+            for (final RangeIndexConfigElement idxConf: paths.values()) {
+                if (idxConf instanceof ComplexRangeIndexConfigElement) {
+                    analyzer = ((ComplexRangeIndexConfigElement) idxConf).getAnalyzer(fieldName);
                     if (analyzer != null) {
                         break;
                     }
@@ -168,17 +181,17 @@ public class RangeIndexConfig {
         return analyzer;
     }
 
-    public boolean isCaseSensitive(QName qname, String fieldName) {
+    public boolean isCaseSensitive(final QName qname, final String fieldName) {
         boolean caseSensitive = true;
         if (qname != null) {
-            RangeIndexConfigElement idxConf = paths.get(qname);
-            if (idxConf != null) {
-                caseSensitive = idxConf.isCaseSensitive(fieldName);
+            final RangeIndexConfigElement idxConf = paths.get(qname);
+            if (idxConf instanceof BasicRangeIndexConfigElement) {
+                caseSensitive = ((BasicRangeIndexConfigElement) idxConf).isCaseSensitive(fieldName);
             }
         } else {
-            for (RangeIndexConfigElement idxConf: paths.values()) {
-                if (idxConf.isComplex()) {
-                    caseSensitive = idxConf.isCaseSensitive(fieldName);
+            for (final RangeIndexConfigElement idxConf: paths.values()) {
+                if (idxConf instanceof ComplexRangeIndexConfigElement) {
+                    caseSensitive = ((ComplexRangeIndexConfigElement) idxConf).isCaseSensitive(fieldName);
                     if (!caseSensitive) {
                         break;
                     }
@@ -188,16 +201,16 @@ public class RangeIndexConfig {
         return caseSensitive;
     }
 
-    public Iterator<RangeIndexConfigElement> getConfig(NodePath path) {
+    public Iterator<RangeIndexConfigElement> getConfig(final NodePath path) {
         iterator.reset(path);
         return iterator;
     }
 
-    private NodeList getFieldsAndConditions(Element root) {
-        NodeListImpl fields = new NodeListImpl();
-        NodeList children = root.getChildNodes();
+    private NodeList getFieldsAndConditions(final Element root) {
+        final NodeListImpl fields = new NodeListImpl();
+        final NodeList children = root.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
-            Node node = children.item(i);
+            final Node node = children.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE && (FIELD_ELEM.equals(node.getLocalName()) || CONDITION_ELEM.equals(node.getLocalName()))) {
                 fields.add(node);
             }
@@ -205,20 +218,21 @@ public class RangeIndexConfig {
         return fields;
     }
 
-    public boolean matches(NodePath path) {
+    public boolean matches(final NodePath path) {
         RangeIndexConfigElement idxConf = paths.get(path.getLastComponent());
         while (idxConf != null) {
-            if (idxConf.match(path))
+            if (idxConf.match(path)) {
                 return true;
+            }
             idxConf = idxConf.getNext();
         }
         return false;
     }
 
-    public int getType(String field) {
-        for (RangeIndexConfigElement conf : paths.values()) {
-            if (conf.isComplex()) {
-                int type = conf.getType(field);
+    public int getType(final String field) {
+        for (final RangeIndexConfigElement conf : paths.values()) {
+            if (conf instanceof ComplexRangeIndexConfigElement) {
+                int type = ((ComplexRangeIndexConfigElement) conf).getType(field);
                 if (type != Type.ITEM) {
                     return type;
                 }
@@ -228,17 +242,16 @@ public class RangeIndexConfig {
     }
 
     private class PathIterator implements Iterator<RangeIndexConfigElement> {
-
-        private RangeIndexConfigElement nextConfig;
+        private @Nullable RangeIndexConfigElement nextConfig;
         private NodePath path;
         private boolean atLast = false;
 
-        protected void reset(NodePath path) {
+        protected void reset(final NodePath path) {
             this.atLast = false;
             this.path = path;
-            nextConfig = paths.get(path.getLastComponent());
-            if (nextConfig == null) {
-                atLast = true;
+            this.nextConfig = paths.get(path.getLastComponent());
+            if (this.nextConfig == null) {
+                this.atLast = true;
             }
         }
 
@@ -249,13 +262,14 @@ public class RangeIndexConfig {
 
         @Override
         public RangeIndexConfigElement next() {
-            if (nextConfig == null)
+            if (this.nextConfig == null) {
                 return null;
+            }
 
-            RangeIndexConfigElement currentConfig = nextConfig;
-            nextConfig = nextConfig.getNext();
-            if (nextConfig == null && !atLast) {
-                atLast = true;
+            final RangeIndexConfigElement currentConfig = this.nextConfig;
+            this.nextConfig = this.nextConfig.getNext();
+            if (this.nextConfig == null && !this.atLast) {
+                this.atLast = true;
             }
             return currentConfig;
         }
@@ -264,6 +278,5 @@ public class RangeIndexConfig {
         public void remove() {
             //Nothing to do
         }
-
     }
 }

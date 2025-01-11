@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,56 +32,63 @@ package org.exist.indexing.range;
 
 import org.exist.dom.persistent.AttrImpl;
 import org.exist.dom.persistent.AbstractCharacterData;
-import org.exist.dom.QName;
+import org.exist.dom.persistent.ElementImpl;
 import org.exist.storage.NodePath;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 public class ComplexTextCollector implements TextCollector {
 
-    private NodePath parentPath;
-    private ComplexRangeIndexConfigElement config;
-    private List<Field> fields = new LinkedList<>();
-    private RangeIndexConfigField currentField = null;
+    private final NodePath parentPath;
+    private final ComplexRangeIndexConfigElement config;
+    private @Nullable List<Field> fields = null;
+    private @Nullable RangeIndexConfigField currentField = null;
     private int length = 0;
 
-    public ComplexTextCollector(ComplexRangeIndexConfigElement configuration, NodePath parentPath) {
+    public ComplexTextCollector(final ComplexRangeIndexConfigElement configuration,final NodePath parentPath) {
         this.config = configuration;
         this.parentPath = new NodePath(parentPath, false);
     }
 
     @Override
-    public void startElement(QName qname, NodePath path) {
-        RangeIndexConfigField fieldConf = config.getField(parentPath, path);
+    public void startElement(final ElementImpl element, final NodePath path) {
+       final RangeIndexConfigField fieldConf = config.getField(parentPath, path);
         if (fieldConf != null) {
             currentField = fieldConf;
-            Field field = new Field(currentField.getName(), false, fieldConf.whitespaceTreatment(), fieldConf.isCaseSensitive());
+            final Field field = new Field(currentField.getName(), false, fieldConf.whitespaceTreatment(), fieldConf.isCaseSensitive());
+            if (fields == null) {
+                fields = new LinkedList<>();
+            }
             fields.add(field);
         }
 
     }
 
     @Override
-    public void endElement(QName qname, NodePath path) {
+    public void endElement(final ElementImpl element, final NodePath path) {
         if (currentField != null && currentField.match(path)) {
             currentField = null;
         }
     }
 
     @Override
-    public void attribute(AttrImpl attribute, NodePath path) {
-        RangeIndexConfigField fieldConf = config.getField(parentPath, path);
+    public void attribute(final AttrImpl attribute, final NodePath path) {
+        final RangeIndexConfigField fieldConf = config.getField(parentPath, path);
         if (fieldConf != null) {
-            Field field = new Field(fieldConf.getName(), true, fieldConf.whitespaceTreatment(), fieldConf.isCaseSensitive());
+            final Field field = new Field(fieldConf.getName(), true, fieldConf.whitespaceTreatment(), fieldConf.isCaseSensitive());
             field.append(attribute.getValue());
+            if (fields == null) {
+                fields = new LinkedList<>();
+            }
             fields.add(0, field);
         }
     }
 
     @Override
-    public void characters(AbstractCharacterData text, NodePath path) {
-        if (currentField != null) {
-            Field field = fields.get(fields.size() - 1);
+    public void characters(final AbstractCharacterData text, final NodePath path) {
+        if (currentField != null && fields != null) {
+            final Field field = fields.get(fields.size() - 1);
             if (!field.isAttribute() && (currentField.includeNested() || currentField.match(path))) {
                 field.append(text.getXMLString());
                 length += text.getXMLString().length();
