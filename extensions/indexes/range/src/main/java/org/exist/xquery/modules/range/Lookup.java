@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,10 +35,7 @@ import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.VirtualNodeSet;
-import org.exist.indexing.range.RangeIndex;
-import org.exist.indexing.range.RangeIndexConfig;
-import org.exist.indexing.range.RangeIndexConfigElement;
-import org.exist.indexing.range.RangeIndexWorker;
+import org.exist.indexing.range.*;
 import org.exist.storage.ElementValue;
 import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath;
@@ -37,9 +43,9 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -296,11 +302,16 @@ public class Lookup extends Function implements Optimizable {
         return RangeIndexModule.OPERATOR_MAP.get(calledAs);
     }
 
-    private AtomicValue[] getKeys(Sequence contextSequence) throws XPathException {
-        RangeIndexConfigElement config = findConfiguration(contextSequence);
-        int targetType = config != null ? config.getType() : Type.ITEM;
-        Sequence keySeq = Atomize.atomize(getArgument(1).eval(contextSequence, null));
-        AtomicValue[] keys = new AtomicValue[keySeq.getItemCount()];
+    private AtomicValue[] getKeys(final Sequence contextSequence) throws XPathException {
+        @Nullable final RangeIndexConfigElement config = findConfiguration(contextSequence);
+        final int targetType;
+        if (config instanceof BasicRangeIndexConfigElement) {
+            targetType = ((BasicRangeIndexConfigElement) config).getType();
+        } else {
+            targetType = Type.ITEM;
+        }
+        final Sequence keySeq = Atomize.atomize(getArgument(1).eval(contextSequence, null));
+        final AtomicValue[] keys = new AtomicValue[keySeq.getItemCount()];
         for (int i = 0; i < keys.length; i++) {
             if (targetType == Type.ITEM) {
                 keys[i] = (AtomicValue) keySeq.itemAt(i);
@@ -398,7 +409,9 @@ public class Lookup extends Function implements Optimizable {
             }
             return false;
         }
-        usesCollation = rice.usesCollation();
+        if (rice instanceof BasicRangeIndexConfigElement) {
+            usesCollation = ((BasicRangeIndexConfigElement) rice).usesCollation();
+        }
         canOptimize = true;
         return canOptimize;
     }
@@ -421,7 +434,7 @@ public class Lookup extends Function implements Optimizable {
                 RangeIndexConfig config = (RangeIndexConfig) idxConf.getCustomIndexSpec(RangeIndex.ID);
                 if (config != null) {
                     RangeIndexConfigElement rice = config.find(path);
-                    if (rice != null && !rice.isComplex()) {
+                    if (rice != null && !(rice instanceof ComplexRangeIndexConfigElement)) {
                         return rice;
                     }
                 }

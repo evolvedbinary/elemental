@@ -905,6 +905,7 @@
                                 <include>src/main/java/org/exist/storage/NativeBroker.java</include>
                                 <include>src/main/java/org/exist/storage/NativeValueIndex.java</include>
                                 <include>src/main/java/org/exist/storage/NodePath.java</include>
+                                <include>src/main/java/org/exist/storage/NodePath2.java</include>
                                 <include>src/test/java/org/exist/storage/NodePathTest.java</include>
                                 <include>src/main/java/org/exist/storage/ProcessMonitor.java</include>
                                 <include>src/test/java/org/exist/storage/RecoveryTest.java</include>
@@ -1351,6 +1352,7 @@
                                 <exclude>src/main/java/org/exist/storage/NativeBroker.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/NativeValueIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/NodePath.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/NodePath2.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/NodePathTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/ProcessMonitor.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoverBinaryTest.java</exclude>
