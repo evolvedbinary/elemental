@@ -677,10 +677,13 @@
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>project-suppression.xml</include>
+                                <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/test/java/org/exist/xquery/WatchdogTest.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                             </includes>
                         </licenseSet>
@@ -768,8 +771,10 @@
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
                                 <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/ParsingFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</include>
                                 <include>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
@@ -887,6 +892,7 @@
                                 <exclude>src/main/java/org/exist/test/runner/XMLTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/XQueryTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/XSuite.java</exclude>
+                                <exclude>src/main/java/org/exist/util/ByteOrderMark.java</exclude>
                                 <exclude>src/main/java/org/exist/util/Collations.java</exclude>
                                 <exclude>src/main/java/org/exist/util/crypto/digest/DigestType.java</exclude>
                                 <exclude>src/main/java/org/exist/webstart/JnlpJarFiles.java</exclude>
@@ -899,8 +905,12 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunXmlToJson.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/LoadXQueryModule.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/ParsingFunctions.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
