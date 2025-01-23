@@ -55,6 +55,7 @@ import static org.exist.indexing.lucene.LuceneIndexConfig.TYPE_ATTR;
 public class BasicRangeIndexConfigElement extends AbstractRangeIndexConfigElement {
 
     public final static String FILTER_ELEMENT = "filter";
+    public final static String CONTEXT_ELEMENT = "context";
 
     private final int type;
     protected final RangeIndexAnalyzer analyzer = new RangeIndexAnalyzer();
@@ -64,7 +65,9 @@ public class BasicRangeIndexConfigElement extends AbstractRangeIndexConfigElemen
     protected final int wsTreatment;
     private org.exist.indexing.range.conversion.TypeConverter typeConverter = null;
 
-    public BasicRangeIndexConfigElement(final Element element, final Map<String, String> namespaces) throws DatabaseConfigurationException {
+    private @Nullable Map<String, RangeIndexConfigContextRefElement> contextRefs = null;
+
+    public BasicRangeIndexConfigElement(final Element element, final Map<String, String> namespaces, @Nullable final Map<String, RangeIndexConfigContextElement> contextConfigs) throws DatabaseConfigurationException {
         super(element, namespaces);
 
         final String typeStr = element.getAttribute(TYPE_ATTR);
@@ -78,7 +81,7 @@ public class BasicRangeIndexConfigElement extends AbstractRangeIndexConfigElemen
              this.type = Type.STRING;
         }
 
-        parseChildren(element);
+        parseChildren(element, contextConfigs);
 
         final String collation = element.getAttribute("collation");
         usesCollation = !collation.isEmpty();
@@ -116,12 +119,18 @@ public class BasicRangeIndexConfigElement extends AbstractRangeIndexConfigElemen
         }
     }
 
-    private void parseChildren(final Node root) throws DatabaseConfigurationException {
+    private void parseChildren(final Node root, @Nullable final Map<String, RangeIndexConfigContextElement> contextConfigs) throws DatabaseConfigurationException {
         Node child = root.getFirstChild();
         while (child != null) {
             if (child.getNodeType() == Node.ELEMENT_NODE) {
                 if (FILTER_ELEMENT.equals(child.getLocalName())) {
                     analyzer.addFilter((Element) child);
+                }  else if (CONTEXT_ELEMENT.equals(child.getLocalName())) {
+                    final RangeIndexConfigContextRefElement contextRef = new RangeIndexConfigContextRefElement((Element) child, contextConfigs);
+                    if (contextRefs == null) {
+                        contextRefs = new HashMap<>();
+                    }
+                    contextRefs.put(contextRef.getName(), contextRef);
                 }
             }
             child = child.getNextSibling();
@@ -317,5 +326,9 @@ public class BasicRangeIndexConfigElement extends AbstractRangeIndexConfigElemen
     @Override
     public boolean find(final NodePath other) {
         return match(other);
+    }
+
+    public @Nullable Map<String, RangeIndexConfigContextRefElement> getContextRefs() {
+        return contextRefs;
     }
 }

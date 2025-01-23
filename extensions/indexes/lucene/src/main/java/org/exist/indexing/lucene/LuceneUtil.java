@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,11 +30,9 @@
  */
 package org.exist.indexing.lucene;
 
+import java.io.EOFException;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -43,9 +50,14 @@ import org.apache.lucene.util.BytesRef;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.SymbolTable;
 import org.exist.numbering.NodeId;
+import org.exist.numbering.NodeIdFactory;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.io.VariableByteArrayInput;
+import org.exist.storage.io.VariableByteInput;
+import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.util.ByteConversion;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 
 public class LuceneUtil {
@@ -74,6 +86,58 @@ public class LuceneUtil {
         final BytesRef ref = nodeIdValues.get(doc);
         final int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
         return pool.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+    }
+
+    /**
+     * Encodes Node IDs into a byte array.
+     *
+     * @param nodeIds the Node IDs to encode.
+     *
+     * @return the encoded representation.
+     *
+     * @throws IOException if an error occurs during encoding.
+     */
+    public static byte[] encodeNodeIds(final NodeId[] nodeIds) throws IOException {
+        try (final VariableByteOutputStream vbos = new VariableByteOutputStream(32)) {
+            @Nullable NodeId prevNodeId = null;
+            for (final NodeId nodeId : nodeIds) {
+                nodeId.write(prevNodeId, vbos);
+                prevNodeId = nodeId;
+            }
+            return vbos.toByteArray();
+        }
+    }
+
+    /**
+     * Decodes Node IDs from a byte array.
+     *
+     * @param encodedNodeIds the Node IDs to decode.
+     * @param offset the offset to start reading from.
+     * @param length the length to read.
+     *
+     * @return the decoded representation.
+     *
+     * @throws IOException if an error occurs during decoding.
+     */
+    public static NodeId[] decodeNodeIds(final NodeIdFactory nodeIdFactory, final byte[] encodedNodeIds, final int offset, final int length) throws IOException {
+        final VariableByteInput vbi = new VariableByteArrayInput(encodedNodeIds, offset, length);
+
+        final List<NodeId> nodeIds = new ArrayList<>();
+        @Nullable NodeId prevNodeId = null;
+        while (prevNodeId != NodeId.END_OF_DOCUMENT) {
+            try {
+                final NodeId nodeId = nodeIdFactory.createFromStream(prevNodeId, vbi);
+                if (nodeId != NodeId.END_OF_DOCUMENT) {
+                    nodeIds.add(nodeId);
+                }
+                prevNodeId = nodeId;
+            } catch (final EOFException e) {
+                // reached end of input
+                break;
+            }
+        }
+
+        return nodeIds.toArray(new NodeId[0]);
     }
 
     /**

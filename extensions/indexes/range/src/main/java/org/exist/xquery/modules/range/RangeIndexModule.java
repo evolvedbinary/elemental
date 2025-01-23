@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,13 +32,15 @@ package org.exist.xquery.modules.range;
 
 import org.exist.dom.QName;
 import org.exist.indexing.range.RangeIndex;
-import org.exist.xquery.AbstractInternalModule;
-import org.exist.xquery.ErrorCodes;
-import org.exist.xquery.FunctionDef;
+import org.exist.xquery.*;
+import org.exist.xquery.value.FunctionParameterSequenceType;
+import org.exist.xquery.value.FunctionReturnSequenceType;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.exist.xquery.FunctionDSL.functionDefs;
 
 public class RangeIndexModule extends AbstractInternalModule {
 
@@ -37,32 +48,48 @@ public class RangeIndexModule extends AbstractInternalModule {
     public final static String PREFIX = "range";
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
-    public final static FunctionDef[] functions = {
-        new FunctionDef(Lookup.signatures[0], Lookup.class),
-        new FunctionDef(Lookup.signatures[1], Lookup.class),
-        new FunctionDef(Lookup.signatures[2], Lookup.class),
-        new FunctionDef(Lookup.signatures[3], Lookup.class),
-        new FunctionDef(Lookup.signatures[4], Lookup.class),
-        new FunctionDef(Lookup.signatures[5], Lookup.class),
-        new FunctionDef(Lookup.signatures[6], Lookup.class),
-        new FunctionDef(Lookup.signatures[7], Lookup.class),
-        new FunctionDef(Lookup.signatures[8], Lookup.class),
-        new FunctionDef(Lookup.signatures[9], Lookup.class),
-        new FunctionDef(FieldLookup.signatures[0], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[1], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[2], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[3], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[4], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[5], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[6], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[7], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[8], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[9], FieldLookup.class),
-        new FunctionDef(FieldLookup.signatures[10], FieldLookup.class),
-        new FunctionDef(Optimize.signature, Optimize.class),
-        new FunctionDef(IndexKeys.signatures[0], IndexKeys.class),
-        new FunctionDef(IndexKeys.signatures[1], IndexKeys.class)
-    };
+    public static final FunctionDef[] functions = functionDefs(
+            functionDefs(Lookup.class,
+                    Lookup.signatures[0],
+                    Lookup.signatures[1],
+                    Lookup.signatures[2],
+                    Lookup.signatures[3],
+                    Lookup.signatures[4],
+                    Lookup.signatures[5],
+                    Lookup.signatures[6],
+                    Lookup.signatures[7],
+                    Lookup.signatures[8],
+                    Lookup.signatures[9]
+            ),
+            functionDefs(FieldLookup.class,
+                    FieldLookup.signatures[0],
+                    FieldLookup.signatures[1],
+                    FieldLookup.signatures[2],
+                    FieldLookup.signatures[3],
+                    FieldLookup.signatures[4],
+                    FieldLookup.signatures[5],
+                    FieldLookup.signatures[6],
+                    FieldLookup.signatures[7],
+                    FieldLookup.signatures[8],
+                    FieldLookup.signatures[9],
+                    FieldLookup.signatures[10]
+            ),
+            functionDefs(Optimize.class,
+                    Optimize.signature
+            ),
+            functionDefs(IndexKeys.class,
+                    IndexKeys.signatures[0],
+                    IndexKeys.signatures[1]
+            ),
+            functionDefs(ContextLookup.class,
+                    ContextLookup.FS_CONTEXT[0],
+                    ContextLookup.FS_CONTEXT[1],
+                    ContextLookup.FS_PRE_CONTEXT[0],
+                    ContextLookup.FS_PRE_CONTEXT[1],
+                    ContextLookup.FS_POST_CONTEXT[0],
+                    ContextLookup.FS_POST_CONTEXT[1]
+            )
+    );
 
     public final static Map<String, RangeIndex.Operator> OPERATOR_MAP = new HashMap<>();
     static {
@@ -87,8 +114,10 @@ public class RangeIndexModule extends AbstractInternalModule {
 
     }
 
-    public final static ErrorCodes.ErrorCode EXXQDYFT0001 = new RangeIndexErrorCode("EXXQDYFT0001", "Collation not " +
-            "supported");
+    public static final ErrorCodes.ErrorCode EXXQDYFT0001 = new RangeIndexErrorCode("EXXQDYFT0001", "Collation not supported");
+    public static final ErrorCodes.ErrorCode EXXQDYFT0002 = new RangeIndexErrorCode("EXXQDYFT0002", "Node type is in-memory and is not a stored node");
+    public static final ErrorCodes.ErrorCode EXXQDYFT0003 = new RangeIndexErrorCode("EXXQDYFT0003", "There is no context defined in the index definition for this node");
+    public final static ErrorCodes.ErrorCode EXXQDYFT0004 = new RangeIndexErrorCode("EXXQDYFT0004", "An I/O error occurred whilst searching the index");
 
     public RangeIndexModule(Map<String, List<? extends Object>> parameters) {
         super(functions, parameters, false);
@@ -112,5 +141,13 @@ public class RangeIndexModule extends AbstractInternalModule {
     @Override
     public String getReleaseVersion() {
         return RELEASED_IN_VERSION;
+    }
+
+    static FunctionSignature functionSignature(final String name, final String description, final FunctionReturnSequenceType returnType, final FunctionParameterSequenceType... paramTypes) {
+        return FunctionDSL.functionSignature(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, paramTypes);
+    }
+
+    static FunctionSignature[] functionSignatures(final String name, final String description, final FunctionReturnSequenceType returnType, final FunctionParameterSequenceType[][] variableParamTypes) {
+        return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 }

@@ -489,18 +489,22 @@ public abstract class StoredNode<T extends StoredNode> extends NodeImpl<T> imple
     @Override
     public NodePath getPath() {
         final NodePath2 path = new NodePath2();
-        if(getNodeType() == Node.ELEMENT_NODE) {
+        if (getNodeType() == Node.ELEMENT_NODE) {
             path.addNode(this);
         }
 
+        if (getNodeType() == Node.ATTRIBUTE_NODE) {
+            path.addComponent(getQName());
+        }
+
         Node parent;
-        if(getNodeType() == Node.ATTRIBUTE_NODE) {
-            parent = ((Attr)this).getOwnerElement();
+        if (getNodeType() == Node.ATTRIBUTE_NODE) {
+            parent = ((Attr) this).getOwnerElement();
         } else {
             parent = getParentNode();
         }
 
-        while(parent != null && parent.getNodeType() != Node.DOCUMENT_NODE) {
+        while (parent != null && parent.getNodeType() != Node.DOCUMENT_NODE) {
             path.addNode(parent);
             parent = parent.getParentNode();
         }
