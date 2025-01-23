@@ -650,6 +650,12 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
             }
             return (T) javaArray;
 
+        } else if (target.isAssignableFrom(StringValue.class)) {
+            return (T) this;
+
+        } else if (target == Sequence[].class) {
+            return (T) toArray();
+
         } else if (Object[].class.isAssignableFrom(target)) {
             final Object[] javaArray = new Object[vector.length()];
             for (int i = 0; i < vector.length(); i++) {

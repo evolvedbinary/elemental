@@ -34,20 +34,27 @@ import org.exist.dom.QName;
 import org.exist.numbering.NodeId;
 import org.exist.storage.NodePath;
 
+import javax.annotation.Nullable;
+import java.util.List;
+
 public class RangeIndexDoc {
 
     private final NodeId nodeId;
     private final QName qname;
     private final NodePath path;
     private final TextCollector collector;
+    private @Nullable final List<StaticContext> preContexts;
+    private @Nullable final List<CompletableContext> postContexts;
     private final RangeIndexConfigElement config;
     private long address = -1;
 
-    public RangeIndexDoc(final NodeId nodeId, final QName qname, final NodePath path, final TextCollector collector, final RangeIndexConfigElement config) {
+    public RangeIndexDoc(final NodeId nodeId, final QName qname, final NodePath path, final TextCollector collector, @Nullable final List<StaticContext> preContexts, @Nullable final List<CompletableContext> postContexts, final RangeIndexConfigElement config) {
         this.nodeId = nodeId;
         this.qname = qname;
         this.path = path;
         this.collector = collector;
+        this.preContexts = preContexts;
+        this.postContexts = postContexts;
         this.config = config;
     }
 
@@ -73,6 +80,14 @@ public class RangeIndexDoc {
 
     public TextCollector getCollector() {
         return collector;
+    }
+
+    public @Nullable List<StaticContext> getPreContexts() {
+        return preContexts;
+    }
+
+    public @Nullable List<CompletableContext> getPostContexts() {
+        return postContexts;
     }
 
     public RangeIndexConfigElement getConfig() {
