@@ -67,9 +67,9 @@ public class ComplexRangeIndexConfigElement extends BasicRangeIndexConfigElement
         return conditions.size();
     }
 
-    public ComplexRangeIndexConfigElement(final Element node, final NodeList children, final Map<String, String> namespaces)
+    public ComplexRangeIndexConfigElement(final Element node, final NodeList children, final Map<String, String> namespaces, @Nullable final Map<String, RangeIndexConfigContextElement> contextConfigs)
             throws DatabaseConfigurationException {
-        super(node, namespaces);
+        super(node, namespaces, contextConfigs);
 
         for (int i = 0; i < children.getLength(); i++) {
             final Node child = children.item(i);

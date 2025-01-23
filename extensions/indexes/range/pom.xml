@@ -126,6 +126,17 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.j8cu</groupId>
+            <artifactId>j8cu</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
