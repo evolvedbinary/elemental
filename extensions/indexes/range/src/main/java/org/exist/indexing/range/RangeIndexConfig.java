@@ -55,10 +55,12 @@ public class RangeIndexConfig {
     static final String CREATE_ELEM = "create";
     private static final String FIELD_ELEM = "field";
     private final static String CONDITION_ELEM = "condition";
+    private final static String CONTEXT_ELEM = "context";
 
     private static final Logger LOG = LogManager.getLogger(RangeIndexConfig.class);
 
     private final Map<QName, RangeIndexConfigElement> paths;
+    private @Nullable Map<String, RangeIndexConfigContextElement> contexts = null;
 
     private Analyzer analyzer;
 
@@ -128,10 +130,16 @@ public class RangeIndexConfig {
                     if (CREATE_ELEM.equals(node.getLocalName())) {
                         final NodeList fields = getFieldsAndConditions((Element) node);
                         if (fields.getLength() > 0) {
-                            newConfig = new ComplexRangeIndexConfigElement((Element) node, fields, namespaces);
+                            newConfig = new ComplexRangeIndexConfigElement((Element) node, fields, namespaces, contexts);
                         } else {
-                            newConfig = new BasicRangeIndexConfigElement((Element) node, namespaces);
+                            newConfig = new BasicRangeIndexConfigElement((Element) node, namespaces, contexts);
                         }
+                    } else if (CONTEXT_ELEM.equals(node.getLocalName())) {
+                        newConfig = new RangeIndexConfigContextElement((Element) node, namespaces);
+                        if (contexts == null) {
+                            contexts = new HashMap<>();
+                        }
+                        contexts.put(((RangeIndexConfigContextElement) newConfig).getId(), (RangeIndexConfigContextElement) newConfig);
                     }
 
                     final RangeIndexConfigElement idxConf = paths.get(newConfig.getNodePath().getLastComponent());

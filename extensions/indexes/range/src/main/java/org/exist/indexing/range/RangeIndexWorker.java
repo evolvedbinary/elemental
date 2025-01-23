@@ -30,18 +30,10 @@
  */
 package org.exist.indexing.range;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.exist.dom.persistent.ElementImpl;
-import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.persistent.NewArrayNodeSet;
-import org.exist.dom.persistent.NodeHandle;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.IStoredNode;
-import org.exist.dom.persistent.AttrImpl;
-import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.*;
 import org.exist.dom.QName;
-import org.exist.dom.persistent.AbstractCharacterData;
-import org.exist.dom.persistent.NodeProxy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -67,6 +59,7 @@ import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath;
 import org.exist.storage.NodePath2;
 import org.exist.storage.btree.DBException;
+import org.exist.storage.dom.INodeIterator;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
@@ -83,9 +76,13 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.exist.xquery.modules.range.ContextLookup.INDEX_DEF_CONTEXT_SIZE;
+
 /**
  * The main worker class for the range index.
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Wolfgang Meier
  */
 public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
@@ -96,6 +93,9 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public static final String FIELD_DOC_ID = "docId";
     public static final String FIELD_ADDRESS = "address";
     public static final String FIELD_ID = "id";
+
+    private static final String PRE_CONTEXT_FIELD_PREFIX = "pre_";
+    private static final String POST_CONTEXT_FIELD_PREFIX = "post_";
 
     private static final Set<String> LOAD_FIELDS = new TreeSet<>();
     static {
@@ -108,14 +108,17 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private IndexController controller;
     private DocumentImpl currentDoc;
     private ReindexMode mode = ReindexMode.STORE;
+    private @Nullable List<Tuple2<RangeIndexDoc, Integer>> nodesAwaitingPostContextCompletion;
     private List<RangeIndexDoc> nodesToWrite;
     private @Nullable Set<NodeId> nodesToRemove = null;
     private @Nullable RangeIndexConfig config = null;
     private final RangeIndexListener listener = new RangeIndexListener();
     private @Nullable Deque<TextCollector> contentStack = null;
-    private int cachedNodesSize = 0;
+    private @Nullable Map<String, ContextTextCollector> contextCollectors = null;
+    private int cachedNodesToWriteSize = 0;
 
     private static final int MAX_CACHED_NODES_SIZE = 4096 * 1024;
+    private static final int MAX_CACHED_NODES_AWAITING_COMPLETION_SIZE = 20;
 
     public RangeIndexWorker(RangeIndex index, DBBroker broker) {
         this.index = index;
@@ -269,19 +272,29 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             config = RangeIndexConfig.DEFAULT_CONFIG;
         }
         this.mode = mode;
+
+        if (contextCollectors != null) {
+            for (final ContextTextCollector contextCollector : contextCollectors.values()) {
+                contextCollector.reset();
+            }
+        }
     }
 
     @Override
-    public void setMode(ReindexMode mode) {
+    public void setMode(final ReindexMode mode) {
         this.mode = mode;
         switch (mode) {
+
             case STORE:
-                if (nodesToWrite == null)
-                    nodesToWrite = new ArrayList<>();
-                else
+                if (nodesAwaitingPostContextCompletion != null) {
+                    nodesAwaitingPostContextCompletion.clear();
+                }
+                if (nodesToWrite != null) {
                     nodesToWrite.clear();
-                cachedNodesSize = 0;
+                }
+                cachedNodesToWriteSize = 0;
                 break;
+
             case REMOVE_SOME_NODES:
                 nodesToRemove = new TreeSet<>();
                 break;
@@ -353,6 +366,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public void flush() {
         switch (mode) {
             case STORE:
+                checkAndUpdateNodesAwaitingPostContextCompletion();
                 write();
                 break;
             case REMOVE_SOME_NODES:
@@ -448,18 +462,119 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     protected void indexText(final NodeHandle nodeHandle, final QName qname, final NodePath path, final RangeIndexConfigElement config, final TextCollector collector) {
-        final RangeIndexDoc pending = new RangeIndexDoc(nodeHandle.getNodeId(), qname, path.copy(), collector, config);
+        @Nullable List<StaticContext> preContexts = null;
+        @Nullable List<CompletableContext> postContexts = null;
+        if (this.contextCollectors != null && config instanceof BasicRangeIndexConfigElement) {
+            @Nullable final Map<String, RangeIndexConfigContextRefElement> contextRefs = ((BasicRangeIndexConfigElement) config).getContextRefs();
+            if (contextRefs != null) {
+                for (final RangeIndexConfigContextRefElement contextRefConfig : contextRefs.values()) {
+                    final ContextTextCollector contextTextCollector = this.contextCollectors.get(contextRefConfig.getRef());
+
+                    if (contextRefConfig.getRangeIndexConfigContextElement().getPreContextSize() > 0) {
+                        @Nullable final NodeId[] preContextEntries = contextTextCollector.getContextEntries();
+                        if (preContextEntries != null) {
+                            final StaticContext preContext = new StaticContext(contextRefConfig.getName(), preContextEntries);
+                            if (preContexts == null) {
+                                preContexts = new ArrayList<>(contextRefs.size());
+                            }
+                            preContexts.add(preContext);
+                        }
+                    }
+
+                    if (contextRefConfig.getRangeIndexConfigContextElement().getPostContextSize() > 0) {
+                        final CompletableContext postContext = new CompletableContext(contextRefConfig.getName());
+                        // listen for the post context
+                        contextTextCollector.addContextReceiver(new CompletableContext.ContextReceiverAdapter(postContext), contextRefConfig.getRangeIndexConfigContextElement().getPostContextSize());
+                        if (postContexts == null) {
+                            postContexts = new ArrayList<>(contextRefs.size());
+                        }
+                        postContexts.add(postContext);
+                    }
+                }
+            }
+        }
+
+        final RangeIndexDoc pending = new RangeIndexDoc(nodeHandle.getNodeId(), qname, path.copy(), collector, preContexts, postContexts, config);
         pending.setAddress(nodeHandle.getInternalAddress());
-        nodesToWrite.add(pending);
-        cachedNodesSize += collector.length();
-        if (cachedNodesSize > MAX_CACHED_NODES_SIZE) {
+
+        if (postContexts != null) {
+            // if the node has not had its post contexts completed, we need to wait for that before adding it to `nodesToWrite`
+            if (nodesAwaitingPostContextCompletion == null) {
+                nodesAwaitingPostContextCompletion = new ArrayList<>();
+            }
+            nodesAwaitingPostContextCompletion.add(Tuple(pending, collector.length()));
+
+            // check and update any nodes that were previously awaiting their post context(s) and are now complete
+            lazyCheckAndUpdateNodesAwaitingPostContextCompletion();
+        } else {
+            // if the node has no post contexts we can add it to `nodesToWrite`
+            if (nodesToWrite == null) {
+                nodesToWrite = new ArrayList<>();
+            }
+            nodesToWrite.add(pending);
+            cachedNodesToWriteSize += collector.length();
+        }
+
+        // write any nodes that may be ready to be written
+        lazyWrite();
+    }
+
+    private void lazyCheckAndUpdateNodesAwaitingPostContextCompletion() {
+        if (nodesAwaitingPostContextCompletion != null && nodesAwaitingPostContextCompletion.size() > MAX_CACHED_NODES_AWAITING_COMPLETION_SIZE) {
+            checkAndUpdateNodesAwaitingPostContextCompletion();
+        }
+    }
+
+    /**
+     * Checks if the post context(s) of each RangeIndexDoc in `nodesAwaitingPostContextCompletion`
+     * have been completed, if they have, then they are moved from `nodesAwaitingPostContextCompletion` to `nodesToWrite`
+     */
+    private void checkAndUpdateNodesAwaitingPostContextCompletion() {
+        if (nodesAwaitingPostContextCompletion == null || nodesAwaitingPostContextCompletion.isEmpty()) {
+            return;
+        }
+
+        // find all nodes whose post contexts have been completed
+        final Iterator<Tuple2<RangeIndexDoc, Integer>> itNodeAwaitingPostContextCompletion = nodesAwaitingPostContextCompletion.iterator();
+        while (itNodeAwaitingPostContextCompletion.hasNext()) {
+            final Tuple2<RangeIndexDoc, Integer> nodeAwaitingPostContextCompletion = itNodeAwaitingPostContextCompletion.next();
+            @Nullable final List<CompletableContext> completablePostContexts = nodeAwaitingPostContextCompletion._1.getPostContexts();
+            if (completablePostContexts != null) {
+                boolean done = false;
+                for (final CompletableContext completablePostContext : completablePostContexts) {
+                    done = completablePostContext.isDone();
+                    if (!done) {
+                        break;
+                    }
+                }
+                if (done) {
+                    // node has had its post contexts completed
+
+                    // remove node with completed post contexts from `nodesAwaitingPostContextCompletion`
+                    itNodeAwaitingPostContextCompletion.remove();
+
+                    // add node with completed post context to `nodesToWrite` and update cached size
+                    if (nodesToWrite == null) {
+                        nodesToWrite = new ArrayList<>();
+                    }
+                    nodesToWrite.add(nodeAwaitingPostContextCompletion._1);
+                    cachedNodesToWriteSize += nodeAwaitingPostContextCompletion._2;
+                }
+            }
+        }
+    }
+
+    private void lazyWrite() {
+        if (cachedNodesToWriteSize > MAX_CACHED_NODES_SIZE) {
             write();
         }
     }
 
     private void write() {
-        if (nodesToWrite == null || nodesToWrite.isEmpty())
+        if (nodesToWrite == null || nodesToWrite.isEmpty()) {
             return;
+        }
+
         IndexWriter writer = null;
         try {
             writer = index.getWriter();
@@ -499,7 +614,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 final Field fNodeIdIdx = new Field(FIELD_ID, bts, LuceneIndexWorker.TYPE_NODE_ID);
                 doc.add(fNodeIdIdx);
 
-                final List<TextCollector.Field> fields = pending.getCollector().getFields();
+                // store any fields
+                @Nullable final List<TextCollector.Field> fields = pending.getCollector().getFields();
                 if (fields != null) {
                     for (final TextCollector.Field field : fields) {
                         final String contentField;
@@ -517,6 +633,36 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         }
                     }
                 }
+
+                // store any context
+
+                // store the pre-context if present
+                @Nullable final List<StaticContext> preContexts = pending.getPreContexts();
+                if (preContexts != null) {
+                    for (final StaticContext preContext : preContexts) {
+                        @Nullable final NodeId[] preContextEntries = preContext.getEntries();
+                        if (preContextEntries != null) {
+                            final byte[] nodeIdsBytes = LuceneUtil.encodeNodeIds(preContextEntries);
+                            final StoredField fPreContext = new StoredField(PRE_CONTEXT_FIELD_PREFIX + preContext.getName(), new BytesRef(nodeIdsBytes));
+                            doc.add(fPreContext);
+                        }
+                    }
+                }
+                // store the post-context if present
+                @Nullable final List<CompletableContext> postContexts = pending.getPostContexts();
+                // store the pre-context if present... all should have been completed by this point!
+                if (postContexts != null) {
+                    for (final CompletableContext postContext : postContexts) {
+                        @Nullable final NodeId[] postContextEntries = postContext.getEntries();
+                        if (postContextEntries != null) {
+                            final byte[] nodeIdsBytes = LuceneUtil.encodeNodeIds(postContextEntries);
+                            final StoredField fPostContext = new StoredField(POST_CONTEXT_FIELD_PREFIX + postContext.getName(), new BytesRef(nodeIdsBytes));
+                            doc.add(fPostContext);
+                        }
+                    }
+                }
+
+                // store the document id
                 fDocIdIdx.setIntValue(currentDoc.getDocId());
                 doc.add(fDocIdIdx);
 
@@ -534,7 +680,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         } finally {
             index.releaseWriter(writer);
             nodesToWrite = new ArrayList<>();
-            cachedNodesSize = 0;
+            cachedNodesToWriteSize = 0;
         }
     }
 
@@ -614,6 +760,135 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         SearchCollector collector = new SearchCollector(docs, contextSet, nodeType, axis, contextId);
         searcher.search(query, filter, collector);
         return collector.getResultSet();
+    }
+
+    /**
+     * Lookup context information for a node indexed in the range index.
+     *
+     * @param expression the calling expression.
+     * @param nodeProxy the stored node as retrieved from the range index.
+     * @param contextName the name of the context to lookup.
+     * @param maxPreContextSize the size of the pre-context to retrieve from zero and up to that configured in the index definition. If set to {@link org.exist.xquery.modules.range.ContextLookup#INDEX_DEF_CONTEXT_SIZE} then the size from the index definition is used.
+     * @param maxPostContextSize the size of the post-context to retrieve from zero and up to that configured in the index definition. If set to {@link org.exist.xquery.modules.range.ContextLookup#INDEX_DEF_CONTEXT_SIZE} then the size from the index definition is used.
+     *
+     * @return or null if the {@code nodeProxy} is not indexed.
+     */
+    public @Nullable Tuple2<Sequence, Sequence> contextLookup(final Expression expression, final NodeProxy nodeProxy, final String contextName, final int maxPreContextSize, final int maxPostContextSize) throws XPathException, IOException {
+        // 1. find the context configuration
+        @Nullable RangeIndexConfigContextElement rangeIndexConfigContextElement = null;
+        final Node node = nodeProxy.getNode();
+        final StoredNode<?> storedNode = (StoredNode<?>) node;
+        final NodePath nodePath = storedNode.getPath();
+        @Nullable final Iterator<RangeIndexConfigElement> configIter = config.getConfig(nodePath);
+        if (configIter != null) {
+            while (configIter.hasNext()) {
+                final RangeIndexConfigElement configuration = configIter.next();
+                if (configuration.match(nodePath) && configuration instanceof BasicRangeIndexConfigElement) {
+                    @Nullable final Map<String, RangeIndexConfigContextRefElement> contextRefs = ((BasicRangeIndexConfigElement) configuration).getContextRefs();
+                    if (contextRefs != null) {
+                        @Nullable final RangeIndexConfigContextRefElement contextRef = contextRefs.get(contextName);
+                        if (contextRef != null) {
+                            rangeIndexConfigContextElement = contextRef.getRangeIndexConfigContextElement();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (rangeIndexConfigContextElement == null) {
+            return null;
+        }
+        final short contextNodeType = rangeIndexConfigContextElement.path.getLastComponent().getNameType() == ElementValue.ELEMENT ? Node.ELEMENT_NODE : Node.ATTRIBUTE_NODE;
+
+        // 2. Calculate max pre and post context sizes
+        final int computedMaxPreContextSize;
+        final int computedMaxPostContextSize;
+        if (maxPreContextSize == INDEX_DEF_CONTEXT_SIZE) {
+            computedMaxPreContextSize = rangeIndexConfigContextElement.getPreContextSize();
+        } else {
+            computedMaxPreContextSize = Math.min(rangeIndexConfigContextElement.getPreContextSize(), maxPreContextSize);
+        }
+        if (maxPostContextSize == INDEX_DEF_CONTEXT_SIZE) {
+            computedMaxPostContextSize = rangeIndexConfigContextElement.getPostContextSize();
+        } else {
+            computedMaxPostContextSize = Math.min(rangeIndexConfigContextElement.getPostContextSize(), maxPostContextSize);
+        }
+
+        // if we are asked to search for nothing... then return nothing
+        if ((computedMaxPreContextSize == 0 || rangeIndexConfigContextElement.getPreContextSize() == 0) && (computedMaxPostContextSize == 0 && rangeIndexConfigContextElement.getPostContextSize() == 0)) {
+            return Tuple(Sequence.EMPTY_SEQUENCE, Sequence.EMPTY_SEQUENCE);
+        }
+
+        // 3. access the lucene document directly, and read the pre and post context fields
+        @Nullable final Tuple2<Sequence, Sequence> contextSearchResults = index.withSearcher(searcher -> {
+
+            // search on the document id and node id field
+            final int nodeIdLen = nodeProxy.getNodeId().size();
+            final byte[] idData = new byte[nodeIdLen + 4];
+            ByteConversion.intToByteH(nodeProxy.getOwnerDocument().getDocId(), idData, 0);
+            nodeProxy.getNodeId().serialize(idData, 4);
+
+            final TermQuery docIdNodeIdQuery = new TermQuery(new Term(FIELD_ID, new BytesRef(idData)));
+            final TopDocs queryResults = searcher.searcher.search(docIdNodeIdQuery, 1);
+
+            if (queryResults.totalHits == 1) {
+                final int luceneDocId = queryResults.scoreDocs[0].doc;
+                final Document luceneDocument = searcher.searcher.doc(luceneDocId);
+
+                // get the pre-context
+                final Sequence preContextNodes;
+                if (computedMaxPreContextSize <= 0) {
+                    preContextNodes = Sequence.EMPTY_SEQUENCE;
+                } else {
+                    preContextNodes = getContextNodesFromField(nodeProxy.getOwnerDocument(), luceneDocument, PRE_CONTEXT_FIELD_PREFIX + contextName, contextNodeType);
+                }
+
+                // get the post-context
+                final Sequence postContextNodes;
+                if (computedMaxPostContextSize <= 0) {
+                    postContextNodes = Sequence.EMPTY_SEQUENCE;
+                } else {
+                    postContextNodes = getContextNodesFromField(nodeProxy.getOwnerDocument(), luceneDocument, POST_CONTEXT_FIELD_PREFIX + contextName, contextNodeType);
+                }
+
+                return Tuple(preContextNodes, postContextNodes);
+            } else if (queryResults.totalHits > 1) {
+                throw new IOException("Found more than one document in the Range Index that has the same XML document id and node id");
+            } else {
+                // no such document in the index, perhaps the nodeProxy we were asked to search on does not have an entry in the Range Index - it should be though... so this is an error
+                return null;
+            }
+        });
+
+        return contextSearchResults;
+    }
+
+    private @Nullable Sequence getContextNodesFromField(final DocumentImpl dbDocument, final Document luceneDocument, final String contextFieldName, final short contextNodeType) throws IOException {
+        @Nullable final IndexableField contextField = luceneDocument.getField(contextFieldName);
+        if (contextField == null) {
+            // could not find the context field in the index - it should be there though... so this is an error
+            return null;
+        }
+
+        final BytesRef contextFieldValue = contextField.binaryValue();
+        final NodeId[] contextNodeIds = LuceneUtil.decodeNodeIds(broker.getBrokerPool().getNodeFactory(), contextFieldValue.bytes, contextFieldValue.offset, contextFieldValue.length);
+        int idx = 0;
+
+        final Sequence contextNodes = new NewArrayNodeSet(contextNodeIds.length);
+        final NodeHandle contextFirstDocumentNodeId = new DocumentNodeIdNodeHandle(dbDocument, contextNodeIds[idx], contextNodeType);
+
+        // TODO(AR) could be more efficient to create a feature whereby we can set a filter on the iterator so we don't return IStoredNode for nodes that don't match the nodeIds we are looking for
+        try (final INodeIterator nodeIterator = broker.getNodeIterator(contextFirstDocumentNodeId)) {
+            while (nodeIterator.hasNext() && idx < contextNodeIds.length) {
+                final IStoredNode<?> contextStoredNode = nodeIterator.next();
+                if (contextStoredNode.getNodeId().equals(contextNodeIds[idx])) {
+                    ((NewArrayNodeSet) contextNodes).add(new NodeProxy(contextStoredNode));
+                    idx++;
+                }
+            }
+        }
+
+        return contextNodes;
     }
 
     private class SearchCollector extends Collector {
@@ -837,9 +1112,21 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     while (configIter.hasNext()) {
                         final RangeIndexConfigElement configuration = configIter.next();
                         if (configuration.match(path)) {
-                            TextCollector collector = configuration.newCollector(path);
+                            final TextCollector collector;
+                            if (configuration instanceof RangeIndexConfigContextElement) {
+                                final String contextId = ((RangeIndexConfigContextElement) configuration).getId();
+                                if (contextCollectors == null) {
+                                    contextCollectors = new HashMap<>();
+                                    collector = configuration.newCollector(path);
+                                    contextCollectors.put(contextId, (ContextTextCollector) collector);
+                                } else {
+                                    collector = contextCollectors.computeIfAbsent(contextId, _id -> (ContextTextCollector) configuration.newCollector(path));
+                                }
+                            } else {
+                                collector = configuration.newCollector(path);
+                                contentStack.push(collector);
+                            }
                             collector.startElement(element, path);
-                            contentStack.push(collector);
                         }
                     }
                 }
@@ -891,14 +1178,16 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     } else {
                         while (configIter.hasNext()) {
                             final RangeIndexConfigElement configuration = configIter.next();
-                            boolean match = configuration.match(path);
-                            if (match) {
-                                final TextCollector collector = contentStack.pop();
-                                match = collector instanceof ComplexTextCollector
-                                        ? match && ((ComplexTextCollector)collector).getConfig().matchConditions(element)
-                                        : match;
+                            if (!(configuration instanceof RangeIndexConfigContextElement)) {
+                                boolean match = configuration.match(path);
                                 if (match) {
-                                    indexText(element, element.getQName(), path, configuration, collector);
+                                    final TextCollector collector = contentStack.pop();
+                                    match = collector instanceof ComplexTextCollector
+                                            ? match && ((ComplexTextCollector) collector).getConfig().matchConditions(element)
+                                            : match;
+                                    if (match) {
+                                        indexText(element, element.getQName(), path, configuration, collector);
+                                    }
                                 }
                             }
                         }
@@ -916,6 +1205,21 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
             }
             super.characters(transaction, text, path);
+        }
+
+        @Override
+        public void endIndexDocument(final Txn transaction) {
+            if (mode == ReindexMode.STORE) {
+                // document is finished, make sure to complete any nodes from the document that are awaiting post context
+                if (contextCollectors != null) {
+                    for (final ContextTextCollector contextCollector : contextCollectors.values()) {
+                        contextCollector.reset();
+                    }
+                }
+                checkAndUpdateNodesAwaitingPostContextCompletion();
+                assert(nodesAwaitingPostContextCompletion == null || nodesAwaitingPostContextCompletion.isEmpty());
+            }
+            super.endIndexDocument(transaction);
         }
 
         @Override
@@ -1060,6 +1364,48 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     }
                 }
             } while(termsIter.next() != null);
+        }
+    }
+
+    private static class DocumentNodeIdNodeHandle implements NodeHandle {
+        private final DocumentImpl document;
+        private final NodeId nodeId;
+        private final short nodeType;
+
+        public DocumentNodeIdNodeHandle(final DocumentImpl document, final NodeId nodeId, final short nodeType) {
+            this.document = document;
+            this.nodeId = nodeId;
+            this.nodeType = nodeType;
+        }
+
+        @Override
+        public void setNodeId(final NodeId dln) {
+            throw new UnsupportedOperationException("This classes NodeId is immutable");
+        }
+
+        @Override
+        public long getInternalAddress() {
+            return StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
+        }
+
+        @Override
+        public void setInternalAddress(final long internalAddress) {
+            throw new UnsupportedOperationException("This classes NodeId is immutable");
+        }
+
+        @Override
+        public NodeId getNodeId() {
+            return nodeId;
+        }
+
+        @Override
+        public short getNodeType() {
+            return nodeType;
+        }
+
+        @Override
+        public DocumentImpl getOwnerDocument() {
+            return document;
         }
     }
 }
