@@ -657,11 +657,12 @@ public abstract class AbstractNodeSet extends AbstractSequence implements NodeSe
     public String toString() {
         final StringBuilder result = new StringBuilder();
         result.append("NodeSet(");
-        for(int i = 0; i < getLength(); i++) {
+        for(int i = 0;; i++) {
+            final NodeProxy p = get(i);
+            if (p == null) break;
             if(i > 0) {
                 result.append(", ");
             }
-            final NodeProxy p = get(i);
             result.append("[").append(p.getOwnerDocument().getDocId()).append(":").append(p.getNodeId()).append("]");
         }
         result.append(")");
