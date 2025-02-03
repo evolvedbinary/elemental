@@ -517,11 +517,25 @@ public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet,
         return foundOne ? ancestor : null;
     }
 
+    private boolean checkSorted() {
+        for (int i = 0; i < size - 1; i++) {
+            if (nodes[i].compareTo(nodes[i + 1]) > 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public void sort(final boolean mergeContexts) {
         if(isSorted) {
             return;
         } else if(hasOne) {
+            isSorted = true; // shortcut: don't sort if there's just one item
+            removeDuplicates(mergeContexts);
+            updateDocs();
+            return;
+        } else if (size > 0 && checkSorted()) {
             isSorted = true; // shortcut: don't sort if there's just one item
             removeDuplicates(mergeContexts);
             updateDocs();
