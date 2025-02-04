@@ -386,4 +386,6 @@ public interface NodeSet extends Sequence, NodeList, Iterable<NodeProxy> {
 
     void setTrackMatches(boolean track);
 
+    default void setKnownSorted(final boolean mergeContexts) {
+    }
 }
