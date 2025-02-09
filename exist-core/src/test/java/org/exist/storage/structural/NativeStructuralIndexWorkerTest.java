@@ -47,7 +47,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(1,2,3,4,5,6));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<Range> ranges = indexWorker.getDocIdRanges(docs);
 
         assertEquals(1, ranges.size());
 
@@ -61,7 +61,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(1,2,3,4,5,6, 88,89, 3,4,5,6, 77, 10,11,12));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<Range> ranges = indexWorker.getDocIdRanges(docs);
 
         assertEquals(5, ranges.size());
 
@@ -87,7 +87,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<Range> ranges = indexWorker.getDocIdRanges(docs);
 
         assertEquals(1, ranges.size());
 
@@ -101,7 +101,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574, 11,12,13,14,15));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<Range> ranges = indexWorker.getDocIdRanges(docs);
 
         assertEquals(2, ranges.size());
 
@@ -118,7 +118,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(11,12,13,14,15, 6574));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<Range> ranges = indexWorker.getDocIdRanges(docs);
 
         assertEquals(2, ranges.size());
 
@@ -135,7 +135,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574, 200, 12, 24));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<Range> ranges = indexWorker.getDocIdRanges(docs);
 
         assertEquals(4, ranges.size());
 

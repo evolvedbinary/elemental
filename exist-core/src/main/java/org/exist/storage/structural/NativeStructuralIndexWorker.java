@@ -47,6 +47,7 @@ import org.exist.storage.btree.Value;
 
 import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.Txn;
+import org.exist.storage.util.ResultCache;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
@@ -72,6 +73,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     private NativeStructuralIndex index;
     private ReindexMode mode = ReindexMode.STORE;
     private DocumentImpl document;
+
+    private ResultCache resultCache = new ResultCache();
 
     //TODO throw away this Comparator or use a different data struct here when we have moved
     //nameType out of QName
@@ -108,6 +111,12 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent) {
+
+        final List<Range> ranges = getDocIdRanges(docs);
+        final NodeSet cachedResult = resultCache.get(type, qname, selector, ranges);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
         final NewArrayNodeSet result = new NewArrayNodeSet();
         final FindElementsCallback callback = new FindElementsCallback(type, qname, result, docs, selector, parent);
 
@@ -127,6 +136,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                 NativeStructuralIndex.LOG.error("Error while searching structural index: {}", e.getMessage(), e);
             }
         }
+        resultCache.put(type, qname, selector, ranges, result);
         return result;
     }
 
@@ -157,20 +167,6 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return ranges;
     }
 
-    /**
-     * Internal helper class used by
-     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.persistent.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
-     */
-    static class Range {
-        int start = -1;
-        int end = -1;
-
-        private Range(int start) {
-            this.start = start;
-            this.end = start;
-        }
-    }
-    
     /**
      * Find all descendants (or children) of the specified node set matching the given QName.
      *
