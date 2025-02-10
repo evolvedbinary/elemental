@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -47,7 +71,7 @@ public class FunError extends BasicFunction {
 
     public final static FunctionSignature[] signature = {
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "the default qname, 'http://www.w3.org/2004/07/xqt-errors#err:FOER0000', " +
@@ -56,7 +80,7 @@ public class FunError extends BasicFunction {
             new SequenceType(Type.EMPTY_SEQUENCE, Cardinality.EMPTY_SEQUENCE)
         ),
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "$qname and the default message, 'An error has been raised by the query'.",
@@ -67,7 +91,7 @@ public class FunError extends BasicFunction {
             new SequenceType(Type.EMPTY_SEQUENCE, Cardinality.EMPTY_SEQUENCE)
         ),
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "$qname and $message.",
@@ -79,7 +103,7 @@ public class FunError extends BasicFunction {
             },
             new SequenceType(Type.EMPTY_SEQUENCE, Cardinality.EMPTY_SEQUENCE)),
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "$qname and $message with $error-object appended.",

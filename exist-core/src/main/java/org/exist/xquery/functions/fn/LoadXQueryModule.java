@@ -74,7 +74,7 @@ import static org.exist.xquery.functions.map.MapType.newLinearMap;
 public class LoadXQueryModule extends BasicFunction {
 
     public final static FunctionSignature LOAD_XQUERY_MODULE_1 = new FunctionSignature(
-            new QName("load-xquery-module", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("load-xquery-module", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Provides access to the public functions and global variables of a dynamically-loaded XQuery library module.",
             new SequenceType[] {
                     new FunctionParameterSequenceType("module-uri", Type.STRING,
@@ -95,7 +95,7 @@ public class LoadXQueryModule extends BasicFunction {
     );
 
     public final static FunctionSignature LOAD_XQUERY_MODULE_2 = new FunctionSignature(
-            new QName("load-xquery-module", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("load-xquery-module", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Provides access to the public functions and global variables of a dynamically-loaded XQuery library module.",
             new SequenceType[] {
                     new FunctionParameterSequenceType("module-uri", Type.STRING,

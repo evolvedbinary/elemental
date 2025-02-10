@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -69,7 +93,7 @@ public class FnFormatDates extends BasicFunction {
 
 
     public final static FunctionSignature FNS_FORMAT_DATETIME_2 = new FunctionSignature(
-        new QName("format-dateTime", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-dateTime", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATETIME,
@@ -79,7 +103,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_DATETIME_5 = new FunctionSignature(
-        new QName("format-dateTime", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-dateTime", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATETIME,
@@ -92,7 +116,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_DATE_2 = new FunctionSignature(
-        new QName("format-date", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-date", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATE,
@@ -102,7 +126,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_DATE_5 = new FunctionSignature(
-        new QName("format-date", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-date", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATE,
@@ -115,7 +139,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_TIME_2 = new FunctionSignature(
-        new QName("format-time", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-time", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:time value formatted for display.",
         new SequenceType[] {
             TIME,
@@ -125,7 +149,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_TIME_5 = new FunctionSignature(
-        new QName("format-time", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-time", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:time value formatted for display.",
         new SequenceType[] {
             TIME,

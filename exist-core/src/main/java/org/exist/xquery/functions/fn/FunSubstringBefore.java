@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -52,7 +76,7 @@ public class FunSubstringBefore extends CollatingFunction {
 	protected static final FunctionParameterSequenceType SOURCE_ARG = new FunctionParameterSequenceType("source", Type.STRING, Cardinality.ZERO_OR_ONE, "The input string");
 	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
-			new QName("substring-before", Function.BUILTIN_FUNCTION_NS),
+			new QName("substring-before", FnModule.NAMESPACE_URI),
 			"Returns the substring of the value of $source that precedes the first occurrence " +
 			"of a sequence of the value of $search. If the value of $source or $search is the empty " +
 			"sequence it is interpreted as the zero-length string. If the value of " +
@@ -65,7 +89,7 @@ public class FunSubstringBefore extends CollatingFunction {
 				},
 				new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the substring before $search")),
 		new FunctionSignature(
-				new QName("substring-before", Function.BUILTIN_FUNCTION_NS),
+				new QName("substring-before", FnModule.NAMESPACE_URI),
 			"Returns the substring of the value of $source that precedes the first occurrence " +
 			"of a sequence of the value of $search in the collation $collation-uri. If the value of $source or $search is the empty " +
 			"sequence it is interpreted as the zero-length string. If the value of " +
