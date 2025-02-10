@@ -23,7 +23,6 @@ package org.exist.xquery;
 
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.source.Source;
-import org.exist.storage.util.ResultCache;
 import org.exist.xquery.parser.XQueryAST;
 import org.exist.xquery.util.ExpressionDumper;
 
@@ -205,12 +204,6 @@ public interface Expression extends Materializable {
     public boolean allowMixedNodesInReturn();
 
     public Expression getParent();
-
-    public ResultCache getResultCache();
-
-    public void setResultCache(final ResultCache resultCache);
-
-    public ResultCache getRootResultCache();
 
     /**
      * Return true only if the next expression within a path expression

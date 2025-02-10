@@ -22,7 +22,6 @@
 package org.exist.xquery;
 
 import org.exist.source.Source;
-import org.exist.storage.util.ResultCache;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.util.ExpressionDumper;
@@ -196,29 +195,4 @@ public class DebuggableExpression implements Expression, RewritableExpression {
     public boolean evalNextExpressionOnEmptyContextSequence() {
         return false;
     }
-
-  private ResultCache resultCache = null;
-
-  @Override
-  public ResultCache getResultCache() {
-    return resultCache;
-  }
-
-  @Override
-  public void setResultCache(final ResultCache resultCache) {
-    this.resultCache = resultCache;
-  }
-
-  @Override
-  public ResultCache getRootResultCache() {
-    Expression parent = this;
-    while (parent.getParent() != null) {
-      parent = parent.getParent();
-    }
-    if (parent.getResultCache() == null) {
-      parent.setResultCache(new ResultCache());
-    }
-    return parent.getResultCache();
-  }
-
 }
