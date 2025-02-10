@@ -893,39 +893,25 @@ public class LocationStep extends Step {
             final DocumentSet docs = getDocumentSet(contextSet);
             final List<DocumentNodeRange> ranges = DocumentNodeRange.fromSiblingContextSet(contextSet);
             synchronized (context) {
-                NodeSet resultSet = null;
-                if (currentSet == null || currentDocs == null || !(docs.equalDocs(currentDocs))) {
-                    final StructuralIndex index = context.getBroker().getStructuralIndex();
-                    if (context.getProfiler().isEnabled()) {
-                        context.getProfiler().message(
-                                this,
-                                Profiler.OPTIMIZATIONS,
-                                "OPTIMIZATION",
-                                "Using structural index '" + index.toString()
-                                        + "'");
-                    }
-                    resultSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, ranges, test.getName(), null, this);
-                    resultSet.setKnownSorted(true);
-                    //currentSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null, this);
-                    //currentSet.setKnownSorted(true);
-                    //currentDocs = docs;
-                    registerUpdateListener();
+                final StructuralIndex index = context.getBroker().getStructuralIndex();
+                if (context.getProfiler().isEnabled()) {
+                    context.getProfiler().message(
+                      this,
+                      Profiler.OPTIMIZATIONS,
+                      "OPTIMIZATION",
+                      "Using structural index '" + index.toString()
+                        + "'");
                 }
-                NodeSet filteredResultSet;
-                //NodeSet filteredCurrentSet;
+                final NodeSet resultSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, ranges, test.getName(), null, this);
+                resultSet.setKnownSorted(true);
                 switch (axis) {
                     case Constants.PRECEDING_SIBLING_AXIS:
-                        filteredResultSet = resultSet.selectPrecedingSiblings(contextSet, contextId);
-                        //filteredCurrentSet = currentSet.selectPrecedingSiblings(contextSet, contextId);
-                        break;
+                        return resultSet.selectPrecedingSiblings(contextSet, contextId);
                     case Constants.FOLLOWING_SIBLING_AXIS:
-                        filteredResultSet = resultSet.selectFollowingSiblings(contextSet, contextId);
-                        //filteredCurrentSet = currentSet.selectFollowingSiblings(contextSet, contextId);
-                        break;
+                        return resultSet.selectFollowingSiblings(contextSet, contextId);
                     default:
                         throw new IllegalArgumentException("Unsupported axis specified");
                 }
-                return filteredResultSet;
             }
         }
     }
