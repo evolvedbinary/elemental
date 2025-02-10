@@ -36,7 +36,6 @@ import org.exist.xquery.value.FunctionReturnSequenceType;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.ValueSequence;
-import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
@@ -103,20 +102,14 @@ public class FunReverse extends Function {
             }
         }
 
-        final Sequence result;
         final Sequence seq = getArguments(contextSequence, contextItem)[0];
+        final Sequence result;
         if (seq.isEmpty()) {
             result = Sequence.EMPTY_SEQUENCE;
         } else {
             result = new ValueSequence();
-
-            final Sequence tmp = new ValueSequence();
-            for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                final Item item = i.nextItem();
-                tmp.add(item);
-            }
             for (int i = seq.getItemCount() - 1; i >= 0; i--) {
-                result.add(tmp.itemAt(i));
+                result.add(seq.itemAt(i));
             }
         }
 
