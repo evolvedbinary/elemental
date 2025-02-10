@@ -40,7 +40,8 @@ public interface Namespaces {
 	String SCHEMA_INSTANCE_NS = XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI;
     
     // Move this here from Function.BUILTIN_FUNCTION_NS? /ljo
-	String XPATH_FUNCTIONS_NS = "http://www.w3.org/2005/xpath-functions";	
+	String XPATH_FUNCTIONS_NS = "http://www.w3.org/2005/xpath-functions";
+	String XPATH_FUNCTIONS_PREFIX = "fn";
     String XQUERY_LOCAL_NS = "http://www.w3.org/2005/xquery-local-functions";
 	String XPATH_DATATYPES_NS = "http://www.w3.org/2003/05/xpath-datatypes";
         
