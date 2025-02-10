@@ -46,14 +46,14 @@ public class FunString extends Function {
 
 	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
-			new QName("string", Function.BUILTIN_FUNCTION_NS),
+			new QName("string", FnModule.NAMESPACE_URI),
 			"Returns the value of the context item as xs:string. " +
 			"If the context item is undefined, an error is raised.",
 			new SequenceType[0],
 			new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the value of the context item as an xs:string")
 		),
 		new FunctionSignature(
-			new QName("string", Function.BUILTIN_FUNCTION_NS),
+			new QName("string", FnModule.NAMESPACE_URI),
 			"Returns the value of $arg as xs:string. " +
 			"If the value of $arg is the empty sequence, the zero-length string is returned. " +
 			"If the context item of $arg is undefined, an error is raised.",

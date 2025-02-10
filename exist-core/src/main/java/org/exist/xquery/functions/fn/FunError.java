@@ -47,7 +47,7 @@ public class FunError extends BasicFunction {
 
     public final static FunctionSignature[] signature = {
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "the default qname, 'http://www.w3.org/2004/07/xqt-errors#err:FOER0000', " +
@@ -56,7 +56,7 @@ public class FunError extends BasicFunction {
             new SequenceType(Type.EMPTY, Cardinality.EMPTY_SEQUENCE)
         ),
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "$qname and the default message, 'An error has been raised by the query'.",
@@ -67,7 +67,7 @@ public class FunError extends BasicFunction {
             new SequenceType(Type.EMPTY, Cardinality.EMPTY_SEQUENCE)
         ),
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "$qname and $message.",
@@ -79,7 +79,7 @@ public class FunError extends BasicFunction {
             },
             new SequenceType(Type.EMPTY, Cardinality.EMPTY_SEQUENCE)),
         new FunctionSignature(
-            new QName("error", Function.BUILTIN_FUNCTION_NS),
+            new QName("error", FnModule.NAMESPACE_URI),
             "Indicates that an irrecoverable error has occurred. " +
             "The script will terminate immediately with an exception using " +
             "$qname and $message with $error-object appended.",

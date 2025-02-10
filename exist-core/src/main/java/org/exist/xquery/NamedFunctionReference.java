@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.exist.dom.QName;
+import org.exist.xquery.functions.fn.FnModule;
 import org.exist.xquery.parser.XQueryAST;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.FunctionReference;
@@ -53,7 +54,7 @@ public class NamedFunctionReference extends AbstractExpression {
 	}
 
 	public static FunctionCall lookupFunction(Expression self, XQueryContext context, QName funcName, int arity) throws XPathException {
-		if (Function.BUILTIN_FUNCTION_NS.equals(funcName.getNamespaceURI())
+		if (FnModule.NAMESPACE_URI.equals(funcName.getNamespaceURI())
 				&& "concat".equals(funcName.getLocalPart())
 				&& arity < 2) {
 			throw new XPathException(self, ErrorCodes.XPST0017, "No such function; fn:concat requires at least two arguments");

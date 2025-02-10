@@ -45,14 +45,14 @@ public class FunEnvironment extends BasicFunction {
 
     public final static FunctionSignature[] signature = {
         new FunctionSignature(
-            new QName("available-environment-variables", Function.BUILTIN_FUNCTION_NS),
+            new QName("available-environment-variables", FnModule.NAMESPACE_URI),
             "Returns a list of environment variable names.",
             null,
             new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE,
             "Returns a sequence of strings, being the names of the environment variables. User must be DBA.")
         ),
         new FunctionSignature(
-            new QName("environment-variable", Function.BUILTIN_FUNCTION_NS),
+            new QName("environment-variable", FnModule.NAMESPACE_URI),
             "Returns the value of a system environment variable, if it exists.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("name", Type.STRING,

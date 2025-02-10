@@ -72,7 +72,7 @@ public class FunUnparsedText extends BasicFunction {
     private final static FunctionParameterSequenceType PARAM_ENCODING = param("encoding", Type.STRING, "character encoding of the resource");
 
     static final FunctionSignature [] FS_UNPARSED_TEXT = functionSignatures(
-        new QName("unparsed-text", Function.BUILTIN_FUNCTION_NS),
+        new QName("unparsed-text", FnModule.NAMESPACE_URI),
         "reads an external resource (for example, a file) and returns a string representation of the resource",
         returnsOpt(Type.STRING),
         arities(
@@ -81,7 +81,7 @@ public class FunUnparsedText extends BasicFunction {
         ));
 
     static final FunctionSignature[] FS_UNPARSED_TEXT_LINES = functionSignatures(
-        new QName("unparsed-text-lines", Function.BUILTIN_FUNCTION_NS),
+        new QName("unparsed-text-lines", FnModule.NAMESPACE_URI),
         "reads an external resource (for example, a file) and returns its contents as a sequence of strings, one for each line of text in the string representation of the resource",
         returnsOptMany(Type.STRING),
         arities(
@@ -90,7 +90,7 @@ public class FunUnparsedText extends BasicFunction {
         ));
 
     static final FunctionSignature [] FS_UNPARSED_TEXT_AVAILABLE = functionSignatures(
-        new QName("unparsed-text-available", Function.BUILTIN_FUNCTION_NS),
+        new QName("unparsed-text-available", FnModule.NAMESPACE_URI),
         "determines whether a call on the fn:unparsed-text function with identical arguments would return a string",
         returns(Type.BOOLEAN),
         arities(

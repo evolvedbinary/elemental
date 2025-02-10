@@ -41,7 +41,7 @@ public class FunReverse extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("reverse", Function.BUILTIN_FUNCTION_NS),
+			new QName("reverse", FnModule.NAMESPACE_URI),
 			"Reverses the order of items in a sequence.  If the argument is an empty" +
 			"sequence, the empty sequence is returned.",
 			new SequenceType[] {new FunctionParameterSequenceType("arg", Type.ITEM, Cardinality.ZERO_OR_MORE, "The sequence to reverse")},

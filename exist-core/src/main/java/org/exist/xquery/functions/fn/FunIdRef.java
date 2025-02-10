@@ -67,7 +67,7 @@ public class FunIdRef extends Function {
 	protected static final Logger logger = LogManager.getLogger(FunIdRef.class);
 	public final static FunctionSignature[] signature = {
 		new FunctionSignature(
-			new QName("idref", Function.BUILTIN_FUNCTION_NS),
+			new QName("idref", FnModule.NAMESPACE_URI),
 			"Returns the sequence of element or attributes nodes with an IDREF value matching the " +
 			"value of one or more of the ID values supplied in $ids. " +
 			"If none is matching or $ids is the empty sequence, returns the empty sequence.",
@@ -77,7 +77,7 @@ public class FunIdRef extends Function {
 			new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_MORE, "the elements with matching IDREF values from IDs in $ids")),
 
         new FunctionSignature(
-            new QName("idref", Function.BUILTIN_FUNCTION_NS),
+            new QName("idref", FnModule.NAMESPACE_URI),
 			"Returns the sequence of element or attributes nodes with an IDREF value matching the " +
 			"value of one or more of the ID values supplied in $ids. " +
             "If none is matching or $ids is the empty sequence, returns the empty sequence.",

@@ -65,13 +65,13 @@ public class FunLocalName extends Function {
 
     public static final FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("local-name", Function.BUILTIN_FUNCTION_NS),
+                    new QName("local-name", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION,
                     null,
                     new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the local name")
             ),
             new FunctionSignature(
-                    new QName("local-name", Function.BUILTIN_FUNCTION_NS),
+                    new QName("local-name", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION,
                     new SequenceType[] {
                             new FunctionParameterSequenceType("arg", Type.NODE, Cardinality.ZERO_OR_ONE, "The node to retrieve the local name from")

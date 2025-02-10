@@ -37,7 +37,7 @@ public class FunOnFunctions extends BasicFunction {
 
 	public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("function-lookup", Function.BUILTIN_FUNCTION_NS),
+            new QName("function-lookup", FnModule.NAMESPACE_URI),
             "Returns a reference to the function having a given name and arity, if there is one," +
             " the empty sequence otherwise",
             new SequenceType[] {
@@ -46,7 +46,7 @@ public class FunOnFunctions extends BasicFunction {
             },
             new FunctionReturnSequenceType(Type.FUNCTION_REFERENCE, Cardinality.ZERO_OR_ONE, "The function if found, empty sequence otherwise")),
         new FunctionSignature(
-            new QName("function-name", Function.BUILTIN_FUNCTION_NS),
+            new QName("function-name", FnModule.NAMESPACE_URI),
             "Returns the name of the function identified by a function item.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("function", Type.FUNCTION_REFERENCE, Cardinality.EXACTLY_ONE, "The function item")
@@ -54,7 +54,7 @@ public class FunOnFunctions extends BasicFunction {
             new FunctionReturnSequenceType(Type.QNAME, Cardinality.ZERO_OR_ONE,
             		"The name of the function or the empty sequence if $function is an anonymous function.")),
 		new FunctionSignature(
-            new QName("function-arity", Function.BUILTIN_FUNCTION_NS),
+            new QName("function-arity", FnModule.NAMESPACE_URI),
             "Returns the arity of the function identified by a function item.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("function", Type.FUNCTION_REFERENCE, Cardinality.EXACTLY_ONE, "The function item")

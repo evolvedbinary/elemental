@@ -51,7 +51,7 @@ public class FunSum extends Function {
 
 	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
-			new QName("sum", Function.BUILTIN_FUNCTION_NS),
+			new QName("sum", FnModule.NAMESPACE_URI),
 			"Returns a value obtained by adding together the values in $arg. " +
             "If $arg is the the empty sequence the xs:double value 0.0e0 is returned.",
 			new SequenceType[] {
@@ -59,7 +59,7 @@ public class FunSum extends Function {
 			new FunctionReturnSequenceType(Type.ATOMIC, Cardinality.EXACTLY_ONE, "the sum of all numbers in $arg")
 		),
 		new FunctionSignature(
-			new QName("sum", Function.BUILTIN_FUNCTION_NS),
+			new QName("sum", FnModule.NAMESPACE_URI),
 			"Returns a value obtained by adding together the values in $arg. " +
             "If $arg is the the empty sequence then $default is returned.",
 			new SequenceType[] {

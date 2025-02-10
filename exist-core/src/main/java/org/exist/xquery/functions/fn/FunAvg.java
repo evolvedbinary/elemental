@@ -57,7 +57,7 @@ public class FunAvg extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("avg", Function.BUILTIN_FUNCTION_NS),
+            new QName("avg", FnModule.NAMESPACE_URI),
             "Returns the average of the values in the input sequence $values, " +
             "that is, the sum of the values divided by the number of values.",
             new SequenceType[] {

@@ -51,7 +51,7 @@ public class FunSubstring extends Function {
 	
 	public final static FunctionSignature[] signatures = {
 			new FunctionSignature(
-				new QName("substring", Function.BUILTIN_FUNCTION_NS),
+				new QName("substring", FnModule.NAMESPACE_URI),
 				"Returns the portion of the value of $source beginning at the position indicated " +
 				"by the value of $starting-at and continuing to the end of $source. " +
 				"The characters returned do not extend beyond the end of $source. If $starting-at " +
@@ -64,7 +64,7 @@ public class FunSubstring extends Function {
 				new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the substring")
 			),
 			new FunctionSignature(
-				new QName("substring", Function.BUILTIN_FUNCTION_NS),
+				new QName("substring", FnModule.NAMESPACE_URI),
 				"Returns the portion of the value of $source beginning at the position indicated by the value of $starting-at " +
 				"and continuing for the number of characters indicated by the value of $length. The characters returned do not extend " +
 				"beyond the end of $source. If $starting-at is zero or negative, only those characters in positions greater " +

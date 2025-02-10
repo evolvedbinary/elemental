@@ -85,7 +85,7 @@ public class FunIndexOf extends BasicFunction {
 
 	public final static FunctionSignature[] fnIndexOf = {
 			new FunctionSignature(
-					new QName("index-of", Function.BUILTIN_FUNCTION_NS),
+					new QName("index-of", FnModule.NAMESPACE_URI),
 					FUNCTION_DESCRIPTION,
 					new SequenceType[] {
 						SEQ_PARAM,
@@ -94,7 +94,7 @@ public class FunIndexOf extends BasicFunction {
 					RETURN_TYPE
 			),
 			new FunctionSignature(
-					new QName("index-of", Function.BUILTIN_FUNCTION_NS),
+					new QName("index-of", FnModule.NAMESPACE_URI),
 					FUNCTION_DESCRIPTION +
                     " " + CollatingFunction.THIRD_REL_COLLATION_ARG_EXAMPLE,
 					new SequenceType[] {

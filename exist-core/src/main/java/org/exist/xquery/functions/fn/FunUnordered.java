@@ -48,7 +48,7 @@ public class FunUnordered extends Function {
 
     public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("unordered", Function.BUILTIN_FUNCTION_NS),
+			new QName("unordered", FnModule.NAMESPACE_URI),
 			"Takes a sequence $arg as input and returns an arbitrary implementation dependent permutation " +
 			"of it. Currently, this has no effect in eXist, but it might be used for future optimizations.",
 			new SequenceType[] {

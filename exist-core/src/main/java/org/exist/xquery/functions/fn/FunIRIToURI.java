@@ -78,7 +78,7 @@ public class FunIRIToURI extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("iri-to-uri", Function.BUILTIN_FUNCTION_NS),
+			new QName("iri-to-uri", FnModule.NAMESPACE_URI),
 			FUNCTION_DESCRIPTION,
 			new SequenceType[] { new FunctionParameterSequenceType("iri", Type.STRING, Cardinality.ZERO_OR_ONE, "The IRI") },
 			new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the URI"));

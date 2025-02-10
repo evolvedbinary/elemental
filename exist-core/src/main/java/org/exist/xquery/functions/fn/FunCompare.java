@@ -50,7 +50,7 @@ public class FunCompare extends CollatingFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature (
-            new QName("compare", Function.BUILTIN_FUNCTION_NS),
+            new QName("compare", FnModule.NAMESPACE_URI),
             "Returns the collatable comparison between $string-1 and $string-2, using $collation-uri. " +
             "-1 if $string-1 is inferior to $string-2, 0 if $string-1 is equal " +
             "to $string-2, 1 if $string-1 is superior to $string-2. " + 
@@ -70,7 +70,7 @@ public class FunCompare extends CollatingFunction {
                 "1 if $string-1 is superior to $string-2. " +
                 "If either comparand is the empty sequence, the empty sequence is returned.")),
         new FunctionSignature (
-            new QName("compare", Function.BUILTIN_FUNCTION_NS),
+            new QName("compare", FnModule.NAMESPACE_URI),
             "Returns the collatable comparison between $string-1 and $string-2, using $collation-uri. " +
             "-1 if $string-1 is inferior to $string-2, 0 if $string-1 is equal " +
             "to $string-2, 1 if $string-1 is superior to $string-2. " +

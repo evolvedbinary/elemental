@@ -29,7 +29,7 @@ import org.w3c.dom.Node;
 
 public class FnHasChildren extends Function {
 
-    private final static QName QN_HAS_CHILDREN = new QName("has-children", Function.BUILTIN_FUNCTION_NS);
+    private final static QName QN_HAS_CHILDREN = new QName("has-children", FnModule.NAMESPACE_URI);
 
     public final static FunctionSignature FNS_HAS_CHILDREN_0 = new FunctionSignature(
             QN_HAS_CHILDREN,

@@ -36,7 +36,7 @@ public class FunSubSequence extends Function {
 
     public static final FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("subsequence", Function.BUILTIN_FUNCTION_NS),
+                    new QName("subsequence", FnModule.NAMESPACE_URI),
                     "Returns a subsequence of the items in $source-sequence, "
                             + "items starting at the position, $starting-at, "
                             + "up to the end of the sequence are included.",
@@ -46,7 +46,7 @@ public class FunSubSequence extends Function {
                     },
                     new FunctionReturnSequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE, "the subsequence")),
             new FunctionSignature(
-                    new QName("subsequence", Function.BUILTIN_FUNCTION_NS),
+                    new QName("subsequence", FnModule.NAMESPACE_URI),
                     "Returns a subsequence of the items in $source, "
                             + "starting at the position, $starting-at,  "
                             + "including the number of items indicated by $length.",

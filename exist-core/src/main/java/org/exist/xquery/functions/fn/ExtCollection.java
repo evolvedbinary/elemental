@@ -54,7 +54,7 @@ public class ExtCollection extends Function {
 
     public final static FunctionSignature signature =
             new FunctionSignature(
-                    new QName("collection", Function.BUILTIN_FUNCTION_NS),
+                    new QName("collection", FnModule.NAMESPACE_URI),
                     "Returns the documents contained in the collections specified in " +
                             "the input sequence. " + XMLDBModule.COLLECTION_URI +
                             " Documents contained in sub-collections are also included. If no value is supplied, the statically know documents are used, for the REST Server this could be the addressed collection.",

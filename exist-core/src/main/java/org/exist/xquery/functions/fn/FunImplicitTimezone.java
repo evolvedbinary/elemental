@@ -45,7 +45,7 @@ public class FunImplicitTimezone extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("implicit-timezone", Function.BUILTIN_FUNCTION_NS),
+			new QName("implicit-timezone", FnModule.NAMESPACE_URI),
 			"Returns the value of the implicit timezone property from the dynamic context.",
 			null,
 			new FunctionReturnSequenceType(Type.DAY_TIME_DURATION, Cardinality.EXACTLY_ONE, "the implicit timezone daytime-duration from the dynamic context"));

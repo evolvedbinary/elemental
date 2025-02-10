@@ -52,7 +52,7 @@ public class FunReplace extends BasicFunction {
 
 	private static final XmlRegexFactory XML_REGEX_FACTORY = XmlRegexFactory.getInstance();
 
-	private static final QName FS_REPLACE_NAME = new QName("replace", Function.BUILTIN_FUNCTION_NS);
+	private static final QName FS_REPLACE_NAME = new QName("replace", FnModule.NAMESPACE_URI);
 
 	private static final String FS_REPLACE_DESCRIPTION =
         "The function returns the xs:string that is obtained by replacing each non-overlapping substring " +

@@ -68,13 +68,13 @@ public class FunNamespaceURI extends Function {
 
     public final static FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("namespace-uri", Function.BUILTIN_FUNCTION_NS),
+                    new QName("namespace-uri", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_0_PARAM + FUNCTION_DESCRIPTION_COMMON,
                     new SequenceType[0],
                     new FunctionReturnSequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE, "the namespace URI"),
                     false),
             new FunctionSignature(
-                    new QName("namespace-uri", Function.BUILTIN_FUNCTION_NS),
+                    new QName("namespace-uri", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_1_PARAM + FUNCTION_DESCRIPTION_COMMON,
                     new SequenceType[] {
                             new FunctionParameterSequenceType("arg", Type.NODE, Cardinality.ZERO_OR_ONE, "The input node")

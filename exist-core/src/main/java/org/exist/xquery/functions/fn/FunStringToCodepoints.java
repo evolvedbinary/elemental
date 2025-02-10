@@ -37,7 +37,7 @@ public class FunStringToCodepoints extends BasicFunction {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-				new QName("string-to-codepoints", Function.BUILTIN_FUNCTION_NS),
+				new QName("string-to-codepoints", FnModule.NAMESPACE_URI),
 				"Returns the sequence of unicode code points that constitute an xs:string. If $arg is a zero-length " +
 				"string or the empty sequence, the empty sequence is returned.",
 				new SequenceType[] {

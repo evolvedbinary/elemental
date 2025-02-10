@@ -51,7 +51,7 @@ public class FunNodeName extends Function {
 
     public final static FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("node-name", Function.BUILTIN_FUNCTION_NS),
+                    new QName("node-name", FnModule.NAMESPACE_URI),
                     "Returns an expanded-QName for node kinds that can have names. For other kinds " +
                             "of nodes it returns the empty sequence. If the context item is the empty sequence, the " +
                             "empty sequence is returned.",
@@ -59,7 +59,7 @@ public class FunNodeName extends Function {
                     new FunctionReturnSequenceType(Type.QNAME, Cardinality.ZERO_OR_ONE, "the expanded QName")),
 
             new FunctionSignature(
-                    new QName("node-name", Function.BUILTIN_FUNCTION_NS),
+                    new QName("node-name", FnModule.NAMESPACE_URI),
                     "Returns an expanded-QName for node kinds that can have names. For other kinds " +
                             "of nodes it returns the empty sequence. If $arg is the empty sequence, the " +
                             "empty sequence is returned.",

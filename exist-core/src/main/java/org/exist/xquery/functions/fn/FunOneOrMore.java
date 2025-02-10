@@ -46,7 +46,7 @@ public class FunOneOrMore extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("one-or-more", Function.BUILTIN_FUNCTION_NS),
+			new QName("one-or-more", FnModule.NAMESPACE_URI),
 			"Returns $arg if it contains one or more items. Otherwise, " +
 			"raises an error.",
 			new SequenceType[] {

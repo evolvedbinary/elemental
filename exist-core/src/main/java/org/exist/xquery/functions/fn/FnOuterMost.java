@@ -35,7 +35,7 @@ import java.util.Set;
 public class FnOuterMost extends BasicFunction {
 
     public final static FunctionSignature FNS_OUTERMOST = new FunctionSignature(
-            new QName("outermost", Function.BUILTIN_FUNCTION_NS),
+            new QName("outermost", FnModule.NAMESPACE_URI),
             "Returns every node within the input sequence that has no ancestor that is itself a member of the input sequence; the nodes are returned in document order with duplicates eliminated.",
             new SequenceType[] {
                     new FunctionParameterSequenceType("nodes", Type.NODE, Cardinality.ZERO_OR_MORE, "The nodes to test")

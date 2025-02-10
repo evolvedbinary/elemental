@@ -53,7 +53,7 @@ public class FunDoc extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("doc", Function.BUILTIN_FUNCTION_NS),
+            new QName("doc", FnModule.NAMESPACE_URI),
             "Returns the document node of $document-uri. " +
             XMLDBModule.ANY_URI,
             new SequenceType[] {

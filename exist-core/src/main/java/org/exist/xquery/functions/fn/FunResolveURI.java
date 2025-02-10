@@ -74,13 +74,13 @@ public class FunResolveURI extends Function {
 	
     public final static FunctionSignature[] signatures = {
     	new FunctionSignature(
-    		      new QName("resolve-uri", Function.BUILTIN_FUNCTION_NS),
+    		      new QName("resolve-uri", FnModule.NAMESPACE_URI),
     		      FUNCTION_DESCRIPTION_1_PARAM + FUNCTION_DESCRIPTION_COMMON,
 	      new SequenceType[] { RELATIVE_ARG },
 	      RETURN_TYPE
 	    ),
 	    new FunctionSignature (
-	  	      new QName("resolve-uri", Function.BUILTIN_FUNCTION_NS),
+	  	      new QName("resolve-uri", FnModule.NAMESPACE_URI),
 		      FUNCTION_DESCRIPTION_2_PARAM + FUNCTION_DESCRIPTION_COMMON,
 		      new SequenceType[] { RELATIVE_ARG, BASE_ARG },
 		      RETURN_TYPE

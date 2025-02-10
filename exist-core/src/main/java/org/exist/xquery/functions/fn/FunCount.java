@@ -41,7 +41,7 @@ public class FunCount extends Function {
 
     public final static FunctionSignature signature =
             new FunctionSignature(
-                    new QName("count", Function.BUILTIN_FUNCTION_NS),
+                    new QName("count", FnModule.NAMESPACE_URI),
                     "Returns the number of items in the argument sequence, $items.",
                     new SequenceType[]{
                             new FunctionParameterSequenceType("items", Type.ITEM,

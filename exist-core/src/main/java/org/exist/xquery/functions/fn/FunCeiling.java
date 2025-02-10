@@ -41,7 +41,7 @@ public class FunCeiling extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("ceiling", Function.BUILTIN_FUNCTION_NS),
+            new QName("ceiling", FnModule.NAMESPACE_URI),
             "Returns a value of the same type as the argument. Specifically, " +
             "returns the smallest (closest to negative infinity) number " +
             "with no fractional part that is not less than the value of the argument, $number.",

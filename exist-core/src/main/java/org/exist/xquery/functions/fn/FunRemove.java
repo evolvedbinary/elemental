@@ -49,7 +49,7 @@ public class FunRemove extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("remove", Function.BUILTIN_FUNCTION_NS),
+			new QName("remove", FnModule.NAMESPACE_URI),
 			"Returns a new sequence constructed from the value of $target with the item " +
 			"at $position removed.\n\nIf $position " +
 			"is less than 1 or greater than the number of items in $target, $target is returned. " +

@@ -47,7 +47,7 @@ public class QNameFunctions extends BasicFunction {
 
 	public final static FunctionSignature prefixFromQName =
 		new FunctionSignature(
-				new QName("prefix-from-QName", Function.BUILTIN_FUNCTION_NS),
+				new QName("prefix-from-QName", FnModule.NAMESPACE_URI),
 				"Returns an xs:NCName representing the prefix of $arg. If $arg is the empty " +
 				"sequence, returns the empty sequence.",
 				new SequenceType[] {
@@ -57,7 +57,7 @@ public class QNameFunctions extends BasicFunction {
 	
 	public final static FunctionSignature localNameFromQName =
 		new FunctionSignature(
-				new QName("local-name-from-QName", Function.BUILTIN_FUNCTION_NS),
+				new QName("local-name-from-QName", FnModule.NAMESPACE_URI),
 				"Returns an xs:NCName representing the local part of $arg. If $arg is the empty " +
 				"sequence, returns the empty sequence.",
 				new SequenceType[] {
@@ -67,7 +67,7 @@ public class QNameFunctions extends BasicFunction {
 	
 	public final static FunctionSignature namespaceURIFromQName =
 		new FunctionSignature(
-				new QName("namespace-uri-from-QName", Function.BUILTIN_FUNCTION_NS),
+				new QName("namespace-uri-from-QName", FnModule.NAMESPACE_URI),
 				"Returns the namespace URI for $arg. If $arg is the empty " +
 				"sequence, returns the empty sequence.",
 				new SequenceType[] {

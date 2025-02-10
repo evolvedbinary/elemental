@@ -46,7 +46,7 @@ public class FunExists extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("exists", Function.BUILTIN_FUNCTION_NS),
+			new QName("exists", FnModule.NAMESPACE_URI),
 			"Returns true if the argument $items is not the empty sequence, " +
 			"false otherwise.",
 			new SequenceType[] {

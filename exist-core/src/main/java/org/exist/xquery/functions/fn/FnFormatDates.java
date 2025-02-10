@@ -69,7 +69,7 @@ public class FnFormatDates extends BasicFunction {
 
 
     public final static FunctionSignature FNS_FORMAT_DATETIME_2 = new FunctionSignature(
-        new QName("format-dateTime", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-dateTime", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATETIME,
@@ -79,7 +79,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_DATETIME_5 = new FunctionSignature(
-        new QName("format-dateTime", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-dateTime", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATETIME,
@@ -92,7 +92,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_DATE_2 = new FunctionSignature(
-        new QName("format-date", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-date", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATE,
@@ -102,7 +102,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_DATE_5 = new FunctionSignature(
-        new QName("format-date", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-date", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:date value formatted for display.",
         new SequenceType[] {
             DATE,
@@ -115,7 +115,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_TIME_2 = new FunctionSignature(
-        new QName("format-time", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-time", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:time value formatted for display.",
         new SequenceType[] {
             TIME,
@@ -125,7 +125,7 @@ public class FnFormatDates extends BasicFunction {
     );
 
     public final static FunctionSignature FNS_FORMAT_TIME_5 = new FunctionSignature(
-        new QName("format-time", Function.BUILTIN_FUNCTION_NS),
+        new QName("format-time", FnModule.NAMESPACE_URI),
         "Returns a string containing an xs:time value formatted for display.",
         new SequenceType[] {
             TIME,

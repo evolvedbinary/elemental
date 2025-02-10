@@ -52,7 +52,7 @@ public class FunSubstringBefore extends CollatingFunction {
 	protected static final FunctionParameterSequenceType SOURCE_ARG = new FunctionParameterSequenceType("source", Type.STRING, Cardinality.ZERO_OR_ONE, "The input string");
 	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
-			new QName("substring-before", Function.BUILTIN_FUNCTION_NS),
+			new QName("substring-before", FnModule.NAMESPACE_URI),
 			"Returns the substring of the value of $source that precedes the first occurrence " +
 			"of a sequence of the value of $search. If the value of $source or $search is the empty " +
 			"sequence it is interpreted as the zero-length string. If the value of " +
@@ -65,7 +65,7 @@ public class FunSubstringBefore extends CollatingFunction {
 				},
 				new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the substring before $search")),
 		new FunctionSignature(
-				new QName("substring-before", Function.BUILTIN_FUNCTION_NS),
+				new QName("substring-before", FnModule.NAMESPACE_URI),
 			"Returns the substring of the value of $source that precedes the first occurrence " +
 			"of a sequence of the value of $search in the collation $collation-uri. If the value of $source or $search is the empty " +
 			"sequence it is interpreted as the zero-length string. If the value of " +

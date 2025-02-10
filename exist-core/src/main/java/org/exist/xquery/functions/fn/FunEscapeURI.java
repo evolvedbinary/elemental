@@ -47,7 +47,7 @@ public class FunEscapeURI extends BasicFunction {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("escape-uri", Function.BUILTIN_FUNCTION_NS),
+            new QName("escape-uri", FnModule.NAMESPACE_URI),
             "This function applies the URI escaping rules defined in section 2 " +
             "of [RFC 2396] as amended by [RFC 2732], with one exception, to " +
             "the string supplied as $uri, which typically represents all or part " +

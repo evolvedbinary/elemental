@@ -46,7 +46,7 @@ public class FunNot extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("not", Function.BUILTIN_FUNCTION_NS),
+			new QName("not", FnModule.NAMESPACE_URI),
 			" Returns true if the effective boolean " +
 			"value is false, and false if the effective boolean value is true. \n\n $arg is reduced to an effective boolean value by applying " +
 			"the fn:boolean() function.",

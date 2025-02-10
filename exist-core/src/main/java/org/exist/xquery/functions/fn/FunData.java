@@ -43,7 +43,7 @@ import org.exist.xquery.value.ValueSequence;
  */
 public class FunData extends Function {
 
-    public static final QName qnData = new QName("data", Function.BUILTIN_FUNCTION_NS);
+    public static final QName qnData = new QName("data", FnModule.NAMESPACE_URI);
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(

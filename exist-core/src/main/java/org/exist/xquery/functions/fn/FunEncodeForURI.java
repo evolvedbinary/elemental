@@ -46,7 +46,7 @@ import org.exist.xquery.value.Type;
 public class FunEncodeForURI extends Function {
 
     public final static FunctionSignature signature = new FunctionSignature(
-        new QName("encode-for-uri", Function.BUILTIN_FUNCTION_NS),
+        new QName("encode-for-uri", FnModule.NAMESPACE_URI),
             "Escapes reserved characters in $uri-part by replacing it " +
                 "with its percent-encoded form as described in [RFC 3986]. " +
                 "If $uri-part is the empty sequence, returns the zero-length string.",

@@ -91,7 +91,7 @@ public class FunMax extends CollatingFunction {
 
 	public final static FunctionSignature[] signatures = {
 			new FunctionSignature(
-					new QName("max", Function.BUILTIN_FUNCTION_NS),
+					new QName("max", FnModule.NAMESPACE_URI),
 					FUNCTION_DESCRIPTION_COMMON_1 +
                     FUNCTION_DESCRIPTION_COMMON_2,
 					new SequenceType[] {
@@ -100,7 +100,7 @@ public class FunMax extends CollatingFunction {
 					new FunctionReturnSequenceType(Type.ATOMIC, Cardinality.ZERO_OR_ONE, "the max value")
 			),
 			new FunctionSignature(
-					new QName("max", Function.BUILTIN_FUNCTION_NS),
+					new QName("max", FnModule.NAMESPACE_URI),
 					FUNCTION_DESCRIPTION_COMMON_1  + FUNCTION_DESCRIPTION_2_PARAM +
                     FUNCTION_DESCRIPTION_COMMON_2,
 					new SequenceType[] {

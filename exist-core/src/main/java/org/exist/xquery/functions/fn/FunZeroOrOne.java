@@ -46,7 +46,7 @@ public class FunZeroOrOne extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("zero-or-one", Function.BUILTIN_FUNCTION_NS),
+			new QName("zero-or-one", FnModule.NAMESPACE_URI),
 			"Returns the argument sequence $arg if it contains zero or one items. Otherwise, " +
 			"raises an error.",
 			new SequenceType[] {

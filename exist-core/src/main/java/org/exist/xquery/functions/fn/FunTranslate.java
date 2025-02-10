@@ -47,7 +47,7 @@ public class FunTranslate extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("translate", Function.BUILTIN_FUNCTION_NS),
+			new QName("translate", FnModule.NAMESPACE_URI),
 			"Returns the value of $arg modified so that every character in the value of $arg that occurs at some position N in the " +
 			"value of $map has been replaced by the character that occurs at position N in the value of $trans.\n\n" +
 			"If the value of $arg is the empty sequence, the zero-length string is returned.\n\n" +

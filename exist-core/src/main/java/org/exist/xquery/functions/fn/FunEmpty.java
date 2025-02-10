@@ -44,7 +44,7 @@ public class FunEmpty extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("empty", Function.BUILTIN_FUNCTION_NS),
+            new QName("empty", FnModule.NAMESPACE_URI),
             "Returns true() if the value of $items is the empty sequence, false() otherwise.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("items", Type.ITEM,

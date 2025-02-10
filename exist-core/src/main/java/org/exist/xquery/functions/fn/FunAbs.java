@@ -44,7 +44,7 @@ public class FunAbs extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("abs", Function.BUILTIN_FUNCTION_NS),
+            new QName("abs", FnModule.NAMESPACE_URI),
             "Returns the absolute value of the argument $number." +
             "If the argument is negative returns -$number otherwise returns $number.",
             new SequenceType[] {

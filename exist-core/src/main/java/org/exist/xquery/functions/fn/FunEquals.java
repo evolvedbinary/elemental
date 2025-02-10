@@ -44,7 +44,7 @@ public class FunEquals extends CollatingFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("equals", Function.BUILTIN_FUNCTION_NS),
+            new QName("equals", FnModule.NAMESPACE_URI),
             "Returns an xs:boolean indicating whether or not the value of " +
             "$source-string  equals the collation units in the value of " +
             "$substring, according to the default collation. " +
@@ -60,7 +60,7 @@ public class FunEquals extends CollatingFunction {
                 "true() if $source-string equals $substring, false() otherwise")
         ),
         new FunctionSignature(
-            new QName("equals", Function.BUILTIN_FUNCTION_NS),
+            new QName("equals", FnModule.NAMESPACE_URI),
             "Returns an xs:boolean indicating whether or not the value of " +
             "$source-string equals the  collation units in the value of " +
             "$substring, according to the collation that is specified in " +

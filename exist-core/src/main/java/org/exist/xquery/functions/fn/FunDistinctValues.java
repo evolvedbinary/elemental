@@ -62,7 +62,7 @@ public class FunDistinctValues extends CollatingFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("distinct-values", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("distinct-values", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Returns a sequence where duplicate values of $atomic-values, " +
             "based on value equality, have been deleted.",
             new SequenceType[] {
@@ -73,7 +73,7 @@ public class FunDistinctValues extends CollatingFunction {
                 "the distinct values sequence")
         ),
         new FunctionSignature(
-            new QName("distinct-values", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("distinct-values", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Returns a sequence where duplicate values of $atomic-values, " +
             "based on value equality specified by collation $collation-uri, " + 
             "have been deleted.",

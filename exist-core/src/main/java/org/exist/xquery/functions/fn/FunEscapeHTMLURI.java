@@ -47,7 +47,7 @@ public class FunEscapeHTMLURI extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("escape-html-uri", Function.BUILTIN_FUNCTION_NS),
+            new QName("escape-html-uri", FnModule.NAMESPACE_URI),
             "Replaces all non-printable ASCII characters in the string value of " +
             "$html-uri by an escape sequence represented as a hexadecimal octet " +
             "in the form %XX. If $html-uri is the empty sequence, " + 

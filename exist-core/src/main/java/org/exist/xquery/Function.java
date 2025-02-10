@@ -64,10 +64,6 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
  */
 public abstract class Function extends PathExpr {
 
-    // Declare it in Namespaces instead? /ljo
-    public final static String BUILTIN_FUNCTION_NS =
-            "http://www.w3.org/2005/xpath-functions";
-
     /**
      * The module that declared the function.
      */

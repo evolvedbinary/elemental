@@ -47,7 +47,7 @@ public class FunCurrentDateTime extends Function {
 
     public final static FunctionSignature fnCurrentDateTime =
         new FunctionSignature(
-            new QName("current-dateTime", Function.BUILTIN_FUNCTION_NS),
+            new QName("current-dateTime", FnModule.NAMESPACE_URI),
             "Returns the xs:dateTimeStamp (with timezone) that is current at some time " +
             "during the evaluation of a query or transformation in which " +
             "fn:current-dateTime() is executed.",
@@ -58,7 +58,7 @@ public class FunCurrentDateTime extends Function {
 
     public final static FunctionSignature fnCurrentTime =
         new FunctionSignature(
-            new QName("current-time", Function.BUILTIN_FUNCTION_NS),
+            new QName("current-time", FnModule.NAMESPACE_URI),
             "Returns the xs:time (with timezone) that is current at some time " +
             "during the evaluation of a query or transformation in which " +
             "fn:current-time() is executed.",
@@ -69,7 +69,7 @@ public class FunCurrentDateTime extends Function {
 
     public final static FunctionSignature fnCurrentDate =
         new FunctionSignature(
-            new QName("current-date", Function.BUILTIN_FUNCTION_NS),
+            new QName("current-date", FnModule.NAMESPACE_URI),
             "Returns the xs:date (with timezone) that is current at some time " +
             "during the evaluation of a query or transformation in which " +
             "fn:current-date() is executed.",

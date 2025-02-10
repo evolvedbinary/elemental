@@ -45,7 +45,7 @@ public class FunLast extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("last", Function.BUILTIN_FUNCTION_NS),
+			new QName("last", FnModule.NAMESPACE_URI),
 			"Returns the context size from the dynamic context. " + 
 			"If the context item is undefined, an error is raised.",
 			null,

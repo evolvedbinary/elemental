@@ -53,7 +53,7 @@ import static org.exist.dom.QName.Validity.VALID;
 public class FunResolveQName extends BasicFunction {
 
     public final static FunctionSignature signature = 
-    	new FunctionSignature(new QName("resolve-QName", Function.BUILTIN_FUNCTION_NS), 
+    	new FunctionSignature(new QName("resolve-QName", FnModule.NAMESPACE_URI), 
     			"Returns an xs:QName value (that is, an expanded-QName) by taking an xs:string that has the lexical " +
     			"form of an xs:QName (a string in the form \"prefix:local-name\" or \"local-name\") and resolving it " +
     			"using the in-scope namespaces for a given element.\n\nIf $qname does not have the correct lexical " +

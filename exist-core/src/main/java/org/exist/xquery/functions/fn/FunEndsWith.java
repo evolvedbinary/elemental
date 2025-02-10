@@ -43,7 +43,7 @@ public class FunEndsWith extends CollatingFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("ends-with", Function.BUILTIN_FUNCTION_NS),
+            new QName("ends-with", FnModule.NAMESPACE_URI),
                 "Returns true() if the string value of $suffix is a suffix of the " +
                 "string value of $source-string, false() otherwise. " +
                 "If either $source-string or $suffix is the empty " +
@@ -58,7 +58,7 @@ public class FunEndsWith extends CollatingFunction {
                 "true() if $suffix is suffix of $source-string, false() otherwise")
         ),
         new FunctionSignature (
-            new QName("ends-with", Function.BUILTIN_FUNCTION_NS),
+            new QName("ends-with", FnModule.NAMESPACE_URI),
                 "Returns true() if the string value of $suffix is a suffix of the " +
                 "string value of $source-string using collation $collation-uri, " +
                 "false() otherwise. If either $source-string or $suffix is " +

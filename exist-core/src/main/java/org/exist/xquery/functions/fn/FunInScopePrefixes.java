@@ -53,7 +53,7 @@ public class FunInScopePrefixes extends BasicFunction {
 
     public final static FunctionSignature signature =
             new FunctionSignature(
-                    new QName("in-scope-prefixes", Function.BUILTIN_FUNCTION_NS),
+                    new QName("in-scope-prefixes", FnModule.NAMESPACE_URI),
                     "Returns the prefixes of the in-scope namespaces for $element. " +
                             "For namespaces that have a prefix, it returns the prefix as an " +
                             "xs:NCName. For the default namespace, which has no prefix, " +

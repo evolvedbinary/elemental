@@ -68,14 +68,14 @@ public class FunNormalizeSpace extends Function {
 
     public static final FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("normalize-space", Function.BUILTIN_FUNCTION_NS),
+                    new QName("normalize-space", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_0_PARAM + FUNCTION_DESCRIPTION_COMMON_1 +
                             FUNCTION_DESCRIPTION_COMMON_2,
                     new SequenceType[0],
                     RETURN_TYPE
             ),
             new FunctionSignature(
-                    new QName("normalize-space", Function.BUILTIN_FUNCTION_NS),
+                    new QName("normalize-space", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_1_PARAM + FUNCTION_DESCRIPTION_COMMON_1 +
                             FUNCTION_DESCRIPTION_1_PARAM_1 + FUNCTION_DESCRIPTION_COMMON_2,
                     new SequenceType[]{new FunctionParameterSequenceType("arg", Type.STRING, Cardinality.ZERO_OR_ONE, "The string to normalize")},

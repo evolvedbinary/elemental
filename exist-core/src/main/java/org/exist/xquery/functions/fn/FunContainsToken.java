@@ -40,7 +40,7 @@ import static org.exist.xquery.FunctionDSL.*;
  * @see <a href="https://www.w3.org/TR/xpath-functions-31/#func-contains-token">https://www.w3.org/TR/xpath-functions-31/#func-contains-token</a>
  */
 public class FunContainsToken extends BasicFunction {
-    private static final QName FS_CONTAINS_TOKEN_NAME = new QName("contains-token", Function.BUILTIN_FUNCTION_NS);
+    private static final QName FS_CONTAINS_TOKEN_NAME = new QName("contains-token", FnModule.NAMESPACE_URI);
 
     private final static FunctionParameterSequenceType FS_INPUT = optManyParam("input", Type.STRING, "The input string");
     private final static FunctionParameterSequenceType FS_TOKEN = param("token", Type.STRING, "The token to be searched for");

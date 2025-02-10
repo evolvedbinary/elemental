@@ -44,7 +44,7 @@ public class FunDefaultCollation extends BasicFunction {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("default-collation", Function.BUILTIN_FUNCTION_NS),
+            new QName("default-collation", FnModule.NAMESPACE_URI),
             "Returns the context's default collation. E.g. http://www.w3.org/" +
             "2005/xpath-functions/collation/codepoint.",
             null,

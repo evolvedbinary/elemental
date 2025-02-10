@@ -37,7 +37,7 @@ import static org.exist.xquery.FunctionDSL.functionSignature;
 
 public class FunPath extends BasicFunction {
 
-    private static final QName FN_PATH_NAME = new QName("path", Function.BUILTIN_FUNCTION_NS);
+    private static final QName FN_PATH_NAME = new QName("path", FnModule.NAMESPACE_URI);
     private static final String FN_PATH_DESCRIPTION =
             "Returns a path expression that can be used to select the supplied node " +
                     "relative to the root of its containing document.";

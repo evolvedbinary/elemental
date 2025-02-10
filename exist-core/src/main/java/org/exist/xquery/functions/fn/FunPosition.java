@@ -44,7 +44,7 @@ public class FunPosition extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("position", Function.BUILTIN_FUNCTION_NS),
+			new QName("position", FnModule.NAMESPACE_URI),
 			"Returns the context position from the dynamic context. " +
 			"If the context item is undefined, raises an error.",
 			null,

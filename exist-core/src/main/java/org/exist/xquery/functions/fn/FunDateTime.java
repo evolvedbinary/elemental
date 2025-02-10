@@ -52,7 +52,7 @@ public class FunDateTime extends BasicFunction {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("dateTime", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("dateTime", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Creates an xs:dateTime from an xs:date, $date, and an xs:time, $time.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("date", Type.DATE,

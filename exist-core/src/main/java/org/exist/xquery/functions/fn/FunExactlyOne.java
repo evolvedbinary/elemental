@@ -49,7 +49,7 @@ public class FunExactlyOne extends Function {
 	protected static final Logger logger = LogManager.getLogger(FunExactlyOne.class);
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("exactly-one", Function.BUILTIN_FUNCTION_NS),
+			new QName("exactly-one", FnModule.NAMESPACE_URI),
 			"Returns the argument sequence, $items, if it contains exactly one item. Otherwise, " +
 			"raises an error.",
 			new SequenceType[] {

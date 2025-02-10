@@ -49,7 +49,7 @@ public class FunQName extends BasicFunction {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("QName", Function.BUILTIN_FUNCTION_NS),
+			new QName("QName", FnModule.NAMESPACE_URI),
 			"Returns an xs:QName with the namespace URI given in $uri. If $uri is " +
 			"the zero-length string or the empty sequence, it represents \"no namespace\"; in " +
 			"this case, if the value of $qname contains a colon (:), an error is " +

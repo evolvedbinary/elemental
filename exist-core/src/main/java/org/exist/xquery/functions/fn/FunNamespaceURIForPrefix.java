@@ -58,7 +58,7 @@ public class FunNamespaceURIForPrefix extends BasicFunction {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("namespace-uri-for-prefix", Function.BUILTIN_FUNCTION_NS),
+			new QName("namespace-uri-for-prefix", FnModule.NAMESPACE_URI),
 			FUNCTION_DESCRIPTION,
 			new SequenceType[] { 
 				new FunctionParameterSequenceType("prefix", Type.STRING, Cardinality.ZERO_OR_ONE, "The namespace prefix"),

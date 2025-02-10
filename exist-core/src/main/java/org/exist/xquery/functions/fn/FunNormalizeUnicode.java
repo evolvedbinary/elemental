@@ -90,13 +90,13 @@ public class FunNormalizeUnicode extends Function {
 
 	public final static FunctionSignature[] signatures = {
     	new FunctionSignature(
-	      new QName("normalize-unicode", Function.BUILTIN_FUNCTION_NS),
+	      new QName("normalize-unicode", FnModule.NAMESPACE_URI),
 	      FUNCTION_DESCRIPTION_0_PARAM,
 	      new SequenceType[] { ARG_PARAM },
 	      RETURN_TYPE
 	    ),
 	    new FunctionSignature (
-  	      new QName("normalize-unicode", Function.BUILTIN_FUNCTION_NS),
+  	      new QName("normalize-unicode", FnModule.NAMESPACE_URI),
 	      FUNCTION_DESCRIPTION_1_PARAM,
 	      new SequenceType[] { ARG_PARAM, NF_PARAM },
 	      RETURN_TYPE

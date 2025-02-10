@@ -67,12 +67,12 @@ public class FunStartsWith extends CollatingFunction {
 	
     public final static FunctionSignature[] signatures = {
 	new FunctionSignature (
-			       new QName("starts-with", Function.BUILTIN_FUNCTION_NS),
+			       new QName("starts-with", FnModule.NAMESPACE_URI),
 			       FUNCTION_DESCRIPTION,
 			       new SequenceType[] { ARG1_PARAM, ARG2_PARAM },
 			       RETURN_TYPE),
 	new FunctionSignature (
-			       new QName("starts-with", Function.BUILTIN_FUNCTION_NS),
+			       new QName("starts-with", FnModule.NAMESPACE_URI),
 			       FUNCTION_DESCRIPTION + THIRD_REL_COLLATION_ARG_EXAMPLE,
 			       new SequenceType[] { ARG1_PARAM, ARG2_PARAM, COLLATION_PARAM },
 			       RETURN_TYPE)

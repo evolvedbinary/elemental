@@ -96,14 +96,14 @@ public class FunMin extends CollatingFunction {
 
 	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
-			new QName("min", Function.BUILTIN_FUNCTION_NS),
+			new QName("min", FnModule.NAMESPACE_URI),
             FUNCTION_DESCRIPTION_COMMON_1 +
             FUNCTION_DESCRIPTION_COMMON_2,
 			new SequenceType[] { new FunctionParameterSequenceType("arg", Type.ATOMIC, Cardinality.ZERO_OR_MORE, "The input sequence")},
 			new FunctionReturnSequenceType(Type.ATOMIC, Cardinality.ZERO_OR_ONE, "the minimum value")
 		),
 		new FunctionSignature(
-			new QName("min", Function.BUILTIN_FUNCTION_NS),
+			new QName("min", FnModule.NAMESPACE_URI),
             FUNCTION_DESCRIPTION_COMMON_1  + FUNCTION_DESCRIPTION_2_PARAM +
             FUNCTION_DESCRIPTION_COMMON_2,
 			new SequenceType[] { 

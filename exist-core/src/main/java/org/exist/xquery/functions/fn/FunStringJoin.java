@@ -48,7 +48,7 @@ public class FunStringJoin extends BasicFunction {
 
 	public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("string-join", Function.BUILTIN_FUNCTION_NS),
+            new QName("string-join", FnModule.NAMESPACE_URI),
             "Returns a xs:string created by concatenating the members of the " +
             "$arg sequence using $separator as a separator. If the value of the separator is the zero-length " +
             "string, then the members of the sequence are concatenated without a separator. " +
@@ -61,7 +61,7 @@ public class FunStringJoin extends BasicFunction {
             },
             new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the joined string")),
 		new FunctionSignature(
-            new QName("string-join", Function.BUILTIN_FUNCTION_NS),
+            new QName("string-join", FnModule.NAMESPACE_URI),
             "Returns a xs:string created by concatenating the members of the " +
             "$arg sequence using $separator as a separator. If the value of the separator is the zero-length " +
             "string, then the members of the sequence are concatenated without a separator.",

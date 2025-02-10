@@ -66,7 +66,7 @@ public class FunInsertBefore extends Function {
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("insert-before", Function.BUILTIN_FUNCTION_NS),
+			new QName("insert-before", FnModule.NAMESPACE_URI),
 			FUNCTION_DESCRIPTION,
 			new SequenceType[] {
 					new FunctionParameterSequenceType("target", Type.ITEM, Cardinality.ZERO_OR_MORE, "The target"),

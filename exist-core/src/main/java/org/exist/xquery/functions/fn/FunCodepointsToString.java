@@ -55,7 +55,7 @@ public class FunCodepointsToString extends BasicFunction {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("codepoints-to-string", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("codepoints-to-string", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Creates an xs:string from a sequence of code points. Returns the " +
             "zero-length string if $codepoints is the empty sequence. " +
             "If any of the code points in $codepoints is not a " +

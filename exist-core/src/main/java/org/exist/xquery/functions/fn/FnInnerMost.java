@@ -35,7 +35,7 @@ import java.util.Set;
 public class FnInnerMost extends BasicFunction {
 
     public final static FunctionSignature FNS_INNERMOST = new FunctionSignature(
-            new QName("innermost", Function.BUILTIN_FUNCTION_NS),
+            new QName("innermost", FnModule.NAMESPACE_URI),
             "Returns every node within the input sequence that is not an ancestor of another member of the input sequence; the nodes are returned in document order with duplicates eliminated.",
             new SequenceType[] {
                     new FunctionParameterSequenceType("nodes", Type.NODE, Cardinality.ZERO_OR_MORE, "The nodes to test")

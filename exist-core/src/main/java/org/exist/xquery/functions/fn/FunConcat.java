@@ -58,7 +58,7 @@ public class FunConcat extends Function {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("concat", Function.BUILTIN_FUNCTION_NS),
+            new QName("concat", FnModule.NAMESPACE_URI),
             "Accepts two or more xdt:anyAtomicType arguments, $atomizable-values, " +
             "and converts them to xs:string. Returns the xs:string that is the " +
             "concatenation of the values of its arguments after conversion. " +

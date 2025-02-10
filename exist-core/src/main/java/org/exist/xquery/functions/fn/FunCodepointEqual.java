@@ -48,7 +48,7 @@ public class FunCodepointEqual extends BasicFunction {
 
     public final static FunctionSignature signature =
         new FunctionSignature(
-            new QName("codepoint-equal", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+            new QName("codepoint-equal", FnModule.NAMESPACE_URI, FnModule.PREFIX),
             "Returns true or false depending on whether the value of $string-1 " +
             "is equal to the value of $string-2, according to the Unicode " +
             "code point collation.",

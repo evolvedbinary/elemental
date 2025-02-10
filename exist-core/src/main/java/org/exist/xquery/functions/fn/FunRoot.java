@@ -63,13 +63,13 @@ public class FunRoot extends Function {
 
     public final static FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("root", Function.BUILTIN_FUNCTION_NS),
+                    new QName("root", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_0_PARAM,
                     new SequenceType[0],
                     new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the root node of the tree to which the context node belongs")
             ),
             new FunctionSignature(
-                    new QName("root", Function.BUILTIN_FUNCTION_NS),
+                    new QName("root", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_1_PARAM,
                     new SequenceType[]{new FunctionParameterSequenceType("arg", Type.NODE, Cardinality.ZERO_OR_ONE, "The input node")},
                     new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_ONE, "the root node of the tree to which $arg belongs")

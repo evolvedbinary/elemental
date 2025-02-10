@@ -32,7 +32,7 @@ import org.exist.xquery.value.Type;
 public class FnDefaultLanguage extends BasicFunction {
 
     public static final FunctionSignature FS_DEFAULT_LANGUAGE = FunctionDSL.functionSignature(
-            new QName("default-language", Function.BUILTIN_FUNCTION_NS),
+            new QName("default-language", FnModule.NAMESPACE_URI),
             "Returns the xs:language that is " +
                     "the value of the default language property from the dynamic context " +
                     "during the evaluation of a query or transformation in which " +

@@ -43,7 +43,7 @@ public class FunContains extends CollatingFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("contains", Function.BUILTIN_FUNCTION_NS),
+            new QName("contains", FnModule.NAMESPACE_URI),
             "Returns an xs:boolean indicating whether or not the value of " +
             "$source-string contains (at the beginning, at the end, " +
             "or anywhere within) at least one sequence of collation units " +
@@ -58,7 +58,7 @@ public class FunContains extends CollatingFunction {
             new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE,
                 "true() if $source-string contains $substring, false() otherwise")),
         new FunctionSignature(
-            new QName("contains", Function.BUILTIN_FUNCTION_NS),
+            new QName("contains", FnModule.NAMESPACE_URI),
             "Returns an xs:boolean indicating whether or not the value of " +
             "$source-string contains (at the beginning, at the end, " +
             "or anywhere within) at least one sequence of collation units " +

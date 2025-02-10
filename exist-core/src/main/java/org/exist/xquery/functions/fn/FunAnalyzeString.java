@@ -56,12 +56,12 @@ public class FunAnalyzeString extends BasicFunction {
 
     private static final XmlRegexFactory XML_REGEX_FACTORY = XmlRegexFactory.getInstance();
 
-    private final static QName fnAnalyzeString = new QName("analyze-string", Function.BUILTIN_FUNCTION_NS);
+    private final static QName fnAnalyzeString = new QName("analyze-string", FnModule.NAMESPACE_URI);
 
-    private final static QName QN_MATCH = new QName("match", Function.BUILTIN_FUNCTION_NS);
-    private final static QName QN_GROUP = new QName("group", Function.BUILTIN_FUNCTION_NS);
+    private final static QName QN_MATCH = new QName("match", FnModule.NAMESPACE_URI);
+    private final static QName QN_GROUP = new QName("group", FnModule.NAMESPACE_URI);
     private final static QName QN_NR = new QName("nr", XMLConstants.NULL_NS_URI);
-    private final static QName QN_NON_MATCH = new QName("non-match", Function.BUILTIN_FUNCTION_NS);
+    private final static QName QN_NON_MATCH = new QName("non-match", FnModule.NAMESPACE_URI);
     
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
@@ -110,7 +110,7 @@ public class FunAnalyzeString extends BasicFunction {
         try {
             final MemTreeBuilder builder = context.getDocumentBuilder();
             builder.startDocument();
-            builder.startElement(new QName("analyze-string-result", Function.BUILTIN_FUNCTION_NS), null);
+            builder.startElement(new QName("analyze-string-result", FnModule.NAMESPACE_URI), null);
             String input = "";
             if (!args[0].isEmpty()) {
                 input = args[0].itemAt(0).getStringValue();

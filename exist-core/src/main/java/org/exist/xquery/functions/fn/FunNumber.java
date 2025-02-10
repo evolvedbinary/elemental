@@ -72,13 +72,13 @@ public class FunNumber extends Function {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("number", Function.BUILTIN_FUNCTION_NS),
+            new QName("number", FnModule.NAMESPACE_URI),
             FUNCTION_DESCRIPTION_0_PARAM,
             new SequenceType[0],
             RETURN_TYPE
         ),
         new FunctionSignature(
-            new QName("number", Function.BUILTIN_FUNCTION_NS),
+            new QName("number", FnModule.NAMESPACE_URI),
             FUNCTION_DESCRIPTION_1_PARAM,
             new SequenceType[] { ARG_PARAM },
             RETURN_TYPE
