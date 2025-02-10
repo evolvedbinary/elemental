@@ -21,13 +21,16 @@
  */
 package org.exist.indexing;
 
+import org.exist.dom.QName;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.ExtNodeSet;
 import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.QName;
+import org.exist.storage.structural.DocumentNodeRange;
 import org.exist.xquery.Expression;
 import org.exist.xquery.NodeSelector;
 import org.exist.xquery.NodeTest;
+
+import java.util.List;
 
 /**
  * Core interface for structural indexes. The structural index provides access to elements and attributes
@@ -47,6 +50,7 @@ public interface StructuralIndex {
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector);
 
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent);
+    public NodeSet findElementsByTagName(byte type, DocumentSet docs, List<DocumentNodeRange> ranges, QName qname, NodeSelector selector, Expression parent);
 
     public NodeSet findDescendantsByTagName(byte type, QName qname, int axis,
         DocumentSet docs, NodeSet contextSet,  int contextId);

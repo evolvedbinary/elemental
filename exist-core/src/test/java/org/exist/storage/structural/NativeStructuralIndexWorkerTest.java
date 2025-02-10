@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.easymock.EasyMock.*;
+import static org.exist.storage.structural.DocumentNodeRange.getDocIdRanges;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -43,11 +44,9 @@ public class NativeStructuralIndexWorkerTest {
 
     @Test
     public void getDocIdRanges_singleContiguous() {
-        final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
-
         final DocumentSet docs = documentIdSet(Arrays.asList(1,2,3,4,5,6));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<DocumentNodeRange> ranges = getDocIdRanges(docs);
 
         assertEquals(1, ranges.size());
 
@@ -57,11 +56,9 @@ public class NativeStructuralIndexWorkerTest {
 
     @Test
     public void getDocIdRanges_multipleContiguous() {
-        final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
-
         final DocumentSet docs = documentIdSet(Arrays.asList(1,2,3,4,5,6, 88,89, 3,4,5,6, 77, 10,11,12));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<DocumentNodeRange> ranges = getDocIdRanges(docs);
 
         assertEquals(5, ranges.size());
 
@@ -87,7 +84,7 @@ public class NativeStructuralIndexWorkerTest {
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<DocumentNodeRange> ranges = getDocIdRanges(docs);
 
         assertEquals(1, ranges.size());
 
@@ -97,11 +94,9 @@ public class NativeStructuralIndexWorkerTest {
 
     @Test
     public void getDocIdRanges_singleId_followed_by_continguousIds() {
-        final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
-
         final DocumentSet docs = documentIdSet(Arrays.asList(6574, 11,12,13,14,15));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<DocumentNodeRange> ranges = getDocIdRanges(docs);
 
         assertEquals(2, ranges.size());
 
@@ -114,11 +109,9 @@ public class NativeStructuralIndexWorkerTest {
 
     @Test
     public void getDocIdRanges_contiguousIds_followed_by_single() {
-        final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
-
         final DocumentSet docs = documentIdSet(Arrays.asList(11,12,13,14,15, 6574));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<DocumentNodeRange> ranges = getDocIdRanges(docs);
 
         assertEquals(2, ranges.size());
 
@@ -131,11 +124,9 @@ public class NativeStructuralIndexWorkerTest {
 
     @Test
     public void getDocIdRanges_multiple_singleIds() {
-        final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
-
         final DocumentSet docs = documentIdSet(Arrays.asList(6574, 200, 12, 24));
 
-        final List<NativeStructuralIndexWorker.Range> ranges = indexWorker.getDocIdRanges(docs);
+        final List<DocumentNodeRange> ranges = getDocIdRanges(docs);
 
         assertEquals(4, ranges.size());
 
