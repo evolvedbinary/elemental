@@ -752,6 +752,7 @@
                                 <include>src/test/java/org/exist/IndexerTest.java</include>
                                 <include>src/test/java/org/exist/IndexerTest2.java</include>
                                 <include>src/test/java/org/exist/IndexerTest3.java</include>
+                                <include>src/main/java/org/exist/Namespaces.java</include>
                                 <include>src/main/resources-filtered/org/exist/system.properties</include>
                                 <include>src/main/java/org/exist/backup/SystemExport.java</include>
                                 <include>src/main/java/org/exist/backup/ZipWriter.java</include>
@@ -1176,6 +1177,7 @@
                                 <exclude>src/test/java/org/exist/IndexerTest.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest2.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest3.java</exclude>
+                                <exclude>src/main/java/org/exist/Namespaces.java</exclude>
                                 <exclude>src/main/resources-filtered/org/exist/system.properties</exclude>
                                 <exclude>src/main/java/org/exist/backup/SystemExport.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/ZipWriter.java</exclude>
