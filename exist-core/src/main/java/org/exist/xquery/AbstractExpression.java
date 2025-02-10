@@ -23,6 +23,7 @@ package org.exist.xquery;
 
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.source.Source;
+import org.exist.storage.util.ResultCache;
 import org.exist.xquery.parser.XQueryAST;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
@@ -181,6 +182,30 @@ public abstract class AbstractExpression implements Expression {
     @Override
     public Expression getParent() {
         return null;
+    }
+
+    private ResultCache resultCache = null;
+
+    @Override
+    public ResultCache getResultCache() {
+        return resultCache;
+    }
+
+    @Override
+    public void setResultCache(final ResultCache resultCache) {
+        this.resultCache = resultCache;
+    }
+
+    @Override
+    public ResultCache getRootResultCache() {
+        Expression parent = this;
+        while (parent.getParent() != null) {
+            parent = parent.getParent();
+        }
+        if (parent.getResultCache() == null) {
+            parent.setResultCache(new ResultCache());
+        }
+        return parent.getResultCache();
     }
 
     @Override

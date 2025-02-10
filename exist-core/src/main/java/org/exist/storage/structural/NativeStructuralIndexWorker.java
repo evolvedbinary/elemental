@@ -74,8 +74,6 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     private ReindexMode mode = ReindexMode.STORE;
     private DocumentImpl document;
 
-    private ResultCache resultCache = new ResultCache();
-
     //TODO throw away this Comparator or use a different data struct here when we have moved
     //nameType out of QName
     private Map<QName, List<NodeProxy>> pending = new TreeMap<>(new TypedQNameComparator());
@@ -112,6 +110,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent) {
 
+        final ResultCache resultCache = parent.getRootResultCache();
         final List<Range> ranges = getDocIdRanges(docs);
         final NodeSet cachedResult = resultCache.get(type, qname, selector, ranges);
         if (cachedResult != null) {
