@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -60,7 +84,7 @@ public class FunGetDurationComponent extends BasicFunction {
 
 	public final static FunctionSignature fnDaysFromDuration =
 		new FunctionSignature(
-			new QName("days-from-duration", Function.BUILTIN_FUNCTION_NS),
+			new QName("days-from-duration", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the days component in the canonical lexical " +
 			"representation of the value of $duration. The result may be negative.",
 			new SequenceType[] {
@@ -70,7 +94,7 @@ public class FunGetDurationComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnHoursFromDuration =
 		new FunctionSignature(
-			new QName("hours-from-duration", Function.BUILTIN_FUNCTION_NS),
+			new QName("hours-from-duration", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the hours component in the canonical lexical " +
 			"representation of the value of $duration. The result may be negative.",
 			new SequenceType[] {
@@ -80,7 +104,7 @@ public class FunGetDurationComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnMinutesFromDuration =
 		new FunctionSignature(
-			new QName("minutes-from-duration", Function.BUILTIN_FUNCTION_NS),
+			new QName("minutes-from-duration", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the minutes component in the canonical " +
 			"lexical representation of the value of $duration. The result may be negative.",
 			new SequenceType[] {
@@ -90,7 +114,7 @@ public class FunGetDurationComponent extends BasicFunction {
 
 	public final static FunctionSignature fnSecondsFromDuration =
 		new FunctionSignature(
-			new QName("seconds-from-duration", Function.BUILTIN_FUNCTION_NS),
+			new QName("seconds-from-duration", FnModule.NAMESPACE_URI),
 			"Returns an xs:decimal representing the seconds component in the canonical lexical " +
 			"representation of the value of $duration. The result may be negative",
 			new SequenceType[] {
@@ -99,7 +123,7 @@ public class FunGetDurationComponent extends BasicFunction {
 			new FunctionReturnSequenceType(Type.DECIMAL, Cardinality.ZERO_OR_ONE, "the seconds component of $duration"));
 
    public final static FunctionSignature fnMonthsFromDuration = new FunctionSignature(
-			new QName("months-from-duration", Function.BUILTIN_FUNCTION_NS),
+			new QName("months-from-duration", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the months component in the canonical lexical " +
 			"representation of the value of $duration. The result may be negative.",
 			new SequenceType[] {
@@ -108,7 +132,7 @@ public class FunGetDurationComponent extends BasicFunction {
 			new FunctionReturnSequenceType(Type.INTEGER, Cardinality.ZERO_OR_ONE, "the months component of $duration"));
 
    public final static FunctionSignature fnYearsFromDuration = new FunctionSignature(
-			new QName("years-from-duration", Function.BUILTIN_FUNCTION_NS),
+			new QName("years-from-duration", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the years component in the canonical lexical " +
 			"representation of the value of $duration. The result may be negative.",
 			new SequenceType[] {

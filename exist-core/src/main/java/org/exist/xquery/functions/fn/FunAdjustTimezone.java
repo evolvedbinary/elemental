@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -55,14 +79,14 @@ public class FunAdjustTimezone extends BasicFunction {
 
     public final static FunctionSignature[] fnAdjustDateTimeToTimezone = {
         new FunctionSignature(
-            new QName("adjust-dateTime-to-timezone", Function.BUILTIN_FUNCTION_NS),
+            new QName("adjust-dateTime-to-timezone", FnModule.NAMESPACE_URI),
             "Adjusts the xs:dateTime value $date-time to the implicit timezone of the current locale.",
             new SequenceType[] { 
                 DATE_TIME_01_PARAM
             },
             DATE_TIME_01_RETURN),
         new FunctionSignature(
-            new QName("adjust-dateTime-to-timezone", Function.BUILTIN_FUNCTION_NS),
+            new QName("adjust-dateTime-to-timezone", FnModule.NAMESPACE_URI),
             "Adjusts the xs:dateTime value $date-time to a specific timezone, or to no timezone at all. " +
             "If $duration is the empty sequence, returns an xs:dateTime without a timezone.",
             new SequenceType[] {
@@ -74,14 +98,14 @@ public class FunAdjustTimezone extends BasicFunction {
 
     public final static FunctionSignature[] fnAdjustDateToTimezone = {
         new FunctionSignature(
-            new QName("adjust-date-to-timezone", Function.BUILTIN_FUNCTION_NS),
+            new QName("adjust-date-to-timezone", FnModule.NAMESPACE_URI),
             "Adjusts the xs:date value $date to the implicit timezone of the current locale.",
             new SequenceType[] {
                 DATE_01_PARAM
             },
             DATE_01_RETURN),
         new FunctionSignature(
-            new QName("adjust-date-to-timezone", Function.BUILTIN_FUNCTION_NS),
+            new QName("adjust-date-to-timezone", FnModule.NAMESPACE_URI),
             "Adjusts the xs:date value $date to a specific timezone, or to no timezone at all. " +
             "If $duration is the empty sequence, returns an xs:date without a timezone.",
             new SequenceType[] { 
@@ -93,14 +117,14 @@ public class FunAdjustTimezone extends BasicFunction {
 
     public final static FunctionSignature[] fnAdjustTimeToTimezone = {
         new FunctionSignature(
-            new QName("adjust-time-to-timezone", Function.BUILTIN_FUNCTION_NS),
+            new QName("adjust-time-to-timezone", FnModule.NAMESPACE_URI),
             "Adjusts the xs:time value $time to the implicit timezone of the current locale.",
             new SequenceType[] { 
                 TIME_01_PARAM
             },
             TIME_01_RETURN),
         new FunctionSignature(
-            new QName("adjust-time-to-timezone", Function.BUILTIN_FUNCTION_NS),
+            new QName("adjust-time-to-timezone", FnModule.NAMESPACE_URI),
             "Adjusts the xs:time value $time to a specific timezone, or to no timezone at all. " +
             "If $duration is the empty sequence, returns an xs:time without a timezone.",
             new SequenceType[] { 

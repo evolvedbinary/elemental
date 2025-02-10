@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -37,7 +61,7 @@ public class FunOnFunctions extends BasicFunction {
 
 	public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("function-lookup", Function.BUILTIN_FUNCTION_NS),
+            new QName("function-lookup", FnModule.NAMESPACE_URI),
             "Returns a reference to the function having a given name and arity, if there is one," +
             " the empty sequence otherwise",
             new SequenceType[] {
@@ -46,7 +70,7 @@ public class FunOnFunctions extends BasicFunction {
             },
             new FunctionReturnSequenceType(Type.FUNCTION_REFERENCE, Cardinality.ZERO_OR_ONE, "The function if found, empty sequence otherwise")),
         new FunctionSignature(
-            new QName("function-name", Function.BUILTIN_FUNCTION_NS),
+            new QName("function-name", FnModule.NAMESPACE_URI),
             "Returns the name of the function identified by a function item.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("function", Type.FUNCTION_REFERENCE, Cardinality.EXACTLY_ONE, "The function item")
@@ -54,7 +78,7 @@ public class FunOnFunctions extends BasicFunction {
             new FunctionReturnSequenceType(Type.QNAME, Cardinality.ZERO_OR_ONE,
             		"The name of the function or the empty sequence if $function is an anonymous function.")),
 		new FunctionSignature(
-            new QName("function-arity", Function.BUILTIN_FUNCTION_NS),
+            new QName("function-arity", FnModule.NAMESPACE_URI),
             "Returns the arity of the function identified by a function item.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("function", Type.FUNCTION_REFERENCE, Cardinality.EXACTLY_ONE, "The function item")
