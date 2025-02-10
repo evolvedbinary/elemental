@@ -23,28 +23,22 @@ package org.exist.storage.structural;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.dom.TypedQNameComparator;
-import org.exist.dom.persistent.AttrImpl;
-import org.exist.dom.persistent.NodeProxy;
-import org.exist.dom.QName;
-import org.exist.dom.persistent.ElementImpl;
-import org.exist.dom.persistent.DocumentSet;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.IStoredNode;
-import org.exist.dom.persistent.SymbolTable;
-import org.exist.dom.persistent.NewArrayNodeSet;
-import org.exist.dom.persistent.ExtNodeSet;
-import org.exist.dom.persistent.NodeSet;
 import org.exist.collections.Collection;
+import org.exist.dom.QName;
+import org.exist.dom.TypedQNameComparator;
+import org.exist.dom.persistent.*;
 import org.exist.indexing.*;
 import org.exist.indexing.StreamListener.ReindexMode;
 import org.exist.numbering.NodeId;
-import org.exist.storage.*;
+import org.exist.security.PermissionDeniedException;
+import org.exist.storage.DBBroker;
+import org.exist.storage.ElementValue;
+import org.exist.storage.NodePath;
+import org.exist.storage.RangeIndexSpec;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.BTreeCallback;
 import org.exist.storage.btree.IndexQuery;
 import org.exist.storage.btree.Value;
-
 import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
@@ -58,7 +52,7 @@ import org.w3c.dom.NodeList;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.exist.security.PermissionDeniedException;
+import static org.exist.storage.structural.DocumentNodeRange.getDocIdRanges;
 
 /**
  * Internal default implementation of the structural index. It uses a single btree, in which
@@ -107,12 +101,13 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return findElementsByTagName(type, docs, qname, selector, null);
     }
 
+    @Override
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent) {
         final NewArrayNodeSet result = new NewArrayNodeSet();
         final FindElementsCallback callback = new FindElementsCallback(type, qname, result, docs, selector, parent);
 
         // for each document id range, scan the index to find matches
-        for (final Range range : getDocIdRanges(docs)) {
+        for (final DocumentNodeRange range : getDocIdRanges(docs)) {
             final byte[] fromKey = computeKey(type, qname, range.start);
             final byte[] toKey = computeKey(type, qname, range.end + 1);
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
@@ -130,47 +125,31 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return result;
     }
 
-    /**
-     * Scan the document set to find document id ranges to query
-     *
-     * @param docs the document set
-     * @return List of contiguous document id ranges
-     */
-    List<Range> getDocIdRanges(final DocumentSet docs) {
-        final List<Range> ranges = new ArrayList<>();
-        Range next = null;
-        for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext(); ) {
-            final DocumentImpl doc = i.next();
-            if (next == null) {
-                next = new Range(doc.getDocId());
-            } else if (next.end + 1 == doc.getDocId()) {
-                next.end++;
-            } else {
-                ranges.add(next);
-                next = new Range(doc.getDocId());
+    @Override
+    public NodeSet findElementsByTagName(byte type, DocumentSet docs, List<DocumentNodeRange> ranges, QName qname, NodeSelector selector, Expression parent) {
+        final NewArrayNodeSet result = new NewArrayNodeSet();
+        final FindElementsCallback callback = new FindElementsCallback(type, qname, result, docs, selector, parent);
+
+        // for each document id range, scan the index to find matches
+        for (final DocumentNodeRange range : ranges) {
+            final byte[] fromKey = computeKey(type, qname, range.start, range.from);
+            final byte[] toKey = range.to == null ? computeKey(type, qname, range.end + 1) :
+              computeKey(type, qname, range.end, range.to);
+            final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
+
+            try(final ManagedLock<ReentrantLock> btreeLock = index.lockManager.acquireBtreeReadLock(index.btree.getLockName())) {
+                index.btree.query(query, callback);
+            } catch (final LockException e) {
+                NativeStructuralIndex.LOG.warn("Lock problem while searching structural index: {}", e.getMessage(), e);
+            } catch (final TerminatedException e) {
+                NativeStructuralIndex.LOG.warn("Query was terminated while searching structural index: {}", e.getMessage(), e);
+            } catch (final Exception e) {
+                NativeStructuralIndex.LOG.error("Error while searching structural index: {}", e.getMessage(), e);
             }
         }
-        if (next != null) {
-            ranges.add(next);
-        }
-
-        return ranges;
+        return result;
     }
 
-    /**
-     * Internal helper class used by
-     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.persistent.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
-     */
-    static class Range {
-        int start = -1;
-        int end = -1;
-
-        private Range(int start) {
-            this.start = start;
-            this.end = start;
-        }
-    }
-    
     /**
      * Find all descendants (or children) of the specified node set matching the given QName.
      *

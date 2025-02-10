@@ -30,14 +30,18 @@
  */
 package org.exist.xquery;
 
-import org.exist.dom.persistent.*;
-import org.exist.indexing.StructuralIndex;
 import org.exist.dom.memtree.InMemoryNodeSet;
 import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.persistent.*;
+import org.exist.indexing.StructuralIndex;
 import org.exist.numbering.NodeId;
-import org.exist.stax.*;
+import org.exist.stax.EmbeddedXMLStreamReader;
+import org.exist.stax.ExtendedXMLStreamReader;
+import org.exist.stax.IEmbeddedXMLStreamReader;
+import org.exist.stax.StaXUtil;
 import org.exist.storage.ElementValue;
 import org.exist.storage.UpdateListener;
+import org.exist.storage.structural.DocumentNodeRange;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -47,6 +51,7 @@ import javax.xml.stream.StreamFilter;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Processes all location path steps (like descendant::*, ancestor::XXX).
@@ -871,7 +876,9 @@ public class LocationStep extends Step {
         } else {
             // TODO : no test on preloaded data ?
             final DocumentSet docs = getDocumentSet(contextSet);
+            final List<DocumentNodeRange> ranges = DocumentNodeRange.fromSiblingContextSet(contextSet);
             synchronized (context) {
+                NodeSet resultSet = null;
                 if (currentSet == null || currentDocs == null || !(docs.equalDocs(currentDocs))) {
                     final StructuralIndex index = context.getBroker().getStructuralIndex();
                     if (context.getProfiler().isEnabled()) {
@@ -882,14 +889,16 @@ public class LocationStep extends Step {
                                 "Using structural index '" + index.toString()
                                         + "'");
                     }
-                    currentSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null, this);
-                    currentSet.setKnownSorted(true);
-                    currentDocs = docs;
+                    resultSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, ranges, test.getName(), null, this);
+                    resultSet.setKnownSorted(true);
+                    //currentSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null, this);
+                    //currentSet.setKnownSorted(true);
+                    //currentDocs = docs;
                     registerUpdateListener();
                 }
                 return switch (axis) {
-                    case Constants.PRECEDING_SIBLING_AXIS -> currentSet.selectPrecedingSiblings(contextSet, contextId);
-                    case Constants.FOLLOWING_SIBLING_AXIS -> currentSet.selectFollowingSiblings(contextSet, contextId);
+                    case Constants.PRECEDING_SIBLING_AXIS -> resultSet.selectPrecedingSiblings(contextSet, contextId);
+                    case Constants.FOLLOWING_SIBLING_AXIS -> resultSet.selectFollowingSiblings(contextSet, contextId);
                     default -> throw new IllegalArgumentException("Unsupported axis specified");
                 };
             }
