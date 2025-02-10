@@ -51,15 +51,15 @@ import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.FunctionReturnSequenceType;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.SequenceIterator;
+import org.exist.xquery.value.ValueSequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
-import org.exist.xquery.value.ValueSequence;
 
 /**
  * Implements the fn:reverse function.
  *
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class FunReverse extends Function {
 
@@ -103,37 +103,34 @@ public class FunReverse extends Function {
         argumentsChecked = true;
     }
 
-    public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
+    @Override
+    public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {
-            context.getProfiler().start(this);       
+            context.getProfiler().start(this);
             context.getProfiler().message(this, Profiler.DEPENDENCIES, "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
-            if (contextSequence != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT SEQUENCE", contextSequence);}
-            if (contextItem != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());}
-        }           
-        
-        Sequence result;
-        final Sequence seq = getArguments(contextSequence, contextItem)[0];
-		if (seq.isEmpty()) 
-            {result = Sequence.EMPTY_SEQUENCE;}
-        else {
-                final Sequence tmp = new ValueSequence();
-                Item item;
-                for(final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                    item = i.nextItem();
-                    tmp.add(item);
-                }
-                result = new ValueSequence();
-                for (int i = seq.getItemCount() - 1; i >= 0; i--) {
-                    result.add(tmp.itemAt(i));
-                }
+            if (contextSequence != null) {
+                context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT SEQUENCE", contextSequence);
+            }
+            if (contextItem != null) {
+                context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());
+            }
         }
 
-        if (context.getProfiler().isEnabled()) 
-            {context.getProfiler().end(this, "", result);} 
-        
-        return result;
-	}
+        final Sequence seq = getArguments(contextSequence, contextItem)[0];
+        final Sequence result;
+        if (seq.isEmpty()) {
+            result = Sequence.EMPTY_SEQUENCE;
+        } else {
+            result = new ValueSequence();
+            for (int i = seq.getItemCount() - 1; i >= 0; i--) {
+                result.add(seq.itemAt(i));
+            }
+        }
 
+        if (context.getProfiler().isEnabled()) {
+            context.getProfiler().end(this, "", result);
+        }
+
+        return result;
+    }
 }
