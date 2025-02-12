@@ -5,10 +5,14 @@ import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.numbering.NodeId;
+import org.exist.xquery.Constants;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.exist.xquery.Constants.FOLLOWING_SIBLING_AXIS;
+import static org.exist.xquery.Constants.PRECEDING_SIBLING_AXIS;
 
 /**
  * Internal helper class used by
@@ -59,11 +63,27 @@ public class DocumentNodeRange {
     return ranges;
   }
 
-  public static List<DocumentNodeRange> fromSiblingContextSet(final NodeSet contextSet) {
+  public static List<DocumentNodeRange> fromSiblingContextSet(final NodeSet contextSet, final int axis) {
     final List<DocumentNodeRange> ranges = new ArrayList<>();
     for (NodeProxy nodeProxy : contextSet) {
-      final NodeId from = nodeProxy.getNodeId().getParentId();
-      final NodeId to = from.nextSibling();
+      final NodeId contextNodeId = nodeProxy.getNodeId();
+      final NodeId leftmost = contextNodeId.getParentId();
+      final NodeId rightmost = leftmost.nextSibling();
+      final NodeId from;
+      final NodeId to;
+      switch (axis) {
+        case PRECEDING_SIBLING_AXIS:
+          from = leftmost;
+          to = contextNodeId;
+          break;
+        case FOLLOWING_SIBLING_AXIS:
+          from = contextNodeId;
+          to = rightmost;
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported axis specified: " + axis + ". Must be PRECEDING_SIBLING_AXIS (" +
+            PRECEDING_SIBLING_AXIS + ") or FOLLOWING_SIBLING_AXIS (" + FOLLOWING_SIBLING_AXIS + ")");
+      }
       ranges.add(new DocumentNodeRange(nodeProxy.getDoc().getDocId(), from, to));
     }
     return ranges;
