@@ -87,6 +87,50 @@ declare variable $axes:siblings :=
     </xml>
 ;
 
+declare variable $axes:flat :=
+    <xml>
+        <a>A1</a>
+        <b>B1</b>
+        <c>C1</c>
+        <b>B2</b>
+        <a>A2</a>
+        <d>D1</d>
+        <c>C2</c>
+    </xml>
+;
+
+declare variable $axes:cousins :=
+    <xml>
+        <alpha>
+            <a>alphaA1</a>
+            <b>alphaB1</b>
+            <c>alphaC1</c>
+            <b>alphaB2</b>
+            <a>alphaA2</a>
+            <d>alphaD1</d>
+            <c>alphaC2</c>
+        </alpha>
+        <main>
+             <a>A1</a>
+             <b>B1</b>
+             <c>C1</c>
+             <b>B2</b>
+             <a>A2</a>
+             <d>D1</d>
+             <c>C2</c>
+        </main>
+        <beta>
+            <a>betaA1</a>
+            <b>betaB1</b>
+            <c>betaC1</c>
+            <b>betaB2</b>
+            <a>betaA2</a>
+            <d>betaD1</d>
+            <c>betaC2</c>
+        </beta>
+    </xml>
+;
+
 declare
     %test:setUp
 function axes:setup() {
@@ -95,7 +139,9 @@ function axes:setup() {
     xmldb:store("/db/axes-test", "doc1.xml", $axes:in-mem-doc1),
     xmldb:store("/db/axes-test", "doc2.xml", $axes:in-mem-doc2),
     xmldb:store("/db/axes-test", "pi.xml", $axes:pi-doc),
-    xmldb:store("/db/axes-test", "siblings.xml", $axes:siblings)
+    xmldb:store("/db/axes-test", "siblings.xml", $axes:siblings),
+    xmldb:store("/db/axes-test", "flat.xml", $axes:flat),
+    xmldb:store("/db/axes-test", "cousins.xml", $axes:cousins)
 };
 
 declare
@@ -340,4 +386,40 @@ declare
     %test:assertEquals("<c>correct</c>")
 function axes:in-database-position-and-path() {
     doc("/db/axes-test/siblings.xml")//c[../preceding-sibling::a[position() eq 1]/b = 'B1']
+};
+
+declare
+    %test:assertEquals("<a>A1</a>", "<a>A2</a>")
+function axes:in-database-flat-a() {
+    doc("/db/axes-test/flat.xml")//d/preceding-sibling::a
+};
+
+declare
+    %test:assertEquals("<c>C1</c>")
+function axes:in-database-flat-c() {
+    doc("/db/axes-test/flat.xml")//b/preceding-sibling::c
+};
+
+declare
+    %test:assertEquals("<c>C1</c>", "<c>C2</c>")
+function axes:in-database-flat-b() {
+    doc("/db/axes-test/flat.xml")//b/following-sibling::c
+};
+
+declare
+    %test:assertEquals("<c>alphaC1</c>", "<c>C1</c>", "<c>betaC1</c>")
+function axes:in-database-cousins-c() {
+    doc("/db/axes-test/cousins.xml")//b/preceding-sibling::c
+};
+
+declare
+    %test:assertEquals("<c>alphaC1</c>", "<c>alphaC2</c>", "<c>C1</c>", "<c>C2</c>", "<c>betaC1</c>", "<c>betaC2</c>")
+function axes:in-database-cousins-b() {
+    doc("/db/axes-test/cousins.xml")//b/following-sibling::c
+};
+
+declare
+    %test:assertEmpty
+function axes:in-database-flat-root() {
+    doc("/db/axes-test/flat.xml")//xml/preceding-sibling::any
 };
