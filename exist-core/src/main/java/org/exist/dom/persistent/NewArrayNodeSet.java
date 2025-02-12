@@ -610,7 +610,10 @@ public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet,
      * @param mergeContext a <code>boolean</code> value
      * @return the new length of the part, after removing all duplicates
      */
-    private int removeDuplicates(final boolean mergeContext) {
+    int removeDuplicates(final boolean mergeContext) {
+        if (size == 0) {
+            return 0;
+        }
         int j = 0;
         for(int i = 1; i < size; i++) {
             if(nodes[i].compareTo(nodes[j]) != 0) {
