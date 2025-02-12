@@ -22,7 +22,12 @@
 
 package org.exist.dom.persistent;
 
+import org.easymock.EasyMock;
+import org.exist.numbering.DLN;
+import org.exist.security.SecurityManager;
+import org.exist.storage.BrokerPool;
 import org.exist.xquery.Constants;
+import org.exist.xquery.Expression;
 import org.exist.xquery.value.SequenceIterator;
 import org.junit.Test;
 
@@ -91,6 +96,93 @@ public class NewArrayNodeSetTest {
         }
 
         assertEquals(69, count);
+    }
+
+    @Test
+    public void duplicates() {
+        NewArrayNodeSet newArrayNodeSet = mockNewArrayNodeSet("1.1", "1.2", "1.2", "1.4");
+        assertEquals(4, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(3, newArrayNodeSet.size);
+        NewArrayNodeSet compare = mockNewArrayNodeSet("1.1", "1.2", "1.4");
+        assertEquals(3, count(newArrayNodeSet.deepIntersection((NodeSet) compare)));
+
+        newArrayNodeSet = mockNewArrayNodeSet("1.1", "1.2", "1.2", "1.4", "1.4", "1.4.1", "1.4.2", "1.4.2");
+        assertEquals(8, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(5, newArrayNodeSet.size);
+        compare = mockNewArrayNodeSet("1.1", "1.2", "1.4", "1.4.1", "1.4.2");
+        assertEquals(5, count(newArrayNodeSet.deepIntersection((NodeSet) compare)));
+
+        newArrayNodeSet = mockNewArrayNodeSet("1.2", "1.2", "1.2", "1.4", "1.4", "1.4.1", "1.4.2", "1.4.2");
+        assertEquals(8, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(4, newArrayNodeSet.size);
+        compare = mockNewArrayNodeSet("1.2", "1.4", "1.4.1", "1.4.2");
+        assertEquals(4, count(newArrayNodeSet.deepIntersection((NodeSet) compare)));
+
+        newArrayNodeSet = mockNewArrayNodeSet("1.2");
+        assertEquals(1, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(1, newArrayNodeSet.size);
+        compare = mockNewArrayNodeSet("1.2");
+        assertEquals(1, count(newArrayNodeSet.deepIntersection((NodeSet) compare)));
+
+        newArrayNodeSet = mockNewArrayNodeSet("1.1", "1.2");
+        assertEquals(2, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(2, newArrayNodeSet.size);
+        compare = mockNewArrayNodeSet("1.1", "1.2");
+        assertEquals(2, count(newArrayNodeSet.deepIntersection((NodeSet) compare)));
+
+        newArrayNodeSet = mockNewArrayNodeSet("1.2", "1.2");
+        assertEquals(2, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(1, newArrayNodeSet.size);
+        compare = mockNewArrayNodeSet("1.1", "1.2");
+        assertEquals(1, count(newArrayNodeSet.deepIntersection((NodeSet) compare)));
+
+        // Regression, was 1
+        newArrayNodeSet = mockNewArrayNodeSet();
+        assertEquals(0, newArrayNodeSet.size);
+        newArrayNodeSet.removeDuplicates(true);
+        assertEquals(0, newArrayNodeSet.size);
+        assertEquals(0, count(newArrayNodeSet));
+    }
+
+    private int count(NodeSet nodeSet) {
+        int i = 0;
+        for (NodeProxy nodeProxy : nodeSet) {
+            i++;
+        }
+        return i;
+    }
+
+    private NewArrayNodeSet mockNewArrayNodeSet(String ... dlns) {
+
+        final NewArrayNodeSet newArrayNodeSet = new NewArrayNodeSet();
+        BrokerPool mockBrokerPool = EasyMock.createMock(BrokerPool.class);
+        DocumentImpl mockDocument = EasyMock.createMock(DocumentImpl.class);
+        SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
+        Expression mockExpression = EasyMock.createMock(Expression.class);
+
+        expect(mockBrokerPool.getSecurityManager()).andReturn(mockSecurityManager);
+        expect(mockDocument.getExpression()).andReturn(mockExpression).anyTimes();
+        expect(mockDocument.getDocId()).andReturn(1).anyTimes();
+        replay(mockBrokerPool, mockDocument, mockSecurityManager, mockExpression);
+
+        for (String dln : dlns) {
+            newArrayNodeSet.add(new NodeProxy(mockDocument, new DLN(dln)));
+        }
+        return newArrayNodeSet;
+    }
+
+    @Test
+    public void set_sorted() {
+        final NewArrayNodeSet newArrayNodeSet = mockNewArrayNodeSet(0);
+        assertEquals(0, newArrayNodeSet.size);
+        newArrayNodeSet.setKnownSorted(true);
+        assertEquals(0, newArrayNodeSet.size);
     }
 
     private static NewArrayNodeSet mockNewArrayNodeSet(final int size) {
