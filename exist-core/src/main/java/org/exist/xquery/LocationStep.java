@@ -891,7 +891,7 @@ public class LocationStep extends Step {
         } else {
             // TODO : no test on preloaded data ?
             final DocumentSet docs = getDocumentSet(contextSet);
-            final List<DocumentNodeRange> ranges = DocumentNodeRange.fromSiblingContextSet(contextSet);
+            final List<DocumentNodeRange> ranges = DocumentNodeRange.fromSiblingContextSet(contextSet, axis);
             synchronized (context) {
                 final StructuralIndex index = context.getBroker().getStructuralIndex();
                 if (context.getProfiler().isEnabled()) {
