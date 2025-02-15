@@ -5,7 +5,6 @@ import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.numbering.NodeId;
-import org.exist.xquery.Constants;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -19,21 +18,21 @@ import static org.exist.xquery.Constants.PRECEDING_SIBLING_AXIS;
  * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.persistent.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
  */
 public class DocumentNodeRange {
-  int start = -1;
-  int end = -1;
-  NodeId from = null;
-  NodeId to = null;
+  int startDocId = -1;
+  int endDocId = -1;
+  NodeId fromNodeId = null;
+  NodeId toNodeId = null;
 
   DocumentNodeRange(int start) {
-    this.start = start;
-    this.end = start;
+    this.startDocId = start;
+    this.endDocId = start;
   }
 
-  DocumentNodeRange(final int docId, final NodeId from, final NodeId to) {
-    this.start = docId;
-    this.end = docId;
-    this.from = from;
-    this.to = to;
+  DocumentNodeRange(final int docId, final NodeId fromNodeId, final NodeId toNodeId) {
+    this.startDocId = docId;
+    this.endDocId = docId;
+    this.fromNodeId = fromNodeId;
+    this.toNodeId = toNodeId;
   }
 
   /**
@@ -49,8 +48,8 @@ public class DocumentNodeRange {
       final DocumentImpl doc = i.next();
       if (next == null) {
         next = new DocumentNodeRange(doc.getDocId());
-      } else if (next.end + 1 == doc.getDocId()) {
-        next.end++;
+      } else if (next.endDocId + 1 == doc.getDocId()) {
+        next.endDocId++;
       } else {
         ranges.add(next);
         next = new DocumentNodeRange(doc.getDocId());
@@ -77,7 +76,7 @@ public class DocumentNodeRange {
           to = contextNodeId;
           break;
         case FOLLOWING_SIBLING_AXIS:
-          from = contextNodeId;
+          from = contextNodeId.nextSibling();
           to = rightmost;
           break;
         default:

@@ -50,8 +50,8 @@ public class NativeStructuralIndexWorkerTest {
 
         assertEquals(1, ranges.size());
 
-        assertEquals(1, ranges.get(0).start);
-        assertEquals(6, ranges.get(0).end);
+        assertEquals(1, ranges.get(0).startDocId);
+        assertEquals(6, ranges.get(0).endDocId);
     }
 
     @Test
@@ -62,20 +62,20 @@ public class NativeStructuralIndexWorkerTest {
 
         assertEquals(5, ranges.size());
 
-        assertEquals(1, ranges.get(0).start);
-        assertEquals(6, ranges.get(0).end);
+        assertEquals(1, ranges.get(0).startDocId);
+        assertEquals(6, ranges.get(0).endDocId);
 
-        assertEquals(88, ranges.get(1).start);
-        assertEquals(89, ranges.get(1).end);
+        assertEquals(88, ranges.get(1).startDocId);
+        assertEquals(89, ranges.get(1).endDocId);
 
-        assertEquals(3, ranges.get(2).start);
-        assertEquals(6, ranges.get(2).end);
+        assertEquals(3, ranges.get(2).startDocId);
+        assertEquals(6, ranges.get(2).endDocId);
 
-        assertEquals(77, ranges.get(3).start);
-        assertEquals(77, ranges.get(3).end);
+        assertEquals(77, ranges.get(3).startDocId);
+        assertEquals(77, ranges.get(3).endDocId);
 
-        assertEquals(10, ranges.get(4).start);
-        assertEquals(12, ranges.get(4).end);
+        assertEquals(10, ranges.get(4).startDocId);
+        assertEquals(12, ranges.get(4).endDocId);
     }
 
     @Test
@@ -88,8 +88,8 @@ public class NativeStructuralIndexWorkerTest {
 
         assertEquals(1, ranges.size());
 
-        assertEquals(6574, ranges.get(0).start);
-        assertEquals(6574, ranges.get(0).end);
+        assertEquals(6574, ranges.get(0).startDocId);
+        assertEquals(6574, ranges.get(0).endDocId);
     }
 
     @Test
@@ -100,11 +100,11 @@ public class NativeStructuralIndexWorkerTest {
 
         assertEquals(2, ranges.size());
 
-        assertEquals(6574, ranges.get(0).start);
-        assertEquals(6574, ranges.get(0).end);
+        assertEquals(6574, ranges.get(0).startDocId);
+        assertEquals(6574, ranges.get(0).endDocId);
 
-        assertEquals(11, ranges.get(1).start);
-        assertEquals(15, ranges.get(1).end);
+        assertEquals(11, ranges.get(1).startDocId);
+        assertEquals(15, ranges.get(1).endDocId);
     }
 
     @Test
@@ -115,11 +115,11 @@ public class NativeStructuralIndexWorkerTest {
 
         assertEquals(2, ranges.size());
 
-        assertEquals(11, ranges.get(0).start);
-        assertEquals(15, ranges.get(0).end);
+        assertEquals(11, ranges.get(0).startDocId);
+        assertEquals(15, ranges.get(0).endDocId);
 
-        assertEquals(6574, ranges.get(1).start);
-        assertEquals(6574, ranges.get(1).end);
+        assertEquals(6574, ranges.get(1).startDocId);
+        assertEquals(6574, ranges.get(1).endDocId);
     }
 
     @Test
@@ -130,17 +130,17 @@ public class NativeStructuralIndexWorkerTest {
 
         assertEquals(4, ranges.size());
 
-        assertEquals(6574, ranges.get(0).start);
-        assertEquals(6574, ranges.get(0).end);
+        assertEquals(6574, ranges.get(0).startDocId);
+        assertEquals(6574, ranges.get(0).endDocId);
 
-        assertEquals(200, ranges.get(1).start);
-        assertEquals(200, ranges.get(1).end);
+        assertEquals(200, ranges.get(1).startDocId);
+        assertEquals(200, ranges.get(1).endDocId);
 
-        assertEquals(12, ranges.get(2).start);
-        assertEquals(12, ranges.get(2).end);
+        assertEquals(12, ranges.get(2).startDocId);
+        assertEquals(12, ranges.get(2).endDocId);
 
-        assertEquals(24, ranges.get(3).start);
-        assertEquals(24, ranges.get(3).end);
+        assertEquals(24, ranges.get(3).startDocId);
+        assertEquals(24, ranges.get(3).endDocId);
     }
 
     private DocumentSet documentIdSet(final List<Integer> documentIds) {

@@ -63,13 +63,13 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     private final static Logger LOG = LogManager.getLogger(NativeStructuralIndexWorker.class);
 
-    private NativeStructuralIndex index;
+    private final NativeStructuralIndex index;
     private ReindexMode mode = ReindexMode.STORE;
     private DocumentImpl document;
 
     //TODO throw away this Comparator or use a different data struct here when we have moved
     //nameType out of QName
-    private Map<QName, List<NodeProxy>> pending = new TreeMap<>(new TypedQNameComparator());
+    private final Map<QName, List<NodeProxy>> pending = new TreeMap<>(new TypedQNameComparator());
 
     public NativeStructuralIndexWorker(NativeStructuralIndex index) {
         this.index = index;
@@ -108,8 +108,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
         // for each document id range, scan the index to find matches
         for (final DocumentNodeRange range : getDocIdRanges(docs)) {
-            final byte[] fromKey = computeKey(type, qname, range.start);
-            final byte[] toKey = computeKey(type, qname, range.end + 1);
+            final byte[] fromKey = computeKey(type, qname, range.startDocId);
+            final byte[] toKey = computeKey(type, qname, range.endDocId + 1);
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
 
             try(final ManagedLock<ReentrantLock> btreeLock = index.lockManager.acquireBtreeReadLock(index.btree.getLockName())) {
@@ -132,9 +132,9 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
         // for each document id range, scan the index to find matches
         for (final DocumentNodeRange range : ranges) {
-            final byte[] fromKey = computeKey(type, qname, range.start, range.from);
-            final byte[] toKey = range.to == null ? computeKey(type, qname, range.end + 1) :
-              computeKey(type, qname, range.end, range.to);
+            final byte[] fromKey = computeKey(type, qname, range.startDocId, range.fromNodeId);
+            final byte[] toKey = range.toNodeId == null ? computeKey(type, qname, range.endDocId + 1) :
+              computeKey(type, qname, range.endDocId, range.toNodeId);
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
 
             try(final ManagedLock<ReentrantLock> btreeLock = index.lockManager.acquireBtreeReadLock(index.btree.getLockName())) {
@@ -338,7 +338,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         DocumentImpl doc;
         int contextId;
         NewArrayNodeSet result;
-        boolean selfAsContext = false;
+        boolean selfAsContext;
         Expression parent;
 
         FindDescendantsCallback(byte type, int axis, QName qname, int contextId, NewArrayNodeSet result, Expression parent) {
@@ -439,7 +439,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return insert ? null : node;
     }
 
-    private NativeStructuralStreamListener listener = new NativeStructuralStreamListener();
+    private final NativeStructuralStreamListener listener = new NativeStructuralStreamListener();
     
     public StreamListener getListener() {
         return listener;
@@ -464,7 +464,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
     protected void removeSome() {
-        if (pending.size() == 0) {
+        if (pending.isEmpty()) {
             return;
         }
 
@@ -695,14 +695,6 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return data;
     }
 
-    private byte[] computeKey(byte type, int documentId) {
-    	final byte[] data = new byte[5];
-
-        data[0] = type;
-        ByteConversion.intToByteH(documentId, data, 1);
-        return data;
-    }
-    
     private byte[] computeDocKey(byte type, int documentId, QName qname) {
         final SymbolTable symbols = index.getBrokerPool().getSymbols();
         final short sym = symbols.getSymbol(qname.getLocalPart());
