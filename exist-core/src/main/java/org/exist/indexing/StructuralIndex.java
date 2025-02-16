@@ -50,7 +50,7 @@ public interface StructuralIndex {
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector);
 
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent);
-    public NodeSet findElementsByTagName(byte type, DocumentSet docs, List<DocumentNodeRange> ranges, QName qname, Expression parent);
+    public NodeSet findElementsByTagName(byte type, DocumentSet docs, List<DocumentNodeRange> ranges, QName qname, NodeSelector selector, Expression parent);
 
     public NodeSet findDescendantsByTagName(byte type, QName qname, int axis,
         DocumentSet docs, NodeSet contextSet,  int contextId);
