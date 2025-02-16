@@ -126,12 +126,12 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
     @Override
-    public NodeSet findElementsByTagName(byte type, DocumentSet docs, List<DocumentNodeRange> ranges, QName qname, NodeSelector selector, Expression parent) {
+    public NodeSet findElementsByTagName(byte type, DocumentSet docs, List<DocumentNodeRange> ranges, QName qname, Expression parent) {
         final NewArrayNodeSet result = new NewArrayNodeSet();
-        final FindElementsCallback callback = new FindElementsCallback(type, qname, result, docs, selector, parent);
 
         // for each document id range, scan the index to find matches
         for (final DocumentNodeRange range : ranges) {
+            final FindElementsCallback callback = new FindElementsCallback(type, qname, result, docs, range.nodeSelector, parent);
             final byte[] fromKey = computeKey(type, qname, range.startDocId, range.fromNodeId);
             final byte[] toKey = range.toNodeId == null ? computeKey(type, qname, range.endDocId + 1) :
               computeKey(type, qname, range.endDocId, range.toNodeId);

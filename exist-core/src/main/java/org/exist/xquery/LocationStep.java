@@ -891,7 +891,7 @@ public class LocationStep extends Step {
         } else {
             // TODO : no test on preloaded data ?
             final DocumentSet docs = getDocumentSet(contextSet);
-            final List<DocumentNodeRange> ranges = DocumentNodeRange.fromSiblingContextSet(contextSet, axis);
+            final List<DocumentNodeRange> ranges = DocumentNodeRange.fromSiblingContextSet(contextSet, contextId, axis);
             synchronized (context) {
                 final StructuralIndex index = context.getBroker().getStructuralIndex();
                 if (context.getProfiler().isEnabled()) {
@@ -902,16 +902,7 @@ public class LocationStep extends Step {
                       "Using structural index '" + index.toString()
                         + "'");
                 }
-                final NodeSet resultSet = index.findElementsByTagName(ElementValue.ELEMENT, docs, ranges, test.getName(), null, this);
-                resultSet.setKnownSorted(true);
-                switch (axis) {
-                    case Constants.PRECEDING_SIBLING_AXIS:
-                        return resultSet.selectPrecedingSiblings(contextSet, contextId);
-                    case Constants.FOLLOWING_SIBLING_AXIS:
-                        return resultSet.selectFollowingSiblings(contextSet, contextId);
-                    default:
-                        throw new IllegalArgumentException("Unsupported axis specified");
-                }
+                return index.findElementsByTagName(ElementValue.ELEMENT, docs, ranges, test.getName(), this);
             }
         }
     }
