@@ -239,8 +239,8 @@ public abstract class AbstractNodeIterator implements INodeIterator {
                 }
                 rec = db.findRecord(addr);
             }
-            pageNum = rec.getPage().getPageNum();
-            page = rec.getPage();
+            pageNum = rec.page.getPageNum();
+            page = rec.page;
             //Position the stream at the very beginning of the record
             offset = rec.offset - DOMFile.LENGTH_TID;
             node = null;
@@ -249,10 +249,10 @@ public abstract class AbstractNodeIterator implements INodeIterator {
             final RecordPos rec = db.findRecord(startAddress);
             if(rec == null)
                 {throw new IOException("Node not found at specified address.");}
-            pageNum = rec.getPage().getPageNum();
+            pageNum = rec.page.getPageNum();
             //Position the stream at the very beginning of the record
             offset = rec.offset - DOMFile.LENGTH_TID;
-            page = rec.getPage();
+            page = rec.page;
             startAddress = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
             return true;
         } else if (pageNum != Page.NO_PAGE) {

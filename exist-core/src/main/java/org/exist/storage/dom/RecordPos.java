@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,42 +34,35 @@ import org.exist.storage.dom.DOMFile.DOMPage;
 
 public final class RecordPos {
 
-    private DOMPage page;
+    DOMPage page;
     int offset;
-    private short tupleID;
-    private boolean isLink = false;
+    short tupleId;
+    boolean link;
 
-    public RecordPos(int offset, DOMPage page, short tupleID) {
+    public RecordPos(final int offset, final DOMPage page, final short tupleId) {
+        this(offset, page, tupleId, false);
+    }
+
+    public RecordPos(final RecordPos other) {
+        this(other.offset, other.page, other.tupleId, other.link);
+    }
+
+    public RecordPos(final int offset, final DOMPage page, final short tupleId, final boolean link) {
         this.offset = offset;
         this.page = page;
-        this.tupleID = tupleID;
+        this.tupleId = tupleId;
+        this.link = link;
     }
 
-    public RecordPos(int offset, DOMPage page, short tupleID, boolean isLink) {
-        this.offset = offset;
-        this.page = page;
-        this.tupleID = tupleID;
-        this.isLink = isLink;
+    public void set(final RecordPos other) {
+        this.page = other.page;
+        this.offset = other.offset;
+        this.tupleId = other.tupleId;
+        this.link = other.link;
     }
 
-    public DOMPage getPage() {
-        return page;
-    }
-
-    public void setPage(DOMPage page) {
-        this.page = page;
-    }
-
-    public short getTupleID() {
-        return tupleID;
-    }
-
-    //Strange : only one call to this method
-    public void setTupleID(short tupleID) {
-        this.tupleID = tupleID;
-    }
-
-    public boolean isLink() {
-        return isLink;
+    @Override
+    public String toString() {
+        return "RecordPos { offset: " + offset + ", tupleId: " + tupleId + ", link: " + link + "}";
     }
 }

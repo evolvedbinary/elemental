@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -92,10 +101,10 @@ public class RawNodeIterator implements IRawNodeIterator {
                     throw new IOException("Node not found: " + e.getMessage());
                 }
             }
-            pageNum = rec.getPage().getPageNum();
+            pageNum = rec.page.getPageNum();
             //Position the stream at the very beginning of the record
             offset = rec.offset - DOMFile.LENGTH_TID;
-            page = rec.getPage();
+            page = rec.page;
         } catch (final LockException e) {
             throw new IOException("Exception while scanning document: " + e.getMessage());
         }
