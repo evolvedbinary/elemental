@@ -29,7 +29,8 @@ import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
 import org.exist.storage.Signatures;
 import org.exist.storage.btree.Value;
-import org.exist.storage.dom.AbstractRawNodeIterator;
+import org.exist.storage.dom.ManualLockRawNodeIterator;
+import org.exist.storage.lock.ManagedLock;
 import org.exist.util.ByteConversion;
 import org.exist.util.XMLString;
 import org.exist.util.serializer.AttrList;
@@ -47,6 +48,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, ExtendedXMLStreamReader {
 
@@ -59,7 +61,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
     // members which don't (generally) change!
     private DBBroker broker;
     private DocumentImpl document;
-    private final AbstractRawNodeIterator iterator;
+    private final ManualLockRawNodeIterator iterator;
     private boolean reportAttributes;
 
     // mutable members which hold the current state of the stream
@@ -77,7 +79,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
     private final XMLString text = new XMLString(256);
 
 
-    public EmbeddedXMLStreamReader(final DBBroker broker, final DocumentImpl document, final AbstractRawNodeIterator iterator, @Nullable final NodeHandle origin, final boolean reportAttributes)
+    public EmbeddedXMLStreamReader(final DBBroker broker, final DocumentImpl document, final ManualLockRawNodeIterator iterator, @Nullable final NodeHandle origin, final boolean reportAttributes)
             throws XMLStreamException {
         this.broker = broker;
         this.document = document;
@@ -88,23 +90,35 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
 
     @Override
     public void reposition(final DBBroker broker, final NodeHandle node, final boolean reportAttributes) throws IOException {
-        this.broker = broker;
-        // Seeking to a node with unknown address will reuse this reader, so do it before setting all
-        // the fields otherwise they could get overwritten.
-        iterator.seek(node);
-        reset();
-        this.current = null;
-        this.previous = null;
-        this.elementStack.clear();
-        this.state = BEFORE;
-        this.consumedState = false;
-        this.reportAttributes = reportAttributes;
-        this.document = node.getOwnerDocument();
-        this.origin = node;
+        try (final ManagedLock<ReentrantLock> dbLock = iterator.acquireReadLock()) {
+            this.broker = broker;
+            // Seeking to a node with unknown address will reuse this reader, so do it before setting all
+            // the fields otherwise they could get overwritten.
+            iterator.seek(node);
+            reset();
+            this.current = null;
+            this.previous = null;
+            this.elementStack.clear();
+            this.state = BEFORE;
+            this.consumedState = false;
+            this.reportAttributes = reportAttributes;
+            this.document = node.getOwnerDocument();
+            this.origin = node;
+        }
     }
 
     @Override
     public boolean hasNext() throws XMLStreamException {
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            return hasNextLocked();
+        }
+    }
+
+    /**
+     * LP == iterator.ReadLock
+     * @throws XMLStreamException
+     */
+    private boolean hasNextLocked() throws XMLStreamException {
         if (consumedState || state == BEFORE) {
             getNext();
 
@@ -121,13 +135,28 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
 
     @Override
     public int next() throws XMLStreamException {
-        if (!hasNext()) {
+        try (final ManagedLock<ReentrantLock> dbLock = iterator.acquireReadLock()) {
+            return nextLocked();
+        }
+    }
+
+    /**
+     * LP == iterator.ReadLock
+     * @throws XMLStreamException
+     */
+    private int nextLocked() throws XMLStreamException {
+        if (!hasNextLocked()) {
             throw new IllegalStateException("hasNext()==false");
         }
         consumedState = true;  // mark that we have consumed the current state
         return state;
     }
 
+
+    /**
+     * LP == iterator.ReadLock
+     * @throws XMLStreamException
+     */
     private void getNext() throws XMLStreamException {
         if(state != END_ELEMENT) {
             previous = current;
@@ -165,10 +194,12 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
 
     @Override
     public void filter(final StreamFilter filter) throws XMLStreamException {
-        while (hasNext()) {
-            next();
-            if (!filter.accept(this)) {
-                break;
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            while (hasNextLocked()) {
+                nextLocked();
+                if (!filter.accept(this)) {
+                    break;
+                }
             }
         }
     }
@@ -200,6 +231,10 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         readNodeId();
     }
 
+    /**
+     * LP == iterator.ReadLock
+     * @throws XMLStreamException
+     */
     private void skipAttributes() throws XMLStreamException {
         if(attributes == null) {
             // attributes were not yet read. skip them...
@@ -212,6 +247,10 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         }
     }
 
+    /**
+     * LP == iterator.ReadLock
+     * @throws XMLStreamException
+     */
     private void readAttributes() {
         if(attributes == null) {
             final ElementEvent parent = elementStack.peek();
@@ -352,14 +391,16 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
 
     @Override
     public String getAttributeValue(final String namespaceURI, final String localName) {
-        readAttributes();
-        for(int i = 0; i < attributes.getLength(); i++) {
-            final org.exist.dom.QName qn = attributes.getQName(i);
-            if(qn.getNamespaceURI().equals(namespaceURI) && qn.getLocalPart().equals(localName)) {
-                return attributes.getValue(i);
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            readAttributes();
+            for (int i = 0; i < attributes.getLength(); i++) {
+                final org.exist.dom.QName qn = attributes.getQName(i);
+                if (qn.getNamespaceURI().equals(namespaceURI) && qn.getLocalPart().equals(localName)) {
+                    return attributes.getValue(i);
+                }
             }
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -370,99 +411,115 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
 
     @Override
     public javax.xml.namespace.QName getAttributeName(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getQName(index).toJavaQName();
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getQName(index).toJavaQName();
     }
 
     @Override
     public org.exist.dom.QName getAttributeQName(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if(index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getQName(index);
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getQName(index);
     }
 
     @Override
     public String getAttributeNamespace(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getQName(index).getNamespaceURI();
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getQName(index).getNamespaceURI();
     }
 
     @Override
     public String getAttributeLocalName(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getQName(index).getLocalPart();
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getQName(index).getLocalPart();
     }
 
     @Override
     public String getAttributePrefix(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getQName(index).getPrefix();
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getQName(index).getPrefix();
     }
 
     @Override
     public String getAttributeType(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            final int type = attributes.getType(index);
+            return AttrImpl.getAttributeType(type);
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        final int type = attributes.getType(index);
-        return AttrImpl.getAttributeType(type);
     }
 
     @Override
     public String getAttributeValue(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getValue(index);
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getValue(index);
     }
 
     @Override
     public NodeId getAttributeId(final int index) {
-        if (state != START_ELEMENT) {
-            throw new IllegalStateException("Cursor is not at an element");
+        try (final ManagedLock<ReentrantLock> domFileLock = iterator.acquireReadLock()) {
+            if (state != START_ELEMENT) {
+                throw new IllegalStateException("Cursor is not at an element");
+            }
+            readAttributes();
+            if (index > attributes.getLength()) {
+                throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
+            }
+            return attributes.getNodeId(index);
         }
-        readAttributes();
-        if(index > attributes.getLength()) {
-            throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
-        }
-        return attributes.getNodeId(index);
     }
 
     @Override

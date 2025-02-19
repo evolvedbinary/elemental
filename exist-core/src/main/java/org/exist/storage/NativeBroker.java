@@ -495,7 +495,7 @@ public class NativeBroker extends DBBroker {
     public IEmbeddedXMLStreamReader getXMLStreamReader(final NodeHandle node, final boolean reportAttributes)
             throws IOException, XMLStreamException {
         if(streamReader == null) {
-            final AbstractRawNodeIterator iterator = new GranularRawNodeIterator(this, domDb, node);
+            final ManualLockRawNodeIterator iterator = new ManualLockRawNodeIterator(this, domDb, node);
             streamReader = new EmbeddedXMLStreamReader(this, node.getOwnerDocument(), iterator, node, reportAttributes);
         } else {
             streamReader.reposition(this, node, reportAttributes);
@@ -506,7 +506,7 @@ public class NativeBroker extends DBBroker {
     @Override
     public IEmbeddedXMLStreamReader newXMLStreamReader(final NodeHandle node, final boolean reportAttributes)
             throws IOException, XMLStreamException {
-        final GranularRawNodeIterator iterator = new GranularRawNodeIterator(this, domDb, node);
+        final ManualLockRawNodeIterator iterator = new ManualLockRawNodeIterator(this, domDb, node);
         return new EmbeddedXMLStreamReader(this, node.getOwnerDocument(), iterator, null, reportAttributes);
     }
 
