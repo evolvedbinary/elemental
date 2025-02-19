@@ -50,7 +50,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import java.io.PrintWriter;
 
 /**
- *
+ * Metrics of a tree.
  */
 public class TreeMetrics {
 
@@ -59,15 +59,16 @@ public class TreeMetrics {
     private int dataPages = 0;
     private String btreeName;
 
-    public TreeMetrics(String name) {
-        this.btreeName = name;
+    public TreeMetrics(final String btreeName) {
+        this.btreeName = btreeName;
     }
 
-    public void addPage(int status) {
-        if (status == BTree.BRANCH)
-            {addInnerPage();}
-        else
-            {addLeafPage();}
+    public void addPage(final PageStatus pageStatus) {
+        if (pageStatus == PageStatus.BRANCH) {
+            addInnerPage();
+        } else {
+            addLeafPage();
+        }
     }
 
     public void addLeafPage() {
@@ -82,7 +83,7 @@ public class TreeMetrics {
         ++dataPages;
     }
 
-    public void print(PrintWriter writer) {
+    public void print(final PrintWriter writer) {
         writer.println("BTree tree metrics for " + btreeName);
         writer.println("# inner pages: " + innerPages);
         writer.println("# leaf pages: " + leafPages);

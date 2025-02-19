@@ -427,7 +427,7 @@ public class NativeBroker extends DBBroker {
         return domDb;
     }
 
-    public BTree getStorage(final byte id) {
+    public AbstractBTree<?, ?> getStorage(final byte id) {
         //Notice that there is no entry for the symbols table
         switch(id) {
             case DOM_DBX_ID:
@@ -452,7 +452,7 @@ public class NativeBroker extends DBBroker {
     @Override
     public void backupToArchive(final RawDataBackup backup) throws IOException, EXistException {
         for(final byte i : ALL_STORAGE_FILES) {
-            final Paged paged = getStorage(i);
+            final AbstractPagedFile<?, ?> paged = getStorage(i);
             if(paged == null) {
                 LOG.warn("Storage file is null: {}", i);
                 continue;
@@ -3704,7 +3704,7 @@ public class NativeBroker extends DBBroker {
     }
 
     protected void rebuildIndex(final byte indexId) {
-        final BTree btree = getStorage(indexId);
+        final AbstractBTree<?, ?> btree = getStorage(indexId);
         try(final ManagedLock<ReentrantLock> btreeLock = lockManager.acquireBtreeWriteLock(btree.getLockName())) {
             LOG.info("Rebuilding index {}", FileUtils.fileName(btree.getFile()));
             btree.rebuild();

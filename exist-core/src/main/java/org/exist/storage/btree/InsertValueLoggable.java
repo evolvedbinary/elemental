@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,6 +35,7 @@ import java.nio.ByteBuffer;
 import org.exist.storage.DBBroker;
 import org.exist.storage.journal.LogException;
 import org.exist.storage.txn.Txn;
+import org.exist.util.HexEncoder;
 
 /**
  * Log object representing the insertion of a new btree key.
@@ -93,6 +103,6 @@ public class InsertValueLoggable extends BTAbstractLoggable {
 
     @Override
 	public String dump() {
-		return super.dump() + " - insert btree key on page: " + pageNum + ": " + Paged.hexDump(key.data());
+		return super.dump() + " - insert btree key on page: " + pageNum + ": " + HexEncoder.bytesToHex(key.data());
 	}
 }

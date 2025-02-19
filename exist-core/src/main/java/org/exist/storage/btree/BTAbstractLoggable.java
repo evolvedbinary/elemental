@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -45,7 +54,7 @@ public abstract class BTAbstractLoggable extends AbstractLoggable {
         this.broker = (NativeBroker) broker;
     }
 
-    protected BTree getStorage() {
+    protected AbstractBTree<?, ?> getStorage() {
         return broker.getStorage(fileId);
     }
 

@@ -36,10 +36,7 @@ import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
-import org.exist.storage.btree.BTree;
-import org.exist.storage.btree.BTreeException;
-import org.exist.storage.btree.Paged;
-import org.exist.storage.btree.Value;
+import org.exist.storage.btree.*;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedLock;
 import org.exist.util.ByteConversion;
@@ -118,12 +115,12 @@ public class RawNodeIterator implements IRawNodeIterator {
             db.setOwnerObject(broker);
             long backLink = 0;
             do {
-                final DOMFile.DOMFilePageHeader pageHeader = page.getPageHeader();
+                final DOMFilePageHeader pageHeader = page.getPageHeader();
                 //Next value larger than length of the current page?
                 if (offset >= pageHeader.getDataLength()) {
                     //Load next page in chain
                     long nextPage = pageHeader.getNextDataPage();
-                    if (nextPage == Paged.Page.NO_PAGE) {
+                    if (nextPage == Page.NO_PAGE) {
                         SanityCheck.TRACE("Bad link to next page " + page.page.getPageInfo() +
                             "; previous: " + pageHeader.getPreviousDataPage() +
                             "; offset = " + offset + "; lastTupleID = " + lastTupleID);
@@ -135,6 +132,7 @@ public class RawNodeIterator implements IRawNodeIterator {
                     db.addToBuffer(page);
                     offset = 0;
                 }
+
                 //Extract the tuple id
                 lastTupleID = ByteConversion.byteToShort(page.data, offset);
                 offset += DOMFile.LENGTH_TID;
@@ -158,7 +156,7 @@ public class RawNodeIterator implements IRawNodeIterator {
                     offset += DOMFile.LENGTH_ORIGINAL_LOCATION;
                 }
                 //Overflow page? load the overflow value
-                if (valueLength == DOMFile.OVERFLOW) {
+                if (valueLength == DOMFile.OVERFLOW_PAGE_DATA_LENGTH) {
                     valueLength = DOMFile.LENGTH_OVERFLOW_LOCATION;
                     final long overflow = ByteConversion.byteToLong(page.data, offset);
                     offset += DOMFile.LENGTH_OVERFLOW_LOCATION;

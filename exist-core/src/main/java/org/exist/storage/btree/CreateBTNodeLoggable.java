@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,20 +37,34 @@ import org.exist.storage.journal.LogException;
 import org.exist.storage.txn.Txn;
 
 public class CreateBTNodeLoggable extends BTAbstractLoggable {
+
+	// TODO(AR) should this be immutable - or can we reuse these objects if they are mutable
+
+	private PageStatus pageStatus;
+	private long pageNum;
+	private long parentNum;
 	
-	protected byte status;
-	protected long pageNum;
-	protected long parentNum;
-	
-	public CreateBTNodeLoggable(Txn transaction, byte fileId, byte status, long pageNum, long parentNum) {
+	public CreateBTNodeLoggable(final Txn transaction, final byte fileId, final PageStatus pageStatus, final long pageNum, final long parentNum) {
 		super(BTree.LOG_CREATE_BNODE, fileId, transaction);
 		this.pageNum = pageNum;
 		this.parentNum = parentNum;
-		this.status = status;
+		this.pageStatus = pageStatus;
 	}
 	
-	public CreateBTNodeLoggable(DBBroker broker, long transactionId) {
+	public CreateBTNodeLoggable(final DBBroker broker, final long transactionId) {
 		super(BTree.LOG_CREATE_BNODE, broker, transactionId);
+	}
+
+	public long getPageNum() {
+		return this.pageNum;
+	}
+
+	public long getParentNum() {
+		return this.parentNum;
+	}
+
+	public PageStatus getPageStatus() {
+		return this.pageStatus;
 	}
 
 	@Override
@@ -50,19 +73,19 @@ public class CreateBTNodeLoggable extends BTAbstractLoggable {
 	}
 
 	@Override
-	public void write(ByteBuffer out) {
+	public void write(final ByteBuffer out) {
         super.write(out);
-		out.put(status);
-		out.putLong(pageNum);
-		out.putLong(parentNum);
+		out.put(this.pageStatus.getValue());
+		out.putLong(this.pageNum);
+		out.putLong(this.parentNum);
 	}
 
 	@Override
-	public void read(ByteBuffer in) {
+	public void read(final ByteBuffer in) {
         super.read(in);
-		status = in.get();
-		pageNum = in.getLong();
-		parentNum = in.getLong();
+		this.pageStatus = PageStatus.fromValue(in.get());
+		this.pageNum = in.getLong();
+		this.parentNum = in.getLong();
 	}
 
 	@Override
@@ -72,6 +95,6 @@ public class CreateBTNodeLoggable extends BTAbstractLoggable {
 
 	@Override
 	public String dump() {
-		return super.dump() + " - create btree node: " + pageNum;
+		return super.dump() + " - create btree node: " + this.pageNum;
 	}
 }

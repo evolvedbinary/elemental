@@ -38,12 +38,12 @@ import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.exist.storage.btree.Paged.Page.NO_PAGE;
+import static org.exist.storage.btree.Page.NO_PAGE;
 
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongOpenHashMap;
@@ -66,12 +66,7 @@ import org.exist.storage.NativeBroker;
 import org.exist.storage.NativeBroker.NodeRef;
 import org.exist.storage.Signatures;
 import org.exist.storage.StorageAddress;
-import org.exist.storage.btree.BTree;
-import org.exist.storage.btree.BTreeCallback;
-import org.exist.storage.btree.BTreeException;
-import org.exist.storage.btree.DBException;
-import org.exist.storage.btree.IndexQuery;
-import org.exist.storage.btree.Value;
+import org.exist.storage.btree.*;
 import org.exist.storage.cache.Cache;
 import org.exist.storage.cache.Cacheable;
 import org.exist.storage.cache.LRUCache;
@@ -121,10 +116,11 @@ import org.w3c.dom.Node;
  * tuple id and length each use two bytes (short), address pointers 8 bytes (long).
  * The upper two bits of the tuple id are used to indicate the type of the record
  * (see {@link org.exist.storage.dom.ItemId}).
- * 
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
-public class DOMFile extends BTree implements Lockable {
+public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
     private static final Logger LOGSTATS = LogManager.getLogger(NativeBroker.EXIST_STATISTICS_LOGGER);
 
@@ -178,17 +174,14 @@ public class DOMFile extends BTree implements Lockable {
 
     private final LockManager lockManager;
 
-    //Page types
-    static final byte LOB = 21;
-    static final byte RECORD = 20;
-    //Data length for overflow pages
-    static final short OVERFLOW = 0;
+    /**
+     * The length of data length in overflow pages.
+     */
+    static final short OVERFLOW_PAGE_DATA_LENGTH = 0;
 
     static final long DATA_SYNC_PERIOD = 4200;
 
     private final Cache<DOMPage> dataCache;
-
-    private final BTreeFileHeader fileHeader;
 
     private Object owner = null;
 
@@ -203,11 +196,10 @@ public class DOMFile extends BTree implements Lockable {
         this.lockManager = pool.getLockManager();
         this.pages = new Reference2LongOpenHashMap<>(64);
         this.pages.defaultReturnValue(NO_PAGE);
-        fileHeader = (BTreeFileHeader)getFileHeader();
-        fileHeader.setPageCount(0);
-        fileHeader.setTotalCount(0);
-        dataCache = new LRUCache<>(getFileName(), 256, 0.0, 1.0, Cache.CacheType.DATA);
-        cacheManager.registerCache(dataCache);
+        this.fileHeader.setPageCount(0);
+        this.fileHeader.setTotalCount(0);
+        this.dataCache = new LRUCache<>(getFileName(), 256, 0.0, 1.0, Cache.CacheType.DATA);
+        this.cacheManager.registerCache(dataCache);
         final Path file = dataDir.resolve(getFileName());
         setFile(file);
         if (exists()) {
@@ -326,6 +318,10 @@ public class DOMFile extends BTree implements Lockable {
         this.currentDocument = doc;
     }
 
+    BTreeFileHeader getFileHeader() {
+        return fileHeader;
+    }
+
     /**
      * Append a value to the current page.
      * 
@@ -351,7 +347,14 @@ public class DOMFile extends BTree implements Lockable {
         }
 
         // overflow value?
-        if (value.length + LENGTH_TID + LENGTH_DATA_LENGTH > fileHeader.getWorkSize()) {
+        final int workSize;
+        final ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
+        try {
+            workSize = fileHeader.getWorkSize();
+        } finally {
+            fileHeaderReadlock.unlock();
+        }
+        if (value.length + LENGTH_TID + LENGTH_DATA_LENGTH > workSize) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Creating overflow page");
             }
@@ -415,7 +418,7 @@ public class DOMFile extends BTree implements Lockable {
         ByteConversion.shortToByte(tupleID, currentPage.data, currentPage.len);
         currentPage.len += LENGTH_TID;
         //Save data length
-        ByteConversion.shortToByte(overflowPage ? OVERFLOW : (short) valueLength,
+        ByteConversion.shortToByte(overflowPage ? OVERFLOW_PAGE_DATA_LENGTH : (short) valueLength,
             currentPage.data, currentPage.len);
         currentPage.len += LENGTH_DATA_LENGTH;
         //Save data
@@ -429,7 +432,7 @@ public class DOMFile extends BTree implements Lockable {
         return StorageAddress.createPointer((int)currentPage.getPageNum(), tupleID);
     }
 
-    private void writeToLog(final Loggable loggable, final Page page) {
+    private void writeToLog(final Loggable loggable, final Page<DOMFilePageHeader> page) {
         if(logManager.isPresent()) {
             try {
                 logManager.get().journal(loggable);
@@ -555,7 +558,14 @@ public class DOMFile extends BTree implements Lockable {
         }
         // check if we need an overflow page
         boolean isOverflow = false;
-        if (LENGTH_TID + LENGTH_DATA_LENGTH + value.length > fileHeader.getWorkSize()) {
+        int workSize;
+        ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
+        try {
+            workSize = fileHeader.getWorkSize();
+        } finally {
+            fileHeaderReadlock.unlock();
+        }
+        if (LENGTH_TID + LENGTH_DATA_LENGTH + value.length > workSize) {
             final OverflowDOMPage overflowPage = new OverflowDOMPage();
             LOG.debug("Creating overflow page: {}", overflowPage.getPageNum());
             overflowPage.write(transaction, value);
@@ -573,7 +583,7 @@ public class DOMFile extends BTree implements Lockable {
         if (ItemId.isRelocated(rec.tupleId)) {
             rec.offset += LENGTH_ORIGINAL_LOCATION;
         }
-        if (vlen == OVERFLOW) {
+        if (vlen == OVERFLOW_PAGE_DATA_LENGTH) {
             rec.offset += LENGTH_OVERFLOW_LOCATION;
         } else {
             rec.offset += vlen;
@@ -583,7 +593,13 @@ public class DOMFile extends BTree implements Lockable {
         //Can we insert in the middle of the page?
         if (rec.offset < dataLength) {
             //New value fits into the page
-            if (dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length <= fileHeader.getWorkSize()
+            fileHeaderReadlock = fileHeader.readLock();
+            try {
+                workSize = fileHeader.getWorkSize();
+            } finally {
+                fileHeaderReadlock.unlock();
+            }
+            if (dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length <= workSize
                 && rec.page.getPageHeader().hasRoom()) {
                 final int end = rec.offset + LENGTH_TID + LENGTH_DATA_LENGTH + value.length;
                 System.arraycopy(rec.page.data, rec.offset, rec.page.data, end,
@@ -594,8 +610,14 @@ public class DOMFile extends BTree implements Lockable {
             } else {
                 rec = splitDataPage(transaction, rec);
                 //Still not enough free space: create a new page
+                fileHeaderReadlock = fileHeader.readLock();
+                try {
+                    workSize = fileHeader.getWorkSize();
+                } finally {
+                    fileHeaderReadlock.unlock();
+                }
                 if (rec.offset + LENGTH_TID + LENGTH_DATA_LENGTH + 
-                        value.length > fileHeader.getWorkSize() ||
+                        value.length > workSize ||
                         !rec.page.getPageHeader().hasRoom()) {
                     final DOMPage newPage = new DOMPage();
                     final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
@@ -611,9 +633,9 @@ public class DOMFile extends BTree implements Lockable {
                     newPageHeader.setPrevDataPage(rec.page.getPageNum());
                     if (transaction != null && isRecoveryEnabled()) {
                         final UpdateHeaderLoggable loggable = new UpdateHeaderLoggable(
-                            transaction, rec.page.getPageHeader().getPreviousDataPage(),
-                            rec.page.getPageNum(), newPage.getPageNum(),
-                            rec.page.getPageHeader().getPreviousDataPage(),
+                            transaction, rec.page.getPageHeader().getPreviousDataPage(), 
+                            rec.page.getPageNum(), newPage.getPageNum(), 
+                            rec.page.getPageHeader().getPreviousDataPage(), 
                             rec.page.getPageHeader().getNextDataPage());
                         writeToLog(loggable, rec.page.page);
                     }
@@ -647,54 +669,64 @@ public class DOMFile extends BTree implements Lockable {
                 }
             }
         //The value doesn't fit into page : create new page
-        } else if (dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length > 
-            fileHeader.getWorkSize() || !rec.page.getPageHeader().hasRoom()) {
-            final DOMPage newPage = new DOMPage();
-            final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
-            LOG.debug("Creating new page: {}", newPage.getPageNum());
-            if (transaction != null && isRecoveryEnabled()) {
-                final CreatePageLoggable loggable = new CreatePageLoggable(
-                    transaction, rec.page.getPageNum(),
-                    newPage.getPageNum(), rec.page.getPageHeader().getNextDataPage());
-                writeToLog(loggable, newPage.page);
-            }
-            final long nextPageNum = rec.page.getPageHeader().getNextDataPage();
-            newPageHeader.setNextDataPage(nextPageNum);
-            newPageHeader.setPrevDataPage(rec.page.getPageNum());
-            if (transaction != null && isRecoveryEnabled()) {
-                final DOMFilePageHeader pageHeader = rec.page.getPageHeader();
-                final UpdateHeaderLoggable loggable = 
-                    new UpdateHeaderLoggable(transaction, pageHeader.getPreviousDataPage(), 
-                        rec.page.getPageNum(), newPage.getPageNum(),
-                        pageHeader.getPreviousDataPage(), pageHeader.getNextDataPage());
-                writeToLog(loggable, rec.page.page);
-            }
-            rec.page.getPageHeader().setNextDataPage(newPage.getPageNum());
-            if (nextPageNum != NO_PAGE) {
-                final DOMPage nextPage = getDOMPage(nextPageNum);
-                final DOMFilePageHeader nextPageHeader = nextPage.getPageHeader();
-                if (transaction != null && isRecoveryEnabled()) {
-                    final UpdateHeaderLoggable loggable = 
-                        new UpdateHeaderLoggable(transaction, newPage.getPageNum(), 
-                            nextPage.getPageNum(), nextPageHeader.getNextDataPage(), 
-                            nextPageHeader.getPreviousDataPage(), nextPageHeader.getNextDataPage());
-                    writeToLog(loggable, nextPage.page);
-                }
-                nextPageHeader.setPrevDataPage(newPage.getPageNum());
-                nextPage.setDirty(true);
-                dataCache.add(nextPage);
-            }
-            rec.page.setDirty(true);
-            dataCache.add(rec.page);
-            //Switch record to new page
-            rec.page = newPage;
-            rec.offset = 0;
-            rec.page.len = LENGTH_TID + LENGTH_DATA_LENGTH + value.length;
-            rec.page.getPageHeader().setDataLength(rec.page.len);
-        //Append the value
         } else {
-            rec.page.len = dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length;
-            rec.page.getPageHeader().setDataLength(rec.page.len);
+
+            fileHeaderReadlock = fileHeader.readLock();
+            try {
+                workSize = fileHeader.getWorkSize();
+            } finally {
+                fileHeaderReadlock.unlock();
+            }
+
+            if (dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length >
+                workSize || !rec.page.getPageHeader().hasRoom()) {
+                final DOMPage newPage = new DOMPage();
+                final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
+                LOG.debug("Creating new page: {}", newPage.getPageNum());
+                if (transaction != null && isRecoveryEnabled()) {
+                    final CreatePageLoggable loggable = new CreatePageLoggable(
+                        transaction, rec.page.getPageNum(),
+                        newPage.getPageNum(), rec.page.getPageHeader().getNextDataPage());
+                    writeToLog(loggable, newPage.page);
+                }
+                final long nextPageNum = rec.page.getPageHeader().getNextDataPage();
+                newPageHeader.setNextDataPage(nextPageNum);
+                newPageHeader.setPrevDataPage(rec.page.getPageNum());
+                if (transaction != null && isRecoveryEnabled()) {
+                    final DOMFilePageHeader pageHeader = rec.page.getPageHeader();
+                    final UpdateHeaderLoggable loggable =
+                        new UpdateHeaderLoggable(transaction, pageHeader.getPreviousDataPage(),
+                            rec.page.getPageNum(), newPage.getPageNum(),
+                            pageHeader.getPreviousDataPage(), pageHeader.getNextDataPage());
+                    writeToLog(loggable, rec.page.page);
+                }
+                rec.page.getPageHeader().setNextDataPage(newPage.getPageNum());
+                if (nextPageNum != NO_PAGE) {
+                    final DOMPage nextPage = getDOMPage(nextPageNum);
+                    final DOMFilePageHeader nextPageHeader = nextPage.getPageHeader();
+                    if (transaction != null && isRecoveryEnabled()) {
+                        final UpdateHeaderLoggable loggable =
+                            new UpdateHeaderLoggable(transaction, newPage.getPageNum(),
+                                nextPage.getPageNum(), nextPageHeader.getNextDataPage(),
+                                nextPageHeader.getPreviousDataPage(), nextPageHeader.getNextDataPage());
+                        writeToLog(loggable, nextPage.page);
+                    }
+                    nextPageHeader.setPrevDataPage(newPage.getPageNum());
+                    nextPage.setDirty(true);
+                    dataCache.add(nextPage);
+                }
+                rec.page.setDirty(true);
+                dataCache.add(rec.page);
+                //Switch record to new page
+                rec.page = newPage;
+                rec.offset = 0;
+                rec.page.len = LENGTH_TID + LENGTH_DATA_LENGTH + value.length;
+                rec.page.getPageHeader().setDataLength(rec.page.len);
+                //Append the value
+            } else {
+                rec.page.len = dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length;
+                rec.page.getPageHeader().setDataLength(rec.page.len);
+            }
         }
         final short tupleID = rec.page.getPageHeader().getNextTupleID();
         if (transaction != null && isRecoveryEnabled()) {
@@ -705,7 +737,7 @@ public class DOMFile extends BTree implements Lockable {
         ByteConversion.shortToByte(tupleID, rec.page.data, rec.offset);
         rec.offset += LENGTH_TID;
         //Write value length
-        ByteConversion.shortToByte(isOverflow ? OVERFLOW : (short) value.length,
+        ByteConversion.shortToByte(isOverflow ? OVERFLOW_PAGE_DATA_LENGTH : (short) value.length,
             rec.page.data, rec.offset);
         rec.offset += LENGTH_DATA_LENGTH;
         //Write data
@@ -764,7 +796,14 @@ public class DOMFile extends BTree implements Lockable {
                 rec.page.getPageNum(), rec.offset, oldData, oldDataLen);
             writeToLog(loggable, rec.page.page);
         }
-        rec.page.data = new byte[fileHeader.getWorkSize()];
+        int workSize;
+        ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
+        try {
+            workSize = fileHeader.getWorkSize();
+        } finally {
+            fileHeaderReadlock.unlock();
+        }
+        rec.page.data = new byte[workSize];
         System.arraycopy(oldData, 0, rec.page.data, 0, rec.offset);
         //The old rec.page now contains a copy of the data up to the split point
         rec.page.len = rec.offset;
@@ -790,8 +829,14 @@ public class DOMFile extends BTree implements Lockable {
             pos += LENGTH_TID;
             //This is already a link, so we just copy it
             if (ItemId.isLink(tupleID)) {
+                fileHeaderReadlock = fileHeader.readLock();
+                try {
+                    workSize = fileHeader.getWorkSize();
+                } finally {
+                    fileHeaderReadlock.unlock();
+                }
                 /* No room in the old page, append a new one */
-                if (rec.page.len + LENGTH_TID + LENGTH_FORWARD_LOCATION > fileHeader.getWorkSize()) {
+                if (rec.page.len + LENGTH_TID + LENGTH_FORWARD_LOCATION > workSize) {
                     final DOMPage newPage = new DOMPage();
                     final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                     if (transaction != null && isRecoveryEnabled()) {
@@ -800,7 +845,7 @@ public class DOMFile extends BTree implements Lockable {
                             pageHeader.getNextDataPage(), pageHeader.getCurrentTupleID());
                         writeToLog(loggable, firstSplitPage.page);
                         loggable = new UpdateHeaderLoggable(transaction,
-                            pageHeader.getPreviousDataPage(), rec.page.getPageNum(),
+                            pageHeader.getPreviousDataPage(), rec.page.getPageNum(), 
                             newPage.getPageNum(), pageHeader.getPreviousDataPage(),
                             pageHeader.getNextDataPage());
                         writeToLog(loggable, nextSplitPage.page);
@@ -839,10 +884,16 @@ public class DOMFile extends BTree implements Lockable {
             pos += LENGTH_DATA_LENGTH;
             //If this is an overflow page, the real data length is always
             //LENGTH_LINK byte for the page number of the overflow page
-            final short realLen = (vlen == OVERFLOW ? LENGTH_OVERFLOW_LOCATION : vlen);
+            final short realLen = (vlen == OVERFLOW_PAGE_DATA_LENGTH ? LENGTH_OVERFLOW_LOCATION : vlen);
             //Check if we have room in the current split page
+            fileHeaderReadlock = fileHeader.readLock();
+            try {
+                workSize = fileHeader.getWorkSize();
+            } finally {
+                fileHeaderReadlock.unlock();
+            }
             if (nextSplitPage.len + LENGTH_TID + LENGTH_DATA_LENGTH +
-                    LENGTH_ORIGINAL_LOCATION + realLen > fileHeader.getWorkSize()) {
+                    LENGTH_ORIGINAL_LOCATION + realLen > workSize) {
                 //Not enough room in the split page: append a new page
                 final DOMPage newPage = new DOMPage();
                 final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
@@ -934,7 +985,13 @@ public class DOMFile extends BTree implements Lockable {
             // been relocated before.
             if (!ItemId.isRelocated(tupleID)) {
                 // the link doesn't fit into the old page. Append a new page
-                if (rec.page.len + LENGTH_TID + LENGTH_FORWARD_LOCATION > fileHeader.getWorkSize()) {
+                fileHeaderReadlock = fileHeader.readLock();
+                try {
+                    workSize = fileHeader.getWorkSize();
+                } finally {
+                    fileHeaderReadlock.unlock();
+                }
+                if (rec.page.len + LENGTH_TID + LENGTH_FORWARD_LOCATION > workSize) {
                     final DOMPage newPage = new DOMPage();
                     final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                     if (transaction != null && isRecoveryEnabled()) {
@@ -944,7 +1001,7 @@ public class DOMFile extends BTree implements Lockable {
                         writeToLog(loggable, firstSplitPage.page);
                         loggable = new UpdateHeaderLoggable(transaction, 
                             pageHeader.getPreviousDataPage(), 
-                            rec.page.getPageNum(), newPage.getPageNum(),
+                            rec.page.getPageNum(), newPage.getPageNum(), 
                             pageHeader.getPreviousDataPage(), pageHeader.getNextDataPage());
                         writeToLog(loggable, nextSplitPage.page);
                     }
@@ -1037,7 +1094,7 @@ public class DOMFile extends BTree implements Lockable {
         if (firstSplitPage != null) {
             if (transaction != null && isRecoveryEnabled()) {
                 final Loggable loggable = new UpdateHeaderLoggable(transaction, 
-                    pageHeader.getPreviousDataPage(), rec.page.getPageNum(),
+                    pageHeader.getPreviousDataPage(), rec.page.getPageNum(), 
                     firstSplitPage.getPageNum(), pageHeader.getPreviousDataPage(), 
                     pageHeader.getNextDataPage());
                 writeToLog(loggable, rec.page.page);
@@ -1069,11 +1126,11 @@ public class DOMFile extends BTree implements Lockable {
                 final short vlen = ByteConversion.byteToShort(page.data, pos);
                 pos += LENGTH_DATA_LENGTH;
                 if (ItemId.isRelocated(tupleID)) {
-                    pos += vlen == OVERFLOW ? 
+                    pos += vlen == OVERFLOW_PAGE_DATA_LENGTH ?
                         LENGTH_ORIGINAL_LOCATION + LENGTH_OVERFLOW_LOCATION :
                         LENGTH_ORIGINAL_LOCATION + vlen;
                 } else {
-                    pos += vlen == OVERFLOW ? LENGTH_OVERFLOW_LOCATION : vlen;
+                    pos += vlen == OVERFLOW_PAGE_DATA_LENGTH ? LENGTH_OVERFLOW_LOCATION : vlen;
                 }
             }
         }
@@ -1244,17 +1301,17 @@ public class DOMFile extends BTree implements Lockable {
     }
 
     @Override
-    public FileHeader createFileHeader(final int pageSize) {
-        return new BTreeFileHeader(1024, pageSize);
+    public BTreeFileHeader createFileHeader(final int pageSize) {
+        return new BTreeFileHeader(fileVersion, 1024, pageSize);
     }
 
     @Override
-    protected void unlinkPages(final Page page) throws IOException {
+    protected void unlinkPages(final Page<DOMFilePageHeader> page) throws IOException {
         super.unlinkPages(page);
     }
 
     @Override
-    public PageHeader createPageHeader() {
+    public DOMFilePageHeader createPageHeader() {
         return new DOMFilePageHeader();
     }
 
@@ -1505,7 +1562,7 @@ public class DOMFile extends BTree implements Lockable {
             rec.offset += LENGTH_ORIGINAL_LOCATION;
         }
         final Value value;
-        if (vlen == OVERFLOW) {
+        if (vlen == OVERFLOW_PAGE_DATA_LENGTH) {
             final long pageNo = ByteConversion.byteToLong(rec.page.data, rec.offset);
             final byte[] data = getOverflowValue(pageNo);
             value = new Value(data);
@@ -1517,9 +1574,9 @@ public class DOMFile extends BTree implements Lockable {
     }
 
     @Override
-    protected void dumpValue(final Writer writer, final Value key, final int status) throws IOException {
-        if (status == BRANCH) {
-            super.dumpValue(writer, key, status);
+    protected void dumpValue(final Writer writer, final Value key, final PageStatus pageStatus) throws IOException {
+        if (pageStatus == PageStatus.BRANCH) {
+            super.dumpValue(writer, key, pageStatus);
             return;
         }
         if (key.getLength() == 0) {
@@ -1656,7 +1713,7 @@ public class DOMFile extends BTree implements Lockable {
             }
             if (transaction != null && isRecoveryEnabled()) {
                 final RemoveEmptyPageLoggable loggable = new RemoveEmptyPageLoggable(
-                   transaction, rec.page.getPageNum(),
+                   transaction, rec.page.getPageNum(), 
                    pageHeader.getPreviousDataPage(), pageHeader.getNextDataPage());
                     writeToLog(loggable, rec.page.page);
             }
@@ -1697,7 +1754,7 @@ public class DOMFile extends BTree implements Lockable {
             realLen += LENGTH_ORIGINAL_LOCATION;
             removeLink(transaction, backLink);
         }
-        if (vlen == OVERFLOW) {
+        if (vlen == OVERFLOW_PAGE_DATA_LENGTH) {
             // remove overflow value
             isOverflow = true;
             final long overflowLink = ByteConversion.byteToLong(rec.page.data, rec.offset);
@@ -1712,9 +1769,9 @@ public class DOMFile extends BTree implements Lockable {
             realLen += LENGTH_OVERFLOW_LOCATION;
         }
         if (transaction != null && isRecoveryEnabled()) {
-            final byte[] data = new byte[vlen == OVERFLOW ? LENGTH_OVERFLOW_LOCATION : vlen];
+            final byte[] data = new byte[vlen == OVERFLOW_PAGE_DATA_LENGTH ? LENGTH_OVERFLOW_LOCATION : vlen];
             System.arraycopy(rec.page.data, rec.offset, data, 0,
-                vlen == OVERFLOW ? LENGTH_OVERFLOW_LOCATION : vlen);
+                vlen == OVERFLOW_PAGE_DATA_LENGTH ? LENGTH_OVERFLOW_LOCATION : vlen);
             final RemoveValueLoggable loggable = new RemoveValueLoggable(transaction,
                rec.page.getPageNum(), rec.tupleId, startOffset, data, isOverflow, backLink);
             writeToLog(loggable, rec.page.page);
@@ -2064,7 +2121,7 @@ public class DOMFile extends BTree implements Lockable {
         byte[] data = rec.page.data;
         int readOffset = rec.offset;
         boolean inOverflow = false;
-        if (valueLength == OVERFLOW) {
+        if (valueLength == OVERFLOW_PAGE_DATA_LENGTH) {
             //If we have an overflow value, load it from the overflow page
             final long p = ByteConversion.byteToLong(data, rec.offset);
             data = getOverflowValue(p);
@@ -2242,12 +2299,18 @@ public class DOMFile extends BTree implements Lockable {
         if (newPageHeader.getLsn().equals(Lsn.LSN_INVALID) || requiresRedo(loggable, newPage)) {
             try {
                 dropFreePageList();
-                newPageHeader.setStatus(RECORD);
+                newPageHeader.updateStatus(PageStatus.RECORD);
                 newPageHeader.setDataLength(0);
                 newPageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
                 newPageHeader.setRecordCount((short) 0);
                 newPage.len = 0;
-                newPage.data = new byte[fileHeader.getWorkSize()];
+
+                final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+                try {
+                    newPage.data = new byte[fileHeader.getWorkSize()];
+                } finally {
+                    fileHeaderReadLock.unlock();
+                }
                 newPageHeader.setPrevDataPage(NO_PAGE);
                 if (loggable.nextTID != ItemId.UNKNOWN_ID) {
                     newPageHeader.setNextTupleID(loggable.nextTID);
@@ -2301,7 +2364,7 @@ public class DOMFile extends BTree implements Lockable {
                 // save data length
                 // overflow pages have length 0
                 final short vlen = (short) loggable.value.length;
-                ByteConversion.shortToByte(loggable.isOverflow ? OVERFLOW : vlen, page.data, page.len);
+                ByteConversion.shortToByte(loggable.isOverflow ? OVERFLOW_PAGE_DATA_LENGTH : vlen, page.data, page.len);
                 page.len += LENGTH_DATA_LENGTH;
                 // save data
                 System.arraycopy(loggable.value, 0, page.data, page.len, vlen);
@@ -2324,7 +2387,7 @@ public class DOMFile extends BTree implements Lockable {
         final DOMFilePageHeader pageHeader = page.getPageHeader();
 
         // is there anything to undo?
-        if (pageHeader.getLsn().equals(Lsn.LSN_INVALID) || pageHeader.getStatus() == UNUSED) {
+        if (pageHeader.getLsn().equals(Lsn.LSN_INVALID) || pageHeader.getStatus() == PageStatus.UNUSED) {
             LOG.warn("Nothing to undo, but received: AddValueLoggable(txnId={}, lsn={}, pageNum={}, isOverflow={})", loggable.getTransactionId(), loggable.getLsn(), loggable.pageNum, loggable.isOverflow);
             return;
         }
@@ -2413,7 +2476,7 @@ public class DOMFile extends BTree implements Lockable {
                     pos.offset += LENGTH_ORIGINAL_LOCATION;
                     l += LENGTH_ORIGINAL_LOCATION;
                 }
-                if (l == OVERFLOW) {
+                if (l == OVERFLOW_PAGE_DATA_LENGTH) {
                     l += LENGTH_OVERFLOW_LOCATION;
                 }
                 // end offset
@@ -2474,7 +2537,7 @@ public class DOMFile extends BTree implements Lockable {
             // save data length
             // overflow pages have length 0
             if (loggable.isOverflow) {
-                ByteConversion.shortToByte(OVERFLOW, page.data, offset);
+                ByteConversion.shortToByte(OVERFLOW_PAGE_DATA_LENGTH, page.data, offset);
             } else {
                 ByteConversion.shortToByte(vlen, page.data, offset);
             }
@@ -2543,7 +2606,12 @@ public class DOMFile extends BTree implements Lockable {
             try {
                 pageHeader.setNextDataPage(NO_PAGE);
                 pageHeader.setPrevDataPage(NO_PAGE);
-                pageHeader.setDataLen(fileHeader.getWorkSize());
+                final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+                try {
+                    pageHeader.updateDataLen(fileHeader.getWorkSize());
+                } finally {
+                    fileHeaderReadLock.unlock();
+                }
                 pageHeader.setDataLength(0);
                 pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
                 pageHeader.setRecordCount((short) 0);
@@ -2563,7 +2631,7 @@ public class DOMFile extends BTree implements Lockable {
             final DOMPage page = getDOMPage(loggable.pageNum);
             final DOMFilePageHeader pageHeader = page.getPageHeader();
             dropFreePageList();
-            pageHeader.setStatus(RECORD);
+            pageHeader.updateStatus(PageStatus.RECORD);
             pageHeader.setNextDataPage(loggable.nextPage);
             pageHeader.setPrevDataPage(loggable.prevPage);
             pageHeader.setNextTupleID(ItemId.getId(loggable.oldTid));
@@ -2581,16 +2649,16 @@ public class DOMFile extends BTree implements Lockable {
 
     void redoWriteOverflow(final WriteOverflowPageLoggable loggable) {
         try {
-            final Page page = getPage(loggable.pageNum);
-            final PageHeader pageHeader = page.getPageHeader();
+            final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
             if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
 
                 dropFreePageList();
-                pageHeader.setStatus(RECORD);
+                pageHeader.updateStatus(PageStatus.RECORD);
                 if (loggable.nextPage == NO_PAGE) {
-                    pageHeader.setNextPage(NO_PAGE);
+                    pageHeader.updateNextPage(NO_PAGE);
                 } else {
-                    pageHeader.setNextPage(loggable.nextPage);
+                    pageHeader.updateNextPage(loggable.nextPage);
                 }
                 pageHeader.setLsn(loggable.getLsn());
                 writeValue(page, loggable.value);
@@ -2604,8 +2672,8 @@ public class DOMFile extends BTree implements Lockable {
 
     void undoWriteOverflow(final WriteOverflowPageLoggable loggable) {
         try {
-            final Page page = getPage(loggable.pageNum);
-            page.read();
+            final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
+            page.read(raf);
             unlinkPages(page);
         } catch (final IOException e) {
             LOG.warn("Failed to undo {}: {}", loggable.dump(), e.getMessage(), e);
@@ -2615,9 +2683,9 @@ public class DOMFile extends BTree implements Lockable {
 
     void redoRemoveOverflow(final RemoveOverflowLoggable loggable) {
         try {
-            final Page page = getPage(loggable.pageNum);
-            page.read();
-            final PageHeader pageHeader = page.getPageHeader();
+            final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
+            page.read(raf);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
             if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
                 unlinkPages(page);
             }
@@ -2629,15 +2697,15 @@ public class DOMFile extends BTree implements Lockable {
 
     void undoRemoveOverflow(final RemoveOverflowLoggable loggable) {
         try {
-            final Page page = getPage(loggable.pageNum);
-            page.read();
-            final PageHeader pageHeader = page.getPageHeader();
+            final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
+            page.read(raf);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
             dropFreePageList();
-            pageHeader.setStatus(RECORD);
+            pageHeader.updateStatus(PageStatus.RECORD);
             if (loggable.nextPage == NO_PAGE) {
-                pageHeader.setNextPage(NO_PAGE);
+                pageHeader.updateNextPage(NO_PAGE);
             } else {
-                pageHeader.setNextPage(loggable.nextPage);
+                pageHeader.updateNextPage(loggable.nextPage);
             }
             writeValue(page, loggable.oldData);
         } catch (final IOException e) {
@@ -2672,7 +2740,7 @@ public class DOMFile extends BTree implements Lockable {
             page.len += LENGTH_TID;
             // writing value length
             ByteConversion.shortToByte(loggable.isOverflow() ?
-                OVERFLOW : (short) loggable.value.length, page.data, offset);
+                OVERFLOW_PAGE_DATA_LENGTH : (short) loggable.value.length, page.data, offset);
             offset += LENGTH_DATA_LENGTH;
             page.len += LENGTH_DATA_LENGTH;
             // writing data
@@ -2703,7 +2771,7 @@ public class DOMFile extends BTree implements Lockable {
             if (ItemId.isRelocated(loggable.tid)) {
                 l += LENGTH_ORIGINAL_LOCATION;
             }
-            if (l == OVERFLOW) {
+            if (l == OVERFLOW_PAGE_DATA_LENGTH) {
                 l += LENGTH_OVERFLOW_LOCATION;
             }
             // end offset
@@ -2738,7 +2806,12 @@ public class DOMFile extends BTree implements Lockable {
         final DOMFilePageHeader pageHeader = page.getPageHeader();
         if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
             final byte[] oldData = page.data;
-            page.data = new byte[fileHeader.getWorkSize()];
+            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+            try {
+                page.data = new byte[fileHeader.getWorkSize()];
+            } finally {
+                fileHeaderReadLock.unlock();
+            }
             System.arraycopy(oldData, 0, page.data, 0, loggable.splitOffset);
             page.len = loggable.splitOffset;
             if (page.len < 0) {
@@ -2913,127 +2986,6 @@ public class DOMFile extends BTree implements Lockable {
         dataCache.add(page, 2);
     }
 
-    protected final class DOMFilePageHeader extends BTreePageHeader {
-
-        int dataLength = 0;
-        long nextDataPage = NO_PAGE;
-        long previousDataPage = NO_PAGE;
-        short tupleID = ItemId.UNKNOWN_ID;
-        private short records = 0;
-
-        static final short LENGTH_RECORDS_COUNT = 2; //sizeof short
-        static final int LENGTH_DATA_LENGTH = 4; //sizeof int
-        static final long LENGTH_NEXT_PAGE_POINTER = 8; //sizeof long
-        static final long LENGTH_PREV_PAGE_POINTER = 8; //sizeof long
-        static final short LENGTH_CURRENT_TID = 2; //sizeof short
-
-        DOMFilePageHeader() {
-            super();
-        }
-
-        DOMFilePageHeader(final byte[] data, final int offset) throws IOException {
-            super(data, offset);
-        }
-
-        void decRecordCount() {
-            //TODO : check negative value ? -pb
-            records--;
-        }
-
-        short getCurrentTupleID() {
-            //TODO : overflow check ? -pb
-            return tupleID;
-        }
-
-        short getNextTupleID() {
-            if (++tupleID == ItemId.ID_MASK) {
-                throw new RuntimeException("No spare ids on page");
-            }
-            return tupleID;
-        }
-
-        boolean hasRoom() {
-            return tupleID < ItemId.MAX_ID;
-        }
-
-        void setNextTupleID(final short tupleID) {
-            if (tupleID > ItemId.MAX_ID) {
-                throw new RuntimeException("TupleID overflow! TupleID = " + tupleID);
-            }
-            this.tupleID = tupleID;
-        }
-
-        int getDataLength() {
-            return dataLength;
-        }
-
-        long getNextDataPage() {
-            return nextDataPage;
-        }
-
-        long getPreviousDataPage() {
-            return previousDataPage;
-        }
-
-        short getRecordCount() {
-            return records;
-        }
-
-        void incRecordCount() {
-            records++;
-        }
-
-        @Override
-        public int read(final byte[] data, int offset) throws IOException {
-            offset = super.read(data, offset);
-            records = ByteConversion.byteToShort(data, offset);
-            offset += LENGTH_RECORDS_COUNT;
-            dataLength = ByteConversion.byteToInt(data, offset);
-            offset += LENGTH_DATA_LENGTH;
-            nextDataPage = ByteConversion.byteToLong(data, offset);
-            offset += LENGTH_NEXT_PAGE_POINTER;
-            previousDataPage = ByteConversion.byteToLong(data, offset);
-            offset += LENGTH_PREV_PAGE_POINTER;
-            tupleID = ByteConversion.byteToShort(data, offset);
-            return offset + LENGTH_CURRENT_TID;
-        }
-
-        @Override
-        public int write(final byte[] data, int offset) throws IOException {
-            offset = super.write(data, offset);
-            ByteConversion.shortToByte(records, data, offset);
-            offset += LENGTH_RECORDS_COUNT;
-            ByteConversion.intToByte(dataLength, data, offset);
-            offset += LENGTH_DATA_LENGTH;
-            ByteConversion.longToByte(nextDataPage, data, offset);
-            offset += LENGTH_NEXT_PAGE_POINTER;
-            ByteConversion.longToByte(previousDataPage, data, offset);
-            offset += LENGTH_PREV_PAGE_POINTER;
-            ByteConversion.shortToByte(tupleID, data, offset);
-            return offset + LENGTH_CURRENT_TID;
-        }
-
-        void setDataLength(final int dataLength) {
-            if (dataLength > fileHeader.getWorkSize()) {
-                LOG.error("data too long for file header !");
-                //TODO  :throw exception ? -pb
-            }
-            this.dataLength = dataLength;
-        }
-
-        void setNextDataPage(final long page) {
-            nextDataPage = page;
-        }
-
-        void setPrevDataPage(final long page) {
-            previousDataPage = page;
-        }
-
-        void setRecordCount(final short recs) {
-            records = recs;
-        }
-    }
-
     protected final class DOMPage implements Cacheable {
 
         // the raw working data (without page header) of this page
@@ -3043,7 +2995,7 @@ public class DOMFile extends BTree implements Lockable {
         int len = 0;
 
         // the low-level page
-        Page page;
+        Page<DOMFilePageHeader> page;
 
         DOMFilePageHeader pageHeader;
 
@@ -3060,49 +3012,89 @@ public class DOMFile extends BTree implements Lockable {
 
         private final ThreadLocal<Integer> lastFound = ThreadLocal.withInitial(() -> 0);
 
-        DOMPage() {
+        static DOMPage create() throws IOException {
             this.page = createNewPage();
-            this.pageHeader = (DOMFilePageHeader) page.getPageHeader();
-            this.data = new byte[fileHeader.getWorkSize()];
+            this.pageHeader = page.getPageHeader();
+            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+            try {
+                this.data = new byte[fileHeader.getWorkSize()];
+            } finally {
+                fileHeaderReadLock.unlock();
+            }
             this.len = 0;
         }
 
+//        static DOMPage load(final long pos) throws IOException {
+//
+//        }
+//
+//        static DOMPage load(final Page<DOMFilePageHeader> page) throws IOException {
+//
+//        }
+
+        // TODO(AR) should be static constructor function that can throw IOException?
+        DOMPage() {
+            this.page = createNewPage();
+            this.pageHeader = page.getPageHeader();
+            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+            try {
+                this.data = new byte[fileHeader.getWorkSize()];
+            } finally {
+                fileHeaderReadLock.unlock();
+            }
+            this.len = 0;
+        }
+
+        // TODO(AR) should be static constructor function that can throw IOException?
         DOMPage(final long pos) {
             try {
                 this.page = getPage(pos);
-                load(page);
+                loadPage(page);
             } catch (final IOException ioe) {
                 LOG.error(ioe);
                 ioe.printStackTrace();
                 //TODO  :throw exception ? -pb
             }
         }
-        
-        DOMPage(final Page page) {
+
+        // TODO(AR) should be static constructor function that can throw IOException?
+        DOMPage(final Page<DOMFilePageHeader> page) {
             this.page = page;
-            load(page);
+            loadPage(page);
         }
 
-        Page createNewPage() {
-            try {
-                final Page page = getFreePage();
-                final DOMFilePageHeader pageHeader = (DOMFilePageHeader) page.getPageHeader();
-                pageHeader.setStatus(RECORD);
-                pageHeader.setDirty(true);
-                pageHeader.setNextDataPage(NO_PAGE);
-                pageHeader.setPrevDataPage(NO_PAGE);
-                pageHeader.setNextPage(NO_PAGE);
-                pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
-                pageHeader.setDataLength(0);
-                pageHeader.setRecordCount((short) 0);
-                if (currentDocument != null) {
-                    currentDocument.incPageCount();
+        private void loadPage(final Page<DOMFilePageHeader> page) throws IOException {
+            data = page.read(raf);
+            pageHeader = page.getPageHeader();
+            len = pageHeader.getDataLength();
+            if (data.length == 0) {
+                final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+                try {
+                    data = new byte[fileHeader.getWorkSize()];
+                } finally {
+                    fileHeaderReadLock.unlock();
                 }
-                return page;
-            } catch (final IOException ioe) {
-                LOG.error(ioe);
-                return null;
+                len = 0;
+                return;
             }
+            saved = true;
+        }
+
+        Page<DOMFilePageHeader> createNewPage() throws IOException {
+            final Page<DOMFilePageHeader> page = getFreePage();
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            pageHeader.updateStatus(PageStatus.RECORD);
+            pageHeader.setDirty(true);
+            pageHeader.setNextDataPage(NO_PAGE);
+            pageHeader.setPrevDataPage(NO_PAGE);
+            pageHeader.updateNextPage(NO_PAGE);
+            pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
+            pageHeader.setDataLength(0);
+            pageHeader.setRecordCount((short) 0);
+            if (currentDocument != null) {
+                currentDocument.incPageCount();
+            }
+            return page;
         }
 
         /**
@@ -3154,7 +3146,7 @@ public class DOMFile extends BTree implements Lockable {
                     } else {
                         pos += vlen;
                     }
-                    if (vlen == OVERFLOW) {
+                    if (vlen == OVERFLOW_PAGE_DATA_LENGTH) {
                         pos += LENGTH_OVERFLOW_LOCATION;
                     }
                 }
@@ -3223,23 +3215,6 @@ public class DOMFile extends BTree implements Lockable {
             }
         }
 
-        private void load(final Page page) {
-            try {
-                data = page.read();
-                pageHeader = (DOMFilePageHeader) page.getPageHeader();
-                len = pageHeader.getDataLength();
-                if (data.length == 0) {
-                    data = new byte[fileHeader.getWorkSize()];
-                    len = 0;
-                    return;
-                }
-            } catch (final IOException ioe) {
-                LOG.error(ioe);
-                ioe.printStackTrace();
-            }
-            saved = true;
-        }
-
         private void write() {
             if (page == null) {
                 return;
@@ -3259,7 +3234,7 @@ public class DOMFile extends BTree implements Lockable {
         }
 
         String dumpPage() {
-            return "Contents of page " + page.getPageNum() + ": " + hexDump(data);
+            return "Contents of page " + page.getPageNum() + ": " + HexEncoder.bytesToHex(data);
         }
 
         @Override
@@ -3322,11 +3297,11 @@ public class DOMFile extends BTree implements Lockable {
                     final short vlen = ByteConversion.byteToShort(data, pos);
                     pos += LENGTH_DATA_LENGTH;
                     if (ItemId.isRelocated(tupleID)) {
-                        pos += vlen == OVERFLOW ?
+                        pos += vlen == OVERFLOW_PAGE_DATA_LENGTH ?
                             LENGTH_ORIGINAL_LOCATION + LENGTH_OVERFLOW_LOCATION : 
                             LENGTH_ORIGINAL_LOCATION + vlen;
                     } else {
-                        pos += vlen == OVERFLOW ? LENGTH_OVERFLOW_LOCATION : vlen;
+                        pos += vlen == OVERFLOW_PAGE_DATA_LENGTH ? LENGTH_OVERFLOW_LOCATION : vlen;
                     }
                 }
             }
@@ -3344,7 +3319,7 @@ public class DOMFile extends BTree implements Lockable {
      */
     final class OverflowDOMPage {
 
-        final Page firstPage;
+        final Page<DOMFilePageHeader> firstPage;
 
         OverflowDOMPage() {
             firstPage = createNewPage();
@@ -3355,137 +3330,137 @@ public class DOMFile extends BTree implements Lockable {
             firstPage = getPage(first);
         }
 
-        Page createNewPage() {
-            try {
-                final Page page = getFreePage();
-                final DOMFilePageHeader pageHeader = (DOMFilePageHeader) page.getPageHeader();
-                pageHeader.setStatus(RECORD);
-                pageHeader.setDirty(true);
-                pageHeader.setNextDataPage(NO_PAGE);
-                pageHeader.setPrevDataPage(NO_PAGE);
-                pageHeader.setNextPage(NO_PAGE);
-                pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
-                pageHeader.setDataLength(0);
-                pageHeader.setRecordCount((short) 0);
-                if (currentDocument != null) {
-                    currentDocument.incPageCount();
-                }
-                return page;
-            } catch (final IOException ioe) {
-                LOG.error(ioe);
-                return null;
+        Page<DOMFilePageHeader> createNewPage() throws IOException {
+            final Page<DOMFilePageHeader> page = getFreePage();
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            pageHeader.updateStatus(PageStatus.RECORD);
+            pageHeader.setDirty(true);
+            pageHeader.setNextDataPage(NO_PAGE);
+            pageHeader.setPrevDataPage(NO_PAGE);
+            pageHeader.updateNextPage(NO_PAGE);
+            pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
+            pageHeader.setDataLength(0);
+            pageHeader.setRecordCount((short) 0);
+            if (currentDocument != null) {
+                currentDocument.incPageCount();
             }
+            return page;
         }
 
         // Write binary resource from InputStream
-        int write(final Txn transaction, final InputStream is) {
+        int write(final Txn transaction, final InputStream is) throws IOException {
             int pageCount = 0;
-            Page currentPage = firstPage;
+            Page<DOMFilePageHeader> currentPage = firstPage;
+
+            // Transfer bytes from InputStream to db
+            final int chunkSize;
+            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                // Transfer bytes from InputStream to db
-                final int chunkSize = fileHeader.getWorkSize();
-                final byte[] buf = new byte[chunkSize];
-                final byte[] altbuf = new byte[chunkSize];
-                byte[] currbuf = buf;
-                byte[] fullbuf = null;
-                boolean isaltbuf = false;
-                int len;
-                int basebuf = 0;
-                int basemax = chunkSize;
-                boolean emptyPage = true;
-                while((len = is.read(currbuf, basebuf, basemax))!=-1) {
-                    emptyPage=false;
-                    // We are going to use a buffer swapping technique
-                    if(fullbuf != null) {
-                        final Value value = new Value(fullbuf, 0, chunkSize);
-                        final Page nextPage = createNewPage();
-                        currentPage.getPageHeader().setNextPage(nextPage.getPageNum());
-                        if (transaction != null && isRecoveryEnabled()) {
-                            final long nextPageNum = nextPage.getPageNum();
-                            final Loggable loggable = new WriteOverflowPageLoggable(
-                                transaction, currentPage.getPageNum(),
-                                nextPageNum , value);
-                            writeToLog(loggable, currentPage);
-                        }
-                        writeValue(currentPage, value);
-                        pageCount++;
-                        currentPage = nextPage;
-                        fullbuf=null;
-                    }
-                    // Let's swap the buffer
-                    basebuf += len;
-                    if(basebuf == chunkSize) {
-                        fullbuf = currbuf;
-                        currbuf = (isaltbuf)? buf : altbuf;
-                        isaltbuf = !isaltbuf;
-                        basebuf = 0;
-                        basemax = chunkSize;
-                    } else {
-                        basemax -= len;
-                    }
-                }
-                // Detecting a zero byte stream
-                if(emptyPage) {
-                    currentPage.setPageNum(NO_PAGE);
-                    currentPage.getPageHeader().setNextPage(NO_PAGE);
-                } else {
-                    // Just in the limit of a page
-                    if (fullbuf != null) {
-                        basebuf = chunkSize;
-                        currbuf = fullbuf;
-                    }
-                    final Value value = new Value(currbuf, 0, basebuf);
-                    currentPage.getPageHeader().setNextPage(NO_PAGE);
+                chunkSize = fileHeader.getWorkSize();
+            } finally {
+                fileHeaderReadLock.unlock();
+            }
+            final byte[] buf = new byte[chunkSize];
+            final byte[] altbuf = new byte[chunkSize];
+            byte[] currbuf = buf;
+            byte[] fullbuf = null;
+            boolean isaltbuf = false;
+            int len;
+            int basebuf = 0;
+            int basemax = chunkSize;
+            boolean emptyPage = true;
+            while((len = is.read(currbuf, basebuf, basemax))!=-1) {
+                emptyPage=false;
+                // We are going to use a buffer swapping technique
+                if(fullbuf != null) {
+                    final Value value = new Value(fullbuf, 0, chunkSize);
+                    final Page<DOMFilePageHeader> nextPage = createNewPage();
+                    currentPage.getPageHeader().updateNextPage(nextPage.getPageNum());
                     if (transaction != null && isRecoveryEnabled()) {
+                        final long nextPageNum = nextPage.getPageNum();
                         final Loggable loggable = new WriteOverflowPageLoggable(
-                            transaction, currentPage.getPageNum(), NO_PAGE, value);
+                            transaction, currentPage.getPageNum(),
+                            nextPageNum , value);
                         writeToLog(loggable, currentPage);
                     }
                     writeValue(currentPage, value);
                     pageCount++;
+                    currentPage = nextPage;
+                    fullbuf=null;
                 }
-                // TODO what if remaining length == 0 ?
-            } catch (final IOException ex) {
-                LOG.error("IO error while writing overflow page", ex);
-              //TODO : throw exception ? -pb
+                // Let's swap the buffer
+                basebuf += len;
+                if(basebuf == chunkSize) {
+                    fullbuf = currbuf;
+                    currbuf = (isaltbuf)? buf : altbuf;
+                    isaltbuf = !isaltbuf;
+                    basebuf = 0;
+                    basemax = chunkSize;
+                } else {
+                    basemax -= len;
+                }
             }
+            // Detecting a zero byte stream
+            if(emptyPage) {
+                currentPage.setPageNum(NO_PAGE);
+                currentPage.getPageHeader().updateNextPage(NO_PAGE);
+            } else {
+                // Just in the limit of a page
+                if (fullbuf != null) {
+                    basebuf = chunkSize;
+                    currbuf = fullbuf;
+                }
+                final Value value = new Value(currbuf, 0, basebuf);
+                currentPage.getPageHeader().updateNextPage(NO_PAGE);
+                if (transaction != null && isRecoveryEnabled()) {
+                    final Loggable loggable = new WriteOverflowPageLoggable(
+                        transaction, currentPage.getPageNum(), NO_PAGE, value);
+                    writeToLog(loggable, currentPage);
+                }
+                writeValue(currentPage, value);
+                pageCount++;
+            }
+            // TODO what if remaining length == 0 ?
             return pageCount;
         }
 
-        int write(final Txn transaction, final byte[] data) {
+        int write(final Txn transaction, final byte[] data) throws IOException {
             int pageCount = 0;
-            try {
-                Page currentPage = firstPage;
-                int remaining = data.length;
-                int pos = 0;
-                while (remaining > 0) {
-                    final int chunkSize = remaining > fileHeader.getWorkSize() ? 
+
+            Page<DOMFilePageHeader> currentPage = firstPage;
+            int remaining = data.length;
+            int pos = 0;
+            while (remaining > 0) {
+                final int chunkSize;
+                final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+                try {
+                    chunkSize = remaining > fileHeader.getWorkSize() ?
                         fileHeader.getWorkSize() : remaining;
-                    remaining -= chunkSize;
-                    final Value value = new Value(data, pos, chunkSize);
-                    final Page nextPage;
-                    if (remaining > 0) {
-                        nextPage = createNewPage();
-                        currentPage.getPageHeader().setNextPage(nextPage.getPageNum());
-                    } else {
-                        nextPage = null;
-                        currentPage.getPageHeader().setNextPage(NO_PAGE);
-                    }
-                    if (transaction != null && isRecoveryEnabled()) {
-                        final Loggable loggable = new WriteOverflowPageLoggable(
-                            transaction, currentPage.getPageNum(),
-                            remaining > 0 ? nextPage.getPageNum() : NO_PAGE, value);
-                        writeToLog(loggable, currentPage);
-                    }
-                    writeValue(currentPage, value);
-                    pos += chunkSize;
-                    currentPage = nextPage;
-                    ++pageCount;
+                } finally {
+                    fileHeaderReadLock.unlock();
                 }
-            } catch (final IOException e) {
-                LOG.warn("IO error while writing overflow page", e);
-                //TODO : throw exception ? -pb
+                remaining -= chunkSize;
+                final Value value = new Value(data, pos, chunkSize);
+                final Page<DOMFilePageHeader> nextPage;
+                if (remaining > 0) {
+                    nextPage = createNewPage();
+                    currentPage.getPageHeader().updateNextPage(nextPage.getPageNum());
+                } else {
+                    nextPage = null;
+                    currentPage.getPageHeader().updateNextPage(NO_PAGE);
+                }
+                if (transaction != null && isRecoveryEnabled()) {
+                    final Loggable loggable = new WriteOverflowPageLoggable(
+                        transaction, currentPage.getPageNum(),
+                        remaining > 0 ? nextPage.getPageNum() : NO_PAGE, value);
+                    writeToLog(loggable, currentPage);
+                }
+                writeValue(currentPage, value);
+                pos += chunkSize;
+                currentPage = nextPage;
+                ++pageCount;
             }
+
             return pageCount;
         }
 
@@ -3500,11 +3475,11 @@ public class DOMFile extends BTree implements Lockable {
         }
 
         void streamTo(final OutputStream os) {
-            Page page = firstPage;
+            Page<DOMFilePageHeader> page = firstPage;
             int count = 0;
             while (page != null) {
                 try {
-                    final byte[] chunk = page.read();
+                    final byte[] chunk = page.read(raf);
                     os.write(chunk);
                     final long nextPageNumber = page.getPageHeader().getNextPage();
                     page = (nextPageNumber == NO_PAGE) ? null : getPage(nextPageNumber);
@@ -3518,12 +3493,12 @@ public class DOMFile extends BTree implements Lockable {
         }
 
         void delete(final Txn transaction) throws IOException {
-            Page page = firstPage;
+            Page<DOMFilePageHeader> page = firstPage;
             while (page != null) {
                 LOG.debug("Removing overflow page {}", page.getPageNum());
                 final long nextPageNumber = page.getPageHeader().getNextPage();
                 if (transaction != null && isRecoveryEnabled()) {
-                    final byte[] chunk = page.read();
+                    final byte[] chunk = page.read(raf);
                     final Loggable loggable = new RemoveOverflowLoggable(transaction,
                         page.getPageNum(), nextPageNumber, chunk);
                     writeToLog(loggable, page);
@@ -3568,5 +3543,4 @@ public class DOMFile extends BTree implements Lockable {
             return false;
         }
     }
-
 }

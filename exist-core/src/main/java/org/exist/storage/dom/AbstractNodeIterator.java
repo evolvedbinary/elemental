@@ -41,7 +41,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.BTreeException;
-import org.exist.storage.btree.Paged.Page;
+import org.exist.storage.btree.Page;
 import org.exist.util.ByteConversion;
 import org.exist.util.sanity.SanityCheck;
 
@@ -54,6 +54,9 @@ import org.exist.dom.persistent.NodeHandle;
  */
 @NotThreadSafe
 public abstract class AbstractNodeIterator implements INodeIterator {
+
+    // TODO(AR) consider if this should be in here in multiple-places or in the sub-class, i.e. we only need to do this when we lock and unlock!
+    //domFile.setOwnerObject(dbBroker)
 
     private static final Logger LOG = LogManager.getLogger(AbstractNodeIterator.class);
 
@@ -97,7 +100,7 @@ public abstract class AbstractNodeIterator implements INodeIterator {
             db.setOwnerObject(broker);
             if (gotoNextPosition()) {
                 db.addToBuffer(page);
-                final DOMFile.DOMFilePageHeader pageHeader = page.getPageHeader();
+                final DOMFilePageHeader pageHeader = page.getPageHeader();
                 if (offset < pageHeader.getDataLength())
                     {return true;}
                 else if (pageHeader.getNextDataPage() == Page.NO_PAGE)
@@ -124,7 +127,7 @@ public abstract class AbstractNodeIterator implements INodeIterator {
             if (gotoNextPosition()) {
                 long backLink = 0;
                 do {
-                    final DOMFile.DOMFilePageHeader pageHeader = page.getPageHeader();
+                    final DOMFilePageHeader pageHeader = page.getPageHeader();
                     //Next value larger than length of the current page?
                     if (offset >= pageHeader.getDataLength()) {
                         //Load next page in chain
@@ -170,7 +173,7 @@ public abstract class AbstractNodeIterator implements INodeIterator {
                         offset += DOMFile.LENGTH_ORIGINAL_LOCATION;
                     }
                     //Overflow page? Load the overflow value
-                    if (vlen == DOMFile.OVERFLOW) {
+                    if (vlen == DOMFile.OVERFLOW_PAGE_DATA_LENGTH) {
                         vlen = DOMFile.LENGTH_OVERFLOW_LOCATION;
                         final long overflow = ByteConversion.byteToLong(page.data, offset);
                         offset += DOMFile.LENGTH_OVERFLOW_LOCATION;
