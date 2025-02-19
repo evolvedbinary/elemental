@@ -29,7 +29,7 @@ import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
 import org.exist.storage.Signatures;
 import org.exist.storage.btree.Value;
-import org.exist.storage.dom.RawNodeIterator;
+import org.exist.storage.dom.AbstractRawNodeIterator;
 import org.exist.util.ByteConversion;
 import org.exist.util.XMLString;
 import org.exist.util.serializer.AttrList;
@@ -59,7 +59,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
     // members which don't (generally) change!
     private DBBroker broker;
     private DocumentImpl document;
-    private final RawNodeIterator iterator;
+    private final AbstractRawNodeIterator iterator;
     private boolean reportAttributes;
 
     // mutable members which hold the current state of the stream
@@ -77,7 +77,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
     private final XMLString text = new XMLString(256);
 
 
-    public EmbeddedXMLStreamReader(final DBBroker broker, final DocumentImpl document, final RawNodeIterator iterator, @Nullable final NodeHandle origin, final boolean reportAttributes)
+    public EmbeddedXMLStreamReader(final DBBroker broker, final DocumentImpl document, final AbstractRawNodeIterator iterator, @Nullable final NodeHandle origin, final boolean reportAttributes)
             throws XMLStreamException {
         this.broker = broker;
         this.document = document;

@@ -31,18 +31,21 @@
 package org.exist.storage;
 
 import com.evolvedbinary.j8fu.function.FunctionE;
+import com.evolvedbinary.j8fu.tuple.Tuple2;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.collections.*;
-import org.exist.collections.Collection;
-import org.exist.dom.memtree.DOMIndexer;
-import org.exist.dom.persistent.*;
-import org.exist.dom.QName;
 import org.exist.EXistException;
 import org.exist.Indexer;
 import org.exist.backup.RawDataBackup;
+import org.exist.collections.Collection;
 import org.exist.collections.Collection.SubCollectionEntry;
+import org.exist.collections.*;
 import org.exist.collections.triggers.*;
+import org.exist.dom.QName;
+import org.exist.dom.memtree.DOMIndexer;
+import org.exist.dom.persistent.*;
 import org.exist.indexing.StreamListener;
 import org.exist.indexing.StreamListener.ReindexMode;
 import org.exist.indexing.StructuralIndex;
@@ -73,8 +76,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
-import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
-import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.TerminatedException;
@@ -83,25 +84,26 @@ import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 import javax.annotation.Nullable;
 import javax.xml.stream.XMLStreamException;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.function.Function;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.evolvedbinary.j8fu.tuple.Tuple2;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.security.Permission.DEFAULT_TEMPORARY_COLLECTION_PERM;
@@ -493,7 +495,7 @@ public class NativeBroker extends DBBroker {
     public IEmbeddedXMLStreamReader getXMLStreamReader(final NodeHandle node, final boolean reportAttributes)
             throws IOException, XMLStreamException {
         if(streamReader == null) {
-            final RawNodeIterator iterator = new RawNodeIterator(this, domDb, node);
+            final AbstractRawNodeIterator iterator = new GranularRawNodeIterator(this, domDb, node);
             streamReader = new EmbeddedXMLStreamReader(this, node.getOwnerDocument(), iterator, node, reportAttributes);
         } else {
             streamReader.reposition(this, node, reportAttributes);
@@ -504,7 +506,7 @@ public class NativeBroker extends DBBroker {
     @Override
     public IEmbeddedXMLStreamReader newXMLStreamReader(final NodeHandle node, final boolean reportAttributes)
             throws IOException, XMLStreamException {
-        final RawNodeIterator iterator = new RawNodeIterator(this, domDb, node);
+        final GranularRawNodeIterator iterator = new GranularRawNodeIterator(this, domDb, node);
         return new EmbeddedXMLStreamReader(this, node.getOwnerDocument(), iterator, null, reportAttributes);
     }
 
