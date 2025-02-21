@@ -39,6 +39,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nullable;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -68,7 +69,6 @@ import org.exist.storage.Signatures;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.*;
 import org.exist.storage.cache.Cache;
-import org.exist.storage.cache.Cacheable;
 import org.exist.storage.cache.LRUCache;
 import org.exist.storage.journal.JournalException;
 import org.exist.storage.journal.LogEntryTypes;
@@ -183,11 +183,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
     private final Cache<DOMPage> dataCache;
 
+    // TODO(AR) investigate how this is used
     private Object owner = null;
 
     private final Reference2LongMap<Object> pages;
 
-    private DocumentImpl currentDocument = null;
+    private @Nullable DocumentImpl currentDocument = null;
 
     private final AddValueLoggable addValueLog = new AddValueLoggable();
 
@@ -196,14 +197,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         this.lockManager = pool.getLockManager();
         this.pages = new Reference2LongOpenHashMap<>(64);
         this.pages.defaultReturnValue(NO_PAGE);
-        this.fileHeader.setPageCount(0);
-        this.fileHeader.setTotalCount(0);
         this.dataCache = new LRUCache<>(getFileName(), 256, 0.0, 1.0, Cache.CacheType.DATA);
         this.cacheManager.registerCache(dataCache);
         final Path file = dataDir.resolve(getFileName());
         setFile(file);
         if (exists()) {
-            open();
+            super.open(FILE_FORMAT_VERSION_ID);
         } else {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Creating data file: {}", FileUtils.fileName(file));
@@ -234,7 +233,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     private DOMPage getCurrentPage(final Txn transaction) {
         final long pageNum = pages.getLong(owner);
         if (pageNum == NO_PAGE) {
-            final DOMPage page = new DOMPage();
+            final DOMPage page = createDOMPage();
             pages.put(owner, page.page.getPageNum());
             dataCache.add(page);
             if (transaction != null && isRecoveryEnabled()) {
@@ -248,28 +247,65 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         }
     }
 
+    private DOMPage createDOMPage() throws IOException {
+        final Page<DOMFilePageHeader> freePage = getFreePage();
+
+        final DOMFilePageHeader pageHeader = freePage.getPageHeader();
+        pageHeader.updateStatus(PageStatus.RECORD);
+        pageHeader.setDirty(true);
+        pageHeader.setNextDataPage(NO_PAGE);
+        pageHeader.setPrevDataPage(NO_PAGE);
+        pageHeader.updateNextPage(NO_PAGE);
+        pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
+        pageHeader.setDataLength(0);
+        pageHeader.setRecordCount((short) 0);
+
+        final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
+        final byte[] data;
+        try {
+            data = new byte[fileHeader.getWorkSize()];
+        } finally {
+            fileHeaderReadLock.unlock();
+        }
+
+        // update page count of the document
+        if (currentDocument != null) {
+            currentDocument.incPageCount();
+        }
+
+        return new DOMPage(freePage, data, 0);
+    }
+
+    private DOMPage createDOMPage(final long pointer) throws IOException {
+        final Page<DOMFilePageHeader> newPage = getPage(pointer);
+        byte[] data = newPage.read(raf);
+        int len = newPage.getPageHeader().getDataLength();
+        if (data.length == 0) {
+            data = new byte[fileHeader.getWorkSize()];
+            len = 0;
+        }
+
+        // TODO(AR) should we update the page count of the document here like in {@link #createDOMPage()}
+        // update page count of the document
+        if (currentDocument != null) {
+            currentDocument.incPageCount();
+        }
+
+        return new DOMPage(newPage, data, len);
+    }
+
     /**
      * Retrieve the current page
      * 
      * @param pointer Description of the Parameter
      * @return The current page
      */
-    DOMPage getDOMPage(final long pointer) {
+    DOMPage getDOMPage(final long pointer) throws IOException {
         DOMPage page = dataCache.get(pointer);
         if (page == null) {
-            page = new DOMPage(pointer);
+            page = createDOMPage(pointer);
         }
         return page;
-    }
-
-    /**
-     * Open the file.
-     * 
-     * @return Description of the Return Value
-     * @throws DBException   Description of the Exception
-     */
-    private boolean open() throws DBException {
-        return super.open(FILE_FORMAT_VERSION_ID);
     }
 
     public void closeDocument() {
@@ -386,7 +422,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         DOMPage currentPage = getCurrentPage(transaction);
         //Does the value fit into current data page?
         if (currentPage.len + LENGTH_TID + LENGTH_DATA_LENGTH + valueLength > currentPage.data.length) {
-            final DOMPage newPage = new DOMPage();
+            final DOMPage newPage = createDOMPage();
             final DOMFilePageHeader currentPageHeader = currentPage.getPageHeader();
             if (transaction != null && isRecoveryEnabled()) {
                 final UpdateHeaderLoggable loggable = new UpdateHeaderLoggable(
@@ -433,9 +469,9 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     }
 
     private void writeToLog(final Loggable loggable, final Page<DOMFilePageHeader> page) {
-        if(logManager.isPresent()) {
+        if(logManager != null) {
             try {
-                logManager.get().journal(loggable);
+                logManager.journal(loggable);
                 page.getPageHeader().setLsn(loggable.getLsn());
             } catch (final JournalException e) {
                 LOG.error(e.getMessage(), e);
@@ -619,7 +655,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 if (rec.offset + LENGTH_TID + LENGTH_DATA_LENGTH + 
                         value.length > workSize ||
                         !rec.page.getPageHeader().hasRoom()) {
-                    final DOMPage newPage = new DOMPage();
+                    final DOMPage newPage = createDOMPage();
                     final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                     LOG.debug("creating additional page: {}; prev = {}; next = {}", newPage.getPageNum(), rec.page.getPageNum(), rec.page.getPageHeader().getNextDataPage());
                     if (transaction != null && isRecoveryEnabled()) {
@@ -680,7 +716,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
             if (dataLength + LENGTH_TID + LENGTH_DATA_LENGTH + value.length >
                 workSize || !rec.page.getPageHeader().hasRoom()) {
-                final DOMPage newPage = new DOMPage();
+                final DOMPage newPage = createDOMPage();
                 final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                 LOG.debug("Creating new page: {}", newPage.getPageNum());
                 if (transaction != null && isRecoveryEnabled()) {
@@ -765,7 +801,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      *
      * @return the updated record position
      */
-    private RecordPos splitDataPage(final Txn transaction, final RecordPos rec) {
+    private RecordPos splitDataPage(final Txn transaction, final RecordPos rec) throws IOException {
         if (currentDocument != null) {
             currentDocument.incSplitCount();
         }
@@ -810,7 +846,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         pageHeader.setDataLength(rec.page.len);
         rec.page.setDirty(true);
         //Create a first split page
-        DOMPage firstSplitPage = new DOMPage();
+        DOMPage firstSplitPage = createDOMPage();
         if (transaction != null && isRecoveryEnabled()) {
             final Loggable loggable = new CreatePageLoggable(transaction,
                 rec.page.getPageNum(), firstSplitPage.getPageNum(),
@@ -837,7 +873,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 }
                 /* No room in the old page, append a new one */
                 if (rec.page.len + LENGTH_TID + LENGTH_FORWARD_LOCATION > workSize) {
-                    final DOMPage newPage = new DOMPage();
+                    final DOMPage newPage = createDOMPage();
                     final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                     if (transaction != null && isRecoveryEnabled()) {
                         Loggable loggable = new CreatePageLoggable(transaction,
@@ -857,7 +893,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                     pageHeader.setNextDataPage(newPage.getPageNum());
                     pageHeader.setDataLength(rec.page.len);
                     pageHeader.setRecordCount(countRecordsInPage(rec.page));
-                    rec.page.cleanUp();
+                    try {
+                        rec.page.cleanUp();
+                    } catch (final IOException e) {
+                        LOG.fatal(debugPageContents(rec.page));
+                        throw e;
+                    }
                     rec.page.setDirty(true);
                     dataCache.add(rec.page);
                     //Switch record to new page...
@@ -895,7 +936,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             if (nextSplitPage.len + LENGTH_TID + LENGTH_DATA_LENGTH +
                     LENGTH_ORIGINAL_LOCATION + realLen > workSize) {
                 //Not enough room in the split page: append a new page
-                final DOMPage newPage = new DOMPage();
+                final DOMPage newPage = createDOMPage();
                 final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                 if (transaction != null && isRecoveryEnabled()) {
                     Loggable loggable = new CreatePageLoggable(transaction,
@@ -916,7 +957,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 nextSplitPage.getPageHeader().setNextDataPage(newPage.getPageNum());
                 nextSplitPage.getPageHeader().setDataLength(nextSplitPage.len);
                 nextSplitPage.getPageHeader().setRecordCount(splitRecordCount);
-                nextSplitPage.cleanUp();
+                try {
+                    nextSplitPage.cleanUp();
+                } catch (final IOException e) {
+                    LOG.fatal(debugPageContents(nextSplitPage));
+                    throw e;
+                }
                 nextSplitPage.setDirty(true);
                 dataCache.add(nextSplitPage);
                 dataCache.add(newPage);
@@ -992,7 +1038,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                     fileHeaderReadlock.unlock();
                 }
                 if (rec.page.len + LENGTH_TID + LENGTH_FORWARD_LOCATION > workSize) {
-                    final DOMPage newPage = new DOMPage();
+                    final DOMPage newPage = createDOMPage();
                     final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
                     if (transaction != null && isRecoveryEnabled()) {
                         Loggable loggable = new CreatePageLoggable(transaction, 
@@ -1012,7 +1058,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                     pageHeader.setNextDataPage(newPage.getPageNum());
                     pageHeader.setDataLength(rec.page.len);
                     pageHeader.setRecordCount(countRecordsInPage(rec.page));
-                    rec.page.cleanUp();
+                    try {
+                        rec.page.cleanUp();
+                    } catch (final IOException e) {
+                        LOG.fatal(debugPageContents(rec.page));
+                        throw e;
+                    }
                     rec.page.setDirty(true);
                     dataCache.add(rec.page);
                     //switch record to new page...
@@ -1059,7 +1110,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             nextSplitPage.getPageHeader().setDataLength(nextSplitPage.len);
             nextSplitPage.getPageHeader().setNextDataPage(pageHeader.getNextDataPage());
             nextSplitPage.getPageHeader().setRecordCount(splitRecordCount);
-            nextSplitPage.cleanUp();
+            try {
+                nextSplitPage.cleanUp();
+            } catch (final IOException e) {
+                LOG.fatal(debugPageContents(nextSplitPage));
+                throw e;
+            }
             nextSplitPage.setDirty(true);
             dataCache.add(nextSplitPage);
             if (transaction != null && isRecoveryEnabled()) {
@@ -1103,7 +1159,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         }
         pageHeader.setDataLength(rec.page.len);
         pageHeader.setRecordCount(countRecordsInPage(rec.page));
-        rec.page.cleanUp();
+        try {
+            rec.page.cleanUp();
+        } catch (final IOException e) {
+            LOG.fatal(debugPageContents(rec.page));
+            throw e;
+        }
         rec.offset = rec.page.len;
         return rec;
     }
@@ -1302,7 +1363,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
     @Override
     public BTreeFileHeader createFileHeader(final int pageSize) {
-        return new BTreeFileHeader(fileVersion, 1024, pageSize);
+        return new BTreeFileHeader(fileVersion, 0, pageSize);
     }
 
     @Override
@@ -1446,16 +1507,20 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      */
     @Override
     public boolean flush() throws DBException {
-        boolean flushed = false;
-        //TODO : record transaction as a valuable flush ?
-        if (isRecoveryEnabled()) {
-            logManager.ifPresent(l -> l.flush(true, false));
+        try {
+            boolean flushed = false;
+            //TODO : record transaction as a valuable flush ?
+            if (isRecoveryEnabled() && logManager != null) {
+                logManager.flush(true, false);
+            }
+            if (!BrokerPool.FORCE_CORRUPTION) {
+                flushed = super.flush();
+                flushed = flushed | dataCache.flush();
+            }
+            return flushed;
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
         }
-        if (!BrokerPool.FORCE_CORRUPTION) {
-            flushed = flushed | super.flush();
-            flushed = flushed | dataCache.flush();
-        }
-        return flushed;
     }
 
     @Override
@@ -1797,8 +1862,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             if (transaction != null && isRecoveryEnabled()) {
                 final RemoveEmptyPageLoggable loggable = new RemoveEmptyPageLoggable(
                    transaction, rec.page.getPageNum(),
-                   rec.page.pageHeader.getPreviousDataPage(),
-                   rec.page.pageHeader.getNextDataPage());
+                   rec.page.getPageHeader().getPreviousDataPage(),
+                   rec.page.getPageHeader().getNextDataPage());
                 writeToLog(loggable, rec.page.page);
             }
             removePage(rec.page);
@@ -2984,329 +3049,6 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         pageHeader.setLsn(loggable.getLsn());
         page.setDirty(true);
         dataCache.add(page, 2);
-    }
-
-    protected final class DOMPage implements Cacheable {
-
-        // the raw working data (without page header) of this page
-        byte[] data;
-
-        // the current size of the used data
-        int len = 0;
-
-        // the low-level page
-        Page<DOMFilePageHeader> page;
-
-        DOMFilePageHeader pageHeader;
-
-        // fields required by Cacheable
-        int refCount = 0;
-
-        int timestamp = 0;
-
-        // has the page been saved or is it dirty?
-        boolean saved = true;
-
-        // set to true if the page has been removed from the cache
-        boolean invalidated = false;
-
-        private final ThreadLocal<Integer> lastFound = ThreadLocal.withInitial(() -> 0);
-
-        static DOMPage create() throws IOException {
-            this.page = createNewPage();
-            this.pageHeader = page.getPageHeader();
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                this.data = new byte[fileHeader.getWorkSize()];
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-            this.len = 0;
-        }
-
-//        static DOMPage load(final long pos) throws IOException {
-//
-//        }
-//
-//        static DOMPage load(final Page<DOMFilePageHeader> page) throws IOException {
-//
-//        }
-
-        // TODO(AR) should be static constructor function that can throw IOException?
-        DOMPage() {
-            this.page = createNewPage();
-            this.pageHeader = page.getPageHeader();
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                this.data = new byte[fileHeader.getWorkSize()];
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-            this.len = 0;
-        }
-
-        // TODO(AR) should be static constructor function that can throw IOException?
-        DOMPage(final long pos) {
-            try {
-                this.page = getPage(pos);
-                loadPage(page);
-            } catch (final IOException ioe) {
-                LOG.error(ioe);
-                ioe.printStackTrace();
-                //TODO  :throw exception ? -pb
-            }
-        }
-
-        // TODO(AR) should be static constructor function that can throw IOException?
-        DOMPage(final Page<DOMFilePageHeader> page) {
-            this.page = page;
-            loadPage(page);
-        }
-
-        private void loadPage(final Page<DOMFilePageHeader> page) throws IOException {
-            data = page.read(raf);
-            pageHeader = page.getPageHeader();
-            len = pageHeader.getDataLength();
-            if (data.length == 0) {
-                final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-                try {
-                    data = new byte[fileHeader.getWorkSize()];
-                } finally {
-                    fileHeaderReadLock.unlock();
-                }
-                len = 0;
-                return;
-            }
-            saved = true;
-        }
-
-        Page<DOMFilePageHeader> createNewPage() throws IOException {
-            final Page<DOMFilePageHeader> page = getFreePage();
-            final DOMFilePageHeader pageHeader = page.getPageHeader();
-            pageHeader.updateStatus(PageStatus.RECORD);
-            pageHeader.setDirty(true);
-            pageHeader.setNextDataPage(NO_PAGE);
-            pageHeader.setPrevDataPage(NO_PAGE);
-            pageHeader.updateNextPage(NO_PAGE);
-            pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
-            pageHeader.setDataLength(0);
-            pageHeader.setRecordCount((short) 0);
-            if (currentDocument != null) {
-                currentDocument.incPageCount();
-            }
-            return page;
-        }
-
-        /**
-         * Optimize scanning for records in a page
-         * Based on the fact that we are looking for the same thing again,
-         * Or we are looking for something after the last thing.
-         *
-         * So, start the scan where we left off before.
-         *
-         * @param targetId the tuple id we are looking for in the page
-         *
-         * @return a record describing the tuple, if we found it, otherwise null
-         */
-        RecordPos findRecord(final short targetId) {
-            final int startScan = lastFound.get();
-            RecordPos rec = findRecordInRange(targetId, startScan, pageHeader.getDataLength());
-            if (rec == null) {
-                rec = findRecordInRange(targetId, 0, startScan);
-            }
-            if (rec != null) {
-                // start from here again next time; step back over the tuple id
-                lastFound.set(rec.offset - LENGTH_TID);
-            }
-            return rec;
-        }
-
-        RecordPos findRecordInRange(final short targetId, final int from, final int to) {
-            RecordPos rec = null;
-            for (int pos = from; pos < to;) {
-                final short tupleID = ByteConversion.byteToShort(data, pos);
-                pos += LENGTH_TID;
-                if (ItemId.matches(tupleID, targetId)) {
-                    if (ItemId.isLink(tupleID)) {
-                        rec = new RecordPos(pos, this, tupleID, true);
-                    } else {
-                        rec = new RecordPos(pos, this, tupleID);
-                    }
-                    break;
-                } else if (ItemId.isLink(tupleID)) {
-                    pos += LENGTH_FORWARD_LOCATION;
-                } else {
-                    final short vlen = ByteConversion.byteToShort(data, pos);
-                    pos += LENGTH_DATA_LENGTH;
-                    if (vlen < 0) {
-                        LOG.error("page = {}; pos = {}; vlen = {}; tupleID = {}; target = {}", page.getPageNum(), pos, vlen, tupleID, targetId);
-                    }
-                    if (ItemId.isRelocated(tupleID)) {
-                        pos += LENGTH_ORIGINAL_LOCATION + vlen;
-                    } else {
-                        pos += vlen;
-                    }
-                    if (vlen == OVERFLOW_PAGE_DATA_LENGTH) {
-                        pos += LENGTH_OVERFLOW_LOCATION;
-                    }
-                }
-            }
-            return rec;
-        }
-
-        @Override
-        public long getKey() {
-            return page.getPageNum();
-        }
-
-        @Override
-        public int getReferenceCount() {
-            return refCount;
-        }
-
-        @Override
-        public int decReferenceCount() {
-            //TODO : check if the decrementation is allowed ? -pb
-            return refCount > 0 ? --refCount : 0;
-        }
-
-        @Override
-        public int incReferenceCount() {
-            //TODO : check uf the incrementation is allowed ? -pb 
-            if (refCount < Cacheable.MAX_REF) {
-                refCount++;
-            }
-            return refCount;
-        }
-
-        @Override
-        public void setReferenceCount(final int count) {
-            refCount = count;
-        }
-
-        @Override
-        public void setTimestamp(final int timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        @Override
-        public int getTimestamp() {
-            return timestamp;
-        }
-
-        DOMFilePageHeader getPageHeader() {
-            return pageHeader;
-        }
-
-        long getPageNum() {
-            return page.getPageNum();
-        }
-
-        @Override
-        public boolean isDirty() {
-            return !saved;
-        }
-
-        void setDirty(final boolean dirty) {
-            saved = !dirty;
-            page.getPageHeader().setDirty(dirty);
-            if (dirty) {
-                lastFound.set(0);
-            }
-        }
-
-        private void write() {
-            if (page == null) {
-                return;
-            }
-
-            try {
-                if (!pageHeader.isDirty()) {
-                    return;
-                }
-                pageHeader.setDataLength(len);
-                writeValue(page, data);
-                setDirty(false);
-            } catch (final IOException ioe) {
-                LOG.error(ioe);
-                //TODO : throw exception ? -pb
-            }
-        }
-
-        String dumpPage() {
-            return "Contents of page " + page.getPageNum() + ": " + HexEncoder.bytesToHex(data);
-        }
-
-        @Override
-        public boolean sync(final boolean syncJournal) {
-            if (isDirty()) {
-                write();
-                if (isRecoveryEnabled() && syncJournal && logManager.isPresent() && logManager.get().lastWrittenLsn().compareTo(pageHeader.getLsn()) < 0) {
-                    logManager.ifPresent(l -> l.flush(true, false));
-                }
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public boolean allowUnload() {
-            return true;
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            if(!(obj instanceof DOMPage)) {
-                return false;
-            }
-
-            final DOMPage other = (DOMPage) obj;
-            return page.equals(other.page);
-        }
-
-        void invalidate() {
-            invalidated = true;
-        }
-
-        boolean isInvalidated() {
-            return invalidated;
-        }
-
-        /**
-         * Walk through the page after records have been removed. Set the tid
-         * counter to the next spare id that can be used for following
-         * insertions.
-         */
-        void cleanUp() {
-            final int dlen = pageHeader.getDataLength();
-            short maxTupleID = 0;
-            short recordCount = 0;
-            for (int pos = 0; pos < dlen; recordCount++) {
-                final short tupleID = ByteConversion.byteToShort(data, pos);
-                pos += LENGTH_TID;
-                if (ItemId.getId(tupleID) > ItemId.MAX_ID) {
-                    LOG.error(debugPageContents(this));
-                    throw new RuntimeException("TupleID overflow in page " + getPageNum());
-                }
-                if (ItemId.getId(tupleID) > maxTupleID) {
-                    maxTupleID = ItemId.getId(tupleID);
-                }
-                if (ItemId.isLink(tupleID)) {
-                    pos += LENGTH_FORWARD_LOCATION;
-                } else {
-                    final short vlen = ByteConversion.byteToShort(data, pos);
-                    pos += LENGTH_DATA_LENGTH;
-                    if (ItemId.isRelocated(tupleID)) {
-                        pos += vlen == OVERFLOW_PAGE_DATA_LENGTH ?
-                            LENGTH_ORIGINAL_LOCATION + LENGTH_OVERFLOW_LOCATION : 
-                            LENGTH_ORIGINAL_LOCATION + vlen;
-                    } else {
-                        pos += vlen == OVERFLOW_PAGE_DATA_LENGTH ? LENGTH_OVERFLOW_LOCATION : vlen;
-                    }
-                }
-            }
-            pageHeader.setNextTupleID(maxTupleID);
-        }
     }
 
     /**

@@ -99,6 +99,7 @@ import org.exist.util.HexEncoder;
 import org.exist.util.Lockable;
 import org.exist.xquery.TerminatedException;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.file.Path;
 import java.text.NumberFormat;
@@ -158,39 +159,37 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
     protected final DefaultCacheManager cacheManager;
 
     /** Cache of BTreeNode(s) */
-    protected Cache<BTreeNode> cache;
+    private Cache<BTreeNode> cache;
 
     /** The LogManager for writing the transaction log */
-    protected final Optional<JournalManager> logManager;
+    protected final @Nullable JournalManager logManager;
 
     protected final byte fileId;
 
     private double splitFactor = -1;
 
-    protected AbstractBTree(final BrokerPool pool, final byte fileId, final short fileVersion, final boolean recoveryEnabled,
-            final DefaultCacheManager cacheManager) throws DBException {
+    protected AbstractBTree(final BrokerPool pool, final byte fileId, final short fileVersion,
+            final boolean enableRecovery, final DefaultCacheManager cacheManager) {
         super(pool, fileVersion);
         this.pool = pool;
         this.cacheManager = cacheManager;
         this.fileId = fileId;
-        this.fileHeader.setPageCount(0);
-        this.fileHeader.setTotalCount(0);
-        if (recoveryEnabled && pool.isRecoveryEnabled()) {
-            this.logManager = pool.getJournalManager();
+        if (enableRecovery && pool.isRecoveryEnabled()) {
+            this.logManager = pool.getJournalManager().orElse(null);
         } else {
-            this.logManager = Optional.empty();
+            this.logManager = null;
         }
     }
 
     protected boolean isRecoveryEnabled() {
-        return logManager.isPresent() && pool.isRecoveryEnabled();
+        return logManager != null && pool.isRecoveryEnabled();
     }
 
     public AbstractBTree(final BrokerPool pool, final byte fileId, final short fileVersion,
-                 final boolean recoveryEnabled,
+                 final boolean enableRecovery,
                  final DefaultCacheManager cacheManager, final Path file)
             throws DBException {
-        this(pool, fileId, fileVersion, recoveryEnabled, cacheManager);
+        this(pool, fileId, fileVersion, enableRecovery, cacheManager);
         setFile(file);
     }
 
@@ -547,9 +546,13 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
 
     @Override
     public boolean flush() throws DBException {
-        boolean flushed = cache.flush();
-        flushed = flushed | super.flush();
-        return flushed;
+        try {
+            boolean flushed = cache.flush();
+            flushed = flushed | super.flush();
+            return flushed;
+        } catch (final IOException e) {
+            throw new DBException(e);
+        }
     }
 
     @Override
@@ -575,7 +578,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             TerminatedException {
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         try {
-            final long pages = fileHeader.totalCount;
+            final long pages = fileHeader.getTotalCount();
             for (int i = 1; i < pages; i++) {
                 final Page<PAGE_HEADER> page = getPage(i);
                 page.read(raf);
@@ -619,7 +622,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         int pageCount = 0;
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         try {
-            final long pages = fileHeader.totalCount;
+            final long pages = fileHeader.getTotalCount();
             for (long i = 0; i < pages; i++) {
                 // first check if page is in cache. if yes, use it.
                 BTreeNode node = cache.get(i);
@@ -767,9 +770,9 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
      * ---------------------------------------------------------------------- */
 
     private void writeToLog(final Loggable loggable, final BTreeNode node) {
-        if(logManager.isPresent()) {
+        if(logManager != null) {
             try {
-                logManager.get().journal(loggable);
+                logManager.journal(loggable);
                 node.page.getPageHeader().setLsn(loggable.getLsn());
             } catch (final JournalException e) {
                 LOG.warn(e.getMessage(), e);
@@ -978,7 +981,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             if (parent != null) {
                 pageHeader.setParentPage(parent.page.getPageNum());
             } else {
-                pageHeader.setPareantPage(Page.NO_PAGE);
+                pageHeader.setParentPage(Page.NO_PAGE);
             }
             saved = false;
         }
@@ -1035,17 +1038,13 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         }
 
         @Override
-        public boolean sync(final boolean syncJournal) {
-            if(isDirty()) {
-                try {
-                    write();
-                    if (isRecoveryEnabled() && syncJournal) {
-                        logManager.ifPresent(l -> l.flush(true, false));
-                    }
-                    return true;
-                } catch (final IOException e) {
-                    LOG.error("IO error while writing page: {}", page.getPageNum(), e);
+        public boolean sync(final boolean syncJournal) throws IOException {
+            if (isDirty()) {
+                write();
+                if (isRecoveryEnabled() && syncJournal && logManager != null) {
+                    logManager.flush(true, false);
                 }
+                return true;
             }
             return false;
         }
@@ -1344,7 +1343,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             final int keyLen;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                workSize = fileHeader.workSize;
+                workSize = fileHeader.getWorkSize();
                 keyLen = fileHeader.getFixedKeyLen();
             } finally {
                 fileHeaderReadLock.unlock();
@@ -1510,7 +1509,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                                     final int workSize;
                                     final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                                     try {
-                                        workSize = fileHeader.workSize;
+                                        workSize = fileHeader.getWorkSize();
                                     } finally {
                                         fileHeaderReadLock.unlock();
                                     }
@@ -1554,7 +1553,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             final int workSize;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                workSize = fileHeader.workSize;
+                workSize = fileHeader.getWorkSize();
             } finally {
                 fileHeaderReadLock.unlock();
             }
@@ -1721,7 +1720,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         /**
          * Set the parent-link in all child nodes to point to this node
          */
-        private void setAsParent() {
+        private void setAsParent() throws IOException {
             if (pageHeader.getStatus() == PageStatus.BRANCH) {
                 for (int i = 0; i < nPtrs; i++) {
                     final BTreeNode node = getBTreeNode(ptrs[i]);

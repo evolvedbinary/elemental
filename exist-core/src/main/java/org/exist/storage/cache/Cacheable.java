@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +30,8 @@
  */
 package org.exist.storage.cache;
 
+import java.io.IOException;
+
 /**
  * Implemented by all objects that should be stored into a cache.
  * 
@@ -28,7 +39,8 @@ package org.exist.storage.cache;
  * and a timestamp marker (used to measure how long the object has stayed
  * in the cache). It depends on the concrete cache implementation if and how
  * these fields are used.
- * 
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang</a>
  */
 public interface Cacheable {
@@ -96,7 +108,7 @@ public interface Cacheable {
 	 * @param syncJournal the journal to sync
 	 * @return true if sync was successful
 	 */
-	boolean sync(boolean syncJournal);
+	boolean sync(boolean syncJournal) throws IOException;
 	
 	/**
 	 * Is it safe to unload the Cacheable from the cache?

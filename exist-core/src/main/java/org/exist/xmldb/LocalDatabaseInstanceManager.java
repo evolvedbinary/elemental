@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,6 +34,7 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.exist.EXistException;
 import org.exist.scheduler.SystemTaskJob;
 import org.exist.scheduler.impl.ShutdownTask;
 import org.exist.scheduler.impl.SystemTaskJobImpl;
@@ -73,6 +83,8 @@ public class LocalDatabaseInstanceManager extends AbstractLocalService implement
     public boolean enterServiceMode() throws XMLDBException {
         try {
             brokerPool.enterServiceMode(user);
+        } catch (final EXistException e) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         } catch (final PermissionDeniedException e) {
             throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, e.getMessage(), e);
         }

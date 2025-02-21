@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -31,8 +40,8 @@ import java.nio.file.Path;
 
 public class BTreeStore extends BTree {
 
-    public BTreeStore(final BrokerPool pool, final byte fileId, final short fileVersion, final boolean recoverEnabled, final Path file, final DefaultCacheManager cacheManager) throws DBException {
-        super(pool, fileId, fileVersion, recoverEnabled, cacheManager, file);
+    public BTreeStore(final BrokerPool pool, final byte fileId, final short fileVersion, final boolean enableRecovery, final Path file, final DefaultCacheManager cacheManager) throws DBException {
+        super(pool, fileId, fileVersion, enableRecovery, cacheManager, file);
 
         if(exists()) {
             open(fileVersion);

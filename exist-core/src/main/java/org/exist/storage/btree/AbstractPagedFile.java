@@ -106,29 +106,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, PAGE_HEADER extends AbstractPageHeader> implements PagedFile<HEADER, PAGE_HEADER>, AutoCloseable {
 
-    public static final int LENGTH_VERSION_ID = 2;  //sizeof short
-    public static final int LENGTH_HEADER_SIZE = 2;  //sizeof short
-    public static final int LENGTH_PAGE_COUNT = 8; //sizeof long
-    public static final int LENGTH_PAGE_SIZE = 4; //sizeof int
-    public static final int LENGTH_TOTAL_COUNT = 8; //sizeof long
-    public static final int LENGTH_FIRST_FREE_PAGE = 8; //sizeof long
-    public static final int LENGTH_LAST_FREE_PAGE = 8; //sizeof long
-    public static final int LENGTH_PAGE_HEADER_SIZE = 1; //sizeof byte
-    public static final int LENGTH_MAX_KEY_SIZE = 2;  //sizeof short
-    public static final int LENGTH_RECORD_COUNT = 8; //sizeof long
-
-    public static final int OFFSET_VERSION_ID = 0;
-    public static final int OFFSET_HEADER_SIZE = OFFSET_VERSION_ID + LENGTH_VERSION_ID; //2
-    public static final int OFFSET_PAGE_SIZE = OFFSET_HEADER_SIZE + LENGTH_HEADER_SIZE; //4
-    public static final int OFFSET_PAGE_COUNT = OFFSET_PAGE_SIZE + LENGTH_PAGE_SIZE; //8
-    public static final int OFFSET_TOTAL_COUNT = OFFSET_PAGE_COUNT + LENGTH_PAGE_COUNT; //16
-    public static final int OFFSET_FIRST_FREE_PAGE = OFFSET_TOTAL_COUNT + LENGTH_TOTAL_COUNT; //24
-    public static final int OFFSET_LAST_FREE_PAGE = OFFSET_FIRST_FREE_PAGE + LENGTH_FIRST_FREE_PAGE; //32
-    public static final int OFFSET_PAGE_HEADER_SIZE = OFFSET_LAST_FREE_PAGE + LENGTH_LAST_FREE_PAGE; //40
-    public static final int OFFSET_MAX_KEY_SIZE = OFFSET_PAGE_HEADER_SIZE + LENGTH_PAGE_HEADER_SIZE; //41
-    public static final int OFFSET_RECORD_COUNT = OFFSET_MAX_KEY_SIZE + LENGTH_MAX_KEY_SIZE; //43
-    public static final int OFFSET_REMAINDER = OFFSET_RECORD_COUNT + LENGTH_RECORD_COUNT; //51
-
     protected static final Logger LOG = LogManager.getLogger(AbstractPagedFile.class);
 
     protected static int PAGE_SIZE = 4096;
@@ -144,11 +121,11 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     private boolean readOnly = false;
     private boolean fileIsNew = false;
 	
-    public AbstractPagedFile(final BrokerPool pool, final short fileVersion) {
+    protected AbstractPagedFile(final BrokerPool pool, final short fileVersion) {
         this.fileVersion = fileVersion;
         this.fileHeader = createFileHeader(pool.getPageSize());
-        this.tempPageData = new byte[fileHeader.pageSize];
-        this.tempHeaderData = new byte[fileHeader.pageHeaderSize];
+        this.tempPageData = new byte[fileHeader.getPageSize()];
+        this.tempHeaderData = new byte[fileHeader.getPageHeaderSize()];
     }
 
     public final static void setPageSize(final int pageSize) {
@@ -174,7 +151,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             raf.close();
         } catch (final IOException e) {
             throw new DBException("An error occurred whilst closing the database file '"
-                    + file == null ? "null" : FileUtils.fileName(file) + "': " + e.getMessage());
+                    + file == null ? "null" : FileUtils.fileName(file) + "': " + e.getMessage(), e);
         }
     }
 
@@ -220,8 +197,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                 flushed = true;
             }
         } catch (final IOException ioe) {
-            LOG.warn("report me");
-            //TODO : this exception is *silently* ignored ?
+            throw new DBException(ioe);
         } finally {
             fileHeaderWriteLock.unlock();
         }
@@ -263,7 +239,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
 //    }
 
     protected final Page<PAGE_HEADER> getFreePage() throws IOException {
-        return getFreePage(fileHeader,true);
+        return getFreePage(true);
     }
 
     /**
@@ -278,24 +254,24 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      *
      * @throws IOException if an I/O error occurs
      */
-    private static Page<PAGE_HEADER> getFreePage(final AbstractPagedFileHeader fileHeader, final boolean reuseDeleted) throws IOException {
+    protected Page<PAGE_HEADER> getFreePage(final boolean reuseDeleted) throws IOException {
         final Page<PAGE_HEADER> page;
         final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
         try {
-            long pageNum = fileHeader.firstFreePage;
+            long pageNum = fileHeader.getFirstFreePage();
             if (reuseDeleted && pageNum != Page.NO_PAGE) {
 
                 // Steal a deleted page
                 page = new Page<>(tempPageData, tempHeaderData, pageNum);
                 page.read(raf);
 
-                fileHeader.firstFreePage = page.header.nextPage;
-                if (fileHeader.firstFreePage == Page.NO_PAGE) {
+                fileHeader.setFirstFreePage(page.header.getNextPage());
+                if (fileHeader.getFirstFreePage() == Page.NO_PAGE) {
                     fileHeader.setLastFreePage(Page.NO_PAGE);
                 }
             } else {
                 // Grow the file
-                pageNum = fileHeader.totalCount;
+                pageNum = fileHeader.getTotalCount();
                 if(pageNum == Integer.MAX_VALUE) {
                     throw new IOException("page limit reached: " + pageNum);
                 }
@@ -385,7 +361,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     public void printFreeSpaceList(final PrintStream out) throws IOException {
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         try {
-            long pageNum = fileHeader.firstFreePage;
+            long pageNum = fileHeader.getFirstFreePage();
             out.println("first free page: " + pageNum);
             Page<PAGE_HEADER> next;
             out.println("free pages for " + FileUtils.fileName(getFile()));
@@ -450,11 +426,11 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             page.header.setLsn(Lsn.LSN_INVALID);
             final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
             try {
-                if (fileHeader.firstFreePage == Page.NO_PAGE) {
+                if (fileHeader.getFirstFreePage() == Page.NO_PAGE) {
                     fileHeader.setFirstFreePage(page.pageNum);
                     page.header.updateNextPage(Page.NO_PAGE);
                 } else {
-                    final long firstFreePage = fileHeader.firstFreePage;
+                    final long firstFreePage = fileHeader.getFirstFreePage();
                     fileHeader.setFirstFreePage(page.pageNum);
                     page.header.updateNextPage(firstFreePage);
                 }
@@ -478,8 +454,8 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     }
 
     /**
-     * Clears the {@link AbstractPagedFileHeader#firstFreePage} and
-     *  {@link AbstractPagedFileHeader#lastFreePage}.
+     * Clears the {@link AbstractPagedFileHeader#getFirstFreePage()} and
+     *  {@link AbstractPagedFileHeader#getLastFreePage()}.
      *
      * This is needed in recovery, as the free page list
      * may have become corrupted.
@@ -561,7 +537,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         final int workSize;
         try {
-            workSize = fileHeader.workSize;
+            workSize = fileHeader.getWorkSize();
         } finally {
             fileHeaderReadLock.unlock();
         }

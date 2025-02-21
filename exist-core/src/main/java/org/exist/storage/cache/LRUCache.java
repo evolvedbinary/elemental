@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.storage.CacheManager;
 import org.exist.util.hashtable.SequencedLongHashMap;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -68,7 +78,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
 	}
 
 	@Override
-	public void add(final T item, final int initialRefCount) {
+	public void add(final T item, final int initialRefCount) throws IOException {
 		_add(item);
 	}
 
@@ -78,7 +88,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
     }
 
     @Override
-	public void add(final T item) {
+	public void add(final T item) throws IOException {
         _add(item);
 	}
 
@@ -86,7 +96,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * Avoids StackOverflow through
      * base/sub-class overriding add(T)
      */
-	private void _add(final T item) {
+	private void _add(final T item) throws IOException {
         if(map.size() == max) {
             removeOne(item);
         }
@@ -115,7 +125,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
 	}
 
 	@Override
-	public boolean flush() {
+	public boolean flush() throws IOException {
 		boolean flushed = false;
         final Iterator<T> iterator = map.valueIterator();
         while (iterator.hasNext()) {
@@ -164,7 +174,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
         return accounting.getThrashing();
     }
 
-	protected void removeOne(final T item) {
+	protected void removeOne(final T item) throws IOException {
         boolean removed = false;
         Iterator<Long2ObjectMap.Entry<T>> iterator = map.fastEntrySetIterator();
         do {
@@ -201,7 +211,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
     }
     
     @Override
-    public void resize(final int newSize) {
+    public void resize(final int newSize) throws IOException {
         if (newSize < max) {
             shrink(newSize);
         } else {
@@ -214,7 +224,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
         }
     }
 
-    protected void shrink(final int newSize) {
+    protected void shrink(final int newSize) throws IOException {
         flush();
         map = new SequencedLongHashMap<>(newSize);
         max = newSize;

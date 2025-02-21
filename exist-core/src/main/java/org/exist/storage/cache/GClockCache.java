@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,6 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.CacheManager;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 
 /**
@@ -90,12 +100,12 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
     }
 
     @Override
-    public void add(final T item) {
+    public void add(final T item) throws IOException {
 		add(item, 1);
 	}
 
 	@Override
-	public void add(final T item, final int initialRefCount) {
+	public void add(final T item, final int initialRefCount) throws IOException {
 		final T old = map.get(item.getKey());
 		if (old != null) {
 			old.incReferenceCount();
@@ -145,7 +155,7 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
 	}
 
 	@Override
-	public boolean flush() {
+	public boolean flush() throws IOException {
 		boolean flushed = false;
 	    int written = 0;
 		for (int i = 0; i < count; i++) {
@@ -170,7 +180,7 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
 	    return false;
 	}
 
-	protected T removeOne(final T item) {
+	protected T removeOne(final T item) throws IOException {
 		T old = null;
 		boolean removed = false;
 		int bucket;
@@ -247,7 +257,7 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
     }
 
     @Override
-    public void resize(final int newSize) {
+    public void resize(final int newSize) throws IOException {
         if (newSize < size) {
             shrink(newSize);
         } else {
@@ -265,7 +275,7 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
         }
     }
     
-    private void shrink(final int newSize) {
+    private void shrink(final int newSize) throws IOException {
         flush();
         items = createArray(cacheableClazz, newSize);
         map = new Long2ObjectOpenHashMap<>(newSize * 2);

@@ -998,7 +998,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
      * @return <code>true</code> if transactions can be handled
      */
     public boolean isRecoveryEnabled() {
-        return !readOnly.get() && recoveryEnabled;
+        return recoveryEnabled && !readOnly.get();
     }
 
     @Override
@@ -1416,7 +1416,11 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
                 //TODO : use a "clean" dedicated method (we have some below) ?
                 if(syncRequired) {
                     //Note that the broker is not yet really inactive ;-)
-                    sync(broker, syncEvent);
+                    try {
+                        sync(broker, syncEvent);
+                    } catch (final EXistException e) {
+                        LOG.error(e.getMessage(), e);
+                    }
                     this.syncRequired = false;
                     this.checkpoint = false;
                 }
@@ -1429,7 +1433,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         }
     }
 
-    public DBBroker enterServiceMode(final Subject user) throws PermissionDeniedException {
+    public DBBroker enterServiceMode(final Subject user) throws EXistException, PermissionDeniedException {
         if(!user.hasDbaRole()) {
             throw new PermissionDeniedException("Only users of group dba can switch the db to service mode");
         }
@@ -1489,8 +1493,10 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
      *
      * @param broker    A broker responsible for executing the job
      * @param syncEvent One of {@link org.exist.storage.sync.Sync}
+     *
+     * @throws EXistException if an error occurs during synchronization.
      */
-    public void sync(final DBBroker broker, final Sync syncEvent) {
+    public void sync(final DBBroker broker, final Sync syncEvent) throws EXistException {
 
         /**
          * Database Systems - The Complete Book (Second edition)
@@ -1534,6 +1540,8 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 //            LOG.debug("Minor sync");
             }
             //TODO : touch this.syncEvent and syncRequired ?
+        } catch (final IOException e) {
+            throw new EXistException(e.getMessage(), e);
         } finally {
             broker.popSubject();
         }

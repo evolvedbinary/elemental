@@ -77,13 +77,13 @@ public class BFileHeader extends BTreeFileHeader {
 //    }
 
     @Override
-    public int read(final byte[] buf) throws IOException {
+    protected int read(final byte[] buf) throws IOException {
         final int offset = super.read(buf);
         return freeList.read(buf, offset);
     }
 
     @Override
-    public int write(final byte[] buf) throws IOException {
+    protected int write(final byte[] buf) throws IOException {
         final int offset = super.write(buf);
         return freeList.write(buf, offset);
     }

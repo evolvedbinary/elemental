@@ -63,7 +63,7 @@ public class RawNodeIterator implements IRawNodeIterator {
 
     private int offset;
     private short lastTupleID = ItemId.UNKNOWN_ID;
-    private DOMFile.DOMPage page = null;
+    private DOMPage page = null;
     private long pageNum;
 
     /**

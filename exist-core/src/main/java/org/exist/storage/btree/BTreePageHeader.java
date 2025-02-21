@@ -132,6 +132,15 @@ public class BTreePageHeader extends AbstractPageHeader {
         return parentPage;
     }
 
+    /**
+     * Set the parent page.
+     *
+     * @param parentPage the parent page.
+     */
+    public void setParentPage(final long parentPage) {
+        this.parentPage = parentPage;
+    }
+
     @Override
     public int read(final byte[] data, int offset) throws IOException {
         offset = super.read(data, offset);

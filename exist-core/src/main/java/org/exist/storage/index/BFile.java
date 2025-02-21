@@ -144,9 +144,9 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     protected final int maxValueSize;
 
 
-    public BFile(final BrokerPool pool, final byte fileId, final short fileVersion, final boolean recoveryEnabled, final Path file, final DefaultCacheManager cacheManager,
+    public BFile(final BrokerPool pool, final byte fileId, final short fileVersion, final boolean enableRecovery, final Path file, final DefaultCacheManager cacheManager,
             final double cacheGrowth, final double thresholdData) throws DBException {
-        super(pool, fileId, fileVersion, recoveryEnabled, cacheManager, file);
+        super(pool, fileId, fileVersion, enableRecovery, cacheManager, file);
         this.lockManager = pool.getLockManager();
         this.dataCache = new LRUCache<>(FileUtils.fileName(file), 64, cacheGrowth, thresholdData, Cache.CacheType.DATA);
         cacheManager.registerCache(dataCache);
@@ -372,14 +372,18 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
 
     @Override
     public boolean flush() throws DBException {
-        boolean flushed = false;
-        //TODO : consider log operation as a flush ?
-        if (isRecoveryEnabled()) {
-            logManager.ifPresent(l -> l.flush(true, false));
+        try {
+            boolean flushed = false;
+            //TODO : consider log operation as a flush ?
+            if (isRecoveryEnabled() && logManager != null) {
+                logManager.flush(true, false);
+            }
+            flushed = dataCache.flush();
+            flushed = flushed | super.flush();
+            return flushed;
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
         }
-        flushed = flushed | dataCache.flush();
-        flushed = flushed | super.flush();
-        return flushed;
     }
 
     public BufferStats getDataBufferStats() {
@@ -1015,9 +1019,9 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
      * @param page the data page
      */
     private void writeToLog(final Loggable loggable, final DataPage page) {
-        if(logManager.isPresent()) {
+        if (logManager != null) {
             try {
-                logManager.get().journal(loggable);
+                logManager.journal(loggable);
                 page.getPageHeader().setLsn(loggable.getLsn());
             } catch (final JournalException e) {
                 LOG.warn(e.getMessage(), e);
@@ -1030,7 +1034,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         if (wp == null) {
             final Page<BFilePageHeader> page = getPage(pos);
             final byte[] data = page.read(raf);
-            if (page.getPageHeader().getStatus() < PageStatus.RECORD) {
+            if (!PageStatus.isRecordType(page.getPageHeader().getStatus())) {
                 return null;
             }
             if (loggable != null && isUptodate(page, loggable)) {
@@ -1099,7 +1103,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     return;
                 }
                 final byte[] data = page.read(raf);
-                if (page.getPageHeader().getStatus() < PageStatus.RECORD || isUptodate(page, loggable)) {
+                if ((!PageStatus.isRecordType(page.getPageHeader().getStatus())) || isUptodate(page, loggable)) {
                 	// page is obviously deleted later
                 	return;
                 }
@@ -1133,7 +1137,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     return;
                 }
                 final byte[] data = page.read(raf);
-                if (page.getPageHeader().getStatus() < PageStatus.RECORD || isUptodate(page, loggable)) {
+                if ((!PageStatus.isRecordType(page.getPageHeader().getStatus())) || isUptodate(page, loggable)) {
                     return;
                 }
                 wp = new SinglePage(page, data, false);
@@ -1336,8 +1340,9 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     return;
                 }
                 final byte[] data = page.read(raf);
-                if (page.getPageHeader().getStatus() < PageStatus.RECORD || isUptodate(page, loggable))
-                    {return;}
+                if ((!PageStatus.isRecordType(page.getPageHeader().getStatus())) || isUptodate(page, loggable)) {
+                    return;
+                }
                 wp = new SinglePage(page, data, true);
             }
             if (requiresRedo(loggable, wp)) {
@@ -1540,17 +1545,13 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         }
 
         @Override
-        public boolean sync(final boolean syncJournal) {
+        public boolean sync(final boolean syncJournal) throws IOException {
             if (isDirty()) {
-                try {
-                    write();
-                    if (isRecoveryEnabled() && syncJournal && logManager.isPresent() && logManager.get().lastWrittenLsn().compareTo(getPageHeader().getLsn()) < 0) {
-                        logManager.ifPresent(l -> l.flush(true, false));
-                    }
-                    return true;
-                } catch (final IOException e) {
-                    LOG.error("IO exception occurred while saving page {}", getPageNum());
+                write();
+                if (isRecoveryEnabled() && syncJournal && logManager != null && logManager.lastWrittenLsn().compareTo(getPageHeader().getLsn()) < 0) {
+                    logManager.flush(true, false);
                 }
+                return true;
             }
             return false;
         }

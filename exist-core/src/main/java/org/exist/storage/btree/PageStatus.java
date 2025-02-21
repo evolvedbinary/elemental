@@ -37,4 +37,13 @@ public enum PageStatus {
         }
         throw new IllegalArgumentException("Unknown value for PageStatus: " + value);
     }
+
+    /**
+     * Determine if the page status is a type of record.
+     *
+     * @return true if the page status is a type of record, false otherwise.
+     */
+    public static boolean isRecordType(final PageStatus pageStatus) {
+        return pageStatus.value >= RECORD.value;
+    }
 }

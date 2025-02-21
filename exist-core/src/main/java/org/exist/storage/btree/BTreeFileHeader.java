@@ -107,7 +107,7 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
     }
 
     @Override
-    public int read(final byte[] buf) throws IOException {
+    protected int read(final byte[] buf) throws IOException {
         int offset = super.read(buf);
         rootPage = ByteConversion.byteToLong(buf, offset);
         offset += 8;
@@ -117,7 +117,7 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
     }
 
     @Override
-    public int write(final byte[] buf) throws IOException {
+    protected int write(final byte[] buf) throws IOException {
         int offset = super.write(buf);
         ByteConversion.longToByte(rootPage, buf, offset);
         offset += 8;

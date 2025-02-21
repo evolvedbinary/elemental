@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,6 +31,8 @@
 package org.exist.storage.cache;
 
 import org.exist.storage.CacheManager;
+
+import java.io.IOException;
 
 /**
  * Base interface for all cache implementations that are used for
@@ -52,7 +63,7 @@ public interface Cache<T extends Cacheable> {
      * 
      * @param item The item to add to the cache
      */
-    void add(T item);
+    void add(T item) throws IOException;
 
     /**
      * Add the item to the cache. If it is already in the cache,
@@ -61,7 +72,7 @@ public interface Cache<T extends Cacheable> {
      * @param item The item to add to the cache
      * @param initialRefCount the initial reference count for the item
      */
-    void add(T item, int initialRefCount);
+    void add(T item, int initialRefCount) throws IOException;
 
     /**
      * Retrieve an item from the cache.
@@ -103,7 +114,7 @@ public interface Cache<T extends Cacheable> {
      * @return true if flush was successful otherwise false
      */
 
-    boolean flush();
+    boolean flush() throws IOException;
 
     /**
      * Get the size of this cache.
@@ -133,7 +144,7 @@ public interface Cache<T extends Cacheable> {
      * 
      * @param newSize the new size of the cache.
      */
-    void resize(int newSize);
+    void resize(int newSize) throws IOException;
 
     /**
      * Set the CacheManager object that controls this cache.

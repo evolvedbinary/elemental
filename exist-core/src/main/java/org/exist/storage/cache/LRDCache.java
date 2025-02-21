@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,6 +33,8 @@ package org.exist.storage.cache;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
 
 /**
  * A cache implementation based on a Least Reference Density (LRD)
@@ -57,7 +68,7 @@ public class LRDCache<T extends Cacheable> extends GClockCache<T> {
 	}
 	
 	@Override
-	public void add(final T item, final int initialRefCount) {
+	public void add(final T item, final int initialRefCount) throws IOException {
 		final T old = map.get(item.getKey());
 		if (old != null) {
 			old.incReferenceCount();
@@ -82,7 +93,7 @@ public class LRDCache<T extends Cacheable> extends GClockCache<T> {
 	}
 
 	@Override
-	protected T removeOne(final T item) {
+	protected T removeOne(final T item) throws IOException {
 		T old;
 		double rd = 0;
 		double minRd = -1;

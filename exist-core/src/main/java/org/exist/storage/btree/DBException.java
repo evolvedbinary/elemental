@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * NOTE: This file is in part based on code from The dbXML Group.
  * The original license statement is also included below.
  *
@@ -72,6 +81,8 @@
  */
 package org.exist.storage.btree;
 
+import java.io.IOException;
+
 /**
  * A DBException is thrown by the database if an exception occurs in the
  * managing (creating, dropping) database objects such as Collections, Indexes,
@@ -98,6 +109,14 @@ public class DBException extends Exception {
 	public DBException(final int faultCode, final String message) {
 		super(message);
 		this.faultCode = faultCode;
+	}
+
+	public DBException(final IOException e) {
+		super(e);
+	}
+
+	public DBException(final String message, final IOException e) {
+		super(message, e);
 	}
 
 }

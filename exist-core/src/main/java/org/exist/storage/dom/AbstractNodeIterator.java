@@ -65,7 +65,7 @@ public abstract class AbstractNodeIterator implements INodeIterator {
     private DocumentImpl doc = null;
     private int offset;
     private short lastTupleID = ItemId.UNKNOWN_ID;
-    private DOMFile.DOMPage page = null;
+    private DOMPage page = null;
     private long pageNum;
     private long startAddress = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
     protected DBBroker broker;

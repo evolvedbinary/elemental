@@ -30,9 +30,7 @@
  */
 package org.exist.storage.dom;
 
-import org.exist.storage.dom.DOMFile.DOMPage;
-
-public final class RecordPos {
+class RecordPos {
 
     DOMPage page;
     int offset;

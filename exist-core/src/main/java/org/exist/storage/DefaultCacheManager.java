@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -30,6 +39,7 @@ import org.exist.storage.cache.Cache;
 import org.exist.util.Configuration;
 import org.exist.util.DatabaseConfigurationException;
 
+import java.io.IOException;
 import java.text.NumberFormat;
 
 import java.util.ArrayList;
@@ -179,8 +189,7 @@ public class DefaultCacheManager implements CacheManager, BrokerPoolService
 
 
     @Override
-    public int requestMem( Cache cache )
-    {
+    public int requestMem( Cache cache ) throws IOException {
         if( currentPageCount >= totalPageCount ) {
 
             if( cache.getBuffers() < maxCacheSize ) {
@@ -241,8 +250,7 @@ public class DefaultCacheManager implements CacheManager, BrokerPoolService
      * If shrinked, the cache will be reset to the default initial cache size.
      */
     @Override
-    public void checkCaches()
-    {
+    public void checkCaches() throws IOException {
         final int   minSize = (int)( totalPageCount * MIN_SHRINK_FACTOR );
         Cache cache;
         int   load;
@@ -272,8 +280,7 @@ public class DefaultCacheManager implements CacheManager, BrokerPoolService
 
 
     @Override
-    public void checkDistribution()
-    {
+    public void checkDistribution() throws IOException {
         if( lastRequest == null ) {
             return;
         }

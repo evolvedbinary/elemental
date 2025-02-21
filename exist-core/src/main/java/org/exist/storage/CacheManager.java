@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,6 +32,8 @@ package org.exist.storage;
 
 import org.exist.storage.cache.Cache;
 
+import java.io.IOException;
+
 public interface CacheManager {
 
     /**
@@ -46,7 +57,7 @@ public interface CacheManager {
      * @param cache cache to grow
      * @return new cache size, or -1 if no free pages available.
      */
-    int requestMem(Cache cache);
+    int requestMem(Cache cache) throws IOException;
 
     /**
      * Called from the global major sync event to check if caches can
@@ -54,7 +65,7 @@ public interface CacheManager {
      *
      * If shrinked, the cache will be reset to the default initial cache size.
      */
-    void checkCaches();
+    void checkCaches() throws IOException;
 
     /**
      * Called from the global minor sync event to check if a smaller
@@ -62,7 +73,7 @@ public interface CacheManager {
      * might decide to shrink this cache by a certain amount to make
      * room for the smaller cache to grow.
      */
-    void checkDistribution();
+    void checkDistribution() throws IOException;
 
     /**
      * @return Maximum size of all Caches (unit of measurement is implementation defined)

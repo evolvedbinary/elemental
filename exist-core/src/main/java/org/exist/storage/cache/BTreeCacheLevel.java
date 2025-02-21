@@ -8,6 +8,7 @@ package org.exist.storage.cache;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.jcip.annotations.NotThreadSafe;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -21,14 +22,14 @@ public class BTreeCacheLevel<T extends BTreeCacheable> extends LRUCache<T> {
     }
 
     @Override
-    public void add(final T item) {
+    public void add(final T item) throws IOException {
         map.put(item.getKey(), item);
         if (map.size() >= max + 1) {
             removeNext(item);
         }
     }
 
-    private void removeNext(final T item) {
+    private void removeNext(final T item) throws IOException {
         final Iterator<Long2ObjectMap.Entry<T>> iterator = map.fastEntrySetIterator();
         while (iterator.hasNext()) {
             final Long2ObjectMap.Entry<T> next = iterator.next();
