@@ -60,8 +60,8 @@ public class BTreeTest {
 
     public void create(int count) throws DBException, IOException {
         FileUtils.deleteQuietly(file);
-        try (BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
+//            btree.create((short) -1);
 
             String prefixStr = "KEY";
             for (int i = 1; i <= count; i++) {
@@ -78,11 +78,9 @@ public class BTreeTest {
     }
 
     public void rebuild() throws DBException, IOException, TerminatedException {
-        BTree btree = null;
-        try {
             System.out.println("Loading btree ...");
-            btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file);
-            btree.open((short)-1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
+//            btree.open((short)-1);
 
             System.out.println("Rebuilding ...");
             btree.rebuild();
@@ -91,19 +89,13 @@ public class BTreeTest {
                 btree.dump(writer);
                 writer.flush();
             }
-        } finally {
-            if (btree != null) {
-                btree.close();
-            }
         }
     }
 
     public void read(int count) throws DBException, IOException, TerminatedException {
-        BTree btree = null;
-        try {
-            System.out.println("Loading btree ...");
-            btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file);
-            btree.open((short)-1);
+        System.out.println("Loading btree ...");
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
+//            btree.open((short)-1);
 
             String prefixStr = "KEY";
             for (int i = 1; i <= count; i++) {
@@ -112,10 +104,6 @@ public class BTreeTest {
                 if (r == -1) {
                     System.out.println("Key not found: " + i);
                 }
-            }
-        } finally {
-            if (btree != null) {
-                btree.close();
             }
         }
     }
