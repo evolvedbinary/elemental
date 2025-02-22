@@ -208,9 +208,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             //use inheritance
             final Path file = dataDir.resolve(getFileName());
             LOG.debug("Creating '{}'...", FileUtils.fileName(file));
-            nativeFile = new BFile(broker.getBrokerPool(), id, FILE_FORMAT_VERSION_ID, false, file,
-                    broker.getBrokerPool().getCacheManager(), cacheGrowth,
-                    cacheValueThresHold);
+            nativeFile = BFile.open(broker.getBrokerPool(), id, FILE_FORMAT_VERSION_ID, file, false, cacheGrowth, cacheValueThresHold);
             config.setProperty(getConfigKeyForFile(), nativeFile);
         }
         dbValues = nativeFile;

@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -35,8 +44,8 @@ import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.DBException;
-import org.exist.storage.index.BTreeStore;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedLock;
 import org.exist.util.DatabaseConfigurationException;
@@ -55,7 +64,7 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
     public static final byte STRUCTURAL_INDEX_ID = 1;
 
     /** The datastore for this node index */
-    protected BTreeStore btree;
+    protected BTree btree;
 
     protected LockManager lockManager;
     protected SymbolTable symbols;
@@ -76,8 +85,8 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
         final Path file = getDataDir().resolve(FILE_NAME);
         LOG.debug("Creating '{}'...", FileUtils.fileName(file));
         try {
-            btree = new BTreeStore(pool, STRUCTURAL_INDEX_ID, FILE_FORMAT_VERSION_ID, false,
-                    file, pool.getCacheManager());
+            this.btree = BTree.open(pool, STRUCTURAL_INDEX_ID, FILE_FORMAT_VERSION_ID, file, false);
+            this.btree.setSplitFactor(0.7);
         } catch (final DBException e) {
             LOG.error("Failed to initialize structural index: {}", e.getMessage(), e);
             throw new DatabaseConfigurationException(e.getMessage(), e);

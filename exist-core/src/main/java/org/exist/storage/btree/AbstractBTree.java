@@ -189,7 +189,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         return null;
     }
 
-    protected void setSplitFactor(final double factor) {
+    public void setSplitFactor(final double factor) {
         if (factor > 1.0) {
             throw new IllegalArgumentException("splitFactor should be <= 1 > 0");
         }
