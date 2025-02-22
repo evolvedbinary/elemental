@@ -30,10 +30,8 @@
  */
 package org.exist.storage.dom;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
+import java.io.*;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -46,6 +44,7 @@ import javax.xml.stream.XMLStreamReader;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.storage.btree.Page.NO_PAGE;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongOpenHashMap;
 import org.apache.logging.log4j.LogManager;
@@ -179,11 +178,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      */
     static final short OVERFLOW_PAGE_DATA_LENGTH = 0;
 
-    static final long DATA_SYNC_PERIOD = 4200;
-
     private final Cache<DOMPage> dataCache;
 
-    // TODO(AR) investigate how this is used
     private Object owner = null;
 
     private final Reference2LongMap<Object> pages;
@@ -192,24 +188,62 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
     private final AddValueLoggable addValueLog = new AddValueLoggable();
 
-    public DOMFile(final BrokerPool pool, final byte id, final Path dataDir, final Configuration config) throws DBException {
-        super(pool, id, FILE_FORMAT_VERSION_ID, true, pool.getCacheManager());
+    private DOMFile(final BrokerPool pool, final byte fileId, final BackingFile backingFile, final BTreeFileHeader fileHeader) {
+        super(pool, fileId, backingFile, fileHeader, true, pool.getCacheManager());
         this.lockManager = pool.getLockManager();
         this.pages = new Reference2LongOpenHashMap<>(64);
         this.pages.defaultReturnValue(NO_PAGE);
         this.dataCache = new LRUCache<>(getFileName(), 256, 0.0, 1.0, Cache.CacheType.DATA);
         this.cacheManager.registerCache(dataCache);
-        final Path file = dataDir.resolve(getFileName());
-        setFile(file);
-        if (exists()) {
-            super.open(FILE_FORMAT_VERSION_ID);
-        } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Creating data file: {}", FileUtils.fileName(file));
+    }
+
+    public static DOMFile open(final BrokerPool pool, final byte fileId, final Path dataDir) throws DBException {
+        final Path domPath = dataDir.resolve(getFileName());
+        BackingFile backingFile = null;
+        try {
+            backingFile = openAndLockFile(domPath, true);
+            final boolean readOnly = backingFile.fileLock.isShared();
+            if (readOnly) {
+                LOG.warn("DOM file was opened in read-only mode: {}", FileUtils.fileName(backingFile.path));
             }
-            create();
+
+            // create a new file header object
+            final BTreeFileHeader fileHeader = new BTreeFileHeader(FILE_FORMAT_VERSION_ID, 0, pool.getPageSize());
+            if (backingFile.createdNewFile) {
+                // write the file header data to the new file
+                fileHeader.write(backingFile.randomAccessFile);
+            } else {
+                // load the file header data from the existing file
+                fileHeader.read(backingFile.randomAccessFile);
+                fileHeader.checkVersion(FILE_FORMAT_VERSION_ID, FileUtils.fileName(backingFile.path));
+                LOG.info("Opened DOM file: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            final DOMFile domFile = new DOMFile(pool, fileId, backingFile, fileHeader);
+
+            if (backingFile.createdNewFile) {
+                // this is a new DOMFile, so create the root node and persist it
+                domFile.createRootNode(null);
+                fileHeader.setFixedKeyLen((short) -1);
+                fileHeader.write(backingFile.randomAccessFile);
+
+                LOG.info("Created DOM file: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            return domFile;
+
+        } catch (final IOException e) {
+            // release the resources we opened before re-throwing exception
+            if (backingFile != null) {
+                try {
+                    backingFile.randomAccessFile.close();
+                    backingFile.fileLock.release();
+                } catch (final IOException e2) {
+                    LOG.error(e2.getMessage(), e2);
+                }
+            }
+            throw new DBException(e);
         }
-        config.setProperty(getConfigKeyForFile(), this);
     }
 
     /**
@@ -278,7 +312,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
     private DOMPage createDOMPage(final long pointer) throws IOException {
         final Page<DOMFilePageHeader> newPage = getPage(pointer);
-        byte[] data = newPage.read(raf);
+        byte[] data = newPage.read(backingFile.randomAccessFile);
         int len = newPage.getPageHeader().getDataLength();
         if (data.length == 0) {
             data = new byte[fileHeader.getWorkSize()];
@@ -328,11 +362,6 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             LOG.debug("The file doesn't own a lock");
         }
         dataCache.add(page);
-    }
-
-    @Override
-    public boolean create() throws DBException {
-        return super.create((short) -1);
     }
 
     @Override
@@ -1359,11 +1388,6 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             }
         }
         return buf.toString();
-    }
-
-    @Override
-    public BTreeFileHeader createFileHeader(final int pageSize) {
-        return new BTreeFileHeader(fileVersion, 0, pageSize);
     }
 
     @Override
@@ -2738,7 +2762,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     void undoWriteOverflow(final WriteOverflowPageLoggable loggable) {
         try {
             final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
-            page.read(raf);
+            page.read(backingFile.randomAccessFile);
             unlinkPages(page);
         } catch (final IOException e) {
             LOG.warn("Failed to undo {}: {}", loggable.dump(), e.getMessage(), e);
@@ -2749,7 +2773,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     void redoRemoveOverflow(final RemoveOverflowLoggable loggable) {
         try {
             final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
-            page.read(raf);
+            page.read(backingFile.randomAccessFile);
             final DOMFilePageHeader pageHeader = page.getPageHeader();
             if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
                 unlinkPages(page);
@@ -2763,7 +2787,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     void undoRemoveOverflow(final RemoveOverflowLoggable loggable) {
         try {
             final Page<DOMFilePageHeader> page = getPage(loggable.pageNum);
-            page.read(raf);
+            page.read(backingFile.randomAccessFile);
             final DOMFilePageHeader pageHeader = page.getPageHeader();
             dropFreePageList();
             pageHeader.updateStatus(PageStatus.RECORD);
@@ -3221,7 +3245,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             int count = 0;
             while (page != null) {
                 try {
-                    final byte[] chunk = page.read(raf);
+                    final byte[] chunk = page.read(backingFile.randomAccessFile);
                     os.write(chunk);
                     final long nextPageNumber = page.getPageHeader().getNextPage();
                     page = (nextPageNumber == NO_PAGE) ? null : getPage(nextPageNumber);
@@ -3240,7 +3264,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 LOG.debug("Removing overflow page {}", page.getPageNum());
                 final long nextPageNumber = page.getPageHeader().getNextPage();
                 if (transaction != null && isRecoveryEnabled()) {
-                    final byte[] chunk = page.read(raf);
+                    final byte[] chunk = page.read(backingFile.randomAccessFile);
                     final Loggable loggable = new RemoveOverflowLoggable(transaction,
                         page.getPageNum(), nextPageNumber, chunk);
                     writeToLog(loggable, page);

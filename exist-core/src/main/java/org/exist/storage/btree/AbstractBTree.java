@@ -85,11 +85,8 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import org.exist.storage.BrokerPool;
-import org.exist.storage.BufferStats;
+import org.exist.storage.*;
 
-import org.exist.storage.DefaultCacheManager;
-import org.exist.storage.NativeBroker;
 import org.exist.storage.cache.*;
 import org.exist.storage.journal.*;
 import org.exist.storage.txn.Txn;
@@ -112,7 +109,7 @@ import java.util.stream.Collectors;
  *  {@link org.exist.storage.btree.Value}. The actual value data is not
  *  stored in the B+tree itself. Instead, we use long pointers to record the
  *  storage address of the value. This class has no methods to locate or
- *  modify data records. Data handling is in the responsibilty of the 
+ *  modify data records. Data handling is in the responsibility of the
  *  proper subclasses: {@link org.exist.storage.index.BFile} and
  *  {@link org.exist.storage.dom.DOMFile}.
  *  
@@ -156,10 +153,10 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
 
     private final BrokerPool pool;
 
-    protected final DefaultCacheManager cacheManager;
+    protected final CacheManager cacheManager;
 
     /** Cache of BTreeNode(s) */
-    private Cache<BTreeNode> cache;
+    private final Cache<BTreeNode> cache;
 
     /** The LogManager for writing the transaction log */
     protected final @Nullable JournalManager logManager;
@@ -168,9 +165,9 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
 
     private double splitFactor = -1;
 
-    protected AbstractBTree(final BrokerPool pool, final byte fileId, final short fileVersion,
-            final boolean enableRecovery, final DefaultCacheManager cacheManager) {
-        super(pool, fileVersion);
+    protected AbstractBTree(final BrokerPool pool, final byte fileId, final BackingFile backingFile,
+            final HEADER fileHeader, final boolean enableRecovery, final CacheManager cacheManager) {
+        super(backingFile, fileHeader);
         this.pool = pool;
         this.cacheManager = cacheManager;
         this.fileId = fileId;
@@ -179,61 +176,17 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         } else {
             this.logManager = null;
         }
+        this.cache = new BTreeCache<>(FileUtils.fileName(getFile()), cacheManager.getDefaultInitialSize(), 1.5, 0, Cache.CacheType.BTREE);
+        this.cacheManager.registerCache(cache);
     }
 
     protected boolean isRecoveryEnabled() {
         return logManager != null && pool.isRecoveryEnabled();
     }
 
-    public AbstractBTree(final BrokerPool pool, final byte fileId, final short fileVersion,
-                 final boolean enableRecovery,
-                 final DefaultCacheManager cacheManager, final Path file)
-            throws DBException {
-        this(pool, fileId, fileVersion, enableRecovery, cacheManager);
-        setFile(file);
-    }
-
-    public boolean create(final short fixedKeyLen) throws DBException {
-        if (super.create()) {
-            initCache();
-            try {
-                createRootNode(null);
-            } catch (final IOException e) {
-                LOG.warn("Can not create database file {}", getFile().toAbsolutePath().toString(), e);
-                return false;
-            }
-            final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
-            try {
-                fileHeader.setFixedKeyLen(fixedKeyLen);
-                fileHeader.write(raf);
-            } catch (final IOException e) {
-                throw new DBException("Error while writing file header: " + e.getMessage());
-            } finally {
-                fileHeaderWriteLock.unlock();
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean open(final short expectedVersion) throws DBException {
-        if (super.open(expectedVersion)) {
-            initCache();
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     @Override
     public String getLockName() {
         return null;
-    }
-
-    protected void initCache() {
-        this.cache = new BTreeCache<>(FileUtils.fileName(getFile()), cacheManager.getDefaultInitialSize(), 1.5,
-            0, Cache.CacheType.BTREE);
-        cacheManager.registerCache(cache);
     }
 
     protected void setSplitFactor(final double factor) {
@@ -481,7 +434,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
         try {
             fileHeader.setRootPage(rootNode.page.getPageNum());
-            fileHeader.write(raf);
+            fileHeader.write(backingFile.randomAccessFile);
         } finally {
             fileHeaderWriteLock.unlock();
         }
@@ -581,7 +534,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             final long pages = fileHeader.getTotalCount();
             for (int i = 1; i < pages; i++) {
                 final Page<PAGE_HEADER> page = getPage(i);
-                page.read(raf);
+                page.read(backingFile.randomAccessFile);
                 if (page.getPageHeader().getStatus() == PageStatus.LEAF) {
                     final BTreeNode node = new BTreeNode(page, false);
                     node.read();
@@ -632,7 +585,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     page = node.page;
                 } else {
                     page = getPage(i);
-                    page.read(raf);
+                    page.read(backingFile.randomAccessFile);
                 }
                 if (page.getPageHeader().getStatus() == PageStatus.LEAF) {
                     pageCount++;
@@ -660,7 +613,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         if (removeBranches) {
             for (final long p : branchPages) {
                 final Page<PAGE_HEADER> page = getPage(p);
-                page.read(raf);
+                page.read(backingFile.randomAccessFile);
                 final BTreeNode node = new BTreeNode(page, false);
                 node.read();
                 cache.remove(node);
@@ -790,7 +743,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             // node is not yet loaded. Load it
             try {
                 final Page<PAGE_HEADER> page = getPage(loggable.getPageNum());
-                page.read(raf);
+                page.read(backingFile.randomAccessFile);
                 if ((page.getPageHeader().getStatus() == PageStatus.BRANCH ||
                         page.getPageHeader().getStatus() == PageStatus.LEAF) &&
                         (!page.getPageHeader().getLsn().equals(Lsn.LSN_INVALID)) &&
@@ -1266,7 +1219,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          * @throws IOException if an I/O error occurs
          */
         private void read() throws IOException {
-            final byte[] data = page.read(raf);
+            final byte[] data = page.read(backingFile.randomAccessFile);
             final short keyLen;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {

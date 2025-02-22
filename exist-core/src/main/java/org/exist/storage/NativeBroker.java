@@ -236,7 +236,8 @@ public class NativeBroker extends DBBroker {
             if(configuredDomFile != null) {
                 this.domDb = configuredDomFile;
             } else {
-                this.domDb = new DOMFile(pool, DOM_DBX_ID, dataDir, config);
+                this.domDb = DOMFile.open(pool, DOM_DBX_ID, dataDir);
+                config.setProperty(DOMFile.getConfigKeyForFile(), domDb);
             }
             if(domDb.isReadOnly()) {
                 LOG.warn("{} is read-only!", FileUtils.fileName(domDb.getFile()));
@@ -248,7 +249,8 @@ public class NativeBroker extends DBBroker {
             if(configuredCollectionsDb != null) {
                 this.collectionsDb = configuredCollectionsDb;
             } else {
-                this.collectionsDb = new CollectionStore(pool, COLLECTIONS_DBX_ID, dataDir, config);
+                this.collectionsDb = CollectionStore.open(pool, COLLECTIONS_DBX_ID, dataDir);
+                config.setProperty(CollectionStore.getConfigKeyForFile(), collectionsDb);
             }
             if(collectionsDb.isReadOnly()) {
                 LOG.warn("{} is read-only!", FileUtils.fileName(collectionsDb.getFile()));

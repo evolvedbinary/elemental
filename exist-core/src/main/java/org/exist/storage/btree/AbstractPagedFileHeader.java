@@ -327,6 +327,19 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
         this.dirty = false;
     }
 
+    public void checkVersion(final short requiredVersion, final String filename) throws IOException {
+        if (getVersion() != requiredVersion) {
+            throw new IOException("Database file: " +
+                filename + " has a storage format incompatible with this " +
+                "version of eXist-db. You need to upgrade your database by creating a backup, " +
+                "cleaning your data directory and restoring the data. In some cases, " +
+                "a reindex may be sufficient. " +
+                "Please follow the instructions for the version you installed. " +
+                "On-disk file version has storage format: " + getVersion() +
+                "; However this version of eXist-db requires storage format version: " + requiredVersion);
+        }
+    }
+
     public ReentrantReadWriteLock.ReadLock readLock() {
         final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
         readLock.lock();

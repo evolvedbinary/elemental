@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -60,16 +69,60 @@ public class CollectionStore extends BFile {
 
     /**
      * @param pool the broker pool
-     * @param id the if of the collection store
-     * @param dataDir the data directory for the collection store
-     * @param config the database configuration
-     *
-     * @throws DBException if the collection store cannot be constructed.
+     * @param fileId the id of the collection store
+     * @param backingFile the backing file
+     * @param fileHeader the file header
      */
-    public CollectionStore(BrokerPool pool, byte id, Path dataDir, Configuration config) throws DBException {
-        super(pool, id, FILE_FORMAT_VERSION_ID, true, dataDir.resolve(getFileName()),
-                pool.getCacheManager(), 1.25, 0.03);
-        config.setProperty(getConfigKeyForFile(), this);
+    private CollectionStore(final BrokerPool pool, final byte fileId, final BackingFile backingFile, final BFileHeader fileHeader) {
+        super(pool, fileId, backingFile, fileHeader, true, 1.25, 0.03);
+    }
+
+    public static CollectionStore open(final BrokerPool pool, final byte fileId, final Path path) throws DBException {
+        BackingFile backingFile = null;
+        try {
+            backingFile = openAndLockFile(path, true);
+            final boolean readOnly = backingFile.fileLock.isShared();
+            if (readOnly) {
+                LOG.warn("CollectionStore file was opened in read-only mode: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            // create a new file header object
+            final BFileHeader fileHeader = new BFileHeader(FILE_FORMAT_VERSION_ID, pool.getPageSize());
+            if (backingFile.createdNewFile) {
+                // write the file header data to the new file
+                fileHeader.write(backingFile.randomAccessFile);
+            } else {
+                // load the file header data from the existing file
+                fileHeader.read(backingFile.randomAccessFile);
+                fileHeader.checkVersion(FILE_FORMAT_VERSION_ID, FileUtils.fileName(backingFile.path));
+                LOG.info("Opened CollectionStore file: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            final CollectionStore collectionStore = new CollectionStore(pool, fileId, backingFile, fileHeader);
+
+            if (backingFile.createdNewFile) {
+                // this is a new BTree, so create the root node and persist it
+                collectionStore.createRootNode(null);
+                fileHeader.setFixedKeyLen((short) -1);
+                fileHeader.write(backingFile.randomAccessFile);
+
+                LOG.info("Created CollectionStore file: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            return collectionStore;
+
+        } catch (final IOException e) {
+            // release the resources we opened before re-throwing exception
+            if (backingFile != null) {
+                try {
+                    backingFile.randomAccessFile.close();
+                    backingFile.fileLock.release();
+                } catch (final IOException e2) {
+                    LOG.error(e2.getMessage(), e2);
+                }
+            }
+            throw new DBException(e);
+        }
     }
 
     public static String getFileName() {
@@ -87,12 +140,16 @@ public class CollectionStore extends BFile {
 
     @Override
     public boolean flush() throws DBException {
-        boolean flushed = false;
-        if (!BrokerPool.FORCE_CORRUPTION) {
-            flushed = flushed | dataCache.flush();
-            flushed = flushed | super.flush();
+        try {
+            boolean flushed = false;
+            if (!BrokerPool.FORCE_CORRUPTION) {
+                flushed = dataCache.flush();
+                flushed = flushed | super.flush();
+            }
+            return flushed;
+        } catch (final IOException e) {
+            throw new DBException(e);
         }
-        return flushed;
     }
 
     public void freeResourceId(final int id) {

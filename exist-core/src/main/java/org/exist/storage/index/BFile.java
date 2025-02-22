@@ -35,7 +35,6 @@ import org.apache.logging.log4j.Logger;
 
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BufferStats;
-import org.exist.storage.DefaultCacheManager;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.AbstractBTree;
@@ -140,26 +139,63 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     protected final LockManager lockManager;
     protected final int minFree;
     protected final Cache<DataPage> dataCache;
-    public final int fixedKeyLen = -1;
     protected final int maxValueSize;
 
-
-    public BFile(final BrokerPool pool, final byte fileId, final short fileVersion, final boolean enableRecovery, final Path file, final DefaultCacheManager cacheManager,
-            final double cacheGrowth, final double thresholdData) throws DBException {
-        super(pool, fileId, fileVersion, enableRecovery, cacheManager, file);
+    protected BFile(final BrokerPool pool, final byte fileId, final BackingFile backingFile, final BFileHeader fileHeader,
+            final boolean enableRecovery, final double cacheGrowth, final double thresholdData) {
+        super(pool, fileId, backingFile, fileHeader, enableRecovery, pool.getCacheManager());
         this.lockManager = pool.getLockManager();
-        this.dataCache = new LRUCache<>(FileUtils.fileName(file), 64, cacheGrowth, thresholdData, Cache.CacheType.DATA);
-        cacheManager.registerCache(dataCache);
+        this.dataCache = new LRUCache<>(FileUtils.fileName(backingFile.path), 64, cacheGrowth, thresholdData, Cache.CacheType.DATA);
+        this.cacheManager.registerCache(dataCache);
         this.minFree = PAGE_MIN_FREE;
         this.maxValueSize = fileHeader.getWorkSize() / 2;
-        
-        if(exists()) {
-            open(fileVersion);
-        } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Creating data file: {}", FileUtils.fileName(getFile()));
+    }
+
+    public static BFile open(final BrokerPool pool, final byte fileId, final short fileVersion, final Path path, final boolean enableRecovery, final double cacheGrowth, final double thresholdData) throws DBException {
+        BackingFile backingFile = null;
+        try {
+            backingFile = openAndLockFile(path, true);
+            final boolean readOnly = backingFile.fileLock.isShared();
+            if (readOnly) {
+                LOG.warn("BFile file was opened in read-only mode: {}", FileUtils.fileName(backingFile.path));
             }
-            create();
+
+            // create a new file header object
+            final BFileHeader fileHeader = new BFileHeader(fileVersion, pool.getPageSize());
+            if (backingFile.createdNewFile) {
+                // write the file header data to the new file
+                fileHeader.write(backingFile.randomAccessFile);
+            } else {
+                // load the file header data from the existing file
+                fileHeader.read(backingFile.randomAccessFile);
+                fileHeader.checkVersion(fileVersion, FileUtils.fileName(backingFile.path));
+                LOG.info("Opened BFile file: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            final BFile bfile = new BFile(pool, fileId, backingFile, fileHeader, enableRecovery, cacheGrowth, thresholdData);
+
+            if (backingFile.createdNewFile) {
+                // this is a new BTree, so create the root node and persist it
+                bfile.createRootNode(null);
+                fileHeader.setFixedKeyLen((short) -1);
+                fileHeader.write(backingFile.randomAccessFile);
+
+                LOG.info("Created BFile file: {}", FileUtils.fileName(backingFile.path));
+            }
+
+            return bfile;
+
+        } catch (final IOException e) {
+            // release the resources we opened before re-throwing exception
+            if (backingFile != null) {
+                try {
+                    backingFile.randomAccessFile.close();
+                    backingFile.fileLock.release();
+                } catch (final IOException e2) {
+                    LOG.error(e2.getMessage(), e2);
+                }
+            }
+            throw new DBException(e);
         }
     }
 
@@ -275,11 +311,6 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     }
 
     @Override
-    public boolean create() throws DBException {
-        return super.create((short) fixedKeyLen);
-    }
-
-    @Override
     public void close() throws DBException {
         super.close();
         cacheManager.deregisterCache(dataCache);
@@ -294,11 +325,6 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             LOG.warn(ioe);
             return null;
         }
-    }
-
-    @Override
-    public BFileHeader createFileHeader(final int pageSize) {
-        return new BFileHeader(fileVersion, pageSize);
     }
 
     @Override
@@ -560,7 +586,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                 LOG.debug("page {} not found!", pos);
                 return null;
             }
-            final byte[] data = page.read(raf);
+            final byte[] data = page.read(backingFile.randomAccessFile);
             if (page.getPageHeader().getStatus() == PageStatus.MULTI_PAGE) {
                 return new OverflowPage(page, data);
             }
@@ -584,7 +610,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                 LOG.debug("page {} not found!", pos);
                 return null;
             }
-            final byte[] data = page.read(raf);
+            final byte[] data = page.read(backingFile.randomAccessFile);
             return new SinglePage(page, data, initialize);
         }
         return wp;
@@ -1033,7 +1059,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         final SinglePage wp = (SinglePage) dataCache.get(pos);
         if (wp == null) {
             final Page<BFilePageHeader> page = getPage(pos);
-            final byte[] data = page.read(raf);
+            final byte[] data = page.read(backingFile.randomAccessFile);
             if (!PageStatus.isRecordType(page.getPageHeader().getStatus())) {
                 return null;
             }
@@ -1102,7 +1128,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     LOG.warn("page {} not found!", loggable.page);
                     return;
                 }
-                final byte[] data = page.read(raf);
+                final byte[] data = page.read(backingFile.randomAccessFile);
                 if ((!PageStatus.isRecordType(page.getPageHeader().getStatus())) || isUptodate(page, loggable)) {
                 	// page is obviously deleted later
                 	return;
@@ -1136,7 +1162,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     LOG.warn("page {} not found!", loggable.page);
                     return;
                 }
-                final byte[] data = page.read(raf);
+                final byte[] data = page.read(backingFile.randomAccessFile);
                 if ((!PageStatus.isRecordType(page.getPageHeader().getStatus())) || isUptodate(page, loggable)) {
                     return;
                 }
@@ -1166,7 +1192,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             DataPage firstPage = dataCache.get(loggable.pageNum);
             if (firstPage == null) {
                 final Page<BFilePageHeader> page = getPage(loggable.pageNum);
-                byte[] data = page.read(raf);
+                byte[] data = page.read(backingFile.randomAccessFile);
                 if (page.getPageHeader().getLsn().equals(Lsn.LSN_INVALID) || requiresRedo(loggable, page)) {
                     dropFreePageList();
                     final BFilePageHeader ph = page.getPageHeader();
@@ -1339,7 +1365,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     LOG.warn("page {} not found!", loggable.getPageNum());
                     return;
                 }
-                final byte[] data = page.read(raf);
+                final byte[] data = page.read(backingFile.randomAccessFile);
                 if ((!PageStatus.isRecordType(page.getPageHeader().getStatus())) || isUptodate(page, loggable)) {
                     return;
                 }
@@ -1450,7 +1476,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             DataPage dp = dataCache.get(newPage);
             if (dp == null) {
                 final Page<BFilePageHeader> page = getPage(newPage);
-                byte[] data = page.read(raf);
+                byte[] data = page.read(backingFile.randomAccessFile);
                 if (page.getPageHeader().getLsn().equals(Lsn.LSN_INVALID) || (loggable != null && requiresRedo(loggable, page)) ) {
                     if (reuseDeleted) {
                         reuseDeleted(page);

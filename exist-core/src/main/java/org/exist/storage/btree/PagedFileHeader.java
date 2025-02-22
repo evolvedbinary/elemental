@@ -9,4 +9,5 @@ package org.exist.storage.btree;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface PagedFileHeader {
+
 }

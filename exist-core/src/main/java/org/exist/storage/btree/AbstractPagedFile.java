@@ -81,13 +81,14 @@
  */
 package org.exist.storage.btree;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import net.jcip.annotations.GuardedBy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.journal.Lsn;
 import org.exist.util.FileUtils;
 
+import javax.annotation.Nullable;
 import java.lang.AutoCloseable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -95,10 +96,11 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.channels.NonWritableChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 
 /**
  *  Paged is a paged file foundation that is used by the BTree class and
@@ -110,34 +112,30 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
 
     protected static int PAGE_SIZE = 4096;
 
-    protected final short fileVersion;
     @GuardedBy("FileHeader#lock")
     protected final HEADER fileHeader;
     private final byte[] tempPageData;
     private final byte[] tempHeaderData;
 
-    protected RandomAccessFile raf;
-    private Path file;
-    private boolean readOnly = false;
-    private boolean fileIsNew = false;
+    protected final BackingFile backingFile;
 	
-    protected AbstractPagedFile(final BrokerPool pool, final short fileVersion) {
-        this.fileVersion = fileVersion;
-        this.fileHeader = createFileHeader(pool.getPageSize());
+    protected AbstractPagedFile(final BackingFile backingFile, final HEADER fileHeader) {
+        this.backingFile = backingFile;
+        this.fileHeader = fileHeader;
         this.tempPageData = new byte[fileHeader.getPageSize()];
         this.tempHeaderData = new byte[fileHeader.getPageHeaderSize()];
     }
 
-    public final static void setPageSize(final int pageSize) {
+    public static void setPageSize(final int pageSize) {
         PAGE_SIZE = pageSize;
     }
 
-    public final static int getPageSize() {
+    public static int getPageSize() {
         return PAGE_SIZE;
     }
 
     public final boolean isReadOnly() {
-        return readOnly;
+        return backingFile.fileLock.isShared();
     }
 
     /**
@@ -148,10 +146,10 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     @Override
     public void close() throws DBException {
         try {
-            raf.close();
+            backingFile.randomAccessFile.close();
+            backingFile.fileLock.close();
         } catch (final IOException e) {
-            throw new DBException("An error occurred whilst closing the database file '"
-                    + file == null ? "null" : FileUtils.fileName(file) + "': " + e.getMessage(), e);
+            throw new DBException("An error occurred whilst closing the database file: '" + FileUtils.fileName(backingFile.path) + "': " + e.getMessage(), e);
         }
     }
 
@@ -163,28 +161,11 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      */
     public final void closeAndRemove() throws DBException {
         close();
-        FileUtils.deleteQuietly(file);
-    }
-
-    public boolean create() throws DBException {
-        final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
-        try {
-            fileHeader.write(raf);
-            return true;
-        } catch (final Exception e) {
-            e.printStackTrace();
-            throw new DBException(0, "Error creating " + FileUtils.fileName(file));
-        } finally {
-            fileHeaderWriteLock.unlock();
-        }
-    }
-
-    public boolean exists() {
-        return !fileIsNew;
+        FileUtils.deleteQuietly(backingFile.path);
     }
 
     /**
-     * Flushes {@link AbstractPagedFile#flush()} dirty data to the disk and cleans up the cache.
+     * Flushes dirty data to the disk and cleans up the cache.
      * @return <code>true</code> if something has actually been cleaned
      * @throws DBException if an error occurs
      */
@@ -192,8 +173,8 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
         boolean flushed = false;
         final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
         try {
-            if(fileHeader.isDirty() && !readOnly) {
-                fileHeader.write(raf);
+            if (fileHeader.isDirty() && !isReadOnly()) {
+                fileHeader.write(backingFile.randomAccessFile);
                 flushed = true;
             }
         } catch (final IOException ioe) {
@@ -212,10 +193,10 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      * @throws IOException if an I/O error occurs
      */
     public void backupToStream(final OutputStream os) throws IOException {
-        raf.seek(0);
+        backingFile.randomAccessFile.seek(0);
         final byte[] buf = new byte[4096];
         int len;
-        while ((len = raf.read(buf)) > 0) {
+        while ((len = backingFile.randomAccessFile.read(buf)) > 0) {
             os.write(buf, 0, len);
         }
     }
@@ -226,17 +207,8 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      * @return The File
      */
     public final Path getFile() {
-        return file;
+        return backingFile.path;
     }
-
-    /**
-     * getFileHeader returns the FileHeader
-     *
-     * @return The FileHeader
-     */
-//    public FileHeader getFileHeader() {
-//        return fileHeader;
-//    }
 
     protected final Page<PAGE_HEADER> getFreePage() throws IOException {
         return getFreePage(true);
@@ -263,7 +235,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
 
                 // Steal a deleted page
                 page = new Page<>(tempPageData, tempHeaderData, pageNum);
-                page.read(raf);
+                page.read(backingFile.randomAccessFile);
 
                 fileHeader.setFirstFreePage(page.header.getNextPage());
                 if (fileHeader.getFirstFreePage() == Page.NO_PAGE) {
@@ -278,7 +250,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                 fileHeader.setTotalCount(pageNum + 1);
 
                 page = new Page<>(tempPageData, tempHeaderData, pageNum);
-                page.read(raf);
+                page.read(backingFile.randomAccessFile);
             }
 
             // Cleanly initialize The Page Header
@@ -287,7 +259,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             fileHeader.setDirty(true);
 
             // write out the file header
-            fileHeader.write(raf);
+            fileHeader.write(backingFile.randomAccessFile);
 
         } finally {
             fileHeaderWriteLock.unlock();
@@ -318,40 +290,6 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     }
 
     /**
-     * @param requiredVersion The required version of the file
-     * @return true if opened
-     * @throws DBException if the paged file cannot be opened
-     */
-    public boolean open(final short requiredVersion) throws DBException {
-        try {
-            if (exists()) {
-                final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
-                try {
-                    fileHeader.read(raf);
-                    if (fileHeader.getVersion() != requiredVersion) {
-                        throw new DBException("Database file " +
-                            FileUtils.fileName(getFile()) + " has a storage format incompatible with this " +
-                            "version of eXist. You need to upgrade your database by creating a backup, " +
-                            "cleaning your data directory and restoring the data. In some cases, " +
-                            "a reindex may be sufficient. " +
-                            "Please follow the instructions for the version you installed. " +
-                            "File version is: " + fileHeader.getVersion() +
-                            "; db requires version: " + requiredVersion);
-                    }
-                } finally {
-                    fileHeaderWriteLock.unlock();
-                }
-                return true;
-            } else {
-                return false;
-            }
-        } catch (final Exception e) {
-            e.printStackTrace();
-            throw new DBException(0, "Error opening " + FileUtils.fileName(file) + ": " + e.getMessage());
-        }
-    }
-
-    /**
      * Debug.
      *
      * @param out the output print stream
@@ -367,7 +305,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             out.println("free pages for " + FileUtils.fileName(getFile()));
             while (pageNum != Page.NO_PAGE) {
                 next = getPage(pageNum);
-                next.read(raf);
+                next.read(backingFile.randomAccessFile);
                 out.print(pageNum + ";");
                 pageNum = next.header.getNextPage();
             }
@@ -377,38 +315,122 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
         }
     }
 
+    public static class BackingFile {
+        public final Path path;
+        public final boolean createdNewFile;
+        public final RandomAccessFile randomAccessFile;
+        public final FileLock fileLock;
+
+        private BackingFile(final Path path, final boolean createdNewFile, final RandomAccessFile randomAccessFile, final FileLock fileLock) {
+            this.path = path;
+            this.createdNewFile = createdNewFile;
+            this.randomAccessFile = randomAccessFile;
+            this.fileLock = fileLock;
+        }
+    }
+
     /**
-     * setFile sets the file object for this Paged.
+     * Opens a Random Access File with an appropriate filesystem lock.
+     * Note that the caller is responsible for closing the file and releasing the lock
+     * when they are finished with the file.
      *
-     * @param file The File
+     * @param path the path to the file to open/create.
      *
-     * @throws DBException if a database error occurs
+     * @param fallbackToReadOnly when true if the file is not writable, then it will be opened in read-only mode.
+     *                           When false if the file cannot be opened in read-write mode then an exception will
+     *                           be thrown.
+     *
+     * @return the file lock and the random access file. You can determine if the file was opened in read-only
+     *         mode by calling {@link FileLock#isShared()}.
+     *
+     * @throws IOException if the file cannot be opened and locked as intended.
      */
-    protected final void setFile(final Path file) throws DBException {
-        this.file = file;
-        fileIsNew = !Files.exists(file);
-        try {
-            if ((!Files.exists(file)) || Files.isWritable(file)) {
-                try {
-                    raf = new RandomAccessFile(file.toFile(), "rw");
-                    final FileChannel channel = raf.getChannel();   
-                    final FileLock lock = channel.tryLock();
-                    if (lock == null) {
-                        readOnly = true;
-                    }
-                //TODO : who will release the lock ? -pb
-                } catch (final NonWritableChannelException e) {
-                    //No way : switch to read-only mode
-                    readOnly = true;
-                    raf = new RandomAccessFile(file.toFile(), "r");
-                    LOG.warn(e);
-                }
+    protected static BackingFile openAndLockFile(final Path path, final boolean fallbackToReadOnly) throws IOException {
+        final boolean fileExists = Files.exists(path);
+        final boolean fileWritable = Files.isWritable(path);
+        final boolean parentWritable = Files.isWritable(path.getParent());
+
+        // determine the mode for opening the file
+        boolean readOnly = true;
+        if (fileExists) {
+            if (fileWritable) {
+                // Read and Write
+                readOnly = false;
             } else {
-                readOnly = true;
-                raf = new RandomAccessFile(file.toFile(), "r");
+                // Read Only
+                if (fallbackToReadOnly) {
+                    readOnly = true;
+                } else {
+                    throw new IOException("File is not writable by this process: " + path.normalize().toAbsolutePath());
+                }
             }
-        } catch (final IOException e) {
-            LOG.warn("An exception occurred while opening database file {}: {}", file.toAbsolutePath().toString(), e.getMessage(), e);
+        } else if (parentWritable) {
+            // can write to the parent, and so we can create and then Read and Write a new file
+            readOnly = false;
+        } else {
+            throw new IOException("Either the file does not exist or the location is not writable by this process: " + path.normalize().toAbsolutePath());
+        }
+
+        // try and open the file
+        @Nullable Tuple2<RandomAccessFile, FileLock> randomAccessFileWithLock = tryOpenAndLockFile(path, readOnly);
+        if (randomAccessFileWithLock == null) {
+            // unable to open and lock
+
+            // check if we have hit an error condition
+            if (readOnly) {
+                throw new IOException("Unable to open file in read-only mode: " + path.normalize().toAbsolutePath());
+            } else if (!fallbackToReadOnly) {
+                throw new IOException("An exclusive lock could not be acquired because another program holds an overlapping lock on the file: " + path.normalize().toAbsolutePath());
+            } else if (!fileExists) {
+                throw new IOException("Unable to fallback to opening non-existent file in read-only mode: " + path.normalize().toAbsolutePath());
+            }
+
+            // fallback and try to re-open in read-only mode with a shared lock
+            randomAccessFileWithLock = tryOpenAndLockFile(path, true);
+            if (randomAccessFileWithLock == null) {
+                throw new IOException("Unable to fallback to read-only mode on the file: " + path.normalize().toAbsolutePath());
+            }
+        }
+
+        return new BackingFile(path, !fileExists, randomAccessFileWithLock._1, randomAccessFileWithLock._2);
+    }
+
+    /**
+     * Try and open a Random Access File with an appropriate filesystem lock.
+     * Note that the caller is responsible for closing the file and releasing the lock
+     * when they are finished with the file.
+     *
+     * @param path the path to the file to open/create.
+     *
+     * @param readOnly when true the file is opened read only with a shared lock,
+     *                 otherwise when false the file is opened read-write with an exclusive lock.
+     *
+     * @return the file lock and the random access file, or null if the file lock could not be acquired.
+     *
+     * @throws IOException if an I/O error occurs whilst opening or trying to lock the file.
+     */
+    private static @Nullable Tuple2<RandomAccessFile, FileLock> tryOpenAndLockFile(final Path path, final boolean readOnly) throws IOException {
+        // try and open the file
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(path.toFile(), readOnly ? "r" : "rw");
+
+        // try and get a lock for the file
+        final FileChannel fileChannel = randomAccessFile.getChannel();
+        try {
+            @Nullable FileLock fileLock = fileChannel.tryLock(0L, Long.MAX_VALUE, readOnly);
+            if (fileLock == null) {
+                // NOTE(AR) the lock could not be acquired
+                fileChannel.close();
+                randomAccessFile.close();
+
+                return null;
+            }
+            return Tuple(randomAccessFile, fileLock);
+
+        } catch (final IllegalArgumentException | IllegalStateException | IOException e) {
+            // release the resources we opened before re-throwing exception
+            fileChannel.close();
+            randomAccessFile.close();
+            throw e;
         }
     }
 
@@ -434,7 +456,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                     fileHeader.setFirstFreePage(page.pageNum);
                     page.header.updateNextPage(firstFreePage);
                 }
-                page.remove(raf);
+                page.remove(backingFile.randomAccessFile);
                 fileHeader.setDirty(true);
             } finally {
                 fileHeaderWriteLock.unlock();
@@ -480,7 +502,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             }
 
             if (updated) {
-                fileHeader.write(raf);
+                fileHeader.write(backingFile.randomAccessFile);
             }
         } finally {
             fileHeaderWriteLock.unlock();
@@ -495,23 +517,23 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                 long firstFreePageNum = fileHeader.getFirstFreePage();
                 if (firstFreePageNum == page.pageNum) {
                     fileHeader.setFirstFreePage(page.header.getNextPage());
-                    fileHeader.write(raf);
+                    fileHeader.write(backingFile.randomAccessFile);
                     return;
                 }
 
                 Page<PAGE_HEADER> firstFreePage = getPage(firstFreePageNum);
-                firstFreePage.read(raf);
+                firstFreePage.read(backingFile.randomAccessFile);
                 firstFreePageNum = firstFreePage.header.getNextPage();
 
                 while (firstFreePageNum != Page.NO_PAGE) {
                     if (firstFreePageNum == page.pageNum) {
                         firstFreePage.header.updateNextPage(page.header.getNextPage());
                         firstFreePage.header.setDirty(true);
-                        firstFreePage.write(raf,null);
+                        firstFreePage.write(backingFile.randomAccessFile,null);
                         return;
                     }
                     firstFreePage = getPage(firstFreePageNum);
-                    firstFreePage.read(raf);
+                    firstFreePage.read(backingFile.randomAccessFile);
                     firstFreePageNum = firstFreePage.header.getNextPage();
                 }
             }
@@ -528,7 +550,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      *
      * @throws IOException if an Exception occurs
      */
-    protected final void writeValue(final Page page, final Value value) throws IOException {
+    protected final void writeValue(final Page<PAGE_HEADER> page, final Value value) throws IOException {
         final byte[] data = value.getData();
         writeValue(page, data);
     }
@@ -550,7 +572,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             }
             pageHeader.updateDataLen(data.length);
         }
-        page.write(raf, data);
+        page.write(backingFile.randomAccessFile, data);
     }
 
     /**
