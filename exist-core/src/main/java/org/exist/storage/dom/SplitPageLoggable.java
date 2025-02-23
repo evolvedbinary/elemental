@@ -68,7 +68,7 @@ public class SplitPageLoggable extends AbstractLoggable implements Loggable {
         pageNum = in.getInt();
         splitOffset = in.getInt();
         oldLen = in.getShort();
-        oldData = new byte[domDb.getFileHeader().getWorkSize()];
+        oldData = new byte[domDb.getFileHeader().getPageContentSize()];
         in.get(oldData, 0, oldLen);
     }
 

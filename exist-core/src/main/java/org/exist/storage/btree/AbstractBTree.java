@@ -98,7 +98,6 @@ import org.exist.xquery.TerminatedException;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -1126,7 +1125,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                         if (fileHeaderReadLock == null) {
                             fileHeaderReadLock = fileHeader.readLock();
                         }
-                        pivot = currentLen > fileHeader.getWorkSize() ? i : i + 1;
+                        pivot = currentLen > fileHeader.getPageContentSize() ? i : i + 1;
                         break;
                     }
                 }
@@ -1162,7 +1161,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                return getDataLen() > fileHeader.getWorkSize();
+                return getDataLen() > fileHeader.getPageContentSize();
             } finally {
                 fileHeaderReadLock.unlock();
             }
@@ -1251,7 +1250,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             final int keyLen;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                workSize = fileHeader.getWorkSize();
+                workSize = fileHeader.getPageContentSize();
                 keyLen = fileHeader.getFixedKeyLen();
             } finally {
                 fileHeaderReadLock.unlock();
@@ -1417,7 +1416,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                                     final int workSize;
                                     final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                                     try {
-                                        workSize = fileHeader.getWorkSize();
+                                        workSize = fileHeader.getPageContentSize();
                                     } finally {
                                         fileHeaderReadLock.unlock();
                                     }
@@ -1461,7 +1460,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             final int workSize;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                workSize = fileHeader.getWorkSize();
+                workSize = fileHeader.getPageContentSize();
             } finally {
                 fileHeaderReadLock.unlock();
             }

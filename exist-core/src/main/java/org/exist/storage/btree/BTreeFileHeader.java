@@ -192,7 +192,7 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
 
     @Override
     public int getMaxKeySize() {
-        return (getWorkSize() / 2) - MIN_SPACE_PER_KEY;
+        return (getPageContentSize() / 2) - MIN_SPACE_PER_KEY;
     }
 
 

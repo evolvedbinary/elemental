@@ -135,7 +135,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         this.dataCache = new LRUCache<>(FileUtils.fileName(backingFile.path), 64, cacheGrowth, thresholdData, Cache.CacheType.DATA);
         this.cacheManager.registerCache(dataCache);
         this.minFree = PAGE_MIN_FREE;
-        this.maxValueSize = fileHeader.getWorkSize() / 2;
+        this.maxValueSize = fileHeader.getPageContentSize() / 2;
     }
 
     public static BFile open(final BrokerPool pool, final byte fileId, final short fileVersion, final Path path, final boolean enableRecovery, final double cacheGrowth, final double thresholdData) throws DBException {
@@ -627,7 +627,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         final int workSize;
         try {
-            workSize = fileHeader.getWorkSize();
+            workSize = fileHeader.getPageContentSize();
         } finally {
             fileHeaderReadLock.unlock();
         }
@@ -672,7 +672,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         final int workSize;
         try {
-            workSize = fileHeader.getWorkSize();
+            workSize = fileHeader.getPageContentSize();
         } finally {
             fileHeaderReadLock.unlock();
         }
@@ -792,7 +792,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             } else {
                 page.removeTID(tid, l + 6);
                 // adjust free space data
-                final int newFree = fileHeader.getWorkSize() - len;
+                final int newFree = fileHeader.getPageContentSize() - len;
                 if (newFree > minFree) {
                     FreeSpace free = fileHeader.getFreeSpace(page.getPageNum());
                     if (free == null) {
@@ -812,7 +812,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     private final void saveFreeSpace(final FreeSpace space, final AbstractDataPage page) {
         final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
         try {
-            final int free = fileHeader.getWorkSize() - page.getPageHeader().getDataLength();
+            final int free = fileHeader.getPageContentSize() - page.getPageHeader().getDataLength();
             space.setFree(free);
             if (free < minFree) {
                 fileHeader.removeFreeSpace(space);
@@ -853,9 +853,9 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                         final Loggable loggable = new CreatePageLoggable(transaction, fileId, page.getPageNum());
                         writeToLog(loggable, page);
                     }
-                    page.setData(new byte[fileHeader.getWorkSize()]);
+                    page.setData(new byte[fileHeader.getPageContentSize()]);
                     free = new FreeSpace(page.getPageNum(),
-                        fileHeader.getWorkSize() - page.getPageHeader().getDataLength());
+                        fileHeader.getPageContentSize() - page.getPageHeader().getDataLength());
                     fileHeader.addFreeSpace(free);
                 } else {
                     page = getDataPage(free.getPage());
@@ -866,7 +866,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                         continue;
                     }
                     // check if the information about free space is really correct
-                    final int realSpace = fileHeader.getWorkSize() - page.getPageHeader().getDataLength();
+                    final int realSpace = fileHeader.getPageContentSize() - page.getPageHeader().getDataLength();
                     if (realSpace < 6 + vlen) {
                         // not correct: adjust and continue
                         LOG.warn("Wrong data length in list of free pages: adjusting to {}", realSpace);
@@ -1175,7 +1175,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     ph.setNextTID((short) 32);
                     final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                     try {
-                        data = new byte[fileHeader.getWorkSize()];
+                        data = new byte[fileHeader.getPageContentSize()];
                     } finally {
                         fileHeaderReadLock.unlock();
                     }
@@ -1378,7 +1378,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         try {
             value.copyTo(page.data, len);
         } catch (final RuntimeException e) {
-            LOG.error("{}: storage error in page: {}; len: {} ; value: {}; max: {}; status: {}", FileUtils.fileName(getFile()), page.getPageNum(), len, value.size(), fileHeader.getWorkSize(), page.ph.getStatus());
+            LOG.error("{}: storage error in page: {}; len: {} ; value: {}; max: {}; status: {}", FileUtils.fileName(getFile()), page.getPageNum(), len, value.size(), fileHeader.getPageContentSize(), page.ph.getStatus());
             LOG.debug(page.printContents());
             throw e;
         }
@@ -1392,7 +1392,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         try {
             FreeSpace free = fileHeader.getFreeSpace(page.getPageNum());
             if (free == null) {
-                free = new FreeSpace(page.getPageNum(), fileHeader.getWorkSize() - len);
+                free = new FreeSpace(page.getPageNum(), fileHeader.getPageContentSize() - len);
             }
             saveFreeSpace(free, page);
         } finally {
@@ -1426,7 +1426,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             // adjust free space data
             final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
             try {
-                final int newFree = fileHeader.getWorkSize() - len;
+                final int newFree = fileHeader.getPageContentSize() - len;
                 if (newFree > minFree) {
                     FreeSpace free = fileHeader.getFreeSpace(page.getPageNum());
                     if (free == null) {
@@ -1460,8 +1460,8 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                     ph.setDataLength(0);
                     final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                     try {
-                        ph.updateDataLen(fileHeader.getWorkSize());
-                        data = new byte[fileHeader.getWorkSize()];
+                        ph.updateDataLen(fileHeader.getPageContentSize());
+                        data = new byte[fileHeader.getPageContentSize()];
                     } finally {
                         fileHeaderReadLock.unlock();
                     }

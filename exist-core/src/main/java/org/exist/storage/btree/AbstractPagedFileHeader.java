@@ -124,12 +124,42 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     //<editor-fold desc="Immutable state">
+    /**
+     * A number indicating the version of the file format in use.
+     */
     private final short version;
+
+    /**
+     * Size of the header in bytes.
+     * Historically this has always been 4KB in eXist-db,
+     * but it can be configured in conf.xml.
+     */
     private final short headerSize;
+
+    /**
+     * Size of a page in bytes.
+     * Historically this has always been 4KB in eXist-db,
+     * but it can be configured in conf.xml.
+     */
     private final int pageSize;
+
+    /**
+     * Size of a header with in a page in bytes.
+     * Defaults to {@link #DEFAULT_PAGE_HEADER_SIZE}.
+     */
     private final byte pageHeaderSize;
+
+    /**
+     * Maximum size for a key.
+     * Defaults to {@link #DEFAULT_MAX_KEY_SIZE}.
+     */
     private final short maxKeySize;
-    private final int workSize;
+
+    /**
+     * The size in bytes of the area within a page for writing content.
+     * This is simply pre-calculated as {@code pageSize - pageHeaderSize}.
+     */
+    private final int pageContentSize;
 
     /**
      * This is here so that we can allocate once and reuse multiple times in {@link #write(byte[])}.
@@ -138,9 +168,25 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     // </editor-fold>
 
     //<editor-fold desc="Mutable state">
+    /**
+     * The total number of pages in the file.
+     */
     private long totalCount;
+
+    /**
+     * The first free page in the file.
+     */
     private long firstFreePage;
+
+    /**
+     * The last free page in the file.
+     */
     private long lastFreePage;
+
+    /**
+     * Whether the file header has been updated
+     * and needs to be persisted.
+     */
     private boolean dirty;
     //</editor-fold>
 
@@ -153,7 +199,7 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
         this.firstFreePage = firstFreePage;
         this.lastFreePage = lastFreePage;
         this.totalCount = totalCount;
-        this.workSize = this.pageSize - this.pageHeaderSize;
+        this.pageContentSize = this.pageSize - this.pageHeaderSize;
         this.headerBuf = new byte[headerSize];
     }
 
@@ -264,12 +310,12 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     }
 
     /**
-     * Gets the workSize attribute of the FileHeader object
+     * Get the size in bytes of the area within a page for writing content.
      *
-     * @return The workSize value
+     * @return the page content size.
      */
-    public int getWorkSize() {
-        return this.workSize;
+    public int getPageContentSize() {
+        return this.pageContentSize;
     }
 
     /**

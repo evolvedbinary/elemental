@@ -295,7 +295,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         final byte[] data;
         try {
-            data = new byte[fileHeader.getWorkSize()];
+            data = new byte[fileHeader.getPageContentSize()];
         } finally {
             fileHeaderReadLock.unlock();
         }
@@ -313,7 +313,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         byte[] data = newPage.read(backingFile.randomAccessFile);
         int len = newPage.getPageHeader().getDataLength();
         if (data.length == 0) {
-            data = new byte[fileHeader.getWorkSize()];
+            data = new byte[fileHeader.getPageContentSize()];
             len = 0;
         }
 
@@ -413,7 +413,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         final int workSize;
         final ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
         try {
-            workSize = fileHeader.getWorkSize();
+            workSize = fileHeader.getPageContentSize();
         } finally {
             fileHeaderReadlock.unlock();
         }
@@ -624,7 +624,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         int workSize;
         ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
         try {
-            workSize = fileHeader.getWorkSize();
+            workSize = fileHeader.getPageContentSize();
         } finally {
             fileHeaderReadlock.unlock();
         }
@@ -658,7 +658,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             //New value fits into the page
             fileHeaderReadlock = fileHeader.readLock();
             try {
-                workSize = fileHeader.getWorkSize();
+                workSize = fileHeader.getPageContentSize();
             } finally {
                 fileHeaderReadlock.unlock();
             }
@@ -675,7 +675,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 //Still not enough free space: create a new page
                 fileHeaderReadlock = fileHeader.readLock();
                 try {
-                    workSize = fileHeader.getWorkSize();
+                    workSize = fileHeader.getPageContentSize();
                 } finally {
                     fileHeaderReadlock.unlock();
                 }
@@ -736,7 +736,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
             fileHeaderReadlock = fileHeader.readLock();
             try {
-                workSize = fileHeader.getWorkSize();
+                workSize = fileHeader.getPageContentSize();
             } finally {
                 fileHeaderReadlock.unlock();
             }
@@ -862,7 +862,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         int workSize;
         ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
         try {
-            workSize = fileHeader.getWorkSize();
+            workSize = fileHeader.getPageContentSize();
         } finally {
             fileHeaderReadlock.unlock();
         }
@@ -894,7 +894,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             if (ItemId.isLink(tupleID)) {
                 fileHeaderReadlock = fileHeader.readLock();
                 try {
-                    workSize = fileHeader.getWorkSize();
+                    workSize = fileHeader.getPageContentSize();
                 } finally {
                     fileHeaderReadlock.unlock();
                 }
@@ -956,7 +956,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             //Check if we have room in the current split page
             fileHeaderReadlock = fileHeader.readLock();
             try {
-                workSize = fileHeader.getWorkSize();
+                workSize = fileHeader.getPageContentSize();
             } finally {
                 fileHeaderReadlock.unlock();
             }
@@ -1060,7 +1060,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 // the link doesn't fit into the old page. Append a new page
                 fileHeaderReadlock = fileHeader.readLock();
                 try {
-                    workSize = fileHeader.getWorkSize();
+                    workSize = fileHeader.getPageContentSize();
                 } finally {
                     fileHeaderReadlock.unlock();
                 }
@@ -2394,7 +2394,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
                 final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                 try {
-                    newPage.data = new byte[fileHeader.getWorkSize()];
+                    newPage.data = new byte[fileHeader.getPageContentSize()];
                 } finally {
                     fileHeaderReadLock.unlock();
                 }
@@ -2611,7 +2611,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                     "; tid: " + ItemId.getId(loggable.tid) + "; required: " + required +
                     "; offset: " + offset + "; end: " + end +
                     "; len: " + (pageHeader.getDataLength() - offset) +
-                    "; avail: " + page.data.length + "; work: " + fileHeader.getWorkSize());
+                    "; avail: " + page.data.length + "; work: " + fileHeader.getPageContentSize());
             }
         }
         //save TID
@@ -2695,7 +2695,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 pageHeader.setPrevDataPage(NO_PAGE);
                 final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                 try {
-                    pageHeader.updateDataLen(fileHeader.getWorkSize());
+                    pageHeader.updateDataLen(fileHeader.getPageContentSize());
                 } finally {
                     fileHeaderReadLock.unlock();
                 }
@@ -2895,7 +2895,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             final byte[] oldData = page.data;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                page.data = new byte[fileHeader.getWorkSize()];
+                page.data = new byte[fileHeader.getPageContentSize()];
             } finally {
                 fileHeaderReadLock.unlock();
             }
@@ -3120,7 +3120,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             final int chunkSize;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
             try {
-                chunkSize = fileHeader.getWorkSize();
+                chunkSize = fileHeader.getPageContentSize();
             } finally {
                 fileHeaderReadLock.unlock();
             }
@@ -3198,8 +3198,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 final int chunkSize;
                 final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
                 try {
-                    chunkSize = remaining > fileHeader.getWorkSize() ?
-                        fileHeader.getWorkSize() : remaining;
+                    chunkSize = remaining > fileHeader.getPageContentSize() ?
+                        fileHeader.getPageContentSize() : remaining;
                 } finally {
                     fileHeaderReadLock.unlock();
                 }

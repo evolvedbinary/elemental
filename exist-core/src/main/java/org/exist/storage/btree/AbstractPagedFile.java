@@ -545,7 +545,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
         final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
         final int workSize;
         try {
-            workSize = fileHeader.getWorkSize();
+            workSize = fileHeader.getPageContentSize();
         } finally {
             fileHeaderReadLock.unlock();
         }
