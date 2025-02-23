@@ -33,6 +33,7 @@ package org.exist.storage.index;
 import org.exist.storage.btree.BTreeFileHeader;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 /**
  * BFile Header.
@@ -43,12 +44,47 @@ import java.io.IOException;
  */
 public class BFileHeader extends BTreeFileHeader {
 
-    private final FreeList freeList = new FreeList();
+    private static final int OFFSET_FREE_LIST = OFFSET_FIXED_LEN + LENGTH_FIXED_LEN;  // 61
 
-    //public final static int MAX_FREE_LIST_LEN = 128;
+    private final FreeList freeList;
 
-    public BFileHeader(final short fileVersion, final int pageSize) {
-        super(fileVersion, pageSize);
+    protected BFileHeader(final short version, final short headerSize, final int pageSize, final byte pageHeaderSize, final short maxKeySize, final long firstFreePage, final long lastFreePage, final long totalCount, final long rootPage, final short fixedLen, final FreeList freeList) {
+        super(version, headerSize, pageSize, pageHeaderSize, maxKeySize, firstFreePage, lastFreePage, totalCount, rootPage, fixedLen);
+        this.freeList = freeList;
+    }
+
+    protected BFileHeader(final short fileVersion, final int pageSize) {
+        super(fileVersion, 1024, pageSize);
+        this.freeList = new FreeList();
+    }
+
+    public static BFileHeader createNew(final short version, final int pageSize) {
+        return new BFileHeader(version, pageSize);
+    }
+
+    public static BTreeFileHeader load(final RandomAccessFile raf) throws IOException {
+        // file header is at the start of the file, so always reposition to the start of the file
+        raf.seek(0);
+
+        // read the entire AbstractPagedFileHeader from the file
+//        final int headerBufSize = OFFSET_FIXED_LEN + LENGTH_FIXED_LEN;  // 61
+        // TODO(AR) how can we possibly calculate this?
+        final byte[] headerBuf = new byte[headerBufSize];
+        raf.read(headerBuf);
+
+        final BTreeFileHeaderData bTreeFileHeaderData = readBTreeFileHeaderData(headerBuf);
+        return new BTreeFileHeader(
+            bTreeFileHeaderData.abstractPagedFileHeaderData.version,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.headerSize,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.pageSize,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.pageHeaderSize,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.maxKeySize,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.firstFreePage,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.lastFreePage,
+            bTreeFileHeaderData.abstractPagedFileHeaderData.totalCount,
+            bTreeFileHeaderData.rootPage,
+            bTreeFileHeaderData.fixedLen
+        );
     }
 
     public void addFreeSpace(final FreeSpace freeSpace) {
@@ -76,15 +112,27 @@ public class BFileHeader extends BTreeFileHeader {
 //        LOG.debug("{}: {}", FileUtils.fileName(getFile()), freeList.toString());
 //    }
 
-    @Override
-    protected int read(final byte[] buf) throws IOException {
-        final int offset = super.read(buf);
-        return freeList.read(buf, offset);
+    protected static BFileHeaderData readBFileHeaderData(final byte[] headerBuf) {
+        final BTreeFileHeaderData btreeFileHeaderData = readBTreeFileHeaderData(headerBuf);
+        final FreeList freeList = new FreeList();
+        freeList.read(headerBuf, OFFSET_FREE_LIST);
+
+        return new BFileHeaderData(btreeFileHeaderData, freeList);
     }
 
     @Override
     protected int write(final byte[] buf) throws IOException {
         final int offset = super.write(buf);
         return freeList.write(buf, offset);
+    }
+
+    protected static class BFileHeaderData {
+        final BTreeFileHeaderData btreeFileHeaderData;
+        final FreeList freeList;
+
+        private BFileHeaderData(final BTreeFileHeaderData btreeFileHeaderData, final FreeList freeList) {
+            this.btreeFileHeaderData = btreeFileHeaderData;
+            this.freeList = freeList;
+        }
     }
 }

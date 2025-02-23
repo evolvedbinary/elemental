@@ -95,28 +95,27 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     //<editor-fold desc="Description of the file header format">
-    private static final int LENGTH_VERSION_ID = 2;  //sizeof short
-    private static final int LENGTH_HEADER_SIZE = 2;  //sizeof short
-    private static final int LENGTH_PAGE_COUNT = 8; //sizeof long
-    private static final int LENGTH_PAGE_SIZE = 4; //sizeof int
-    private static final int LENGTH_TOTAL_COUNT = 8; //sizeof long
-    private static final int LENGTH_FIRST_FREE_PAGE = 8; //sizeof long
-    private static final int LENGTH_LAST_FREE_PAGE = 8; //sizeof long
-    private static final int LENGTH_PAGE_HEADER_SIZE = 1; //sizeof byte
-    private static final int LENGTH_MAX_KEY_SIZE = 2;  //sizeof short
-    private static final int LENGTH_RECORD_COUNT = 8; //sizeof long
+    private static final int LENGTH_VERSION_ID = 2;        // sizeof(short)
+    private static final int LENGTH_HEADER_SIZE = 2;       // sizeof(short)
+    private static final int LENGTH_PAGE_COUNT = 8;        // sizeof(long)
+    private static final int LENGTH_PAGE_SIZE = 4;         // sizeof(int)
+    private static final int LENGTH_TOTAL_COUNT = 8;       // sizeof(long)
+    private static final int LENGTH_FIRST_FREE_PAGE = 8;   // sizeof(long)
+    private static final int LENGTH_LAST_FREE_PAGE = 8;    // sizeof(long)
+    private static final int LENGTH_PAGE_HEADER_SIZE = 1;  // sizeof(byte)
+    private static final int LENGTH_MAX_KEY_SIZE = 2;      // sizeof(short)
+    protected static final int LENGTH_RECORD_COUNT = 8;    // sizeof(long)
 
-    private static final int OFFSET_VERSION_ID = 0;
-    private static final int OFFSET_HEADER_SIZE = OFFSET_VERSION_ID + LENGTH_VERSION_ID; //2
-    private static final int OFFSET_PAGE_SIZE = OFFSET_HEADER_SIZE + LENGTH_HEADER_SIZE; //4
-    private static final int OFFSET_PAGE_COUNT = OFFSET_PAGE_SIZE + LENGTH_PAGE_SIZE; //8
-    private static final int OFFSET_TOTAL_COUNT = OFFSET_PAGE_COUNT + LENGTH_PAGE_COUNT; //16
-    private static final int OFFSET_FIRST_FREE_PAGE = OFFSET_TOTAL_COUNT + LENGTH_TOTAL_COUNT; //24
-    private static final int OFFSET_LAST_FREE_PAGE = OFFSET_FIRST_FREE_PAGE + LENGTH_FIRST_FREE_PAGE; //32
-    private static final int OFFSET_PAGE_HEADER_SIZE = OFFSET_LAST_FREE_PAGE + LENGTH_LAST_FREE_PAGE; //40
-    private static final int OFFSET_MAX_KEY_SIZE = OFFSET_PAGE_HEADER_SIZE + LENGTH_PAGE_HEADER_SIZE; //41
-    private static final int OFFSET_RECORD_COUNT = OFFSET_MAX_KEY_SIZE + LENGTH_MAX_KEY_SIZE; //43
-    private static final int OFFSET_REMAINDER = OFFSET_RECORD_COUNT + LENGTH_RECORD_COUNT; //51
+    private static final int OFFSET_VERSION_ID = 0;                                                    //  0
+    private static final int OFFSET_HEADER_SIZE = OFFSET_VERSION_ID + LENGTH_VERSION_ID;               //  2
+    private static final int OFFSET_PAGE_SIZE = OFFSET_HEADER_SIZE + LENGTH_HEADER_SIZE;               //  4
+    private static final int OFFSET_PAGE_COUNT = OFFSET_PAGE_SIZE + LENGTH_PAGE_SIZE;                  //  8
+    private static final int OFFSET_TOTAL_COUNT = OFFSET_PAGE_COUNT + LENGTH_PAGE_COUNT;               // 16
+    private static final int OFFSET_FIRST_FREE_PAGE = OFFSET_TOTAL_COUNT + LENGTH_TOTAL_COUNT;         // 24
+    private static final int OFFSET_LAST_FREE_PAGE = OFFSET_FIRST_FREE_PAGE + LENGTH_FIRST_FREE_PAGE;  // 32
+    private static final int OFFSET_PAGE_HEADER_SIZE = OFFSET_LAST_FREE_PAGE + LENGTH_LAST_FREE_PAGE;  // 40
+    private static final int OFFSET_MAX_KEY_SIZE = OFFSET_PAGE_HEADER_SIZE + LENGTH_PAGE_HEADER_SIZE;  // 41
+    protected static final int OFFSET_RECORD_COUNT = OFFSET_MAX_KEY_SIZE + LENGTH_MAX_KEY_SIZE;        // 43
     //</editor-fold>
 
     private final static byte DEFAULT_PAGE_HEADER_SIZE = 64;
@@ -124,31 +123,42 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private short version;     // TODO(AR) try and make final?
-    private short headerSize;  // TODO(AR) try and make final?
-    private int pageSize;      // TODO(AR) try and make final?
+    //<editor-fold desc="Immutable state">
+    private final short version;
+    private final short headerSize;
+    private final int pageSize;
+    private final byte pageHeaderSize;
+    private final short maxKeySize;
+    private final int workSize;
+
+    /**
+     * This is here so that we can allocate once and reuse multiple times in {@link #write(byte[])}.
+     */
+    private final byte[] headerBuf;
+    // </editor-fold>
+
+    //<editor-fold desc="Mutable state">
     private long totalCount;
-    private long firstFreePage = Page.NO_PAGE;
-    private long lastFreePage = Page.NO_PAGE;
-    private byte pageHeaderSize = DEFAULT_PAGE_HEADER_SIZE;  // TODO(AR) try and make final?
-    private short maxKeySize = DEFAULT_MAX_KEY_SIZE;  // TODO(AR) try and make final?
+    private long firstFreePage;
+    private long lastFreePage;
+    private boolean dirty;
+    //</editor-fold>
 
-    private final byte[] buf;
-    private int workSize; // TODO(AR) try and make final, i.e. calculate once and then we don't need to re-calc  ?
-    private boolean dirty = false;
-
-    public AbstractPagedFileHeader(final short fileVersion, final long pageCount, final int pageSize) {
-        this.version = fileVersion;
-        this.headerSize = (short) pageSize;
+    protected AbstractPagedFileHeader(final short version, final short headerSize, final int pageSize, final byte pageHeaderSize, final short maxKeySize, final long firstFreePage, final long lastFreePage, final long totalCount) {
+        this.version = version;
+        this.headerSize = headerSize;
         this.pageSize = pageSize;
-        this.totalCount = pageCount;
-        this.buf = new byte[this.headerSize];
-        this.workSize = calculateWorkSize();
+        this.pageHeaderSize = pageHeaderSize;
+        this.maxKeySize = maxKeySize;
+        this.firstFreePage = firstFreePage;
+        this.lastFreePage = lastFreePage;
+        this.totalCount = totalCount;
+        this.workSize = this.pageSize - this.pageHeaderSize;
+        this.headerBuf = new byte[headerSize];
     }
 
-    // TODO(AR) remove this and try and inline it
-    private int calculateWorkSize() {
-        return this.pageSize - this.pageHeaderSize;
+    protected AbstractPagedFileHeader(final short version, final long pageCount, final int pageSize) {
+        this(version, (short) pageSize, pageSize, DEFAULT_PAGE_HEADER_SIZE, DEFAULT_MAX_KEY_SIZE, Page.NO_PAGE, Page.NO_PAGE, pageCount);
     }
 
     /**
@@ -280,28 +290,21 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
         this.dirty = dirty;
     }
 
-    public void read(final RandomAccessFile raf) throws IOException {
-        raf.seek(0);
-        raf.read(this.buf);
-        read(this.buf);
-        this.workSize = calculateWorkSize();
-        this.dirty = false;
-    }
-
-    protected int read(final byte[] buf) throws IOException {
-        this.version = ByteConversion.byteToShort(buf, OFFSET_VERSION_ID);
-        this.headerSize = ByteConversion.byteToShort(buf, OFFSET_HEADER_SIZE);
-        this.pageSize = ByteConversion.byteToInt(buf, OFFSET_PAGE_SIZE);
+    protected static AbstractPagedFileHeaderData readAbstractPagedFileHeaderData(final byte[] headerBuf) {
+        final short version = ByteConversion.byteToShort(headerBuf, OFFSET_VERSION_ID);
+        final short headerSize = ByteConversion.byteToShort(headerBuf, OFFSET_HEADER_SIZE);
+        final int pageSize = ByteConversion.byteToInt(headerBuf, OFFSET_PAGE_SIZE);
         // NOTE(AR) pageCount no longer seems to be needed
-//        this.pageCount = ByteConversion.byteToLong(buf, OFFSET_PAGE_COUNT);
-        this.totalCount = ByteConversion.byteToLong(buf, OFFSET_TOTAL_COUNT);
-        this.firstFreePage = ByteConversion.byteToLong(buf, OFFSET_FIRST_FREE_PAGE);
-        this.lastFreePage = ByteConversion.byteToLong(buf, OFFSET_LAST_FREE_PAGE);
-        this.pageHeaderSize = buf[OFFSET_PAGE_HEADER_SIZE];
-        this.maxKeySize = ByteConversion.byteToShort(buf, OFFSET_MAX_KEY_SIZE);
+//        final long pageCount = ByteConversion.byteToLong(buf, OFFSET_PAGE_COUNT);
+        final long totalCount = ByteConversion.byteToLong(headerBuf, OFFSET_TOTAL_COUNT);
+        final long firstFreePage = ByteConversion.byteToLong(headerBuf, OFFSET_FIRST_FREE_PAGE);
+        final long lastFreePage = ByteConversion.byteToLong(headerBuf, OFFSET_LAST_FREE_PAGE);
+        final byte pageHeaderSize = headerBuf[OFFSET_PAGE_HEADER_SIZE];
+        final short maxKeySize = ByteConversion.byteToShort(headerBuf, OFFSET_MAX_KEY_SIZE);
         // NOTE(AR) recordCount no longer seems to be needed
-//        this.recordCount = ByteConversion.byteToLong(buf, OFFSET_RECORD_COUNT);
-        return OFFSET_REMAINDER;
+//        final long recordCount = ByteConversion.byteToLong(buf, OFFSET_RECORD_COUNT);
+
+        return new AbstractPagedFileHeaderData(version, headerSize, pageSize, totalCount, firstFreePage, lastFreePage, pageHeaderSize, maxKeySize);
     }
 
     protected int write(final byte[] buf) throws IOException {
@@ -317,13 +320,13 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
         ByteConversion.shortToByte(this.maxKeySize, buf, OFFSET_MAX_KEY_SIZE);
         // NOTE(AR) recordCount no longer seems to be needed
 //        ByteConversion.longToByte(this.recordCount, buf, OFFSET_RECORD_COUNT);
-        return OFFSET_REMAINDER;
+        return OFFSET_RECORD_COUNT + LENGTH_RECORD_COUNT;  // 51
     }
 
     public void write(final RandomAccessFile raf) throws IOException {
         raf.seek(0);
-        write(this.buf);
-        raf.write(this.buf);
+        write(this.headerBuf);
+        raf.write(this.headerBuf);
         this.dirty = false;
     }
 
@@ -350,5 +353,28 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
         final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
         writeLock.lock();
         return writeLock;
+    }
+
+
+    protected static class AbstractPagedFileHeaderData {
+        final short version;
+        final short headerSize;
+        final int pageSize;
+        final long totalCount;
+        final long firstFreePage;
+        final long lastFreePage;
+        final byte pageHeaderSize;
+        final short maxKeySize;
+
+        private AbstractPagedFileHeaderData(final short version, final short headerSize, final int pageSize, final long totalCount, final long firstFreePage, final long lastFreePage, final byte pageHeaderSize, final short maxKeySize) {
+            this.version = version;
+            this.headerSize = headerSize;
+            this.pageSize = pageSize;
+            this.totalCount = totalCount;
+            this.firstFreePage = firstFreePage;
+            this.lastFreePage = lastFreePage;
+            this.pageHeaderSize = pageHeaderSize;
+            this.maxKeySize = maxKeySize;
+        }
     }
 }

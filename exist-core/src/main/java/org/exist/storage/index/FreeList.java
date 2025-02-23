@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2014 Evolved Binary Ltd
+ *
+ * Changes made by Evolved Binary are proprietary and are not Open Source.
+ *
+ * NOTE: Parts of this file contain code from The eXist-db Authors.
+ *       The original license header is included below.
+ *
+ * ----------------------------------------------------------------------------
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,10 +30,9 @@
  */
 package org.exist.storage.index;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
-
 import org.exist.util.ByteConversion;
+
+import javax.annotation.Nullable;
 
 /**
  * Manages a list of pages containing unused sections.
@@ -37,19 +45,16 @@ import org.exist.util.ByteConversion;
  * 
  * FreeList implements a linked list of {@link FreeSpace} objects. Each object
  * in the list describes a page and the unused space in this page.
- * 
- * @see FreeList
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author wolf
  */
 public class FreeList {
+    private static final int MAX_FREE_LIST_LEN = 128;
 
-    //private final static Logger LOG = LogManager.getLogger(FreeList.class);
-
-    public final static int MAX_FREE_LIST_LEN = 128;
-
-    protected FreeSpace header = null;
-    protected FreeSpace last = null;
-    protected int size = 0;
+    private @Nullable FreeSpace header = null;
+    private @Nullable FreeSpace last = null;
+    private int size = 0;
 
     /**
      * Append a new {@link FreeSpace} object to the list,
@@ -143,14 +148,13 @@ public class FreeList {
     }
 
     /**
-     * Read the list from a {@link RandomAccessFile}.
+     * Read the list.
      * 
      * @param buf the buffer to read from
      * @param offset the position in the buffer to read from
      * @return the offset after reading
-     * @throws IOException if an error occurs whilst reading
      */
-    public int read(byte[] buf, int offset) throws IOException {
+    public int read(final byte[] buf, int offset) {
         final int fsize = ByteConversion.byteToInt(buf, offset);
         offset += 4;
         long page;
@@ -166,7 +170,7 @@ public class FreeList {
     }
 
     /**
-     * Write the list to a {@link RandomAccessFile}.
+     * Write the list.
      * 
      * As the list is written to the file header, its maximum length
      * has to be restricted. The method will thus only store
@@ -177,9 +181,8 @@ public class FreeList {
      * @param buf the buffer to write to
      * @param offset the position in the buffer to write to
      * @return the offset after writing
-     * @throws IOException if an error occurs whilst writing
      */
-    public int write(byte[] buf, int offset) throws IOException {
+    public int write(final byte[] buf, int offset) {
         //does the free-space list fit into the file header?
         int skip = 0;
         if (size > MAX_FREE_LIST_LEN) {
