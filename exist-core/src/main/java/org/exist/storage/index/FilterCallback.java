@@ -30,8 +30,40 @@
  */
 package org.exist.storage.index;
 
+import org.exist.storage.StorageAddress;
+import org.exist.storage.btree.BTreeCallback;
 import org.exist.storage.btree.Value;
+import org.exist.util.ByteConversion;
+import org.exist.xquery.TerminatedException;
 
-public interface BFileCallback {
-    void info(Value key, Value value);
+import java.io.IOException;
+
+/**
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ */
+class FilterCallback implements BTreeCallback {
+    private final BFileCallback callback;
+
+    public FilterCallback(final BFileCallback callback) {
+        this.callback = callback;
+    }
+
+    @Override
+    public boolean indexInfo(final Value value, final long pointer) throws TerminatedException {
+        try {
+            final long pos = StorageAddress.pageFromPointer(pointer);
+            final short tid = StorageAddress.tidFromPointer(pointer);
+            final AbstractDataPage page = getDataPage(pos);
+            final int offset = page.findValuePosition(tid);
+            final byte[] data = page.getData();
+            final int l = ByteConversion.byteToInt(data, offset);
+            final Value v = new Value(data, offset + 4, l);
+            callback.info(value, v);
+            return true;
+        } catch (final IOException e) {
+            LOG.error(e.getMessage(), e);
+            return true;
+        }
+    }
 }

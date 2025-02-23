@@ -315,20 +315,6 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
         }
     }
 
-    public static class BackingFile {
-        public final Path path;
-        public final boolean createdNewFile;
-        public final RandomAccessFile randomAccessFile;
-        public final FileLock fileLock;
-
-        private BackingFile(final Path path, final boolean createdNewFile, final RandomAccessFile randomAccessFile, final FileLock fileLock) {
-            this.path = path;
-            this.createdNewFile = createdNewFile;
-            this.randomAccessFile = randomAccessFile;
-            this.fileLock = fileLock;
-        }
-    }
-
     /**
      * Opens a Random Access File with an appropriate filesystem lock.
      * Note that the caller is responsible for closing the file and releasing the lock

@@ -30,8 +30,37 @@
  */
 package org.exist.storage.index;
 
-import org.exist.storage.btree.Value;
+import org.exist.storage.io.VariableByteArrayInput;
 
-public interface BFileCallback {
-    void info(Value key, Value value);
+import java.io.IOException;
+
+/**
+ * Variable byte input stream to read data from a single page.
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ */
+class SimplePageInput extends VariableByteArrayInput implements PageInput {
+
+    private final long address;
+
+    public SimplePageInput(final byte[] data, final int start, final int len, final long address) {
+        super(data, start, len);
+        this.address = address;
+    }
+
+    @Override
+    public long getAddress() {
+        return address;
+    }
+
+    @Override
+    public long position() {
+        return position;
+    }
+
+    @Override
+    public void seek(final long pos) throws IOException {
+        this.position = (int) pos;
+    }
 }

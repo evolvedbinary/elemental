@@ -31,7 +31,6 @@
 package org.exist.storage.dom;
 
 import java.io.*;
-import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -44,7 +43,6 @@ import javax.xml.stream.XMLStreamReader;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.storage.btree.Page.NO_PAGE;
 
-import com.evolvedbinary.j8fu.tuple.Tuple2;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongOpenHashMap;
 import org.apache.logging.log4j.LogManager;

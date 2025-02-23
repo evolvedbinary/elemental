@@ -45,85 +45,86 @@ import java.io.IOException;
  */
 public interface Cacheable {
 
+	int MIN_REF = 0;
 	int MAX_REF = 10000;
 	
 	/**
 	 * Get a unique key for the object.
-	 * 
 	 * Usually this is the page number.
 	 * 
-	 * @return unique key
+	 * @return the unique key.
 	 */
 	long getKey();
 	
 	/**
 	 * Get the current reference count.
-	 * 
-	 * @return The count value. 
+	 *
+	 * @return the reference count.
 	 */
 	int getReferenceCount();
 
 	/**
 	 * Increase the reference count of this object by one
 	 * and return it.
-	 * 
-	 * @return the reference count
+	 *
+	 * @return the reference count.
 	 */
 	int incReferenceCount();
-	
+
 	/**
 	 * Decrease the reference count of this object by one
 	 * and return it.
-	 * 
-	 * @return the reference count
+	 *
+	 * @return the reference count.
 	 */
 	int decReferenceCount();
-	
+
 	/**
 	 * Set the reference count of this object.
-	 * 
-	 * @param count A reference count
+	 *
+	 * @param count the reference count.
 	 */
 	void setReferenceCount(int count);
-	
-	/**
-	 * Set the timestamp marker.
-	 * 
-	 * @param timestamp A timestamp marker
-	 */
-	void setTimestamp(int timestamp);
-	
+
 	/**
 	 * Get the current timestamp marker.
-	 * 
-	 * @return timestamp marker
+	 *
+	 * @return the timestamp marker.
 	 */
 	int getTimestamp();
+
+	/**
+	 * Set the timestamp marker.
+	 *
+	 * @param timestamp the timestamp marker.
+	 */
+	void setTimestamp(int timestamp);
 
 	/**
 	 * Called before the object is released by the
 	 * cache. The object should prepare to be garbage
 	 * collected. All unwritten data should be flushed
 	 * to disk.
-	 * @param syncJournal the journal to sync
-	 * @return true if sync was successful
+	 *
+	 * @param syncJournal true if the journal should also be synced, false otherwise.
+	 *
+	 * @return true if sync was successful, false otherwise.
 	 */
 	boolean sync(boolean syncJournal) throws IOException;
-	
+
 	/**
 	 * Is it safe to unload the Cacheable from the cache?
-	 * 
 	 * Called before an object is actually removed. Return
-	 * false to avoid being removed.
-	 * 
-	 * @return A boolean where true indicates it can be unloaded.
+	 * false to avoid the object being removed.
+	 *
+	 * @return true indicates the object can be unloaded, false otherwise.
 	 */
 	boolean allowUnload();
 
 	/**
-	 * Indicates whether the cacheable is dirty
+	 * Indicates whether the cacheable is dirty.
 	 *
-	 * @return true if the cacheable is dirty
+	 * @return true if the object is dirty, false if it is clean.
 	 */
 	boolean isDirty();
 }

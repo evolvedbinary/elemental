@@ -83,6 +83,7 @@ package org.exist.storage.btree;
 
 import org.exist.storage.journal.Lsn;
 import org.exist.util.FileUtils;
+import org.exist.util.HexEncoder;
 import org.exist.xquery.Constants;
 
 import java.io.IOException;

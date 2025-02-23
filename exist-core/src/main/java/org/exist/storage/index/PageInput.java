@@ -30,8 +30,18 @@
  */
 package org.exist.storage.index;
 
-import org.exist.storage.btree.Value;
+import org.exist.storage.io.VariableByteInput;
 
-public interface BFileCallback {
-    void info(Value key, Value value);
+import java.io.IOException;
+
+/**
+ * Interface for reading data pages.
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ */
+interface PageInput extends VariableByteInput {
+    long getAddress();
+    long position();
+    void seek(long position) throws IOException;
 }

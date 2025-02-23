@@ -546,7 +546,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         }
     }
 
-    protected static class TreeInfo {
+    private static class TreeInfo {
         final long firstPage;
         final int leafPages;
 
@@ -663,7 +663,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             root.insertPointer(info.firstPage, 0);
             cache.add(root);
             node.setParent(root);
-            node.saved = false;
+            node.setDirty(true);
             cache.add(node);
 
             // scan through chain of pages and add them to the tree
@@ -803,7 +803,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
             node.ptrs[loggable.idx] = loggable.pointer;
             node.pageHeader.setLsn(loggable.getLsn());
-            node.saved = false;
+            node.setDirty(true);
         }
     }
 
@@ -851,7 +851,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         if (requiresRedo(loggable, node.page)) {
             node.pageHeader.setParentPage(loggable.parentNum);
             node.pageHeader.setLsn(loggable.getLsn());
-            node.saved = false;
+            node.setDirty(true);
         }
     }
 
@@ -860,7 +860,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         if (requiresRedo(loggable, node.page)) {
             node.pageHeader.updateNextPage(loggable.nextPage);
             node.pageHeader.setLsn(loggable.getLsn());
-            node.saved = false;
+            node.setDirty(true);
         }
     }
 
@@ -877,7 +877,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
      * @author wolf
      *
      */
-    protected final class BTreeNode implements BTreeCacheable {
+    protected final class BTreeNode extends AbstractCacheable implements BTreeCacheable {
 
         /** defines the default size for the keys array */
         private final static int DEFAULT_INITIAL_ENTRIES = 32;
@@ -902,13 +902,6 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         /** the number of pointers currently used */
         private int nPtrs = 0;
 
-        /** fields used by the Cacheable interface */
-        private int refCount = 0;
-        private int timestamp = 0;
-
-        /** does this node need to be saved? */
-        private boolean saved = true;
-
         /** the computed raw data size required by this node */
         private int currentDataLen = -1;
 
@@ -921,7 +914,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 keys = new Value[DEFAULT_INITIAL_ENTRIES];
                 ptrs = new long[DEFAULT_INITIAL_ENTRIES + 1];
                 pageHeader.updateValueCount((short) 0);
-                saved = false;
+                setDirty(true);
             }
         }
 
@@ -936,7 +929,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             } else {
                 pageHeader.setParentPage(Page.NO_PAGE);
             }
-            saved = false;
+            setDirty(true);
         }
 		
         /**
@@ -953,36 +946,8 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         }
 
         @Override
-        public int getReferenceCount() {
-            return refCount;
-        }
-
-        @Override
-        public int incReferenceCount() {
-            if (refCount < Cacheable.MAX_REF) {
-                refCount++;
-            }
-            return refCount;
-        }
-
-        @Override
-        public void setReferenceCount(final int count) {
-            refCount = count;
-        }
-
-        @Override
-        public void setTimestamp(final int timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        @Override
         public boolean allowUnload() {
             return allowUnload;
-        }
-
-        @Override
-        public int getTimestamp() {
-            return timestamp;
         }
 
         @Override
@@ -1007,16 +972,6 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             return page.getPageNum();
         }
 
-        @Override
-        public int decReferenceCount() {
-            return refCount > 0 ? --refCount : 0;
-        }
-
-        @Override
-        public boolean isDirty() {
-            return !saved;
-        }
-
         /**
          * Set the keys of this node.
          * 
@@ -1026,7 +981,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             keys = vals;
             nKeys = vals.length;
             pageHeader.updateValueCount((short) nKeys);
-            saved = false;
+            setDirty(true);
         }
 
         /**
@@ -1037,7 +992,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         private void setPointers(final long[] pointers) {
             ptrs = pointers;
             nPtrs = pointers.length;
-            saved = false;
+            setDirty(true);
         }
 
         /**
@@ -1347,7 +1302,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 p += 8;
             }
             writeValue(page, new Value(temp));
-            saved = true;
+            setDirty(false);
         }
 
         /**
@@ -1441,7 +1396,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                                     writeToLog(loggable, this);
                             }
                             ptrs[idx] = pointer;
-                            saved = false;
+                            setDirty(true);
                             return oldPtr;
                         } else {
                             // Value was not found
@@ -1499,9 +1454,9 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             insertKey(value, idx);
             insertPointer(rightNode.page.getPageNum(), idx + 1);
             rightNode.setParent(this);
-            rightNode.saved = false;
+            rightNode.setDirty(true);
             cache.add(rightNode);
-            this.saved = false;
+            setDirty(true);
             cache.add(this);
             final int workSize;
             final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
@@ -1763,7 +1718,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
             writer.write(page.getPageNum() + ": ");
             writer.write(pageHeader.getStatus() == PageStatus.BRANCH ? "BRANCH: " : "LEAF: ");
-            writer.write(saved ? "SAVED: " : "DIRTY: ");
+            writer.write(isDirty() ? "DIRTY: " : "SAVED: ");
             if (pageHeader.getStatus() == PageStatus.BRANCH) {
                 writer.write("PREFIX: ");
                 dumpValue(writer, prefix, pageHeader.getStatus());
@@ -2552,7 +2507,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             System.arraycopy(keys, idx, keys, idx + 1, nKeys - idx);
             keys[idx] = val;
             pageHeader.updateValueCount((short) ++nKeys);
-            saved = false;
+            setDirty(true);
         }
 
         /**
@@ -2567,7 +2522,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 LOG.error("keys: {} idx: {}", nKeys, idx);
             }
             pageHeader.updateValueCount((short) --nKeys);
-            saved = false;
+            setDirty(true);
         }
 
         /**
@@ -2581,7 +2536,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             System.arraycopy(ptrs, idx, ptrs, idx + 1, nPtrs - idx);
             ptrs[idx] = ptr;
             nPtrs++;
-            saved = false;
+            setDirty(true);
         }
 
         /**
@@ -2592,7 +2547,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         private void removePointer(final int idx) {
             System.arraycopy(ptrs, idx + 1, ptrs, idx, nPtrs - idx - 1);
             nPtrs--;
-            saved = false;
+            setDirty(true);
         }
 
         /**

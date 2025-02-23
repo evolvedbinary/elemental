@@ -38,7 +38,7 @@ import org.exist.storage.BufferStats;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.AbstractBTree;
-import org.exist.storage.btree.BTreeCallback;
+import org.exist.storage.btree.BackingFile;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.btree.IndexQuery;
@@ -46,37 +46,24 @@ import org.exist.storage.btree.Page;
 import org.exist.storage.btree.PageStatus;
 import org.exist.storage.btree.Value;
 import org.exist.storage.cache.Cache;
-import org.exist.storage.cache.Cacheable;
 import org.exist.storage.cache.LRUCache;
-import org.exist.storage.io.VariableByteArrayInput;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutput;
 import org.exist.storage.journal.JournalException;
 import org.exist.storage.journal.LogEntryTypes;
 import org.exist.storage.journal.Loggable;
 import org.exist.storage.journal.Lsn;
 import org.exist.storage.lock.LockManager;
-import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
-import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.sanity.SanityCheck;
-import org.exist.xquery.Constants;
 import org.exist.xquery.TerminatedException;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.nio.file.Path;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 /**
@@ -138,7 +125,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
 
     protected final LockManager lockManager;
     protected final int minFree;
-    protected final Cache<DataPage> dataCache;
+    protected final Cache<AbstractDataPage> dataCache;
     protected final int maxValueSize;
 
     protected BFile(final BrokerPool pool, final byte fileId, final BackingFile backingFile, final BFileHeader fileHeader,
@@ -263,7 +250,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             // key exists: get old data
             final long pnum = StorageAddress.pageFromPointer(p);
             final short tid = StorageAddress.tidFromPointer(p);
-            final DataPage page = getDataPage(pnum);
+            final AbstractDataPage page = getDataPage(pnum);
             if (page instanceof OverflowPage) {
                 ((OverflowPage) page).append(transaction, value);
             } else {
@@ -345,7 +332,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         // first collect the values to remove, then sort them by their page number
         // and remove them.
         try {
-            final RemoveCallback cb = new RemoveCallback(); 
+            final PointerCollectorCallback cb = new PointerCollectorCallback();
             remove(transaction, query, cb);
             LOG.debug("Found {} items to remove.", cb.count);
             if (cb.count == 0) {
@@ -361,31 +348,16 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         }
     }
 
-    private static class RemoveCallback implements BTreeCallback {
-        long[] pointers = new long[128];
-        int count = 0;
-        
-        public boolean indexInfo(final Value value, final long pointer) throws TerminatedException {
-            if (count == pointers.length) {
-                final long[] np = new long[count * 2];
-                System.arraycopy(pointers, 0, np, 0, count);
-                pointers = np;
-            }
-            pointers[count++] = pointer;
-            return true;
-        }
-    }
-
-    public ArrayList<Value> findEntries(final IndexQuery query) throws IOException,
+    public List<Value> findEntries(final IndexQuery query) throws IOException,
             BTreeException, TerminatedException {
-        final FindCallback cb = new FindCallback(FindCallback.BOTH);
+        final FindCallback cb = new FindCallback(FindCallback.Mode.BOTH);
         query(query, cb);
         return cb.getValues();
     }
 
-    public ArrayList<Value> findKeys(final IndexQuery query)
+    public List<Value> findKeys(final IndexQuery query)
         throws IOException, BTreeException, TerminatedException {
-        final FindCallback cb = new FindCallback(FindCallback.KEYS);
+        final FindCallback cb = new FindCallback(FindCallback.Mode.KEYS);
         query(query, cb);
         return cb.getValues();
     }
@@ -461,7 +433,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                 return null;
             }
             final long pnum = StorageAddress.pageFromPointer(p);
-            final DataPage page = getDataPage(pnum);
+            final AbstractDataPage page = getDataPage(pnum);
             return get(page, p);
         } catch (final BTreeException e) {
             LOG.error("An exception occurred while trying to retrieve key {}: {}", key, e.getMessage(), e);
@@ -484,7 +456,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             final long p = findValue(key);
             if (p == KEY_NOT_FOUND) {return null;}           
             final long pnum = StorageAddress.pageFromPointer(p);
-            final DataPage page = getDataPage(pnum);
+            final AbstractDataPage page = getDataPage(pnum);
             switch (page.getPageHeader().getStatus()) {
                 case MULTI_PAGE:
                     return ((OverflowPage) page).getDataStream(p);
@@ -506,7 +478,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
      * @throws IOException if an I/O error occurs
      */
     public VariableByteInput getAsStream(final long pointer) throws IOException {
-        final DataPage page = getDataPage(StorageAddress.pageFromPointer(pointer));
+        final AbstractDataPage page = getDataPage(StorageAddress.pageFromPointer(pointer));
         switch (page.getPageHeader().getStatus()) {
             case MULTI_PAGE:
                 return ((OverflowPage) page).getDataStream(pointer);
@@ -515,7 +487,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         }
     }
 
-    private VariableByteInput getAsStream(final DataPage page, final long pointer) throws IOException {
+    private VariableByteInput getAsStream(final AbstractDataPage page, final long pointer) throws IOException {
         dataCache.add(page.getFirstPage(), 2);
         final short tid = StorageAddress.tidFromPointer(pointer);
         final int offset = page.findValuePosition(tid);
@@ -537,7 +509,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     public Value get(final long pointer) {
         try {
             final long pnum = StorageAddress.pageFromPointer(pointer);
-            final DataPage page = getDataPage(pnum);
+            final AbstractDataPage page = getDataPage(pnum);
             return get(page, pointer);
         } catch (final IOException e) {
             LOG.error(e);
@@ -555,7 +527,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
      *
      * @throws IOException if an I/O error occurs
      */
-    protected Value get(final DataPage page, final long pointer) throws IOException {
+    protected Value get(final AbstractDataPage page, final long pointer) throws IOException {
         final short tid = StorageAddress.tidFromPointer(pointer);
         final int offset = page.findValuePosition(tid);
         final byte[] data = page.getData();
@@ -574,12 +546,12 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         return v;
     }
 
-    private DataPage getDataPage(final long pos) throws IOException {
+    private AbstractDataPage getDataPage(final long pos) throws IOException {
     	return getDataPage(pos, true);
     }
 
-    private DataPage getDataPage(final long pos, final boolean initialize) throws IOException {
-        final DataPage wp = dataCache.get(pos);
+    private AbstractDataPage getDataPage(final long pos, final boolean initialize) throws IOException {
+        final AbstractDataPage wp = dataCache.get(pos);
         if (wp == null) {
             final Page<BFilePageHeader> page = getPage(pos);
             if (page == null) {
@@ -616,23 +588,23 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         return wp;
     }
 
-    public ArrayList<Value> getEntries() throws IOException, BTreeException, TerminatedException {
+    public List<Value> getEntries() throws IOException, BTreeException, TerminatedException {
         final IndexQuery query = new IndexQuery(IndexQuery.ANY, "");
-        final FindCallback cb = new FindCallback(FindCallback.BOTH);
+        final FindCallback cb = new FindCallback(FindCallback.Mode.BOTH);
         query(query, cb);
         return cb.getValues();
     }
 
-    public ArrayList<Value> getKeys() throws IOException, BTreeException, TerminatedException {
+    public List<Value> getKeys() throws IOException, BTreeException, TerminatedException {
         final IndexQuery query = new IndexQuery(IndexQuery.ANY, "");
-        final FindCallback cb = new FindCallback(FindCallback.KEYS);
+        final FindCallback cb = new FindCallback(FindCallback.Mode.KEYS);
         query(query, cb);
         return cb.getValues();
     }
 
-    public ArrayList<Value> getValues() throws IOException, BTreeException, TerminatedException {
+    public List<Value> getValues() throws IOException, BTreeException, TerminatedException {
         final IndexQuery query = new IndexQuery(IndexQuery.ANY, "");
-        final FindCallback cb = new FindCallback(FindCallback.VALUES);
+        final FindCallback cb = new FindCallback(FindCallback.Mode.VALUES);
         query(query, cb);
         return cb.getValues();
     }
@@ -759,7 +731,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
                 return;
             }
             final long pos = StorageAddress.pageFromPointer(p);
-            final DataPage page = getDataPage(pos);
+            final AbstractDataPage page = getDataPage(pos);
             remove(transaction, page, p);
             removeValue(transaction, key);
         } catch (final BTreeException | IOException e) {
@@ -770,14 +742,14 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     public void remove(final Txn transaction, final long p) {
         try {
             final long pos = StorageAddress.pageFromPointer(p);
-            final DataPage page = getDataPage(pos);
+            final AbstractDataPage page = getDataPage(pos);
             remove(transaction, page, p);
         } catch (final IOException e) {
             LOG.error(e);
         }
     }
 
-    private void remove(final Txn transaction, final DataPage page, final long p) throws IOException {
+    private void remove(final Txn transaction, final AbstractDataPage page, final long p) throws IOException {
         if (page.getPageHeader().getStatus() == PageStatus.MULTI_PAGE) {
             // overflow page: simply delete the whole page
             ((OverflowPage)page).delete(transaction);
@@ -837,7 +809,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         }
     }
 
-    private final void saveFreeSpace(final FreeSpace space, final DataPage page) {
+    private final void saveFreeSpace(final FreeSpace space, final AbstractDataPage page) {
         final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
         try {
             final int free = fileHeader.getWorkSize() - page.getPageHeader().getDataLength();
@@ -866,7 +838,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             //dataCache.add(page);
             return StorageAddress.createPointer((int) page.getPageNum(), (short)1);
         }
-        DataPage page = null;
+        AbstractDataPage page = null;
         short tid = -1;
         FreeSpace free = null;
 
@@ -996,7 +968,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
      * @throws BTreeException if an error occurs updating the tree
      * @throws IOException if an I/O error occurs
      */
-    protected long update(final Txn transaction, final long p, final DataPage page, final Value key, final ByteArray value)
+    protected long update(final Txn transaction, final long p, final AbstractDataPage page, final Value key, final ByteArray value)
             throws BTreeException, IOException {
         if (page.getPageHeader().getStatus() == PageStatus.MULTI_PAGE) {
             final int valueLen = value.size();
@@ -1044,7 +1016,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
      * @param loggable the log entry
      * @param page the data page
      */
-    private void writeToLog(final Loggable loggable, final DataPage page) {
+    private void writeToLog(final Loggable loggable, final AbstractDataPage page) {
         if (logManager != null) {
             try {
                 logManager.journal(loggable);
@@ -1075,7 +1047,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         return page.getPageHeader().getLsn().compareTo(loggable.getLsn()) >= 0;
     }
 
-    private boolean requiresRedo(final Loggable loggable, final DataPage page) {
+    private boolean requiresRedo(final Loggable loggable, final AbstractDataPage page) {
         return loggable.getLsn().compareTo(page.getPageHeader().getLsn()) > 0;
     }
 
@@ -1189,7 +1161,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
 
     protected void redoCreateOverflow(final OverflowCreateLoggable loggable) {
         try {
-            DataPage firstPage = dataCache.get(loggable.pageNum);
+            AbstractDataPage firstPage = dataCache.get(loggable.pageNum);
             if (firstPage == null) {
                 final Page<BFilePageHeader> page = getPage(loggable.pageNum);
                 byte[] data = page.read(backingFile.randomAccessFile);
@@ -1382,7 +1354,7 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
     }
 
     protected void undoRemoveOverflow(final OverflowRemoveLoggable loggable) {
-        final DataPage page = createPageHelper(loggable, loggable.getPageNum(), false);
+        final AbstractDataPage page = createPageHelper(loggable, loggable.getPageNum(), false);
         final BFilePageHeader ph = page.getPageHeader();
         ph.updateStatus(loggable.getPageStatus());
         ph.setDataLength(loggable.getLength());
@@ -1471,9 +1443,9 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
         }
     }
 
-    private DataPage createPageHelper(final Loggable loggable, final long newPage, final boolean reuseDeleted) {
+    private AbstractDataPage createPageHelper(final Loggable loggable, final long newPage, final boolean reuseDeleted) {
         try {
-            DataPage dp = dataCache.get(newPage);
+            AbstractDataPage dp = dataCache.get(newPage);
             if (dp == null) {
                 final Page<BFilePageHeader> page = getPage(newPage);
                 byte[] data = page.read(backingFile.randomAccessFile);
@@ -1509,1232 +1481,5 @@ public class BFile extends AbstractBTree<BFileHeader, BFilePageHeader> {
             LOG.warn("An IOException occurred during redo: {}", e.getMessage(), e);
         }
         return null;
-    }
-
-    private abstract class DataPage implements Comparable, Cacheable {
-        private int refCount = 0;
-        private int timestamp = 0;
-        private boolean saved = true;
-
-        public abstract void delete() throws IOException;
-
-        public abstract byte[] getData() throws IOException;
-
-        public abstract BFilePageHeader getPageHeader();
-
-        public abstract String getPageInfo();
-
-        public abstract long getPageNum();
-
-        public abstract int findValuePosition(short tid) throws IOException;
-
-        public abstract short getNextTID();
-
-        public abstract void removeTID(short tid, int length) throws IOException;
-
-        public abstract void setOffset(short tid, int offset);
-
-        @Override
-        public long getKey() {
-            return getPageNum();
-        }
-
-        @Override
-        public int getReferenceCount() {
-            return refCount;
-        }
-
-        @Override
-        public int incReferenceCount() {
-            if (refCount < Cacheable.MAX_REF) {++refCount;}
-            return refCount;
-        }
-
-        @Override
-        public int decReferenceCount() {
-            return refCount > 0 ? --refCount : 0;
-        }
-
-        @Override
-        public void setReferenceCount(final int count) {
-            refCount = count;
-        }
-
-        @Override
-        public void setTimestamp(final int timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        @Override
-        public int getTimestamp() {
-            return timestamp;
-        }
-
-        @Override
-        public boolean sync(final boolean syncJournal) throws IOException {
-            if (isDirty()) {
-                write();
-                if (isRecoveryEnabled() && syncJournal && logManager != null && logManager.lastWrittenLsn().compareTo(getPageHeader().getLsn()) < 0) {
-                    logManager.flush(true, false);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public boolean isDirty() {
-            return !saved;
-        }
-
-        @Override
-        public boolean allowUnload() {
-            return true;
-        }
-
-        public abstract void setData(byte[] buf);
-
-        public abstract SinglePage getFirstPage();
-
-        public void setDirty(final boolean dirty) {
-            saved = !dirty;
-            getPageHeader().setDirty(dirty);
-        }
-
-        public abstract void write() throws IOException;
-
-        @Override
-        public int compareTo(final Object other) {
-            if (getPageNum() == ((DataPage) other).getPageNum()) {
-                return Constants.EQUAL;
-            } else if (getPageNum() > ((DataPage) other).getPageNum()) {
-                return Constants.SUPERIOR;
-            } else {
-                return Constants.INFERIOR;
-            }
-        }
-    }
-
-    private final class FilterCallback implements BTreeCallback {
-        private final BFileCallback callback;
-
-        public FilterCallback(final BFileCallback callback) {
-            this.callback = callback;
-        }
-
-        @Override
-        public boolean indexInfo(final Value value, final long pointer) throws TerminatedException{
-            try {
-                final long pos = StorageAddress.pageFromPointer(pointer);
-                final short tid = StorageAddress.tidFromPointer(pointer);
-                final DataPage page = getDataPage(pos);
-                final int offset = page.findValuePosition(tid);
-                final byte[] data = page.getData();
-                final int l = ByteConversion.byteToInt(data, offset);
-                final Value v = new Value(data, offset + 4, l);
-                callback.info(value, v);
-                return true;
-            } catch (final IOException e) {
-                LOG.error(e.getMessage(), e);
-                return true;
-            }
-        }
-    }
-
-    private final class FindCallback implements BTreeCallback {
-        public final static int BOTH = 2;
-        public final static int KEYS = 1;
-        public final static int VALUES = 0;
-
-        private final int mode;
-        private final IndexCallback callback;
-        private final ArrayList<Value> values;
-
-        public FindCallback(final int mode) {
-            this.mode = mode;
-            this.callback = null;
-            this.values = new ArrayList<>();
-        }
-
-        public FindCallback(final IndexCallback callback) {
-            this.mode = BOTH;
-            this.callback = callback;
-            this.values = null;
-        }
-
-        public ArrayList<Value> getValues() {
-            return values;
-        }
-
-        public boolean indexInfo(final Value value, final long pointer) throws TerminatedException {
-            final long pos;
-            final short tid;
-            final DataPage page;
-            final int offset;
-            final int l;
-            final Value v;
-            byte[] data;
-            try {
-                switch (mode) {
-                    case VALUES:
-                        pos = StorageAddress.pageFromPointer(pointer);
-                        tid = StorageAddress.tidFromPointer(pointer);
-                        page = getDataPage(pos);
-                        dataCache.add(page.getFirstPage());
-                        offset = page.findValuePosition(tid);
-                        data = page.getData();
-                        l = ByteConversion.byteToInt(data, offset);
-                        v = new Value(data, offset + 4, l);
-                        v.setAddress(pointer);
-                        if (callback == null) {
-                            values.add(v);
-                        } else {
-                            return callback.indexInfo(value, v);
-                        }
-                        return true;
-
-                    case KEYS:
-                        value.setAddress(pointer);
-                        if (callback == null) {
-                            values.add(value);
-                        } else {
-                            return callback.indexInfo(value, null);
-                        }
-                        return true;
-
-                    case BOTH:
-                        final Value[] entry = new Value[2];
-                        entry[0] = value;
-                        pos = StorageAddress.pageFromPointer(pointer);
-                        tid = StorageAddress.tidFromPointer(pointer);
-                        page = getDataPage(pos);
-                        if (page.getPageHeader().getStatus() == PageStatus.MULTI_PAGE) {
-                            data = page.getData();
-                        }
-                        dataCache.add(page.getFirstPage());
-                        offset = page.findValuePosition(tid);
-                        data = page.getData();
-                        l = ByteConversion.byteToInt(data, offset);
-                        v = new Value(data, offset + 4, l);
-                        v.setAddress(pointer);
-                        entry[1] = v;
-                        if (callback == null) {
-                            values.add(entry[0]);
-                            values.add(entry[1]);
-                        } else {
-                            return callback.indexInfo(value, v);
-                        }
-
-                        return true;
-                }
-            } catch (final IOException e) {
-                LOG.error(e.getMessage(), e);
-            }
-
-            return false;
-        }
-    }
-
-    private final class OverflowPage extends DataPage {
-        private final SinglePage firstPage;
-        private byte[] data = null;
-
-        public OverflowPage(final Txn transaction) throws IOException {
-            firstPage = new SinglePage(false);
-            if (transaction != null && isRecoveryEnabled()) {
-                final Loggable loggable = new OverflowCreateLoggable(fileId, transaction, firstPage.getPageNum());
-                writeToLog(loggable, firstPage);
-            }
-            final BFilePageHeader ph = firstPage.getPageHeader();
-            ph.updateStatus(PageStatus.MULTI_PAGE);
-            ph.setNextInChain(0L);
-            ph.setLastInChain(0L);
-            ph.setDataLength(0);
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                firstPage.setData(new byte[fileHeader.getWorkSize()]);
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-            dataCache.add(firstPage, 3);
-        }
-
-        public OverflowPage(final DataPage page) {
-            firstPage = (SinglePage) page;
-        }
-
-        public OverflowPage(final Page<BFilePageHeader> p, final byte[] data) throws IOException {
-            firstPage = new SinglePage(p, data, false);
-            firstPage.getPageHeader().updateStatus(PageStatus.MULTI_PAGE);
-        }
-
-        /**
-         * Append a new chunk of data to the page
-         *
-         * @param transaction the database transaction
-         * @param chunk chunk of data to append
-         */
-        public void append(final Txn transaction, final ByteArray chunk) throws IOException {
-            SinglePage nextPage;
-            BFilePageHeader ph = firstPage.getPageHeader();
-            final int newLen = ph.getDataLength() + chunk.size();
-            // get the last page and fill it
-            final long next = ph.getLastInChain();
-            DataPage page;
-            if (next > 0) {
-                page = getDataPage(next, false);
-            } else {
-                page = firstPage;
-            }
-            ph = page.getPageHeader();
-            final int chunkLen = chunk.size();
-            int chunkSize;
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                chunkSize = fileHeader.getWorkSize() - ph.getDataLength();
-                if (chunkLen < chunkSize) {
-                    chunkSize = chunkLen;
-                }
-                // fill last page
-                if (transaction != null && isRecoveryEnabled()) {
-                    final Loggable loggable =
-                        new OverflowAppendLoggable(fileId, transaction, page.getPageNum(), chunk, 0, chunkSize);
-                    writeToLog(loggable, page);
-                }
-                chunk.copyTo(0, page.getData(), ph.getDataLength(), chunkSize);
-                if (page != firstPage) {
-                    ph.setDataLength(ph.getDataLength() + chunkSize);
-                }
-                page.setDirty(true);
-                // write the remaining chunks to new pages
-                int remaining = chunkLen - chunkSize;
-                int current = chunkSize;
-                chunkSize = fileHeader.getWorkSize();
-                if (remaining > 0) {
-                    // walk through chain of pages
-                    while (remaining > 0) {
-                        if (remaining < chunkSize) {
-                            chunkSize = remaining;
-                        }
-
-                        // add a new page to the chain
-                        nextPage = createDataPage();
-                        if (transaction != null && isRecoveryEnabled()) {
-                            Loggable loggable = new OverflowCreatePageLoggable(transaction, fileId, nextPage.getPageNum(),
-                                page.getPageNum());
-                            writeToLog(loggable, nextPage);
-
-                            loggable = new OverflowAppendLoggable(fileId, transaction, nextPage.getPageNum(),
-                                chunk, current, chunkSize);
-                            writeToLog(loggable, page);
-                        }
-                        nextPage.setData(new byte[fileHeader.getWorkSize()]);
-                        page.getPageHeader().setNextInChain(nextPage.getPageNum());
-                        page.setDirty(true);
-                        dataCache.add(page);
-                        page = nextPage;
-                        // copy next chunk of data to the page
-                        chunk.copyTo(current, page.getData(), 0, chunkSize);
-                        page.setDirty(true);
-                        if (page != firstPage) {
-                            page.getPageHeader().setDataLength(chunkSize);
-                        }
-                        remaining = remaining - chunkSize;
-                        current += chunkSize;
-                    }
-                }
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-            ph = firstPage.getPageHeader();
-            if (transaction != null && isRecoveryEnabled()) {
-                final Loggable loggable = new OverflowModifiedLoggable(fileId, transaction, firstPage.getPageNum(), 
-                        ph.getDataLength() + chunkLen, ph.getDataLength(), page == firstPage ? 0 : page.getPageNum());
-                writeToLog(loggable, page);
-            }
-            if (page != firstPage) {
-                // add link to last page
-                dataCache.add(page);
-                ph.setLastInChain(page.getPageNum());
-                
-            } else {
-                ph.setLastInChain(0L);
-            }
-            // adjust length field in first page
-            ph.setDataLength(newLen);
-            ByteConversion.intToByte(firstPage.getPageHeader().getDataLength() - 6, firstPage.getData(), 2);
-            firstPage.setDirty(true);
-            // keep the first page in cache
-            dataCache.add(firstPage, 2);
-        }
-
-        @Override
-        public void delete() throws IOException {
-            delete(null);
-        }
-
-        public void delete(final Txn transaction) throws IOException {
-            long next = firstPage.getPageNum();
-            SinglePage page = firstPage;
-            do {
-                next = page.ph.getNextInChain();
-                if (transaction != null && isRecoveryEnabled()) {
-                    int dataLen = page.ph.getDataLength();
-                    final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-                    try {
-                        if (dataLen > fileHeader.getWorkSize()) {
-                            dataLen = fileHeader.getWorkSize();
-                        }
-                    } finally {
-                        fileHeaderReadLock.unlock();
-                    }
-                    final Loggable loggable = new OverflowRemoveLoggable(fileId, transaction, 
-                            page.ph.getStatus(), page.getPageNum(),
-                            page.getData(), dataLen, 
-                            page.ph.getNextInChain());
-                    writeToLog(loggable, page);
-                }
-                
-                page.getPageHeader().setNextInChain(-1L);
-                page.setDirty(true);
-                dataCache.remove(page);
-                page.delete();
-                if (next > 0) {
-                    page = getSinglePage(next);
-                }
-            } while (next > 0);
-        }
-
-        public VariableByteInput getDataStream(final long pointer) {
-            final MultiPageInput input = new MultiPageInput(firstPage, pointer);
-            return input;
-        }
-
-        @Override
-        public byte[] getData() throws IOException {
-            if (data != null) {
-                return data;
-            }
-
-            SinglePage page = firstPage;
-            long next;
-            byte[] temp;
-            int len;
-
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try(final UnsynchronizedByteArrayOutputStream os = new UnsynchronizedByteArrayOutputStream(page.getPageHeader().getDataLength())) {
-                do {
-                    temp = page.getData();
-                    next = page.getPageHeader().getNextInChain();
-                    len = next > 0 ? fileHeader.getWorkSize() : page
-                        .getPageHeader().getDataLength();
-                    os.write(temp, 0, len);
-
-                    if (next > 0) {
-                        page = (SinglePage) getDataPage(next, false);
-                        dataCache.add(page);
-                    }
-                } while (next > 0);
-                data = os.toByteArray();
-                if (data.length != firstPage.getPageHeader().getDataLength()) {
-                    LOG.warn("{} read={}; expected={}", FileUtils.fileName(getFile()), data.length, firstPage.getPageHeader().getDataLength());
-                }
-                return data;
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-        }
-
-        @Override
-        public SinglePage getFirstPage() {
-            return firstPage;
-        }
-
-        @Override
-        public BFilePageHeader getPageHeader() {
-            return firstPage.getPageHeader();
-        }
-
-        @Override
-        public String getPageInfo() {
-            return "MULTI_PAGE: " + firstPage.getPageInfo();
-        }
-
-        @Override
-        public long getPageNum() {
-            return firstPage.getPageNum();
-        }
-
-        @Override
-        public void setData(final byte[] buf) {
-            setData(null, buf);
-        }
-
-        public void setData(final Txn transaction, final byte[] data) {
-            this.data = data;
-            try {
-                write(transaction);
-            } catch (final IOException e) {
-                LOG.error(e);
-            }
-        }
-
-        @Override
-        public void write() throws IOException {
-            write(null);
-        }
-
-        public void write(final Txn transaction) throws IOException {
-            if (data == null) {
-                return;
-            }
-
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
-            try {
-                int chunkSize = fileHeader.getWorkSize();
-                int remaining = data.length;
-                int current = 0;
-                long next = 0L;
-                SinglePage page = firstPage;
-                page.getPageHeader().setDataLength(remaining);
-                SinglePage nextPage;
-                long prevPageNum = Page.NO_PAGE;
-                // walk through chain of pages
-                while (remaining > 0) {
-                    if (remaining < chunkSize) {
-                        chunkSize = remaining;
-                    }
-                    page.clear();
-                    // copy next chunk of data to the page
-                    if (transaction != null && isRecoveryEnabled()) {
-                        final Loggable loggable = new OverflowStoreLoggable(fileId, transaction, page.getPageNum(), prevPageNum,
-                            data, current, chunkSize);
-                        writeToLog(loggable, page);
-                    }
-                    System.arraycopy(data, current, page.getData(), 0, chunkSize);
-                    if (page != firstPage) {
-                        page.getPageHeader().setDataLength(chunkSize);
-                    }
-                    page.setDirty(true);
-                    remaining -= chunkSize;
-                    current += chunkSize;
-                    next = page.getPageHeader().getNextInChain();
-                    if (remaining > 0) {
-                        if (next > 0) {
-                            // load next page in chain
-                            nextPage = (SinglePage) getDataPage(next, false);
-                            dataCache.add(page);
-                            prevPageNum = page.getPageNum();
-                            page = nextPage;
-                        } else {
-                            // add a new page to the chain
-                            nextPage = createDataPage();
-                            if (transaction != null && isRecoveryEnabled()) {
-                                final Loggable loggable = new CreatePageLoggable(transaction, fileId, nextPage.getPageNum());
-                                writeToLog(loggable, nextPage);
-                            }
-                            nextPage.setData(new byte[fileHeader.getWorkSize()]);
-                            nextPage.getPageHeader().setNextInChain(0L);
-                            page.getPageHeader().setNextInChain(
-                                nextPage.getPageNum());
-                            dataCache.add(page);
-                            prevPageNum = page.getPageNum();
-                            page = nextPage;
-                        }
-                    } else {
-                        page.getPageHeader().setNextInChain(0L);
-                        if (page != firstPage) {
-                            page.setDirty(true);
-                            dataCache.add(page);
-                            firstPage.getPageHeader().setLastInChain(
-                                page.getPageNum());
-                        } else {
-                            firstPage.getPageHeader().setLastInChain(0L);
-                        }
-                        firstPage.setDirty(true);
-                        dataCache.add(firstPage, 3);
-                    }
-                }
-
-
-                if (next > 0) {
-                    // there are more pages in the chain:
-                    // remove them
-                    while (next > 0) {
-                        nextPage = (SinglePage) getDataPage(next, false);
-
-                        next = nextPage.getPageHeader().getNextInChain();
-
-                        if (transaction != null && isRecoveryEnabled()) {
-                            final Loggable loggable = new OverflowRemoveLoggable(fileId, transaction,
-                                    nextPage.getPageHeader().getStatus(), nextPage.getPageNum(),
-                                    nextPage.getData(), nextPage.getPageHeader().getDataLength(),
-                                    nextPage.getPageHeader().getNextInChain());
-                            writeToLog(loggable, nextPage);
-                        }
-
-                        nextPage.setDirty(true);
-                        nextPage.delete();
-                        dataCache.remove(nextPage);
-                    }
-                }
-                firstPage.getPageHeader().setDataLength(data.length);
-                firstPage.setDirty(true);
-                dataCache.add(firstPage, 3);
-    //            LOG.debug(firstPage.getPageNum() + " data length: " + firstPage.ph.getDataLength());
-            } finally {
-                fileHeaderReadlock.unlock();
-            }
-        }
-
-        @Override
-        public int findValuePosition(final short tid) throws IOException {
-            return 2;
-        }
-
-        @Override
-        public short getNextTID() {
-            return 1;
-        }
-
-        @Override
-        public void removeTID(final short tid, final int length) {
-            //
-        }
-
-        @Override
-        public void setOffset(final short tid, final int offset) {
-            //
-        }
-    }
-
-    public interface PageInputStream {
-        long getAddress();
-        long position();
-        void seek(long position) throws IOException;
-    }
-
-    /**
-     * Variable byte input stream to read data from a single page.
-     * 
-     * @author wolf
-     */
-    private final static class SimplePageInput extends VariableByteArrayInput
-            implements PageInputStream {
-
-        private final long address;
-        
-        public SimplePageInput(final byte[] data, final int start, final int len, final long address) {
-            super(data, start, len);
-            this.address = address;
-        }
-
-        @Override
-        public long getAddress() {
-            return address;
-        }
-
-        @Override
-        public long position() {
-            return position;
-        }
-
-        @Override
-        public void seek(final long pos) throws IOException {
-            this.position = (int) pos;
-        }
-    }
-
-    /**
-     * Variable byte input stream to read a multi-page sequences.
-     * 
-     * @author wolf
-     */
-    private final class MultiPageInput implements VariableByteInput, PageInputStream {
-        private SinglePage nextPage;
-        private int pageLen;
-        private short offset = 0;
-        private final long address;
-
-        public MultiPageInput(SinglePage first, long address) {
-            nextPage = first;
-            offset = 6;
-            pageLen = first.ph.getDataLength();
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
-            try {
-                if (pageLen > fileHeader.getWorkSize()) {
-                    pageLen = fileHeader.getWorkSize();
-                }
-            } finally {
-                fileHeaderReadlock.unlock();
-            }
-            dataCache.add(first, 3);
-            this.address = address;
-        }
-
-        @Override
-        public long getAddress() {
-            return address;
-        }
-
-        @Override
-        public final int read() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            return nextPage.data[offset++] & 0xFF;
-        }
-
-        @Override
-        public final byte readByte() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            return nextPage.data[offset++];
-        }
-
-        @Override
-        public final short readShort() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            byte b = nextPage.data[offset++];
-            short i = (short) (b & 0177);
-            for (int shift = 7; (b & 0200) != 0; shift += 7) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                b = nextPage.data[offset++];
-                i |= (b & 0177) << shift;
-            }
-            return i;
-        }
-
-        @Override
-        public short readFixedShort() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            // do we have to read across a page boundary?
-            if (offset + 2 < pageLen) {
-                return (short) ((nextPage.data[offset++] & 0xff) |
-                    ((nextPage.data[offset++] & 0xff) << 8));
-            }
-
-            short r = (short) (nextPage.data[offset++] & 0xff);
-            if (offset == pageLen) {
-                advance();
-            }
-            r |= (nextPage.data[offset++] & 0xff) << 8;
-
-            return r;
-        }
-
-        @Override
-        public final int readInt() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            byte b = nextPage.data[offset++];
-            int i = b & 0177;
-            for (int shift = 7; (b & 0200) != 0; shift += 7) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                b = nextPage.data[offset++];
-                i |= (b & 0177) << shift;
-            }
-            return i;
-        }
-
-        @Override
-        public int readFixedInt() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            // do we have to read across a page boundary?
-            if (offset + 4 < pageLen) {
-                return ( nextPage.data[offset++] & 0xff ) |
-                    ( (nextPage.data[offset++] & 0xff) << 8 ) |
-                    ( (nextPage.data[offset++] & 0xff) << 16 ) |
-                    ( (nextPage.data[offset++] & 0xff) << 24 );
-            }
-
-            int r = nextPage.data[offset++] & 0xff;
-            int shift = 8;
-            for (int i = 0; i < 3; i++) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                r |= (nextPage.data[offset++] & 0xff) << shift;
-                shift += 8;
-            }
-            return r;
-        }
-
-        @Override
-        public final long readLong() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            byte b = nextPage.data[offset++];
-            long i = b & 0177;
-            for (int shift = 7; (b & 0200) != 0; shift += 7) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                b = nextPage.data[offset++];
-                i |= (b & 0177L) << shift;
-            }
-            return i;
-        }
-
-        @Override
-        public long readFixedLong() throws IOException {
-            if (offset == pageLen) {
-                advance();
-            }
-            // do we have to read across a page boundary?
-            if (offset + 8 < pageLen) {
-                return ((nextPage.data[offset++] & 0xff) << 56) |
-                    ((nextPage.data[offset++] & 0xff) << 48) |
-                    ((nextPage.data[offset++] & 0xff) << 40) |
-                    ((nextPage.data[offset++] & 0xff) << 32) |
-                    ((nextPage.data[offset++] & 0xff) << 24) |
-                    ((nextPage.data[offset++] & 0xff) << 16) |
-                    ((nextPage.data[offset++] & 0xff) << 8) |
-                    (nextPage.data[offset++] & 0xff);
-            }
-
-            int r = (nextPage.data[offset++] & 0xff) << 56;
-            int shift = 48;
-            for (int i = 0; i < 7; i++) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                r |= (nextPage.data[offset++] & 0xff) << shift;
-                shift -= 8;
-            }
-            return r;
-        }
-
-        @Override
-        public BigInteger readBigInteger() throws IOException {
-            final int dataLength = readInt();
-            final byte[] data = new byte[dataLength];
-            read(data);
-
-            return new BigInteger(data);
-        }
-
-        @Override
-        public BigInteger readFixedBigInteger() throws IOException {
-            final int dataLength = readFixedInt();
-            final byte[] data = new byte[dataLength];
-            read(data);
-
-            return new BigInteger(data);
-        }
-
-        @Override
-        public BigDecimal readBigDecimal() throws IOException {
-            final int scale = readInt();
-            final int precision = readInt();
-            final int dataLength = readInt();
-            final byte[] data = new byte[dataLength];
-            read(data);
-
-            final MathContext mathContext = new java.math.MathContext(precision);
-            return new BigDecimal(new BigInteger(data), scale, mathContext);
-        }
-
-        @Override
-        public BigDecimal readFixedBigDecimal() throws IOException {
-            final int scale = readFixedInt();
-            final int precision = readFixedInt();
-            final int dataLength = readFixedInt();
-            final byte[] data = new byte[dataLength];
-            read(data);
-
-            final MathContext mathContext = new java.math.MathContext(precision);
-            return new BigDecimal(new BigInteger(data), scale, mathContext);
-        }
-
-        @Override
-        public final void skip(final int count) throws IOException {
-            for (int i = 0; i < count; i++) {
-                do {
-                    if (offset == pageLen) {
-                        advance();
-                    }
-                } while ((nextPage.data[offset++] & 0200) > 0);
-            }
-        }
-
-        @Override
-        public final void skipBytes(final long count) throws IOException {
-            for(long i = 0; i < count; i++) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                offset++;
-            }
-        }
-
-        private final void advance() throws IOException {
-            final long next = nextPage.getPageHeader().getNextInChain();
-            if (next < 1) {
-                pageLen = -1;
-                offset = 0;
-                throw new EOFException();
-            }
-
-
-            try(final ManagedLock<ReentrantLock> bfileLock = lockManager.acquireBtreeReadLock(getLockName())) {
-                nextPage = (SinglePage) getDataPage(next, false);
-                pageLen = nextPage.ph.getDataLength();
-                offset = 0;
-                dataCache.add(nextPage);
-            } catch (final LockException e) {
-                throw new IOException("failed to acquire a read lock on "
-                        + FileUtils.fileName(getFile()));
-            }
-        }
-
-        @Override
-        public final int available() throws IOException {
-            if (pageLen < 0) {
-                return 0;
-            }
-            int inPage = pageLen - offset;
-            if (inPage == 0) {
-                inPage = nextPage.getPageHeader().getNextInChain() > 0 ? 1 : 0;
-            }
-            return inPage;
-        }
-
-        @Override
-        public final int read(final byte[] data) throws IOException {
-            return read(data, 0, data.length);
-        }
-
-        @Override
-        public final int read(final byte[] b, final int off, final int len) throws IOException {
-            if (pageLen < 0) {
-                return -1;
-            }
-
-            for (int i = 0; i < len; i++) {
-                if (offset == pageLen) {
-                    final long next = nextPage.getPageHeader().getNextInChain();
-                    if (next < 1) {
-                        pageLen = -1;
-                        offset = 0;
-                        return i;
-                    }
-                    nextPage = (SinglePage) getDataPage(next, false);
-                    pageLen = nextPage.ph.getDataLength();
-                    offset = 0;
-                    dataCache.add(nextPage);
-                }
-                b[off + i] = nextPage.data[offset++];
-            }
-            return len;
-        }
-
-        @Override
-        public final String readUTF() throws IOException {
-            final int len = readInt();
-            final byte data[] = new byte[len];
-
-            read(data);
-
-            return new String(data, UTF_8);
-        }
-
-        @Override
-        public final void copyTo(final VariableByteOutput os) throws IOException {
-            byte more;
-            do {
-                if (offset == pageLen) {
-                    advance();
-                }
-                more = nextPage.data[offset++];
-                os.writeByte(more);
-                more &= 0200;
-            } while (more > 0);
-        }
-
-        @Override
-        public final void copyTo(final VariableByteOutput os, final int count) throws IOException {
-            byte more;
-            for (int i = 0; i < count; i++) {
-                do {
-                    if (offset == pageLen) {
-                        advance();
-                    }
-                    more = nextPage.data[offset++];
-                    os.writeByte(more);
-                } while ((more & 0x200) > 0);
-            }
-        }
-
-        @Override
-        public void copyRaw(final VariableByteOutput os, final int count) throws IOException {
-            for (int i = count; i != 0; ) {
-                if (offset == pageLen) {
-                    advance();
-                }
-                int avail = pageLen - offset;
-                if (i >= avail) {
-                    os.write(nextPage.data, offset, avail);
-                    i -= avail;
-                    offset = (short) pageLen;
-                } else {
-                    os.write(nextPage.data, offset, i);
-                    offset += i;
-                    break;
-                }
-                //os.writeByte(nextPage.data[offset++]);
-            }
-        }
-
-        @Override
-        public long position() {
-            return StorageAddress.createPointer((int) nextPage.getPageNum(), offset);
-        }
-
-        @Override
-        public void seek(final long position) throws IOException {
-            final int newPage = StorageAddress.pageFromPointer(position);
-            final short newOffset = StorageAddress.tidFromPointer(position);
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
-            try(final ManagedLock<ReentrantLock> bfileLock =  lockManager.acquireBtreeReadLock(getLockName())) {
-                nextPage = getSinglePage(newPage);
-                pageLen = nextPage.ph.getDataLength();
-                if (pageLen > fileHeader.getWorkSize()) {
-                    pageLen = fileHeader.getWorkSize();
-                }
-                offset = newOffset;
-                dataCache.add(nextPage);
-            } catch (final LockException e) {
-                throw new IOException("Failed to acquire a read lock on " + FileUtils.fileName(getFile()));
-            } finally {
-                fileHeaderReadlock.unlock();
-            }
-        }
-    }
-
-    /**
-     * Represents a single data page (as opposed to an overflow page).
-     * 
-     * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
-     */
-    private final class SinglePage extends DataPage {
-
-        // the raw working data of this page (without page header)
-        byte[] data = null;
-
-        // the low-level page
-        final Page<BFilePageHeader> page;
-
-        // the page header
-        final BFilePageHeader ph;
-
-        // table mapping record ids (tids) to offsets
-        short[] offsets = null;
-
-        public SinglePage() throws IOException {
-            this(true);
-        }
-
-        public SinglePage(final boolean compress) throws IOException {
-            page = getFreePage();
-            ph = page.getPageHeader();
-            ph.updateStatus(PageStatus.RECORD);
-            ph.setDirty(true);
-            ph.setDataLength(0);
-            //ph.setNextChunk( -1 );
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadlock = fileHeader.readLock();
-            try {
-                data = new byte[fileHeader.getWorkSize()];
-            } finally {
-                fileHeaderReadlock.unlock();
-            }
-            offsets = new short[32];
-            ph.setNextTID((short) 32);
-            Arrays.fill(offsets, (short)-1);
-        }
-
-        public SinglePage(final Page<BFilePageHeader> p, final byte[] data, final boolean initialize) throws IOException {
-            if (p == null) {
-                throw new IOException("illegal page");
-            }
-
-            if (!(p.getPageHeader().getStatus() == PageStatus.RECORD || p.getPageHeader()
-                    .getStatus() == PageStatus.MULTI_PAGE)) {
-                final IOException e = new IOException("not a data-page: "
-                        + p.getPageHeader().getStatus());
-                LOG.debug("not a data-page: {}", p.getPageInfo(), e);
-                throw e;
-            }
-            this.data = data;
-            page = p;
-            ph = page.getPageHeader();
-            if(initialize) {
-                offsets = new short[ph.getCurrentTID()];
-                if (ph.getStatus() != PageStatus.MULTI_PAGE) {
-                    readOffsets();
-                }
-            }
-        }
-
-        @Override
-        public final int findValuePosition(final short tid) throws IOException {
-            return offsets[tid];
-        }
-
-        private void readOffsets() {
-            //if(offsets.length > 256)
-                //LOG.warn("TID size: " + ph.nextTID);
-            Arrays.fill(offsets, (short)-1);
-            final int dlen = ph.getDataLength();
-            for(short pos = 0; pos < dlen; ) {
-                final short tid = ByteConversion.byteToShort(data, pos);
-                if (tid < 0) {
-                    LOG.error("Invalid tid found: {}; ignoring rest of page ...", tid);
-                    ph.setDataLength(pos);
-                    return;
-                }
-                if(tid >= offsets.length) {
-                    LOG.error("Problematic tid found: {}; trying to recover ...", tid);
-                    final short[] t = new short[tid + 1];
-                    Arrays.fill(t, (short)-1);
-                    System.arraycopy(offsets, 0, t, 0, offsets.length);
-                    offsets = t;
-                    ph.setNextTID((short)(tid + 1));
-                }
-                offsets[tid] = (short)(pos + 2);
-                pos += ByteConversion.byteToInt(data, pos + 2) + 6;
-            }
-        }
-
-        @Override
-        public short getNextTID() {
-            for(short i = 0; i < offsets.length; i++) {
-                if(offsets[i] == -1) {
-                    return i;
-                }
-            }
-            final short tid = (short)offsets.length;
-            final short next = (short)(ph.getCurrentTID() * 2);
-            if (next < 0 || next < ph.getCurrentTID()) {
-                return -1;
-            }
-            final short[] t = new short[next];
-            Arrays.fill(t, (short)-1);
-            System.arraycopy(offsets, 0, t, 0, offsets.length);
-            offsets = t;
-            ph.setNextTID(next);
-            return tid;
-        }
-
-        public void adjustTID(final short tid) {
-            if (tid >= ph.getCurrentTID()) {
-                final short next = (short)(tid * 2);
-                final short[] t = new short[next];
-                Arrays.fill(t, (short)-1);
-                System.arraycopy(offsets, 0, t, 0, offsets.length);
-                offsets = t;
-                ph.setNextTID(next);
-            }
-        }
-
-        public void clear() {
-            Arrays.fill(data, (byte) 0);
-        }
-
-        private String printContents() {
-            final StringBuilder buf = new StringBuilder();
-            for(short i = 0; i < offsets.length; i++) {
-                if (offsets[i] > -1) {
-                    buf.append('[').append(i).append(", ").append(offsets[i]);
-                    final short len = ByteConversion.byteToShort(data, offsets[i]);
-                    buf.append(", ").append(len).append(']');
-                }
-            }
-            return buf.toString();
-        }
-
-        @Override
-        public void setOffset(final short tid, final int offset) {
-            if (offsets == null) {
-                LOG.warn("page: {} file: {} status: {}", page.getPageNum(), FileUtils.fileName(getFile()), getPageHeader().getStatus());
-                throw new RuntimeException("page offsets not initialized");
-            }
-            offsets[tid] = (short)offset;
-        }
-        
-        @Override
-        public void removeTID(final short tid, final int length) throws IOException {
-            final int offset = offsets[tid] - 2;
-            offsets[tid] = -1;
-            for(short i = 0; i < offsets.length; i++) {
-                if(offsets[i] > offset) {
-                    offsets[i] -= length;
-                }
-            }
-            //readOffsets(start);
-        }
-
-        @Override
-        public void delete() throws IOException {
-            // reset page header fields
-            ph.setDataLength(0);
-            ph.setNextInChain(-1L);
-            ph.setLastInChain(-1L);
-            ph.setNextTID((short) -1);
-            ph.setRecordCount((short) 0);
-            setReferenceCount(0);
-            ph.setDirty(true);
-            unlinkPages(page);
-        }
-
-        @Override
-        public SinglePage getFirstPage() {
-            return this;
-        }
-
-        @Override
-        public byte[] getData() {
-            return data;
-        }
-
-        @Override
-        public BFilePageHeader getPageHeader() {
-            return ph;
-        }
-
-        @Override
-        public String getPageInfo() {
-            return page.getPageInfo();
-        }
-
-        @Override
-        public long getPageNum() {
-            return page.getPageNum();
-        }
-
-        @Override
-        public void setData(final byte[] buf) {
-            data = buf;
-        }
-
-        @Override
-        public void write() throws IOException {
-            //LOG.debug(getPath().getName() + " writing page " + getPageNum());
-            writeValue(page, new Value(data));
-            setDirty(false);
-        }
     }
 }

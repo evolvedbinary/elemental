@@ -31,7 +31,7 @@
 package org.exist.storage.dom;
 
 import org.exist.storage.btree.Page;
-import org.exist.storage.cache.Cacheable;
+import org.exist.storage.cache.AbstractCacheable;
 import org.exist.util.ByteConversion;
 import org.exist.util.HexEncoder;
 
@@ -45,36 +45,45 @@ import java.io.IOException;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
-class DOMPage implements Cacheable {
+class DOMPage extends AbstractCacheable {
 
-    // TODO(AR) make these fields private access?
-
-    // the low-level page
+    /**
+     * The low-level page.
+     */
     final Page<DOMFilePageHeader> page;
 
-    // the raw working data (without page header) of this DOM page
+    /**
+     * The raw data (without page header) of this DOM page.
+     */
     byte[] data;
 
-    // the current size of the used data of this DOM Page
+    /**
+     * The current size of the used {@link #data} of this DOM Page.
+     */
     int len = 0;
 
-    // fields required by Cacheable
-    private int refCount = 0;
-
-    private int timestamp = 0;
-
-    // has the page been saved or is it dirty?
-    private boolean saved = true;
-
-    // set to true if the page has been removed from the cache
-    private boolean invalidated = false;
-
+    /**
+     * The last found record's offset.
+     */
     private final ThreadLocal<Integer> lastFound = ThreadLocal.withInitial(() -> 0);
 
     DOMPage(final Page<DOMFilePageHeader> page, final byte[] data, final int len) {
         this.page = page;
         this.data = data;
         this.len = len;
+    }
+
+    @Override
+    public long getKey() {
+        return page.getPageNum();
+    }
+
+    DOMFilePageHeader getPageHeader() {
+        return page.getPageHeader();
+    }
+
+    long getPageNum() {
+        return page.getPageNum();
     }
 
     /**
@@ -135,64 +144,15 @@ class DOMPage implements Cacheable {
     }
 
     @Override
-    public long getKey() {
-        return page.getPageNum();
-    }
-
-    @Override
-    public int getReferenceCount() {
-        return refCount;
-    }
-
-    @Override
-    public int decReferenceCount() {
-        //TODO : check if the decrementation is allowed ? -pb
-        return refCount > 0 ? --refCount : 0;
-    }
-
-    @Override
-    public int incReferenceCount() {
-        //TODO : check uf the incrementation is allowed ? -pb
-        if (refCount < Cacheable.MAX_REF) {
-            refCount++;
+    public boolean sync(final boolean syncJournal) throws IOException {
+        if (isDirty()) {
+            write();
+            if (isRecoveryEnabled() && syncJournal && logManager != null && logManager.lastWrittenLsn().compareTo(page.getPageHeader().getLsn()) < 0) {
+                logManager.flush(true, false);
+            }
+            return true;
         }
-        return refCount;
-    }
-
-    @Override
-    public void setReferenceCount(final int count) {
-        refCount = count;
-    }
-
-    @Override
-    public void setTimestamp(final int timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    @Override
-    public int getTimestamp() {
-        return timestamp;
-    }
-
-    DOMFilePageHeader getPageHeader() {
-        return page.getPageHeader();
-    }
-
-    long getPageNum() {
-        return page.getPageNum();
-    }
-
-    @Override
-    public boolean isDirty() {
-        return !saved;
-    }
-
-    void setDirty(final boolean dirty) {
-        saved = !dirty;
-        page.getPageHeader().setDirty(dirty);
-        if (dirty) {
-            lastFound.set(0);
-        }
+        return false;
     }
 
     private void write() throws IOException {
@@ -208,43 +168,24 @@ class DOMPage implements Cacheable {
         setDirty(false);
     }
 
-    String dumpPage() {
-        return "Contents of page " + page.getPageNum() + ": " + HexEncoder.bytesToHex(data);
-    }
-
     @Override
-    public boolean sync(final boolean syncJournal) throws IOException {
-        if (isDirty()) {
-            write();
-            if (isRecoveryEnabled() && syncJournal && logManager.isPresent() && logManager.get().lastWrittenLsn().compareTo(page.getPageHeader().getLsn()) < 0) {
-                logManager.ifPresent(l -> l.flush(true, false));
-            }
-            return true;
+    public void setDirty(final boolean dirty) {
+        super.setDirty(dirty);
+
+        page.getPageHeader().setDirty(dirty);
+        if (dirty) {
+            lastFound.set(0);
         }
-        return false;
-    }
-
-    @Override
-    public boolean allowUnload() {
-        return true;
     }
 
     @Override
     public boolean equals(final Object obj) {
-        if(!(obj instanceof DOMPage)) {
+        if (!(obj instanceof DOMPage)) {
             return false;
         }
 
         final DOMPage other = (DOMPage) obj;
         return page.equals(other.page);
-    }
-
-    void invalidate() {
-        invalidated = true;
-    }
-
-    boolean isInvalidated() {
-        return invalidated;
     }
 
     /**
@@ -280,5 +221,9 @@ class DOMPage implements Cacheable {
             }
         }
         page.getPageHeader().setNextTupleID(maxTupleID);
+    }
+
+    String dumpPage() {
+        return "Contents of page " + page.getPageNum() + ": " + HexEncoder.bytesToHex(data);
     }
 }
