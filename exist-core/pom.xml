@@ -188,6 +188,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.j8cu</groupId>
+            <artifactId>j8cu</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.evolvedbinary.j8fu</groupId>
             <artifactId>j8fu</artifactId>
         </dependency>
