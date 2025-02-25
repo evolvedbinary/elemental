@@ -212,6 +212,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.j8cu</groupId>
+            <artifactId>j8cu</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.evolvedbinary.j8fu</groupId>
             <artifactId>j8fu</artifactId>
         </dependency>
