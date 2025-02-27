@@ -275,7 +275,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     return;
                 }
                 if (test) {
-                    if (transaction != null && isRecoveryEnabled() && nextPage.pageHeader.getStatus() == PageStatus.LEAF) {
+                    if (transaction != null && isRecoveryEnabled() && nextPage.pageHeader.getType() == PageType.LEAF) {
                         final RemoveValueLoggable log = new RemoveValueLoggable(transaction, 
                             fileId, nextPage.page.getPageNum(), i, nextPage.keys[i], nextPage.ptrs[i]);
                         writeToLog(log, nextPage);
@@ -375,21 +375,21 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
      * Create a new node with the given status and parent.
      * 
      * @param transaction the database transaction
-     * @param pageStatus the status
+     * @param pageType the status
      * @param parent the parent
      * @param reuseDeleted true if deleted pages should be reused
      * @return The BTree node
      */
-    private BTreeNode createBTreeNode(final Txn transaction, final PageStatus pageStatus, final BTreeNode parent, final boolean reuseDeleted) {
+    private BTreeNode createBTreeNode(final Txn transaction, final PageType pageType, final BTreeNode parent, final boolean reuseDeleted) {
         try {
             final Page<PAGE_HEADER> page = getFreePage(reuseDeleted);
-            final BTreeNode node = new BTreeNode(page, true);
-            if (transaction != null && isRecoveryEnabled() && pageStatus == PageStatus.LEAF) {
+            final BTreeNode node = createBTreeNode(page, true);
+            if (transaction != null && isRecoveryEnabled() && pageType == PageType.LEAF) {
                 final Loggable loggable = new CreateBTNodeLoggable(transaction, fileId,
-                    pageStatus, page.getPageNum(), parent != null ? parent.page.getPageNum() : Page.NO_PAGE);
+                    pageType, page.getPageNum(), parent != null ? parent.page.getPageNum() : Page.NO_PAGE);
                 writeToLog(loggable, node);
             }
-            node.pageHeader.updateStatus(pageStatus);
+            node.pageHeader.updateType(pageType);
             node.setPointers(new long[0]);
             node.setParent(parent);
             node.write();
@@ -398,6 +398,10 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             LOG.error("Failed to create a BTree node", e);
             return null;
         }
+    }
+
+    private BTreeNode createBTreeNode(final Page<PAGE_HEADER> page, final boolean newPage) {
+        return new BTreeNode(page, newPage);
     }
 
     /**
@@ -410,11 +414,11 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         try {
             BTreeNode node = cache.get(pageNum);
             if (node == null) {
-                final Page<PAGE_HEADER> page = getPage(pageNum);
-                node = new BTreeNode(page, false);
+                final Page<PAGE_HEADER> page = createPage(pageNum);
+                node = createBTreeNode(page, false);
                 node.read();
             }
-            final int increment = node.pageHeader.getStatus() == PageStatus.BRANCH ? 2 : 1;
+            final int increment = node.pageHeader.getType() == PageType.BRANCH ? 2 : 1;
             cache.add(node, increment);
             return node;
         } catch (final IOException e) {
@@ -448,7 +452,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
      * @throws IOException if an I/O error occurs
      */
     protected long createRootNode(final Txn transaction) throws IOException {
-        final BTreeNode root = createBTreeNode(transaction, PageStatus.LEAF, null, true);
+        final BTreeNode root = createBTreeNode(transaction, PageType.LEAF, null, true);
         setRootNode(root);
         return root.page.getPageNum();
     }
@@ -461,8 +465,8 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         try {
             BTreeNode node = cache.get(fileHeader.getRootPage());
             if (node == null) {
-                final Page<PAGE_HEADER> page = getPage(fileHeader.getRootPage());
-                node = new BTreeNode(page, false);
+                final Page<PAGE_HEADER> page = createPage(fileHeader.getRootPage());
+                node = createBTreeNode(page, false);
                 node.read();
             }
             cache.add(node, 2);
@@ -516,7 +520,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         cacheManager.deregisterCache(cache);
     }
 
-    protected void dumpValue(final Writer writer, final Value value, final PageStatus pageStatus) throws IOException {
+    protected void dumpValue(final Writer writer, final Value value, final PageType pageType) throws IOException {
         final byte[] data = value.getData();
         writer.write('[');
         writer.write(HexEncoder.bytesToHex(data));
@@ -532,10 +536,10 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         try {
             final long pages = fileHeader.getTotalCount();
             for (int i = 1; i < pages; i++) {
-                final Page<PAGE_HEADER> page = getPage(i);
+                final Page<PAGE_HEADER> page = createPage(i);
                 page.read(backingFile.randomAccessFile);
-                if (page.getPageHeader().getStatus() == PageStatus.LEAF) {
-                    final BTreeNode node = new BTreeNode(page, false);
+                if (page.getPageHeader().getType() == PageType.LEAF) {
+                    final BTreeNode node = createBTreeNode(page, false);
                     node.read();
                     node.scanRaw(query, callback);
                 }
@@ -583,13 +587,13 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 if (node != null) {
                     page = node.page;
                 } else {
-                    page = getPage(i);
+                    page = createPage(i);
                     page.read(backingFile.randomAccessFile);
                 }
-                if (page.getPageHeader().getStatus() == PageStatus.LEAF) {
+                if (page.getPageHeader().getType() == PageType.LEAF) {
                     pageCount++;
                     if (node == null) {
-                        node = new BTreeNode(page, false);
+                        node = createBTreeNode(page, false);
                         node.read();
                     }
                     cache.add(node);
@@ -597,7 +601,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     if (node.pageHeader.getNextPage() != Page.NO_PAGE) {
                         nextPages.add(node.pageHeader.getNextPage());
                     }
-                } else if (page.getPageHeader().getStatus() == PageStatus.BRANCH) {
+                } else if (page.getPageHeader().getType() == PageType.BRANCH) {
                     branchPages.add(page.getPageNum());
                 }
             }
@@ -611,9 +615,9 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         }
         if (removeBranches) {
             for (final long p : branchPages) {
-                final Page<PAGE_HEADER> page = getPage(p);
+                final Page<PAGE_HEADER> page = createPage(p);
                 page.read(backingFile.randomAccessFile);
-                final BTreeNode node = new BTreeNode(page, false);
+                final BTreeNode node = createBTreeNode(page, false);
                 node.read();
                 cache.remove(node);
                 unlinkPages(page);
@@ -655,7 +659,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             cache.add(root);
         } else {
             // create a new root node
-            final BTreeNode root = createBTreeNode(null, PageStatus.BRANCH, null, false);
+            final BTreeNode root = createBTreeNode(null, PageType.BRANCH, null, false);
             setRootNode(root);
             // insert a pointer to the first page into the root
             BTreeNode node = getBTreeNode(info.firstPage);
@@ -683,7 +687,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 if (parent == null) {
                     throw new IOException("Parent is null for page " + node.page.getPageNum());
                 }
-                if (parent.pageHeader.getStatus() != PageStatus.BRANCH) {
+                if (parent.pageHeader.getType() != PageType.BRANCH) {
                     throw new IOException("Not a branch page: " + parent.page.getPageNum());
                 }
 
@@ -703,7 +707,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
     private BTreeNode findParent(final Value key) throws IOException {
         BTreeNode node = getRootNode();
         BTreeNode last = node;
-        while (node.pageHeader.getStatus() != PageStatus.LEAF) {
+        while (node.pageHeader.getType() != PageType.LEAF) {
             last = node;
             try {
                 int idx = node.searchKey(key);
@@ -741,26 +745,26 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         if (node == null) {
             // node is not yet loaded. Load it
             try {
-                final Page<PAGE_HEADER> page = getPage(loggable.getPageNum());
+                final Page<PAGE_HEADER> page = createPage(loggable.getPageNum());
                 page.read(backingFile.randomAccessFile);
-                if ((page.getPageHeader().getStatus() == PageStatus.BRANCH ||
-                        page.getPageHeader().getStatus() == PageStatus.LEAF) &&
+                if ((page.getPageHeader().getType() == PageType.BRANCH ||
+                        page.getPageHeader().getType() == PageType.LEAF) &&
                         (!page.getPageHeader().getLsn().equals(Lsn.LSN_INVALID)) &&
                         !requiresRedo(loggable, page)) {
                     // node already found on disk: read it
-                    node = new BTreeNode(page, false);
+                    node = createBTreeNode(page, false);
                     node.read();
                     return;
                 } else {
                     // create a new node
-                    node = new BTreeNode(page, true);
-                    node.pageHeader.updateStatus(loggable.getPageStatus());
+                    node = createBTreeNode(page, true);
+                    node.pageHeader.updateType(loggable.getPageType());
                     node.setPointers(new long[0]);
                     node.write();
                 }
                 node.pageHeader.setLsn(loggable.getLsn());
                 node.pageHeader.setParentPage(loggable.getParentNum());
-                final int increment = node.pageHeader.getStatus() == PageStatus.BRANCH ? 2 : 1;
+                final int increment = node.pageHeader.getType() == PageType.BRANCH ? 2 : 1;
                 cache.add(node, increment);
             } catch (final IOException e) {
                 throw new LogException(e.getMessage(), e);
@@ -951,7 +955,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
 
         @Override
         public boolean isInnerPage() {
-            return pageHeader.getStatus() == PageStatus.BRANCH;
+            return pageHeader.getType() == PageType.BRANCH;
         }
 
         @Override
@@ -1011,23 +1015,17 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          */
         private int recalculateDataLen() {
             currentDataLen = ptrs == null ? 0 : nPtrs * 8;
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                if (fileHeader.getFixedKeyLen() < 0) {
-                    currentDataLen += 2 * nKeys;
-                }
-            } finally {
-                fileHeaderReadLock.unlock();
+            if (fileHeader.getFixedKeyLen() < 0) {
+                currentDataLen += 2 * nKeys;
             }
-
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 currentDataLen += prefix.getLength() + 2;
             }
-            if (pageHeader.getStatus() == PageStatus.LEAF) {
+            if (pageHeader.getType() == PageType.LEAF) {
                 currentDataLen += nKeys - 1;
             }
             for (int i = 0; i < nKeys; i++) {
-                if (pageHeader.getStatus() == PageStatus.LEAF && i > 0) {
+                if (pageHeader.getType() == PageType.LEAF && i > 0) {
                     // if this is a leaf page, we use prefix compression to store the keys,
                     // so subtract the size of the prefix
                     int prefix = keys[i].commonPrefix(keys[i - 1]);
@@ -1053,7 +1051,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 recalculateDataLen();
                 return;
             }
-            if (pageHeader.getStatus() == PageStatus.LEAF && idx > 0) {
+            if (pageHeader.getType() == PageType.LEAF && idx > 0) {
                 // if this is a leaf page, we use prefix compression to store the keys,
                 // so subtract the size of the prefix
                 int prefix;
@@ -1070,18 +1068,13 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 currentDataLen++; // add one byte for the prefix length
             } else {
                 currentDataLen += keys[idx].getLength();
-                if (pageHeader.getStatus() == PageStatus.LEAF) {
+                if (pageHeader.getType() == PageType.LEAF) {
                     currentDataLen++;
                 }
             }
             currentDataLen += 8;
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                if (fileHeader.getFixedKeyLen() < 0) {
-                    currentDataLen += 2;
-                }
-            } finally {
-                fileHeaderReadLock.unlock();
+            if (fileHeader.getFixedKeyLen() < 0) {
+                currentDataLen += 2;
             }
         }
 
@@ -1107,31 +1100,21 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             final int totalLen = getKeyDataLen();
             int currentLen = 0;
             int pivot = nKeys - 1;
-            ReentrantReadWriteLock.ReadLock fileHeaderReadLock = null;
-            try {
-                for (int i = 0; i < nKeys - 1; i++) {
-                    if (pageHeader.getStatus() == PageStatus.LEAF && i > 0) {
-                        // if this is a leaf page, we use prefix compression to store the keys,
-                        // so subtract the size of the prefix
-                        int prefix = keys[i].commonPrefix(keys[i - 1]);
-                        if (prefix < 0 || prefix > Byte.MAX_VALUE) {
-                            prefix = 0;
-                        }
-                        currentLen += keys[i].getLength() - prefix;
-                    } else {
-                        currentLen += keys[i].getLength();
+            for (int i = 0; i < nKeys - 1; i++) {
+                if (pageHeader.getType() == PageType.LEAF && i > 0) {
+                    // if this is a leaf page, we use prefix compression to store the keys,
+                    // so subtract the size of the prefix
+                    int prefix = keys[i].commonPrefix(keys[i - 1]);
+                    if (prefix < 0 || prefix > Byte.MAX_VALUE) {
+                        prefix = 0;
                     }
-                    if (currentLen > totalLen / 2 || i + 1 == preferred) {
-                        if (fileHeaderReadLock == null) {
-                            fileHeaderReadLock = fileHeader.readLock();
-                        }
-                        pivot = currentLen > fileHeader.getPageContentSize() ? i : i + 1;
-                        break;
-                    }
+                    currentLen += keys[i].getLength() - prefix;
+                } else {
+                    currentLen += keys[i].getLength();
                 }
-            } finally {
-                if (fileHeaderReadLock != null) {
-                    fileHeaderReadLock.unlock();
+                if (currentLen > totalLen / 2 || i + 1 == preferred) {
+                    pivot = currentLen > getPageContentSize() ? i : i + 1;
+                    break;
                 }
             }
             return pivot;
@@ -1140,7 +1123,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         private int getKeyDataLen() {
             int totalLen = 0;
             for (int i = 0; i < nKeys; i++) {
-                if (pageHeader.getStatus() == PageStatus.LEAF && i > 0) {
+                if (pageHeader.getType() == PageType.LEAF && i > 0) {
                     // if this is a leaf page, we use prefix compression to store the keys,
                     // so subtract the size of the prefix
                     int prefix = keys[i].commonPrefix(keys[i - 1]);
@@ -1159,12 +1142,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             if (pageHeader.getValueCount() != nKeys) {
                 throw new RuntimeException("Wrong value count");
             }
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                return getDataLen() > fileHeader.getPageContentSize();
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
+            return getDataLen() > getPageContentSize();
         }
 
         /**
@@ -1174,17 +1152,11 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          */
         private void read() throws IOException {
             final byte[] data = page.read(backingFile.randomAccessFile);
-            final short keyLen;
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                keyLen = fileHeader.getFixedKeyLen();
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
+            final short keyLen = fileHeader.getFixedKeyLen();
             short valSize = keyLen;
             int p = 0;
             // it this is a branch node, read the common prefix
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 final short prefixSize = ByteConversion.byteToShort(data, p);
                 p += 2;
                 if (prefixSize == 0) {
@@ -1201,7 +1173,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     valSize = ByteConversion.byteToShort(data, p);
                     p += 2;
                 }
-                if (pageHeader.getStatus() == PageStatus.LEAF && i > 0) {
+                if (pageHeader.getType() == PageType.LEAF && i > 0) {
                     // for leaf pages, we use prefix compression to increase the number of
                     // keys that can be stored on one page. Each key is stored as follows:
                     // [valSize, prefixLen, value], where prefixLen specifies the number of
@@ -1243,24 +1215,14 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          */
         private void write() throws IOException {
             if (nKeys != pageHeader.getValueCount()) {
-                throw new RuntimeException("nkeys: " + nKeys + " valueCount: " + pageHeader.getValueCount());
+                throw new IOException("nkeys: " + nKeys + " valueCount: " + pageHeader.getValueCount());
             }
 
-            final int workSize;
-            final int keyLen;
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                workSize = fileHeader.getPageContentSize();
-                keyLen = fileHeader.getFixedKeyLen();
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-
-            final byte[] temp = new byte[workSize];
+            final byte[] temp = new byte[getPageContentSize()];
             int p = 0;
 
             // if this is a branch node, write out the common prefix
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 ByteConversion.shortToByte((short) prefix.getLength(), temp, p);
                 p += 2;
                 if (prefix.getLength() > 0) {
@@ -1268,12 +1230,13 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     p += prefix.getLength();
                 }
             }
+            final int keyLen = fileHeader.getFixedKeyLen();
             for (int i = 0; i < nKeys; i++) {
                 if (keyLen < 0) {
                     ByteConversion.shortToByte((short) keys[i].getLength(), temp, p);
                     p += 2;
                 }
-                if (pageHeader.getStatus() == PageStatus.LEAF && i > 0) {
+                if (pageHeader.getType() == PageType.LEAF && i > 0) {
                     // for leaf pages, we use prefix compression to increase the number of
                     // keys that can be stored on one page. Each key is stored as follows:
                     // [valSize, prefixLen, value], where prefixLen specifies the number of
@@ -1312,7 +1275,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          * @throws IOException if an I/O error occurs
          */
         private BTreeNode getChildNode(final int idx) throws IOException {
-            if (pageHeader.getStatus() == PageStatus.BRANCH && idx >= 0 && idx < nPtrs) {
+            if (pageHeader.getType() == PageType.BRANCH && idx >= 0 && idx < nPtrs) {
                 return getBTreeNode(ptrs[idx]);
             } else {
                 return null;
@@ -1330,7 +1293,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          */
         private long removeValue(final Txn transaction, final Value key) throws IOException, BTreeException {
             int idx = searchKey(key);
-            switch (pageHeader.getStatus()) {
+            switch (pageHeader.getType()) {
                 case BRANCH :
                     idx = idx < 0 ? - (idx + 1) : idx + 1;
                     return getChildNode(idx).removeValue(transaction, key);
@@ -1378,7 +1341,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
 
             int idx = searchKey(value);
-            switch (pageHeader.getStatus()) {
+            switch (pageHeader.getType()) {
                 case BRANCH :
                     idx = idx < 0 ? - (idx + 1) : idx + 1;
                     return getChildNode(idx).addValue(transaction, value, pointer);
@@ -1413,15 +1376,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                                     // however, if the inserted key is in the upper or lower
                                     // section of the node, we split directly at the key. this
                                     // has advantages if keys are inserted in ascending order
-                                    final int workSize;
-                                    final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-                                    try {
-                                        workSize = fileHeader.getPageContentSize();
-                                    } finally {
-                                        fileHeaderReadLock.unlock();
-                                    }
-
-                                    if (splitFactor > 0 && idx > (nKeys * splitFactor) && value.getLength() < workSize / 4) {
+                                    if (splitFactor > 0 && idx > (nKeys * splitFactor) && value.getLength() < getPageContentSize() / 4) {
                                         split(transaction, idx == 0 ? 1 : idx);
                                     } else {
                                         split(transaction);
@@ -1435,7 +1390,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
 
                 default :
                     throw new BTreeException("Invalid Page Type In addValue: " +
-                        pageHeader.getStatus() + "; " + page.getPageInfo());
+                        pageHeader.getType() + "; " + page.getPageInfo());
             }
         }
 
@@ -1457,14 +1412,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             cache.add(rightNode);
             setDirty(true);
             cache.add(this);
-            final int workSize;
-            final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-            try {
-                workSize = fileHeader.getPageContentSize();
-            } finally {
-                fileHeaderReadLock.unlock();
-            }
-            final boolean split = recalculateDataLen() > workSize;
+            final boolean split = recalculateDataLen() > getPageContentSize();
             if (split) {
                 split(transaction);
             }
@@ -1493,7 +1441,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             pivot = getPivot(pivot);
 
             // Split the node into two nodes
-            switch (pageHeader.getStatus()) {
+            switch (pageHeader.getType()) {
                 case BRANCH :
                     leftVals = new Value[pivot];
                     leftPtrs = new long[leftVals.length + 1];
@@ -1529,7 +1477,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
 
             // Log the update of the current page
-            if (transaction != null && isRecoveryEnabled() && pageHeader.getStatus() == PageStatus.LEAF) {
+            if (transaction != null && isRecoveryEnabled() && pageHeader.getType() == PageType.LEAF) {
                 final Loggable log = new UpdatePageLoggable(transaction, fileId,
                     page.getPageNum(), prefix, leftVals, leftVals.length, leftPtrs, leftPtrs.length);
                 writeToLog(log, this);
@@ -1541,19 +1489,19 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             BTreeNode parent = getParent();
             if (parent == null) {
                 // This can only happen if this is the root
-                parent = createBTreeNode(transaction, PageStatus.BRANCH, null, false);
+                parent = createBTreeNode(transaction, PageType.BRANCH, null, false);
                 // Log change of the parent page
-                if (transaction != null && isRecoveryEnabled() && pageHeader.getStatus() == PageStatus.LEAF) {
+                if (transaction != null && isRecoveryEnabled() && pageHeader.getType() == PageType.LEAF) {
                     final Loggable log = new SetParentLoggable(transaction, fileId, page.getPageNum(), 
                         parent.page.getPageNum());
                     writeToLog(log, this);
                 }
                 setParent(parent);
-                final BTreeNode rNode = createBTreeNode(transaction, pageHeader.getStatus(), parent, false);
+                final BTreeNode rNode = createBTreeNode(transaction, pageHeader.getType(), parent, false);
                 rNode.setValues(rightVals);
                 rNode.setPointers(rightPtrs);
                 rNode.setAsParent();
-                if (pageHeader.getStatus() == PageStatus.BRANCH) {
+                if (pageHeader.getType() == PageType.BRANCH) {
                     rNode.prefix = prefix;
                     rNode.growPrefix();
                 } else {
@@ -1565,7 +1513,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     pageHeader.updateNextPage(rNode.page.getPageNum());
                 }
                 // Log update of the right node
-                if (transaction != null && isRecoveryEnabled() && pageHeader.getStatus() == PageStatus.LEAF) {
+                if (transaction != null && isRecoveryEnabled() && pageHeader.getType() == PageType.LEAF) {
                     final Loggable log = new UpdatePageLoggable(transaction, fileId,
                         rNode.page.getPageNum(), rNode.prefix, rNode.keys, rNode.nKeys, rightPtrs, rightPtrs.length);
                     writeToLog(log, rNode);
@@ -1583,11 +1531,11 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 }
                 cache.add(rNode);
             } else {
-                final BTreeNode rNode = createBTreeNode(transaction, pageHeader.getStatus(), parent, false);
+                final BTreeNode rNode = createBTreeNode(transaction, pageHeader.getType(), parent, false);
                 rNode.setValues(rightVals);
                 rNode.setPointers(rightPtrs);
                 rNode.setAsParent();
-                if (pageHeader.getStatus() == PageStatus.BRANCH) {
+                if (pageHeader.getType() == PageType.BRANCH) {
                     rNode.prefix = prefix;
                     rNode.growPrefix();
                 } else {
@@ -1603,7 +1551,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     pageHeader.updateNextPage(rNode.page.getPageNum());
                 }
                 // Log update of the right node
-                if (transaction != null && isRecoveryEnabled() && pageHeader.getStatus() == PageStatus.LEAF) {
+                if (transaction != null && isRecoveryEnabled() && pageHeader.getType() == PageType.LEAF) {
                     final Loggable log = new UpdatePageLoggable(transaction, fileId, 
                         rNode.page.getPageNum(), rNode.prefix, rNode.keys,
                         rNode.nKeys, rightPtrs, rightPtrs.length);
@@ -1628,7 +1576,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          * Set the parent-link in all child nodes to point to this node
          */
         private void setAsParent() throws IOException {
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 for (int i = 0; i < nPtrs; i++) {
                     final BTreeNode node = getBTreeNode(ptrs[i]);
                     node.setParent(this);
@@ -1650,7 +1598,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          */
         private long findValue(final Value value) throws IOException, BTreeException {
             int idx = searchKey(value);
-            switch (pageHeader.getStatus()) {
+            switch (pageHeader.getType()) {
 
                 case BRANCH :
                     idx = idx < 0 ? - (idx + 1) : idx + 1;
@@ -1685,8 +1633,8 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         }
 
         private void treeStatistics(final TreeMetrics metrics) throws IOException {
-            metrics.addPage(pageHeader.getStatus());
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            metrics.addPage(pageHeader.getType());
+            if (pageHeader.getType() == PageType.BRANCH) {
                 for (int i = 0; i < nPtrs; i++) {
                     final BTreeNode child = getChildNode(i);
                     child.treeStatistics(metrics);
@@ -1716,11 +1664,11 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 fileHeaderReadLock.unlock();
             }
             writer.write(page.getPageNum() + ": ");
-            writer.write(pageHeader.getStatus() == PageStatus.BRANCH ? "BRANCH: " : "LEAF: ");
+            writer.write(pageHeader.getType() == PageType.BRANCH ? "BRANCH: " : "LEAF: ");
             writer.write(isDirty() ? "DIRTY: " : "SAVED: ");
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 writer.write("PREFIX: ");
-                dumpValue(writer, prefix, pageHeader.getStatus());
+                dumpValue(writer, prefix, pageHeader.getType());
                 writer.write(": ");
             }
             writer.write("NEXT: ");
@@ -1730,10 +1678,10 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 if (i > 0) {
                     writer.write(' ');
                 }
-                dumpValue(writer, keys[i], pageHeader.getStatus());
+                dumpValue(writer, keys[i], pageHeader.getType());
             }
             writer.write('\n');
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 writer.write("-----------------------------------------------------------------------------------------\n");
                 writer.write(page.getPageNum() + " POINTERS: ");
                 for (int i = 0; i < nPtrs; i++) {
@@ -1742,7 +1690,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 writer.write('\n');
             }
             writer.write("-----------------------------------------------------------------------------------------\n");
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 for (int i = 0; i < nPtrs; i++) {
                     final BTreeNode child = getChildNode(i);
                     child.dump(writer);
@@ -1770,7 +1718,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 int rightIdx = qvals.length > 1 ?
                     searchKey(qvals[qvals.length - 1]) : leftIdx;
                     final boolean pos = query.getOperator() >= 0;
-                    switch (pageHeader.getStatus()) {
+                    switch (pageHeader.getType()) {
                         case BRANCH :
                             leftIdx = leftIdx < 0 ? - (leftIdx + 1) : leftIdx + 1;
                             rightIdx = rightIdx < 0 ? - (rightIdx + 1) : rightIdx + 1;
@@ -1945,7 +1893,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                     }
             } else {
                 // No Query - Just Walk The Tree
-                switch (pageHeader.getStatus()) {
+                switch (pageHeader.getType()) {
                 case BRANCH :
                     for (int i = 0; i < nPtrs; i++) {
                         getChildNode(i).query(query, callback);
@@ -1985,7 +1933,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 final Value[] qvals = query.getValues();
                 int leftIdx = searchKey(qvals[0]);
                 int pfxIdx = searchKey(keyPrefix);
-                switch (pageHeader.getStatus()) {
+                switch (pageHeader.getType()) {
                     case BRANCH :
                         leftIdx = leftIdx < 0 ? - (leftIdx + 1) : leftIdx + 1;
                         pfxIdx = pfxIdx < 0 ? - (pfxIdx + 1) : pfxIdx + 1;
@@ -2073,7 +2021,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 }
             } else {
                 // No Query - Just Walk The Tree
-                switch (pageHeader.getStatus()) {
+                switch (pageHeader.getType()) {
                     case BRANCH :
                         for (int i = 0; i < nPtrs; i++) {
                             getChildNode(i).query(query, callback);
@@ -2130,7 +2078,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 int rightIdx = qvals.length > 1 ? 
                     searchKey(qvals[qvals.length - 1]) : leftIdx;
                 final boolean pos = query.getOperator() >= 0;
-                switch (pageHeader.getStatus()) {
+                switch (pageHeader.getType()) {
                     case BRANCH :
                         leftIdx = leftIdx < 0 ? - (leftIdx + 1) : leftIdx + 1;
                         rightIdx = rightIdx < 0 ? - (rightIdx + 1) : rightIdx + 1;
@@ -2383,7 +2331,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 }
             } else {
                 // No Query - Just Walk The Tree
-                switch (pageHeader.getStatus()) {
+                switch (pageHeader.getType()) {
                     case BRANCH :
                         for (int i = 0; i < nPtrs; i++) {
                             if (transaction != null && isRecoveryEnabled()) {
@@ -2489,7 +2437,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          * @param idx the index
          */
         private void insertKey(Value val, final int idx) {
-            if (pageHeader.getStatus() == PageStatus.BRANCH) {
+            if (pageHeader.getType() == PageType.BRANCH) {
                 // in a leaf page we might have to adjust the prefix
                 if (nKeys == 0) {
                     prefix = val;
@@ -2557,7 +2505,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          * @return the position
          */
         private int searchKey(Value key) {
-            if (pageHeader.getStatus() == PageStatus.BRANCH && prefix != null && prefix.getLength() > 0) {
+            if (pageHeader.getType() == PageType.BRANCH && prefix != null && prefix.getLength() > 0) {
                 // if this is a leaf page, check the common prefix first
                 if (key.getLength() < prefix.getLength()) {
                     return key.compareTo(prefix) <= 0 ? -1 : -(nKeys + 1);

@@ -30,13 +30,9 @@
  */
 package org.exist.storage.dom;
 
+import org.exist.storage.btree.AbstractPagedFile.Page;
 import org.exist.storage.btree.BTreePageHeader;
 import org.exist.util.ByteConversion;
-
-import java.io.IOException;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.exist.storage.btree.Page.NO_PAGE;
 
 public class DOMFilePageHeader extends BTreePageHeader {
 
@@ -46,33 +42,32 @@ public class DOMFilePageHeader extends BTreePageHeader {
     private static final int LENGTH_PREV_PAGE_POINTER = 8; //sizeof long
     private static final int LENGTH_CURRENT_TID = 2; //sizeof short
 
-    private int dataLength = 0;
-    private long nextDataPage = NO_PAGE;
-    private long previousDataPage = NO_PAGE;
-    private short tupleID = ItemId.UNKNOWN_ID;
     private short records = 0;
+    private int dataLength = 0;
+    private long nextDataPage = Page.NO_PAGE;
+    private long previousDataPage = Page.NO_PAGE;
+    private short tupleID = ItemId.UNKNOWN_ID;
 
-    DOMFilePageHeader() {
-        super();
-    }
+    private final int maxDataLength;
 
-    DOMFilePageHeader(final byte[] data, final int offset) throws IOException {
-        super(data, offset);
+    public DOMFilePageHeader(final int maxDataLength) {
+        this.maxDataLength = maxDataLength;
     }
 
     void decRecordCount() {
-        //TODO : check negative value ? -pb
+        if (records == 0) {
+            throw new IllegalStateException("recordCount cannot be decremented below zero");
+        }
         records--;
     }
 
     short getCurrentTupleID() {
-        //TODO : overflow check ? -pb
         return tupleID;
     }
 
     short getNextTupleID() {
         if (++tupleID == ItemId.ID_MASK) {
-            throw new RuntimeException("No spare ids on page");
+            throw new IllegalStateException("No spare ids on page");
         }
         return tupleID;
     }
@@ -83,7 +78,7 @@ public class DOMFilePageHeader extends BTreePageHeader {
 
     void setNextTupleID(final short tupleID) {
         if (tupleID > ItemId.MAX_ID) {
-            throw new RuntimeException("TupleID overflow! TupleID = " + tupleID);
+            throw new IllegalArgumentException("TupleID would overflow! TupleID = " + tupleID);
         }
         this.tupleID = tupleID;
     }
@@ -109,22 +104,22 @@ public class DOMFilePageHeader extends BTreePageHeader {
     }
 
     @Override
-    public int read(final byte[] data, int offset) throws IOException {
+    public int read(final byte[] data, int offset) {
         offset = super.read(data, offset);
-        records = ByteConversion.byteToShort(data, offset);
+        this.records = ByteConversion.byteToShort(data, offset);
         offset += LENGTH_RECORDS_COUNT;
-        dataLength = ByteConversion.byteToInt(data, offset);
+        this.dataLength = ByteConversion.byteToInt(data, offset);
         offset += LENGTH_DATA_LENGTH;
-        nextDataPage = ByteConversion.byteToLong(data, offset);
+        this.nextDataPage = ByteConversion.byteToLong(data, offset);
         offset += LENGTH_NEXT_PAGE_POINTER;
-        previousDataPage = ByteConversion.byteToLong(data, offset);
+        this.previousDataPage = ByteConversion.byteToLong(data, offset);
         offset += LENGTH_PREV_PAGE_POINTER;
-        tupleID = ByteConversion.byteToShort(data, offset);
+        this.tupleID = ByteConversion.byteToShort(data, offset);
         return offset + LENGTH_CURRENT_TID;
     }
 
     @Override
-    public int write(final byte[] data, int offset) throws IOException {
+    public int write(final byte[] data, int offset) {
         offset = super.write(data, offset);
         ByteConversion.shortToByte(records, data, offset);
         offset += LENGTH_RECORDS_COUNT;
@@ -139,14 +134,8 @@ public class DOMFilePageHeader extends BTreePageHeader {
     }
 
     void setDataLength(final int dataLength) {
-        final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-        try {
-            if (dataLength > fileHeader.getWorkSize()) {
-                LOG.error("data too long for file header !");
-                //TODO  :throw exception ? -pb
-            }
-        } finally {
-            fileHeaderReadLock.unlock();
+        if (dataLength > maxDataLength) {
+            throw new IllegalArgumentException("setDataLength(" + dataLength + ") exceeds maxDataLength: " + maxDataLength);
         }
         this.dataLength = dataLength;
     }

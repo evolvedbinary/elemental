@@ -30,9 +30,17 @@
  */
 package org.exist.storage.index;
 
+import com.evolvedbinary.j8cu.list.linked.BoundedDoublyLinkedList;
+import com.evolvedbinary.j8cu.list.linked.OrderedDoublyLinkedList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.util.ByteConversion;
 
 import javax.annotation.Nullable;
+
+import java.util.Iterator;
+
+import static com.evolvedbinary.j8cu.list.linked.Bounded.bound;
 
 /**
  * Manages a list of pages containing unused sections.
@@ -50,50 +58,31 @@ import javax.annotation.Nullable;
  * @author wolf
  */
 public class FreeList {
-    private static final int MAX_FREE_LIST_LEN = 128;
 
-    private @Nullable FreeSpace header = null;
-    private @Nullable FreeSpace last = null;
-    private int size = 0;
+    private static final Logger LOG = LogManager.getLogger(FreeList.class);
+
+    public static final int HEADER_SIZE = 4;  // sizeof(int);
+    public static final int RECORD_SIZE = FreeSpace.LENGTH;
+
+    // TODO(AR) consider using an ordered map of Long -> Int instead of the FreeSpace class.
+    private final BoundedDoublyLinkedList<FreeSpace> list = bound(new OrderedDoublyLinkedList<FreeSpace>(16), Long.MAX_VALUE);
 
     /**
-     * Append a new {@link FreeSpace} object to the list,
-     * describing the amount of free space available on a page.
+     * Append a new FreeSpace object to this list.
      *  
-     * @param free the free space
+     * @param freeSpace the free space
      */
-    public void add( FreeSpace free ) {
-        if(header == null) {
-            header = free;
-            last = free;
-        } else {
-            last.next = free;
-            free.previous = last;
-            last = free;
-        }
-        ++size;
+    public void add(final FreeSpace freeSpace) {
+        list.add(freeSpace);
     }
 
     /**
-     * Remove a record from the list.
+     * Remove a FreeSpace object from this list.
      * 
-     * @param node the free space
+     * @param freeSpace the free space
      */
-    public void remove(FreeSpace node) {
-        --size;
-        if (node.previous == null) {
-            if (node.next != null) {
-                node.next.previous = null;
-                header = node.next;
-            } else
-                {header = null;}
-        } else {
-            node.previous.next = node.next;
-            if (node.next != null)
-                {node.next.previous = node.previous;}
-            else
-                {last = node.previous;}
-        }
+    public void remove(final FreeSpace freeSpace) {
+        list.removeOne(freeSpace);
     }
 
     /**
@@ -102,12 +91,11 @@ public class FreeList {
      * @param pageNum the page number
      * @return the free space
      */
-    public FreeSpace retrieve(long pageNum) {
-        FreeSpace next = header;
-        while(next != null) {
-            if(next.page == pageNum)
-                {return next;}
-            next = next.next;
+    public @Nullable FreeSpace retrieve(final long pageNum) {
+        for (final FreeSpace freeSpace : list) {
+            if (freeSpace.page == pageNum) {
+                return freeSpace;
+            }
         }
         return null;
     }
@@ -122,39 +110,38 @@ public class FreeList {
      *
      * @return the free space
      */
-    public FreeSpace find(int requiredSize) {
-        FreeSpace next = header;
-        FreeSpace found = null;
-        while(next != null) {
-            if(next.free >= requiredSize) {
-                if(found == null || next.free < found.free)
-                    {found = next;}
+    public @Nullable FreeSpace find(final int requiredSize) {
+        for (final FreeSpace freeSpace : list) {
+            if (freeSpace.free >= requiredSize) {
+                return freeSpace;
             }
-            next = next.next;
         }
-        return found;
+        return null;
     }
 
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder();
-        FreeSpace next = header;
-        while(next != null) {
-            buf.append("[").append(next.page).append(", ");
-            buf.append(next.free).append("] ");
-            next = next.next;
+        for (final FreeSpace freeSpace : list) {
+            if (buf.length() != 0) {
+                buf.append(' ');
+            }
+            buf.append("[").append(freeSpace.page).append(", ");
+            buf.append(freeSpace.free).append("]");
         }
         return buf.toString();
     }
 
     /**
-     * Read the list.
+     * Load a FreeList from a buffer.
      * 
      * @param buf the buffer to read from
      * @param offset the position in the buffer to read from
-     * @return the offset after reading
+     *
+     * @return the freelist.
      */
-    public int read(final byte[] buf, int offset) {
+    public static FreeList load(final byte[] buf, int offset) {
+        final FreeList freeList = new FreeList();
         final int fsize = ByteConversion.byteToInt(buf, offset);
         offset += 4;
         long page;
@@ -164,9 +151,9 @@ public class FreeList {
             offset += 8;
             space = ByteConversion.byteToInt(buf, offset);
             offset += 4;
-            add(new FreeSpace(page, space));
+            freeList.add(new FreeSpace(page, space));
         }
-        return offset;
+        return freeList;
     }
 
     /**
@@ -174,35 +161,41 @@ public class FreeList {
      * 
      * As the list is written to the file header, its maximum length
      * has to be restricted. The method will thus only store
-     * {@link #MAX_FREE_LIST_LEN} entries and throw away the 
-     * rest. Usually, this should not happen very often, so it is ok to
-     * waste some space.
+     * maxRecords entries and throw away the rest. Usually, this should not
+     * happen very often, so it is ok to waste some space.
      *
+     * @param maxRecords the max records to write.
      * @param buf the buffer to write to
      * @param offset the position in the buffer to write to
      * @return the offset after writing
      */
-    public int write(final byte[] buf, int offset) {
+    public int write(final int maxRecords, final byte[] buf, int offset) {
         //does the free-space list fit into the file header?
-        int skip = 0;
-        if (size > MAX_FREE_LIST_LEN) {
-            //LOG.warn("removing " + (size - MAX_FREE_LIST_LEN) + " free pages.");
-            // no: remove some smaller entries to make it fit
-            skip = size - MAX_FREE_LIST_LEN;
+        if (list.size() > maxRecords) {
+            LOG.warn("FreeList contains " + list.size() + " records, but page can only store " + maxRecords + "; smallest FreeSpace records will be discarded.");
         }
-        ByteConversion.intToByte(size - skip, buf, offset);
+
+        // write the header (i.e. the number of records that will be stored)
+        ByteConversion.intToByte((int) Math.min(maxRecords, list.size()), buf, offset);
         offset += 4;
-        FreeSpace next = header;
-        while(next != null) {
-            if(skip == 0) {
-                ByteConversion.longToByte(next.page, buf, offset);
-                offset += 8;
-                ByteConversion.intToByte(next.free, buf, offset);
-                offset += 4;
-            } else
-                {--skip;}
-            next = next.next;
+
+        // write the records
+        int records = 0;
+        final Iterator<FreeSpace> itFreeSpace = list.reverseIterator();  // reverse iterator as they are ordered smallest first, and we want the largest
+        while (itFreeSpace.hasNext()) {
+            // write a record
+            final FreeSpace freeSpace = itFreeSpace.next();
+            ByteConversion.longToByte(freeSpace.page, buf, offset);
+            offset += 8;
+            ByteConversion.intToByte(freeSpace.free, buf, offset);
+            offset += 4;
+
+            if (++records == maxRecords) {
+                // we have written the maximum number of records
+                break;
+            }
         }
+
         return offset;
     }
 }

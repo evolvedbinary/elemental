@@ -41,7 +41,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.BTreeException;
-import org.exist.storage.btree.Page;
+import org.exist.storage.btree.AbstractPagedFile.Page;
 import org.exist.util.ByteConversion;
 import org.exist.util.sanity.SanityCheck;
 
@@ -65,7 +65,7 @@ public abstract class AbstractNodeIterator implements INodeIterator {
     private DocumentImpl doc = null;
     private int offset;
     private short lastTupleID = ItemId.UNKNOWN_ID;
-    private DOMPage page = null;
+    private DOMFile.DOMPage page = null;
     private long pageNum;
     private long startAddress = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
     protected DBBroker broker;

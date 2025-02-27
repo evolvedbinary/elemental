@@ -88,13 +88,14 @@ public class CollectionStore extends BFile {
             }
 
             // create a new file header object
-            final BFileHeader fileHeader = new BFileHeader(FILE_FORMAT_VERSION_ID, pool.getPageSize());
+            final BFileHeader fileHeader;
             if (backingFile.createdNewFile) {
                 // write the file header data to the new file
+                fileHeader = BFileHeader.createNew(FILE_FORMAT_VERSION_ID, pool.getPageSize());
                 fileHeader.write(backingFile.randomAccessFile);
             } else {
                 // load the file header data from the existing file
-                fileHeader.read(backingFile.randomAccessFile);
+                fileHeader = BFileHeader.load(backingFile.randomAccessFile);
                 fileHeader.checkVersion(FILE_FORMAT_VERSION_ID, FileUtils.fileName(backingFile.path));
                 LOG.info("Opened CollectionStore file: {}", FileUtils.fileName(backingFile.path));
             }
@@ -104,9 +105,7 @@ public class CollectionStore extends BFile {
             if (backingFile.createdNewFile) {
                 // this is a new BTree, so create the root node and persist it
                 collectionStore.createRootNode(null);
-                fileHeader.setFixedKeyLen((short) -1);
                 fileHeader.write(backingFile.randomAccessFile);
-
                 LOG.info("Created CollectionStore file: {}", FileUtils.fileName(backingFile.path));
             }
 

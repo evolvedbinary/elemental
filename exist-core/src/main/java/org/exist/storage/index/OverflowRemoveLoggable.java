@@ -33,7 +33,7 @@ package org.exist.storage.index;
 import java.nio.ByteBuffer;
 
 import org.exist.storage.DBBroker;
-import org.exist.storage.btree.PageStatus;
+import org.exist.storage.btree.PageType;
 import org.exist.storage.journal.LogException;
 import org.exist.storage.txn.Txn;
 
@@ -45,7 +45,7 @@ public class OverflowRemoveLoggable extends AbstractBFileLoggable {
 
     // TODO(AR) should this be immutable - or can we reuse these objects if they are mutable
 
-    private PageStatus pageStatus;
+    private PageType pageType;
     private long pageNum;
     private byte[] data;
     private int length;
@@ -55,16 +55,16 @@ public class OverflowRemoveLoggable extends AbstractBFileLoggable {
      *
      * @param fileId the file id
      * @param transaction the database transaction
-     * @param pageStatus the page status
+     * @param pageType the page type
      * @param pageNum the page number
      * @param data the data
      * @param length the length of the data
      * @param nextInChain the next in chain
      */
-    public OverflowRemoveLoggable(final byte fileId, final Txn transaction, final PageStatus pageStatus, final long pageNum, final byte[] data,
-            final int length, final long nextInChain) {
+    public OverflowRemoveLoggable(final byte fileId, final Txn transaction, final PageType pageType, final long pageNum, final byte[] data,
+                                  final int length, final long nextInChain) {
         super(BFile.LOG_OVERFLOW_REMOVE, fileId, transaction);
-        this.pageStatus = pageStatus;
+        this.pageType = pageType;
         this.pageNum = pageNum;
         this.data = data;
         this.length = length;
@@ -79,8 +79,8 @@ public class OverflowRemoveLoggable extends AbstractBFileLoggable {
         super(broker, transactionId);
     }
 
-    public PageStatus getPageStatus() {
-        return this.pageStatus;
+    public PageType getPageType() {
+        return this.pageType;
     }
 
     public long getPageNum() {
@@ -102,7 +102,7 @@ public class OverflowRemoveLoggable extends AbstractBFileLoggable {
     @Override
     public void write(final ByteBuffer out) {
         super.write(out);
-        out.put(pageStatus.getValue());
+        out.put(pageType.getValue());
         out.putInt((int) this.pageNum);
         out.putInt((int) this.nextInChain);
         out.putInt(this.length);
@@ -112,7 +112,7 @@ public class OverflowRemoveLoggable extends AbstractBFileLoggable {
     @Override
     public void read(final ByteBuffer in) {
         super.read(in);
-        this.pageStatus = PageStatus.fromValue(in.get());
+        this.pageType = PageType.fromValue(in.get());
         this.pageNum = in.getInt();
         this.nextInChain = in.getInt();
         this.length = in.getInt();

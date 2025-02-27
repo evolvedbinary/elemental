@@ -40,15 +40,15 @@ public class CreateBTNodeLoggable extends BTAbstractLoggable {
 
 	// TODO(AR) should this be immutable - or can we reuse these objects if they are mutable
 
-	private PageStatus pageStatus;
+	private PageType pageType;
 	private long pageNum;
 	private long parentNum;
 	
-	public CreateBTNodeLoggable(final Txn transaction, final byte fileId, final PageStatus pageStatus, final long pageNum, final long parentNum) {
+	public CreateBTNodeLoggable(final Txn transaction, final byte fileId, final PageType pageType, final long pageNum, final long parentNum) {
 		super(BTree.LOG_CREATE_BNODE, fileId, transaction);
 		this.pageNum = pageNum;
 		this.parentNum = parentNum;
-		this.pageStatus = pageStatus;
+		this.pageType = pageType;
 	}
 	
 	public CreateBTNodeLoggable(final DBBroker broker, final long transactionId) {
@@ -63,8 +63,8 @@ public class CreateBTNodeLoggable extends BTAbstractLoggable {
 		return this.parentNum;
 	}
 
-	public PageStatus getPageStatus() {
-		return this.pageStatus;
+	public PageType getPageType() {
+		return this.pageType;
 	}
 
 	@Override
@@ -75,7 +75,7 @@ public class CreateBTNodeLoggable extends BTAbstractLoggable {
 	@Override
 	public void write(final ByteBuffer out) {
         super.write(out);
-		out.put(this.pageStatus.getValue());
+		out.put(this.pageType.getValue());
 		out.putLong(this.pageNum);
 		out.putLong(this.parentNum);
 	}
@@ -83,7 +83,7 @@ public class CreateBTNodeLoggable extends BTAbstractLoggable {
 	@Override
 	public void read(final ByteBuffer in) {
         super.read(in);
-		this.pageStatus = PageStatus.fromValue(in.get());
+		this.pageType = PageType.fromValue(in.get());
 		this.pageNum = in.getLong();
 		this.parentNum = in.getLong();
 	}

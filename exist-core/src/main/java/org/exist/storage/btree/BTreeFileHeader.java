@@ -81,6 +81,7 @@
  */
 package org.exist.storage.btree;
 
+import org.exist.storage.btree.AbstractPagedFile.Page;
 import org.exist.util.ByteConversion;
 
 import java.io.IOException;
@@ -102,9 +103,12 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
     private static final int OFFSET_ROOT_PAGE = OFFSET_RECORD_COUNT + LENGTH_RECORD_COUNT;  // 51
     protected static final int OFFSET_FIXED_LEN = OFFSET_ROOT_PAGE + LENGTH_ROOT_PAGE;      // 59
 
+    //<editor-fold desc="Immutable state">
+    private final short fixedLen;
+    //</editor-fold>
+
     //<editor-fold desc="Mutable state">
-    private long rootPage = 0;
-    private short fixedLen = -1;
+    private long rootPage;
     //</editor-fold>
 
     protected BTreeFileHeader(final short version, final short headerSize, final int pageSize, final byte pageHeaderSize, final short maxKeySize, final long firstFreePage, final long lastFreePage, final long totalCount, final long rootPage, final short fixedLen) {
@@ -113,14 +117,14 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
         this.fixedLen = fixedLen;
     }
 
-    protected BTreeFileHeader(final short version, final long pageCount, final int pageSize) {
-        super(version, pageCount, pageSize);
+    protected BTreeFileHeader(final short version, final int pageSize, final long pageCount) {
+        super(version, (short) pageSize, pageSize, DEFAULT_PAGE_HEADER_SIZE, (short)(((pageSize - DEFAULT_PAGE_HEADER_SIZE) / 2) - MIN_SPACE_PER_KEY), Page.NO_PAGE, Page.NO_PAGE, pageCount);
         this.rootPage = 0;
         this.fixedLen = -1;
     }
 
     public static BTreeFileHeader createNew(final short version, final long pageCount, final int pageSize) {
-        return new BTreeFileHeader(version, pageCount, pageSize);
+        return new BTreeFileHeader(version, pageSize, pageCount);
     }
 
     public static BTreeFileHeader load(final RandomAccessFile raf) throws IOException {
@@ -128,6 +132,7 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
         raf.seek(0);
 
         // read the entire BTreeFileHeader from the file
+        // NOTE(AR) the `headerBufSize` calculation is an optimisation, as the BTreeFileHeader is a fixed size we don't need to read all `headerSize` bytes
         final int headerBufSize = OFFSET_FIXED_LEN + LENGTH_FIXED_LEN;  // 61
         final byte[] headerBuf = new byte[headerBufSize];
         raf.read(headerBuf);
@@ -186,20 +191,11 @@ public class BTreeFileHeader extends AbstractPagedFileHeader implements PagedFil
         return fixedLen;
     }
 
-    public void setFixedKeyLen(short keyLen) {
-        this.fixedLen = keyLen;
-    }
-
-    @Override
-    public int getMaxKeySize() {
-        return (getPageContentSize() / 2) - MIN_SPACE_PER_KEY;
-    }
-
 
     protected static class BTreeFileHeaderData {
-        final AbstractPagedFileHeaderData abstractPagedFileHeaderData;
-        final long rootPage;
-        final short fixedLen;
+        public final AbstractPagedFileHeaderData abstractPagedFileHeaderData;
+        public final long rootPage;
+        public final short fixedLen;
 
         private BTreeFileHeaderData(final AbstractPagedFileHeaderData abstractPagedFileHeaderData, final long rootPage, final short fixedLen) {
             this.abstractPagedFileHeaderData = abstractPagedFileHeaderData;

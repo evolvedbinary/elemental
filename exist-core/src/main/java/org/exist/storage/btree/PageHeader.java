@@ -55,18 +55,18 @@ public interface PageHeader {
     void setDirty(final boolean dirty);
 
     /**
-     * Get the status of the current page.
+     * Get the type of the current page.
      *
-     * @return the status of the current page.
+     * @return the type of the current page.
      */
-    PageStatus getStatus();
+    PageType getType();
 
     /**
-     * Update the status of the current page.
+     * Update the type of the current page.
      *
-     * @param newStatus The new status for the current page.
+     * @param newType The new type of the current page.
      */
-    void updateStatus(final PageStatus newStatus);
+    void updateType(final PageType newType);
 
     /**
      * Returns the LSN, i.e. the Log Sequence Number, of the last
@@ -87,4 +87,24 @@ public interface PageHeader {
      * @param lsn the Log Sequence Number of the last operation that modified this page.
      */
     void setLsn(final Lsn lsn);
+
+    /**
+     * Read the class members from a buffer.
+     *
+     * @param buf the buffer
+     * @param offset the offset to start reading the buffer from.
+     *
+     * @return the offset after reading.
+     */
+    int read(byte[] buf, int offset);
+
+    /**
+     * Write the class members to a buffer.
+     *
+     * @param buf the buffer
+     * @param offset the offset to start writing to the buffer from.
+     *
+     * @return the offset after writing.
+     */
+    int write(byte[] buf, int offset);
 }

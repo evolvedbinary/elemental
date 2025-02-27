@@ -36,7 +36,11 @@ import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
-import org.exist.storage.btree.*;
+
+import org.exist.storage.btree.AbstractBTree;
+import org.exist.storage.btree.AbstractPagedFile.Page;
+import org.exist.storage.btree.BTreeException;
+import org.exist.storage.btree.Value;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedLock;
 import org.exist.util.ByteConversion;
@@ -63,7 +67,7 @@ public class RawNodeIterator implements IRawNodeIterator {
 
     private int offset;
     private short lastTupleID = ItemId.UNKNOWN_ID;
-    private DOMPage page = null;
+    private DOMFile.DOMPage page = null;
     private long pageNum;
 
     /**
@@ -91,7 +95,7 @@ public class RawNodeIterator implements IRawNodeIterator {
             if (rec == null) {
                 try {
                     final long address = db.findValue(broker, new NodeProxy(null, node));
-                    if (address == BTree.KEY_NOT_FOUND)
+                    if (address == AbstractBTree.KEY_NOT_FOUND)
                         {throw new IOException("Node not found.");}
                     rec = db.findRecord(address);
                 } catch (final BTreeException e) {

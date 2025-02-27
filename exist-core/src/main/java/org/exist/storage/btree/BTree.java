@@ -31,13 +31,14 @@ public class BTree extends AbstractBTree<BTreeFileHeader, BTreePageHeader> {
             }
 
             // create a new file header object
-            final BTreeFileHeader fileHeader = new BTreeFileHeader(fileVersion, 0, pool.getPageSize());
+            final BTreeFileHeader fileHeader;
             if (backingFile.createdNewFile) {
+                fileHeader = BTreeFileHeader.createNew(fileVersion, 0, pool.getPageSize());
                 // write the file header data to the new file
                 fileHeader.write(backingFile.randomAccessFile);
             } else {
                 // load the file header data from the existing file
-                fileHeader.read(backingFile.randomAccessFile);
+                fileHeader = BTreeFileHeader.load(backingFile.randomAccessFile);
                 fileHeader.checkVersion(fileVersion, FileUtils.fileName(backingFile.path));
                 LOG.info("Opened BTree file: {}", FileUtils.fileName(backingFile.path));
             }
@@ -47,9 +48,7 @@ public class BTree extends AbstractBTree<BTreeFileHeader, BTreePageHeader> {
             if (backingFile.createdNewFile) {
                 // this is a new BTree, so create the root node and persist it
                 btree.createRootNode(null);
-                fileHeader.setFixedKeyLen((short) -1);
                 fileHeader.write(backingFile.randomAccessFile);
-
                 LOG.info("Created BTree file: {}", FileUtils.fileName(backingFile.path));
             }
 

@@ -30,62 +30,29 @@
  */
 package org.exist.storage.index;
 
-import org.exist.storage.btree.Page;
-import org.exist.xquery.Constants;
-
-
-
 /**
  * Used to track the available amount of free space in a data page.
  * 
  * @see FreeList
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author wolf
  */
-public class FreeSpace {
+public class FreeSpace implements Comparable<FreeSpace> {
 
-	protected int free = 0;
-    protected long page = Page.NO_PAGE;
-    
-    protected FreeSpace next = null;
-    protected FreeSpace previous = null;
+    public static final int LENGTH_PAGE = 8;  // sizeof(long)
+    public static final int LENGTH_FREE = 4;  // sizeof(int)
+    public static final int LENGTH = LENGTH_PAGE + LENGTH_FREE;
 
-    public FreeSpace(long pageNum, int space) {
-        page = pageNum;
-        free = space;
-    }
-    
-    public int compareTo(FreeSpace other) {
-        if (free < other.free)
-            {return Constants.INFERIOR;}
-        else if (free > other.free)
-            {return Constants.SUPERIOR;}
-        else
-            {return Constants.EQUAL;}
-	}
-    
-    public boolean equals(FreeSpace other) {
-		return page == other.page;
-	}
-    
-    /**
-     * Returns the amount of unused space in the page (in bytes).
-     * 
-     * @return amount of unused space
-     */
-    public int getFree() {
-        return free;
+    final long page;
+    int free;
+
+    public FreeSpace(final long page, final int free) {
+        this.page = page;
+        this.free = free;
     }
 
-    /**
-     * The unique page number.
-     * 
-     * @return unique page number
-     */
-    public long getPage() {
-        return page;
-    }
-
-    public void setFree(int space) {
-        free = space;
+    @Override
+    public int compareTo(final FreeSpace other) {
+        return Integer.compare(free, other.free);
     }
 }

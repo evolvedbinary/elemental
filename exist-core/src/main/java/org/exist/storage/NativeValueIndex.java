@@ -177,8 +177,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
      * A collection of key-value pairs that pending modifications for this value index.
      * The keys are {@link org.exist.xquery.value.AtomicValue atomic values}
      * that implement {@link Indexable Indexable}.
-     * The values are {@link org.exist.util.LongLinkedList lists} containing the nodes GIDs
-     * (global identifiers).
+     * The values are lists containing the nodes GIDs (global identifiers).
      */
     private final PendingChanges<AtomicValue> pendingGeneric = new PendingChanges<>(IndexType.GENERIC);
     private final PendingChanges<QNameKey> pendingQName = new PendingChanges<>(IndexType.QNAME);

@@ -81,6 +81,7 @@
  */
 package org.exist.storage.btree;
 
+import org.exist.storage.btree.AbstractPagedFile.Page;
 import org.exist.util.ByteConversion;
 
 import java.io.IOException;
@@ -96,7 +97,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     //<editor-fold desc="Description of the file header format">
     private static final int LENGTH_VERSION_ID = 2;        // sizeof(short)
-    private static final int LENGTH_HEADER_SIZE = 2;       // sizeof(short)
+    protected static final int LENGTH_HEADER_SIZE = 2;     // sizeof(short)
     private static final int LENGTH_PAGE_COUNT = 8;        // sizeof(long)
     private static final int LENGTH_PAGE_SIZE = 4;         // sizeof(int)
     private static final int LENGTH_TOTAL_COUNT = 8;       // sizeof(long)
@@ -107,7 +108,7 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     protected static final int LENGTH_RECORD_COUNT = 8;    // sizeof(long)
 
     private static final int OFFSET_VERSION_ID = 0;                                                    //  0
-    private static final int OFFSET_HEADER_SIZE = OFFSET_VERSION_ID + LENGTH_VERSION_ID;               //  2
+    protected static final int OFFSET_HEADER_SIZE = OFFSET_VERSION_ID + LENGTH_VERSION_ID;             //  2
     private static final int OFFSET_PAGE_SIZE = OFFSET_HEADER_SIZE + LENGTH_HEADER_SIZE;               //  4
     private static final int OFFSET_PAGE_COUNT = OFFSET_PAGE_SIZE + LENGTH_PAGE_SIZE;                  //  8
     private static final int OFFSET_TOTAL_COUNT = OFFSET_PAGE_COUNT + LENGTH_PAGE_COUNT;               // 16
@@ -118,7 +119,7 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     protected static final int OFFSET_RECORD_COUNT = OFFSET_MAX_KEY_SIZE + LENGTH_MAX_KEY_SIZE;        // 43
     //</editor-fold>
 
-    private final static byte DEFAULT_PAGE_HEADER_SIZE = 64;
+    protected final static byte DEFAULT_PAGE_HEADER_SIZE = 64;
     private final static short DEFAULT_MAX_KEY_SIZE = 256;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -154,12 +155,6 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
      * Defaults to {@link #DEFAULT_MAX_KEY_SIZE}.
      */
     private final short maxKeySize;
-
-    /**
-     * The size in bytes of the area within a page for writing content.
-     * This is simply pre-calculated as {@code pageSize - pageHeaderSize}.
-     */
-    private final int pageContentSize;
 
     /**
      * This is here so that we can allocate once and reuse multiple times in {@link #write(byte[])}.
@@ -199,11 +194,10 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
         this.firstFreePage = firstFreePage;
         this.lastFreePage = lastFreePage;
         this.totalCount = totalCount;
-        this.pageContentSize = this.pageSize - this.pageHeaderSize;
         this.headerBuf = new byte[headerSize];
     }
 
-    protected AbstractPagedFileHeader(final short version, final long pageCount, final int pageSize) {
+    protected AbstractPagedFileHeader(final short version, final int pageSize, final long pageCount) {
         this(version, (short) pageSize, pageSize, DEFAULT_PAGE_HEADER_SIZE, DEFAULT_MAX_KEY_SIZE, Page.NO_PAGE, Page.NO_PAGE, pageCount);
     }
 
@@ -301,21 +295,12 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
     }
 
     /**
-     * The maximum number of bytes a key can be. 256 is good
+     * The maximum number of bytes a key can be.
      *
      * @return The maxKeySize value
      */
     public int getMaxKeySize() {
         return this.maxKeySize;
-    }
-
-    /**
-     * Get the size in bytes of the area within a page for writing content.
-     *
-     * @return the page content size.
-     */
-    public int getPageContentSize() {
-        return this.pageContentSize;
     }
 
     /**
@@ -403,14 +388,14 @@ public abstract class AbstractPagedFileHeader implements PagedFileHeader {
 
 
     protected static class AbstractPagedFileHeaderData {
-        final short version;
-        final short headerSize;
-        final int pageSize;
-        final long totalCount;
-        final long firstFreePage;
-        final long lastFreePage;
-        final byte pageHeaderSize;
-        final short maxKeySize;
+        public final short version;
+        public final short headerSize;
+        public final int pageSize;
+        public final long totalCount;
+        public final long firstFreePage;
+        public final long lastFreePage;
+        public final byte pageHeaderSize;
+        public final short maxKeySize;
 
         private AbstractPagedFileHeaderData(final short version, final short headerSize, final int pageSize, final long totalCount, final long firstFreePage, final long lastFreePage, final byte pageHeaderSize, final short maxKeySize) {
             this.version = version;

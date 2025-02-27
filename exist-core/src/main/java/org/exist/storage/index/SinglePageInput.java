@@ -40,11 +40,11 @@ import java.io.IOException;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
-class SimplePageInput extends VariableByteArrayInput implements PageInput {
+class SinglePageInput extends VariableByteArrayInput implements PageInput {
 
     private final long address;
 
-    public SimplePageInput(final byte[] data, final int start, final int len, final long address) {
+    public SinglePageInput(final byte[] data, final int start, final int len, final long address) {
         super(data, start, len);
         this.address = address;
     }

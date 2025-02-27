@@ -32,12 +32,12 @@ package org.exist.storage.dom;
 
 class RecordPos {
 
-    DOMPage page;
+    DOMFile.DOMPage page;
     int offset;
     short tupleId;
     boolean link;
 
-    public RecordPos(final int offset, final DOMPage page, final short tupleId) {
+    public RecordPos(final int offset, final DOMFile.DOMPage page, final short tupleId) {
         this(offset, page, tupleId, false);
     }
 
@@ -45,7 +45,7 @@ class RecordPos {
         this(other.offset, other.page, other.tupleId, other.link);
     }
 
-    public RecordPos(final int offset, final DOMPage page, final short tupleId, final boolean link) {
+    public RecordPos(final int offset, final DOMFile.DOMPage page, final short tupleId, final boolean link) {
         this.offset = offset;
         this.page = page;
         this.tupleId = tupleId;

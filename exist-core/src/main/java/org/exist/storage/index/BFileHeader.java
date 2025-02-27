@@ -31,7 +31,9 @@
 package org.exist.storage.index;
 
 import org.exist.storage.btree.BTreeFileHeader;
+import org.exist.util.ByteConversion;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -54,7 +56,7 @@ public class BFileHeader extends BTreeFileHeader {
     }
 
     protected BFileHeader(final short fileVersion, final int pageSize) {
-        super(fileVersion, 1024, pageSize);
+        super(fileVersion, pageSize, 1024);
         this.freeList = new FreeList();
     }
 
@@ -62,28 +64,31 @@ public class BFileHeader extends BTreeFileHeader {
         return new BFileHeader(version, pageSize);
     }
 
-    public static BTreeFileHeader load(final RandomAccessFile raf) throws IOException {
+    public static BFileHeader load(final RandomAccessFile raf) throws IOException {
+        // NOTE(AR) as the BFileHeader is a variable size (due to the FreeList) we need to peek at the `headerSize` and setup a buffer that is big enough to read it
+        raf.seek(OFFSET_HEADER_SIZE);  // seek to the header size field within the file
+        final byte[] headerSizeBytes = new byte[LENGTH_HEADER_SIZE];
+        raf.read(headerSizeBytes);
+        final short headerSize = ByteConversion.byteToShort(headerSizeBytes, 0);
+
+        final byte[] headerBuf = new byte[headerSize];
         // file header is at the start of the file, so always reposition to the start of the file
         raf.seek(0);
-
-        // read the entire AbstractPagedFileHeader from the file
-//        final int headerBufSize = OFFSET_FIXED_LEN + LENGTH_FIXED_LEN;  // 61
-        // TODO(AR) how can we possibly calculate this?
-        final byte[] headerBuf = new byte[headerBufSize];
         raf.read(headerBuf);
 
-        final BTreeFileHeaderData bTreeFileHeaderData = readBTreeFileHeaderData(headerBuf);
-        return new BTreeFileHeader(
-            bTreeFileHeaderData.abstractPagedFileHeaderData.version,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.headerSize,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.pageSize,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.pageHeaderSize,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.maxKeySize,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.firstFreePage,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.lastFreePage,
-            bTreeFileHeaderData.abstractPagedFileHeaderData.totalCount,
-            bTreeFileHeaderData.rootPage,
-            bTreeFileHeaderData.fixedLen
+        final BFileHeaderData bFileHeaderData = readBFileHeaderData(headerBuf);
+        return new BFileHeader(
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.version,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.headerSize,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.pageSize,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.pageHeaderSize,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.maxKeySize,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.firstFreePage,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.lastFreePage,
+            bFileHeaderData.btreeFileHeaderData.abstractPagedFileHeaderData.totalCount,
+            bFileHeaderData.btreeFileHeaderData.rootPage,
+            bFileHeaderData.btreeFileHeaderData.fixedLen,
+            bFileHeaderData.freeList
         );
     }
 
@@ -92,15 +97,15 @@ public class BFileHeader extends BTreeFileHeader {
         setDirty(true);
     }
 
-    public FreeSpace findFreeSpace(final int needed) {
+    public @Nullable FreeSpace findFreeSpace(final int needed) {
         return freeList.find(needed);
     }
 
-    public FreeSpace getFreeSpace(final long page) {
+    public @Nullable FreeSpace getFreeSpace(final long page) {
         return freeList.retrieve(page);
     }
 
-    public void removeFreeSpace(final FreeSpace space) {
+    public void removeFreeSpace(@Nullable final FreeSpace space) {
         if (space == null) {
             return;
         }
@@ -114,16 +119,16 @@ public class BFileHeader extends BTreeFileHeader {
 
     protected static BFileHeaderData readBFileHeaderData(final byte[] headerBuf) {
         final BTreeFileHeaderData btreeFileHeaderData = readBTreeFileHeaderData(headerBuf);
-        final FreeList freeList = new FreeList();
-        freeList.read(headerBuf, OFFSET_FREE_LIST);
-
+        final FreeList freeList = FreeList.load(headerBuf, OFFSET_FREE_LIST);
         return new BFileHeaderData(btreeFileHeaderData, freeList);
     }
 
     @Override
     protected int write(final byte[] buf) throws IOException {
         final int offset = super.write(buf);
-        return freeList.write(buf, offset);
+        final int bytesRemaining = getHeaderSize() - offset;
+        final int maxRecords = (bytesRemaining - FreeList.HEADER_SIZE) / FreeList.RECORD_SIZE;
+        return freeList.write(maxRecords, buf, offset);
     }
 
     protected static class BFileHeaderData {

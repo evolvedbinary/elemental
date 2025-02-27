@@ -81,9 +81,8 @@
  */
 package org.exist.storage.btree;
 
+import org.exist.storage.btree.AbstractPagedFile.Page;
 import org.exist.util.ByteConversion;
-
-import java.io.IOException;
 
 /**
  * Page header for a BTree page.
@@ -93,15 +92,25 @@ import java.io.IOException;
  */
 public class BTreePageHeader extends AbstractPageHeader {
 
-    private short valueCount = 0;
     private long parentPage = Page.NO_PAGE;
+    private short valueCount = 0;
 
-    public BTreePageHeader() {
-        super();
+    /**
+     * Get the parent page.
+     *
+     * @return the parent page.
+     */
+    public long getParentPage() {
+        return parentPage;
     }
 
-    public BTreePageHeader(final byte[] data, final int offset) throws IOException {
-        super(data, offset);
+    /**
+     * Set the parent page.
+     *
+     * @param parentPage the parent page.
+     */
+    public void setParentPage(final long parentPage) {
+        this.parentPage = parentPage;
     }
 
     /**
@@ -123,35 +132,17 @@ public class BTreePageHeader extends AbstractPageHeader {
         setDirty(true);
     }
 
-    /**
-     * Get the parent page.
-     *
-     * @return the parent page.
-     */
-    public long getParentPage() {
-        return parentPage;
-    }
-
-    /**
-     * Set the parent page.
-     *
-     * @param parentPage the parent page.
-     */
-    public void setParentPage(final long parentPage) {
-        this.parentPage = parentPage;
-    }
-
     @Override
-    public int read(final byte[] data, int offset) throws IOException {
+    public int read(final byte[] data, int offset) {
         offset = super.read(data, offset);
-        parentPage = ByteConversion.byteToLong(data, offset);
+        this.parentPage = ByteConversion.byteToLong(data, offset);
         offset += 8;
-        valueCount = ByteConversion.byteToShort(data, offset);
+        this.valueCount = ByteConversion.byteToShort(data, offset);
         return offset + 2;
     }
 
     @Override
-    public int write(final byte[] data, int offset) throws IOException {
+    public int write(final byte[] data, int offset) {
         offset = super.write(data, offset);
         ByteConversion.longToByte(parentPage, data, offset);
         offset += 8;
@@ -165,7 +156,7 @@ public class BTreePageHeader extends AbstractPageHeader {
      * @return    The pointerCount value
      */
     public final short getPointerCount() {
-        if (getStatus() == PageStatus.BRANCH) {
+        if (getType() == PageType.BRANCH) {
             return (short) (valueCount + 1);
         } else {
             return valueCount;

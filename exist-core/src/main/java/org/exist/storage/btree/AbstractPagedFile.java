@@ -87,6 +87,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.journal.Lsn;
 import org.exist.util.FileUtils;
+import org.exist.util.HexEncoder;
+import org.exist.xquery.Constants;
 
 import javax.annotation.Nullable;
 import java.lang.AutoCloseable;
@@ -98,6 +100,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
@@ -110,28 +113,34 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
 
     protected static final Logger LOG = LogManager.getLogger(AbstractPagedFile.class);
 
-    protected static int PAGE_SIZE = 4096;
-
     @GuardedBy("FileHeader#lock")
     protected final HEADER fileHeader;
     private final byte[] tempPageData;
     private final byte[] tempHeaderData;
 
     protected final BackingFile backingFile;
+
+    /**
+     * The size in bytes of the area within a page for writing content.
+     * This is simply pre-calculated as {@code pageSize - pageHeaderSize}.
+     */
+    private final int pageContentSize;
 	
     protected AbstractPagedFile(final BackingFile backingFile, final HEADER fileHeader) {
         this.backingFile = backingFile;
         this.fileHeader = fileHeader;
         this.tempPageData = new byte[fileHeader.getPageSize()];
         this.tempHeaderData = new byte[fileHeader.getPageHeaderSize()];
+        this.pageContentSize = this.fileHeader.getPageSize() - this.fileHeader.getPageHeaderSize();
     }
 
-    public static void setPageSize(final int pageSize) {
-        PAGE_SIZE = pageSize;
-    }
-
-    public static int getPageSize() {
-        return PAGE_SIZE;
+    /**
+     * Get the size in bytes of the area within a page for writing content.
+     *
+     * @return the page content size.
+     */
+    public int getPageContentSize() {
+        return this.pageContentSize;
     }
 
     public final boolean isReadOnly() {
@@ -234,7 +243,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             if (reuseDeleted && pageNum != Page.NO_PAGE) {
 
                 // Steal a deleted page
-                page = new Page<>(tempPageData, tempHeaderData, pageNum);
+                page = createPage(pageNum);
                 page.read(backingFile.randomAccessFile);
 
                 fileHeader.setFirstFreePage(page.header.getNextPage());
@@ -249,13 +258,13 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                 }
                 fileHeader.setTotalCount(pageNum + 1);
 
-                page = new Page<>(tempPageData, tempHeaderData, pageNum);
+                page = createPage(pageNum);
                 page.read(backingFile.randomAccessFile);
             }
 
             // Cleanly initialize The Page Header
             page.header.updateNextPage(Page.NO_PAGE);
-            page.header.updateStatus(PageStatus.UNUSED);
+            page.header.updateType(PageType.UNUSED);
             fileHeader.setDirty(true);
 
             // write out the file header
@@ -269,15 +278,19 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     }
 
     /**
-     * getPage returns the page specified by pageNum.
+     * Create page returns a new page specified by pageNum.
      *
      * @param pageNum The Page number
      *
      * @return The requested Page
+     *
      * @throws IOException if an exception occurs
      */
-    protected final Page<PAGE_HEADER> getPage(final long pageNum) throws IOException {
-        return new Page<>(tempPageData, tempHeaderData, pageNum);
+    protected final Page<PAGE_HEADER> createPage(final long pageNum) throws IOException {
+        if (pageNum == Page.NO_PAGE) {
+            throw new IOException("Illegal page num: " + pageNum);
+        }
+        return new Page<>(createPageHeader(), pageNum, tempPageData, tempHeaderData);
     }
 
     /**
@@ -304,7 +317,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             Page<PAGE_HEADER> next;
             out.println("free pages for " + FileUtils.fileName(getFile()));
             while (pageNum != Page.NO_PAGE) {
-                next = getPage(pageNum);
+                next = createPage(pageNum);
                 next.read(backingFile.randomAccessFile);
                 out.print(pageNum + ";");
                 pageNum = next.header.getNextPage();
@@ -430,7 +443,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
         //Mmmmh... is this null test accurate ? -pb
         if (page != null) {
             // Walk the chain and add it to the unused list
-            page.header.updateStatus(PageStatus.UNUSED);
+            page.header.updateType(PageType.UNUSED);
             page.header.setLsn(Lsn.LSN_INVALID);
             final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
             try {
@@ -458,7 +471,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      * @throws IOException if an exception occurs
      */
     protected final void unlinkPages(final long pageNum) throws IOException {
-        unlinkPages(getPage(pageNum));
+        unlinkPages(createPage(pageNum));
     }
 
     /**
@@ -507,7 +520,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                     return;
                 }
 
-                Page<PAGE_HEADER> firstFreePage = getPage(firstFreePageNum);
+                Page<PAGE_HEADER> firstFreePage = createPage(firstFreePageNum);
                 firstFreePage.read(backingFile.randomAccessFile);
                 firstFreePageNum = firstFreePage.header.getNextPage();
 
@@ -518,7 +531,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                         firstFreePage.write(backingFile.randomAccessFile,null);
                         return;
                     }
-                    firstFreePage = getPage(firstFreePageNum);
+                    firstFreePage = createPage(firstFreePageNum);
                     firstFreePage.read(backingFile.randomAccessFile);
                     firstFreePageNum = firstFreePage.header.getNextPage();
                 }
@@ -542,19 +555,12 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     }
 
     protected final void writeValue(final Page<PAGE_HEADER> page, final byte[] data) throws IOException {
-        final ReentrantReadWriteLock.ReadLock fileHeaderReadLock = fileHeader.readLock();
-        final int workSize;
-        try {
-            workSize = fileHeader.getPageContentSize();
-        } finally {
-            fileHeaderReadLock.unlock();
-        }
         final PAGE_HEADER pageHeader = page.getPageHeader();
-        pageHeader.updateDataLen(workSize);
+        pageHeader.updateDataLen(getPageContentSize());
         if (data.length != pageHeader.getDataLen()) {
             //TODO : where to get this 64 from ?
-            if (pageHeader.getDataLen() != getPageSize() - 64) {
-                LOG.warn("ouch: {} != {}", workSize, data.length);
+            if (pageHeader.getDataLen() != fileHeader.getPageSize() - 64) {
+                LOG.warn("ouch: {} != {}", getPageContentSize(), data.length);
             }
             pageHeader.updateDataLen(data.length);
         }
@@ -569,6 +575,156 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      * @throws IOException if an Exception occurs
      */
     protected final void writeValue(final long page, final Value value) throws IOException {
-        writeValue(getPage(page), value);
+        writeValue(createPage(page), value);
+    }
+
+    /**
+     * A page in a paged file.
+     *
+     * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+     * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+     */
+    public class Page<PAGE_HEADER extends PageHeader> implements Comparable<Page<PAGE_HEADER>> {
+
+        public static final long NO_PAGE = -1;
+
+        /**  The Header for this Page */
+        final PAGE_HEADER header;
+
+        /**  The offset into the file that this page starts */
+        private long offset;
+        /**  This page number */
+        long pageNum;
+
+        // TODO(AR) is this still a good idea to reuse these across multiple instances?
+        private final byte[] tempPageData;
+        private final byte[] tempHeaderData;
+
+        public Page(final PAGE_HEADER header, final byte[] tempPageData, final byte[] tempHeaderData) {
+            this.header = header;
+            this.tempPageData = tempPageData;
+            this.tempHeaderData = tempHeaderData;
+        }
+
+        /**
+         * Constructor for the Page object
+         *
+         * @param pageNum Description of the Parameter
+         */
+        public Page(final PAGE_HEADER pageHeader, final long pageNum, final byte[] tempPageData, final byte[] tempHeaderData) {
+            this(pageHeader, tempPageData, tempHeaderData);
+            setPageNum(pageNum);
+        }
+
+        /**
+         * Gets the offset attribute of the Page object
+         *
+         * @return The offset value
+         */
+        public long getOffset() {
+            return offset;
+        }
+
+        /**
+         * Gets the pageHeader attribute of the Page object
+         *
+         * @return The pageHeader value
+         */
+        public PAGE_HEADER getPageHeader() {
+            return header;
+        }
+
+        /**
+         * Gets the pageInfo attribute of the Page object
+         *
+         * @return The pageInfo value
+         */
+        public String getPageInfo() {
+            return "page: " + pageNum +
+                "; file = " + FileUtils.fileName(getFile()) +
+                "; address = " + Long.toHexString(offset) +
+                "; page header = " + fileHeader.getPageHeaderSize() +
+                "; data start = " + Long.toHexString(offset + fileHeader.getPageHeaderSize());
+        }
+
+        public long getPageNum() {
+            return pageNum;
+        }
+
+        // TODO(AR) this is called quite a lot where the return value `byte[]` is not needed, we could skip reading that extra data by calling raf.skipBytes
+        public byte[] read(final RandomAccessFile raf) throws IOException {
+            try {
+                if (raf.getFilePointer() != offset) {
+                    raf.seek(offset);
+                }
+                Arrays.fill(tempHeaderData, (byte)0);
+                raf.read(tempHeaderData);
+                // Read in the header
+                header.read(tempHeaderData, 0);
+                // Read the working data
+                final byte[] workData = new byte[header.getDataLen()];
+                raf.read(workData);
+                return workData;
+            } catch(final Exception e) {
+                LOG.warn("error while reading page: {}", getPageInfo(), e);
+                throw new IOException(e.getMessage());
+            }
+        }
+
+        public void setPageNum(final long pageNum) {
+            this.pageNum = pageNum;
+            this.offset = fileHeader.getHeaderSize() + (pageNum * fileHeader.getPageSize());
+        }
+
+        public void remove(final RandomAccessFile raf) throws IOException {
+            write(raf, null);
+        }
+
+        void write(final RandomAccessFile raf, final byte[] data) throws IOException {
+            if(data == null) {
+                // Removed page: fill with 0
+                Arrays.fill(tempPageData, (byte)0);
+                header.setLsn(Lsn.LSN_INVALID);
+            }
+            // Write out the header
+            header.write(tempPageData, 0);
+            header.setDirty(false);
+            if (data != null) {
+                if (data.length > getPageContentSize()) {
+                    throw new IOException("page: " + getPageInfo() + ": data length too large: " + data.length);
+                } else {
+                    System.arraycopy(data, 0, tempPageData, fileHeader.getPageHeaderSize(), data.length);
+                }
+            }
+            if (raf.getFilePointer() != offset) {
+                raf.seek(offset);
+            }
+            raf.write(tempPageData);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            return ((Page)obj).pageNum == pageNum;
+        }
+
+        @Override
+        public int compareTo(final Page<PAGE_HEADER> other) {
+            if (pageNum == other.pageNum) {
+                return Constants.EQUAL;
+            } else if(pageNum > other.pageNum) {
+                return Constants.SUPERIOR;
+            } else {
+                return Constants.INFERIOR;
+            }
+        }
+
+        public void dumpPage(final RandomAccessFile raf) throws IOException {
+            if (raf.getFilePointer() != offset) {
+                raf.seek(offset);
+            }
+            final byte[] data = new byte[fileHeader.getPageSize()];
+            raf.read(data);
+            LOG.debug("Contents of page {}: {}", pageNum, HexEncoder.bytesToHex(data));
+        }
     }
 }

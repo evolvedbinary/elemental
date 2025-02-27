@@ -35,8 +35,6 @@ import org.apache.logging.log4j.Logger;
 import org.exist.storage.btree.BTreePageHeader;
 import org.exist.util.ByteConversion;
 
-import java.io.IOException;
-
 /**
  * Page header for a BFile page.
  *
@@ -45,7 +43,7 @@ import java.io.IOException;
  */
 public class BFilePageHeader extends BTreePageHeader {
 
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LogManager.getLogger(BFilePageHeader.class);
 
     private static final int LENGTH_RECORDS_COUNT = 2; //sizeof short
     private static final int LENGTH_NEXT_TID = 2; //sizeof short
@@ -53,21 +51,14 @@ public class BFilePageHeader extends BTreePageHeader {
     public static final short NONE = -1;
     public static final short OVERFLOW_ERROR = -2;
 
+    private short recordCount = 0;
     private int dataLength = 0;
-    private long nextInChain = NONE;
-    private long lastInChain = NONE;
-
     /**
      * Tuple identifier. Identifies a distinct value in a page
      */
     private short nextTID = NONE;
-
-    private short recordCount = 0;
-
-
-    public BFilePageHeader() {
-        super();
-    }
+    private long nextInChain = NONE;
+    private long lastInChain = NONE;
 
     public int getDataLength() {
         return this.dataLength;
@@ -126,17 +117,17 @@ public class BFilePageHeader extends BTreePageHeader {
     }
 
     @Override
-    public int read(final byte[] data, int offset) throws IOException {
+    public int read(final byte[] data, int offset) {
         offset = super.read(data, offset);
-        recordCount = ByteConversion.byteToShort(data, offset);
+        this.recordCount = ByteConversion.byteToShort(data, offset);
         offset += LENGTH_RECORDS_COUNT;
-        dataLength = ByteConversion.byteToInt(data, offset);
+        this.dataLength = ByteConversion.byteToInt(data, offset);
         offset += 4;
-        nextTID = ByteConversion.byteToShort(data, offset);
+        this.nextTID = ByteConversion.byteToShort(data, offset);
         offset += LENGTH_NEXT_TID;
-        nextInChain = ByteConversion.byteToLong(data, offset);
+        this.nextInChain = ByteConversion.byteToLong(data, offset);
         offset += 8;
-        lastInChain = ByteConversion.byteToLong(data, offset);
+        this.lastInChain = ByteConversion.byteToLong(data, offset);
         return offset + 8;
     }
 
@@ -145,7 +136,7 @@ public class BFilePageHeader extends BTreePageHeader {
     }
 
     @Override
-    public int write(final byte[] data, int offset) throws IOException {
+    public int write(final byte[] data, int offset) {
         offset = super.write(data, offset);
         ByteConversion.shortToByte(recordCount, data, offset);
         offset += LENGTH_RECORDS_COUNT;

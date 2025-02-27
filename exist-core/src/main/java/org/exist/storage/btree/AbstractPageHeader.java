@@ -81,10 +81,9 @@
  */
 package org.exist.storage.btree;
 
+import org.exist.storage.btree.AbstractPagedFile.Page;
 import org.exist.storage.journal.Lsn;
 import org.exist.util.ByteConversion;
-
-import java.io.IOException;
 
 /**
  * Base class for page headers.
@@ -94,28 +93,20 @@ import java.io.IOException;
  */
 public abstract class AbstractPageHeader implements PageHeader {
 
-    public static final int LENGTH_PAGE_STATUS = 1; //sizeof byte
+    public static final int LENGTH_PAGE_TYPE = 1; //sizeof byte
     public static final int LENGTH_PAGE_DATA_LENGTH = 4; //sizeof int
     public static final int LENGTH_PAGE_NEXT_PAGE = 8; //sizeof long
     public static final int LENGTH_PAGE_LSN = Lsn.RAW_LENGTH;
 
-    private int dataLen = 0;
-    private long nextPage = Page.NO_PAGE;
-    private boolean dirty = false;
-
     /**
      * The status of the current page.
      */
-    private PageStatus status = PageStatus.UNUSED;
-
+    private PageType type = PageType.UNUSED;
+    private int dataLen = 0;
+    private long nextPage = Page.NO_PAGE;
     private Lsn lsn = Lsn.LSN_INVALID;
 
-    public AbstractPageHeader() {
-    }
-
-    public AbstractPageHeader(final byte[] data, final int offset) throws IOException {
-        read(data, offset);
-    }
+    private boolean dirty = false;
 
     @Override
     public int getDataLen() {
@@ -150,13 +141,13 @@ public abstract class AbstractPageHeader implements PageHeader {
     }
 
     @Override
-    public PageStatus getStatus() {
-        return this.status;
+    public PageType getType() {
+        return this.type;
     }
 
     @Override
-    public void updateStatus(final PageStatus newStatus) {
-        this.status = newStatus;
+    public void updateType(final PageType newType) {
+        this.type = newType;
         setDirty(true);
     }
 
@@ -170,14 +161,15 @@ public abstract class AbstractPageHeader implements PageHeader {
         this.lsn = lsn;
     }
 
-    public int read(final byte[] data, int offset) throws IOException {
-        status = PageStatus.fromValue(data[offset]);
-        offset += LENGTH_PAGE_STATUS;
-        dataLen = ByteConversion.byteToInt(data, offset);
+    @Override
+    public int read(final byte[] data, int offset) {
+        this.type = PageType.fromValue(data[offset]);
+        offset += LENGTH_PAGE_TYPE;
+        this.dataLen = ByteConversion.byteToInt(data, offset);
         offset += LENGTH_PAGE_DATA_LENGTH;
-        nextPage = ByteConversion.byteToLong(data, offset);
+        this.nextPage = ByteConversion.byteToLong(data, offset);
         offset += LENGTH_PAGE_NEXT_PAGE;
-        lsn = Lsn.read(data, offset);
+        this.lsn = Lsn.read(data, offset);
         offset += LENGTH_PAGE_LSN;
 
         // TODO(AR) should we mark this an non-dirty?
@@ -186,9 +178,10 @@ public abstract class AbstractPageHeader implements PageHeader {
         return offset;
     }
 
-    public int write(final byte[] data, int offset) throws IOException {
-        data[offset] = status.getValue();
-        offset += LENGTH_PAGE_STATUS;
+    @Override
+    public int write(final byte[] data, int offset) {
+        data[offset] = type.getValue();
+        offset += LENGTH_PAGE_TYPE;
         ByteConversion.intToByte(dataLen, data, offset);
         offset += LENGTH_PAGE_DATA_LENGTH;
         ByteConversion.longToByte(nextPage, data, offset);
