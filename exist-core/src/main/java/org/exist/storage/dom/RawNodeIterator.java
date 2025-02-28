@@ -112,7 +112,7 @@ public class RawNodeIterator implements IRawNodeIterator {
     }
 
     @Override
-    public Value next() {
+    public Value next() throws IOException {
         Value nextValue = null;
         try(final ManagedLock<ReentrantLock> domFileLock = lockManager.acquireBtreeReadLock(db.getLockName())) {
 

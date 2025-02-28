@@ -139,17 +139,13 @@ public class CollectionStore extends BFile {
     }
 
     @Override
-    public boolean flush() throws DBException {
-        try {
-            boolean flushed = false;
-            if (!BrokerPool.FORCE_CORRUPTION) {
-                flushed = dataCache.flush();
-                flushed = flushed | super.flush();
-            }
-            return flushed;
-        } catch (final IOException e) {
-            throw new DBException(e);
+    public boolean flush() throws IOException {
+        boolean flushed = false;
+        if (!BrokerPool.FORCE_CORRUPTION) {
+            flushed = dataCache.flush();
+            flushed = flushed | super.flush();
         }
+        return flushed;
     }
 
     public void freeResourceId(final int id) {

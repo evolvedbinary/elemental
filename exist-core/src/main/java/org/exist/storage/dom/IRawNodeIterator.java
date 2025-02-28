@@ -35,7 +35,7 @@ public interface IRawNodeIterator extends Closeable {
      * @param node the start node where the iterator will be positioned.
      * @throws IOException if an I/O error occurs
      */
-    public void seek(NodeHandle node) throws IOException;
+    void seek(NodeHandle node) throws IOException;
 
 
     /**
@@ -43,11 +43,11 @@ public interface IRawNodeIterator extends Closeable {
      *
      * @return the raw data of the node
      */
-    public Value next();
+    Value next() throws IOException;
 
     /**
      * Close the iterator
      */
     @Override
-    public void close();
+    void close();
 }

@@ -22,7 +22,7 @@
 package org.exist.indexing;
 
 import org.exist.storage.BrokerPool;
-import org.exist.storage.btree.BTree;
+import org.exist.storage.btree.AbstractBTree;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Element;
 
@@ -78,7 +78,7 @@ public abstract class AbstractIndex implements Index {
     }
 
     @Override
-    public BTree getStorage() {
+    public AbstractBTree<?, ?> getStorage() {
         return null;
     }
 }

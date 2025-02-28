@@ -323,7 +323,7 @@ public class NativeBroker extends DBBroker {
         for(final ContentLoadingObserver observer : contentLoadingObservers) {
             try {
                 observer.flush();
-            } catch(final DBException e) {
+            } catch(final IOException e) {
                 LOG.error(e);
                 //Ignore the exception ; try to continue on other files
             }
@@ -336,14 +336,14 @@ public class NativeBroker extends DBBroker {
         }
     }
 
-    private void notifyClose() throws DBException {
+    private void notifyClose() throws IOException {
         for(final ContentLoadingObserver observer : contentLoadingObservers) {
             observer.close();
         }
         clearContentLoadingObservers();
     }
 
-    private void notifyCloseAndRemove() throws DBException {
+    private void notifyCloseAndRemove() throws IOException {
         for(final ContentLoadingObserver observer : contentLoadingObservers) {
             observer.closeAndRemove();
         }
@@ -1742,11 +1742,11 @@ public class NativeBroker extends DBBroker {
                         final IndexQuery query = new IndexQuery(IndexQuery.TRUNC_RIGHT, ref);
                         domDb.remove(transaction, query, null);
                     } catch (final BTreeException e) {
-                        LOG.error("btree error while removing document", e);
+                        LOG.error("BTree error while removing document", e);
                     } catch (final IOException e) {
-                        LOG.error("io error while removing document", e);
+                        LOG.error("I/O error while removing document", e);
                     } catch (final TerminatedException e) {
-                        LOG.error("method terminated", e);
+                        LOG.error("Method terminated", e);
                     }
                     return null;
                 }
@@ -1758,7 +1758,11 @@ public class NativeBroker extends DBBroker {
                 public Object start() {
                     if (doc.getResourceType() == DocumentImpl.XML_FILE) {
                         final NodeHandle node = (NodeHandle) doc.getFirstChild();
-                        domDb.removeAll(transaction, node.getInternalAddress());
+                        try {
+                            domDb.removeAll(transaction, node.getInternalAddress());
+                        } catch (final IOException e) {
+                            LOG.error("I/O error while removing nodes", e);
+                        }
                     }
                     return null;
                 }
@@ -2870,7 +2874,11 @@ public class NativeBroker extends DBBroker {
                     @Override
                     public Object start() {
                         final NodeHandle node = (NodeHandle) document.getFirstChild();
-                        domDb.removeAll(transaction, node.getInternalAddress());
+                        try {
+                            domDb.removeAll(transaction, node.getInternalAddress());
+                        } catch (final IOException e) {
+                            LOG.error("I/O error while removing DOM nodes", e);
+                        }
                         return null;
                     }
                 }.run();
@@ -3055,10 +3063,10 @@ public class NativeBroker extends DBBroker {
             new DOMTransaction(this, domDb, () -> lockManager.acquireBtreeWriteLock(domDb.getLockName())) {
                 @Override
                 public Object start() {
-                    domDb.removeAll(transaction, firstChild);
                     try {
+                        domDb.removeAll(transaction, firstChild);
                         domDb.flush();
-                    } catch(final DBException e) {
+                    } catch(final IOException e) {
                         LOG.error("start() - error while removing doc", e);
                     }
                     return null;
@@ -3109,8 +3117,12 @@ public class NativeBroker extends DBBroker {
         if(xupdateConsistencyChecks) {
             new DOMTransaction(this, domDb, () -> lockManager.acquireBtreeReadLock(domDb.getLockName())) {
                 @Override
-                public Object start() throws ReadOnlyException {
-                    LOG.debug("Pages used: {}", domDb.debugPages(doc, false));
+                public Object start() {
+                    try {
+                        LOG.debug("Pages used: {}", domDb.debugPages(doc, false));
+                    } catch (final IOException e) {
+                        LOG.error("I/O error while debugging DOM pages", e);
+                    }
                     return null;
                 }
             }.run();
@@ -3163,19 +3175,23 @@ public class NativeBroker extends DBBroker {
             @Override
             public Object start() throws ReadOnlyException {
                 final long address;
-                if(nodeType == Node.TEXT_NODE
-                    || nodeType == Node.ATTRIBUTE_NODE
-                    || nodeType == Node.CDATA_SECTION_NODE
-                    || node.getNodeId().getTreeLevel() > defaultIndexDepth) {
-                    address = domDb.add(transaction, data);
-                } else {
-                    address = domDb.put(transaction, new NodeRef(doc.getDocId(), node.getNodeId()), data);
+                try {
+                    if (nodeType == Node.TEXT_NODE
+                        || nodeType == Node.ATTRIBUTE_NODE
+                        || nodeType == Node.CDATA_SECTION_NODE
+                        || node.getNodeId().getTreeLevel() > defaultIndexDepth) {
+                        address = domDb.add(transaction, data);
+                    } else {
+                        address = domDb.put(transaction, new NodeRef(doc.getDocId(), node.getNodeId()), data);
+                    }
+                    if (address == BFile.UNKNOWN_ADDRESS) {
+                        LOG.error("address is missing");
+                    }
+                    //TODO : how can we continue here ? -pb
+                    node.setInternalAddress(address);
+                } catch (final IOException e) {
+                    LOG.error("I/O error while storing node", e);
                 }
-                if(address == BFile.UNKNOWN_ADDRESS) {
-                    LOG.error("address is missing");
-                }
-                //TODO : how can we continue here ? -pb
-                node.setInternalAddress(address);
                 return null;
             }
         }.run();
@@ -3194,10 +3210,14 @@ public class NativeBroker extends DBBroker {
             new DOMTransaction(this, domDb, () -> lockManager.acquireBtreeWriteLock(domDb.getLockName())) {
                 @Override
                 public Object start() throws ReadOnlyException {
-                    if(StorageAddress.hasAddress(internalAddress)) {
-                        domDb.update(transaction, internalAddress, data);
-                    } else {
-                        domDb.update(transaction, new NodeRef(doc.getDocId(), node.getNodeId()), data);
+                    try {
+                        if (StorageAddress.hasAddress(internalAddress)) {
+                            domDb.update(transaction, internalAddress, data);
+                        } else {
+                            domDb.update(transaction, new NodeRef(doc.getDocId(), node.getNodeId()), data);
+                        }
+                    } catch (final IOException e) {
+                        LOG.error("I/O error while updating node", e);
                     }
                     return null;
                 }
@@ -3207,7 +3227,12 @@ public class NativeBroker extends DBBroker {
             final Value oldVal = new DOMTransaction<Value>(this, domDb, () -> lockManager.acquireBtreeReadLock(domDb.getLockName())) {
                 @Override
                 public Value start() {
-                    return domDb.get(node.getInternalAddress());
+                    try {
+                        return domDb.get(node.getInternalAddress());
+                    } catch (final IOException e) {
+                        LOG.error("I/O error while getting node", e);
+                        return null;
+                    }
                 }
             }.run();
 
@@ -3230,14 +3255,18 @@ public class NativeBroker extends DBBroker {
         new DOMTransaction(this, domDb, () -> lockManager.acquireBtreeWriteLock(domDb.getLockName()), doc) {
             @Override
             public Object start() {
-                long address = previous.getInternalAddress();
-                if(address != BFile.UNKNOWN_ADDRESS) {
-                    address = domDb.insertAfter(transaction, doc, address, data);
-                } else {
-                    final NodeRef ref = new NodeRef(doc.getDocId(), previous.getNodeId());
-                    address = domDb.insertAfter(transaction, doc, ref, data);
+                try {
+                    long address = previous.getInternalAddress();
+                    if (address != BFile.UNKNOWN_ADDRESS) {
+                        address = domDb.insertAfter(transaction, doc, address, data);
+                    } else {
+                        final NodeRef ref = new NodeRef(doc.getDocId(), previous.getNodeId());
+                        address = domDb.insertAfter(transaction, doc, ref, data);
+                    }
+                    node.setInternalAddress(address);
+                } catch (final IOException e) {
+                    LOG.error("I/O error while inserting node after", e);
                 }
-                node.setInternalAddress(address);
                 return null;
             }
         }.run();
@@ -3334,11 +3363,15 @@ public class NativeBroker extends DBBroker {
         new DOMTransaction(this, domDb, () -> lockManager.acquireBtreeWriteLock(domDb.getLockName()), doc) {
             @Override
             public Object start() {
-                final long address = node.getInternalAddress();
-                if(StorageAddress.hasAddress(address)) {
-                    domDb.remove(transaction, new NodeRef(doc.getDocId(), node.getNodeId()), address);
-                } else {
-                    domDb.remove(transaction, new NodeRef(doc.getDocId(), node.getNodeId()));
+                try {
+                    final long address = node.getInternalAddress();
+                    if (StorageAddress.hasAddress(address)) {
+                        domDb.remove(transaction, new NodeRef(doc.getDocId(), node.getNodeId()), address);
+                    } else {
+                        domDb.remove(transaction, new NodeRef(doc.getDocId(), node.getNodeId()));
+                    }
+                } catch (final IOException e) {
+                    LOG.error("I/O error while removing node", e);
                 }
                 return null;
             }
@@ -3596,7 +3629,12 @@ public class NativeBroker extends DBBroker {
         return new DOMTransaction<String>(this, domDb, () -> lockManager.acquireBtreeReadLock(domDb.getLockName())) {
             @Override
             public String start() {
-                return domDb.getNodeValue(NativeBroker.this, node, addWhitespace);
+                try {
+                    return domDb.getNodeValue(NativeBroker.this, node, addWhitespace);
+                } catch (final IOException e) {
+                    LOG.error("I/O error while getting node value", e);
+                    return null;
+                }
             }
         }.run();
     }
@@ -3633,8 +3671,13 @@ public class NativeBroker extends DBBroker {
                 // children (for which it doesn't persist the actual node ids), so ignore that.  Nobody else
                 // should be passing DOCUMENT_NODE into here.
                 final boolean fakeNodeId = p.getNodeId().equals(NodeId.DOCUMENT_NODE);
-                final Value val = domDb.get(p.getInternalAddress(), false);
-                if(val == null) {
+                Value val = null;
+                try {
+                    val = domDb.get(p.getInternalAddress(), false);
+                } catch (final IOException e) {
+                    LOG.error("I/O error while getting DOM value", e);
+                }
+                if (val == null) {
                     LOG.debug("Node {} not found in document {}; docId = {}: {}", p.getNodeId(), p.getOwnerDocument().getURI(),
                             p.getOwnerDocument().getDocId(), StorageAddress.toString(p.getInternalAddress()));
                     if(fakeNodeId) {
@@ -3741,7 +3784,7 @@ public class NativeBroker extends DBBroker {
                 public Object start() {
                     try {
                         domDb.flush();
-                    } catch(final DBException e) {
+                    } catch(final IOException e) {
                         LOG.error("error while flushing dom.dbx", e);
                     }
                     return null;
@@ -3767,7 +3810,7 @@ public class NativeBroker extends DBBroker {
                     nextReportTS = System.currentTimeMillis() + (10 * 60 * 1000); // occurs after 10 minutes from now
                 }
             }
-        } catch(final DBException dbe) {
+        } catch(final IOException | DBException dbe) {
             dbe.printStackTrace();
             LOG.error(dbe);
         }
@@ -3784,7 +3827,7 @@ public class NativeBroker extends DBBroker {
                 public Object start() {
                     try {
                         domDb.close();
-                    } catch(final DBException e) {
+                    } catch(final IOException e) {
                         LOG.error(e.getMessage(), e);
                     }
                     return null;

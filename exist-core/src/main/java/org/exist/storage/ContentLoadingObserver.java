@@ -26,7 +26,8 @@ import org.exist.dom.persistent.AttrImpl;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.persistent.TextImpl;
-import org.exist.storage.btree.DBException;
+
+import java.io.IOException;
 
 /** Receives callback event during document(s) loading and removal;
  * implemented by several classes that generate various indices;
@@ -96,9 +97,9 @@ public interface ContentLoadingObserver extends AutoCloseable {
 	/**
      * Writes the pending items, for the current document's collection.
 	 *
-	 * @throws DBException if an error occurs whilst flushing
+	 * @throws IOException if an error occurs whilst flushing
 	 */
-	void flush() throws DBException;
+	void flush() throws IOException;
 
 	/**
 	 * triggers a cache sync, i.e. forces to write out all cached pages.
@@ -107,9 +108,9 @@ public interface ContentLoadingObserver extends AutoCloseable {
 	void sync();
 
 	@Override
-	void close() throws DBException;
+	void close() throws IOException;
 	
-	void closeAndRemove() throws DBException;
+	void closeAndRemove() throws IOException;
 	
 	void printStatistics();
 	

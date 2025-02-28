@@ -74,6 +74,8 @@ package org.exist.storage.btree;
 
 import org.exist.xquery.TerminatedException;
 
+import java.io.IOException;
+
 /**
  * BTreeCallback is a callback interface for BTree queries.
  */
@@ -83,9 +85,12 @@ public interface BTreeCallback {
     *
     * @param value The Value being reported
     * @param pointer The data pointer being reported
+    *
     * @return false to cancel the enumeration
+    *
+    * @throws IOException if an I/O error occurs whilst reading/writing the BTree.
     * @throws TerminatedException if the callback is terminated
     */
-   boolean indexInfo(Value value, long pointer) throws TerminatedException;
+   boolean indexInfo(Value value, long pointer) throws IOException, TerminatedException;
 }
 

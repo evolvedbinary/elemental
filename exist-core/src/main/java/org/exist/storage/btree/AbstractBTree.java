@@ -120,24 +120,24 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER extends BTreePageHeader> extends AbstractPagedFile<HEADER, PAGE_HEADER> implements Lockable {
 
-    protected final static Logger LOGSTATS = LogManager.getLogger(NativeBroker.EXIST_STATISTICS_LOGGER);
+    private static final Logger LOGSTATS = LogManager.getLogger(NativeBroker.EXIST_STATISTICS_LOGGER);
     
     /** Used as return value, if a value was not found */
     public final static long KEY_NOT_FOUND = -1;
 
     /** Log entry type for an insert value operation */
-    public final static byte LOG_INSERT_VALUE = 0x20;
+    static final byte LOG_INSERT_VALUE = 0x20;
     /** Log entry type for creation of a new BTree node */
-    public final static byte LOG_CREATE_BNODE = 0x21;
+    static final byte LOG_CREATE_BNODE = 0x21;
     /** Log entry type for a page update resulting from a page split */
-    public final static byte LOG_UPDATE_PAGE = 0x22;
+    static final byte LOG_UPDATE_PAGE = 0x22;
     /** Log entry type for a parent page change resulting from a page split */
-    public final static byte LOG_SET_PARENT = 0x23;
+    static final byte LOG_SET_PARENT = 0x23;
     /** Log entry type for a value update */
-    public final static byte LOG_UPDATE_VALUE = 0x24;
+    static final byte LOG_UPDATE_VALUE = 0x24;
     /** Log entry type for removing a value */
-    public final static byte LOG_REMOVE_VALUE = 0x25;
-    public final static byte LOG_SET_LINK = 0x26;
+    static final byte LOG_REMOVE_VALUE = 0x25;
+    static final byte LOG_SET_LINK = 0x26;
 
     static {
         // register the log entry types used for the BTree
@@ -265,7 +265,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
     }
 
     protected void removeSequential(final Txn transaction, final BTreeNode page, final IndexQuery query,
-            final BTreeCallback callback) throws TerminatedException {
+            final BTreeCallback callback) throws TerminatedException, IOException {
         long next = page.pageHeader.getNextPage();
         while (next != Page.NO_PAGE) {
             final BTreeNode nextPage = getBTreeNode(next);
@@ -348,7 +348,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         getRootNode().query(query, prefix, callback);
     }
 
-    protected void scanSequential(BTreeNode page, final IndexQuery query, final Value keyPrefix, final BTreeCallback callback) throws TerminatedException {
+    protected void scanSequential(BTreeNode page, final IndexQuery query, final Value keyPrefix, final BTreeCallback callback) throws TerminatedException, IOException {
         while (page != null) {
             for (int i = 0; i < page.nKeys; i++) {
                 if (keyPrefix != null && page.keys[i].comparePrefix(keyPrefix) > 0) {
@@ -501,18 +501,14 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
     }
 
     @Override
-    public boolean flush() throws DBException {
-        try {
-            boolean flushed = cache.flush();
-            flushed = flushed | super.flush();
-            return flushed;
-        } catch (final IOException e) {
-            throw new DBException(e);
-        }
+    public boolean flush() throws IOException {
+        boolean flushed = cache.flush();
+        flushed = flushed | super.flush();
+        return flushed;
     }
 
     @Override
-	public void close() throws DBException {
+	public void close() throws IOException {
         if (!isReadOnly()) {
             flush();
         }
@@ -567,10 +563,9 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
      * @param removeBranches, true if branches should be removed
      * @return the tree info
      * @throws IOException if an I/O error occurs
-     * @throws DBException if an error occurss with the tree
-     * @throws TerminatedException if the callback is terminated
+     * @throws BTreeException if an error occurs with the tree
      */
-    private TreeInfo scanTree(final boolean removeBranches) throws IOException, TerminatedException, DBException {
+    private TreeInfo scanTree(final boolean removeBranches) throws IOException, BTreeException {
         final Set<Long> pagePointers = new HashSet<>();
         final Set<Long> nextPages = new HashSet<>();
         final List<Long> branchPages = new ArrayList<>();
@@ -611,7 +606,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         pagePointers.removeAll(nextPages);
         if (pagePointers.size() > 1) {
             LOG.error("Found multiple start pages: [{}]", pagePointers.stream().map(l -> Long.toString(l)).collect(Collectors.joining(", ")));
-            throw new DBException("More than one start page found for btree: " + FileUtils.fileName(getFile()));
+            throw new BTreeException("More than one start page found for btree: " + FileUtils.fileName(getFile()));
         }
         if (removeBranches) {
             for (final long p : branchPages) {
@@ -627,7 +622,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         return new TreeInfo(pagePointers.iterator().next(), pageCount);
     }
 
-    public void scanSequential(final PrintStream out, long pageNum, final BTreeCallback callback) throws IOException, TerminatedException {
+    public void scanSequential(final PrintStream out, long pageNum, final BTreeCallback callback) throws TerminatedException, IOException {
         while (pageNum != Page.NO_PAGE) {
             out.print(pageNum + " ");
             final BTreeNode node = getBTreeNode(pageNum);
@@ -637,7 +632,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         out.println();
     }
 
-    public void scanSequential(final PrintStream out) throws TerminatedException, IOException, DBException {
+    public void scanSequential(final PrintStream out) throws TerminatedException, IOException, BTreeException {
         final TreeInfo info = scanTree(false);
         out.println("Sequential scan...");
         scanSequential(out, info.firstPage, (value, pointer) -> true);
@@ -648,10 +643,10 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
      * through leaf pages.
      *
      * @throws IOException if an I/O error occurs
-     * @throws DBException if an error occurss with the tree
+     * @throws BTreeException if an error occurss with the tree
      * @throws TerminatedException if the callback is terminated
      */
-    public void rebuild() throws TerminatedException, IOException, DBException {
+    public void rebuild() throws TerminatedException, IOException, BTreeException {
         final TreeInfo info  = scanTree(true);
         if (info.leafPages == 1) {
             final BTreeNode root = getBTreeNode(info.firstPage);
@@ -685,10 +680,10 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
                 final Value key = node.keys[0];
                 final BTreeNode parent = findParent(key);
                 if (parent == null) {
-                    throw new IOException("Parent is null for page " + node.page.getPageNum());
+                    throw new BTreeException("Parent is null for page " + node.page.getPageNum());
                 }
                 if (parent.pageHeader.getType() != PageType.BRANCH) {
-                    throw new IOException("Not a branch page: " + parent.page.getPageNum());
+                    throw new BTreeException("Not a branch page: " + parent.page.getPageNum());
                 }
 
                 parent.promoteValue(null, key, node);
@@ -709,14 +704,9 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
         BTreeNode last = node;
         while (node.pageHeader.getType() != PageType.LEAF) {
             last = node;
-            try {
-                int idx = node.searchKey(key);
-                idx = idx < 0 ? - (idx + 1) : idx + 1;
-                node = node.getChildNode(idx);
-            } catch (final Exception e) {
-                e.printStackTrace();
-                throw new IOException("Error while scanning page " + node.page.getPageNum());
-            }
+            int idx = node.searchKey(key);
+            idx = idx < 0 ? - (idx + 1) : idx + 1;
+            node = node.getChildNode(idx);
         }
         return last;
     }
@@ -1289,7 +1279,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
          * @param key the key
          *
          * @throws IOException if an I/O error occurs
-         * @throws DBException if an error occurs with the tree
+         * @throws BTreeException if an error occurs with the tree
          */
         private long removeValue(final Txn transaction, final Value key) throws IOException, BTreeException {
             int idx = searchKey(key);
@@ -2040,7 +2030,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
         }
 
-        protected void scanRaw(final IndexQuery query, final BTreeCallback callback) throws TerminatedException {
+        protected void scanRaw(final IndexQuery query, final BTreeCallback callback) throws TerminatedException, IOException {
             for (int i = 0; i < nKeys; i++) {
                 if (query == null || query.testValue(keys[i])) {
                     callback.indexInfo(keys[i], ptrs[i]);
@@ -2048,7 +2038,7 @@ public abstract class AbstractBTree<HEADER extends BTreeFileHeader, PAGE_HEADER 
             }
         }
 
-        protected void scanNextPage(final IndexQuery query, final Value keyPrefix, final BTreeCallback callback) throws TerminatedException {
+        protected void scanNextPage(final IndexQuery query, final Value keyPrefix, final BTreeCallback callback) throws TerminatedException, IOException {
             final long next = pageHeader.getNextPage();
             if (next != Page.NO_PAGE) {
                 final BTreeNode nextPage = getBTreeNode(next);

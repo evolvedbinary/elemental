@@ -83,8 +83,7 @@ public class BTreeTest {
     @Test
     public void simpleUpdates() throws DBException, IOException, TerminatedException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
 
             String prefixStr = "K";
             for (int i = 1; i <= COUNT; i++) {
@@ -119,8 +118,7 @@ public class BTreeTest {
     @Test
     public void strings() throws DBException, IOException, TerminatedException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
 
             String prefixStr = "C";
             for (int i = 1; i <= COUNT; i++) {
@@ -177,9 +175,8 @@ public class BTreeTest {
         final Random rand = new Random(System.currentTimeMillis());
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
             btree.setSplitFactor(0.7);
-            btree.create((short) -1);
 
             Map<String, Integer> keys = new TreeMap<>();
             String prefixStr = "C";
@@ -212,8 +209,7 @@ public class BTreeTest {
     @Test
     public void stringsTruncated() throws DBException, IOException, TerminatedException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
 
             char prefix = 'A';
             for (int i = 0; i < 24; i++) {
@@ -240,8 +236,7 @@ public class BTreeTest {
     @Test
     public void removeStrings() throws DBException, IOException, TerminatedException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
 
             char prefix = 'A';
             for (int i = 0; i < 24; i++) {
@@ -277,8 +272,7 @@ public class BTreeTest {
     @Test
     public void numbers() throws TerminatedException, DBException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
 
             for (int i = 1; i <= COUNT; i++) {
                 Value value = new SimpleValue(new DoubleValue(i));
@@ -316,8 +310,7 @@ public class BTreeTest {
     @Test
     public void numbersWithPrefix() throws DBException, EXistException, IOException, TerminatedException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
-            btree.create((short) -1);
+        try (final BTree btree = BTree.open(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, file, false)) {
 
             for (int i = 1; i <= COUNT; i++) {
                 Value value = new PrefixValue(99, new DoubleValue(i));

@@ -29,6 +29,7 @@ import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.btree.AbstractBTree;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.index.BFile;
@@ -72,8 +73,8 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     @Override
     public void open() throws DatabaseConfigurationException {
         try {
-            db = new BFile(pool, (byte) 0, FILE_FORMAT_VERSION_ID, false, dataFile, pool.getCacheManager(), 1.4, 0.07);
-        } catch (DBException e) {
+            db = BFile.open(pool, (byte) 0, FILE_FORMAT_VERSION_ID, dataFile, false, 1.4, 0.07);
+        } catch (final DBException e) {
             throw new DatabaseConfigurationException("Failed to create index file: " + dataFile.toAbsolutePath().toString() + ": " +
                 e.getMessage());
         }
@@ -84,18 +85,32 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     @Override
     public void close() throws DBException {
         LOG.debug("SYNC NGRAM");
-        db.close();
+        try {
+            db.close();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
+        db = null;
     }
 
     @Override
     public void sync() throws DBException {
         LOG.debug("SYNC NGRAM");
-        db.flush();
+        try {
+            db.flush();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
     }
 
     @Override
     public void remove() throws DBException {
-        db.closeAndRemove();
+        try {
+            db.closeAndRemove();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
+        db = null;
     }
 
     @Override
@@ -113,7 +128,7 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
         return gramSize;
     }
 
-    public BTree getStorage() {
+    public AbstractBTree<?, ?> getStorage() {
         return db;
     }
 

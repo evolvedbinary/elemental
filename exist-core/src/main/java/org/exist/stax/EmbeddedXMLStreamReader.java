@@ -106,7 +106,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
     @Override
     public boolean hasNext() throws XMLStreamException {
         if (consumedState || state == BEFORE) {
-            getNext();
+            try {
+                getNext();
+            } catch (final IOException e) {
+                throw new XMLStreamException(e.getMessage(), e);
+            }
 
             consumedState = false;  // mark that we have a new state available
 
@@ -128,7 +132,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         return state;
     }
 
-    private void getNext() throws XMLStreamException {
+    private void getNext() throws XMLStreamException, IOException {
         if(state != END_ELEMENT) {
             previous = current;
         }
@@ -200,7 +204,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         readNodeId();
     }
 
-    private void skipAttributes() throws XMLStreamException {
+    private void skipAttributes() throws XMLStreamException, IOException {
         if(attributes == null) {
             // attributes were not yet read. skip them...
             final ElementEvent parent = elementStack.peek();
@@ -212,7 +216,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         }
     }
 
-    private void readAttributes() {
+    private void readAttributes() throws IOException {
         if(attributes == null) {
             final ElementEvent parent = elementStack.peek();
             final int count = getAttributeCount();
@@ -235,7 +239,7 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         nodeId = broker.getBrokerPool().getNodeFactory().createFromData(dlnLen, current.data(), offset);
     }
 
-    private void verifyOriginNodeId() throws XMLStreamException {
+    private void verifyOriginNodeId() throws XMLStreamException, IOException {
         if(!nodeId.equals(origin.getNodeId())) {
             // Node got moved, we had the wrong address.  Resync iterator by nodeid.
             LOG.warn("Expected node id {}, got {}; resyncing address", origin.getNodeId(), nodeId);
@@ -352,7 +356,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
 
     @Override
     public String getAttributeValue(final String namespaceURI, final String localName) {
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         for(int i = 0; i < attributes.getLength(); i++) {
             final org.exist.dom.QName qn = attributes.getQName(i);
             if(qn.getNamespaceURI().equals(namespaceURI) && qn.getLocalPart().equals(localName)) {
@@ -373,7 +381,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -385,7 +397,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -397,7 +413,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -409,7 +429,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -421,7 +445,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -433,7 +461,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -446,7 +478,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }
@@ -458,7 +494,11 @@ public class EmbeddedXMLStreamReader implements IEmbeddedXMLStreamReader, Extend
         if (state != START_ELEMENT) {
             throw new IllegalStateException("Cursor is not at an element");
         }
-        readAttributes();
+        try {
+            readAttributes();
+        } catch (final IOException e) {
+            throw new IllegalStateException("Unable to read attributes: " + e.getMessage(), e);
+        }
         if(index > attributes.getLength()) {
             throw new ArrayIndexOutOfBoundsException("index should be < " + attributes.getLength());
         }

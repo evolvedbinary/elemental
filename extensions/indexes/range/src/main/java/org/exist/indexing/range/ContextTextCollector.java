@@ -10,7 +10,7 @@ import org.exist.dom.persistent.AttrImpl;
 import org.exist.dom.persistent.ElementImpl;
 import org.exist.numbering.NodeId;
 import org.exist.storage.NodePath;
-import com.evolvedbinary.j8cu.RingBuffer;
+import com.evolvedbinary.j8cu.buffer.ring.RingBuffer;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

@@ -33,6 +33,8 @@ package org.exist.storage.cache;
 import net.jcip.annotations.NotThreadSafe;
 import org.exist.storage.CacheManager;
 
+import java.io.IOException;
+
 /**
  * This cache implementation always tries to keep the inner btree pages in
  * cache, while the leaf pages can be removed.
@@ -64,7 +66,7 @@ public class BTreeCache<T extends BTreeCacheable> implements Cache<T> {
     }
 
     @Override
-    public void add(final T item, final int initialRefCount) {
+    public void add(final T item, final int initialRefCount) throws IOException {
         add(item);
     }
 
@@ -101,7 +103,7 @@ public class BTreeCache<T extends BTreeCacheable> implements Cache<T> {
     }
 
     @Override
-    public boolean flush() {
+    public boolean flush() throws IOException {
         final boolean inner = innerPageCache.flush();
         final boolean outer = outerPageCache.flush();
         return inner && outer;
@@ -118,7 +120,7 @@ public class BTreeCache<T extends BTreeCacheable> implements Cache<T> {
     }
 
     @Override
-    public void resize(final int newSize) {
+    public void resize(final int newSize) throws IOException {
         innerPageCache.resize(newSize);
         outerPageCache.resize(newSize);
     }
@@ -160,7 +162,7 @@ public class BTreeCache<T extends BTreeCacheable> implements Cache<T> {
     }
 
     @Override
-    public void add(final T item) {
+    public void add(final T item) throws IOException {
         if (item.isInnerPage()) {
             innerPageCache.add(item);
         } else {

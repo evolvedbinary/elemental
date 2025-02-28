@@ -47,7 +47,7 @@ package org.exist.indexing;
 
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.btree.BTree;
+import org.exist.storage.btree.AbstractBTree;
 import org.exist.storage.btree.DBException;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Element;
@@ -156,5 +156,5 @@ public interface Index extends AutoCloseable {
      *
      * @return the underlying btree or null if not available
      */
-    BTree getStorage();
+    AbstractBTree<?, ?> getStorage();
 }

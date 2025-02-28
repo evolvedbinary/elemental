@@ -56,7 +56,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
-import org.exist.storage.btree.BTree;
+import org.exist.storage.btree.AbstractBTree;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -109,7 +109,7 @@ public class CollectionTest {
     
     public void read(final BrokerPool pool) throws EXistException, IOException, PermissionDeniedException, BTreeException, DatabaseConfigurationException, LockException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            BTree btree = ((NativeBroker)broker).getStorage(NativeBroker.COLLECTIONS_DBX_ID);
+            AbstractBTree<?, ?> btree = ((NativeBroker)broker).getStorage(NativeBroker.COLLECTIONS_DBX_ID);
             try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 btree.dump(writer);
             }

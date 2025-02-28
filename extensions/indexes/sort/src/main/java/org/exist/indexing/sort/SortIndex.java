@@ -28,8 +28,8 @@ import org.exist.indexing.AbstractIndex;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
 import org.exist.storage.DBBroker;
+import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.DBException;
-import org.exist.storage.index.BTreeStore;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedLock;
 import org.exist.util.DatabaseConfigurationException;
@@ -59,15 +59,14 @@ public class SortIndex extends AbstractIndex implements RawBackupSupport {
     public final static short FILE_FORMAT_VERSION_ID = 3;
     public static final byte SORT_INDEX_ID = 0x10;
     protected static final Logger LOG = LogManager.getLogger(SortIndex.class);
-    protected BTreeStore btree;
+    protected BTree btree;
 
     @Override
     public void open() throws DatabaseConfigurationException {
         final Path file = getDataDir().resolve(FILE_NAME);
         LOG.debug("Creating '{}'...", FileUtils.fileName(file));
         try {
-            btree = new BTreeStore(pool, SORT_INDEX_ID, FILE_FORMAT_VERSION_ID, false,
-                    file, pool.getCacheManager());
+            btree = BTree.open(pool, SORT_INDEX_ID, FILE_FORMAT_VERSION_ID, file, false);
         } catch (final DBException e) {
             LOG.error("Failed to initialize structural index: {}", e.getMessage(), e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
@@ -76,7 +75,11 @@ public class SortIndex extends AbstractIndex implements RawBackupSupport {
 
     @Override
     public void close() throws DBException {
-        btree.close();
+        try {
+            btree.close();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
         btree = null;
     }
 
@@ -90,7 +93,7 @@ public class SortIndex extends AbstractIndex implements RawBackupSupport {
         } catch (final LockException e) {
             LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(btree.getFile()), e);
             //TODO : throw an exception ? -pb
-        } catch (final DBException e) {
+        } catch (final IOException e) {
             LOG.error(e.getMessage(), e);
             //TODO : throw an exception ? -pb
         }
@@ -98,7 +101,11 @@ public class SortIndex extends AbstractIndex implements RawBackupSupport {
 
     @Override
     public void remove() throws DBException {
-        btree.closeAndRemove();
+        try {
+            btree.closeAndRemove();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
     }
 
     @Override

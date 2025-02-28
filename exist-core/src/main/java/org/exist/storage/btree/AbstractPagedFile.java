@@ -150,15 +150,15 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     /**
      * Close the underlying files.
      *
-     * @throws DBException if an error occurs whilst closing
+     * @throws IOException if an error occurs whilst closing
      */
     @Override
-    public void close() throws DBException {
+    public void close() throws IOException {
         try {
             backingFile.randomAccessFile.close();
             backingFile.fileLock.close();
         } catch (final IOException e) {
-            throw new DBException("An error occurred whilst closing the database file: '" + FileUtils.fileName(backingFile.path) + "': " + e.getMessage(), e);
+            throw new IOException("An error occurred whilst closing the database file: '" + FileUtils.fileName(backingFile.path) + "': " + e.getMessage(), e);
         }
     }
 
@@ -166,9 +166,9 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
      * Completely close down the instance and
      * all underlying resources and caches.
      *
-     * @throws DBException if an error occurs whilst closing and removing the file
+     * @throws IOException if an error occurs whilst closing and removing the file
      */
-    public final void closeAndRemove() throws DBException {
+    public final void closeAndRemove() throws IOException {
         close();
         FileUtils.deleteQuietly(backingFile.path);
     }
@@ -176,9 +176,9 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
     /**
      * Flushes dirty data to the disk and cleans up the cache.
      * @return <code>true</code> if something has actually been cleaned
-     * @throws DBException if an error occurs
+     * @throws IOException if an I/O error occurs
      */
-    public boolean flush() throws DBException {
+    public boolean flush() throws IOException {
         boolean flushed = false;
         final ReentrantReadWriteLock.WriteLock fileHeaderWriteLock = fileHeader.writeLock();
         try {
@@ -186,8 +186,6 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                 fileHeader.write(backingFile.randomAccessFile);
                 flushed = true;
             }
-        } catch (final IOException ioe) {
-            throw new DBException(ioe);
         } finally {
             fileHeaderWriteLock.unlock();
         }
@@ -665,7 +663,7 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
                 final byte[] workData = new byte[header.getDataLen()];
                 raf.read(workData);
                 return workData;
-            } catch(final Exception e) {
+            } catch(final IOException e) {
                 LOG.warn("error while reading page: {}", getPageInfo(), e);
                 throw new IOException(e.getMessage());
             }
@@ -702,9 +700,19 @@ public abstract class AbstractPagedFile<HEADER extends AbstractPagedFileHeader, 
             raf.write(tempPageData);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
-        public boolean equals(final Object obj) {
-            return ((Page)obj).pageNum == pageNum;
+        public final boolean equals(final Object other) {
+            if (!(other instanceof Page)) {
+                return false;
+            }
+            final Page<?> otherPage = (Page<?>) other;
+            return pageNum == otherPage.pageNum;
+        }
+
+        @Override
+        public int hashCode() {
+            return Long.hashCode(pageNum);
         }
 
         @Override

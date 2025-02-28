@@ -261,7 +261,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * 
      * @return The current page
      */
-    private DOMPage getCurrentPage(final Txn transaction) {
+    private DOMPage getCurrentPage(final Txn transaction) throws IOException {
         final long pageNum = pages.getLong(owner);
         if (pageNum == Page.NO_PAGE) {
             final DOMPage page = createDOMPage();
@@ -333,6 +333,23 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         return page;
     }
 
+    private Page<DOMFilePageHeader> createNewPage() throws IOException {
+        final Page<DOMFilePageHeader> page = getFreePage();
+        final DOMFilePageHeader pageHeader = page.getPageHeader();
+        pageHeader.updateType(PageType.RECORD);
+        pageHeader.setDirty(true);
+        pageHeader.setNextDataPage(Page.NO_PAGE);
+        pageHeader.setPrevDataPage(Page.NO_PAGE);
+        pageHeader.updateNextPage(Page.NO_PAGE);
+        pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
+        pageHeader.setDataLength(0);
+        pageHeader.setRecordCount((short) 0);
+        if (currentDocument != null) {
+            currentDocument.incPageCount();
+        }
+        return page;
+    }
+
     public void closeDocument() {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
@@ -348,7 +365,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         return CONFIG_KEY_FOR_FILE;
     }
 
-    void addToBuffer(final DOMPage page) {
+    void addToBuffer(final DOMPage page) throws IOException {
         if (LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
@@ -356,7 +373,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     }
 
     @Override
-    public void close() throws DBException {
+    public void close() throws IOException {
         if (!isReadOnly()) {
             flush();
         }
@@ -392,8 +409,9 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @return the virtual storage address of the value
      *
      * @throws ReadOnlyException if the DOM file is read-only
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public long add(final Txn transaction, final byte[] value) throws ReadOnlyException {
+    public long add(final Txn transaction, final byte[] value) throws ReadOnlyException, IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -407,7 +425,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Creating overflow page");
             }
-            final OverflowDOMPage overflowPage = new OverflowDOMPage();
+            final OverflowDOMPage overflowPage = new OverflowDOMPage(createNewPage());
             overflowPage.write(transaction, value);
             final byte[] pageNum = ByteConversion.longToByte(overflowPage.getPageNum());
             return add(transaction, pageNum, true);
@@ -420,13 +438,17 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * Append a value to the current page. If overflowPage is true, the value
      * will be saved into its own, reserved chain of pages. The current page
      * will just contain a link to the first overflow page.
-     * 
+     *
+     * @param transaction the database transaction
      * @param value the value
      * @param overflowPage the overflow page
+     *
      * @return the virtual storage address of the value
+     *
      * @throws ReadOnlyException if the DOMFile is read-only
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    private long add(final Txn transaction, final byte[] value, final boolean overflowPage) throws ReadOnlyException {
+    private long add(final Txn transaction, final byte[] value, final boolean overflowPage) throws ReadOnlyException, IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -501,12 +523,14 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param value Binary resource as byte array
      *
      * @return the page number
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public long addBinary(final Txn transaction, final DocumentImpl doc, final byte[] value) {
-        if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
+    public long addBinary(final Txn transaction, final DocumentImpl doc, final byte[] value) throws IOException {
+        if (LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
-        final OverflowDOMPage overflowPage = new OverflowDOMPage();
+        final OverflowDOMPage overflowPage = new OverflowDOMPage(createNewPage());
         final int pagesCount = overflowPage.write(transaction, value);
         doc.setPageCount(pagesCount);
         return overflowPage.getPageNum();
@@ -521,12 +545,14 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param is Binary resource as stream.
      *
      * @return the page number
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public long addBinary(final Txn transaction, final DocumentImpl doc, final InputStream is) {
+    public long addBinary(final Txn transaction, final DocumentImpl doc, final InputStream is) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
-        final OverflowDOMPage overflowPage = new OverflowDOMPage();
+        final OverflowDOMPage overflowPage = new OverflowDOMPage(createNewPage());
         final int pagesCount = overflowPage.write(transaction, is);
         doc.setPageCount(pagesCount);
         return overflowPage.getPageNum();
@@ -536,25 +562,24 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * Return binary data stored with {@link #addBinary(Txn, DocumentImpl, byte[])}.
      * 
      * @param pageNum the page number
+     *
      * @return binary data stored
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public byte[] getBinary(final long pageNum) {
+    public byte[] getBinary(final long pageNum) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
         return getOverflowValue(pageNum);
     }
 
-    public void readBinary(final long pageNum, final OutputStream os) {
+    public void readBinary(final long pageNum, final OutputStream os) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
-        try {
-            final OverflowDOMPage overflowPage = new OverflowDOMPage(pageNum);
-            overflowPage.streamTo(os);
-        } catch (final IOException e) {
-            LOG.error("IO error while loading overflow value", e);
-        }
+        final OverflowDOMPage overflowPage = new OverflowDOMPage(createPage(pageNum));
+        overflowPage.streamTo(os);
     }
 
     /**
@@ -566,8 +591,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param value the value
      *
      * @return the storage address pointer
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public long insertAfter(final Txn transaction, final DocumentImpl doc, final Value key, final byte[] value) {
+    public long insertAfter(final Txn transaction, final DocumentImpl doc, final Value key, final byte[] value) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -580,8 +607,6 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             return insertAfter(transaction, doc, address, value);
         } catch (final BTreeException e) {
             LOG.warn("key not found", e);
-        } catch (final IOException e) {
-            LOG.error("IO error", e);
         }
         return KEY_NOT_FOUND;
     }
@@ -600,15 +625,17 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param value     the value of the new node.
      *
      * @return the storage address pointer
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public long insertAfter(final Txn transaction, final DocumentImpl doc, final long address, byte[] value) {
+    public long insertAfter(final Txn transaction, final DocumentImpl doc, final long address, byte[] value) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
         // check if we need an overflow page
         boolean isOverflow = false;
         if (LENGTH_TID + LENGTH_DATA_LENGTH + value.length > getPageContentSize()) {
-            final OverflowDOMPage overflowPage = new OverflowDOMPage();
+            final OverflowDOMPage overflowPage = new OverflowDOMPage(createNewPage());
             LOG.debug("Creating overflow page: {}", overflowPage.getPageNum());
             overflowPage.write(transaction, value);
             value = ByteConversion.longToByte(overflowPage.getPageNum());
@@ -1053,7 +1080,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             try {
                 unlinkPages(nextSplitPage.page);
             } catch (final IOException e) {
-                LOG.warn("Failed to remove empty split page: {}", e.getMessage(), e);
+                LOG.error("Failed to remove empty split page: {}", e.getMessage(), e);
+                throw e;
             }
             nextSplitPage.setDirty(true);
             dataCache.remove(nextSplitPage);
@@ -1453,28 +1481,18 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         return callBack.getValues();
     }
 
-    /**
-     * Flush all buffers to disk.
-     *
-     * @return true if the buffers were flushed
-     * @throws DBException if an error occurs
-     */
     @Override
-    public boolean flush() throws DBException {
-        try {
-            boolean flushed = false;
-            //TODO : record transaction as a valuable flush ?
-            if (isRecoveryEnabled() && logManager != null) {
-                logManager.flush(true, false);
-            }
-            if (!BrokerPool.FORCE_CORRUPTION) {
-                flushed = super.flush();
-                flushed = flushed | dataCache.flush();
-            }
-            return flushed;
-        } catch (final IOException e) {
-            throw new DBException(e.getMessage(), e);
+    public boolean flush() throws IOException {
+        boolean flushed = false;
+        //TODO : record transaction as a valuable flush ?
+        if (isRecoveryEnabled() && logManager != null) {
+            logManager.flush(true, false);
         }
+        if (!BrokerPool.FORCE_CORRUPTION) {
+            flushed = super.flush();
+            flushed = flushed | dataCache.flush();
+        }
+        return flushed;
     }
 
     @Override
@@ -1512,7 +1530,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param key the key
      * @return the value, or null
      */
-    public Value get(final Value key) {
+    public Value get(final Value key) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
@@ -1523,7 +1541,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 return null;
             }
             return get(pointer);
-        } catch (final BTreeException | IOException e) {
+        } catch (final BTreeException e) {
             LOG.error(e);
             return null;
         }
@@ -1549,9 +1567,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * Retrieve node at virtual address.
      * 
      * @param pointer The virtual address
+     *
      * @return The node
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public Value get(final long pointer) {
+    public Value get(final long pointer) throws IOException {
         return get(pointer, true);
     }
 
@@ -1561,9 +1582,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param pointer The virtual address
      * @param warnIfMissing Whether or not a warning should be output 
      * if the node can not be found 
+     *
      * @return The node
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public Value get(final long pointer, final boolean warnIfMissing) {
+    public Value get(final long pointer, final boolean warnIfMissing) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
@@ -1623,16 +1647,17 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @return pointer to the address
      *
      * @throws ReadOnlyException if the DOM file is read-only
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
     public long put(final Txn transaction, final Value key, final byte[] value)
-            throws ReadOnlyException {
+            throws ReadOnlyException, IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
         final long pointer = add(transaction, value);
         try {
             addValue(transaction, key, pointer);
-        } catch (final BTreeException | IOException e) {
+        } catch (final BTreeException e) {
             //TODO : throw exception ?
             LOG.error(e);
             return KEY_NOT_FOUND;
@@ -1646,9 +1671,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      *
      * @param transaction the database transaction
      * @param key the key
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-
-    public void remove(final Txn transaction, final Value key) {
+    public void remove(final Txn transaction, final Value key) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -1660,25 +1686,19 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 return;
             }
             remove(transaction, key, pointer);
-        } catch (final BTreeException | IOException e) {
+        } catch (final BTreeException e) {
             //TODO : throw exception ?
             LOG.warn(e);
         }
     }
 
 
-    byte[] getOverflowValue(final long pointer) {
+    byte[] getOverflowValue(final long pointer) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
-        try {
-            final OverflowDOMPage overflow = new OverflowDOMPage(pointer);
-            return overflow.read();
-        } catch (final IOException e) {
-            LOG.warn("IO error while loading overflow value", e);
-            //TODO : throw exception ?
-            return null;
-        }
+        final OverflowDOMPage overflow = new OverflowDOMPage(createPage(pointer));
+        return overflow.read();
     }
 
     /**
@@ -1687,16 +1707,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param transaction The current transaction
      * @param pointer The pointer to the value
      */
-    public void removeOverflowValue(final Txn transaction, final long pointer) {
+    public void removeOverflowValue(final Txn transaction, final long pointer) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
-        try {
-            final OverflowDOMPage overflow = new OverflowDOMPage(pointer);
-            overflow.delete(transaction);
-        } catch (final IOException e) {
-            LOG.error("IO error while removing overflow value", e);
-        }
+        final OverflowDOMPage overflow = new OverflowDOMPage(createPage(pointer));
+        overflow.delete(transaction);
     }
 
     /**
@@ -1704,8 +1720,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      *
      * @param transaction the current transaction
      * @param pointer The pointer to the value
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    private void removeLink(final Txn transaction, final long pointer) {
+    private void removeLink(final Txn transaction, final long pointer) throws IOException {
         final RecordPos rec = findRecord(pointer, false);
         final DOMFilePageHeader pageHeader = rec.page.getPageHeader();
         if (transaction != null && isRecoveryEnabled()) {
@@ -1750,8 +1768,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      *
      * @param transaction the database transaction
      * @param pointer pointer to the node
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public void removeNode(final Txn transaction, final long pointer) {
+    public void removeNode(final Txn transaction, final long pointer) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -1778,13 +1798,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             isOverflow = true;
             final long overflowLink = ByteConversion.byteToLong(rec.page.data, rec.offset);
             rec.offset += LENGTH_OVERFLOW_LOCATION;
-            try {
-                final OverflowDOMPage overflow = new OverflowDOMPage(overflowLink);
-                overflow.delete(transaction);
-            } catch (final IOException e) {
-                LOG.warn("IO error while removing overflow page", e);
-                //TODO : rethrow exception ? -pb
-            }
+            final OverflowDOMPage overflow = new OverflowDOMPage(createPage(overflowLink));
+            overflow.delete(transaction);
             realLen += LENGTH_OVERFLOW_LOCATION;
         }
         if (transaction != null && isRecoveryEnabled()) {
@@ -1836,11 +1851,11 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param key the key
      * @param pointer pointer to the value
      */
-    public void remove(final Txn transaction, final Value key, final long pointer) {
+    public void remove(final Txn transaction, final Value key, final long pointer) throws IOException {
         removeNode(transaction, pointer);
         try {
             removeValue(transaction, key);
-        } catch (final BTreeException | IOException e) {
+        } catch (final BTreeException e) {
             LOG.error("BTree error while removing node", e);
             //TODO : rethrow exception ? -pb
         }
@@ -1850,8 +1865,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * Remove the specified page. The page is added to the list of free pages.
      * 
      * @param page the DOM page
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    private void removePage(final DOMPage page) {
+    private void removePage(final DOMPage page) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -1868,19 +1885,14 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             previousPage.setDirty(true);
             dataCache.add(previousPage);
         }
-        try {
-            pageHeader.setNextDataPage(Page.NO_PAGE);
-            pageHeader.setPrevDataPage(Page.NO_PAGE);
-            pageHeader.setDataLength(0);
-            pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
-            pageHeader.setRecordCount((short) 0);
-            unlinkPages(page.page);
-            page.setDirty(true);
-            dataCache.remove(page);
-        } catch (final IOException ioe) {
-            LOG.error(ioe);
-            //TODO : rethrow exception ? -pb
-        }
+        pageHeader.setNextDataPage(Page.NO_PAGE);
+        pageHeader.setPrevDataPage(Page.NO_PAGE);
+        pageHeader.setDataLength(0);
+        pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
+        pageHeader.setRecordCount((short) 0);
+        unlinkPages(page.page);
+        page.setDirty(true);
+        dataCache.remove(page);
         if (currentDocument != null) {
             currentDocument.decPageCount();
         }
@@ -1892,8 +1904,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      *
      * @param transaction the database transaction
      * @param pointer the pointer to the first page
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public void removeAll(final Txn transaction, final long pointer) {
+    public void removeAll(final Txn transaction, final long pointer) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -1913,24 +1927,19 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 writeToLog(loggable, currentPage.page);
             }
             pageNum = currentPageHeader.getNextDataPage();
-            try {
-                currentPageHeader.setNextDataPage(Page.NO_PAGE);
-                currentPageHeader.setPrevDataPage(Page.NO_PAGE);
-                currentPageHeader.setDataLength(0);
-                currentPageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
-                currentPageHeader.setRecordCount((short) 0);
-                currentPage.len = 0;
-                unlinkPages(currentPage.page);
-                currentPage.setDirty(true);
-                dataCache.remove(currentPage);
-            } catch (final IOException e) {
-                LOG.error("Error while removing page: {}", e.getMessage(), e);
-                //TODO : rethrow the exception ? -pb
-            }
+            currentPageHeader.setNextDataPage(Page.NO_PAGE);
+            currentPageHeader.setPrevDataPage(Page.NO_PAGE);
+            currentPageHeader.setDataLength(0);
+            currentPageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
+            currentPageHeader.setRecordCount((short) 0);
+            currentPage.len = 0;
+            unlinkPages(currentPage.page);
+            currentPage.setDirty(true);
+            dataCache.remove(currentPage);
         }
     }
 
-    public String debugPages(final DocumentImpl doc, boolean showPageContents) {
+    public String debugPages(final DocumentImpl doc, boolean showPageContents) throws IOException {
         final StringBuilder buf = new StringBuilder();
         buf.append("Pages used by ").append(doc.getURI());
         buf.append("; (docId: ").append(doc.getDocId()).append("): ");
@@ -1959,9 +1968,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @return true if the value was updated, false otherwise
      *
      * @throws ReadOnlyException if the DOM file is read-only
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
     public boolean update(final Txn transaction, final Value key, final byte[] value)
-            throws ReadOnlyException {
+        throws ReadOnlyException, IOException {
         try {
             final long pointer = findValue(key);
             if (pointer == KEY_NOT_FOUND) {
@@ -1971,7 +1981,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             }
             update(transaction, pointer, value);
             return true;
-        } catch (final BTreeException | IOException e) {
+        } catch (final BTreeException e) {
             //TODO : rethrow exception ? -pb
             LOG.error(e);
             e.printStackTrace();
@@ -1987,8 +1997,9 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param value the new value
      *
      * @throws ReadOnlyException if the DOM file is read-only
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public void update(final Txn transaction, final long pointer, final byte[] value) throws ReadOnlyException {
+    public void update(final Txn transaction, final long pointer, final byte[] value) throws ReadOnlyException, IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLockedForWrite(getLockName())) {
             LOG.debug("The file doesn't own a write lock");
         }
@@ -2032,9 +2043,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param broker the database broker
      * @param node the node
      * @param addWhitespace true if whitespace should be added to the node value
+     *
      * @return string value of the specified node
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    public String getNodeValue(final DBBroker broker, final IStoredNode node, final boolean addWhitespace) {
+    public String getNodeValue(final DBBroker broker, final IStoredNode node, final boolean addWhitespace) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
@@ -2074,9 +2088,6 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         } catch (final BTreeException e) {
             LOG.error("BTree error while reading node value", e);
           //TODO : rethrow exception ? -pb
-        } catch (final Exception e) {
-            LOG.error("IO error while reading node value", e);
-          //TODO : rethrow exception ? -pb
         }
         //TODO : remove if exceptions thrown...
         return null;
@@ -2091,11 +2102,13 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * @param rec the record position
      * @param isTopNode true if this is the top node, false otherwise
      * @param addWhitespace true if whitespace should be added to the node value
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
     private void getNodeValue(final BrokerPool pool,
                               final UnsynchronizedByteArrayOutputStream os,
                               final RecordPos rec, final boolean isTopNode,
-                              final boolean addWhitespace) {
+                              final boolean addWhitespace) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
@@ -2238,7 +2251,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         }
     }
 
-    RecordPos findRecord(final long pointer) {
+    RecordPos findRecord(final long pointer) throws IOException {
         return findRecord(pointer, true);
     }
 
@@ -2247,9 +2260,12 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
      * 
      * @param pointer the pointer to the page
      * @param skipLinks true if links should be skipped, false otherwise
+     *
      * @return The record position in the page
+     *
+     * @throws IOException if an I/O error occurs whilst reading/writing the DOM file.
      */
-    private RecordPos findRecord(final long pointer, final boolean skipLinks) {
+    private RecordPos findRecord(final long pointer, final boolean skipLinks) throws IOException {
         if(LOG.isDebugEnabled() && !lockManager.isBtreeLocked(getLockName())) {
             LOG.debug("The file doesn't own a lock");
         }
@@ -2313,10 +2329,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
     }
 
     void redoCreatePage(final CreatePageLoggable loggable) {
-        final DOMPage newPage = getDOMPage(loggable.newPage);
-        final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
-        if (newPageHeader.getLsn().equals(Lsn.LSN_INVALID) || requiresRedo(loggable, newPage)) {
-            try {
+        try {
+            final DOMPage newPage = getDOMPage(loggable.newPage);
+            final DOMFilePageHeader newPageHeader = newPage.getPageHeader();
+            if (newPageHeader.getLsn().equals(Lsn.LSN_INVALID) || requiresRedo(loggable, newPage)) {
                 dropFreePageList();
                 newPageHeader.updateType(PageType.RECORD);
                 newPageHeader.setDataLength(0);
@@ -2340,18 +2356,18 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 } else {
                     newPageHeader.setPrevDataPage(loggable.prevPage);
                 }
-            } catch (final IOException e) {
-                LOG.error("Failed to redo {}: {}", loggable.dump(), e.getMessage(), e);
-                //TODO : throw exception ?
             }
+            dataCache.add(newPage);
+        } catch (final IOException e) {
+            LOG.error("Failed to redoCreatePage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO : throw exception ?
         }
-        dataCache.add(newPage);
     }
 
     void undoCreatePage(final CreatePageLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.newPage);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
         try {
+            final DOMPage page = getDOMPage(loggable.newPage);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
             pageHeader.setNextDataPage(Page.NO_PAGE);
             pageHeader.setPrevDataPage(Page.NO_PAGE);
             pageHeader.setDataLength(0);
@@ -2362,16 +2378,17 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             page.setDirty(true);
             dataCache.remove(page);
         } catch (final IOException e) {
-            LOG.warn("Error while removing page: {}", e.getMessage(), e);
+            LOG.warn("Error while undoCreatePage {}: {}", loggable.dump(), e.getMessage(), e);
             //TODO : exception ?
         }
     }
 
     void redoAddValue(final AddValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            try {
+        DOMPage page = null;
+        try {
+            page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
                 ByteConversion.shortToByte(loggable.tid, page.data, page.len);
                 page.len += LENGTH_TID;
                 // save data length
@@ -2388,193 +2405,228 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 pageHeader.setNextTupleID(loggable.tid);
                 pageHeader.setLsn(loggable.getLsn());
                 dataCache.add(page, 2);
-            } catch (final ArrayIndexOutOfBoundsException e) {
-                LOG.warn("page: {}; len = {}; value = {}", page.getPageNum(), page.len, loggable.value.length);
-                throw e;
             }
+        } catch (final ArrayIndexOutOfBoundsException e) {
+            if (page != null) {
+                LOG.warn("page: {}; len = {}; value = {}", page.getPageNum(), page.len, loggable.value.length);
+            }
+            // TODO(AR) should we throw ArrayIndexOutOfBoundsException?
+        } catch (final IOException e) {
+            LOG.error("Failed to redoAddValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoAddValue(final AddValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
 
-        // is there anything to undo?
-        if (pageHeader.getLsn().equals(Lsn.LSN_INVALID) || pageHeader.getType() == PageType.UNUSED) {
-            LOG.warn("Nothing to undo, but received: AddValueLoggable(txnId={}, lsn={}, pageNum={}, isOverflow={})", loggable.getTransactionId(), loggable.getLsn(), loggable.pageNum, loggable.isOverflow);
-            return;
-        }
+            // is there anything to undo?
+            if (pageHeader.getLsn().equals(Lsn.LSN_INVALID) || pageHeader.getType() == PageType.UNUSED) {
+                LOG.warn("Nothing to undo, but received: AddValueLoggable(txnId={}, lsn={}, pageNum={}, isOverflow={})", loggable.getTransactionId(), loggable.getLsn(), loggable.pageNum, loggable.isOverflow);
+                return;
+            }
 
-        final RecordPos pos = page.findRecord(ItemId.getId(loggable.tid));
-        SanityCheck.ASSERT(pos != null, "Record not found! isOverflow: " + loggable.isOverflow);
-        //TODO : throw exception ? -pb
-        //Position the stream at the very beginning of the record
-        final int startOffset = pos.offset - LENGTH_TID;
-        //Get the record length
-        final short vlen = loggable.isOverflow ? 8 : ByteConversion.byteToShort(page.data, pos.offset);
-        //End offset
-        final int end = startOffset + LENGTH_TID + LENGTH_DATA_LENGTH + vlen;
-        final int dlen = pageHeader.getDataLength();
-        //Remove old value
-        System.arraycopy(page.data, end, page.data, startOffset, dlen - end);
-        page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + vlen);
-        if (page.len < 0) {
-            LOG.error("page length < 0");
-            //TODO : exception ?
+            final RecordPos pos = page.findRecord(ItemId.getId(loggable.tid));
+            SanityCheck.ASSERT(pos != null, "Record not found! isOverflow: " + loggable.isOverflow);
+            //TODO : throw exception ? -pb
+            //Position the stream at the very beginning of the record
+            final int startOffset = pos.offset - LENGTH_TID;
+            //Get the record length
+            final short vlen = loggable.isOverflow ? 8 : ByteConversion.byteToShort(page.data, pos.offset);
+            //End offset
+            final int end = startOffset + LENGTH_TID + LENGTH_DATA_LENGTH + vlen;
+            final int dlen = pageHeader.getDataLength();
+            //Remove old value
+            System.arraycopy(page.data, end, page.data, startOffset, dlen - end);
+            page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + vlen);
+            if (page.len < 0) {
+                LOG.error("page length < 0");
+                //TODO : exception ?
+            }
+            pageHeader.setDataLength(page.len);
+            pageHeader.decRecordCount();
+            page.setDirty(true);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoAddValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        pageHeader.setDataLength(page.len);
-        pageHeader.decRecordCount();
-        page.setDirty(true);
     }
 
     void redoUpdateValue(final UpdateValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader ph = page.getPageHeader();
-        if ((!ph.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            final RecordPos rec = page.findRecord(ItemId.getId(loggable.tid));
-            SanityCheck.THROW_ASSERT(rec != null, 
-                "tid " + ItemId.getId(loggable.tid) +
-                " not found on page " + page.getPageNum() +
-                "; contents: " + debugPageContents(page));
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader ph = page.getPageHeader();
+            if ((!ph.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                final RecordPos rec = page.findRecord(ItemId.getId(loggable.tid));
+                SanityCheck.THROW_ASSERT(rec != null,
+                    "tid " + ItemId.getId(loggable.tid) +
+                        " not found on page " + page.getPageNum() +
+                        "; contents: " + debugPageContents(page));
 //            ByteConversion.byteToShort(rec.page.data, rec.offset);
-            rec.offset += LENGTH_DATA_LENGTH;
-            if (ItemId.isRelocated(rec.tupleId)) {
-                rec.offset += LENGTH_ORIGINAL_LOCATION;
+                rec.offset += LENGTH_DATA_LENGTH;
+                if (ItemId.isRelocated(rec.tupleId)) {
+                    rec.offset += LENGTH_ORIGINAL_LOCATION;
+                }
+                System.arraycopy(loggable.value, 0, rec.page.data, rec.offset, loggable.value.length);
+                rec.page.getPageHeader().setLsn(loggable.getLsn());
+                rec.page.setDirty(true);
+                dataCache.add(rec.page);
             }
-            System.arraycopy(loggable.value, 0, rec.page.data, rec.offset, loggable.value.length);
-            rec.page.getPageHeader().setLsn(loggable.getLsn());
-            rec.page.setDirty(true);
-            dataCache.add(rec.page);
+        } catch (final IOException e) {
+            LOG.error("Failed to redoUpdateValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoUpdateValue(final UpdateValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final RecordPos rec = page.findRecord(ItemId.getId(loggable.tid));
-        SanityCheck.THROW_ASSERT(rec != null,
-            "tid " + ItemId.getId(loggable.tid) +
-            " not found on page " + page.getPageNum() +
-            "; contents: " + debugPageContents(page));
-        final short vlen = ByteConversion.byteToShort(rec.page.data, rec.offset);
-        SanityCheck.THROW_ASSERT(vlen == loggable.oldValue.length);
-        rec.offset += LENGTH_DATA_LENGTH;
-        if (ItemId.isRelocated(rec.tupleId)) {
-            rec.offset += LENGTH_ORIGINAL_LOCATION;
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final RecordPos rec = page.findRecord(ItemId.getId(loggable.tid));
+            SanityCheck.THROW_ASSERT(rec != null,
+                "tid " + ItemId.getId(loggable.tid) +
+                    " not found on page " + page.getPageNum() +
+                    "; contents: " + debugPageContents(page));
+            final short vlen = ByteConversion.byteToShort(rec.page.data, rec.offset);
+            SanityCheck.THROW_ASSERT(vlen == loggable.oldValue.length);
+            rec.offset += LENGTH_DATA_LENGTH;
+            if (ItemId.isRelocated(rec.tupleId)) {
+                rec.offset += LENGTH_ORIGINAL_LOCATION;
+            }
+            System.arraycopy(loggable.oldValue, 0, page.data, rec.offset, loggable.oldValue.length);
+            page.getPageHeader().setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoUpdateValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        System.arraycopy(loggable.oldValue, 0, page.data, rec.offset, loggable.oldValue.length);
-        page.getPageHeader().setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page);
     }
 
     void redoRemoveValue(final RemoveValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            final RecordPos pos = page.findRecord(ItemId.getId(loggable.tid));
-            SanityCheck.ASSERT(pos != null, 
-                "Record not found: " + ItemId.getId(loggable.tid) + ": " + 
-                page.page.getPageInfo() + "\n" + 
-                debugPageContents(page));
-            //Position the stream at the very beginning of the record
-            final int startOffset = pos.offset - LENGTH_TID;
-            if (ItemId.isLink(loggable.tid)) {
-                final int end = pos.offset + LENGTH_FORWARD_LOCATION;
-                System.arraycopy(page.data, end, page.data, startOffset, page.len - end);
-                page.len = page.len - (LENGTH_DATA_LENGTH + LENGTH_FORWARD_LOCATION);
-            } else {
-                // get the record length
-                short l = ByteConversion.byteToShort(page.data, pos.offset);
-                if (ItemId.isRelocated(loggable.tid)) {
-                    pos.offset += LENGTH_ORIGINAL_LOCATION;
-                    l += LENGTH_ORIGINAL_LOCATION;
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                final RecordPos pos = page.findRecord(ItemId.getId(loggable.tid));
+                SanityCheck.ASSERT(pos != null,
+                    "Record not found: " + ItemId.getId(loggable.tid) + ": " +
+                        page.page.getPageInfo() + "\n" +
+                        debugPageContents(page));
+                //Position the stream at the very beginning of the record
+                final int startOffset = pos.offset - LENGTH_TID;
+                if (ItemId.isLink(loggable.tid)) {
+                    final int end = pos.offset + LENGTH_FORWARD_LOCATION;
+                    System.arraycopy(page.data, end, page.data, startOffset, page.len - end);
+                    page.len = page.len - (LENGTH_DATA_LENGTH + LENGTH_FORWARD_LOCATION);
+                } else {
+                    // get the record length
+                    short l = ByteConversion.byteToShort(page.data, pos.offset);
+                    if (ItemId.isRelocated(loggable.tid)) {
+                        pos.offset += LENGTH_ORIGINAL_LOCATION;
+                        l += LENGTH_ORIGINAL_LOCATION;
+                    }
+                    if (l == OVERFLOW_PAGE_DATA_LENGTH) {
+                        l += LENGTH_OVERFLOW_LOCATION;
+                    }
+                    // end offset
+                    final int end = startOffset + LENGTH_TID + LENGTH_DATA_LENGTH + l;
+                    final int dlen = pageHeader.getDataLength();
+                    // remove old value
+                    System.arraycopy(page.data, end, page.data, startOffset, dlen - end);
+                    page.setDirty(true);
+                    page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + l);
                 }
-                if (l == OVERFLOW_PAGE_DATA_LENGTH) {
-                    l += LENGTH_OVERFLOW_LOCATION;
+                if (page.len < 0) {
+                    LOG.error("page length < 0");
+                    //TODO : throw exception ? -pb
                 }
-                // end offset
-                final int end = startOffset + LENGTH_TID + LENGTH_DATA_LENGTH + l;
-                final int dlen = pageHeader.getDataLength();
-                // remove old value
-                System.arraycopy(page.data, end, page.data, startOffset, dlen - end);
+                pageHeader.setDataLength(page.len);
+                pageHeader.decRecordCount();
+                pageHeader.setLsn(loggable.getLsn());
                 page.setDirty(true);
-                page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + l);
+                dataCache.add(page);
             }
-            if (page.len < 0) {
-                LOG.error("page length < 0");
-                //TODO : throw exception ? -pb
-            }
-            pageHeader.setDataLength(page.len);
-            pageHeader.decRecordCount();
-            pageHeader.setLsn(loggable.getLsn());
-            page.setDirty(true);
-            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to redoRemoveValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoRemoveValue(final RemoveValueLoggable loggable) {
-    	final DOMPage page = getDOMPage(loggable.pageNum);
-    	final DOMFilePageHeader pageHeader = page.getPageHeader();
-        int offset = loggable.offset;
-        final short vlen = (short) loggable.oldData.length;
-        if (offset < pageHeader.getDataLength()) {
-            // make room for the removed value
-            int required;
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            int offset = loggable.offset;
+            final short vlen = (short) loggable.oldData.length;
+            if (offset < pageHeader.getDataLength()) {
+                // make room for the removed value
+                int required;
+                if (ItemId.isLink(loggable.tid)) {
+                    required = LENGTH_TID + LENGTH_FORWARD_LOCATION;
+                } else {
+                    required = LENGTH_TID + LENGTH_DATA_LENGTH + vlen;
+                }
+                if (ItemId.isRelocated(loggable.tid)) {
+                    required += LENGTH_ORIGINAL_LOCATION;
+                }
+                final int end = offset + required;
+                try {
+                    System.arraycopy(page.data, offset, page.data, end, pageHeader.getDataLength() - offset);
+                } catch (final ArrayIndexOutOfBoundsException e) {
+                    LOG.error(e);
+                    SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
+                        "; tid: " + ItemId.getId(loggable.tid) + "; required: " + required +
+                        "; offset: " + offset + "; end: " + end +
+                        "; len: " + (pageHeader.getDataLength() - offset) +
+                        "; avail: " + page.data.length + "; work: " + getPageContentSize());
+                }
+            }
+            //save TID
+            ByteConversion.shortToByte(loggable.tid, page.data, offset);
+            offset += LENGTH_TID;
             if (ItemId.isLink(loggable.tid)) {
-                required = LENGTH_TID + LENGTH_FORWARD_LOCATION;
+                System.arraycopy(loggable.oldData, 0, page.data, offset, LENGTH_FORWARD_LOCATION);
+                page.len += (LENGTH_TID + LENGTH_FORWARD_LOCATION);
             } else {
-                required = LENGTH_TID + LENGTH_DATA_LENGTH + vlen;
+                // save data length
+                // overflow pages have length 0
+                if (loggable.isOverflow) {
+                    ByteConversion.shortToByte(OVERFLOW_PAGE_DATA_LENGTH, page.data, offset);
+                } else {
+                    ByteConversion.shortToByte(vlen, page.data, offset);
+                }
+                offset += LENGTH_DATA_LENGTH;
+                if (ItemId.isRelocated(loggable.tid)) {
+                    ByteConversion.longToByte(loggable.backLink, page.data, offset);
+                    offset += LENGTH_ORIGINAL_LOCATION;
+                    page.len += LENGTH_ORIGINAL_LOCATION;
+                }
+                // save data
+                System.arraycopy(loggable.oldData, 0, page.data, offset, vlen);
+                page.len += (LENGTH_TID + LENGTH_DATA_LENGTH + vlen);
             }
-            if (ItemId.isRelocated(loggable.tid)) {
-                required += LENGTH_ORIGINAL_LOCATION;
-            }
-            final int end = offset + required;
-            try {
-            	System.arraycopy(page.data, offset, page.data, end, pageHeader.getDataLength() - offset);
-            } catch(final ArrayIndexOutOfBoundsException e) {
-            	LOG.error(e);
-                SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
-                    "; tid: " + ItemId.getId(loggable.tid) + "; required: " + required +
-                    "; offset: " + offset + "; end: " + end +
-                    "; len: " + (pageHeader.getDataLength() - offset) +
-                    "; avail: " + page.data.length + "; work: " + getPageContentSize());
-            }
+            pageHeader.incRecordCount();
+            pageHeader.setDataLength(page.len);
+            page.setDirty(true);
+            dataCache.add(page, 2);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoRemoveValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        //save TID
-        ByteConversion.shortToByte(loggable.tid, page.data, offset);
-        offset += LENGTH_TID;
-        if (ItemId.isLink(loggable.tid)) {
-            System.arraycopy(loggable.oldData, 0, page.data, offset, LENGTH_FORWARD_LOCATION);
-            page.len += (LENGTH_TID + LENGTH_FORWARD_LOCATION);
-        } else {
-            // save data length
-            // overflow pages have length 0
-            if (loggable.isOverflow) {
-                ByteConversion.shortToByte(OVERFLOW_PAGE_DATA_LENGTH, page.data, offset);
-            } else {
-                ByteConversion.shortToByte(vlen, page.data, offset);
-            }
-            offset += LENGTH_DATA_LENGTH;
-            if (ItemId.isRelocated(loggable.tid)) {
-                ByteConversion.longToByte(loggable.backLink, page.data, offset);
-                offset += LENGTH_ORIGINAL_LOCATION;
-                page.len += LENGTH_ORIGINAL_LOCATION;
-            }
-            // save data
-            System.arraycopy(loggable.oldData, 0, page.data, offset, vlen);
-            page.len += (LENGTH_TID + LENGTH_DATA_LENGTH + vlen);
-        }
-        pageHeader.incRecordCount();
-        pageHeader.setDataLength(page.len);
-        page.setDirty(true);
-        dataCache.add(page, 2);
     }
 
     void redoRemoveEmptyPage(final RemoveEmptyPageLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            removePage(page);
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                removePage(page);
+            }
+        } catch (final IOException e) {
+            LOG.error("Failed to redoRemoveEmptyPage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
@@ -2607,16 +2659,16 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             newPage.setDirty(true);
             dataCache.add(newPage);
         } catch (final IOException e) {
-            LOG.error("Error during undo: {}", e.getMessage(), e);
-            //TODO : throw exception ? -pb
+            LOG.error("Failed to undoRemoveEmptyPage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void redoRemovePage(final RemovePageLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            try {
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
                 pageHeader.setNextDataPage(Page.NO_PAGE);
                 pageHeader.setPrevDataPage(Page.NO_PAGE);
                 pageHeader.updateDataLen(getPageContentSize());
@@ -2627,10 +2679,10 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 unlinkPages(page.page);
                 page.setDirty(true);
                 dataCache.remove(page);
-            } catch (final IOException e) {
-                LOG.warn("Error while removing page: {}", e.getMessage(), e);
-                //TODO : throw exception ? -pb
             }
+        } catch (final IOException e) {
+            LOG.error("Failed to redoRemovePage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
@@ -2650,8 +2702,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             page.setDirty(true);
             dataCache.add(page);
         } catch (final IOException e) {
-            LOG.warn("Failed to undo {}: {}", loggable.dump(), e.getMessage(), e);
-          //TODO : throw exception ? -pb
+            LOG.error("Failed to undoRemovePage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
@@ -2673,8 +2725,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             }
 
         } catch (final IOException e) {
-            LOG.warn("Failed to redo {}: {}", loggable.dump(), e.getMessage(), e);
-            //TODO : throw exception ? -pb
+            LOG.error("Failed to redoWriteOverflow {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
@@ -2684,8 +2736,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             page.read(backingFile.randomAccessFile);
             unlinkPages(page);
         } catch (final IOException e) {
-            LOG.warn("Failed to undo {}: {}", loggable.dump(), e.getMessage(), e);
-          //TODO : throw exception ? -pb
+            LOG.error("Failed to undoWriteOverflow {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
@@ -2698,8 +2750,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 unlinkPages(page);
             }
         } catch (final IOException e) {
-            LOG.warn("Failed to undo {}: {}", loggable.dump(), e.getMessage(), e);
-          //TODO : throw exception ? -pb
+            LOG.error("Failed to redoRemoveOverflow {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
@@ -2717,191 +2769,232 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             }
             writeValue(page, loggable.oldData);
         } catch (final IOException e) {
-            LOG.warn("Failed to redo {}: {}", loggable.dump(), e.getMessage(), e);
-          //TODO : throw exception ? -pb
+            LOG.error("Failed to undoRemoveOverflow {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void redoInsertValue(final InsertValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            final int dlen = pageHeader.getDataLength();
-            int offset = loggable.offset;
-            // insert in the middle of the page?
-            if (offset < dlen) {
-                final int end = offset + LENGTH_TID + LENGTH_DATA_LENGTH + loggable.value.length;
-                try {
-                    System.arraycopy(page.data, offset, page.data, end, dlen - offset);
-                } catch(final ArrayIndexOutOfBoundsException e) {
-                    LOG.error(e);
-                    SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
-                        "; tid: " + loggable.tid +
-                        "; offset: " + offset +
-                        "; end: " + end +
-                        "; len: " + (dlen - offset));
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                final int dlen = pageHeader.getDataLength();
+                int offset = loggable.offset;
+                // insert in the middle of the page?
+                if (offset < dlen) {
+                    final int end = offset + LENGTH_TID + LENGTH_DATA_LENGTH + loggable.value.length;
+                    try {
+                        System.arraycopy(page.data, offset, page.data, end, dlen - offset);
+                    } catch (final ArrayIndexOutOfBoundsException e) {
+                        LOG.error(e);
+                        SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
+                            "; tid: " + loggable.tid +
+                            "; offset: " + offset +
+                            "; end: " + end +
+                            "; len: " + (dlen - offset));
+                    }
                 }
+                // writing tid
+                ByteConversion.shortToByte(loggable.tid, page.data, offset);
+                offset += LENGTH_TID;
+                page.len += LENGTH_TID;
+                // writing value length
+                ByteConversion.shortToByte(loggable.isOverflow() ?
+                    OVERFLOW_PAGE_DATA_LENGTH : (short) loggable.value.length, page.data, offset);
+                offset += LENGTH_DATA_LENGTH;
+                page.len += LENGTH_DATA_LENGTH;
+                // writing data
+                System.arraycopy(loggable.value, 0, page.data, offset, loggable.value.length);
+                offset += loggable.value.length;
+                page.len += loggable.value.length;
+                pageHeader.incRecordCount();
+                pageHeader.setDataLength(page.len);
+                pageHeader.setNextTupleID(ItemId.getId(loggable.tid));
+                page.setDirty(true);
+                dataCache.add(page);
             }
-            // writing tid
-            ByteConversion.shortToByte(loggable.tid, page.data, offset);
-            offset += LENGTH_TID;
-            page.len += LENGTH_TID;
-            // writing value length
-            ByteConversion.shortToByte(loggable.isOverflow() ?
-                OVERFLOW_PAGE_DATA_LENGTH : (short) loggable.value.length, page.data, offset);
-            offset += LENGTH_DATA_LENGTH;
-            page.len += LENGTH_DATA_LENGTH;
-            // writing data
-            System.arraycopy(loggable.value, 0, page.data, offset, loggable.value.length);
-            offset += loggable.value.length;
-            page.len += loggable.value.length;
-            pageHeader.incRecordCount();
-            pageHeader.setDataLength(page.len);
-            pageHeader.setNextTupleID(ItemId.getId(loggable.tid));
-            page.setDirty(true);
-            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to redoInsertValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoInsertValue(final InsertValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if (ItemId.isLink(loggable.tid)) {
-            final int end = loggable.offset + LENGTH_FORWARD_LOCATION;
-            //Position the stream at the very beginning of the record
-            System.arraycopy(page.data, end, page.data, loggable.offset - LENGTH_TID, page.len - end);
-            page.len = page.len - (LENGTH_DATA_LENGTH + LENGTH_FORWARD_LOCATION);
-        } else {
-            // get the record length
-            final int offset = loggable.offset + LENGTH_TID;
-            //TODO Strange : in the lines above, the offset seems to be positioned *after* the TID
-            short l = ByteConversion.byteToShort(page.data, offset);
-            if (ItemId.isRelocated(loggable.tid)) {
-                l += LENGTH_ORIGINAL_LOCATION;
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if (ItemId.isLink(loggable.tid)) {
+                final int end = loggable.offset + LENGTH_FORWARD_LOCATION;
+                //Position the stream at the very beginning of the record
+                System.arraycopy(page.data, end, page.data, loggable.offset - LENGTH_TID, page.len - end);
+                page.len = page.len - (LENGTH_DATA_LENGTH + LENGTH_FORWARD_LOCATION);
+            } else {
+                // get the record length
+                final int offset = loggable.offset + LENGTH_TID;
+                //TODO Strange : in the lines above, the offset seems to be positioned *after* the TID
+                short l = ByteConversion.byteToShort(page.data, offset);
+                if (ItemId.isRelocated(loggable.tid)) {
+                    l += LENGTH_ORIGINAL_LOCATION;
+                }
+                if (l == OVERFLOW_PAGE_DATA_LENGTH) {
+                    l += LENGTH_OVERFLOW_LOCATION;
+                }
+                // end offset
+                final int end = loggable.offset + (LENGTH_TID + LENGTH_DATA_LENGTH + l);
+                final int dlen = pageHeader.getDataLength();
+                // remove value
+                try {
+                    System.arraycopy(page.data, end, page.data, loggable.offset, dlen - end);
+                } catch (final ArrayIndexOutOfBoundsException e) {
+                    LOG.error(e);
+                    SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
+                        "; tid: " + loggable.tid +
+                        "; offset: " + loggable.offset +
+                        "; end: " + end +
+                        "; len: " + (dlen - end) +
+                        "; dataLength: " + dlen);
+                }
+                page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + l);
             }
-            if (l == OVERFLOW_PAGE_DATA_LENGTH) {
-                l += LENGTH_OVERFLOW_LOCATION;
+            if (page.len < 0) {
+                LOG.warn("page length < 0");
             }
-            // end offset
-            final int end = loggable.offset + (LENGTH_TID + LENGTH_DATA_LENGTH + l);
-            final int dlen = pageHeader.getDataLength();
-            // remove value
-            try {
-                System.arraycopy(page.data, end, page.data, loggable.offset, dlen - end);
-            } catch (final ArrayIndexOutOfBoundsException e) {
-                LOG.error(e);
-                SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
-                    "; tid: " + loggable.tid +
-                    "; offset: " + loggable.offset + 
-                    "; end: " + end +
-                    "; len: " + (dlen - end) +
-                    "; dataLength: " + dlen);
-            }
-            page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + l);
+            pageHeader.setDataLength(page.len);
+            pageHeader.decRecordCount();
+            pageHeader.setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoInsertValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        if (page.len < 0) {
-            LOG.warn("page length < 0");
-        }
-        pageHeader.setDataLength(page.len);
-        pageHeader.decRecordCount();
-        pageHeader.setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page);
     }
 
     void redoSplitPage(final SplitPageLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            final byte[] oldData = page.data;
-            page.data = new byte[getPageContentSize()];
-            System.arraycopy(oldData, 0, page.data, 0, loggable.splitOffset);
-            page.len = loggable.splitOffset;
-            if (page.len < 0) {
-                LOG.error("page length < 0");
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                final byte[] oldData = page.data;
+                page.data = new byte[getPageContentSize()];
+                System.arraycopy(oldData, 0, page.data, 0, loggable.splitOffset);
+                page.len = loggable.splitOffset;
+                if (page.len < 0) {
+                    LOG.error("page length < 0");
+                }
+                pageHeader.setDataLength(page.len);
+                pageHeader.setRecordCount(countRecordsInPage(page));
+                page.setDirty(true);
+                dataCache.add(page);
             }
-            pageHeader.setDataLength(page.len);
-            pageHeader.setRecordCount(countRecordsInPage(page));
-            page.setDirty(true);
-            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to redoSplitPage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoSplitPage(final SplitPageLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        page.data = loggable.oldData;
-        page.len = loggable.oldLen;
-        if (page.len < 0) {
-            LOG.error("page length < 0");
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            page.data = loggable.oldData;
+            page.len = loggable.oldLen;
+            if (page.len < 0) {
+                LOG.error("page length < 0");
+            }
+            pageHeader.setDataLength(page.len);
+            pageHeader.setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoSplitPage {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        pageHeader.setDataLength(page.len);
-        pageHeader.setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page);
     }
 
     void redoAddLink(final AddLinkLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            ByteConversion.shortToByte(ItemId.setIsLink(loggable.tid), page.data, page.len);
-            page.len += LENGTH_TID;
-            ByteConversion.longToByte(loggable.link, page.data, page.len);
-            page.len += LENGTH_FORWARD_LOCATION;
-            pageHeader.setNextTupleID(ItemId.getId(loggable.tid));
-            pageHeader.setDataLength(page.len);
-            pageHeader.setLsn(loggable.getLsn());
-            pageHeader.incRecordCount();
-            page.setDirty(true);
-            dataCache.add(page);
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                ByteConversion.shortToByte(ItemId.setIsLink(loggable.tid), page.data, page.len);
+                page.len += LENGTH_TID;
+                ByteConversion.longToByte(loggable.link, page.data, page.len);
+                page.len += LENGTH_FORWARD_LOCATION;
+                pageHeader.setNextTupleID(ItemId.getId(loggable.tid));
+                pageHeader.setDataLength(page.len);
+                pageHeader.setLsn(loggable.getLsn());
+                pageHeader.incRecordCount();
+                page.setDirty(true);
+                dataCache.add(page);
+            }
+        } catch (final IOException e) {
+            LOG.error("Failed to redoAddLink {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoAddLink(final AddLinkLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        final RecordPos rec = page.findRecord(loggable.tid);
-        final int end = rec.offset + LENGTH_FORWARD_LOCATION;
-        //Position the stream at the very beginning of the record
-        System.arraycopy(page.data, end, page.data, rec.offset - LENGTH_TID, page.len - end);
-        page.len = page.len - (LENGTH_TID + LENGTH_FORWARD_LOCATION);
-        if (page.len < 0) {
-            LOG.error("page length < 0");
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            final RecordPos rec = page.findRecord(loggable.tid);
+            final int end = rec.offset + LENGTH_FORWARD_LOCATION;
+            //Position the stream at the very beginning of the record
+            System.arraycopy(page.data, end, page.data, rec.offset - LENGTH_TID, page.len - end);
+            page.len = page.len - (LENGTH_TID + LENGTH_FORWARD_LOCATION);
+            if (page.len < 0) {
+                LOG.error("page length < 0");
+            }
+            pageHeader.setDataLength(page.len);
+            pageHeader.decRecordCount();
+            pageHeader.setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoAddLink {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        pageHeader.setDataLength(page.len);
-        pageHeader.decRecordCount();
-        pageHeader.setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page);
     }
 
     
     void redoUpdateLink(final UpdateLinkLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            ByteConversion.longToByte(loggable.link, page.data, loggable.offset);
-            pageHeader.setLsn(loggable.getLsn());
-            page.setDirty(true);
-            dataCache.add(page);
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                ByteConversion.longToByte(loggable.link, page.data, loggable.offset);
+                pageHeader.setLsn(loggable.getLsn());
+                page.setDirty(true);
+                dataCache.add(page);
+            }
+        } catch (final IOException e) {
+            LOG.error("Failed to redoUpdateLink {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoUpdateLink(final UpdateLinkLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        ByteConversion.longToByte(loggable.oldLink, page.data, loggable.offset);
-        pageHeader.setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page);
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            ByteConversion.longToByte(loggable.oldLink, page.data, loggable.offset);
+            pageHeader.setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoUpdateLink {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
+        }
     }
 
     void redoAddMovedValue(final AddMovedValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            try {
+        DOMPage page = null;
+        try {
+            page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
                 ByteConversion.shortToByte(ItemId.setIsRelocated(loggable.tid), page.data, page.len);
                 page.len += LENGTH_TID;
                 final short vlen = (short) loggable.value.length;
@@ -2922,71 +3015,91 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
                 pageHeader.setLsn(loggable.getLsn());
                 page.setDirty(true);
                 dataCache.add(page, 2);
-            } catch (final ArrayIndexOutOfBoundsException e) {
-                LOG.error("page: {}; len = {}; value = {}", page.getPageNum(), page.len, loggable.value.length);
-                throw e;
             }
+        } catch (final ArrayIndexOutOfBoundsException e) {
+            if (page != null) {
+                LOG.error("page: {}; len = {}; value = {}", page.getPageNum(), page.len, loggable.value.length);
+            }
+            throw e;
+        } catch (final IOException e) {
+            LOG.error("Failed to redoAddMovedValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoAddMovedValue(final AddMovedValueLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        final RecordPos rec = page.findRecord(ItemId.getId(loggable.tid));
-        SanityCheck.ASSERT(rec != null,
-            "Record with tid " + ItemId.getId(loggable.tid) + " not found: " +
-            debugPageContents(page));
-        // get the record's length
-        final short vlen = ByteConversion.byteToShort(page.data, rec.offset);
-        final int end = rec.offset + LENGTH_DATA_LENGTH + LENGTH_ORIGINAL_LOCATION + vlen;
-        final int dlen = pageHeader.getDataLength();
-        // remove value
         try {
-            //Position the stream at the very beginning of the record
-            System.arraycopy(page.data, end, page.data, rec.offset - LENGTH_TID, dlen - end);
-        } catch (final ArrayIndexOutOfBoundsException e) {
-        	LOG.error(e);
-            SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
-                  "; tid: " + loggable.tid +
-                  "; offset: " + (rec.offset - LENGTH_TID) +
-                  "; end: " + end + "; len: " + (dlen - end));
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            final RecordPos rec = page.findRecord(ItemId.getId(loggable.tid));
+            SanityCheck.ASSERT(rec != null,
+                "Record with tid " + ItemId.getId(loggable.tid) + " not found: " +
+                    debugPageContents(page));
+            // get the record's length
+            final short vlen = ByteConversion.byteToShort(page.data, rec.offset);
+            final int end = rec.offset + LENGTH_DATA_LENGTH + LENGTH_ORIGINAL_LOCATION + vlen;
+            final int dlen = pageHeader.getDataLength();
+            // remove value
+            try {
+                //Position the stream at the very beginning of the record
+                System.arraycopy(page.data, end, page.data, rec.offset - LENGTH_TID, dlen - end);
+            } catch (final ArrayIndexOutOfBoundsException e) {
+                LOG.error(e);
+                SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
+                    "; tid: " + loggable.tid +
+                    "; offset: " + (rec.offset - LENGTH_TID) +
+                    "; end: " + end + "; len: " + (dlen - end));
+            }
+            page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + LENGTH_ORIGINAL_LOCATION + vlen);
+            if (page.len < 0) {
+                LOG.error("page length < 0");
+                //TODO : throw exception ? -pb
+            }
+            pageHeader.setDataLength(page.len);
+            pageHeader.decRecordCount();
+            pageHeader.setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoAddMovedValue {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
-        page.len = dlen - (LENGTH_TID + LENGTH_DATA_LENGTH + LENGTH_ORIGINAL_LOCATION + vlen);
-        if (page.len < 0) {
-            LOG.error("page length < 0");
-            //TODO : throw exception ? -pb
-        }
-        pageHeader.setDataLength(page.len);
-        pageHeader.decRecordCount();
-        pageHeader.setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page);
     }
 
     void redoUpdateHeader(final UpdateHeaderLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
-            if (loggable.nextPage != Page.NO_PAGE) {
-                pageHeader.setNextDataPage(loggable.nextPage);
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            if ((!pageHeader.getLsn().equals(Lsn.LSN_INVALID)) && requiresRedo(loggable, page)) {
+                if (loggable.nextPage != Page.NO_PAGE) {
+                    pageHeader.setNextDataPage(loggable.nextPage);
+                }
+                if (loggable.prevPage != Page.NO_PAGE) {
+                    pageHeader.setPrevDataPage(loggable.prevPage);
+                }
+                pageHeader.setLsn(loggable.getLsn());
+                page.setDirty(true);
+                dataCache.add(page, 2);
             }
-            if (loggable.prevPage != Page.NO_PAGE) {
-                pageHeader.setPrevDataPage(loggable.prevPage);
-            }
-            pageHeader.setLsn(loggable.getLsn());
-            page.setDirty(true);
-            dataCache.add(page, 2);
+        } catch (final IOException e) {
+            LOG.error("Failed to redoUpdateHeader {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
         }
     }
 
     void undoUpdateHeader(final UpdateHeaderLoggable loggable) {
-        final DOMPage page = getDOMPage(loggable.pageNum);
-        final DOMFilePageHeader pageHeader = page.getPageHeader();
-        pageHeader.setPrevDataPage(loggable.oldPrev);
-        pageHeader.setNextDataPage(loggable.oldNext);
-        pageHeader.setLsn(loggable.getLsn());
-        page.setDirty(true);
-        dataCache.add(page, 2);
+        try {
+            final DOMPage page = getDOMPage(loggable.pageNum);
+            final DOMFilePageHeader pageHeader = page.getPageHeader();
+            pageHeader.setPrevDataPage(loggable.oldPrev);
+            pageHeader.setNextDataPage(loggable.oldNext);
+            pageHeader.setLsn(loggable.getLsn());
+            page.setDirty(true);
+            dataCache.add(page, 2);
+        } catch (final IOException e) {
+            LOG.error("Failed to undoUpdateHeader {}: {}", loggable.dump(), e.getMessage(), e);
+            //TODO(AR) should we re-throw this exception ?
+        }
     }
 
     /**
@@ -3192,30 +3305,8 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
 
         final Page<DOMFilePageHeader> firstPage;
 
-        OverflowDOMPage() {
-            this.firstPage = createNewPage();
-            LOG.debug("Creating overflow page: {}", firstPage.getPageNum());
-        }
-
-        OverflowDOMPage(final long first) throws IOException {
-            firstPage = createPage(first);
-        }
-
-        Page<DOMFilePageHeader> createNewPage() throws IOException {
-            final Page<DOMFilePageHeader> page = getFreePage();
-            final DOMFilePageHeader pageHeader = page.getPageHeader();
-            pageHeader.updateType(PageType.RECORD);
-            pageHeader.setDirty(true);
-            pageHeader.setNextDataPage(Page.NO_PAGE);
-            pageHeader.setPrevDataPage(Page.NO_PAGE);
-            pageHeader.updateNextPage(Page.NO_PAGE);
-            pageHeader.setNextTupleID(ItemId.UNKNOWN_ID);
-            pageHeader.setDataLength(0);
-            pageHeader.setRecordCount((short) 0);
-            if (currentDocument != null) {
-                currentDocument.incPageCount();
-            }
-            return page;
+        OverflowDOMPage(final Page<DOMFilePageHeader> firstPage) {
+            this.firstPage = firstPage;
         }
 
         // Write binary resource from InputStream
@@ -3321,30 +3412,21 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
             return pageCount;
         }
 
-        byte[] read() {
+        byte[] read() throws IOException {
             try(final UnsynchronizedByteArrayOutputStream os = new UnsynchronizedByteArrayOutputStream(32)) {
                 streamTo(os);
                 return os.toByteArray();
-            } catch(final IOException ioe) {
-                LOG.error(ioe);
-                return null;
             }
         }
 
-        void streamTo(final OutputStream os) {
+        void streamTo(final OutputStream os) throws IOException {
             Page<DOMFilePageHeader> page = firstPage;
             int count = 0;
             while (page != null) {
-                try {
-                    final byte[] chunk = page.read(backingFile.randomAccessFile);
-                    os.write(chunk);
-                    final long nextPageNumber = page.getPageHeader().getNextPage();
-                    page = (nextPageNumber == Page.NO_PAGE) ? null : createPage(nextPageNumber);
-                } catch (final IOException e) {
-                    LOG.error("IO error while loading overflow page {}; read: {}", firstPage.getPageNum(), count, e);
-                    //TODO : too soft ? throw the exception ?
-                    break;
-                }
+                final byte[] chunk = page.read(backingFile.randomAccessFile);
+                os.write(chunk);
+                final long nextPageNumber = page.getPageHeader().getNextPage();
+                page = (nextPageNumber == Page.NO_PAGE) ? null : createPage(nextPageNumber);
                 count++;
             }
         }
@@ -3386,7 +3468,7 @@ public class DOMFile extends AbstractBTree<BTreeFileHeader, DOMFilePageHeader> {
         }
 
         @Override
-        public boolean indexInfo(final Value value, final long pointer) {
+        public boolean indexInfo(final Value value, final long pointer) throws IOException {
             if (mode == VALUES) {
                 final RecordPos rec = findRecord(pointer);
                 final short vlen = ByteConversion.byteToShort(rec.page.data, rec.offset);

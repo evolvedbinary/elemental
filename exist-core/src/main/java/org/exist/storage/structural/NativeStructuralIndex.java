@@ -95,7 +95,11 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
 
     @Override
     public void close() throws DBException {
-        btree.close();
+        try {
+            btree.close();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
         btree = null;
     }
 
@@ -109,7 +113,7 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
         } catch (final LockException e) {
             LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(btree.getFile()), e);
             //TODO : throw an exception ? -pb
-        } catch (final DBException e) {
+        } catch (final IOException e) {
             LOG.error(e.getMessage(), e);
             //TODO : throw an exception ? -pb
         }
@@ -117,7 +121,11 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
 
     @Override
     public void remove() throws DBException {
-        btree.closeAndRemove();
+        try {
+            btree.closeAndRemove();
+        } catch (final IOException e) {
+            throw new DBException(e.getMessage(), e);
+        }
     }
 
     @Override
