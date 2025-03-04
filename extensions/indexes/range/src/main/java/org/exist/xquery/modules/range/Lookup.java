@@ -36,6 +36,8 @@ import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
+import org.exist.xquery.Module;
+import org.exist.xquery.parser.XQueryAST;
 import org.exist.xquery.value.*;
 
 import javax.annotation.Nullable;
@@ -156,7 +158,8 @@ public class Lookup extends Function implements Optimizable {
     @Nullable private NodePath contextPath;
 
     /**
-     * Constructor called via reflection from {@link Function#createFunction(XQueryContext, XQueryAST, Module, FunctionDef)}.
+     * Constructor called via reflection from
+     * {@link Function#createFunction(XQueryContext, XQueryAST, Module, FunctionDef)}.
      *
      * @param context The XQuery Context.
      * @param signature The signature of the Lookup function.
@@ -210,7 +213,7 @@ public class Lookup extends Function implements Optimizable {
         return fallback;
     }
 
-    public void setArguments(List<Expression> arguments) throws XPathException {
+    public void setArguments(List<Expression> arguments) {
         steps.clear();
         Expression path = arguments.get(0);
         steps.add(path);
@@ -484,11 +487,13 @@ public class Lookup extends Function implements Optimizable {
             path = new NodePath(contextQName);
         }
         for (final Iterator<Collection> i = contextSequence.getCollectionIterator(); i.hasNext(); ) {
-            final Collection collection = i.next();
-            if (collection.getURI().startsWith(XmldbURI.SYSTEM_COLLECTION_URI)) {
-                continue;
+            IndexSpec idxConf;
+            try (Collection collection = i.next()) {
+                if (collection.getURI().startsWith(XmldbURI.SYSTEM_COLLECTION_URI)) {
+                    continue;
+                }
+                idxConf = collection.getIndexConfiguration(context.getBroker());
             }
-            IndexSpec idxConf = collection.getIndexConfiguration(context.getBroker());
             if (idxConf != null) {
                 RangeIndexConfig config = (RangeIndexConfig) idxConf.getCustomIndexSpec(RangeIndex.ID);
                 if (config != null) {
