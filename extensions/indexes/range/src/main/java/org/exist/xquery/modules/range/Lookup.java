@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 public class Lookup extends Function implements Optimizable {
 
@@ -418,9 +419,9 @@ public class Lookup extends Function implements Optimizable {
     }
 
     @Override
-    public Sequence canOptimizeSequence(final Sequence contextSequence) {
+    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
         if (contextQName == null) {
-            return Sequence.EMPTY_SEQUENCE;
+            return Optional.empty();
         }
 
         ValueSequence optimizables = null;
@@ -472,7 +473,7 @@ public class Lookup extends Function implements Optimizable {
             return optimizableFallback.canOptimizeSequence(contextSequence);
         }
 
-        return optimizables != null ? optimizables : Sequence.EMPTY_SEQUENCE;
+        return optimizables != null ? Optional.of(optimizables) : Optional.empty();
     }
 
     private RangeIndexConfigElement findConfiguration(Sequence contextSequence) {

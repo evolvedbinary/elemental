@@ -38,6 +38,7 @@ import org.exist.xquery.value.Type;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 public class Optimize extends AbstractPragma {
     public static final String OPTIMIZE_PRAGMA_LOCAL_NAME = "optimize";
@@ -106,19 +107,12 @@ public class Optimize extends AbstractPragma {
             } else {
                 if (optimizables != null) {
                     for (final Optimizable optimizable : optimizables) {
-                        final Sequence canBeOptimized = optimizable.canOptimizeSequence(contextSequence);
-                        if (canBeOptimized == null || contextSequence == null) {
+                        final Optional<Sequence> canBeOptimized = optimizable.canOptimizeSequence(contextSequence);
+                        if (canBeOptimized.isEmpty() || canBeOptimized.get().getItemCountLong() < contextSequence.getItemCountLong() || contextSequence == null) {
                             optimize = false;
-                            break;  // exit for-each loop
+                            break;
                         }
-                        if (canBeOptimized.getItemCount() == contextSequence.getItemCount()) {
-                            // everything in sequence can be optimized
-                            optimize = true;  // so far so good, head to next for-loop of `optimizable`
-                        } else {
-                            // nothing or only some bits can be optimized
-                            optimize = false;
-                            break;  // exit for-each loop
-                        }
+                        optimize = true;
                     }
                 }
             }

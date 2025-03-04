@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 public class FieldLookup extends Function implements Optimizable {
 
@@ -359,8 +360,8 @@ public class FieldLookup extends Function implements Optimizable {
     }
 
     @Override
-    public Sequence canOptimizeSequence(final Sequence contextSequence) {
-        return contextSequence;  // always optimizable!
+    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
+        return Optional.of(contextSequence);  // always optimizable!
     }
 
     @Override

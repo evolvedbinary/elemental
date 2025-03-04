@@ -24,6 +24,8 @@ package org.exist.xquery;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.xquery.value.Sequence;
 
+import java.util.Optional;
+
 /**
  *
  */
@@ -37,7 +39,7 @@ public interface Optimizable extends Expression {
      * @return a sequence containing only the items from the {@code contextSequence} that
      *      can be optimized, if there are no items that can be optimized, the result is the empty sequence.
      */
-    Sequence canOptimizeSequence(Sequence contextSequence);
+    Optional<Sequence> canOptimizeSequence(Sequence contextSequence);
 
     boolean optimizeOnSelf();
 

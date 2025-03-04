@@ -59,6 +59,7 @@ import org.exist.xquery.value.Type;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -250,11 +251,11 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
     }
 
     @Override
-    public Sequence canOptimizeSequence(final Sequence contextSequence) {
+    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
         if (contextQName != null && Optimize.getQNameIndexType(context, contextSequence, contextQName) != Type.ITEM) {
-            return contextSequence;
+            return Optional.of(contextSequence);
         }
-        return Sequence.EMPTY_SEQUENCE;
+        return Optional.empty();
     }
 
     public boolean optimizeOnSelf()

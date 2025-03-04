@@ -31,6 +31,7 @@ import org.w3c.dom.Element;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Optional;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.modules.lucene.LuceneModule.functionSignatures;
@@ -82,8 +83,8 @@ public class QueryField extends Query implements Optimizable {
     }
 
     @Override
-    public Sequence canOptimizeSequence(final Sequence contextSequence) {
-        return contextSequence;  // always optimizable!
+    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
+        return Optional.of(contextSequence);  // always optimizable!
     }
 
     @Override

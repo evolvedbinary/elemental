@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.modules.lucene.LuceneModule.functionSignatures;
@@ -198,11 +199,11 @@ public class Query extends Function implements Optimizable {
     }
 
     @Override
-    public Sequence canOptimizeSequence(final Sequence contextSequence) {
+    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
         if (contextQNames != null) {
-            return contextSequence;
+            return Optional.of(contextSequence);
         }
-        return Sequence.EMPTY_SEQUENCE;
+        return Optional.empty();
     }
 
     @Override

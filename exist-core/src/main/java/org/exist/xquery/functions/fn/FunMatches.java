@@ -52,6 +52,7 @@ import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -189,12 +190,12 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
     }
 
     @Override
-    public Sequence canOptimizeSequence(final Sequence contextSequence) {
+    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
         if (contextQName != null && Type.subTypeOf(Optimize.getQNameIndexType(context, contextSequence, contextQName), Type.STRING)) {
-            return contextSequence;
+            return Optional.of(contextSequence);
         }
 
-        return Sequence.EMPTY_SEQUENCE;
+        return Optional.empty();
     }
 
     @Override
