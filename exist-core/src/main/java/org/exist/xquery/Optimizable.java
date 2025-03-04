@@ -24,22 +24,23 @@ package org.exist.xquery;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.xquery.value.Sequence;
 
-import java.util.Optional;
-
 /**
  *
  */
 public interface Optimizable extends Expression {
 
+    enum CanOptimize {
+        YES,
+        NO
+    };
+
     /**
-     * Given a sequence of Items, test each to see if they are optimizable,
-     * and return only those Items that are optimizable.
+     * Given a sequence of Items, test if all elements of the sequence are optimizable
      *
      * @param contextSequence the sequence of items that should be tested to see if each is optimizable.
-     * @return a sequence containing only the items from the {@code contextSequence} that
-     *      can be optimized, if there are no items that can be optimized, the result is the empty sequence.
+     * @return CanOptimize.YES if all elements can be optimized, otherwise CanOptimize.NO
      */
-    Optional<Sequence> canOptimizeSequence(Sequence contextSequence);
+    CanOptimize canOptimizeSequence(Sequence contextSequence);
 
     boolean optimizeOnSelf();
 

@@ -25,8 +25,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
-import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.indexing.StructuralIndex;
 import org.exist.storage.QNameRangeIndexSpec;
 import org.exist.xmldb.XmldbURI;
@@ -38,7 +38,6 @@ import org.exist.xquery.value.Type;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 public class Optimize extends AbstractPragma {
     public static final String OPTIMIZE_PRAGMA_LOCAL_NAME = "optimize";
@@ -107,8 +106,8 @@ public class Optimize extends AbstractPragma {
             } else {
                 if (optimizables != null) {
                     for (final Optimizable optimizable : optimizables) {
-                        final Optional<Sequence> canBeOptimized = optimizable.canOptimizeSequence(contextSequence);
-                        if (canBeOptimized.isEmpty() || canBeOptimized.get().getItemCountLong() < contextSequence.getItemCountLong() || contextSequence == null) {
+                        final Optimizable.CanOptimize canBeOptimized = optimizable.canOptimizeSequence(contextSequence);
+                        if (canBeOptimized == Optimizable.CanOptimize.NO || contextSequence == null) {
                             optimize = false;
                             break;
                         }

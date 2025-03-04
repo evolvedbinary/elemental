@@ -30,35 +30,28 @@
  */
 package org.exist.xquery.functions.fn;
 
+import net.sf.saxon.regex.RegularExpression;
 import org.exist.EXistException;
+import org.exist.dom.QName;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.ExtArrayNodeSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.storage.NativeValueIndex;
-import org.exist.util.XmlRegexFactory;
 import org.exist.util.PatternFactory;
-import org.exist.xquery.pragmas.Optimize;
+import org.exist.util.XmlRegexFactory;
 import org.exist.xquery.*;
+import org.exist.xquery.pragmas.Optimize;
 import org.exist.xquery.util.Error;
-import org.exist.xquery.value.BooleanValue;
-import org.exist.xquery.value.FunctionParameterSequenceType;
-import org.exist.xquery.value.Item;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.StringValue;
-import org.exist.xquery.value.Type;
+import org.exist.xquery.value.*;
 
+import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import net.sf.saxon.regex.RegularExpression;
-
-import javax.annotation.Nullable;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.functions.fn.FnModule.functionSignatures;
@@ -190,12 +183,12 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
     }
 
     @Override
-    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
+    public CanOptimize canOptimizeSequence(final Sequence contextSequence) {
         if (contextQName != null && Type.subTypeOf(Optimize.getQNameIndexType(context, contextSequence, contextQName), Type.STRING)) {
-            return Optional.of(contextSequence);
+            return CanOptimize.YES;
         }
 
-        return Optional.empty();
+        return CanOptimize.NO;
     }
 
     @Override

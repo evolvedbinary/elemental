@@ -360,8 +360,8 @@ public class FieldLookup extends Function implements Optimizable {
     }
 
     @Override
-    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
-        return Optional.of(contextSequence);  // always optimizable!
+    public CanOptimize canOptimizeSequence(final Sequence contextSequence) {
+        return CanOptimize.YES;  // always optimizable!
     }
 
     @Override

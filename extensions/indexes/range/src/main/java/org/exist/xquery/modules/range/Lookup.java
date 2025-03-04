@@ -22,10 +22,10 @@
 package org.exist.xquery.modules.range;
 
 import org.exist.collections.Collection;
+import org.exist.dom.QName;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.QName;
 import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.indexing.range.RangeIndex;
 import org.exist.indexing.range.RangeIndexConfig;
@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 public class Lookup extends Function implements Optimizable {
 
@@ -419,9 +418,9 @@ public class Lookup extends Function implements Optimizable {
     }
 
     @Override
-    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
+    public CanOptimize canOptimizeSequence(final Sequence contextSequence) {
         if (contextQName == null) {
-            return Optional.empty();
+            return CanOptimize.NO;
         }
 
         ValueSequence optimizables = null;
@@ -473,7 +472,7 @@ public class Lookup extends Function implements Optimizable {
             return optimizableFallback.canOptimizeSequence(contextSequence);
         }
 
-        return optimizables != null ? Optional.of(optimizables) : Optional.empty();
+        return canOptimize ? CanOptimize.YES : CanOptimize.NO;
     }
 
     private RangeIndexConfigElement findConfiguration(Sequence contextSequence) {

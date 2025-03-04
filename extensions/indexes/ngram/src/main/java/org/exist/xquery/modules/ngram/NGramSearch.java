@@ -21,35 +21,23 @@
  */
 package org.exist.xquery.modules.ngram;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.dom.persistent.DocumentSet;
-import org.exist.dom.persistent.EmptyNodeSet;
-import org.exist.dom.persistent.Match;
-import org.exist.dom.persistent.NodeProxy;
-import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.*;
 import org.exist.indexing.ngram.NGramIndex;
 import org.exist.indexing.ngram.NGramIndexWorker;
 import org.exist.storage.ElementValue;
 import org.exist.xquery.*;
-import org.exist.xquery.modules.ngram.query.AlternativeStrings;
-import org.exist.xquery.modules.ngram.query.EmptyExpression;
-import org.exist.xquery.modules.ngram.query.EndAnchor;
-import org.exist.xquery.modules.ngram.query.EvaluatableExpression;
-import org.exist.xquery.modules.ngram.query.FixedString;
-import org.exist.xquery.modules.ngram.query.StartAnchor;
-import org.exist.xquery.modules.ngram.query.Wildcard;
-import org.exist.xquery.modules.ngram.query.WildcardedExpression;
-import org.exist.xquery.modules.ngram.query.WildcardedExpressionSequence;
+import org.exist.xquery.modules.ngram.query.*;
 import org.exist.xquery.modules.ngram.utils.NodeProxies;
 import org.exist.xquery.modules.ngram.utils.NodeSets;
 import org.exist.xquery.util.Error;
 import org.exist.xquery.value.*;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NGramSearch extends Function implements Optimizable {
 
@@ -192,11 +180,11 @@ public class NGramSearch extends Function implements Optimizable {
     }
 
     @Override
-    public Optional<Sequence> canOptimizeSequence(final Sequence contextSequence) {
+    public CanOptimize canOptimizeSequence(final Sequence contextSequence) {
         if (contextQName != null) {
-            return Optional.of(contextSequence);
+            return CanOptimize.YES;
         } else {
-            return Optional.empty();
+            return CanOptimize.NO;
         }
     }
 
