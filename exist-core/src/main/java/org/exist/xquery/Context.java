@@ -41,7 +41,6 @@ import org.exist.stax.ExtendedXMLStreamReader;
 import org.exist.storage.DBBroker;
 import org.exist.storage.UpdateListener;
 import org.exist.storage.lock.LockedDocumentMap;
-import org.exist.util.hashtable.NamePool;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.BinaryValue;
@@ -601,8 +600,6 @@ public interface Context {
      *
      * @return the shared name pool
      */
-    NamePool getSharedNamePool();
-
     XQueryContext getContext();
 
     void prologEnter(Expression expr);

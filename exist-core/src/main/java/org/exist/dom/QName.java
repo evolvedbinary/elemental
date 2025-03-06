@@ -45,6 +45,7 @@
  */
 package org.exist.dom;
 
+import org.exist.util.Str;
 import org.exist.xquery.Context;
 import org.exist.storage.ElementValue;
 import org.exist.util.XMLNames;
@@ -66,12 +67,14 @@ import static org.exist.util.StringUtil.isNullOrEmpty;
  */
 public class QName implements Comparable<QName> {
 
-    public static final String WILDCARD = "*";
+    public static final Str WILDCARD = Str.of("*");
     private static final char COLON = ':';
     private static final char LEFT_BRACE = '{';
     private static final char RIGHT_BRACE = '}';
 
-    public static final QName EMPTY_QNAME = new QName("", XMLConstants.NULL_NS_URI);
+    public static final Str NULL_NS_URI = Str.of(XMLConstants.NULL_NS_URI);
+
+    public static final QName EMPTY_QNAME = new QName(Str.of(""), NULL_NS_URI);
     public static final QName DOCUMENT_QNAME = EMPTY_QNAME;
     public static final QName TEXT_QNAME = EMPTY_QNAME;
     public static final QName COMMENT_QNAME = EMPTY_QNAME;
@@ -81,18 +84,16 @@ public class QName implements Comparable<QName> {
     private static final Pattern PTN_CLARK_NOTATION = Pattern.compile("\\{([^&{}]*)}([^&{}:]+)");
     private static final Pattern PTN_EQ_NAME_NOTATION = Pattern.compile("Q" + PTN_CLARK_NOTATION);
 
-    private String localPart;
-    private String namespaceURI;
-    private String prefix;
-
-    private boolean interned = false;
+    private final Str localPart;
+    private final Str namespaceURI;
+    private final Str prefix;
 
     //TODO : use ElementValue.UNKNOWN and type explicitly ?
     private final byte nameType; // = ElementValue.ELEMENT;
 
-    public QName(final String localPart, final String namespaceURI, final String prefix, final byte nameType) {
+    public QName(final Str localPart, final Str namespaceURI, final Str prefix, final byte nameType) {
         this.localPart = localPart;
-        this.namespaceURI = namespaceURI == null ? XMLConstants.NULL_NS_URI : namespaceURI;
+        this.namespaceURI = namespaceURI == null ? NULL_NS_URI : namespaceURI;
         this.prefix = prefix;
         this.nameType = nameType;
     }
@@ -106,15 +107,15 @@ public class QName implements Comparable<QName> {
      * @param localPart    local part of the <code>QName</code>
      * @param prefix       prefix of the <code>QName</code>
      */
-    public QName(final String localPart, final String namespaceURI, final String prefix) {
+    public QName(final Str localPart, final Str namespaceURI, final Str prefix) {
         this(localPart, namespaceURI, prefix, ElementValue.ELEMENT);
     }
 
-    public QName(final String localPart, final String namespaceURI, final byte nameType) {
+    public QName(final Str localPart, final Str namespaceURI, final byte nameType) {
         this(localPart, namespaceURI, null, nameType);
     }
 
-    public QName(final String localPart, final String namespaceURI) {
+    public QName(final Str localPart, final Str namespaceURI) {
         this(localPart, namespaceURI, null);
     }
 
@@ -127,14 +128,30 @@ public class QName implements Comparable<QName> {
     }
 
     public QName(final String name) throws IllegalQNameException {
-        this(extractLocalName(name), XMLConstants.NULL_NS_URI, extractPrefix(name));
+        this(Str.of(extractLocalName(name)), NULL_NS_URI, Str.of(extractPrefix(name)));
     }
 
-    public String getLocalPart() {
+    public static QName of(final String localPart, final String namespaceURI, final String prefix) {
+        return new QName(Str.of(localPart), Str.of(namespaceURI), Str.of(prefix));
+    }
+
+    public static QName of(final String localPart, final String namespaceURI) {
+        return new QName(Str.of(localPart), Str.of(namespaceURI));
+    }
+
+    public static QName of(final String localPart, final String namespaceURI, byte attribute) {
+        return new QName(Str.of(localPart), Str.of(namespaceURI), attribute);
+    }
+
+    public static QName of(String localName, String namespaceURI, String prefix, byte attribute) {
+        return new QName(Str.of(localName), Str.of(namespaceURI), Str.of(prefix), attribute);
+    }
+
+    public Str getLocalPart() {
         return localPart;
     }
 
-    public String getNamespaceURI() {
+    public Str getNamespaceURI() {
         return namespaceURI;
     }
 
@@ -144,10 +161,10 @@ public class QName implements Comparable<QName> {
      * @return true if there is a non-default namespace.
      */
     public boolean hasNamespace() {
-        return !namespaceURI.equals(XMLConstants.NULL_NS_URI);
+        return !namespaceURI.equals(NULL_NS_URI);
     }
 
-    public String getPrefix() {
+    public Str getPrefix() {
         return prefix;
     }
 
@@ -202,17 +219,17 @@ public class QName implements Comparable<QName> {
     private String getStringRepresentation(final boolean showNsWithoutPrefix, final boolean extended) {
         if (prefix != null && !prefix.isEmpty()) {
             if (extended) {
-                return LEFT_BRACE + namespaceURI + RIGHT_BRACE + prefix + COLON + localPart;
+                return LEFT_BRACE + namespaceURI.toString() + RIGHT_BRACE + prefix.toString() + COLON + localPart.toString();
             } else {
-                return prefix + COLON + localPart;
+                return prefix.toString() + COLON + localPart.toString();
             }
         }
 
-        if (showNsWithoutPrefix && namespaceURI != null && !XMLConstants.NULL_NS_URI.equals(namespaceURI)) {
-            return LEFT_BRACE + namespaceURI + RIGHT_BRACE + localPart;
+        if (showNsWithoutPrefix && namespaceURI != null && !NULL_NS_URI.equals(namespaceURI)) {
+            return LEFT_BRACE + namespaceURI.toString() + RIGHT_BRACE + localPart.toString();
         }
 
-        return localPart;
+        return localPart.toString();
     }
 
     /**
@@ -221,7 +238,7 @@ public class QName implements Comparable<QName> {
      * @return the URIQualifiedName
      */
     public final String toURIQualifiedName() {
-        return '{' + getNamespaceURI() + '}' + getLocalPart();
+        return '{' + getNamespaceURI().toString() + '}' + getLocalPart();
     }
 
     /**
@@ -237,7 +254,7 @@ public class QName implements Comparable<QName> {
         }
         final String ns = matcher.group(1);
         final String localPart = matcher.group(2);
-        return new QName(localPart, ns);
+        return new QName(Str.of(localPart), Str.of(ns));
     }
 
     /**
@@ -307,7 +324,7 @@ public class QName implements Comparable<QName> {
 
     public javax.xml.namespace.QName toJavaQName() {
         return new javax.xml.namespace.QName(
-                namespaceURI, localPart, prefix == null ? XMLConstants.DEFAULT_NS_PREFIX : prefix);
+                namespaceURI.toString(), localPart.toString(), prefix == null ? XMLConstants.DEFAULT_NS_PREFIX : prefix.toString());
     }
 
     /**
@@ -370,13 +387,13 @@ public class QName implements Comparable<QName> {
     public static QName parse(final String namespaceURI, final String qname) throws IllegalQNameException {
         final int p = qname.indexOf(COLON);
         if (p == Constants.STRING_NOT_FOUND) {
-            return new QName(qname, namespaceURI);
+            return new QName(Str.of(qname), Str.of(namespaceURI));
         }
         final byte validity = isQName(qname);
         if (validity != VALID.val) {
             throw new IllegalQNameException(validity, "Illegal QName: '" + qname + "'");
         }
-        return new QName(qname.substring(p + 1), namespaceURI, qname.substring(0, p));
+        return new QName(Str.of(qname.substring(p + 1)), Str.of(namespaceURI), Str.of(qname.substring(0, p)));
     }
 
     /**
@@ -439,7 +456,7 @@ public class QName implements Comparable<QName> {
     public static QName parse(final Context context, final String qname, final String defaultNS)
             throws IllegalQNameException {
 
-        final char firstChar = qname.length() > 0 ? qname.charAt(0) : 0;
+        final char firstChar = !qname.isEmpty() ? qname.charAt(0) : 0;
 
         // quick test if qname is in clark notation
         if (firstChar == '{') {
@@ -450,7 +467,7 @@ public class QName implements Comparable<QName> {
                 //parse as clark notation
                 final String ns = clarkNotation.group(1);
                 final String localPart = clarkNotation.group(2);
-                return new QName(localPart, ns);
+                return new QName(Str.of(localPart), Str.of(ns));
             }
         }
 
@@ -463,24 +480,25 @@ public class QName implements Comparable<QName> {
                 //parse as clark notation
                 final String ns = eqNameNotation.group(1);
                 final String localPart = eqNameNotation.group(2);
-                return new QName(localPart, ns);
+                return new QName(Str.of(localPart), Str.of(ns));
             }
         }
 
         final String prefix = extractPrefix(qname);
-        String namespaceURI;
+        Str namespaceURI;
         if (prefix != null) {
-            namespaceURI = context.getURIForPrefix(prefix);
-            if (namespaceURI == null) {
+            final String nsURI = context.getURIForPrefix(prefix);
+            if (nsURI == null) {
                 throw new IllegalQNameException(INVALID_PREFIX.val, "No namespace defined for prefix " + prefix);
             }
+            namespaceURI = Str.of(nsURI);
         } else {
-            namespaceURI = defaultNS;
+            namespaceURI = Str.of(defaultNS);
         }
         if (namespaceURI == null) {
-            namespaceURI = XMLConstants.NULL_NS_URI;
+            namespaceURI = NULL_NS_URI;
         }
-        return new QName(extractLocalName(qname), namespaceURI, prefix);
+        return new QName(Str.of(extractLocalName(qname)), namespaceURI, Str.of(prefix));
     }
 
     /**
@@ -513,10 +531,10 @@ public class QName implements Comparable<QName> {
 
         byte result = VALID.val;
 
-        if (!(allowWildcards && this instanceof WildcardLocalPartQName) && !XMLNames.isNCName(localPart)) {
+        if (!(allowWildcards && this instanceof WildcardLocalPartQName) && !XMLNames.isNCName(localPart.toCharSequence())) {
             result ^= INVALID_LOCAL_PART.val;
         }
-        if (prefix != null && !XMLNames.isNCName(prefix)) {
+        if (prefix != null && !XMLNames.isNCName(prefix.toCharSequence())) {
             result ^= INVALID_PREFIX.val;
         }
 
@@ -528,22 +546,6 @@ public class QName implements Comparable<QName> {
      *
      * @return this
      */
-    public QName intern() {
-        if (!interned) {
-            if (localPart != null) {
-                this.localPart = localPart.intern();
-            }
-            if (namespaceURI != null) {
-                this.namespaceURI = namespaceURI.intern();
-            }
-            if (prefix != null) {
-                this.prefix = prefix.intern();
-            }
-            interned = true;
-        }
-        return this;
-    }
-
     public static byte isQName(final String name) {
         final int colon = name.indexOf(COLON);
 
@@ -564,7 +566,7 @@ public class QName implements Comparable<QName> {
     }
 
     public static QName fromJavaQName(final javax.xml.namespace.QName jQn) {
-        return new QName(jQn.getLocalPart(), jQn.getNamespaceURI(), jQn.getPrefix());
+        return new QName(Str.of(jQn.getLocalPart()), Str.of(jQn.getNamespaceURI()), Str.of(jQn.getPrefix()));
     }
 
     public interface PartialQName {
@@ -583,25 +585,25 @@ public class QName implements Comparable<QName> {
     }
 
     public static class WildcardNamespaceURIQName extends QName implements PartialQName {
-        public WildcardNamespaceURIQName(final String localPart) {
+        public WildcardNamespaceURIQName(final Str localPart) {
             super(localPart, WILDCARD);
         }
 
-        public WildcardNamespaceURIQName(final String localPart, final byte nameType) {
+        public WildcardNamespaceURIQName(final Str localPart, final byte nameType) {
             super(localPart, WILDCARD, nameType);
         }
     }
 
     public static class WildcardLocalPartQName extends QName implements PartialQName {
-        public WildcardLocalPartQName(final String namespaceURI) {
+        public WildcardLocalPartQName(final Str namespaceURI) {
             super(WILDCARD, namespaceURI);
         }
 
-        public WildcardLocalPartQName(final String namespaceURI, final byte nameType) {
+        public WildcardLocalPartQName(final Str namespaceURI, final byte nameType) {
             super(WILDCARD, namespaceURI, nameType);
         }
 
-        public WildcardLocalPartQName(final String namespaceURI, final String prefix) {
+        public WildcardLocalPartQName(final Str namespaceURI, final Str prefix) {
             super(WILDCARD, namespaceURI, prefix);
         }
 
@@ -615,19 +617,20 @@ public class QName implements Comparable<QName> {
          * @return WildcardLocalPartQName
          * @throws IllegalQNameException if no namespace URI is mapped to the prefix
          */
-        public static WildcardLocalPartQName parseFromPrefix(final Context context, final String prefix, final String defaultNS)
+        public static WildcardLocalPartQName parseFromPrefix(final Context context, final Str prefix, final Str defaultNS)
                 throws IllegalQNameException {
-            String namespaceURI;
+            Str namespaceURI;
             if (prefix != null) {
-                namespaceURI = context.getURIForPrefix(prefix);
-                if (namespaceURI == null) {
+                String nsURI = context.getURIForPrefix(prefix.toString());
+                if (nsURI == null) {
                     throw new IllegalQNameException(INVALID_PREFIX.val, "No namespace defined for prefix " + prefix);
                 }
+                namespaceURI = Str.of(nsURI);
             } else {
                 namespaceURI = defaultNS;
             }
             if (namespaceURI == null) {
-                namespaceURI = XMLConstants.NULL_NS_URI;
+                namespaceURI = NULL_NS_URI;
             }
             return new WildcardLocalPartQName(namespaceURI, prefix);
         }
@@ -641,9 +644,9 @@ public class QName implements Comparable<QName> {
          * @return WildcardLocalPartQName
          * @throws IllegalQNameException if no namespace URI is mapped to the prefix
          */
-        public static WildcardLocalPartQName parseFromPrefix(final Context context, final String prefix)
+        public static WildcardLocalPartQName parseFromPrefix(final Context context, final Str prefix)
                 throws IllegalQNameException {
-            return parseFromPrefix(context, prefix, context.getURIForPrefix(XMLConstants.DEFAULT_NS_PREFIX));
+            return parseFromPrefix(context, prefix, Str.of(context.getURIForPrefix(XMLConstants.DEFAULT_NS_PREFIX)));
         }
     }
 

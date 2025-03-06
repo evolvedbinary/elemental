@@ -100,7 +100,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
         MIMETYPE((byte) 2);
 
         private final byte typeId;
-        private SymbolType(final byte typeId) {
+        SymbolType(final byte typeId) {
             this.typeId = typeId;
         }
 
@@ -130,8 +130,6 @@ public class SymbolTable implements BrokerPoolService, Closeable {
     /**
      * Temporary name pool to share QName instances during indexing.
      */
-    private final QNamePool namePool = new QNamePool();
-
     /**
      * set to true if the symbol table needs to be saved
      */
@@ -171,27 +169,8 @@ public class SymbolTable implements BrokerPoolService, Closeable {
         }
     }
 
-    public static final String getFileName() {
+    public static String getFileName() {
         return FILE_NAME;
-    }
-
-    /**
-     * Retrieve a shared QName instance from the temporary pool.
-     *
-     * TODO: make the namePool thread-local to avoid synchronization.
-     * @param type qname type
-     * @param namespaceURI qname namespace uri
-     * @param localName qname localname
-     * @param prefix qname prefix
-     * @return qname from pool
-     */
-    public synchronized QName getQName(final short type, final String namespaceURI, final String localName, final String prefix) {
-        final byte itype = type == Node.ATTRIBUTE_NODE ? ElementValue.ATTRIBUTE : ElementValue.ELEMENT;
-        QName qn = namePool.get(itype, namespaceURI, localName, prefix);
-        if(qn == null) {
-            qn = namePool.add(itype, namespaceURI, localName, prefix);
-        }
-        return qn;
     }
 
     /**
@@ -226,7 +205,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      */
     //TODO the (short) cast is nasty - should consider using either short or int end to end
     public synchronized short getSymbol(final String name) {
-        if(name.length() == 0) {
+        if(name.isEmpty()) {
             throw new IllegalArgumentException("name is empty");
         }
         return (short) localNameSymbols.getId(name);
@@ -240,7 +219,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      */
     //TODO the (short) cast is nasty - should consider using either short or int end to end
     public synchronized short getNSSymbol(final String ns) {
-        if(ns == null || ns.length() == 0) {
+        if(ns == null || ns.isEmpty()) {
             return 0;
         }
         return (short) namespaceSymbols.getId(ns);
@@ -391,10 +370,10 @@ public class SymbolTable implements BrokerPoolService, Closeable {
         try (final VariableByteFilterOutputStream os = new VariableByteFilterOutputStream(new BufferedOutputStream(Files.newOutputStream(getFile())))) {
             writeAll(os);
         } catch(final FileNotFoundException e) {
-            throw new EXistException("File not found: " + this.getFile().toAbsolutePath().toString(), e);
+            throw new EXistException("File not found: " + this.getFile().toAbsolutePath(), e);
         } catch(final IOException e) {
             throw new EXistException("IO error occurred while creating "
-                + this.getFile().toAbsolutePath().toString(), e);
+                + this.getFile().toAbsolutePath(), e);
         }
     }
 
@@ -420,10 +399,10 @@ public class SymbolTable implements BrokerPoolService, Closeable {
                 read(is);
             }
         } catch(final FileNotFoundException e) {
-            throw new EXistException("Could not read " + this.getFile().toAbsolutePath().toString(), e);
+            throw new EXistException("Could not read " + this.getFile().toAbsolutePath(), e);
         } catch(final IOException e) {
             throw new EXistException("IO error occurred while reading "
-                + this.getFile().toAbsolutePath().toString() + ": " + e.getMessage(), e);
+                + this.getFile().toAbsolutePath() + ": " + e.getMessage(), e);
         }
     }
 
