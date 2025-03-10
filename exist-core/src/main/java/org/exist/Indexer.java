@@ -70,6 +70,7 @@ import org.exist.storage.NodePath2;
 import org.exist.storage.RangeIndexSpec;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
+import org.exist.util.NodeUtil;
 import org.exist.util.ProgressIndicator;
 import org.exist.util.XMLString;
 import org.exist.util.pool.NodePool;
@@ -601,7 +602,7 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
         ElementImpl node;
         int p = qname.indexOf(':');
         final String prefix = (p != Constants.STRING_NOT_FOUND) ? qname.substring(0, p) : "";
-        final QName qn = broker.getBrokerPool().getSymbols().getQName(Node.ELEMENT_NODE, namespace, name, prefix);
+        final QName qn = NodeUtil.createQNameOfType(Node.ELEMENT_NODE, namespace, name, prefix);
 
         if (!stack.isEmpty()) {
             final ElementImpl last = stack.peek();
@@ -676,7 +677,7 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
                 p = attrQName.indexOf(':');
                 final String attrPrefix = (p != Constants.STRING_NOT_FOUND) ? attrQName.substring(0, p) : null;
                 final AttrImpl attr = (AttrImpl) NodePool.getInstance().borrowNode(Node.ATTRIBUTE_NODE);
-                final QName attrQN = broker.getBrokerPool().getSymbols().getQName(Node.ATTRIBUTE_NODE, attrNS, attrLocalName, attrPrefix);
+                final QName attrQN = NodeUtil.createQNameOfType(Node.ATTRIBUTE_NODE, attrNS, attrLocalName, attrPrefix);
                 try {
                     attr.setNodeName(attrQN, broker.getBrokerPool().getSymbols());
                 } catch (final DOMException e) {

@@ -28,6 +28,7 @@ import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.indexing.lucene.LuceneIndex;
 import org.exist.indexing.lucene.LuceneIndexWorker;
 import org.exist.storage.ElementValue;
+import org.exist.util.Str;
 import org.exist.xquery.*;
 import org.exist.xquery.functions.map.AbstractMapType;
 import org.exist.xquery.value.*;
@@ -137,7 +138,7 @@ public class Query extends Function implements Optimizable {
             } else if (lastStep != null && firstStep != null) {
                 final NodeTest test = lastStep.getTest();
                 if (test.getName() == null) {
-                    contextQNames = new QName[]{ new QName(null, null, null) };
+                    contextQNames = new QName[]{ new QName.Builder().build() };
                 } else if (test.isWildcardTest()) {
                     contextQNames = new QName[]{ test.getName() };
                 } else if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
@@ -189,7 +190,7 @@ public class Query extends Function implements Optimizable {
 
         final NodeTest test = locationStep.getTest();
         if (test.getName() == null) {
-            contextQName = new QName(null, null, contextQNameType);
+            contextQName = new QName.Builder().nameType(contextQNameType).build();
         } else {
             contextQName = new QName(test.getName(), contextQNameType);
         }

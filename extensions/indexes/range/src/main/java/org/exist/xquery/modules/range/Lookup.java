@@ -237,7 +237,7 @@ public class Lookup extends Function implements Optimizable {
                 if (outerExpr instanceof LocationStep outerStep) {
                     final NodeTest test = outerStep.getTest();
                     if (test.getName() == null) {
-                        contextQName = new QName(null, null, null);
+                        contextQName = new QName.Builder().build();
                     } else if (test.isWildcardTest()) {
                         contextQName = test.getName();
                     } else {
@@ -253,7 +253,7 @@ public class Lookup extends Function implements Optimizable {
             } else if (lastStep != null && firstStep != null) {
                 final NodeTest test = lastStep.getTest();
                 if(test.getName() == null) {
-                    contextQName = new QName(null, null, null);
+                    contextQName = new QName.Builder().build();
                 } else if(test.isWildcardTest()) {
                     contextQName = test.getName();
                 } else {

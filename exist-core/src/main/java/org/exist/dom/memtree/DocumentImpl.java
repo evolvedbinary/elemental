@@ -59,7 +59,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.storage.serializers.Serializer;
-import org.exist.util.hashtable.NamePool;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
 import org.exist.xmldb.XmldbURI;
@@ -176,8 +175,6 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
     protected final boolean explicitlyCreated;
     protected final long docId;
     private Database db = null;
-    protected NamePool namePool;
-
     boolean replaceAttribute = false;
 
 
@@ -191,11 +188,8 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         this.context = context;
         this.explicitlyCreated = explicitlyCreated;
         this.docId = nextDocId.incrementAndGet();
-        if(context == null) {
-            namePool = new NamePool();
-        } else {
+        if(context != null) {
             db = context.getDatabase();
-            namePool = context.getSharedNamePool();
         }
     }
 
@@ -259,7 +253,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         }
         nodeKind[size] = kind;
         treeLevel[size] = level;
-        nodeName[size] = qname != null ? namePool.getSharedName(qname) : null;
+        nodeName[size] = qname;
         alpha[size] = -1; // undefined
         next[size] = -1;
         return (size++);
@@ -396,7 +390,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         }
         final QName attrQname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), qname.getPrefix(), ElementValue.ATTRIBUTE);
         attrParent[nextAttr] = nodeNum;
-        attrName[nextAttr] = namePool.getSharedName(attrQname);
+        attrName[nextAttr] = attrQname;
         attrValue[nextAttr] = value;
         attrType[nextAttr] = type;
         if(alpha[nodeNum] < 0) {
@@ -412,7 +406,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         if((namespaceCode == null) || (nextNamespace == namespaceCode.length)) {
             growNamespaces();
         }
-        namespaceCode[nextNamespace] = namePool.getSharedName(qname);
+        namespaceCode[nextNamespace] = qname;
         namespaceParent[nextNamespace] = nodeNum;
         if(alphaLen[nodeNum] < 0) {
             alphaLen[nodeNum] = nextNamespace;
@@ -1390,7 +1384,6 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
      * @param newDoc
      */
     private void copyDocContents(final DocumentImpl newDoc) {
-        namePool = newDoc.namePool;
         nodeKind = newDoc.nodeKind;
         treeLevel = newDoc.treeLevel;
         next = newDoc.next;

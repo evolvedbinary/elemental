@@ -26,7 +26,6 @@ import org.easymock.EasyMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.verify;
 import static org.easymock.EasyMock.replay;
-import org.exist.util.hashtable.NamePool;
 import org.exist.xquery.XQueryContext;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +54,6 @@ public class DocumentBuilderReceiverTest {
         XQueryContext mockContext = EasyMock.createMock(XQueryContext.class);
         
         expect(mockContext.getDatabase()).andReturn(null);
-        expect(mockContext.getSharedNamePool()).andReturn(new NamePool());
         //expect(mockContext.getPrefixForURI(ATOM_NS)).andReturn(ATOM_PREFIX).times(2);
         
         replay(mockContext);
@@ -97,7 +95,6 @@ public class DocumentBuilderReceiverTest {
         XQueryContext mockContext = EasyMock.createMock(XQueryContext.class);
 
         expect(mockContext.getDatabase()).andReturn(null);
-        expect(mockContext.getSharedNamePool()).andReturn(new NamePool());
         // no namespace mapping in context
         expect(mockContext.getPrefixForURI(ATOM_NS)).andReturn(null);
 
@@ -132,7 +129,6 @@ public class DocumentBuilderReceiverTest {
         XQueryContext mockContext = EasyMock.createMock(XQueryContext.class);
 
         expect(mockContext.getDatabase()).andReturn(null);
-        expect(mockContext.getSharedNamePool()).andReturn(new NamePool());
         // namespace mapping in context
         expect(mockContext.getPrefixForURI(ATOM_NS)).andReturn("a");
 

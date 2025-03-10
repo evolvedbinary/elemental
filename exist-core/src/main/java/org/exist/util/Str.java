@@ -10,15 +10,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
- * Always-cache fast string utility.
+ * Always-interned fast string utility.
  */
-public class Str {
+public final class Str implements Comparable<Str> {
 
     private final int index;
     private final boolean isEmpty;
-
     private Str(final int i, final boolean isEmpty) {
-        index = i;
+        this.index = i;
         this.isEmpty = isEmpty;
     }
 
@@ -26,15 +25,19 @@ public class Str {
      * Create a Str while guaranteeing that it is `intern()`-ed
      * i.e. that equal Str values share an implementation object.
      *
-     * @param s
+     * @param s sequence to store as a Str
      * @return the unique Str to wrap this sequence.
      */
     public static Str of(final CharSequence s) {
-        return strCache.insertIfAbsent(Rope.from(s));
+        if (s == null) {
+            return null;
+        } else {
+            return strCache.insertIfAbsent(String.valueOf(s));
+        }
     }
 
     public boolean isEmpty() {
-        return isEmpty;
+        return this.isEmpty;
     }
 
     /**
@@ -42,27 +45,27 @@ public class Str {
      *
      * @return the underlying rope
      */
-    private Rope rope() {
+    private String item() {
         return strCache.at(index);
     }
 
     public CharSequence toCharSequence() {
-        return rope().toCharSequence();
+        return item();
     }
 
     public String toString() {
-        return rope().toString();
+        return item();
     }
 
     public int compareTo(final Str o) {
-        return rope().compareTo(o.rope());
+        return item().compareTo(o.item());
     }
 
     public int length() {
-        return rope().size();
+        return item().length();
     }
 
-    private final static StrCache strCache = new StrCache();
+    private final static StrCache<String> strCache = new StrCache<>();
 
     @Override
     public boolean equals(Object o) {
@@ -79,18 +82,26 @@ public class Str {
         return index;
     }
 
+    static int cacheEstimate() {
+        return strCache.entryCount;
+    }
+
+    static void resetCache() {
+        strCache.clear();
+    }
+
     /**
      * Cached string -> index mapping.
      */
-    private static class StrCache {
+    private static class StrCache<T extends Comparable<T> & CharSequence> {
 
-        final Map<Rope, Str> entryMap = new ConcurrentSkipListMap<>(Rope::compareTo);
+        final Map<T, Str> entryMap = new ConcurrentSkipListMap<>(T::compareTo);
 
-        final ArrayList<Rope> entries = new ArrayList<>();
+        final ArrayList<T> entries = new ArrayList<>();
         int entryCount = 0;
 
         /**
-         * insert a rope; assumes it did not exist in the table before
+         * insert a representation; assumes it did not exist in the table before
          * synchronize recording the position with adding the element;
          * because adding a new element is exceptional, this synchronization
          * should not be a performance problem.
@@ -98,21 +109,30 @@ public class Str {
          * @param key the rope to insert
          * @return the wrapped Str of the rope
          */
-        final Str insert(final Rope key) {
+        final Str insert(final T key) {
             int pos;
             synchronized (this) {
                 pos = entryCount++;
                 entries.add(key);
             }
-            return new Str(pos, key.size() == 0);
+            return new Str(pos, key.isEmpty());
         }
 
-        final Str insertIfAbsent(final Rope key) {
+        final Str insertIfAbsent(final T key) {
             return entryMap.computeIfAbsent(key, this::insert);
         }
 
-        final Rope at(final int index) {
+        final T at(final int index) {
             return entries.get(index);
+        }
+
+        /**
+         * Only intended for test use
+         */
+        private synchronized void clear() {
+            entries.clear();
+            entryMap.clear();
+            entryCount = 0;
         }
     }
 }

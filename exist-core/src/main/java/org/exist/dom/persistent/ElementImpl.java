@@ -52,10 +52,7 @@ import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.util.ByteArrayPool;
-import org.exist.util.ByteConversion;
-import org.exist.util.LockException;
-import org.exist.util.UTF8;
+import org.exist.util.*;
 import org.exist.util.pool.NodePool;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
@@ -363,7 +360,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
             node = new ElementImpl((Expression) null);
         }
         node.setNodeId(dln);
-        node.nodeName = doc.getBrokerPool().getSymbols().getQName(Node.ELEMENT_NODE, namespace, name, prefix);
+        node.nodeName = NodeUtil.createQNameOfType(Node.ELEMENT_NODE, namespace, name, prefix);
         node.children = children;
         node.attributes = attributes;
         node.isDirty = isDirty;

@@ -111,7 +111,6 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.LockedDocumentMap;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
-import org.exist.util.hashtable.NamePool;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.parser.*;
 import org.exist.xquery.pragmas.*;
@@ -373,11 +372,6 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     /**
      * Shared name pool used by all in-memory documents constructed in this query context.
-     */
-    private NamePool sharedNamePool = null;
-
-    /**
-     * Stack for temporary document fragments.
      */
     private Deque<MemTreeBuilder> fragmentStack = new ArrayDeque<>();
 
@@ -2243,14 +2237,6 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     private void setDocumentBuilder(final MemTreeBuilder documentBuilder) {
         this.documentBuilder = documentBuilder;
-    }
-
-    @Override
-    public NamePool getSharedNamePool() {
-        if (sharedNamePool == null) {
-            sharedNamePool = new NamePool();
-        }
-        return sharedNamePool;
     }
 
     @Override

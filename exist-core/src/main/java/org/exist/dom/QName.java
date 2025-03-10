@@ -67,12 +67,13 @@ import static org.exist.util.StringUtil.isNullOrEmpty;
  */
 public class QName implements Comparable<QName> {
 
-    public static final Str WILDCARD = Str.of("*");
+    public static final String WILDCARD = "*";
+    private static final Str WILDCARD_STR = Str.of(WILDCARD);
     private static final char COLON = ':';
     private static final char LEFT_BRACE = '{';
     private static final char RIGHT_BRACE = '}';
 
-    public static final Str NULL_NS_URI = Str.of(XMLConstants.NULL_NS_URI);
+    private static final Str NULL_NS_URI = Str.of(XMLConstants.NULL_NS_URI);
 
     public static final QName EMPTY_QNAME = new QName(Str.of(""), NULL_NS_URI);
     public static final QName DOCUMENT_QNAME = EMPTY_QNAME;
@@ -131,27 +132,35 @@ public class QName implements Comparable<QName> {
         this(Str.of(extractLocalName(name)), NULL_NS_URI, Str.of(extractPrefix(name)));
     }
 
-    public static QName of(final String localPart, final String namespaceURI, final String prefix) {
-        return new QName(Str.of(localPart), Str.of(namespaceURI), Str.of(prefix));
+    public QName(final String localPart, final String namespaceURI, final String prefix) {
+        this(Str.of(localPart), Str.of(namespaceURI), Str.of(prefix));
     }
 
-    public static QName of(final String localPart, final String namespaceURI) {
-        return new QName(Str.of(localPart), Str.of(namespaceURI));
+    public QName(final String localPart, final String namespaceURI) {
+        this(Str.of(localPart), Str.of(namespaceURI));
     }
 
-    public static QName of(final String localPart, final String namespaceURI, byte attribute) {
-        return new QName(Str.of(localPart), Str.of(namespaceURI), attribute);
+    public QName(final String localPart, final String namespaceURI, byte attribute) {
+        this(Str.of(localPart), Str.of(namespaceURI), attribute);
     }
 
-    public static QName of(String localName, String namespaceURI, String prefix, byte attribute) {
-        return new QName(Str.of(localName), Str.of(namespaceURI), Str.of(prefix), attribute);
+    public QName(String localName, String namespaceURI, String prefix, byte attribute) {
+        this(Str.of(localName), Str.of(namespaceURI), Str.of(prefix), attribute);
     }
 
-    public Str getLocalPart() {
+    public String getLocalPart() {
+        return localPart == null ? null : localPart.toString();
+    }
+
+    public Str getLocalPartStr() {
         return localPart;
     }
 
-    public Str getNamespaceURI() {
+    public String getNamespaceURI() {
+        return namespaceURI == null ? null : namespaceURI.toString();
+    }
+
+    public Str getNamespaceURIStr() {
         return namespaceURI;
     }
 
@@ -164,7 +173,11 @@ public class QName implements Comparable<QName> {
         return !namespaceURI.equals(NULL_NS_URI);
     }
 
-    public Str getPrefix() {
+    public String getPrefix() {
+        return prefix == null ? null :prefix.toString();
+    }
+
+    public Str getPrefixStr() {
         return prefix;
     }
 
@@ -238,7 +251,7 @@ public class QName implements Comparable<QName> {
      * @return the URIQualifiedName
      */
     public final String toURIQualifiedName() {
-        return '{' + getNamespaceURI().toString() + '}' + getLocalPart();
+        return '{' + getNamespaceURI() + '}' + getLocalPart();
     }
 
     /**
@@ -303,16 +316,16 @@ public class QName implements Comparable<QName> {
         if (this == WildcardQName.instance || qnOther == WildcardQName.instance) {
             return true;
         }
-        if ((localPart.equals(WILDCARD) || qnOther.localPart.equals(WILDCARD))
+        if ((localPart.equals(WILDCARD_STR) || qnOther.localPart.equals(WILDCARD_STR))
                 && namespaceURI.equals(qnOther.namespaceURI)) {
             return true;
         }
-        if ((namespaceURI.equals(WILDCARD) || qnOther.namespaceURI.equals(WILDCARD))
+        if ((namespaceURI.equals(WILDCARD_STR) || qnOther.namespaceURI.equals(WILDCARD_STR))
                 && localPart.equals(qnOther.localPart)) {
             return true;
         }
-        return (namespaceURI.equals(WILDCARD) && localPart.equals(WILDCARD))
-                || (qnOther.namespaceURI.equals(WILDCARD) || qnOther.localPart.equals(WILDCARD));
+        return (namespaceURI.equals(WILDCARD_STR) && localPart.equals(WILDCARD_STR))
+                || (qnOther.namespaceURI.equals(WILDCARD_STR) || qnOther.localPart.equals(WILDCARD_STR));
     }
 
     @Override
@@ -580,31 +593,50 @@ public class QName implements Comparable<QName> {
         }
 
         private WildcardQName() {
-            super(WILDCARD, WILDCARD, WILDCARD);
+            super(WILDCARD_STR, WILDCARD_STR, WILDCARD_STR);
         }
     }
 
     public static class WildcardNamespaceURIQName extends QName implements PartialQName {
         public WildcardNamespaceURIQName(final Str localPart) {
-            super(localPart, WILDCARD);
+            super(localPart, WILDCARD_STR);
+        }
+
+        public WildcardNamespaceURIQName(final String localPart) {
+            super(Str.of(localPart), WILDCARD_STR);
         }
 
         public WildcardNamespaceURIQName(final Str localPart, final byte nameType) {
-            super(localPart, WILDCARD, nameType);
+            super(localPart, WILDCARD_STR, nameType);
+        }
+        public WildcardNamespaceURIQName(final String localPart, final byte nameType) {
+            super(Str.of(localPart), WILDCARD_STR, nameType);
         }
     }
 
     public static class WildcardLocalPartQName extends QName implements PartialQName {
         public WildcardLocalPartQName(final Str namespaceURI) {
-            super(WILDCARD, namespaceURI);
+            super(WILDCARD_STR, namespaceURI);
+        }
+
+        public WildcardLocalPartQName(final String namespaceURI) {
+            super(WILDCARD_STR, Str.of(namespaceURI));
         }
 
         public WildcardLocalPartQName(final Str namespaceURI, final byte nameType) {
-            super(WILDCARD, namespaceURI, nameType);
+            super(WILDCARD_STR, namespaceURI, nameType);
+        }
+
+        public WildcardLocalPartQName(final String namespaceURI, final byte nameType) {
+            super(WILDCARD_STR, Str.of(namespaceURI), nameType);
+        }
+
+        public WildcardLocalPartQName(final String namespaceURI, final String prefix) {
+            super(WILDCARD_STR, Str.of(namespaceURI), Str.of(prefix));
         }
 
         public WildcardLocalPartQName(final Str namespaceURI, final Str prefix) {
-            super(WILDCARD, namespaceURI, prefix);
+            super(WILDCARD_STR, namespaceURI, prefix);
         }
 
         /**
@@ -644,9 +676,45 @@ public class QName implements Comparable<QName> {
          * @return WildcardLocalPartQName
          * @throws IllegalQNameException if no namespace URI is mapped to the prefix
          */
-        public static WildcardLocalPartQName parseFromPrefix(final Context context, final Str prefix)
+        public static WildcardLocalPartQName parseFromPrefix(final Context context, final String prefix)
                 throws IllegalQNameException {
-            return parseFromPrefix(context, prefix, Str.of(context.getURIForPrefix(XMLConstants.DEFAULT_NS_PREFIX)));
+            return parseFromPrefix(context, Str.of(prefix), Str.of(context.getURIForPrefix(XMLConstants.DEFAULT_NS_PREFIX)));
+        }
+    }
+
+    public static class Builder {
+
+        private Str localPart;
+        private Str namespaceURI;
+        private Str prefix;
+
+        private byte nameType = ElementValue.ELEMENT;
+
+        public QName build() {
+            return new QName(localPart, namespaceURI, prefix, nameType);
+        }
+
+        public Builder localPart(final Str localPart) {
+            this.localPart = localPart;
+
+            return this;
+        }
+
+        public Builder namespaceURI(final Str namespaceURI) {
+            this.namespaceURI = namespaceURI;
+
+            return this;
+        }
+
+        public Builder prefix(final Str prefix) {
+            this.prefix = prefix;
+
+            return this;
+        }
+        public Builder nameType(final byte nameType) {
+            this.nameType = nameType;
+
+            return this;
         }
     }
 

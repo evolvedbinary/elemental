@@ -25,6 +25,7 @@ import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.SymbolTable;
 import org.exist.storage.NodePath;
+import org.exist.util.NodeUtil;
 import org.w3c.dom.Node;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -156,7 +157,7 @@ class NodeStats {
         final short localid = buffer.getShort();
         final String namespaceURI = symbols.getNamespace(nsid);
         final String localName = symbols.getName(localid);
-        qname = symbols.getQName(Node.ELEMENT_NODE, namespaceURI,
+        qname = NodeUtil.createQNameOfType(Node.ELEMENT_NODE, namespaceURI,
             localName, "");
         nodeCount = buffer.getInt();
         maxDepth = buffer.getInt();

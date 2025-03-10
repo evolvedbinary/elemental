@@ -107,7 +107,7 @@ public class XMLNames {
      * @return true if the string is a valid XML NCName
      */
     public static  boolean isNCName(final CharSequence s) {
-        if (s == null || s.length() == 0) {
+        if (s == null || s.isEmpty()) {
             return false;
         }
         int firstCodePoint = Character.codePointAt(s, 0);

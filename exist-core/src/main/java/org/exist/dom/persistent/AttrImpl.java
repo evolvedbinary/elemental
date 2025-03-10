@@ -51,10 +51,7 @@ import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
 import org.exist.storage.RangeIndexSpec;
 import org.exist.storage.Signatures;
-import org.exist.util.ByteArrayPool;
-import org.exist.util.ByteConversion;
-import org.exist.util.UTF8;
-import org.exist.util.XMLString;
+import org.exist.util.*;
 import org.exist.util.pool.NodePool;
 import org.exist.util.serializer.AttrList;
 import org.exist.xquery.Expression;
@@ -249,7 +246,7 @@ public class AttrImpl extends NamedNode<AttrImpl> implements Attr {
         } else {
             attr = new AttrImpl((Expression) null);
         }
-        attr.setNodeName(doc.getBrokerPool().getSymbols().getQName(Node.ATTRIBUTE_NODE, namespace, name, prefix));
+        attr.setNodeName(NodeUtil.createQNameOfType(Node.ATTRIBUTE_NODE, namespace, name, prefix));
         if (attr.value != null) {
             attr.value.reset();
         }
@@ -290,7 +287,7 @@ public class AttrImpl extends NamedNode<AttrImpl> implements Attr {
         final String namespace = nsId == 0 ? XMLConstants.NULL_NS_URI : broker.getBrokerPool().getSymbols().getNamespace(nsId);
         final String value = new String(data, pos, len - (pos - start), UTF_8);
 
-        list.addAttribute(broker.getBrokerPool().getSymbols().getQName(Node.ATTRIBUTE_NODE, namespace, name, prefix), value, attrType, dln);
+        list.addAttribute(NodeUtil.createQNameOfType(Node.ATTRIBUTE_NODE, namespace, name, prefix), value, attrType, dln);
     }
 
     @Override
@@ -376,7 +373,7 @@ public class AttrImpl extends NamedNode<AttrImpl> implements Attr {
 
     @Override
     public String toString() {
-        return String.valueOf(nodeName) + "=\"" + value + "\"";
+        return nodeName + "=\"" + value + "\"";
     }
 
     @Override
