@@ -1,8 +1,9 @@
 package org.exist.util;
 
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.xmldb.api.base.XMLDBException;
 
 import java.nio.charset.StandardCharsets;
@@ -13,24 +14,29 @@ import java.util.Random;
 import static java.lang.Math.signum;
 import static org.assertj.core.api.Assertions.assertThat;
 
+// This test resets the StrCache, which should never normally be done, and will break existing Strs
+// if they are accessed again.
+// When surefire runs things in parallel, the test suite will show lots of random-ish failures.
+// Hence we need @Isolated
+//@Isolated
 public class StrTest {
 
-    @Before public void resetCache() {
-        Str.resetCache();
+    @BeforeEach
+    public void resetGeneration() {
+        Str.resetGeneration();
     }
 
-    @Test public void testNullOrEmptyStr() {
+    @Test
+    public void testNullOrEmptyStr() {
         assertThat(Str.of(null)).isEqualTo(null);
         assertThat(Str.of("").toString()).isEqualTo("");
 
         assertThat(Str.of("")).isNotEqualTo(Str.of("1"));
         assertThat(Str.of("1")).isNotEqualTo(Str.of(""));
-        // "" and <code>null</code> are equal, and are cached as the empty Str
-        // everything else is, just once.
-        assertThat(Str.cacheEstimate()).isEqualTo(2);
     }
 
-    @Test public void testCache() {
+    @Test
+    public void testCache() {
         Random random = new Random();
         for (int i = 0; i < 1000000; i++) {
             final int rand = random.nextInt(1000);
@@ -41,7 +47,8 @@ public class StrTest {
         assertThat(Str.cacheEstimate()).isEqualTo(1000);
     }
 
-    @Test public void testOrder() {
+    @Test
+    public void testOrder() {
         for (int i = 0; i < 100; i++) {
             Str si0 = Str.of(String.format("%3d",i));
             Str si1 = Str.of(String.format("%3d",i+1));
@@ -56,7 +63,8 @@ public class StrTest {
         assertThat(Str.cacheEstimate()).isEqualTo(101);
     }
 
-    @Test public void testWords() throws XMLDBException {
+    @Test
+    public void testWords() throws XMLDBException {
         final Map<Str, String> forward = new HashMap<>();
         final Map<String, Str> reverse = new HashMap<>();
         String[] wordList = DBUtils.wordList();
@@ -66,7 +74,6 @@ public class StrTest {
             forward.put(str, word);
             reverse.put(word, str);
         }
-        assertThat(Str.cacheEstimate()).isEqualTo(wordList.length);
         assertThat(forward.size()).isEqualTo(wordList.length);
         assertThat(reverse.size()).isEqualTo(wordList.length);
 
@@ -86,7 +93,8 @@ public class StrTest {
         assertThat(reverse2.isEmpty()).isTrue();
     }
 
-    @Test public void comparableIdentity() throws XMLDBException {
+    @Test
+    public void comparableIdentity() throws XMLDBException {
         String[] wordList = DBUtils.wordList();
         for (String word : wordList) {
             float compareStrs = signum(Str.of(word).compareTo(Str.of(word)));
@@ -94,9 +102,10 @@ public class StrTest {
         }
     }
 
-    @Test public void comparableForward() throws XMLDBException {
+    @Test
+    public void comparableForward() throws XMLDBException {
         String[] wordList = DBUtils.wordList();
-        String prev = "previousWord";
+        String prev = "word0Fwd";
         for (String word : wordList) {
             float compareStrings = signum(prev.compareTo(word));
             float compareStrs = signum(Str.of(prev).compareTo(Str.of(word)));
@@ -105,9 +114,10 @@ public class StrTest {
         }
     }
 
-    @Test public void comparableReverse() throws XMLDBException {
+    @Test
+    public void comparableReverse() throws XMLDBException {
         String[] wordList = DBUtils.wordList();
-        String prev = "previousWord";
+        String prev = "word0Rev";
         for (String word : wordList) {
             float compareStrings = signum(word.compareTo(prev));
             float compareStrs = signum(Str.of(word).compareTo(Str.of(prev)));

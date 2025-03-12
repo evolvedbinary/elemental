@@ -65,6 +65,10 @@ public final class Str implements Comparable<Str> {
         return item().length();
     }
 
+    public static String dumpCache() {
+        return strCache.dump();
+    }
+
     private final static StrCache<String> strCache = new StrCache<>();
 
     @Override
@@ -83,11 +87,11 @@ public final class Str implements Comparable<Str> {
     }
 
     static int cacheEstimate() {
-        return strCache.entryCount;
+        return strCache.generationCount();
     }
 
-    static void resetCache() {
-        strCache.clear();
+    static void resetGeneration() {
+        strCache.resetGeneration();
     }
 
     /**
@@ -97,8 +101,12 @@ public final class Str implements Comparable<Str> {
 
         final Map<T, Str> entryMap = new ConcurrentSkipListMap<>(T::compareTo);
 
+        // When we clear the cache (which we anyway should only do for testing)
+        // move entryStart up to entryEnd, so that all previous Str indices are
+        // known to be invalid.
         final ArrayList<T> entries = new ArrayList<>();
-        int entryCount = 0;
+        int generationStart = 0;
+        int end = 0;
 
         /**
          * insert a representation; assumes it did not exist in the table before
@@ -112,7 +120,7 @@ public final class Str implements Comparable<Str> {
         final Str insert(final T key) {
             int pos;
             synchronized (this) {
-                pos = entryCount++;
+                pos = end++;
                 entries.add(key);
             }
             return new Str(pos, key.isEmpty());
@@ -126,13 +134,29 @@ public final class Str implements Comparable<Str> {
             return entries.get(index);
         }
 
+        final int generationCount() {
+            return end - generationStart;
+        }
+
         /**
          * Only intended for test use
          */
-        private synchronized void clear() {
-            entries.clear();
-            entryMap.clear();
-            entryCount = 0;
+        private synchronized void resetGeneration() {
+            generationStart = end;
+        }
+
+        final synchronized String dump() {
+            StringBuilder sb = new StringBuilder("[");
+            sb.append('(').append(end).append(')');
+            for (int i = 0; i < end; i++) {
+                T val = entries.get(i);
+                sb.append(i).append(":|").append(val);
+                Str mapped = entryMap.get(val);
+                sb.append("|=").append('|').append(mapped == null ? "<<null>>" : mapped).append("|\n");
+            }
+            sb.append(']');
+
+            return sb.toString();
         }
     }
 }
