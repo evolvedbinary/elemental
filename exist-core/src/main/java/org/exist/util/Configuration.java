@@ -51,6 +51,8 @@ import org.apache.logging.log4j.Logger;
 
 import org.exist.backup.SystemExport;
 import org.exist.collections.CollectionCache;
+import org.exist.dom.QName;
+import org.exist.dom.memtree.DocumentImpl;
 import org.exist.repo.Deployment;
 
 import org.exist.resolver.ResolverFactory;
@@ -59,19 +61,12 @@ import org.exist.storage.BrokerPoolConstants;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.LockTable;
 import org.exist.util.io.ContentFilePool;
-import org.exist.xquery.Expression;
-import org.exist.xquery.PerformanceStats;
-import org.exist.xquery.XQueryWatchDog;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.exist.xquery.*;
+import org.exist.xquery.Module;
+import org.exist.xquery.functions.fn.FnModule;
+import org.w3c.dom.*;
 
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-import org.xml.sax.XMLReader;
+import org.xml.sax.*;
 
 import org.exist.Indexer;
 import org.exist.indexing.IndexManager;
@@ -92,6 +87,7 @@ import org.exist.xslt.TransformerFactoryAllocator;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -110,6 +106,11 @@ import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.exist.Namespaces;
 import org.exist.scheduler.JobType;
@@ -281,6 +282,156 @@ public class Configuration implements ErrorHandler {
         this(configFilename, Optional.empty());
     }
 
+    private InputStream getInputStreamFromFile(@Nullable String configFilename, Optional<Path> existHomeDirname) throws IOException, DatabaseConfigurationException {
+
+            existHome = existHomeDirname.map(Optional::of)
+              .orElse(ConfigurationHelper.getExistHome(configFilename));
+
+            if (existHome.isEmpty()) {
+
+                // EB: try to create existHome based on location of config file
+                // when config file points to absolute file location
+                final Path absoluteConfigFile = Paths.get(configFilename);
+
+                if (absoluteConfigFile.isAbsolute() && Files.exists(absoluteConfigFile) && Files.isReadable(absoluteConfigFile)) {
+                    existHome = Optional.of(absoluteConfigFile.getParent());
+                    configFilename = FileUtils.fileName(absoluteConfigFile);
+                }
+            }
+
+            Path configFile = Paths.get(configFilename);
+
+            if (!configFile.isAbsolute() && existHome.isPresent()) {
+
+                // try the passed or constructed existHome first
+                configFile = existHome.get().resolve(configFilename);
+
+                if (!Files.exists(configFile)) {
+                    configFile = existHome.get().resolve(Main.CONFIG_DIR_NAME).resolve(configFilename);
+                }
+            }
+
+            if (!Files.exists(configFile) || !Files.isReadable(configFile)) {
+                throw new DatabaseConfigurationException("Unable to read configuration file at " + configFile);
+            }
+
+            configFilePath = Optional.of(configFile.toAbsolutePath());
+            return Files.newInputStream(configFile);
+    }
+
+    private Document parseConfigFromStream(final InputStream is) throws SAXException, IOException, ParserConfigurationException {
+        // initialize xml parser
+        // we use eXist's in-memory DOM implementation to work
+        // around a bug in Xerces
+        final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
+        factory.setNamespaceAware(true);
+
+        final InputSource src = new InputSource(is);
+        final SAXParser parser = factory.newSAXParser();
+        final XMLReader reader = parser.getXMLReader();
+
+        reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        reader.setFeature(FEATURE_SECURE_PROCESSING, true);
+
+        final SAXAdapter adapter = new SAXAdapter((Expression) null);
+        reader.setContentHandler(adapter);
+        reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
+        reader.parse(src);
+
+        Document doc = adapter.getDocument();
+        setProperty("config.doc.class", doc.getClass().getName());
+
+        return adapter.getDocument();
+    }
+
+    private void setConfigFromDocument(final Optional<Path> existHomePath, final Document doc) throws DatabaseConfigurationException {
+        configureElement(doc, Indexer.CONFIGURATION_ELEMENT_NAME, element -> configureIndexer(doc, element));
+        //scheduler settings
+        configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
+        //db connection settings
+        configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(existHomePath, element));
+        // lock-table settings
+        configureElement(doc, "lock-manager", this::configureLockManager);
+        // repository settings
+        configureElement(doc, "repository", this::configureRepository);
+        // binary manager settings
+        configureElement(doc, "binary-manager", this::configureBinaryManager);
+        // transformer settings
+        configureElement(doc, TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME, this::configureTransformer);
+        // saxon settings (most importantly license file for PE or EE features)
+        configureElement(doc, SaxonConfiguration.SAXON_CONFIGURATION_ELEMENT_NAME, this::configureSaxon);
+        // parser settings
+        configureElement(doc, HtmlToXmlParser.PARSER_ELEMENT_NAME, this::configureParser);
+        // serializer settings
+        configureElement(doc, Serializer.CONFIGURATION_ELEMENT_NAME, this::configureSerializer);
+        // XUpdate settings
+        configureElement(doc, DBBroker.CONFIGURATION_ELEMENT_NAME, this::configureXUpdate);
+        // XQuery settings
+        configureElement(doc, XQUERY_CONFIGURATION_ELEMENT_NAME, this::configureXQuery);
+        // Validation
+        configureElement(doc, XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME, element -> configureValidation(existHomePath, element));
+        // RPC server
+        configureElement(doc, "rpc-server", this::configureRpcServer);
+    }
+
+    private String documentToString(final Document document) {
+        try {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            StringWriter stringWriter = new StringWriter();
+            transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
+            return stringWriter.toString();
+        } catch (TransformerException te) {
+            throw new RuntimeException("Transformation ", te);
+        }
+    }
+
+    private void nodeWalk(final StringBuilder sb, final Node node, int depth) {
+        sb.append("   ".repeat(Math.max(0, depth))).append("[[").append(node.getNodeName());
+        sb.append('=').append(node.getNodeName().equals("#comment") ? "---" : node.getNodeValue());
+        NodeList children = node.getChildNodes();
+        boolean hasContent = false;
+        if (children.getLength() > 0) {
+            hasContent = true;
+            sb.append('\n');
+            for (int i = 0; i < children.getLength(); i++) {
+                nodeWalk(sb, children.item(i), depth + 1);
+            }
+        }
+        NamedNodeMap attrs = node.getAttributes();
+        if (attrs != null && attrs.getLength() > 0) {
+            hasContent = true;
+            sb.append('\n');
+            for (int i = 0; i < attrs.getLength(); i++) {
+                Node attr = attrs.item(i);
+                sb.append("   ".repeat(Math.max(0, depth))).append("||");
+                sb.append(attr.getNodeName()).append('=').append(attr.getNodeValue()).append('\n');
+            }
+        }
+        if (hasContent) {
+            sb.append("   ".repeat(Math.max(0, depth)));
+        }
+        sb.append("]]\n");
+    }
+
+    private String documentWalk(final Document doc) {
+        StringBuilder sb = new StringBuilder();
+        Element root = doc.getDocumentElement();
+        nodeWalk(sb, root, 0);
+        return sb.toString();
+    }
+
+    @Override public final String toString() {
+
+        StringBuilder mapAsString = new StringBuilder("{");
+        for (String key : config.keySet()) {
+            mapAsString.append(key).append("=").append(config.get(key)).append(", \n");
+        }
+        mapAsString.delete(mapAsString.length()-2, mapAsString.length()).append("}");
+        return mapAsString.toString();
+    }
+
     public Configuration(@Nullable String configFilename, Optional<Path> existHomeDirname)
             throws DatabaseConfigurationException {
         InputStream is = null;
@@ -310,96 +461,19 @@ public class Configuration implements ErrorHandler {
             // otherwise, secondly try to read configuration from file. Guess the
             // location if necessary
             if (is == null) {
-                existHome = existHomeDirname.map(Optional::of)
-                        .orElse(ConfigurationHelper.getExistHome(configFilename));
-
-                if (existHome.isEmpty()) {
-
-                    // EB: try to create existHome based on location of config file
-                    // when config file points to absolute file location
-                    final Path absoluteConfigFile = Paths.get(configFilename);
-
-                    if (absoluteConfigFile.isAbsolute() && Files.exists(absoluteConfigFile) && Files.isReadable(absoluteConfigFile)) {
-                        existHome = Optional.of(absoluteConfigFile.getParent());
-                        configFilename = FileUtils.fileName(absoluteConfigFile);
-                    }
-                }
-
-                Path configFile = Paths.get(configFilename);
-
-                if (!configFile.isAbsolute() && existHome.isPresent()) {
-
-                    // try the passed or constructed existHome first
-                    configFile = existHome.get().resolve(configFilename);
-
-                    if (!Files.exists(configFile)) {
-                        configFile = existHome.get().resolve(Main.CONFIG_DIR_NAME).resolve(configFilename);
-                    }
-                }
-
-                if (!Files.exists(configFile) || !Files.isReadable(configFile)) {
-                    throw new DatabaseConfigurationException("Unable to read configuration file at " + configFile);
-                }
-
-                configFilePath = Optional.of(configFile.toAbsolutePath());
-                is = Files.newInputStream(configFile);
+                is = getInputStreamFromFile(configFilename, existHomeDirname);
             }
-
             LOG.info("Reading configuration from file {}", configFilePath.map(Path::toString).orElse("Unknown"));
 
             // set dbHome to parent of the conf file found, to resolve relative
             // path from conf file
             final Optional<Path> existHomePath = configFilePath.map(Path::getParent);
 
-            // initialize xml parser
-            // we use eXist's in-memory DOM implementation to work
-            // around a bug in Xerces
-            final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
-            factory.setNamespaceAware(true);
+            final Document doc = parseConfigFromStream(is);
+            setConfigFromDocument(existHomePath, doc);
+            //setProperty("config.content", documentToString(doc));
+            setProperty("config.altcontent", documentWalk(doc));
 
-            final InputSource src = new InputSource(is);
-            final SAXParser parser = factory.newSAXParser();
-            final XMLReader reader = parser.getXMLReader();
-
-            reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-            reader.setFeature(FEATURE_SECURE_PROCESSING, true);
-
-            final SAXAdapter adapter = new SAXAdapter((Expression) null);
-            reader.setContentHandler(adapter);
-            reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
-            reader.parse(src);
-
-            final Document doc = adapter.getDocument();
-
-            //indexer settings
-            configureElement(doc, Indexer.CONFIGURATION_ELEMENT_NAME, element -> configureIndexer(doc, element));
-            //scheduler settings
-            configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
-            //db connection settings
-            configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(existHomePath, element));
-            // lock-table settings
-            configureElement(doc, "lock-manager", this::configureLockManager);
-            // repository settings
-            configureElement(doc, "repository", this::configureRepository);
-            // binary manager settings
-            configureElement(doc, "binary-manager", this::configureBinaryManager);
-            // transformer settings
-            configureElement(doc, TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME, this::configureTransformer);
-            // saxon settings (most importantly license file for PE or EE features)
-            configureElement(doc, SaxonConfiguration.SAXON_CONFIGURATION_ELEMENT_NAME, this::configureSaxon);
-            // parser settings
-            configureElement(doc, HtmlToXmlParser.PARSER_ELEMENT_NAME, this::configureParser);
-            // serializer settings
-            configureElement(doc, Serializer.CONFIGURATION_ELEMENT_NAME, this::configureSerializer);
-            // XUpdate settings
-            configureElement(doc, DBBroker.CONFIGURATION_ELEMENT_NAME, this::configureXUpdate);
-            // XQuery settings
-            configureElement(doc, XQUERY_CONFIGURATION_ELEMENT_NAME, this::configureXQuery);
-            // Validation
-            configureElement(doc, XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME, element -> configureValidation(existHomePath, element));
-            // RPC server
-            configureElement(doc, "rpc-server", this::configureRpcServer);
         } catch (final SAXException | IOException | ParserConfigurationException e) {
             LOG.error("error while reading config file: {}", configFilename, e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
@@ -565,7 +639,7 @@ public class Configuration implements ErrorHandler {
 
     /**
      * Read list of built-in modules from the configuration. This method will only make sure
-     * that the specified module class exists and is a subclass of {@link org.exist.xquery.Module}.
+     * that the specified module class exists and is a subclass of {@link Module}.
      *
      * @param xquery           configuration root
      * @param modulesClassMap  map containing all classes of modules
@@ -578,7 +652,7 @@ public class Configuration implements ErrorHandler {
                                    final Map<String, Map<String, List<? extends Object>>> moduleParameters
     ) throws DatabaseConfigurationException {
         // add the standard function module
-        modulesClassMap.put(XPATH_FUNCTIONS_NS, org.exist.xquery.functions.fn.FnModule.class);
+        modulesClassMap.put(XPATH_FUNCTIONS_NS, FnModule.class);
 
         // add other modules specified in configuration
         configureElement(xquery, XQUERY_BUILTIN_MODULES_CONFIGURATION_MODULES_ELEMENT_NAME, builtIn -> {
@@ -650,7 +724,7 @@ public class Configuration implements ErrorHandler {
         try {
             final Class<?> mClass = Class.forName(clazz);
 
-            if (!(org.exist.xquery.Module.class.isAssignableFrom(mClass))) {
+            if (!(Module.class.isAssignableFrom(mClass))) {
                 throw (new DatabaseConfigurationException("Failed to load module: " + uri + ". " +
                         "Class " + clazz + " is not an instance of org.exist.xquery.Module."));
             }
@@ -1429,7 +1503,7 @@ public class Configuration implements ErrorHandler {
      *
      * @param exception DOCUMENT ME!
      * @throws SAXException DOCUMENT ME!
-     * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
+     * @see ErrorHandler#error(SAXParseException)
      */
     @Override
     public void error(SAXParseException exception) throws SAXException {
@@ -1441,7 +1515,7 @@ public class Configuration implements ErrorHandler {
      *
      * @param exception DOCUMENT ME!
      * @throws SAXException DOCUMENT ME!
-     * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
+     * @see ErrorHandler#fatalError(SAXParseException)
      */
     @Override
     public void fatalError(SAXParseException exception) throws SAXException {
@@ -1453,7 +1527,7 @@ public class Configuration implements ErrorHandler {
      *
      * @param exception DOCUMENT ME!
      * @throws SAXException DOCUMENT ME!
-     * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
+     * @see ErrorHandler#warning(SAXParseException)
      */
     @Override
     public void warning(SAXParseException exception) throws SAXException {

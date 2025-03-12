@@ -21,19 +21,36 @@
  */
 package org.exist.util;
 
+import org.exist.Namespaces;
+import org.exist.dom.memtree.SAXAdapter;
+import org.exist.storage.BrokerFactory;
+import org.exist.xquery.Expression;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.w3c.dom.Document;
+import org.xml.sax.*;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
 import static org.assertj.core.api.Assertions.*;
 
 class ConfigurationTest {
     @Test
-    void testConfigurationConstructors() throws Exception {
+    void testConfigurationConstructors() {
         assertThatNoException().isThrownBy(Configuration::new);
         assertThatNoException().isThrownBy(() -> new Configuration(null));
     }
@@ -43,6 +60,51 @@ class ConfigurationTest {
         assertThatNoException().isThrownBy(() -> new Configuration("conf.xml"));
         assertThatNoException().isThrownBy(() -> new Configuration("conf.xml", Optional.empty()));
         assertThatNoException().isThrownBy(() -> new Configuration("conf.xml", Optional.of(existHomeDir)));
+    }
+
+    @Test
+    void testConfigurationContents(@TempDir Path existHomeDir) throws Exception {
+        validate(new Configuration("conf.xml"));
+        validate(new Configuration("conf.xml", Optional.empty()));
+        validate(new Configuration("conf.xml", Optional.of(existHomeDir)));
+    }
+
+    private void validate(final Configuration config) {
+        assertThat(config.hasProperty(BrokerFactory.PROPERTY_DATABASE)).isTrue();
+        assertThat(config.getProperty(BrokerFactory.PROPERTY_DATABASE)).isEqualTo("native");
+    }
+
+    private Document getDocument(final InputStream is) throws SAXException, IOException, ParserConfigurationException {
+
+        final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
+        factory.setNamespaceAware(true);
+
+        final InputSource src = new InputSource(is);
+        final SAXParser parser = factory.newSAXParser();
+        final XMLReader reader = parser.getXMLReader();
+
+        reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        reader.setFeature(FEATURE_SECURE_PROCESSING, true);
+
+        final SAXAdapter adapter = new SAXAdapter((Expression) null);
+        reader.setContentHandler(adapter);
+        reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
+        reader.parse(src);
+
+        return adapter.getDocument();
+    }
+
+    private String documentToString(final Document document) {
+        try {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            StringWriter stringWriter = new StringWriter();
+            transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
+            return stringWriter.toString();
+        } catch (TransformerException te) {
+            throw new RuntimeException("Transformation ", te);
+        }
     }
 
     @Test
