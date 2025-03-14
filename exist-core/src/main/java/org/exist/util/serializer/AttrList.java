@@ -66,17 +66,9 @@ public class AttrList {
 		addAttribute(name, value, AttrImpl.CDATA);
 	}
 
-	public void addAttributeNoIntern(final QName name, final String value) {
-		addAttributeNoIntern(name, value, AttrImpl.CDATA);
-	}
-
 	public void addAttribute(final QName name, final String value, final int attrType) {
-		addAttribute(name, value.intern(), attrType, null);
-	}
-	public void addAttributeNoIntern(final QName name, final String value, final int attrType) {
 		addAttribute(name, value, attrType, null);
 	}
-
 
 	public void addAttribute(final QName name, final String value, final int attrType, final NodeId nodeId) {
 		ensureCapacity();

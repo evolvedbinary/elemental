@@ -242,7 +242,7 @@ public class ElementImpl extends NodeImpl implements Element {
             attrList = new AttrList();
             while((attr < document.nextAttr) && (document.attrParent[attr] == nodeNumber)) {
                 final QName attrQName = document.attrName[attr];
-                attrList.addAttributeNoIntern(attrQName, document.attrValue[attr]);
+                attrList.addAttribute(attrQName, document.attrValue[attr]);
                 ++attr;
             }
         }
