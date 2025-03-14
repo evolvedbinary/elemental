@@ -5,6 +5,8 @@
  */
 package org.exist.util.serializer;
 
+import org.exist.util.Str;
+
 import javax.annotation.Nullable;
 
 import java.util.ArrayDeque;
@@ -25,7 +27,7 @@ import static javax.xml.XMLConstants.XML_NS_URI;
  */
 public class NamespaceSupport /* implements NamespaceContext */ {
 
-    @Nullable private Deque<Map<String, String>> stack = null;
+    @Nullable private Deque<Map<Str, String>> stack = null;
 
 //    @Override
     public void pushContext() {
@@ -44,21 +46,19 @@ public class NamespaceSupport /* implements NamespaceContext */ {
     }
 
 //    @Override
-    public @Nullable String getURI(String prefix) {
-        if (XML_NS_PREFIX.equals(prefix)) {
+    public @Nullable String getURI(Str prefix) {
+        if (Str.XMLConstants.XML_NS_PREFIX.equals(prefix)) {
             return XML_NS_URI;
         }
 
-        if (XMLNS_ATTRIBUTE.equals(prefix)) {
+        if (Str.XMLConstants.XMLNS_ATTRIBUTE.equals(prefix)) {
             return XMLNS_ATTRIBUTE_NS_URI;
         }
 
         @Nullable String uri = null;
         if (stack != null) {
 
-            prefix = prefix.intern();  // TODO(AR) if we can be 100% sure that all `prefix` are already interned then we could remove this...
-
-            for (final Map<String, String> context : stack) {
+            for (final Map<Str, String> context : stack) {
                 uri = context.get(prefix);
                 if (uri != null) {
                     break;
@@ -71,8 +71,8 @@ public class NamespaceSupport /* implements NamespaceContext */ {
 
 
 //    @Override
-    public boolean declarePrefix(@Nullable String prefix, final String uri) {
-        if (XML_NS_PREFIX.equals(prefix) || XMLNS_ATTRIBUTE.equals(prefix)) {
+    public boolean declarePrefix(@Nullable Str prefix, final String uri) {
+        if (Str.XMLConstants.XML_NS_PREFIX.equals(prefix) || Str.XMLConstants.XMLNS_ATTRIBUTE.equals(prefix)) {
             return false;
         }
 
@@ -81,9 +81,7 @@ public class NamespaceSupport /* implements NamespaceContext */ {
         }
 
         if (prefix == null) {
-            prefix = "";
-        } else {
-            prefix = prefix.intern();  // TODO(AR) if we can be 100% sure that all `prefix` are already interned then we could remove this...
+            prefix = Str.EMPTY;
         }
 
         stack.peekFirst().put(prefix, uri);

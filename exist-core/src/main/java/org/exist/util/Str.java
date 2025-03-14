@@ -3,8 +3,7 @@
  */
 package org.exist.util;
 
-import io.lacuna.bifurcan.Rope;
-
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -19,6 +18,18 @@ public final class Str implements Comparable<Str> {
     private Str(final int i, final boolean isEmpty) {
         this.index = i;
         this.isEmpty = isEmpty;
+    }
+
+    private final static StrCache<String> strCache = new StrCache<>();
+
+    public final static Str EMPTY = Str.of("");
+    public final static Str WILDCARD = Str.of("*");
+
+    public static String makeString(final Str str) {
+        if (str == null) {
+            return null;
+        }
+        return str.toString();
     }
 
     /**
@@ -69,8 +80,6 @@ public final class Str implements Comparable<Str> {
         return strCache.dump();
     }
 
-    private final static StrCache<String> strCache = new StrCache<>();
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -79,6 +88,26 @@ public final class Str implements Comparable<Str> {
         Str str = (Str) o;
 
         return index == str.index;
+    }
+
+    /**
+     * Test if two Str are equal whilst handling null references.
+     *
+     * @param s1 the first Str.
+     * @param s2 the second Str.
+     *
+     * @return true of the Str are equal or both are null, false otherwise.
+     */
+    public static boolean equals(@Nullable final Str s1, @Nullable final Str s2) {
+        if (s1 == s2) {
+            return true;
+        }
+
+        if (s1 == null) {
+            return false;
+        }
+
+        return s1.equals(s2);
     }
 
     @Override
@@ -158,5 +187,13 @@ public final class Str implements Comparable<Str> {
 
             return sb.toString();
         }
+    }
+
+    public static class XMLConstants {
+        public final static Str DEFAULT_NS_PREFIX = Str.of(javax.xml.XMLConstants.DEFAULT_NS_PREFIX);
+        public final static Str XML_NS_PREFIX = Str.of(javax.xml.XMLConstants.XML_NS_PREFIX);
+        public final static Str XMLNS_ATTRIBUTE = Str.of(javax.xml.XMLConstants.XMLNS_ATTRIBUTE);
+        public final static Str NULL_NS_URI = Str.of(javax.xml.XMLConstants.NULL_NS_URI);
+
     }
 }
