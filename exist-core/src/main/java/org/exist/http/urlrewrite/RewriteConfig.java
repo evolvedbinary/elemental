@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -206,7 +230,7 @@ public class RewriteConfig {
             if (child.getNodeType() == Node.ELEMENT_NODE && Namespaces.EXIST_NS.equals(ns)) {
                 final Element elem = (Element) child;
                 final String pattern = elem.getAttribute(PATTERN_ATTRIBUTE);
-                if (pattern == null) {
+                if (pattern.isEmpty()) {
                     throw new ServletException("Action in controller-config.xml has no pattern: " + elem.toString());
                 }
                 final URLRewrite urw = parseAction(urlRewrite.getConfig(), pattern, elem);
@@ -233,7 +257,7 @@ public class RewriteConfig {
              * as an attribute on the ControllerForward object.
              */
             final String serverName = action.getAttribute(SERVER_NAME_ATTRIBUTE);
-            if (serverName != null && serverName.length() > 0) {
+            if (!serverName.isEmpty()) {
                 cf.setServerName(serverName);
             }
             rewrite = cf;

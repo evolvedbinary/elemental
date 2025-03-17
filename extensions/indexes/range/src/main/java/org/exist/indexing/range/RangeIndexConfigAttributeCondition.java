@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -35,6 +59,7 @@ import org.exist.xquery.value.StringValue;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
@@ -42,6 +67,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static org.exist.util.StringUtil.nullIfEmpty;
 
 /**
  *
@@ -54,13 +80,14 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
 
     private final String attributeName;
     private final QName attribute;
-    private final String value;
+    private @Nullable final String value;
     private final Operator operator;
     private final boolean caseSensitive;
     private final boolean numericComparison;
-    private Double numericValue = null;
-    private String lowercaseValue = null;
-    private Pattern pattern = null;
+    private @Nullable final Double numericValue;
+    private @Nullable final Pattern pattern;
+
+    private @Nullable String lowercaseValue = null;
 
     public RangeIndexConfigAttributeCondition(final Element elem, final NodePath parentPath) throws DatabaseConfigurationException {
 
@@ -69,74 +96,90 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
                     "Range index module: Attribute condition cannot be defined for an attribute:" + parentPath);
         }
 
-        attributeName = elem.getAttribute("attribute");
-        if (attributeName == null || attributeName.isEmpty()) {
+        this.attributeName = elem.getAttribute("attribute");
+        if (this.attributeName.isEmpty()) {
             throw new DatabaseConfigurationException("Range index module: Empty or no attribute qname in condition");
         }
 
         try {
-            attribute = new QName(QName.extractLocalName(attributeName), XMLConstants.NULL_NS_URI,
-                    QName.extractPrefix(attributeName), ElementValue.ATTRIBUTE);
+            this.attribute = new QName(QName.extractLocalName(this.attributeName), XMLConstants.NULL_NS_URI, QName.extractPrefix(this.attributeName), ElementValue.ATTRIBUTE);
         } catch (final QName.IllegalQNameException e) {
             throw new DatabaseConfigurationException("Rand index module error: " + e.getMessage(), e);
         }
-        value = elem.getAttribute("value");
+
+        this.value = nullIfEmpty(elem.getAttribute("value"));
 
         // parse operator (default to 'eq' if missing)
         if (elem.hasAttribute("operator")) {
             final String operatorName = elem.getAttribute("operator");
-            operator = Operator.getByName(operatorName.toLowerCase());
-            if (operator == null) {
-                throw new DatabaseConfigurationException(
-                        "Range index module: Invalid operator specified in range index condition: " + operatorName + ".");
+            this.operator = Operator.getByName(operatorName.toLowerCase());
+            if (this.operator == null) {
+                throw new DatabaseConfigurationException("Range index module: Invalid operator specified in range index condition: " + operatorName + ".");
             }
         } else {
-            operator = Operator.EQ;
+            this.operator = Operator.EQ;
         }
 
-        final String caseString = elem.getAttribute("case");
-        caseSensitive = (caseString != null && !caseString.equalsIgnoreCase("no"));
 
+        final String caseString = elem.getAttribute("case");
+        this.caseSensitive = !caseString.equalsIgnoreCase("no");
         final String numericString = elem.getAttribute("numeric");
-        numericComparison = (numericString != null && numericString.equalsIgnoreCase("yes"));
+        this.numericComparison = numericString.equalsIgnoreCase("yes");
 
         // try to create a pattern matcher for a 'matches' condition
-        if (operator == Operator.MATCH) {
-            final int flags = caseSensitive ? 0 : CASE_INSENSITIVE;
-            try {
-                pattern = Pattern.compile(value, flags);
-            } catch (PatternSyntaxException e) {
-                RangeIndex.LOG.error(e);
-                throw new DatabaseConfigurationException(
-                        "Range index module: Invalid regular expression in condition: " + value);
+        if (this.operator == Operator.MATCH) {
+
+            if (value == null) {
+                throw new DatabaseConfigurationException("Range index module: Operator 'matches' specified without value");
             }
+
+            final int flags = this.caseSensitive ? 0 : CASE_INSENSITIVE;
+            try {
+                this.pattern = Pattern.compile(this.value, flags);
+            } catch (final PatternSyntaxException e) {
+                RangeIndex.LOG.error(e);
+                throw new DatabaseConfigurationException("Range index module: Invalid regular expression in condition: " + this.value);
+            }
+        } else {
+            this.pattern = null;
         }
 
         // try to parse the number value if numeric comparison is specified
         // store a reference to numeric value to avoid having to parse each time
-        if (numericComparison) {
-            switch (operator) {
-                case MATCH, STARTS_WITH, ENDS_WITH, CONTAINS -> throw new DatabaseConfigurationException(
-                        "Range index module: Numeric comparison not applicable for operator: " + operator.name());
+        if (this.numericComparison) {
+
+            switch (this.operator) {
+                case MATCH:
+                case STARTS_WITH:
+                case ENDS_WITH:
+                case CONTAINS:
+                    throw new DatabaseConfigurationException("Range index module: Numeric comparison not applicable for operator: " + this.operator.name());
+            }
+
+            if (value == null) {
+                throw new DatabaseConfigurationException("Range index module: Numeric 'comparison' specified without value");
             }
 
             try {
-                numericValue = Double.parseDouble(value);
-            } catch (NumberFormatException e)  {
-                throw new DatabaseConfigurationException(
-                        "Range index module: Numeric attribute condition specified, " +
-                                "but required value cannot be parsed as number: " + value);
+                this.numericValue = Double.parseDouble(this.value);
+            } catch (final NumberFormatException e)  {
+                throw new DatabaseConfigurationException("Range index module: Numeric attribute condition specified, but required value cannot be parsed as number: " + this.value);
             }
+        } else {
+            this.numericValue = null;
         }
 
     }
 
     // lazily evaluate lowercase value to convert once when needed
     private String getLowercaseValue() {
-        if (lowercaseValue == null && value != null) {
-            lowercaseValue = value.toLowerCase();
+        if (this.lowercaseValue == null) {
+            if (this.value != null) {
+                this.lowercaseValue = this.value.toLowerCase();
+            }
         }
-        return lowercaseValue;
+
+        return this.lowercaseValue;
     }
 
     @Override

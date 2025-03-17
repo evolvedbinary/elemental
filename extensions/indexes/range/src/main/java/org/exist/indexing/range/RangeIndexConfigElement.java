@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -61,7 +85,7 @@ public class RangeIndexConfigElement {
 
     public RangeIndexConfigElement(Element node, Map<String, String> namespaces) throws DatabaseConfigurationException {
         String match = node.getAttribute(MATCH_ATTR);
-        if (match != null && !match.isEmpty()) {
+        if (!match.isEmpty()) {
             try {
                 path = new NodePath(namespaces, match);
                 if (path.length() == 0)
@@ -76,7 +100,7 @@ public class RangeIndexConfigElement {
             isQNameIndex = true;
         }
         String typeStr = node.getAttribute(TYPE_ATTR);
-        if (typeStr != null && !typeStr.isEmpty()) {
+        if (!typeStr.isEmpty()) {
             try {
                 this.type = Type.getType(typeStr);
             } catch (XPathException e) {
@@ -87,29 +111,27 @@ public class RangeIndexConfigElement {
         parseChildren(node);
 
         String collation = node.getAttribute("collation");
-        if (collation != null && !collation.isEmpty()) {
+        if (!collation.isEmpty()) {
             analyzer.addCollation(collation);
             usesCollation = true;
         }
         String nested = node.getAttribute("nested");
-        includeNested = (nested == null || nested.isEmpty() || nested.equalsIgnoreCase("yes"));
+        includeNested = nested.isEmpty() || nested.equalsIgnoreCase("yes");
 
         // normalize whitespace if whitespace="normalize"
         String whitespace = node.getAttribute("whitespace");
-        if (whitespace != null) {
-            if ("trim".equalsIgnoreCase(whitespace)) {
-                wsTreatment = XMLString.SUPPRESS_BOTH;
-            } else if ("normalize".equalsIgnoreCase(whitespace)) {
-                wsTreatment = XMLString.NORMALIZE;
-            }
+        if ("trim".equalsIgnoreCase(whitespace)) {
+            wsTreatment = XMLString.SUPPRESS_BOTH;
+        } else if ("normalize".equalsIgnoreCase(whitespace)) {
+            wsTreatment = XMLString.NORMALIZE;
         }
 
         String caseStr = node.getAttribute("case");
-        if (caseStr != null && !caseStr.isEmpty()) {
+        if (!caseStr.isEmpty()) {
             caseSensitive = caseStr.equalsIgnoreCase("yes");
         }
         String custom = node.getAttribute("converter");
-        if (custom != null && !custom.isEmpty()) {
+        if (!custom.isEmpty()) {
             try {
                 Class customClass = Class.forName(custom);
                 typeConverter = (org.exist.indexing.range.conversion.TypeConverter) customClass.newInstance();

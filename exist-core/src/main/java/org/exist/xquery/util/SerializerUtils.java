@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,7 +49,6 @@ import io.lacuna.bifurcan.IEntry;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import org.apache.commons.lang3.StringUtils;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.exist.numbering.NodeId;
@@ -50,6 +73,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.util.StringUtil.isNullOrEmpty;
 
 /**
  * Serializer utilities used by several XQuery functions.
@@ -393,7 +417,7 @@ public class SerializerUtils {
 
     private static String readCharacterMapAttribute(final XMLStreamReader reader, final String key) throws XPathException {
         final String value = reader.getAttributeValue(XMLConstants.NULL_NS_URI, key);
-        if (StringUtils.isEmpty(value)) {
+        if (isNullOrEmpty(value)) {
             throw new XPathException(ErrorCodes.SEPM0017, "Bad character-map element missing: " + key + " attribute");
         }
         return value;

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -31,8 +55,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.commons.lang3.StringUtils;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,6 +72,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import static java.lang.invoke.MethodType.methodType;
+import static org.exist.util.StringUtil.isNullOrEmptyOrWs;
 
 public class AnalyzerConfig {
 
@@ -123,11 +146,11 @@ public class AnalyzerConfig {
         }
 
         // Get (optional) id-attribute of analyzer
-        final String id = config.getAttribute(ID_ATTRIBUTE);
+        final String id = config.getAttribute(ID_ATTRIBUTE).trim();
 
         // If no ID is provided, register as default analyzer
         // else register analyzer
-        if (StringUtils.isBlank(id)) {
+        if (id.isEmpty()) {
             setDefaultAnalyzer(analyzer);
         } else {
             analyzers.put(id, analyzer);
@@ -155,11 +178,11 @@ public class AnalyzerConfig {
     protected static Analyzer configureAnalyzer(Element config) throws DatabaseConfigurationException {
 
         // Get classname from attribute
-        final String className = config.getAttribute(CLASS_ATTRIBUTE);
+        final String className = config.getAttribute(CLASS_ATTRIBUTE).trim();
 
         Analyzer newAnalyzer = null;
 
-        if (StringUtils.isBlank(className)) {
+        if (className.isEmpty()) {
             // No classname is defined.
             LOG.error("Missing class attribute or attribute is empty.");
             // DW: throw exception?
@@ -360,7 +383,7 @@ public class AnalyzerConfig {
         // Place holder return value
         KeyTypedValue<?> parameter = null;
 
-        if (StringUtils.isBlank(type) || "java.lang.String".equals(type)) {
+        if (isNullOrEmptyOrWs(type) || "java.lang.String".equals(type)) {
             // String or no type is provided, assume string.
 
             if (value == null) {

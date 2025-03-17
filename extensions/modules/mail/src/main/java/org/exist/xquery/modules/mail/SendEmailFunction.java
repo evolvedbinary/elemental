@@ -46,7 +46,6 @@
 package org.exist.xquery.modules.mail;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Version;
@@ -73,6 +72,8 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static org.exist.util.StringUtil.isNullOrEmpty;
 
 /**
  * Mail Module Extension SendEmailFunction.
@@ -854,7 +855,7 @@ public class SendEmailFunction extends BasicFunction {
                                     }
 
                                     // Now, time to store it
-                                    if (content != null && contentType != null && !contentType.isEmpty()) {
+                                    if (content != null && !contentType.isEmpty()) {
                                         String charset = elementBodyPart.getAttribute("charset");
                                         String encoding = elementBodyPart.getAttribute("encoding");
 
@@ -863,11 +864,11 @@ public class SendEmailFunction extends BasicFunction {
                                             multibody.addBodyPart(body);
                                         }
 
-                                        if (StringUtils.isEmpty(charset)) {
+                                        if (isNullOrEmpty(charset)) {
                                             charset = "UTF-8";
                                         }
 
-                                        if (StringUtils.isEmpty(encoding)) {
+                                        if (isNullOrEmpty(encoding)) {
                                             encoding = "quoted-printable";
                                         }
 
