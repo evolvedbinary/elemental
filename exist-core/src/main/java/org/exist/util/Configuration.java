@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -195,6 +219,7 @@ import static org.exist.util.HtmlToXmlParser.HTML_TO_XML_PARSER_PROPERTIES_ELEME
 import static org.exist.util.HtmlToXmlParser.HTML_TO_XML_PARSER_PROPERTIES_PROPERTY;
 import static org.exist.util.HtmlToXmlParser.HTML_TO_XML_PARSER_PROPERTY;
 import static org.exist.util.ParametersExtractor.PARAMETER_ELEMENT_NAME;
+import static org.exist.util.StringUtil.nullIfEmpty;
 import static org.exist.util.XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE;
 import static org.exist.util.XMLReaderPool.XmlParser.XML_PARSER_ELEMENT;
 import static org.exist.util.XMLReaderPool.XmlParser.XML_PARSER_FEATURES_ELEMENT;
@@ -568,23 +593,25 @@ public class Configuration implements ErrorHandler {
                 final String uri = elem.getAttribute(BUILT_IN_MODULE_URI_ATTRIBUTE);
 
                 // uri attribute is the identifier and is always required
-                if (uri == null) {
-                    throw (new DatabaseConfigurationException("element 'module' requires an attribute 'uri'"));
+                if (uri.isEmpty()) {
+                    throw new DatabaseConfigurationException("element 'module' requires an attribute 'uri'");
                 }
 
                 final String clazz = elem.getAttribute(BUILT_IN_MODULE_CLASS_ATTRIBUTE);
                 final String source = elem.getAttribute(BUILT_IN_MODULE_SOURCE_ATTRIBUTE);
                 // either class or source attribute must be present
-                if (clazz == null && source == null) {
-                    throw (new DatabaseConfigurationException("element 'module' requires either an attribute " + "'class' or 'src'"));
+                if (clazz.isEmpty() && source.isEmpty()) {
+                    throw new DatabaseConfigurationException("element 'module' requires either an attribute 'class' or 'src'");
                 }
 
-                if (source != null) {
+                if (!source.isEmpty()) {
                     // Store src attribute info
 
                     modulesSourceMap.put(uri, source);
 
-                    LOG.debug("Registered mapping for module '{}' to '{}'", uri, source);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Registered mapping for module '{}' to '{}'", uri, source);
+                    }
                 } else {
                     // source class attribute info
 
@@ -596,7 +623,9 @@ public class Configuration implements ErrorHandler {
                         modulesClassMap.put(uri, moduleClass);
                     }
 
-                    LOG.debug("Configured module '{}' implemented in '{}'", uri, clazz);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Configured module '{}' implemented in '{}'", uri, clazz);
+                     }
                 }
 
                 //parse any module parameters
@@ -670,18 +699,23 @@ public class Configuration implements ErrorHandler {
                 final String value = attr.getAttribute("value");
                 final String type = attr.getAttribute("type");
 
-                if (name == null || name.isEmpty()) {
+                if (name.isEmpty()) {
                     LOG.warn("Discarded invalid attribute for TransformerFactory: '{}', name not specified", className);
-                } else if (type == null || type.isEmpty() || type.equalsIgnoreCase("string")) {
+
+                } else if (type.isEmpty() || type.equalsIgnoreCase("string")) {
                     attributes.put(name, value);
+
                 } else if (type.equalsIgnoreCase("boolean")) {
                     attributes.put(name, Boolean.valueOf(value));
+
                 } else if (type.equalsIgnoreCase("integer")) {
+
                     try {
                         attributes.put(name, Integer.valueOf(value));
                     } catch (final NumberFormatException nfe) {
                         LOG.warn("Discarded invalid attribute for TransformerFactory: '{}', name: {}, value not integer: {}", className, name, value, nfe);
                     }
+
                 } else {
                     // Assume string type
                     attributes.put(name, value);
@@ -761,7 +795,7 @@ public class Configuration implements ErrorHandler {
                 final Element filterElem = (Element) nlFilters.item(i);
                 final String filterClass = filterElem.getAttribute(CustomMatchListenerFactory.CONFIGURATION_ATTR_CLASS);
 
-                if (filterClass != null) {
+                if (!filterClass.isEmpty()) {
                     filters.add(filterClass);
                     LOG.debug(PRP_DETAILS, CustomMatchListenerFactory.CONFIG_MATCH_LISTENERS, filterClass);
                 } else {
@@ -779,7 +813,7 @@ public class Configuration implements ErrorHandler {
                 final Element filterElem = (Element) backupFilters.item(i);
                 final String filterClass = filterElem.getAttribute(CustomMatchListenerFactory.CONFIGURATION_ATTR_CLASS);
 
-                if (filterClass != null) {
+                if (!filterClass.isEmpty()) {
                     filters.add(filterClass);
                     LOG.debug(PRP_DETAILS, CustomMatchListenerFactory.CONFIG_MATCH_LISTENERS, filterClass);
                 } else {
@@ -1182,14 +1216,13 @@ public class Configuration implements ErrorHandler {
             final String className = elem.getAttribute(IndexManager.INDEXER_MODULES_CLASS_ATTRIBUTE);
             final String id = elem.getAttribute(IndexManager.INDEXER_MODULES_ID_ATTRIBUTE);
 
-            if (className == null || className.isEmpty()) {
-                throw (new DatabaseConfigurationException("Required attribute class is missing for module"));
+            if (className.isEmpty()) {
+                throw new DatabaseConfigurationException("Required attribute class is missing for module");
             }
 
-            if (id == null || id.isEmpty()) {
-                throw (new DatabaseConfigurationException("Required attribute id is missing for module"));
+            if (id.isEmpty()) {
+                throw new DatabaseConfigurationException("Required attribute id is missing for module");
             }
-
             modConfig[i] = new IndexModuleConfig(id, className, elem);
         }
         setProperty(IndexManager.PROPERTY_INDEXER_MODULES, modConfig);
@@ -1282,9 +1315,9 @@ public class Configuration implements ErrorHandler {
      *
      * @param element       The attribute's parent element
      * @param attributeName The name of the attribute
-     * @return The value of the attribute
+     * @return The value of the attribute, or null if the attribute does not exist or has an empty value
      */
-    private String getConfigAttributeValue(final Element element, final String attributeName) {
+    private @Nullable String getConfigAttributeValue(final Element element, final String attributeName) {
         if (element == null || attributeName == null) {
             return null;
         }
@@ -1297,12 +1330,12 @@ public class Configuration implements ErrorHandler {
             return value;
         }
         // If the value has not been overridden in a system property, then get it from the configuration
-        return element.getAttribute(attributeName);
+        return nullIfEmpty(element.getAttribute(attributeName));
     }
 
     private <T> void configureProperty(final Element element, final String attributeName, final String propertyName,
-                                       final Function<String, T> valueConverter, final T defaultValue) {
-        final String attributeValue = getConfigAttributeValue(element, attributeName);
+                                       final Function<String, T> valueConverter, @Nullable final T defaultValue) {
+        @Nullable final String attributeValue = getConfigAttributeValue(element, attributeName);
         if (attributeValue != null) {
             T value = valueConverter.apply(attributeValue);
             if (value != null) {

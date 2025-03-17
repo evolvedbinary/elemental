@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.http;
 
 import org.apache.logging.log4j.LogManager;
@@ -78,7 +101,7 @@ public class Descriptor implements ErrorHandler {
 
     //Data
     private BufferedWriter bufWriteReplayLog = null;    //Should a replay log of requests be created
-    private boolean requestsFiltered = false;
+    private boolean requestsFiltered;
     private String allowSourceList[] = null;    //Array of xql files to allow source to be viewed
     private String mapList[][] = null;                    //Array of Mappings
 
@@ -144,8 +167,9 @@ public class Descriptor implements ErrorHandler {
                 final Path logFile = Paths.get("request-replay-log.txt");
                 bufWriteReplayLog = Files.newBufferedWriter(logFile);
                 final String attr = doc.getDocumentElement().getAttribute("filtered");
-                if (attr != null)
+                if (!attr.isEmpty()) {
                     requestsFiltered = "true".equals(attr);
+                }
             }
 
             //load <allow-source> settings
@@ -206,7 +230,7 @@ public class Descriptor implements ErrorHandler {
             String path = elem.getAttribute("path");        //@path
 
             //must be a path to allow source for
-            if (path == null) {
+            if (path.isEmpty()) {
                 LOG.warn("Error element 'xquery' requires an attribute 'path'");
                 return;
             }
@@ -242,7 +266,7 @@ public class Descriptor implements ErrorHandler {
             String view = elem.getAttribute("view");        //@view
 
             //must be a path or a pattern to map from
-            if (path == null /*&& pattern == null*/) {
+            if (path.isEmpty() /*&& pattern == null*/) {
                 LOG.warn("Error element 'map' requires an attribute 'path' or an attribute 'pattern'");
                 return;
             }
@@ -250,7 +274,7 @@ public class Descriptor implements ErrorHandler {
                     SingleInstanceConfiguration.getWebappHome().orElse(Paths.get(".")).toAbsolutePath().toString().replace('\\', '/'));
 
             //must be a view to map to
-            if (view == null) {
+            if (view.isEmpty()) {
                 LOG.warn("Error element 'map' requires an attribute 'view'");
                 return;
             }

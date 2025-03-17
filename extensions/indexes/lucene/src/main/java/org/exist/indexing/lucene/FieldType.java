@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,7 +45,6 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.exist.indexing.lucene.analyzers.MetaAnalyzer;
@@ -56,14 +79,14 @@ public class FieldType {
     public FieldType(Element config, AnalyzerConfig analyzers) throws DatabaseConfigurationException {
         
     	if (LuceneConfig.FIELD_TYPE_ELEMENT.equals(config.getLocalName())) {
-    		id = config.getAttribute(ID_ATTR);
-            if (StringUtils.isEmpty(id))
+    		id = config.getAttribute(ID_ATTR).trim();
+            if (id.isEmpty())
     			throw new DatabaseConfigurationException("fieldType needs an attribute 'id'");
     	}
-    	
-    	String aId = config.getAttribute(ANALYZER_ID_ATTR);
+
+    	String aId = config.getAttribute(ANALYZER_ID_ATTR).trim();
     	// save Analyzer for later use in LuceneMatchListener
-        if (aId != null && !aId.isEmpty()) {
+        if (!aId.isEmpty()) {
         	final Analyzer configuredAnalyzer = analyzers.getAnalyzerById(aId);
             if (configuredAnalyzer == null)
                 throw new DatabaseConfigurationException("No analyzer configured for id " + aId);
@@ -73,8 +96,8 @@ public class FieldType {
         	analyzer = new MetaAnalyzer(analyzers.getDefaultAnalyzer());
         }
         
-        String boostAttr = config.getAttribute(BOOST_ATTRIB);
-        if (boostAttr != null && !boostAttr.isEmpty()) {
+        String boostAttr = config.getAttribute(BOOST_ATTRIB).trim();
+        if (!boostAttr.isEmpty()) {
             try {
                 boost = Float.parseFloat(boostAttr);
             } catch (NumberFormatException e) {
@@ -83,8 +106,8 @@ public class FieldType {
             }
         }
         
-        String storeAttr = config.getAttribute(STORE_ATTRIB);
-        if (storeAttr != null && !storeAttr.isEmpty()) {
+        String storeAttr = config.getAttribute(STORE_ATTRIB).trim();
+        if (!storeAttr.isEmpty()) {
         	store = storeAttr.equalsIgnoreCase("yes") ? Field.Store.YES : Field.Store.NO;
         }
     }

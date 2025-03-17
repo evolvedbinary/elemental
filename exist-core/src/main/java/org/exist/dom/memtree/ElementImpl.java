@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -102,28 +126,31 @@ public class ElementImpl extends NodeImpl implements Element {
     @Override
     public String getAttribute(final String name) {
         int attr = document.alpha[nodeNumber];
+
         if(-1 < attr) {
-            while(attr < document.nextAttr && document.attrParent[attr] == nodeNumber) {
+            while (attr < document.nextAttr && document.attrParent[attr] == nodeNumber) {
                 final QName attrQName = document.attrName[attr];
-                if(attrQName.getStringValue().equals(name)) {
+                if (attrQName.getStringValue().equals(name)) {
                     return document.attrValue[attr];
                 }
                 ++attr;
             }
         }
-        if(name.startsWith(XMLConstants.XMLNS_ATTRIBUTE + ":")) {
+
+        if (name.startsWith(XMLConstants.XMLNS_ATTRIBUTE + ":")) {
             int ns = document.alphaLen[nodeNumber];
-            if(-1 < ns) {
-                while(ns < document.nextNamespace && document.namespaceParent[ns] == nodeNumber) {
+            if (-1 < ns) {
+                while (ns < document.nextNamespace && document.namespaceParent[ns] == nodeNumber) {
                     final QName nsQName = document.namespaceCode[ns];
-                    if(nsQName.getStringValue().equals(name)) {
+                    if (nsQName.getStringValue().equals(name)) {
                         return nsQName.getNamespaceURI();
                     }
                     ++ns;
                 }
             }
         }
-        return null;
+
+        return "";
     }
 
     @Override
@@ -411,28 +438,31 @@ public class ElementImpl extends NodeImpl implements Element {
     @Override
     public String getAttributeNS(final String namespaceURI, final String localName) {
         int attr = document.alpha[nodeNumber];
-        if(-1 < attr) {
-            while(attr < document.nextAttr && document.attrParent[attr] == nodeNumber) {
+
+        if (-1 < attr) {
+            while (attr < document.nextAttr && document.attrParent[attr] == nodeNumber) {
                 final QName name = document.attrName[attr];
-                if(name.getLocalPart().equals(localName) && name.getNamespaceURI().equals(namespaceURI)) {
+                if (name.getLocalPart().equals(localName) && name.getNamespaceURI().equals(namespaceURI)) {
                     return document.attrValue[attr];
                 }
                 ++attr;
             }
         }
-        if(Namespaces.XMLNS_NS.equals(namespaceURI)) {
+
+        if (Namespaces.XMLNS_NS.equals(namespaceURI)) {
             int ns = document.alphaLen[nodeNumber];
-            if(-1 < ns) {
-                while(ns < document.nextNamespace && document.namespaceParent[ns] == nodeNumber) {
+            if (-1 < ns) {
+                while (ns < document.nextNamespace && document.namespaceParent[ns] == nodeNumber) {
                     final QName nsQName = document.namespaceCode[ns];
-                    if(nsQName.getLocalPart().equals(localName)) {
+                    if (nsQName.getLocalPart().equals(localName)) {
                         return nsQName.getNamespaceURI();
                     }
                     ++ns;
                 }
             }
         }
-        return null;
+
+        return "";
     }
 
     @Override
@@ -473,7 +503,32 @@ public class ElementImpl extends NodeImpl implements Element {
 
     @Override
     public boolean hasAttribute(final String name) {
-        return getAttribute(name) != null;
+        int attr = document.alpha[nodeNumber];
+
+        if (-1 < attr) {
+            while (attr < document.nextAttr && document.attrParent[attr] == nodeNumber) {
+                final QName attrQName = document.attrName[attr];
+                if (attrQName.getStringValue().equals(name)) {
+                    return true;
+                }
+                ++attr;
+            }
+        }
+
+        if (name.startsWith(XMLConstants.XMLNS_ATTRIBUTE + ":")) {
+            int ns = document.alphaLen[nodeNumber];
+            if (-1 < ns) {
+                while (ns < document.nextNamespace && document.namespaceParent[ns] == nodeNumber) {
+                    final QName nsQName = document.namespaceCode[ns];
+                    if (nsQName.getStringValue().equals(name)) {
+                        return true;
+                    }
+                    ++ns;
+                }
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -556,46 +611,43 @@ public class ElementImpl extends NodeImpl implements Element {
         return "";//UNDERSTAND: is it ok?
     }
 
-    //TODO please, keep in sync with org.exist.dom.persistent.ElementImpl
+    // NOTE(AR) please keep in sync with org.exist.dom.persistent.ElementImpl
     private XmldbURI calculateBaseURI() {
         XmldbURI baseURI = null;
 
         final String nodeBaseURI = getAttributeNS(Namespaces.XML_NS, "base");
-        if(nodeBaseURI != null) {
+        if (!nodeBaseURI.isEmpty()) {
             baseURI = XmldbURI.create(nodeBaseURI, false);
-            if(baseURI.isAbsolute()) {
+            if (baseURI.isAbsolute()) {
                 return baseURI;
             }
         }
 
         int parent = -1;
         final int test = document.getParentNodeFor(nodeNumber);
-        if(document.nodeKind[test] != Node.DOCUMENT_NODE) {
+        if (document.nodeKind[test] != Node.DOCUMENT_NODE) {
             parent = test;
         }
 
-        if(parent != -1) {
-            if(nodeBaseURI == null) {
+        if (parent != -1) {
+            if (nodeBaseURI.isEmpty()) {
                 baseURI = ((ElementImpl) document.getNode(parent))
                     .calculateBaseURI();
             } else {
-                XmldbURI parentsBaseURI = ((ElementImpl) document.getNode(parent))
-                    .calculateBaseURI();
-
-                if(nodeBaseURI.isEmpty()) {
-                    baseURI = parentsBaseURI;
-                } else {
+                final XmldbURI parentsBaseURI = ((ElementImpl) document.getNode(parent)).calculateBaseURI();
+                if (parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")) {
                     baseURI = parentsBaseURI.append(baseURI);
+                } else {
+                    // there is a filename, remove it
+                    baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
                 }
             }
         } else {
-            if(nodeBaseURI == null) {
+            if (nodeBaseURI.isEmpty()) {
                 return XmldbURI.create(getOwnerDocument().getBaseURI(), false);
-            } else if(nodeNumber == 1) {
-                //nothing to do
-            } else {
+            } else if (nodeNumber != 1) {
                 final String docBaseURI = getOwnerDocument().getBaseURI();
-                if(docBaseURI.endsWith("/")) {
+                if (docBaseURI.endsWith("/")) {
                     baseURI = XmldbURI.create(getOwnerDocument().getBaseURI(), false);
                     baseURI.append(baseURI);
                 } else {
@@ -605,6 +657,7 @@ public class ElementImpl extends NodeImpl implements Element {
                 }
             }
         }
+
         return baseURI;
     }
 

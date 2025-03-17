@@ -114,11 +114,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
         </dependency>
@@ -241,6 +236,8 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/main/java/org/exist/xquery/modules/mail/MailSessionFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</include>
                             </includes>
                         </licenseSet>
@@ -254,6 +251,8 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/mail/MailSessionFunctions.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</exclude>

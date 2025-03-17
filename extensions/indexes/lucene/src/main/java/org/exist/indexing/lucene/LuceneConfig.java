@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,6 +60,8 @@ import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import javax.annotation.Nullable;
 
 public class LuceneConfig {
 
@@ -441,17 +467,20 @@ public class LuceneConfig {
 
         protected String uri;
         protected String prefix;
-        protected String at;
+        protected @Nullable String at;
 
         ModuleImport(Element config) throws DatabaseConfigurationException {
             this.uri = config.getAttribute(ATTR_MODULE_URI);
             this.prefix = config.getAttribute(ATTR_MODULE_PREFIX);
             this.at = config.getAttribute(ATTR_MODULE_AT);
+            if (at.isEmpty()) {
+                this.at = null;
+            }
 
-            if (this.prefix == null || this.prefix.isEmpty()) {
+            if (this.prefix.isEmpty()) {
                 throw new DatabaseConfigurationException("Attribute prefix for <module> required");
             }
-            if (this.uri == null || this.uri.isEmpty()) {
+            if (this.uri.isEmpty()) {
                 throw new DatabaseConfigurationException("Attribute uri for <module> required");
             }
         }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,11 +47,12 @@ package org.exist.xquery.functions.integer;
 
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.RuleBasedNumberFormat;
-import org.apache.commons.lang3.StringUtils;
 import org.exist.xquery.XPathException;
 
 import java.math.BigInteger;
 import java.util.*;
+
+import static org.exist.util.StringUtil.capitalize;
 
 /**
  * Format numbers according to rules 6/7/8 (formatting as words)
@@ -202,7 +227,7 @@ public class WordPicture extends IntegerPicture {
             String result = switch (this) {
                 case UPPER -> formatted.toUpperCase(locale);
                 case LOWER -> formatted;
-                case CAPITALIZED -> StringUtils.capitalize(formatted);
+                case CAPITALIZED -> capitalize(formatted);
             };
             return result;
         }

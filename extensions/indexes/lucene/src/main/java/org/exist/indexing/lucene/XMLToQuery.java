@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -231,7 +255,7 @@ public class XMLToQuery {
 
     private int getSlop(Element node) throws XPathException {
         String slop = node.getAttribute("slop");
-        if (slop != null && !slop.isEmpty()) {
+        if (!slop.isEmpty()) {
             try {
                 return Integer.parseInt(slop);
             } catch (NumberFormatException e) {
@@ -300,7 +324,7 @@ public class XMLToQuery {
     private Query fuzzyQuery(String field, Element node) throws XPathException {
         int maxEdits = FuzzyQuery.defaultMaxEdits;
         String attr = node.getAttribute("max-edits");
-        if (attr != null && !attr.isEmpty()) {
+        if (!attr.isEmpty()) {
             try {
                 maxEdits = Integer.parseInt(attr);
                 if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
@@ -324,7 +348,7 @@ public class XMLToQuery {
 
         // Specifies a minimum number of the optional BooleanClauses which must be satisfied.
         String minOpt = node.getAttribute("min");
-        if (minOpt != null) {
+        if (!minOpt.isEmpty()) {
             try {
                 int minMust = Integer.parseInt(minOpt);
                 query.setMinimumNumberShouldMatch(minMust);
@@ -351,7 +375,7 @@ public class XMLToQuery {
     private void setRewriteMethod(MultiTermQuery query, Element node, QueryOptions options) {
         boolean doFilterRewrite = options.filterRewrite();
         String option = node.getAttribute("filter-rewrite");
-        if (option != null) {
+        if (!option.isEmpty()) {
             doFilterRewrite = option.equalsIgnoreCase("yes");
         }
         if (doFilterRewrite) {
@@ -364,7 +388,7 @@ public class XMLToQuery {
     private BooleanClause.Occur getOccur(Element elem) {
         BooleanClause.Occur occur = BooleanClause.Occur.SHOULD;
         String occurOpt = elem.getAttribute("occur");
-        if (occurOpt != null) {
+        if (!occurOpt.isEmpty()) {
             occur = switch (occurOpt) {
                 case "must" -> BooleanClause.Occur.MUST;
                 case "not" -> BooleanClause.Occur.MUST_NOT;
@@ -400,7 +424,7 @@ public class XMLToQuery {
 
     private void setBoost(Element node, Query query) throws XPathException {
         String boost = node.getAttribute("boost");
-        if (boost != null && !boost.isEmpty()) {
+        if (!boost.isEmpty()) {
             try {
                 query.setBoost(Float.parseFloat(boost));
             } catch (NumberFormatException e) {
@@ -434,7 +458,7 @@ public class XMLToQuery {
 
     private String getField(Element node, String defaultField) {
         final String field = node.getAttribute("field");
-        if (field != null && !field.isEmpty()) {
+        if (!field.isEmpty()) {
             return field;
         }
         return defaultField;
