@@ -80,12 +80,7 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
         </dependency>
-        
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -228,6 +223,15 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/main/java/org/exist/indexing/lucene/AbstractFieldConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/AnalyzerConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/FieldType.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneFacetConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
                             </includes>
                         </licenseSet>
 
@@ -240,6 +244,15 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/AbstractFieldConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/AnalyzerConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/FieldType.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneFacetConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

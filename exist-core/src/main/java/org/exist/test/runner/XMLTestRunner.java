@@ -83,6 +83,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
+import static org.exist.util.StringUtil.notNullOrEmptyOrWs;
 
 /**
  * A JUnit test runner which can run the XML formatter XQuery tests
@@ -164,14 +165,7 @@ public class XMLTestRunner extends AbstractTestRunner {
     }
 
     private static @Nullable String getIdValue(final Node test) {
-        String id = ((Element)test).getAttribute("id");
-        if (id != null) {
-            id = id.trim();
-            if (!id.isEmpty()) {
-                return id;
-            }
-        }
-        return null;
+        return notNullOrEmptyOrWs(((Element) test).getAttribute("id"), null);
     }
 
     private static @Nullable String getTaskText(final Node test) {

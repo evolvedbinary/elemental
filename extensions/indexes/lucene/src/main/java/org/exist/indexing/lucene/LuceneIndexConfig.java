@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,7 +47,6 @@ package org.exist.indexing.lucene;
 
 import org.apache.commons.collections4.MultiMap;
 import org.apache.commons.collections4.map.MultiValueMap;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -101,17 +124,17 @@ public class LuceneIndexConfig {
         }
 
         String name = config.getAttribute(FIELD_ATTR);
-        if (name != null && !name.isEmpty())
+        if (!name.isEmpty())
         	setName(name);
 
         String fieldType = config.getAttribute(TYPE_ATTR);
-        if (fieldType != null && !fieldType.isEmpty())
+        if (!fieldType.isEmpty())
         	type = fieldTypes.get(fieldType);
         if (type == null)
         	type = new FieldType(config, analyzers);
 
         String indexParam = config.getAttribute(INDEX_ATTR);
-        if (indexParam != null && !indexParam.isEmpty()) {
+        if (!indexParam.isEmpty()) {
             doIndex = "yes".equalsIgnoreCase(indexParam) || "true".equalsIgnoreCase(indexParam);
         }
 
@@ -141,7 +164,7 @@ public class LuceneIndexConfig {
                         }
                         case IGNORE_ELEMENT: {
 			    String qnameAttr = configElement.getAttribute(QNAME_ATTR);
-                            if (StringUtils.isEmpty(qnameAttr)) {
+                            if (qnameAttr.isEmpty()) {
                                 throw new DatabaseConfigurationException("Lucene configuration element 'ignore' needs an attribute 'qname'");
                             }
                             if (specialNodes == null) {
@@ -152,7 +175,7 @@ public class LuceneIndexConfig {
                         }
                         case INLINE_ELEMENT: {
 			    String qnameAttr = configElement.getAttribute(QNAME_ATTR);
-                            if (StringUtils.isEmpty(qnameAttr)) {
+                            if (qnameAttr.isEmpty()) {
                                 throw new DatabaseConfigurationException("Lucene configuration element 'inline' needs an attribute 'qname'");
                             }
                             if (specialNodes == null) {
@@ -177,7 +200,7 @@ public class LuceneIndexConfig {
                             }
 
                             final String qname = configElement.getAttribute("qname");
-                            if (StringUtils.isEmpty(qname)) {
+                            if (qname.isEmpty()) {
                                 throw new DatabaseConfigurationException("Lucene configuration element '" + localName + " needs an attribute 'qname'");
                             }
 
@@ -194,7 +217,7 @@ public class LuceneIndexConfig {
                             String value = null;
                             if (doMatch) {
                                 value = configElement.getAttribute("value");
-                                if (StringUtils.isEmpty(value)) {
+                                if (value.isEmpty()) {
                                     throw new DatabaseConfigurationException("Lucene configuration element '" + localName + " needs an attribute 'value'");
                                 }
                             }
@@ -326,7 +349,7 @@ public class LuceneIndexConfig {
 
     public static QName parseQName(Element config, Map<String, String> namespaces) throws DatabaseConfigurationException {
         String name = config.getAttribute(QNAME_ATTR);
-        if (StringUtils.isEmpty(name))
+        if (name.isEmpty())
             throw new DatabaseConfigurationException("Lucene index configuration error: element " + config.getNodeName() +
                     " must have an attribute " + QNAME_ATTR);
 

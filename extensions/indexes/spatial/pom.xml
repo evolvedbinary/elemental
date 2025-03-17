@@ -237,6 +237,8 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/main/java/org/exist/indexing/spatial/GMLHSQLIndex.java</include>
+                                <include>src/main/java/org/exist/indexing/spatial/GMLIndexConfig.java</include>
                             </includes>
                         </licenseSet>
 
@@ -249,6 +251,8 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/main/java/org/exist/indexing/spatial/GMLHSQLIndex.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/spatial/GMLIndexConfig.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

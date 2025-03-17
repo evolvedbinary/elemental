@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -750,7 +774,7 @@ public class RESTServer {
                     if (Query.xmlKey().equals(root.getLocalName())) {
                         // process <query>xpathQuery</query>
                         String option = root.getAttribute(Start.xmlKey());
-                        if (option != null) {
+                        if (!option.isEmpty()) {
                             try {
                                 start = Integer.parseInt(option);
                             } catch (final NumberFormatException e) {
@@ -759,7 +783,7 @@ public class RESTServer {
                         }
 
                         option = root.getAttribute(Max.xmlKey());
-                        if (option != null) {
+                        if (!option.isEmpty()) {
                             try {
                                 howmany = Integer.parseInt(option);
                             } catch (final NumberFormatException e) {
@@ -768,42 +792,35 @@ public class RESTServer {
                         }
 
                         option = root.getAttribute(Enclose.xmlKey());
-                        if (option != null) {
-                            if ("no".equals(option)) {
-                                enclose = false;
-                            }
+                        if ("no".equals(option)) {
+                            enclose = false;
                         } else {
                             option = root.getAttribute(Wrap.xmlKey());
-                            if (option != null) {
-                                if ("no".equals(option)) {
-                                    enclose = false;
-                                }
+                            if ("no".equals(option)) {
+                                enclose = false;
                             }
                         }
 
                         option = root.getAttribute(Method.xmlKey());
-                        if ((option != null) && (!option.isEmpty())) {
+                        if (!option.isEmpty()) {
                             outputProperties.setProperty(SERIALIZATION_METHOD_PROPERTY, option);
                         }
 
                         option = root.getAttribute(Typed.xmlKey());
-                        if (option != null) {
-                            if ("yes".equals(option)) {
-                                typed = true;
-                            }
+                        if ("yes".equals(option)) {
+                            typed = true;
                         }
 
                         option = root.getAttribute(Mime.xmlKey());
-                        if ((option != null) && (!option.isEmpty())) {
+                        if (!option.isEmpty()) {
                             mimeType = option;
                         }
 
-                        if ((option = root.getAttribute(Cache.xmlKey())) != null) {
-                            cache = "yes".equals(option);
-                        }
+                        option = root.getAttribute(Cache.xmlKey());
+                        cache = "yes".equals(option);
 
-                        if ((option = root.getAttribute(Session.xmlKey())) != null
-                                && option.length() > 0) {
+                        option = root.getAttribute(Session.xmlKey());
+                        if (!option.isEmpty()) {
                             outputProperties.setProperty(
                                     Serializer.PROPERTY_SESSION_ID, option);
                         }
@@ -842,7 +859,7 @@ public class RESTServer {
                                             final String value = property.getAttribute("value");
                                             LOG.debug("{} = {}", key, value);
 
-                                            if (key != null && value != null) {
+                                            if ((!key.isEmpty()) && (!value.isEmpty())) {
                                                 outputProperties.setProperty(key, value);
                                             }
                                         }

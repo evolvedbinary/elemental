@@ -93,6 +93,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.stream.Stream;
 
+import static org.exist.util.StringUtil.notNullOrEmptyOptional;
+import static org.exist.util.StringUtil.nullIfEmpty;
+
 /**
  * Deploy a .xar package into the database using the information provided
  * in expath-pkg.xml and repo.xml.
@@ -207,13 +210,13 @@ public class Deployment {
 
         final ElementImpl root = (ElementImpl) document.getDocumentElement();
         final String name = root.getAttribute("name");
-        final String pkgVersion = root.getAttribute("version");
+        @Nullable final String pkgVersion = nullIfEmpty(root.getAttribute("version"));
 
         final Optional<ExistRepository> repo = broker.getBrokerPool().getExpathRepo();
 	    if (repo.isPresent()) {
             final Packages packages = repo.get().getParentRepo().getPackages(name);
 
-            if (packages != null && (!enforceDeps || pkgVersion.equals(packages.latest().getVersion()))) {
+            if (packages != null && (!enforceDeps || (pkgVersion != null && pkgVersion.equals(packages.latest().getVersion())))) {
                 LOG.info("Application package {} already installed. Skipping.", name);
                 final Package pkg = packages.latest();
                 return Optional.of(getTargetCollection(broker, pkg, getPackageDir(pkg)));
@@ -226,24 +229,24 @@ public class Deployment {
                     final Element dependency = (Element) i.nextItem();
                     final String pkgName = dependency.getAttribute("package");
                     final String processor = dependency.getAttribute("processor");
-                    final String versionStr = dependency.getAttribute("version");
-                    final String semVer = dependency.getAttribute("semver");
-                    final String semVerMin = dependency.getAttribute("semver-min");
-                    final String semVerMax = dependency.getAttribute("semver-max");
+                    @Nullable final String versionStr = nullIfEmpty(dependency.getAttribute("version"));
+                    @Nullable final String semVer = nullIfEmpty(dependency.getAttribute("semver"));
+                    @Nullable final String semVerMin = nullIfEmpty(dependency.getAttribute("semver-min"));
+                    @Nullable final String semVerMax = nullIfEmpty(dependency.getAttribute("semver-max"));
                     PackageLoader.Version version = null;
                     if (semVer != null) {
                         version = new PackageLoader.Version(semVer, true);
-                    } else if (semVerMax != null || semVerMin != null) {
+                    } else if (semVerMin != null || semVerMax != null) {
                         version = new PackageLoader.Version(semVerMin, semVerMax);
                     } else if (pkgVersion != null) {
                         version = new PackageLoader.Version(versionStr, false);
                     }
 
-                    if (processor != null && processor.equals(PROCESSOR_NAME) && version != null) {
+                    if (processor.equals(PROCESSOR_NAME) && version != null) {
                         checkProcessorVersion(version);
-                    } else if (processor != null && processor.equals(EXIST_PROCESSOR_NAME) && version != null) {
+                    } else if (processor.equals(EXIST_PROCESSOR_NAME) && version != null) {
                         checkExistDbProcessorVersion(version);
-                    } else if (pkgName != null) {
+                    } else if (!pkgName.isEmpty()) {
                         LOG.info("Package {} depends on {}", name, pkgName);
                         boolean isInstalled = false;
                         if (repo.get().getParentRepo().getPackages(pkgName) != null) {
@@ -433,7 +436,7 @@ public class Deployment {
                 // extract the permissions (if any)
                 final Optional<ElementImpl> permissions = findElement(repoXML, PERMISSIONS_ELEMENT);
                 final Optional<RequestedPerms> requestedPerms = permissions.flatMap(elem -> {
-                    final Optional<Either<Integer, String>> perms = Optional.ofNullable(elem.getAttribute("mode")).flatMap(mode -> {
+                    final Optional<Either<Integer, String>> perms = notNullOrEmptyOptional(elem.getAttribute("mode")).flatMap(mode -> {
                         try {
                             return Optional.of(Either.Left(Integer.parseInt(mode, 8)));
                         } catch(final NumberFormatException e) {
@@ -448,7 +451,7 @@ public class Deployment {
                     return perms.map(p -> new RequestedPerms(
                         elem.getAttribute("user"),
                         elem.getAttribute("password"),
-                        Optional.ofNullable(elem.getAttribute("group")),
+                        notNullOrEmptyOptional(elem.getAttribute("group")),
                         p
                     ));
                 });

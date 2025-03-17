@@ -122,6 +122,7 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
+                                <include>src/main/java/org/exist/xquery/modules/jndi/ModifyFunction.java</include>
                             </includes>
                         </licenseSet>
 
@@ -132,6 +133,7 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/jndi/ModifyFunction.java</exclude>
                             </excludes>
                         </licenseSet>
 

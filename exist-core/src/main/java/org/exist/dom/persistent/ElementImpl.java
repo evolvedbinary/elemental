@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -803,8 +827,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     @Override
     public String getAttributeNS(final String namespaceURI, final String localName) {
         final Attr attr = findAttribute(new QName(localName, namespaceURI));
-        return attr != null ? attr.getValue() : XMLConstants.NULL_NS_URI;
-        //XXX: if not present must return null
+        return attr != null ? attr.getValue() : "";
     }
 
     @Deprecated //move as soon as getAttributeNS null issue resolved 
@@ -1991,41 +2014,37 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
         return ""; //UNDERSTAND: is it ok?
     }
 
-    //TODO Please, keep in sync with org.exist.dom.memtree.ElementImpl
+    // NOTE(AR) please keep in sync with org.exist.dom.memtree.ElementImpl
     private XmldbURI calculateBaseURI() {
         XmldbURI baseURI = null;
 
-        final String nodeBaseURI = _getAttributeNS(Namespaces.XML_NS, "base");
-        if(nodeBaseURI != null) {
+        final String nodeBaseURI = getAttributeNS(Namespaces.XML_NS, "base");
+        if (!nodeBaseURI.isEmpty()) {
             baseURI = XmldbURI.create(nodeBaseURI, false);
-            if(baseURI.isAbsolute()) {
+            if (baseURI.isAbsolute()) {
                 return baseURI;
             }
         }
 
-        final IStoredNode parent = getParentStoredNode();
-        if(parent != null) {
-            if(nodeBaseURI == null) {
+        final IStoredNode<?> parent = getParentStoredNode();
+        if (parent != null) {
+            if (nodeBaseURI.isEmpty()) {
                 baseURI = ((ElementImpl) parent).calculateBaseURI();
             } else {
-                XmldbURI parentsBaseURI = ((ElementImpl) parent).calculateBaseURI();
-                if(nodeBaseURI.isEmpty()) {
-                    baseURI = parentsBaseURI;
+                final XmldbURI parentsBaseURI = ((ElementImpl) parent).calculateBaseURI();
+                if (parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")) {
+                    baseURI = parentsBaseURI.append(baseURI);
                 } else {
-                    if(parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")){
-                        baseURI = parentsBaseURI.append(baseURI);
-                    } else {
-                        // there is a filename, remove it
-                        baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
-                    }
+                    // there is a filename, remove it
+                    baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
                 }
             }
         } else {
-            if(nodeBaseURI == null) {
+            if (nodeBaseURI.isEmpty()) {
                 return XmldbURI.create(getOwnerDocument().getBaseURI(), false);
             } else {
                 final String docBaseURI = getOwnerDocument().getBaseURI();
-                if(docBaseURI.endsWith("/")) {
+                if (docBaseURI.endsWith("/")) {
                     baseURI = XmldbURI.create(getOwnerDocument().getBaseURI(), false);
                     baseURI.append(baseURI);
                 } else {
@@ -2035,6 +2054,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
                 }
             }
         }
+
         return baseURI;
     }
 

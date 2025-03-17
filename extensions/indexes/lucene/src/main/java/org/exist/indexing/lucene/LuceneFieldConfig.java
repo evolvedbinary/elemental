@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,7 +45,6 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.*;
 import org.exist.dom.persistent.DocumentImpl;
@@ -74,12 +97,12 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
         super(config, configElement, namespaces);
 
         fieldName = configElement.getAttribute(ATTR_FIELD_NAME);
-        if (StringUtils.isEmpty(fieldName)) {
+        if (fieldName.isEmpty()) {
             throw new DatabaseConfigurationException("Invalid config: attribute 'name' must be given");
         }
 
         final String typeStr = configElement.getAttribute(ATTR_TYPE);
-        if (StringUtils.isNotEmpty(typeStr)) {
+        if (!typeStr.isEmpty()) {
             try {
                 this.type = Type.getType(typeStr);
             } catch (XPathException e) {
@@ -88,12 +111,12 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
         }
 
         final String storeStr = configElement.getAttribute(ATTR_STORE);
-        if (StringUtils.isNotEmpty(storeStr)) {
+        if (!storeStr.isEmpty()) {
             this.store = storeStr.equalsIgnoreCase("yes") || storeStr.equalsIgnoreCase("true");
         }
 
         final String analyzerOpt = configElement.getAttribute(ATTR_ANALYZER);
-        if (StringUtils.isNotEmpty(analyzerOpt)) {
+        if (!analyzerOpt.isEmpty()) {
             analyzer = analyzers.getAnalyzerById(analyzerOpt);
             if (analyzer == null) {
                 throw new DatabaseConfigurationException("Analyzer for field " + fieldName + " not found");
@@ -101,7 +124,7 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
         }
 
         final String cond = configElement.getAttribute(ATTR_IF);
-        if (StringUtils.isNotEmpty(cond)) {
+        if (!cond.isEmpty()) {
             this.condition = Optional.of(cond);
         }
     }

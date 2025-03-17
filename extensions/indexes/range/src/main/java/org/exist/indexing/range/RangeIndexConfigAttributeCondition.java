@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -35,12 +59,14 @@ import org.exist.xquery.value.StringValue;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static org.exist.util.StringUtil.nullIfEmpty;
 
 /**
  *
@@ -53,13 +79,14 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
 
     private final String attributeName;
     private final QName attribute;
-    private final String value;
+    private @Nullable final String value;
     private final Operator operator;
-    private boolean caseSensitive = true;
-    private boolean numericComparison = false;
-    private Double numericValue = null;
-    private String lowercaseValue = null;
-    private Pattern pattern = null;
+    private final boolean caseSensitive;
+    private final boolean numericComparison;
+    private @Nullable final Double numericValue;
+    private @Nullable final Pattern pattern;
+
+    private @Nullable String lowercaseValue = null;
 
     public RangeIndexConfigAttributeCondition(Element elem, NodePath parentPath) throws DatabaseConfigurationException {
 
@@ -68,7 +95,7 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
         }
 
         this.attributeName = elem.getAttribute("attribute");
-        if (this.attributeName == null || this.attributeName.isEmpty()) {
+        if (this.attributeName.isEmpty()) {
             throw new DatabaseConfigurationException("Range index module: Empty or no attribute qname in condition");
         }
 
@@ -77,8 +104,8 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
         } catch (final QName.IllegalQNameException e) {
             throw new DatabaseConfigurationException("Rand index module error: " + e.getMessage(), e);
         }
-        this.value = elem.getAttribute("value");
 
+        this.value = nullIfEmpty(elem.getAttribute("value"));
 
         // parse operator (default to 'eq' if missing)
         if (elem.hasAttribute("operator")) {
@@ -91,29 +118,35 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
             this.operator = Operator.EQ;
         }
 
-
         final String caseString = elem.getAttribute("case");
-        final String numericString = elem.getAttribute("numeric");
+        this.caseSensitive = !caseString.equalsIgnoreCase("no");
 
-        this.caseSensitive = (caseString != null && !caseString.equalsIgnoreCase("no"));
-        this.numericComparison = (numericString != null && numericString.equalsIgnoreCase("yes"));
+        final String numericString = elem.getAttribute("numeric");
+        this.numericComparison = numericString.equalsIgnoreCase("yes");
 
         // try to create a pattern matcher for a 'matches' condition
         if (this.operator == Operator.MATCH) {
+
+            if (value == null) {
+                throw new DatabaseConfigurationException("Range index module: Operator 'matches' specified without value");
+            }
+
             final int flags = this.caseSensitive ? 0 : CASE_INSENSITIVE;
             try {
                 this.pattern = Pattern.compile(this.value, flags);
-            } catch (PatternSyntaxException e) {
+            } catch (final PatternSyntaxException e) {
                 RangeIndex.LOG.error(e);
                 throw new DatabaseConfigurationException("Range index module: Invalid regular expression in condition: " + this.value);
             }
+        } else {
+            this.pattern = null;
         }
 
         // try to parse the number value if numeric comparison is specified
         // store a reference to numeric value to avoid having to parse each time
         if (this.numericComparison) {
 
-            switch(this.operator) {
+            switch (this.operator) {
                 case MATCH:
                 case STARTS_WITH:
                 case ENDS_WITH:
@@ -121,11 +154,17 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
                     throw new DatabaseConfigurationException("Range index module: Numeric comparison not applicable for operator: " + this.operator.name());
             }
 
+            if (value == null) {
+                throw new DatabaseConfigurationException("Range index module: Numeric 'comparison' specified without value");
+            }
+
             try {
                 this.numericValue = Double.parseDouble(this.value);
-            } catch (NumberFormatException e)  {
+            } catch (final NumberFormatException e)  {
                 throw new DatabaseConfigurationException("Range index module: Numeric attribute condition specified, but required value cannot be parsed as number: " + this.value);
             }
+        } else {
+            this.numericValue = null;
         }
 
     }

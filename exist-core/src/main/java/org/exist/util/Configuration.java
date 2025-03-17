@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -97,6 +121,7 @@ import org.xmlresolver.Resolver;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
+import static org.exist.util.StringUtil.nullIfEmpty;
 import static org.exist.util.io.ContentFilePool.PROPERTY_IN_MEMORY_SIZE;
 import static org.exist.util.io.VirtualTempPath.DEFAULT_IN_MEMORY_SIZE;
 
@@ -448,16 +473,16 @@ public class Configuration implements ErrorHandler
                     final String source = elem.getAttribute(XQueryContext.BUILT_IN_MODULE_SOURCE_ATTRIBUTE);
 
                     // uri attribute is the identifier and is always required
-                    if(uri == null) {
-                        throw(new DatabaseConfigurationException("element 'module' requires an attribute 'uri'" ));
+                    if (uri.isEmpty()) {
+                        throw new DatabaseConfigurationException("element 'module' requires an attribute 'uri'" );
                     }
 
                     // either class or source attribute must be present
-                    if((clazz == null) && (source == null)) {
-                        throw(new DatabaseConfigurationException("element 'module' requires either an attribute " + "'class' or 'src'" ));
+                    if (clazz.isEmpty() && source.isEmpty()) {
+                        throw new DatabaseConfigurationException("element 'module' requires either an attribute " + "'class' or 'src'" );
                     }
 
-                    if(source != null) {
+                    if (!source.isEmpty()) {
                         // Store src attribute info
 
                         modulesSourceMap.put(uri, source);
@@ -568,19 +593,19 @@ public class Configuration implements ErrorHandler
                 final String  value = attr.getAttribute( "value" );
                 final String  type  = attr.getAttribute( "type" );
 
-                if( ( name == null ) || (name.isEmpty()) ) {
+                if (name.isEmpty()) {
                     LOG.warn("Discarded invalid attribute for TransformerFactory: '{}', name not specified", className);
 
-                } else if( ( type == null ) || (type.isEmpty()) || type.equalsIgnoreCase( "string" ) ) {
+                } else if (type.isEmpty() || type.equalsIgnoreCase("string")) {
                     attributes.put( name, value );
 
-                } else if( type.equalsIgnoreCase( "boolean" ) ) {
+                } else if (type.equalsIgnoreCase( "boolean")) {
                     attributes.put( name, Boolean.valueOf( value ) );
 
-                } else if( type.equalsIgnoreCase( "integer" ) ) {
+                } else if (type.equalsIgnoreCase( "integer")) {
 
                     try {
-                        attributes.put( name, Integer.valueOf( value ) );
+                        attributes.put(name, Integer.valueOf(value));
                     }
                     catch( final NumberFormatException nfe ) {
                         LOG.warn("Discarded invalid attribute for TransformerFactory: '{}', name: {}, value not integer: {}", className, name, value, nfe);
@@ -589,7 +614,7 @@ public class Configuration implements ErrorHandler
                 } else {
 
                     // Assume string type
-                    attributes.put( name, value );
+                    attributes.put(name, value);
                 }
             }
 
@@ -726,7 +751,7 @@ public class Configuration implements ErrorHandler
                 final Element filterElem = (Element) nlFilters.item(i);
                 final String filterClass = filterElem.getAttribute(CustomMatchListenerFactory.CONFIGURATION_ATTR_CLASS);
 
-                if (filterClass != null) {
+                if (!filterClass.isEmpty()) {
                     filters.add(filterClass);
                     LOG.debug(CustomMatchListenerFactory.CONFIG_MATCH_LISTENERS + ": {}", filterClass);
                 } else {
@@ -745,7 +770,7 @@ public class Configuration implements ErrorHandler
                 final Element filterElem = (Element) backupFilters.item(i);
                 final String filterClass = filterElem.getAttribute(CustomMatchListenerFactory.CONFIGURATION_ATTR_CLASS);
 
-                if (filterClass != null) {
+                if (!filterClass.isEmpty()) {
                     filters.add(filterClass);
                     LOG.debug(CustomMatchListenerFactory.CONFIG_MATCH_LISTENERS + ": {}", filterClass);
                 } else {
@@ -1422,14 +1447,14 @@ public class Configuration implements ErrorHandler
                 final String  className = elem.getAttribute( IndexManager.INDEXER_MODULES_CLASS_ATTRIBUTE );
                 final String  id        = elem.getAttribute( IndexManager.INDEXER_MODULES_ID_ATTRIBUTE );
 
-                if( ( className == null ) || (className.isEmpty()) ) {
-                    throw( new DatabaseConfigurationException( "Required attribute class is missing for module" ) );
+                if (className.isEmpty()) {
+                    throw new DatabaseConfigurationException("Required attribute class is missing for module");
                 }
 
-                if( ( id == null ) || (id.isEmpty()) ) {
-                    throw( new DatabaseConfigurationException( "Required attribute id is missing for module" ) );
+                if (id.isEmpty()) {
+                    throw new DatabaseConfigurationException("Required attribute id is missing for module");
                 }
-                modConfig[i] = new IndexModuleConfig( id, className, elem );
+                modConfig[i] = new IndexModuleConfig(id, className, elem);
             }
             config.put( IndexManager.PROPERTY_INDEXER_MODULES, modConfig );
         }
@@ -1476,7 +1501,7 @@ public class Configuration implements ErrorHandler
             for (int i = 0; i < nlCatalogs.getLength(); i++) {
                 String uri = ((Element) nlCatalogs.item(i)).getAttribute("uri");
 
-                if (uri != null) {
+                if (!uri.isEmpty()) {
                     // Substitute string, creating an uri from a local file
                     if (uri.indexOf("${WEBAPP_HOME}") != -1) {
                         uri = uri.replaceAll("\\$\\{WEBAPP_HOME\\}", webappHome.toUri().toString());
@@ -1513,7 +1538,7 @@ public class Configuration implements ErrorHandler
         final NodeList contentFile = validation.getElementsByTagName("content-file");
         if (contentFile.getLength() > 0) {
             final String inMemorySize = ((Element) contentFile.item(0)).getAttribute("in-memory-size");
-            if (inMemorySize != null) {
+            if (!inMemorySize.isEmpty()) {
                 config.put(PROPERTY_IN_MEMORY_SIZE, parseInt(inMemorySize, DEFAULT_IN_MEMORY_SIZE));
                 LOG.debug(PRP_DETAILS, PROPERTY_IN_MEMORY_SIZE, config.get(PROPERTY_IN_MEMORY_SIZE));
             }
@@ -1531,33 +1556,28 @@ public class Configuration implements ErrorHandler
 
     /**
      * Gets the value of a configuration attribute
-     *
+     * <p>
      * The value typically is specified in the conf.xml file, but can be overridden with using a System Property
      *
-     * @param   element        The attribute's parent element
-     * @param   attributeName  The name of the attribute
-     *
-     * @return  The value of the attribute
+     * @param element       The attribute's parent element
+     * @param attributeName The name of the attribute
+     * @return The value of the attribute, or null if the attribute does not exist or has an empty value
      */
-    private String getConfigAttributeValue( Element element, String attributeName )
-    {
-    	String value = null;
-    	
-    	if( element != null && attributeName != null ) {
-    		final String property = getAttributeSystemPropertyName( element, attributeName );
-    		
-    		value = System.getProperty( property );
-    		
-    		// If the value has not been overriden in a system property, then get it from the configuration
-    		
-    		if( value != null ) {
-                LOG.warn("Configuration value overridden by system property: {}, with value: {}", property, value);
-    		} else {
-    			value = element.getAttribute( attributeName );
-    		}
-    	}
-    	
-    	return( value );
+    private @Nullable String getConfigAttributeValue(final Element element, final String attributeName) {
+        if (element == null || attributeName == null) {
+            return null;
+        }
+
+        final String property = getAttributeSystemPropertyName(element, attributeName);
+        final String value = System.getProperty(property);
+
+        if (value != null) {
+            LOG.warn("Configuration value overridden by system property: {}, with value: {}", property, value);
+            return value;
+        }
+
+        // If the value has not been overridden in a system property, then get it from the configuration
+        return nullIfEmpty(element.getAttribute(attributeName));
     }
     
     /**
