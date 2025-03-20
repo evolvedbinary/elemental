@@ -51,6 +51,7 @@ import org.exist.dom.NodeListImpl;
 import org.exist.dom.QName;
 import org.exist.dom.QName.IllegalQNameException;
 import org.exist.storage.ElementValue;
+import org.exist.util.serializer.AttrList;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Expression;
 import org.exist.xquery.NodeTest;
@@ -245,6 +246,22 @@ public class ElementImpl extends NodeImpl implements Element {
             ++ns;
         }
         return map;
+    }
+
+    @Override
+    public AttrList getAttrList() {
+        //Create the attribute list
+        AttrList attrList = null;
+        int attr = document.alpha[nodeNumber];
+        if (attr > -1) {
+            attrList = new AttrList();
+            while((attr < document.nextAttr) && (document.attrParent[attr] == nodeNumber)) {
+                final QName attrQName = document.attrName[attr];
+                attrList.addAttribute(attrQName, document.attrValue[attr]);
+                ++attr;
+            }
+        }
+        return attrList;
     }
 
     @Override

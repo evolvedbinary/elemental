@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,8 +52,6 @@ import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
-import org.exist.dom.memtree.NodeImpl;
-import org.exist.dom.memtree.ReferenceNode;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.Constants;
 import org.exist.xquery.Dependency;
@@ -380,8 +402,8 @@ public class FunDeepEqual extends CollatingFunction {
             }
             switch (nodeTypeA) {
             case Node.TEXT_NODE:
-                final String nodeValueA = getNodeValue(a);
-                final String nodeValueB = getNodeValue(b);
+                final String nodeValueA = a.getNodeValue();
+                final String nodeValueB = b.getNodeValue();
                 final int textComparison = safeCompare(nodeValueA, nodeValueB, collator);
                 if (textComparison != Constants.EQUAL) {
                     return textComparison;
@@ -410,14 +432,6 @@ public class FunDeepEqual extends CollatingFunction {
         }
     }
 
-    private static String getNodeValue(final Node n) {
-        if (n.getNodeType() == NodeImpl.REFERENCE_NODE) {
-           return ((ReferenceNode)n).getReference().getNodeValue();
-        } else {
-            return n.getNodeValue();
-        }
-    }
-
     private static Node findNextTextOrElementNode(Node n) {
         for(;;) {
             if (n == null) {
@@ -432,11 +446,7 @@ public class FunDeepEqual extends CollatingFunction {
     }
 
     private static int getEffectiveNodeType(final Node n) {
-        int nodeType = n.getNodeType();
-        if (nodeType == NodeImpl.REFERENCE_NODE) {
-            nodeType = ((ReferenceNode) n).getReference().getNode().getNodeType();
-        }
-        return nodeType;
+        return n.getNodeType();
     }
 
     private static int compareAttributes(final Node a, final Node b, @Nullable final Collator collator) {
