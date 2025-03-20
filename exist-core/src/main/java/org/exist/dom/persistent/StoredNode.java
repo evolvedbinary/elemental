@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -301,6 +325,10 @@ public abstract class StoredNode<T extends StoredNode> extends NodeImpl<T> imple
 
     @Override
     public Node getPreviousSibling() {
+        return getPreviousSibling(false);
+    }
+
+    Node getPreviousSibling(final boolean includeAttributes) {
         // if we are the root node, there is no sibling
         if(nodeId.equals(NodeId.ROOT_NODE)) {
             return null;
@@ -351,12 +379,17 @@ public abstract class StoredNode<T extends StoredNode> extends NodeImpl<T> imple
         }
 
         final NodeId firstChild = parent.getNodeId().newChild();
-        if(nodeId.equals(firstChild)) {
+        if (nodeId.equals(firstChild)) {
             return null;
         }
 
         final NodeId siblingId = nodeId.precedingSibling();
-        return ownerDocument.getNode(siblingId);
+        final Node precedingSibling = ownerDocument.getNode(siblingId);
+        if (!includeAttributes && precedingSibling.getNodeType() == Node.ATTRIBUTE_NODE) {
+            // NOTE(AR) guard against returning attributes
+            return null;
+        }
+        return precedingSibling;
     }
 
     @Override
