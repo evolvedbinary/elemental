@@ -63,6 +63,7 @@ import org.xml.sax.ext.LexicalHandler;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.helpers.NamespaceSupport;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 
 /**
@@ -166,15 +167,15 @@ public class DOMStreamer {
             case Node.ELEMENT_NODE:
                 namespaceDecls.clear();
                 nsSupport.pushContext();
-                String uri = node.getNamespaceURI();
-                String prefix = node.getPrefix();
+                @Nullable String uri = node.getNamespaceURI();
+                @Nullable String prefix = node.getPrefix();
                 if (uri == null) {
-                    uri = XMLConstants.XML_NS_URI;
+                    uri = XMLConstants.NULL_NS_URI;
                 }
                 if (prefix == null) {
                     prefix = XMLConstants.DEFAULT_NS_PREFIX;
                 }
-                if (nsSupport.getURI(prefix) == null) {
+                if ((!(XMLConstants.NULL_NS_URI.equals(uri) && XMLConstants.DEFAULT_NS_PREFIX.equals(prefix))) && nsSupport.getURI(prefix) == null) {
                     namespaceDecls.put(prefix, uri);
                     nsSupport.declarePrefix(prefix, uri);
                 }

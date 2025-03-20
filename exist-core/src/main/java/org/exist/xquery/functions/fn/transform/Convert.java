@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,13 +43,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn.transform;
 
+import it.unimi.dsi.fastutil.ints.IntList;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.type.BuiltInAtomicType;
 import org.exist.dom.QName;
-import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.functions.array.ArrayType;
@@ -34,8 +58,10 @@ import org.exist.xquery.value.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import javax.xml.XMLConstants;
 import javax.xml.transform.dom.DOMSource;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -123,7 +149,11 @@ class Convert {
             if (Type.subTypeOf(itemType, Type.ATOMIC)) {
                 return ofAtomic((AtomicValue) item);
             } else if (Type.subTypeOf(itemType, Type.NODE)) {
-                return ofNode((Node) item);
+                if (item instanceof NodeProxy) {
+                    return ofNode(((NodeProxy) item).getNode());
+                } else {
+                    return ofNode((Node) item);
+                }
             }
             throw new XPathException(ErrorCodes.XPTY0004,
                     "Item " + item + " of type " + Type.getTypeName(itemType) + COULD_NOT_BE_CONVERTED + "XdmValue");
@@ -150,17 +180,30 @@ class Convert {
 
             final DocumentBuilder sourceBuilder = newDocumentBuilder();
             try {
-                if (node instanceof DocumentImpl) {
+                if (node instanceof Document) {
                     return sourceBuilder.build(new DOMSource(node));
+
                 } else {
                     //The source must be part of a document
                     final Document document = node.getOwnerDocument();
                     if (document == null) {
                         throw new XPathException(ErrorCodes.XPTY0004, "Node " + node + COULD_NOT_BE_CONVERTED + "XdmValue, as it is not part of a document.");
                     }
-                    final List<Integer> nodeIndex = TreeUtils.treeIndex(node);
+                    final boolean implicitDocument = node instanceof org.exist.dom.memtree.NodeImpl && !((org.exist.dom.memtree.DocumentImpl) node.getOwnerDocument()).isExplicitlyCreated();
+                    final IntList nodeIndex = TreeUtils.treeIndex(node, implicitDocument);
                     final XdmNode xdmDocument = sourceBuilder.build(new DOMSource(document));
-                    return TreeUtils.xdmNodeAtIndex(xdmDocument, nodeIndex);
+                    final XdmNode xdmNode = TreeUtils.xdmNodeAtIndex(xdmDocument, nodeIndex);
+                    if (node.getNodeType() == Node.ATTRIBUTE_NODE) {
+                        final net.sf.saxon.s9api.QName attrName = new net.sf.saxon.s9api.QName(node.getPrefix() == null ? XMLConstants.DEFAULT_NS_PREFIX : node.getPrefix(), node.getNamespaceURI(), node.getLocalName());
+                        final Iterator<XdmNode> itAttr = xdmNode.axisIterator(Axis.ATTRIBUTE, attrName);
+                        if (itAttr.hasNext()) {
+                            return itAttr.next();
+                        }
+                        throw new XPathException(ErrorCodes.XPTY0004, "Node " + node + COULD_NOT_BE_CONVERTED + "XdmValue");
+
+                    } else {
+                        return xdmNode;
+                    }
                 }
             } catch (final SaxonApiException e) {
                 throw new XPathException(ErrorCodes.XPTY0004, "Node " + node + COULD_NOT_BE_CONVERTED + "XdmValue", e);

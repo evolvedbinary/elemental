@@ -195,10 +195,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     }
 
     public boolean declaresNamespacePrefixes() {
-        if(namespaceMappings == null) {
-            return false;
-        }
-        return namespaceMappings.size() > 0;
+        return namespaceMappings != null && !namespaceMappings.isEmpty();
     }
 
     /**
@@ -474,13 +471,13 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     }
 
     public void addNamespaceMapping(final String prefix, final String ns) {
-        if(prefix == null) {
+        if (prefix == null) {
             return;
         }
 
-        if(namespaceMappings == null) {
+        if (namespaceMappings == null) {
             namespaceMappings = new HashMap<>(1);
-        } else if(namespaceMappings.containsKey(prefix)) {
+        } else if (namespaceMappings.containsKey(prefix)) {
             return;
         }
 
@@ -1364,8 +1361,13 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     }
 
     public void setNamespaceMappings(final Map<String, String> map) {
-        this.namespaceMappings = new HashMap<>(map);
-        for(final String ns : namespaceMappings.values()) {
+        if (this.namespaceMappings == null) {
+            this.namespaceMappings = new HashMap<>(map);
+        } else {
+            this.namespaceMappings.clear();
+            this.namespaceMappings.putAll(map);
+        }
+        for (final String ns : namespaceMappings.values()) {
             ownerDocument.getBrokerPool().getSymbols().getNSSymbol(ns);
         }
     }
@@ -1544,7 +1546,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
             }
 
             final IStoredNode<?> following = (IStoredNode<?>) refChild;
-            final IStoredNode<?> previous = (IStoredNode<?>) following.getPreviousSibling();
+            final IStoredNode<?> previous = (IStoredNode<?>) ((StoredNode<?>) following).getPreviousSibling(true);
             if(previous == null) {
                 // there's no sibling node before the new node
                 final NodeId newId = following.getNodeId().insertBefore();
@@ -1676,8 +1678,11 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
      * Update a child node. This method will only update the child node
      * but not its potential descendant nodes.
      *
-     * @param oldChild to be replace
+     * @param oldChild to be replaced
      * @param newChild to be added
+     *
+     * @return the new node
+     *
      * @throws DOMException in case of a DOM error
      */
     @Override
@@ -1699,7 +1704,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
             attr.setValue(StringValue.trimWhitespace(StringValue.collapseWhitespace(attr.getValue())));
             attr.setType(AttrImpl.ID);
         }
-        IStoredNode<?> previousNode = (IStoredNode<?>) oldNode.getPreviousSibling();
+        IStoredNode<?> previousNode = (IStoredNode<?>) ((StoredNode<?>) oldNode).getPreviousSibling(true);
         if(previousNode == null) {
             previousNode = this;
         } else {
@@ -1872,13 +1877,16 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     }
 
     /**
-     * Replaces the oldNode with the newChild
+     * Replaces the oldChild with the newChild
      *
      * @param transaction the transaction
      * @param newChild to replace oldChild
-     * @param oldChild to be replace by newChild
+     * @param oldChild to be replaced by newChild
+     *
      * @return The new node (this differs from the {@link org.w3c.dom.Node#replaceChild(Node, Node)} specification)
+     *
      * @throws DOMException in case of a DOM error
+     *
      * @see org.w3c.dom.Node#replaceChild(org.w3c.dom.Node, org.w3c.dom.Node)
      */
     @Override
@@ -1893,7 +1901,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
         }
 
         final NodePath thisPath = getPath();
-        IStoredNode<?> previous = (IStoredNode<?>) oldNode.getPreviousSibling();
+        IStoredNode<?> previous = (IStoredNode<?>) ((StoredNode<?>) oldNode).getPreviousSibling(true);
         if(previous == null) {
             previous = this;
         } else {
