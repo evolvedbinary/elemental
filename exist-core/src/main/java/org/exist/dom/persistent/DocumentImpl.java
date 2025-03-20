@@ -545,6 +545,10 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         lockToken = token;
     }
 
+    /**
+     * @deprecated use {@link #getDoctype()}.
+     */
+    @Deprecated
     public DocumentType getDocType() {
         return docType;
     }

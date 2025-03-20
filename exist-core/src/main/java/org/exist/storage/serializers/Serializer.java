@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -48,9 +72,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
-import org.exist.dom.memtree.NodeImpl;
-import org.exist.dom.memtree.ReferenceNode;
 import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.XMLUtil;
@@ -78,10 +101,7 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.Type;
 import org.exist.xslt.TransformerFactoryAllocator;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.ProcessingInstruction;
+import org.w3c.dom.*;
 import org.xml.sax.*;
 import org.xml.sax.ext.LexicalHandler;
 
@@ -1151,6 +1171,14 @@ public abstract class Serializer implements XMLReader {
         if (n.getNodeType() == Node.DOCUMENT_NODE) {
             final org.exist.dom.memtree.DocumentImpl doc = (org.exist.dom.memtree.DocumentImpl) n;
             setXQueryContext(doc.getContext());
+
+            if (doc.getDoctype() != null) {
+                if ("yes".equals(getProperty(EXistOutputKeys.OUTPUT_DOCTYPE, "no"))) {
+                    final DocumentType docType = doc.getDoctype();
+                    receiver.documentType(docType.getName(), docType.getPublicId(), docType.getSystemId());
+                }
+            }
+
             //TODO set XSL //code from set Stlyesheet XSL_PI
             if ("yes".equals(outputProperties.getProperty(EXistOutputKeys.PROCESS_XSL_PI, "no"))) {
                 final String stylesheet = hasXSLPi(doc);
@@ -1206,20 +1234,7 @@ public abstract class Serializer implements XMLReader {
             return null;
         }
 
-        NodeList docChildren = doc.getChildNodes();
-        if (docChildren.getLength() == 1) {
-            final Node onlyChild = docChildren.item(0);
-            if (onlyChild.getNodeType() == NodeImpl.REFERENCE_NODE) {
-                // if this is a reference to a persistent document node then we must expand it
-                final NodeProxy nodeProxy = ((ReferenceNode) onlyChild).getReference();
-                if (nodeProxy.getNodeType() == Node.DOCUMENT_NODE) {
-                    // switch docChildren to the children of the dereferencedNode
-                    final Node dereferencedNode = nodeProxy.getNode();
-                    docChildren = dereferencedNode.getChildNodes();
-                }
-            }
-        }
-
+        final NodeList docChildren = doc.getChildNodes();
         for (int i = 0; i < docChildren.getLength(); i++) {
             final Node node = docChildren.item(i);
             if (node.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE
