@@ -48,6 +48,7 @@ package org.exist.xquery.functions.fn.transform;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.lacuna.bifurcan.IEntry;
+import net.sf.saxon.expr.parser.Location;
 import net.sf.saxon.om.StructuredQName;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.serialize.SerializationProperties;
@@ -212,8 +213,17 @@ public class Transform {
                 final Transform.TemplateInvocation invocation = new Transform.TemplateInvocation(
                         options, sourceNode, delivery, xslt30Transformer, resultDocuments);
                 return invocation.invoke();
-            } catch (final SaxonApiException | UncheckedXPathException e) {
-                throw originalXPathException("Could not transform input: ", e, ErrorCodes.FOXT0003);
+            } catch (final SaxonApiException e) {
+                throw originalXPathException("Could not transform input using: " + options.xsltSource._1 + ", at line: " + e.getLineNumber() + ". Error: ", e, ErrorCodes.FOXT0003);
+            } catch (final  UncheckedXPathException e) {
+                final Location location = e.getXPathException().getLocator();
+                int line = -1;
+                int column = -1;
+                if (location != null) {
+                    line = location.getLineNumber();
+                    column = location.getColumnNumber();
+                }
+                throw originalXPathException("Could not transform input using: " + options.xsltSource._1 + ", at line: " + line + ", column: " + column + ". Error: ", e, ErrorCodes.FOXT0003);
             }
 
         } else {
