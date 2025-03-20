@@ -1,4 +1,28 @@
 (:
+ : Elemental
+ : Copyright (C) 2024, Evolved Binary Ltd
+ :
+ : admin@evolvedbinary.com
+ : https://www.evolvedbinary.com | https://www.elemental.xyz
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; version 2.1.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :
+ : NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ :       The original license header is included below.
+ :
+ : =====================================================================
+ :
  : eXist-db Open Source Native XML Database
  : Copyright (C) 2001 The eXist-db Authors
  :
@@ -763,17 +787,19 @@ function ser:exist-expand-xinclude-true() {
 };
 
 declare
-    %test:assertXPath("contains($result, 'true')")
+    %test:assertEquals('<?pi?><elem xmlns:exist="http://exist.sourceforge.net/NS/exist" exist:id="2" exist:source="test.xml" a="abc"><!--comment--><b exist:id="2.3">123</b></elem>')
 function ser:exist-add-exist-id-all() {
     let $doc := doc($ser:collection || "/test.xml")
-    return fn:serialize($doc, map { xs:QName("exist:add-exist-id"): "all" }) eq '<?pi?><elem xmlns:exist="http://exist.sourceforge.net/NS/exist" exist:id="2" exist:source="test.xml" a="abc"><!--comment--><b exist:id="2.3">123</b></elem>'
+    return
+        fn:serialize($doc, map { xs:QName("exist:add-exist-id"): "all" })
 };
 
 declare
-    %test:assertXPath("contains($result, 'true')")
+    %test:assertEquals('<?pi?><elem xmlns:exist="http://exist.sourceforge.net/NS/exist" exist:id="2" exist:source="test.xml" a="abc"><!--comment--><b>123</b></elem>')
 function ser:exist-add-exist-id-element() {
     let $doc := doc($ser:collection || "/test.xml")
-    return fn:serialize($doc, map { xs:QName("exist:add-exist-id"): "element" })  eq '<?pi?><elem xmlns:exist="http://exist.sourceforge.net/NS/exist" exist:id="2" exist:source="test.xml" a="abc"><!--comment--><b>123</b></elem>'
+    return
+        fn:serialize($doc, map { xs:QName("exist:add-exist-id"): "element" })
 };
 
 declare

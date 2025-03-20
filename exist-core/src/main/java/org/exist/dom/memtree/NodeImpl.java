@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -34,6 +58,7 @@ import org.exist.dom.persistent.NodeSet;
 import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
+import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
@@ -55,13 +80,13 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
     protected int nodeNumber;
     protected DocumentImpl document;
-    private final Expression expression;
+    private @Nullable final Expression expression;
 
     public NodeImpl(final DocumentImpl doc, final int nodeNumber) {
         this(null, doc, nodeNumber);
     }
 
-    public NodeImpl(final Expression expression, final DocumentImpl doc, final int nodeNumber) {
+    public NodeImpl(@Nullable final Expression expression, final DocumentImpl doc, final int nodeNumber) {
         this.expression = expression;
         this.document = doc;
         this.nodeNumber = nodeNumber;
@@ -96,7 +121,7 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
     }
 
     @Override
-    public final QName getQName() {
+    public QName getQName() {
         switch(getNodeType()) {
             case Node.ATTRIBUTE_NODE:
                 return document.attrName[nodeNumber];
@@ -246,6 +271,7 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
         return document.nodeId[nodeNumber];
     }
 
+    // TODO(AR) see if we can get rid of expansion now we have org.exist.dom.memtree.reference.* classes
     public void expand() throws DOMException {
         document.expand();
     }
@@ -421,6 +447,15 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
     @Override
     public NamedNodeMap getAttributes() {
+        return null;
+    }
+
+    /**
+     * Get a list of attributes.
+     *
+     * @return the attribute list, or null if there are no attributes.
+     */
+    public @Nullable AttrList getAttrList() {
         return null;
     }
 

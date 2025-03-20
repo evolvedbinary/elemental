@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,7 @@ import org.exist.Namespaces;
 import org.exist.dom.NodeListImpl;
 import org.exist.dom.QName;
 import org.exist.dom.QName.IllegalQNameException;
+import org.exist.dom.memtree.reference.*;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.numbering.NodeId;
 import org.exist.numbering.NodeIdFactory;
@@ -47,6 +72,7 @@ import org.exist.xquery.value.Type;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import java.util.Arrays;
 import java.util.Objects;
@@ -97,6 +123,8 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
     private static final int ATTR_SIZE = 8;
     private static final int CHAR_BUF_SIZE = 256;
     private static final int REF_SIZE = 8;
+
+    protected DocumentType docType = null;
 
     // holds the node type of a node
     protected short[] nodeKind = null;
@@ -222,11 +250,11 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         return explicitlyCreated;
     }
 
-    public int addNode(final short kind, final short level, final QName qname) {
-        if(nodeKind == null) {
+    public int addNode(final short kind, final short level, @Nullable final QName qname) {
+        if (nodeKind == null) {
             init();
         }
-        if(size == nodeKind.length) {
+        if (size == nodeKind.length) {
             grow();
         }
         nodeKind[size] = kind;
@@ -317,11 +345,11 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         }
     }
 
-    public void addReferenceNode(final int nodeNum, final NodeProxy proxy) {
-        if(nodeKind == null) {
+    void addReferenceNode(final int nodeNum, final NodeProxy proxy) {
+        if (nodeKind == null) {
             init();
         }
-        if((references == null) || (nextReferenceIdx == references.length)) {
+        if (references == null || nextReferenceIdx == references.length) {
             growReferences();
         }
         references[nextReferenceIdx] = proxy;
@@ -513,35 +541,70 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
     }
 
     public NodeImpl getNode(final int nodeNum) throws DOMException {
-        if(nodeNum == 0) {
+        if (nodeNum == 0) {
             return this;
         }
-        if(nodeNum >= size) {
+
+        if (nodeNum >= size) {
             throw new DOMException(DOMException.HIERARCHY_REQUEST_ERR, "node not found");
         }
-        final NodeImpl node;
-        switch(nodeKind[nodeNum]) {
+
+        final NodeImpl<?> node;
+        switch (nodeKind[nodeNum]) {
             case Node.ELEMENT_NODE:
                 node = new ElementImpl(getExpression(), this, nodeNum);
                 break;
+
             case Node.TEXT_NODE:
                 node = new TextImpl(getExpression(), this, nodeNum);
                 break;
+
             case Node.COMMENT_NODE:
                 node = new CommentImpl(getExpression(), this, nodeNum);
                 break;
+
             case Node.PROCESSING_INSTRUCTION_NODE:
                 node = new ProcessingInstructionImpl(getExpression(), this, nodeNum);
                 break;
+
             case Node.CDATA_SECTION_NODE:
                 node = new CDATASectionImpl(getExpression(), this, nodeNum);
                 break;
+
             case NodeImpl.REFERENCE_NODE:
-                node = new ReferenceNode(getExpression(), this, nodeNum);
+                final NodeProxy nodeProxy = references[alpha[nodeNum]];
+                node = referenceFromNodeProxy(nodeNum, nodeProxy);
                 break;
+
             default:
                 throw new DOMException(DOMException.NOT_FOUND_ERR, "node not found");
         }
+        return node;
+    }
+
+    private NodeImpl referenceFromNodeProxy(final int nodeNum, final NodeProxy nodeProxy) {
+        final NodeImpl<?> node;
+        switch (nodeProxy.getNodeType()) {
+            case Node.ELEMENT_NODE:
+                node = new ElementReferenceImpl(getExpression(), this, nodeNum, nodeProxy);
+                break;
+
+            case Node.TEXT_NODE:
+                node = new TextReferenceImpl(getExpression(), this, nodeNum, nodeProxy);
+                break;
+
+            case Node.PROCESSING_INSTRUCTION_NODE:
+                node = new ProcessingInstructionReferenceImpl(getExpression(), this, nodeNum, nodeProxy);
+                break;
+
+            case Node.COMMENT_NODE:
+                node = new CommentReferenceImpl(getExpression(), this, nodeNum, nodeProxy);
+                break;
+
+            default:
+                throw new DOMException(DOMException.NOT_FOUND_ERR, "reference node not found");
+        }
+
         return node;
     }
 
@@ -559,7 +622,11 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
     @Override
     public DocumentType getDoctype() {
-        return null;
+        return docType;
+    }
+
+    public void setDoctype(final DocumentType docType) {
+        this.docType = docType;
     }
 
     @Override
@@ -1097,33 +1164,41 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
      * @throws SAXException DOCUMENT ME!
      */
     public void copyTo(final NodeImpl node, final DocumentBuilderReceiver receiver) throws SAXException {
-        copyTo(node, receiver, false);
+        copyTo(null, node, receiver);
     }
 
-    protected void copyTo(NodeImpl node, final DocumentBuilderReceiver receiver, final boolean expandRefs)
-        throws SAXException {
+    private void copyTo(@Nullable final Serializer serializer, NodeImpl node, final DocumentBuilderReceiver receiver) throws SAXException {
         final NodeImpl top = node;
-        while(node != null) {
-            copyStartNode(node, receiver, expandRefs);
-            NodeImpl nextNode;
-            if(node instanceof ReferenceNode) {
-                //Nothing more to stream ?
-                nextNode = null;
+
+        @Nullable NodeImpl nextNode;
+        while (node != null) {
+            if (node instanceof AbstractReferenceNodeImpl) {
+                if (serializer != null) {
+                    serializer.toReceiver(((AbstractReferenceNodeImpl) node).getNodeProxy(), false, false);
+                } else {
+                    receiver.addReferenceNode(document.references[document.alpha[node.nodeNumber]]);
+                }
+                nextNode = (NodeImpl) node.getNextSibling();
+
             } else {
+                copyStartNode(node, receiver);
                 nextNode = (NodeImpl) node.getFirstChild();
             }
-            while(nextNode == null) {
-                if (node != null) {
+
+            while (nextNode == null) {
+                if (!(node instanceof AbstractReferenceNodeImpl)) {
                     copyEndNode(node, receiver);
+
+                    if (top.nodeNumber == node.nodeNumber) {
+                        break;
+                    }
                 }
-                if((top != null) && (top.nodeNumber == node.nodeNumber)) {
-                    break;
-                }
+
                 //No nextNode if the top node is a Document node
                 nextNode = (NodeImpl) node.getNextSibling();
-                if(nextNode == null) {
+                if (nextNode == null) {
                     node = (NodeImpl) node.getParentNode();
-                    if((node == null) || ((top != null) && (top.nodeNumber == node.nodeNumber))) {
+                    if (node == null || top.nodeNumber == node.nodeNumber) {
                         if (node != null) {
                             copyEndNode(node, receiver);
                         }
@@ -1131,14 +1206,14 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
                     }
                 }
             }
+
             node = nextNode;
         }
     }
 
-    private void copyStartNode(final NodeImpl node, final DocumentBuilderReceiver receiver, final boolean expandRefs)
-        throws SAXException {
+    private void copyStartNode(final NodeImpl node, final DocumentBuilderReceiver receiver) throws SAXException {
         final int nr = node.nodeNumber;
-        switch(node.getNodeType()) {
+        switch (node.getNodeType()) {
             case Node.ELEMENT_NODE: {
                 final QName nodeName = document.nodeName[nr];
                 receiver.startElement(nodeName, null);
@@ -1160,51 +1235,38 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
                 }
                 break;
             }
+
             case Node.TEXT_NODE:
                 receiver.characters(document.characters, document.alpha[nr], document.alphaLen[nr]);
                 break;
+
             case Node.CDATA_SECTION_NODE:
                 receiver.cdataSection(document.characters, document.alpha[nr], document.alphaLen[nr]);
                 break;
+
             case Node.ATTRIBUTE_NODE:
                 final QName attrQName = document.attrName[nr];
                 receiver.attribute(attrQName, attrValue[nr]);
                 break;
+
             case Node.COMMENT_NODE:
                 receiver.comment(document.characters, document.alpha[nr], document.alphaLen[nr]);
                 break;
+
             case Node.PROCESSING_INSTRUCTION_NODE:
                 final QName piQName = document.nodeName[nr];
                 final String data = new String(document.characters, document.alpha[nr], document.alphaLen[nr]);
                 receiver.processingInstruction(piQName.getLocalPart(), data);
                 break;
+
             case NodeImpl.NAMESPACE_NODE:
                 receiver.addNamespaceNode(document.namespaceCode[nr]);
-                break;
-            case NodeImpl.REFERENCE_NODE:
-                if(expandRefs) {
-                    try(final DBBroker broker = getDatabase().getBroker()) {
-                        final Serializer serializer = broker.borrowSerializer();
-                        try {
-                            serializer.setProperty(Serializer.GENERATE_DOC_EVENTS, "false");
-                            serializer.setReceiver(receiver);
-                            serializer.toReceiver(document.references[document.alpha[nr]], false, false);
-                        } finally {
-                            broker.returnSerializer(serializer);
-                        }
-                    } catch(final EXistException e) {
-                        throw new SAXException(e);
-                    }
-                } else {
-                    receiver.addReferenceNode(document.references[document.alpha[nr]]);
-                }
                 break;
         }
     }
 
-    private void copyEndNode(final NodeImpl node, final DocumentBuilderReceiver receiver)
-        throws SAXException {
-        if(node.getNodeType() == Node.ELEMENT_NODE) {
+    private void copyEndNode(final NodeImpl node, final DocumentBuilderReceiver receiver) throws SAXException {
+        if (node.getNodeType() == Node.ELEMENT_NODE) {
             receiver.endElement(node.getQName());
         }
     }
@@ -1219,6 +1281,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
      */
     @Override
     public void expand() throws DOMException {
+        // TODO(AR) see if we can get rid of expansion now we have org.exist.dom.memtree.reference.* classes
         if(size == 0) {
             return;
         }
@@ -1226,31 +1289,36 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         copyDocContents(newDoc);
     }
 
+    // TODO(AR) see if we can get rid of expansion now we have org.exist.dom.memtree.reference.* classes
     public DocumentImpl expandRefs(final NodeImpl rootNode) throws DOMException {
-        try {
-            if(nextReferenceIdx == 0) {
-                computeNodeIds();
-                return this;
-            }
-            final MemTreeBuilder builder = new MemTreeBuilder(getExpression(), context);
-            final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(getExpression(), builder);
+        if(nextReferenceIdx == 0) {
+            computeNodeIds();
+            return this;
+        }
+        final MemTreeBuilder builder = new MemTreeBuilder(getExpression(), context);
+        final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(getExpression(), builder);
+        try (final DBBroker broker = getDatabase().getBroker()) {
+            final Serializer serializer = broker.borrowSerializer();
             try {
+                serializer.setProperty(Serializer.GENERATE_DOC_EVENTS, "false");
+                serializer.setReceiver(receiver);
+
                 builder.startDocument();
                 NodeImpl node = (rootNode == null) ? (NodeImpl) getFirstChild() : rootNode;
-                while(node != null) {
-                    copyTo(node, receiver, true);
+                while (node != null) {
+                    copyTo(serializer, node, receiver);
                     node = (NodeImpl) node.getNextSibling();
                 }
                 receiver.endDocument();
-            } catch(final SAXException e) {
-                throw new DOMException(DOMException.INVALID_STATE_ERR, e.getMessage());
+            } finally {
+                broker.returnSerializer(serializer);
             }
-            final DocumentImpl newDoc = builder.getDocument();
-            newDoc.computeNodeIds();
-            return newDoc;
-        } catch(final EXistException e) {
+        } catch (final SAXException | EXistException e) {
             throw new DOMException(DOMException.INVALID_STATE_ERR, e.getMessage());
         }
+        final DocumentImpl newDoc = builder.getDocument();
+        newDoc.computeNodeIds();
+        return newDoc;
     }
 
     public NodeImpl getNodeById(final NodeId id) {
@@ -1263,7 +1331,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         return null;
     }
 
-    private void computeNodeIds() throws EXistException {
+    private void computeNodeIds() {
         if(nodeId[0] != null) {
             return;
         }
@@ -1344,48 +1412,62 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
      * @param receiver the receiveer
      * @throws SAXException DOCUMENT ME
      */
-    public void streamTo(final Serializer serializer, NodeImpl node, final Receiver receiver)
-        throws SAXException {
+    public void streamTo(final Serializer serializer, NodeImpl node, final Receiver receiver) throws SAXException {
         final NodeImpl top = node;
-        while(node != null) {
-            startNode(serializer, node, receiver);
-            NodeImpl nextNode;
-            if(node instanceof ReferenceNode) {
-                //Nothing more to stream ?
-                nextNode = null;
-            } else {
-                nextNode = (NodeImpl) node.getFirstChild();
-            }
-            while(nextNode == null) {
-                endNode(node, receiver);
-                if((top != null) && (top.nodeNumber == node.nodeNumber)) {
-                    break;
-                }
+
+        int level = node.getNodeType() == Node.DOCUMENT_NODE ? 0 : 1;
+
+        while (node != null) {
+
+            @Nullable NodeImpl nextNode;
+            if (node instanceof AbstractReferenceNodeImpl) {
+                serializer.toReceiver(((AbstractReferenceNodeImpl) node).getNodeProxy(), true, level == 1);
                 nextNode = (NodeImpl) node.getNextSibling();
-                if(nextNode == null) {
+
+            } else {
+                startNode(node, receiver);
+                nextNode = (NodeImpl) node.getFirstChild();
+                level++;
+            }
+
+            while (nextNode == null) {
+                if (!(node instanceof AbstractReferenceNodeImpl)) {
+                    endNode(node, receiver);
+                    level--;
+
+                    if (top.nodeNumber == node.nodeNumber) {
+                        break;
+                    }
+                }
+
+                //No nextNode if the top node is a Document node
+                nextNode = (NodeImpl) node.getNextSibling();
+                if (nextNode == null) {
                     node = (NodeImpl) node.getParentNode();
-                    if((node == null) || ((top != null) && (top.nodeNumber == node.nodeNumber))) {
+                    if (node == null || top.nodeNumber == node.nodeNumber) {
                         if (node != null) {
                             endNode(node, receiver);
+                            level--;
                         }
                         break;
                     }
                 }
             }
+
             node = nextNode;
         }
     }
 
-    private void startNode(final Serializer serializer, final NodeImpl node, final Receiver receiver)
-        throws SAXException {
-        final int nr = node.nodeNumber;
-        switch(node.getNodeType()) {
+    private void startNode(final NodeImpl node, final Receiver receiver) throws SAXException {
+        final int nodeNumber = node.nodeNumber;
+        switch (node.getNodeType()) {
             case Node.ELEMENT_NODE:
-                final QName nodeName = document.nodeName[nr];
+                final QName nodeName = node.getQName();
+
                 //Output required namespace declarations
-                int ns = document.alphaLen[nr];
-                if(ns > -1) {
-                    while((ns < document.nextNamespace) && (document.namespaceParent[ns] == nr)) {
+                int ns = document.alphaLen[nodeNumber];
+                if (ns > -1) {
+                    while((ns < document.nextNamespace) && (document.namespaceParent[ns] == nodeNumber)) {
                         final QName nsQName = document.namespaceCode[ns];
                         if(XMLConstants.XMLNS_ATTRIBUTE.equals(nsQName.getLocalPart())) {
                             receiver.startPrefixMapping(XMLConstants.DEFAULT_NS_PREFIX, nsQName.getNamespaceURI());
@@ -1395,40 +1477,32 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
                         ++ns;
                     }
                 }
+
                 //Create the attribute list
-                AttrList attribs = null;
-                int attr = document.alpha[nr];
-                if(attr > -1) {
-                    attribs = new AttrList();
-                    while((attr < document.nextAttr) && (document.attrParent[attr] == nr)) {
-                        final QName attrQName = document.attrName[attr];
-                        attribs.addAttribute(attrQName, attrValue[attr]);
-                        ++attr;
-                    }
-                }
+                @Nullable final AttrList attribs = node.getAttrList();
                 receiver.startElement(nodeName, attribs);
                 break;
+
             case Node.TEXT_NODE:
-                receiver.characters(new String(document.characters, document.alpha[nr],
-                    document.alphaLen[nr]));
+                receiver.characters(((TextImpl) node).getData());
                 break;
+
             case Node.ATTRIBUTE_NODE:
-                final QName attrQName = document.attrName[nr];
-                receiver.attribute(attrQName, attrValue[nr]);
+                receiver.attribute(node.getQName(), ((Attr) node).getValue());
                 break;
+
             case Node.COMMENT_NODE:
-                receiver.comment(document.characters, document.alpha[nr], document.alphaLen[nr]);
+                final char[] commentData = ((Comment) node).getData().toCharArray();
+                receiver.comment(commentData, 0, commentData.length);
                 break;
+
             case Node.PROCESSING_INSTRUCTION_NODE:
-                final QName qn = document.nodeName[nr];
-                final String data = new String(document.characters, document.alpha[nr], document.alphaLen[nr]);
-                receiver.processingInstruction(qn.getLocalPart(), data);
+                receiver.processingInstruction(node.getQName().getLocalPart(), ((ProcessingInstruction) node).getData());
                 break;
+
             case Node.CDATA_SECTION_NODE:
-                receiver.cdataSection(document.characters, document.alpha[nr], document.alphaLen[nr]);
-                break;
-            case NodeImpl.REFERENCE_NODE:
-                serializer.toReceiver(document.references[document.alpha[nr]], true, false);
+                final char[] cdataSectionData = ((CDATASection) node).getData().toCharArray();
+                receiver.cdataSection(cdataSectionData, 0, cdataSectionData.length);
                 break;
         }
     }

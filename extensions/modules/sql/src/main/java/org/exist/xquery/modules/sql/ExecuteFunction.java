@@ -78,7 +78,6 @@ import org.exist.dom.QName;
 import org.exist.dom.memtree.AppendingSAXAdapter;
 import org.exist.dom.memtree.ElementImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
-import org.exist.dom.memtree.ReferenceNode;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.util.XMLReaderPool;
 import org.exist.xquery.BasicFunction;
@@ -317,10 +316,6 @@ public class ExecuteFunction extends BasicFunction {
 
                 final String value;
                 if (child != null) {
-                    if (child instanceof ReferenceNode) {
-                        child = ((ReferenceNode) child).getReference().getNode();
-                    }
-
                     if (child instanceof Element) {
                         // check for <sql:null/>
                         final Element elem = (Element)child;

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -30,7 +54,9 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.Attributes;
 
 import javax.annotation.Nullable;
@@ -245,9 +271,9 @@ public class MemTreeBuilder {
     public int addReferenceNode(final NodeProxy proxy) {
         final int lastNode = doc.getLastNode();
 
-        if((lastNode > 0) && (level == doc.getTreeLevel(lastNode))) {
+        if (lastNode > 0 && level == doc.getTreeLevel(lastNode)) {
 
-            if((doc.getNodeType(lastNode) == Node.TEXT_NODE) && (proxy.getNodeType() == Node.TEXT_NODE)) {
+            if (doc.getNodeType(lastNode) == Node.TEXT_NODE && proxy.getNodeType() == Node.TEXT_NODE) {
 
                 // if the last node is a text node, we have to append the
                 // characters to this node. XML does not allow adjacent text nodes.
@@ -255,12 +281,12 @@ public class MemTreeBuilder {
                 return lastNode;
             }
 
-            if(doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
+            if (doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
 
                 // check if the previous node is a reference node. if yes, check if it is a text node
                 final int p = doc.alpha[lastNode];
 
-                if((doc.references[p].getNodeType() == Node.TEXT_NODE) && (proxy.getNodeType() == Node.TEXT_NODE)) {
+                if (doc.references[p].getNodeType() == Node.TEXT_NODE && proxy.getNodeType() == Node.TEXT_NODE) {
 
                     // found a text node reference. create a new char sequence containing
                     // the concatenated text of both nodes
@@ -270,10 +296,40 @@ public class MemTreeBuilder {
                 }
             }
         }
-        final int nodeNr = doc.addNode(NodeImpl.REFERENCE_NODE, level, null);
-        doc.addReferenceNode(nodeNr, proxy);
-        linkNode(nodeNr);
-        return nodeNr;
+
+        // check if the node is a Document Node, if so we don't add the document, but instead we add all of its children
+        final NodeProxy[] proxies;
+        if (proxy.getNodeType() == Node.DOCUMENT_NODE) {
+            final org.exist.dom.persistent.DocumentImpl document = (org.exist.dom.persistent.DocumentImpl) proxy.getNode();
+            final NodeList documentChildren = document.getChildNodes();
+            proxies = new NodeProxy[documentChildren.getLength()];
+            for (int i = 0; i < documentChildren.getLength(); i++) {
+                final org.exist.dom.persistent.NodeImpl<?> child = (org.exist.dom.persistent.NodeImpl<?>) documentChildren.item(i);
+                proxies[i] = NodeProxy.wrap(proxy.getExpression(), child);
+            }
+
+            // if we are at the top of the in-memory doc, copy over any doctype decl
+            if (level == 1 && document.getDoctype() != null) {
+                final DocumentTypeImpl documentType = new DocumentTypeImpl(document.getExpression(), doc, -1, document.getDoctype().getName(), document.getDoctype().getPublicId(), document.getDoctype().getSystemId());
+                doc.setDoctype(documentType);
+            }
+        } else {
+            proxies = new NodeProxy[1];
+            proxies[0] = proxy;
+        }
+
+        // add the node proxy(s) as reference node(s)
+        int firstProxyNodeNr = -1;
+        for (int i = 0; i < proxies.length; i++) {
+            final int nodeNr = doc.addNode(NodeImpl.REFERENCE_NODE, level, null);
+            doc.addReferenceNode(nodeNr, proxies[i]);
+            linkNode(nodeNr);
+
+            if (firstProxyNodeNr == -1) {
+                firstProxyNodeNr = nodeNr;
+            }
+        }
+        return firstProxyNodeNr;
     }
 
 
@@ -306,22 +362,22 @@ public class MemTreeBuilder {
     public int characters(final char[] ch, final int start, final int len) {
         final int lastNode = doc.getLastNode();
 
-        if((lastNode > 0) && (level == doc.getTreeLevel(lastNode))) {
+        if (lastNode > 0 && level == doc.getTreeLevel(lastNode)) {
 
-            if(doc.getNodeType(lastNode) == Node.TEXT_NODE) {
+            if (doc.getNodeType(lastNode) == Node.TEXT_NODE || doc.getNodeType(lastNode) == Node.CDATA_SECTION_NODE) {
 
-                // if the last node is a text node, we have to append the
+                // if the last node is a Text or CDATA node, we have to append the
                 // characters to this node. XML does not allow adjacent text nodes.
                 doc.appendChars(lastNode, ch, start, len);
                 return lastNode;
             }
 
-            if(doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
+            if (doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
 
-                // check if the previous node is a reference node. if yes, check if it is a text node
+                // check if the previous node is a reference node. if yes, check if it is a Text or CDATA node
                 final int p = doc.alpha[lastNode];
 
-                if(doc.references[p].getNodeType() == Node.TEXT_NODE) {
+                if (doc.references[p].getNodeType() == Node.TEXT_NODE || doc.references[p].getNodeType() == Node.CDATA_SECTION_NODE) {
 
                     // found a text node reference. create a new char sequence containing
                     // the concatenated text of both nodes
@@ -347,28 +403,28 @@ public class MemTreeBuilder {
      * @return the node number of the created node, -1 if no node was created
      */
     public int characters(final CharSequence s) {
-        if(s == null) {
+        if (s == null) {
             return -1;
         }
 
         final int lastNode = doc.getLastNode();
 
-        if((lastNode > 0) && (level == doc.getTreeLevel(lastNode))) {
+        if (lastNode > 0 && level == doc.getTreeLevel(lastNode)) {
 
-            if((doc.getNodeType(lastNode) == Node.TEXT_NODE) || (doc.getNodeType(lastNode) == Node.CDATA_SECTION_NODE)) {
+            if (doc.getNodeType(lastNode) == Node.TEXT_NODE || doc.getNodeType(lastNode) == Node.CDATA_SECTION_NODE) {
 
-                // if the last node is a text node, we have to append the
+                // if the last node is a Text or CDATA node, we have to append the
                 // characters to this node. XML does not allow adjacent text nodes.
                 doc.appendChars(lastNode, s);
                 return lastNode;
             }
 
-            if(doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
+            if (doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
 
-                // check if the previous node is a reference node. if yes, check if it is a text node
                 final int p = doc.alpha[lastNode];
+                // check if the previous node is a reference node. if yes, check if it is a Text or CDATA node
 
-                if((doc.references[p].getNodeType() == Node.TEXT_NODE) || (doc.references[p].getNodeType() == Node.CDATA_SECTION_NODE)) {
+                if (doc.references[p].getNodeType() == Node.TEXT_NODE || doc.references[p].getNodeType() == Node.CDATA_SECTION_NODE) {
 
                     // found a text node reference. create a new char sequence containing
                     // the concatenated text of both nodes
@@ -404,9 +460,9 @@ public class MemTreeBuilder {
     public int cdataSection(final CharSequence data) {
         final int lastNode = doc.getLastNode();
 
-        if((lastNode > 0) && (level == doc.getTreeLevel(lastNode))) {
+        if (lastNode > 0 && level == doc.getTreeLevel(lastNode)) {
 
-            if((doc.getNodeType(lastNode) == Node.TEXT_NODE) || (doc.getNodeType(lastNode) == Node.CDATA_SECTION_NODE)) {
+            if (doc.getNodeType(lastNode) == Node.TEXT_NODE || doc.getNodeType(lastNode) == Node.CDATA_SECTION_NODE) {
 
                 // if the last node is a text node, we have to append the
                 // characters to this node. XML does not allow adjacent text nodes.
@@ -414,12 +470,12 @@ public class MemTreeBuilder {
                 return lastNode;
             }
 
-            if(doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
+            if (doc.getNodeType(lastNode) == NodeImpl.REFERENCE_NODE) {
 
                 // check if the previous node is a reference node. if yes, check if it is a text node
                 final int p = doc.alpha[lastNode];
 
-                if((doc.references[p].getNodeType() == Node.TEXT_NODE) || (doc.references[p].getNodeType() == Node.CDATA_SECTION_NODE)) {
+                if (doc.references[p].getNodeType() == Node.TEXT_NODE || doc.references[p].getNodeType() == Node.CDATA_SECTION_NODE) {
 
                     // found a text node reference. create a new char sequence containing
                     // the concatenated text of both nodes

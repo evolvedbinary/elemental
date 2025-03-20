@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -49,6 +73,7 @@ import javax.annotation.Nullable;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Properties;
@@ -58,17 +83,18 @@ import java.util.Properties;
  *
  * NodeProxy is an internal proxy class, acting as a placeholder for all types of persistent XML nodes
  * during query processing. NodeProxy just stores the node's unique id and the document it belongs to.
- * Query processing deals with these proxys most of the time. Using a NodeProxy is much cheaper
+ * Query processing deals with these proxy most of the time. Using a NodeProxy is much cheaper
  * than loading the actual node from the database. The real DOM node is only loaded,
  * if further information is required for the evaluation of an XPath expression. To obtain
  * the real node for a proxy, simply call {@link #getNode()}.
  *
- * All sets of type NodeSet operate on NodeProxys. A node set is a special type of
- * sequence, so NodeProxy does also implement {@link org.exist.xquery.value.Item} and
- * can thus be an item in a sequence. Since, according to XPath 2, a single node is also
- * a sequence, NodeProxy does itself extend NodeSet. It thus represents a node set containing
- * just one, single node.
+ * All sets of type NodeSet operate on NodeProxy objects. A node set is a special type of
+ * sequence, so NodeProxy also implements {@link org.exist.xquery.value.Item}, and
+ * can thus be an item in a sequence. Since according to XPath 2, a single node is also
+ * a sequence, NodeProxy itself extends NodeSet. It thus represents a node set containing
+ * just one single node.
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
 public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, Comparable<Object> {
@@ -79,8 +105,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     /**
      * The owner document of this node.
      */
-    private DocumentImpl doc = null;
-
+    private DocumentImpl doc;
     private NodeId nodeId;
 
     /**
@@ -209,12 +234,14 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     }
 
     public void update(final ElementImpl element) {
+        invalidateCachedNode();
         this.doc = element.getOwnerDocument();
         this.nodeType = UNKNOWN_NODE_TYPE;
         this.internalAddress = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
         this.nodeId = element.getNodeId();
-        match = null;
-        context = null;
+        this.match = null;
+        this.context = null;
+        this.cachedNode = new WeakReference<>(element);
     }
 
     /**
@@ -259,12 +286,23 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
         this(expression, doc, NodeId.DOCUMENT_NODE, Node.DOCUMENT_NODE, StoredNode.UNKNOWN_NODE_IMPL_ADDRESS);
     }
 
+    public static NodeProxy wrap(@Nullable Expression expression, final NodeImpl node) {
+        final DocumentImpl doc = node instanceof DocumentImpl ? (DocumentImpl) node : (DocumentImpl) node.getOwnerDocument();
+        expression = expression != null ? expression : doc.getExpression();
+
+        final NodeProxy wrapper = new NodeProxy(expression, doc, node.getNodeId(), node.getNodeType());
+        wrapper.cachedNode = new WeakReference<>(node);
+
+        return wrapper;
+    }
+
     public Expression getExpression() {
         return expression;
     }
 
     @Override
     public void setNodeId(final NodeId id) {
+        invalidateCachedNode();
         this.nodeId = id;
     }
 
@@ -404,6 +442,13 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
         return nodeType == Node.DOCUMENT_NODE;
     }
 
+
+    private @Nullable WeakReference<Node> cachedNode = null;
+
+    private void invalidateCachedNode() {
+        this.cachedNode = null;
+    }
+
     /**
      * Gets the node from the broker, i.e. fom the underlying file system
      * Call this method <em>only</em> when necessary
@@ -411,16 +456,28 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
      */
     @Override
     public Node getNode() {
-        if(isDocument()) {
+        if (isDocument()) {
             return doc;
-        } else {
+        }
+
+        // try and get cached node
+        @Nullable Node node = null;
+        if (cachedNode != null) {
+            node = cachedNode.get();
+        }
+
+        if (node == null) {
+            // no cached node, get the node from the database
             final NodeImpl realNode = (NodeImpl) doc.getNode(this);
-            if(realNode != null) {
+            if (realNode != null) {
                 this.nodeType = realNode.getNodeType();
                 this.qname = realNode.getQName();
             }
-            return realNode;
+            cachedNode = new WeakReference<>(realNode);
+            node = realNode;
         }
+
+        return node;
     }
 
     @Override
@@ -444,10 +501,12 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public void setInternalAddress(final long internalAddress) {
+        invalidateCachedNode();
         this.internalAddress = internalAddress;
     }
 
-    public void setIndexType(int type) {
+    public void setIndexType(final int type) {
+        invalidateCachedNode();
         this.internalAddress = StorageAddress.setIndexType(internalAddress, (short) type);
     }
 
@@ -700,10 +759,11 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public void nodeMoved(final NodeId oldNodeId, final NodeHandle newNode) {
-        if(nodeId.equals(oldNodeId)) {
+        if (nodeId.equals(oldNodeId)) {
             // update myself
-            nodeId = newNode.getNodeId();
-            internalAddress = newNode.getInternalAddress();
+            invalidateCachedNode();
+            this.nodeId = newNode.getNodeId();
+            this.internalAddress = newNode.getInternalAddress();
         }
     }
 

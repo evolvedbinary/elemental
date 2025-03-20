@@ -50,7 +50,6 @@ import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.memtree.NodeImpl;
-import org.exist.dom.memtree.ReferenceNode;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
@@ -587,9 +586,6 @@ public class Eval extends BasicFunction {
                     value = loadVarFromURI(source);
                 } else {
                     value = (NodeValue) elem.getFirstChild();
-                    if (value instanceof ReferenceNode) {
-                        value = ((ReferenceNode) value).getReference();
-                    }
                 }
                 final String type = elem.getAttribute("type");
                 if ((!type.isEmpty()) && Type.subTypeOf(Type.getType(type), Type.ATOMIC)) {
@@ -625,9 +621,6 @@ public class Eval extends BasicFunction {
                 final Element elem = (Element) child;
                 //TODO : iterate over the children
                 NodeValue value = (NodeValue) elem.getFirstChild();
-                if (value instanceof ReferenceNode) {
-                    value = ((ReferenceNode) value).getReference();
-                }
                 final XmldbURI[] pathes = new XmldbURI[1];
                 //TODO : aggregate !
                 //TODO : cleanly seperate the statically know docollection and documents
