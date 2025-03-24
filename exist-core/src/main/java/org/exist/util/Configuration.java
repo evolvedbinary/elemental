@@ -51,8 +51,6 @@ import org.apache.logging.log4j.Logger;
 
 import org.exist.backup.SystemExport;
 import org.exist.collections.CollectionCache;
-import org.exist.dom.QName;
-import org.exist.dom.memtree.DocumentImpl;
 import org.exist.repo.Deployment;
 
 import org.exist.resolver.ResolverFactory;
@@ -375,53 +373,6 @@ public class Configuration implements ErrorHandler {
         configureElement(doc, "rpc-server", this::configureRpcServer);
     }
 
-    private String documentToString(final Document document) {
-        try {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            StringWriter stringWriter = new StringWriter();
-            transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
-            return stringWriter.toString();
-        } catch (TransformerException te) {
-            throw new RuntimeException("Transformation ", te);
-        }
-    }
-
-    private void nodeWalk(final StringBuilder sb, final Node node, int depth) {
-        sb.append("   ".repeat(Math.max(0, depth))).append("[[").append(node.getNodeName());
-        sb.append('=').append(node.getNodeName().equals("#comment") ? "---" : node.getNodeValue());
-        NodeList children = node.getChildNodes();
-        boolean hasContent = false;
-        if (children.getLength() > 0) {
-            hasContent = true;
-            sb.append('\n');
-            for (int i = 0; i < children.getLength(); i++) {
-                nodeWalk(sb, children.item(i), depth + 1);
-            }
-        }
-        NamedNodeMap attrs = node.getAttributes();
-        if (attrs != null && attrs.getLength() > 0) {
-            hasContent = true;
-            sb.append('\n');
-            for (int i = 0; i < attrs.getLength(); i++) {
-                Node attr = attrs.item(i);
-                sb.append("   ".repeat(Math.max(0, depth))).append("||");
-                sb.append(attr.getNodeName()).append('=').append(attr.getNodeValue()).append('\n');
-            }
-        }
-        if (hasContent) {
-            sb.append("   ".repeat(Math.max(0, depth)));
-        }
-        sb.append("]]\n");
-    }
-
-    private String documentWalk(final Document doc) {
-        StringBuilder sb = new StringBuilder();
-        Element root = doc.getDocumentElement();
-        nodeWalk(sb, root, 0);
-        return sb.toString();
-    }
-
     @Override public final String toString() {
 
         StringBuilder mapAsString = new StringBuilder("{");
@@ -471,8 +422,6 @@ public class Configuration implements ErrorHandler {
 
             final Document doc = parseConfigFromStream(is);
             setConfigFromDocument(existHomePath, doc);
-            //setProperty("config.content", documentToString(doc));
-            setProperty("config.altcontent", documentWalk(doc));
 
         } catch (final SAXException | IOException | ParserConfigurationException e) {
             LOG.error("error while reading config file: {}", configFilename, e);
