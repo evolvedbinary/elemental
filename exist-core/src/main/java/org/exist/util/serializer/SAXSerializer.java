@@ -31,8 +31,8 @@
 package org.exist.util.serializer;
 
 import org.exist.Namespaces;
-import org.exist.dom.INodeHandle;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.NodeHandle;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.Str;
 import org.exist.util.StringUtil;
@@ -52,7 +52,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class SAXSerializer extends AbstractSerializer implements ContentHandler, LexicalHandler, Receiver {
+public class SAXSerializer extends AbstractSerializer implements ContentHandler, LexicalHandler, Receiver<NodeHandle> {
 
     private final NamespaceSupport nsSupport = new NamespaceSupport();
     private final Map<Str, String> namespaceDecls = new HashMap<>();
@@ -548,7 +548,7 @@ public class SAXSerializer extends AbstractSerializer implements ContentHandler,
     }
 
     @Override
-    public void setCurrentNode(final INodeHandle node) {
+    public void setCurrentNode(final NodeHandle node) {
         // just ignore.
     }
 

@@ -26,19 +26,19 @@ import org.exist.numbering.NodeId;
 
 public interface NodeHandle extends INodeHandle<DocumentImpl> {
 
-    public void setNodeId(NodeId dln);
+    void setNodeId(NodeId dln);
 
     /**
      * Returns the internal storage address of this node in dom.dbx.
      *
      * @return long
      */
-    public long getInternalAddress();
+    long getInternalAddress();
 
     /**
      * Sets the internal storage address of this node in dom.dbx.
      *
      * @param internalAddress The internalAddress to set
      */
-    public void setInternalAddress(long internalAddress);
+    void setInternalAddress(long internalAddress);
 }

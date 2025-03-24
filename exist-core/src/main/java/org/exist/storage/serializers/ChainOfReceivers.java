@@ -32,17 +32,17 @@ public interface ChainOfReceivers extends Receiver<NodeHandle> {
      *
      * @param next the next receiver in the chain.
      */
-    void setNextInChain(Receiver next);
+    void setNextInChain(Receiver<NodeHandle> next);
 
     /**
      * Returns the next receiver in the chain.
      * @return the next receiver
      */
-    Receiver getNextInChain();
+    Receiver<NodeHandle> getNextInChain();
 
     /**
      * Walks the chain and returns the final receiver.
      * @return the last receiver in the chain
      */
-    Receiver getLastInChain();
+    Receiver<NodeHandle> getLastInChain();
 }

@@ -24,6 +24,7 @@ package org.exist.util.serializer;
 import org.exist.Namespaces;
 import org.exist.dom.INodeHandle;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.DocumentImpl;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -37,7 +38,7 @@ import javax.annotation.Nullable;
  * 
  * @author wolf
  */
-public interface Receiver<T extends INodeHandle> {
+public interface Receiver<T extends INodeHandle<DocumentImpl>> {
 
     QName MATCH_ELEMENT =
             new QName("match", Namespaces.EXIST_NS, Namespaces.EXIST_NS_PREFIX);
