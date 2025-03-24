@@ -912,6 +912,7 @@
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
                                 <include>src/test/resources/org/exist/validation/catalog.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/util/util.xml</include>
                                 <include>src/test/xquery/xquery3/serialize.xql</include>
                             </includes>
@@ -1058,6 +1059,7 @@
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDeepEqual.java</exclude>
@@ -1113,6 +1115,7 @@
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
                                 <exclude>src/test/resources/org/exist/validation/catalog.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/test/xquery/maps/maps.xqm</exclude>
                                 <exclude>src/test/xquery/util/util.xml</exclude>
                                 <exclude>src/main/java/org/exist/resolver/ResolverFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/resolver/XercesXmlResolverAdapter.java</exclude>

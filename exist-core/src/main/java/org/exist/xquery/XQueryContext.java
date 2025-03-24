@@ -2545,7 +2545,13 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     @Override
     public boolean tailRecursiveCall(final FunctionSignature signature) {
-        return callStack.contains(signature);
+        // NOTE(AR) this should be improved further... eXist-db lacked any sort of proper escape analysis!
+        for (final FunctionSignature existingFunctionSignature : callStack) {
+            if (existingFunctionSignature == signature) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
