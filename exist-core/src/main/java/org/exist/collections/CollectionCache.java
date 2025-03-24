@@ -36,6 +36,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.*;
 import org.exist.util.Configuration;
+import org.exist.util.Str;
 import org.exist.xmldb.XmldbURI;
 
 import javax.annotation.Nullable;
@@ -56,7 +57,7 @@ public class CollectionCache implements BrokerPoolService {
 
     public static final int DEFAULT_CACHE_SIZE_BYTES = 64 * 1024 * 1024;   // 64 MB
     public static final String CACHE_SIZE_ATTRIBUTE = "collectionCache";
-    public static final String PROPERTY_CACHE_SIZE_BYTES = "db-connection.collection-cache-mem";
+    public static final Str PROPERTY_CACHE_SIZE_BYTES = Str.of("db-connection.collection-cache-mem");
 
     private int maxCacheSize = -1;
     private Cache<String, Collection> cache;

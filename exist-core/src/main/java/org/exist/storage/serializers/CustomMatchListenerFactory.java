@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.indexing.MatchListener;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
+import org.exist.util.Str;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -42,7 +43,7 @@ public class CustomMatchListenerFactory {
 
     public final static String CONFIGURATION_ELEMENT = "custom-filter";
     public final static String CONFIGURATION_ATTR_CLASS = "class";
-    public final static String CONFIG_MATCH_LISTENERS = "serialization.custom-match-listeners";
+    public final static Str CONFIG_MATCH_LISTENERS = Str.of("serialization.custom-match-listeners");
 
     private CustomMatchListener first = null;
     private CustomMatchListener last = null;

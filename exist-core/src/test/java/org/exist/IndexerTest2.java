@@ -170,8 +170,8 @@ public class IndexerTest2 {
     @ClassRule
     public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
             propertiesBuilder()
-                .put(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT, true)
-                .set(Indexer.PROPERTY_SUPPRESS_WHITESPACE, "none")
+                .put(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT.toString(), true)
+                .set(Indexer.PROPERTY_SUPPRESS_WHITESPACE.toString(), "none")
                 .build(),
             true,
             false);

@@ -56,6 +56,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;
 import org.exist.util.Configuration;
 import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.Str;
 import org.w3c.dom.Element;
 
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class IndexManager implements BrokerPoolService {
     public static final String INDEXER_MODULES_CLASS_ATTRIBUTE = "class";
     public static final String INDEXER_MODULES_ID_ATTRIBUTE = "id";
 
-    public final static String PROPERTY_INDEXER_MODULES = "indexer.modules";
+    public final static Str PROPERTY_INDEXER_MODULES = Str.of("indexer.modules");
 
     private final BrokerPool pool;
 

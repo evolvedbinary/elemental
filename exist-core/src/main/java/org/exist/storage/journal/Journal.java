@@ -46,10 +46,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.lock.FileLock;
 import org.exist.storage.txn.Checkpoint;
 import org.exist.storage.txn.TxnStart;
-import org.exist.util.ByteConversion;
-import org.exist.util.Configuration;
-import org.exist.util.FileUtils;
-import org.exist.util.ReadOnlyException;
+import org.exist.util.*;
 import org.exist.util.sanity.SanityCheck;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
@@ -123,10 +120,10 @@ public final class Journal implements Closeable {
     public static final String RECOVERY_JOURNAL_DIR_ATTRIBUTE = "journal-dir";
     public static final String RECOVERY_SIZE_LIMIT_ATTRIBUTE = "size";
 
-    public static final String PROPERTY_RECOVERY_SIZE_MIN = "db-connection.recovery.size-min";
-    public static final String PROPERTY_RECOVERY_SIZE_LIMIT = "db-connection.recovery.size-limit";
-    public static final String PROPERTY_RECOVERY_JOURNAL_DIR = "db-connection.recovery.journal-dir";
-    public static final String PROPERTY_RECOVERY_SYNC_ON_COMMIT = "db-connection.recovery.sync-on-commit";
+    public static final Str PROPERTY_RECOVERY_SIZE_MIN = Str.of("db-connection.recovery.size-min");
+    public static final Str PROPERTY_RECOVERY_SIZE_LIMIT = Str.of("db-connection.recovery.size-limit");
+    public static final Str PROPERTY_RECOVERY_JOURNAL_DIR = Str.of("db-connection.recovery.journal-dir");
+    public static final Str PROPERTY_RECOVERY_SYNC_ON_COMMIT = Str.of("db-connection.recovery.sync-on-commit");
 
     public static final String LOG_FILE_SUFFIX = "log";
     public static final String BAK_FILE_SUFFIX = ".bak";

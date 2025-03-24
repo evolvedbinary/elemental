@@ -57,6 +57,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.util.Configuration;
+import org.exist.util.Str;
 
 import static com.evolvedbinary.j8fu.Either.Left;
 import static com.evolvedbinary.j8fu.Either.Right;
@@ -72,6 +73,7 @@ public class BrokerFactory {
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     public static final String PROPERTY_DATABASE = "database";
+    public static final Str CONFIG_PROPERTY_DATABASE = Str.of(PROPERTY_DATABASE);
 
     public static void plug(final String brokerId, final Class<? extends DBBroker> clazz) {
         CONSTRUCTORS.computeIfAbsent(formatBrokerId(brokerId), key -> new LazyValE<>(() -> getConstructor(key, clazz)));
@@ -152,7 +154,7 @@ public class BrokerFactory {
      * @throws IllegalArgumentException if the configuration does not define a broker ID.
      */
     private static String getBrokerId(final Configuration configuration) throws IllegalArgumentException {
-        final String brokerId = (String) configuration.getProperty(PROPERTY_DATABASE);
+        final String brokerId = (String) configuration.getProperty(CONFIG_PROPERTY_DATABASE);
         if (brokerId == null) {
             throw new IllegalArgumentException("No database defined in: " + configuration.getConfigFilePath());
         }

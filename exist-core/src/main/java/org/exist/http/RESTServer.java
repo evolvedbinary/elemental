@@ -407,7 +407,7 @@ public class RESTServer {
             source = "yes".equals(option);
         }
         if ((option = getParameter(request, Session)) != null) {
-            outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, option);
+            outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID_PROPKEY, option);
         }
         String stylesheet;
         if ((stylesheet = getParameter(request, XSL)) != null) {
@@ -849,7 +849,7 @@ public class RESTServer {
                         option = root.getAttribute(Session.xmlKey());
                         if (!option.isEmpty()) {
                             outputProperties.setProperty(
-                                    Serializer.PROPERTY_SESSION_ID, option);
+                                    Serializer.PROPERTY_SESSION_ID_PROPKEY, option);
                         }
 
                         final NodeList children = root.getChildNodes();
@@ -1358,7 +1358,7 @@ public class RESTServer {
             }
         }
 
-        final String sessionIdParam = outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID);
+        final String sessionIdParam = outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID_PROPKEY);
         if (sessionIdParam != null) {
             try {
                 final int sessionId = Integer.parseInt(sessionIdParam);
@@ -1422,7 +1422,7 @@ public class RESTServer {
 
                 if (cache) {
                     final int sessionId = sessionManager.add(query, resultSequence);
-                    outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
+                    outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID_PROPKEY, Integer.toString(sessionId));
                     if (!response.isCommitted()) {
                         response.setIntHeader("X-Session-Id", sessionId);
                     }
@@ -2288,9 +2288,9 @@ public class RESTServer {
                 root.addObject(new JSONSimpleProperty("start", Integer.toString(start), true));
                 root.addObject(new JSONSimpleProperty("count", Integer.toString(howmany), true));
                 root.addObject(new JSONSimpleProperty("hits", Integer.toString(results.getItemCount()), true));
-                if (outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID) != null) {
+                if (outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID_PROPKEY) != null) {
                     root.addObject(new JSONSimpleProperty("session",
-                            outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID)));
+                            outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID_PROPKEY)));
                 }
                 root.addObject(new JSONSimpleProperty("compilationTime", Long.toString(compilationTime), true));
                 root.addObject(new JSONSimpleProperty("executionTime", Long.toString(executionTime), true));

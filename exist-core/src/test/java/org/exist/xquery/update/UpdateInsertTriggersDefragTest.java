@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 public class UpdateInsertTriggersDefragTest {
 
     @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(propertiesBuilder().put(DBBroker.PROPERTY_XUPDATE_FRAGMENTATION_FACTOR, -1).build(), true, true);
+    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(propertiesBuilder().put(DBBroker.PROPERTY_XUPDATE_FRAGMENTATION_FACTOR.toString(), -1).build(), true, true);
 
     @Before
     public void setUp() throws Exception {

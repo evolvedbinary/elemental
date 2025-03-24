@@ -123,6 +123,7 @@ import static org.exist.scheduler.JobConfig.JOB_TYPE_ATTRIBUTE;
 import static org.exist.scheduler.JobConfig.JOB_UNSCHEDULE_ON_EXCEPTION;
 import static org.exist.scheduler.JobConfig.JOB_XQUERY_ATTRIBUTE;
 import static org.exist.scheduler.JobConfig.PROPERTY_SCHEDULER_JOBS;
+import static org.exist.storage.BrokerFactory.CONFIG_PROPERTY_DATABASE;
 import static org.exist.storage.BrokerFactory.PROPERTY_DATABASE;
 import static org.exist.Indexer.CONFIGURATION_INDEX_ELEMENT_NAME;
 import static org.exist.Indexer.PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE;
@@ -251,7 +252,7 @@ import static org.exist.xslt.TransformerFactoryAllocator.TRANSFORMER_CLASS_ATTRI
 
 
 public class Configuration implements ErrorHandler {
-    public static final String BINARY_CACHE_CLASS_PROPERTY = "binary.cache.class";
+    public static final Str BINARY_CACHE_CLASS_PROPERTY = Str.of("binary.cache.class");
     private static final String PRP_DETAILS = "{}: {}";
     private static final Logger LOG = LogManager.getLogger(Configuration.class); //Logger
     private static final String XQUERY_CONFIGURATION_ELEMENT_NAME = "xquery";
@@ -261,7 +262,7 @@ public class Configuration implements ErrorHandler {
     private static final String ORG_EXIST_STORAGE_STARTUP_TRIGGER = "org.exist.storage.StartupTrigger";
     private static final String ERROR_READING_CONFIGURATION_FILE_LINE = "Error occurred while reading configuration file [line: {}]:{}";
 
-    private final Map<String, Object> config = new HashMap<>(); //Configuration
+    private final Map<Str, Object> config = new HashMap<>(); //Configuration
 
     protected Optional<Path> configFilePath = Optional.empty();
     protected Optional<Path> existHome = Optional.empty();
@@ -332,7 +333,7 @@ public class Configuration implements ErrorHandler {
         reader.parse(src);
 
         Document doc = adapter.getDocument();
-        setProperty("config.doc.class", doc.getClass().getName());
+        setProperty(Str.of("config.doc.class"), doc.getClass().getName());
 
         return adapter.getDocument();
     }
@@ -370,7 +371,7 @@ public class Configuration implements ErrorHandler {
     @Override public final String toString() {
 
         StringBuilder mapAsString = new StringBuilder("{");
-        for (String key : config.keySet()) {
+        for (Str key : config.keySet()) {
             mapAsString.append(key).append("=").append(config.get(key)).append(", \n");
         }
         mapAsString.delete(mapAsString.length()-2, mapAsString.length()).append("}");
@@ -944,10 +945,10 @@ public class Configuration implements ErrorHandler {
      * @throws DatabaseConfigurationException
      */
     private void configureBackend(final Optional<Path> dbHome, Element con) throws DatabaseConfigurationException {
-        configureProperty(con, PROPERTY_DATABASE, PROPERTY_DATABASE);
+        configureProperty(con, PROPERTY_DATABASE, CONFIG_PROPERTY_DATABASE);
 
         // directory for database files
-        final String dataFiles = getConfigAttributeValue(con, DATA_DIR_ATTRIBUTE);
+        final String dataFiles = getConfigAttributeValue(con, DATA_DIR_ATTRIBUTE.toString());
 
         if (dataFiles != null) {
             final Path df = ConfigurationHelper.lookup(dataFiles, dbHome);
@@ -1158,7 +1159,7 @@ public class Configuration implements ErrorHandler {
                     // if it actually is a StartupTrigger
                     if (isStartupTrigger) {
                         // Parse additional parameters
-                        final Map<String, List<? extends Object>> params = ParametersExtractor.extract(trigger.getElementsByTagName(PARAMETER_ELEMENT_NAME));
+                        final Map<String, List<?>> params = ParametersExtractor.extract(trigger.getElementsByTagName(PARAMETER_ELEMENT_NAME));
 
                         // Register trigger
                         startupTriggers.add(new StartupTriggerConfig(startupTriggerClass, params));
@@ -1360,7 +1361,7 @@ public class Configuration implements ErrorHandler {
         return nullIfEmpty(element.getAttribute(attributeName));
     }
 
-    private <T> void configureProperty(final Element element, final String attributeName, final String propertyName,
+    private <T> void configureProperty(final Element element, final String attributeName, final Str propertyName,
                                        final Function<String, T> valueConverter, @Nullable final T defaultValue) {
         @Nullable final String attributeValue = getConfigAttributeValue(element, attributeName);
         if (attributeValue != null) {
@@ -1375,7 +1376,7 @@ public class Configuration implements ErrorHandler {
         }
     }
 
-    private void configureProperty(final Element element, final String attributeName, final String propertyName) {
+    private void configureProperty(final Element element, final String attributeName, final Str propertyName) {
         configureProperty(element, attributeName, propertyName, Function.identity(), null);
     }
 
@@ -1418,32 +1419,32 @@ public class Configuration implements ErrorHandler {
         return existHome;
     }
 
-    public Object getProperty(final String name) {
+    public Object getProperty(final Str name) {
         return config.get(name);
     }
 
-    public <T> T getProperty(final String name, final T defaultValue) {
+    public <T> T getProperty(final Str name, final T defaultValue) {
         return Optional.ofNullable((T) config.get(name)).orElse(defaultValue);
     }
 
-    public boolean hasProperty(final String name) {
+    public boolean hasProperty(final Str name) {
         return config.containsKey(name);
     }
 
-    public void setProperty(final String name, final Object obj) {
+    public void setProperty(final Str name, final Object obj) {
         config.put(name, obj);
         LOG.debug(PRP_DETAILS, name, obj);
     }
 
-    public void removeProperty(final String name) {
+    public void removeProperty(final Str name) {
         config.remove(name);
     }
 
-    public int getInteger(final String name) {
+    public int getInteger(final Str name) {
         return getInteger(name, -1);
     }
 
-    public int getInteger(final String name, final int defaultValue) {
+    public int getInteger(final Str name, final int defaultValue) {
         return Optional.ofNullable(getProperty(name))
                 .filter(Integer.class::isInstance)
                 .map(v -> (int) v)

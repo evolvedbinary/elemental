@@ -530,7 +530,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         this.startupTriggersManager = servicesManager.register(new StartupTriggersManager());
 
         // this is just used for unit tests
-        final BrokerPoolService testBrokerPoolService = (BrokerPoolService) conf.getProperty("exist.testBrokerPoolService");
+        final BrokerPoolService testBrokerPoolService = (BrokerPoolService) conf.getProperty(Str.of("exist.testBrokerPoolService"));
         if (testBrokerPoolService != null) {
             servicesManager.register(testBrokerPoolService);
         }
@@ -564,7 +564,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         }
 
         try {
-            statusReporter = new StatusReporter(SIGNAL_STARTUP);
+            statusReporter = new StatusReporter(SIGNAL_STARTUP.toString());
             statusObservers.forEach(statusReporter::addObserver);
 
             final Thread statusThread = newInstanceThread(this, "startup-status-reporter", statusReporter);
@@ -628,7 +628,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
                             }
                         }
 
-                        statusReporter.setStatus(SIGNAL_READINESS);
+                        statusReporter.setStatus(SIGNAL_READINESS.toString());
 
                         try(final Txn transaction = transactionManager.beginTransaction()) {
                             servicesManager.startSystemServices(systemBroker, transaction);
@@ -663,7 +663,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
                         }
 
                         //OK : the DB is repaired; let's make a few RW operations
-                        statusReporter.setStatus(SIGNAL_WRITABLE);
+                        statusReporter.setStatus(SIGNAL_WRITABLE.toString());
 
                         //initialize configurations watcher trigger
                         if(!exportOnly) {

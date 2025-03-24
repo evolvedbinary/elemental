@@ -137,7 +137,7 @@ public class EnforceIndexUseTest {
     public void setup() throws Throwable {
         existEmbeddedServer = new ExistEmbeddedServer(
                 propertiesBuilder()
-                        .put(XQueryContext.PROPERTY_ENFORCE_INDEX_USE, enforceIndexUseValue).build()
+                        .put(XQueryContext.PROPERTY_ENFORCE_INDEX_USE.toString(), enforceIndexUseValue).build()
                 ,true
                 ,true);
 

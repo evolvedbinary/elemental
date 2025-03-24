@@ -21,6 +21,8 @@
  */
 package org.exist.storage;
 
+import org.exist.util.Str;
+
 /**
  * Just static Constants used by {@link BrokerPool}
  *
@@ -49,7 +51,7 @@ public interface BrokerPoolConstants {
     String CONFIGURATION_RECOVERY_ELEMENT_NAME = "recovery";
     String DISK_SPACE_MIN_ATTRIBUTE = "minDiskSpace";
 
-    String DATA_DIR_ATTRIBUTE = "files";
+    Str DATA_DIR_ATTRIBUTE = Str.of("files");
 
     //TODO : move elsewhere ?
     String RECOVERY_ENABLED_ATTRIBUTE = "enabled";
@@ -64,30 +66,30 @@ public interface BrokerPoolConstants {
     String NODES_BUFFER_ATTRIBUTE = "nodesBuffer";
 
     //Various configuration property keys (set by the configuration manager)
-    String PROPERTY_STARTUP_TRIGGERS = "startup.triggers";
-    String PROPERTY_DATA_DIR = "db-connection.data-dir";
-    String PROPERTY_MIN_CONNECTIONS = "db-connection.pool.min";
-    String PROPERTY_MAX_CONNECTIONS = "db-connection.pool.max";
-    String PROPERTY_SYNC_PERIOD = "db-connection.pool.sync-period";
-    String PROPERTY_SHUTDOWN_DELAY = "wait-before-shutdown";
-    String DISK_SPACE_MIN_PROPERTY = "db-connection.diskSpaceMin";
+    Str PROPERTY_STARTUP_TRIGGERS = Str.of("startup.triggers");
+    Str PROPERTY_DATA_DIR = Str.of("db-connection.data-dir");
+    Str PROPERTY_MIN_CONNECTIONS = Str.of("db-connection.pool.min");
+    Str PROPERTY_MAX_CONNECTIONS = Str.of("db-connection.pool.max");
+    Str PROPERTY_SYNC_PERIOD = Str.of("db-connection.pool.sync-period");
+    Str PROPERTY_SHUTDOWN_DELAY = Str.of("wait-before-shutdown");
+    Str DISK_SPACE_MIN_PROPERTY = Str.of("db-connection.diskSpaceMin");
 
     //TODO : move elsewhere ?
-    String PROPERTY_COLLECTION_CACHE_SIZE = "db-connection.collection-cache-size";
+    Str PROPERTY_COLLECTION_CACHE_SIZE = Str.of("db-connection.collection-cache-size");
 
     //TODO : move elsewhere ? Get fully qualified class name ?
-    String PROPERTY_RECOVERY_ENABLED = "db-connection.recovery.enabled";
-    String PROPERTY_RECOVERY_CHECK = "db-connection.recovery.consistency-check";
-    String PROPERTY_SYSTEM_TASK_CONFIG = "db-connection.system-task-config";
-    String PROPERTY_NODES_BUFFER = "db-connection.nodes-buffer";
-    String PROPERTY_EXPORT_ONLY = "db-connection.emergency";
+    Str PROPERTY_RECOVERY_ENABLED = Str.of("db-connection.recovery.enabled");
+    Str PROPERTY_RECOVERY_CHECK = Str.of("db-connection.recovery.consistency-check");
+    Str PROPERTY_SYSTEM_TASK_CONFIG = Str.of("db-connection.system-task-config");
+    Str PROPERTY_NODES_BUFFER = Str.of("db-connection.nodes-buffer");
+    Str PROPERTY_EXPORT_ONLY = Str.of("db-connection.emergency");
 
-    String PROPERTY_RECOVERY_GROUP_COMMIT = "db-connection.recovery.group-commit";
+    Str PROPERTY_RECOVERY_GROUP_COMMIT = Str.of("db-connection.recovery.group-commit");
     String RECOVERY_GROUP_COMMIT_ATTRIBUTE = "group-commit";
-    String PROPERTY_RECOVERY_FORCE_RESTART = "db-connection.recovery.force-restart";
+    Str PROPERTY_RECOVERY_FORCE_RESTART = Str.of("db-connection.recovery.force-restart");
     String RECOVERY_FORCE_RESTART_ATTRIBUTE = "force-restart";
 
-    String PROPERTY_PAGE_SIZE = "db-connection.page-size";
+    Str PROPERTY_PAGE_SIZE = Str.of("db-connection.page-size");
 
     /**
      * Default values

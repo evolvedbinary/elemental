@@ -95,7 +95,7 @@ public class XMLReaderPool extends GenericObjectPool<XMLReader> implements Broke
     public interface XmlParser {
         String XML_PARSER_ELEMENT = "xml";
         String XML_PARSER_FEATURES_ELEMENT = "features";
-        String XML_PARSER_FEATURES_PROPERTY = "parser.xml-parser.features";
+        Str XML_PARSER_FEATURES_PROPERTY = Str.of("parser.xml-parser.features");
     }
 
     @Override

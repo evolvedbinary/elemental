@@ -74,6 +74,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
 
+import static org.exist.Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT;
+
 /**
  * Main class to pre-process an XUpdate request. XUpdateProcessor
  * will parse the request via SAX and compile it into a set of
@@ -206,7 +208,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 		if (broker != null) {
 			final Configuration config = broker.getConfiguration();
 			Boolean temp;
-			if ((temp = (Boolean) config.getProperty("indexer.preserve-whitespace-mixed-content"))
+			if ((temp = (Boolean) config.getProperty(PROPERTY_PRESERVE_WS_MIXED_CONTENT))
 				!= null)
 				{preserveWhitespaceTemp = temp;}
 		}

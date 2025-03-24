@@ -42,7 +42,7 @@ public final class SaxonConfiguration {
 
   public static final String SAXON_CONFIGURATION_ELEMENT_NAME = "saxon";
   public static final String SAXON_CONFIGURATION_FILE_ATTRIBUTE = "configuration-file";
-  public static final String SAXON_CONFIGURATION_FILE_PROPERTY = "saxon.configuration";
+  public static final Str SAXON_CONFIGURATION_FILE_PROPERTY = Str.of("saxon.configuration");
   private static final String SAXON_DEFAULT_SAXON_CONFIG_FILE = "saxon-config.xml";
 
   /**

@@ -45,7 +45,7 @@ public class CollectionStore extends BFile {
     public static final short FILE_FORMAT_VERSION_ID = 17;
 
     public static final String FILE_NAME = "collections.dbx";
-    public static final String  FILE_KEY_IN_CONFIG = "db-connection.collections";
+    public static final Str  FILE_KEY_IN_CONFIG = Str.of("db-connection.collections");
     
     public final static String FREE_DOC_ID_KEY = "__free_doc_id";
     public final static String NEXT_DOC_ID_KEY = "__next_doc_id";  
@@ -76,7 +76,7 @@ public class CollectionStore extends BFile {
         return FILE_NAME;
     }
     
-    public static String getConfigKeyForFile() {
+    public static Str getConfigKeyForFile() {
         return FILE_KEY_IN_CONFIG;
     }
 

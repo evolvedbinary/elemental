@@ -29,6 +29,7 @@ import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.util.Configuration;
+import org.exist.util.Str;
 import org.exist.xquery.util.ExpressionDumper;
 
 import javax.annotation.Nullable;
@@ -44,8 +45,8 @@ public class XQueryWatchDog {
     
     public static final String CONFIGURATION_ELEMENT_NAME = "watchdog";
     
-    public final static String PROPERTY_QUERY_TIMEOUT = "db-connection.watchdog.query-timeout";
-    public final static String PROPERTY_OUTPUT_SIZE_LIMIT = "db-connection.watchdog.output-size-limit";
+    public final static Str PROPERTY_QUERY_TIMEOUT = Str.of("db-connection.watchdog.query-timeout");
+    public final static Str PROPERTY_OUTPUT_SIZE_LIMIT = Str.of("db-connection.watchdog.output-size-limit");
 
     private final XQueryContext context;
     

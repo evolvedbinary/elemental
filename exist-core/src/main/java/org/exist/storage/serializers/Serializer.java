@@ -86,6 +86,7 @@ import org.exist.security.Subject;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
 import org.exist.util.MimeType;
+import org.exist.util.Str;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
 import org.exist.util.serializer.ReceiverToSAX;
@@ -128,26 +129,27 @@ public abstract class Serializer implements XMLReader {
 
     public static final String CONFIGURATION_ELEMENT_NAME = "serializer";
     public static final String OMIT_XML_DECLARATION_ATTRIBUTE = "omit-xml-declaration";
-    public static final String PROPERTY_OMIT_XML_DECLARATION = "serialization.omit-xml-declaration";
+    public static final Str PROPERTY_OMIT_XML_DECLARATION = Str.of("serialization.omit-xml-declaration");
     public static final String OMIT_ORIGINAL_XML_DECLARATION_ATTRIBUTE = "omit-original-xml-declaration";
-    public static final String PROPERTY_OMIT_ORIGINAL_XML_DECLARATION = "serialization.omit-original-xml-declaration";
+    public static final Str PROPERTY_OMIT_ORIGINAL_XML_DECLARATION = Str.of("serialization.omit-original-xml-declaration");
     public static final String OUTPUT_DOCTYPE_ATTRIBUTE = "output-doctype";
-    public static final String PROPERTY_OUTPUT_DOCTYPE = "serialization.output-doctype";
+    public static final Str PROPERTY_OUTPUT_DOCTYPE = Str.of("serialization.output-doctype");
     public static final String ENABLE_XINCLUDE_ATTRIBUTE = "enable-xinclude";
-    public static final String PROPERTY_ENABLE_XINCLUDE = "serialization.enable-xinclude";
+    public static final Str PROPERTY_ENABLE_XINCLUDE = Str.of("serialization.enable-xinclude");
     public static final String ENABLE_XSL_ATTRIBUTE = "enable-xsl";
-    public static final String PROPERTY_ENABLE_XSL = "serialization.enable-xsl";
+    public static final Str PROPERTY_ENABLE_XSL = Str.of("serialization.enable-xsl");
     public static final String INDENT_ATTRIBUTE = "indent";
-    public static final String PROPERTY_INDENT = "serialization.indent";
+    public static final Str PROPERTY_INDENT = Str.of("serialization.indent");
     public static final String COMPRESS_OUTPUT_ATTRIBUTE = "compress-output";
-    public static final String PROPERTY_COMPRESS_OUTPUT = "serialization.compress-output";
+    public static final Str PROPERTY_COMPRESS_OUTPUT = Str.of("serialization.compress-output");
     public static final String ADD_EXIST_ID_ATTRIBUTE = "add-exist-id";
-    public static final String PROPERTY_ADD_EXIST_ID = "serialization.add-exist-id";
+    public static final Str PROPERTY_ADD_EXIST_ID = Str.of("serialization.add-exist-id");
     public static final String TAG_MATCHING_ELEMENTS_ATTRIBUTE = "match-tagging-elements";
-    public static final String PROPERTY_TAG_MATCHING_ELEMENTS = "serialization.match-tagging-elements";
+    public static final Str PROPERTY_TAG_MATCHING_ELEMENTS = Str.of("serialization.match-tagging-elements");
     public static final String TAG_MATCHING_ATTRIBUTES_ATTRIBUTE = "match-tagging-attributes";
-    public static final String PROPERTY_TAG_MATCHING_ATTRIBUTES = "serialization.match-tagging-attributes";
-    public static final String PROPERTY_SESSION_ID = "serialization.session-id";
+    public static final Str PROPERTY_TAG_MATCHING_ATTRIBUTES = Str.of("serialization.match-tagging-attributes");
+    public static final String PROPERTY_SESSION_ID_PROPKEY = "serialization.session-id";
+    public static final Str PROPERTY_SESSION_ID = Str.of(PROPERTY_SESSION_ID_PROPKEY);
 
     // constants to configure the highlighting of matches in text and attributes
     public static final int TAG_NONE = 0x0;
@@ -1071,8 +1073,8 @@ public abstract class Serializer implements XMLReader {
         attrs.addAttribute(ATTR_HITS_QNAME, Integer.toString(seq.getItemCount()));
         attrs.addAttribute(ATTR_START_QNAME, Integer.toString(start));
         attrs.addAttribute(ATTR_COUNT_QNAME, Integer.toString(count));
-        if (outputProperties.getProperty(PROPERTY_SESSION_ID) != null) {
-            attrs.addAttribute(ATTR_SESSION_ID, outputProperties.getProperty(PROPERTY_SESSION_ID));
+        if (outputProperties.getProperty(PROPERTY_SESSION_ID_PROPKEY) != null) {
+            attrs.addAttribute(ATTR_SESSION_ID, outputProperties.getProperty(PROPERTY_SESSION_ID_PROPKEY));
         }
         attrs.addAttribute(ATTR_COMPILATION_TIME_QNAME, Long.toString(compilationTime));
         attrs.addAttribute(ATTR_EXECUTION_TIME_QNAME, Long.toString(compilationTime));
@@ -1159,8 +1161,8 @@ public abstract class Serializer implements XMLReader {
         attrs.addAttribute(ATTR_HITS_QNAME, "1");
         attrs.addAttribute(ATTR_START_QNAME, "1");
         attrs.addAttribute(ATTR_COUNT_QNAME, "1");
-        if (outputProperties.getProperty(PROPERTY_SESSION_ID) != null) {
-            attrs.addAttribute(ATTR_SESSION_ID, outputProperties.getProperty(PROPERTY_SESSION_ID));
+        if (outputProperties.getProperty(PROPERTY_SESSION_ID_PROPKEY) != null) {
+            attrs.addAttribute(ATTR_SESSION_ID, outputProperties.getProperty(PROPERTY_SESSION_ID_PROPKEY));
         }
 
         if (!documentStarted) {

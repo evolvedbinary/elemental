@@ -37,6 +37,9 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
+import static org.exist.storage.BrokerPoolConstants.PROPERTY_PAGE_SIZE;
+import static org.exist.storage.DefaultCacheManager.PROPERTY_CACHE_SIZE;
+
 /** generate statistics about the XML storage - 
  * used by org.apache.cocoon.generation.StatusGenerator
  * @author jmv
@@ -73,8 +76,8 @@ public class XMLStatistics {
             addValue("configuration", configPath.get().toAbsolutePath().toString());
         }
         addValue("data-directory", ((Path)instance.getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR)).toAbsolutePath().toString());
-        addValue("cache-size", String.valueOf(instance.getConfiguration().getInteger("db-connection.cache-size")));
-        addValue("page-size", String.valueOf(instance.getConfiguration().getInteger("db-connection.page-size")));
+        addValue("cache-size", String.valueOf(instance.getConfiguration().getInteger(PROPERTY_CACHE_SIZE)));
+        addValue("page-size", String.valueOf(instance.getConfiguration().getInteger(PROPERTY_PAGE_SIZE)));
         addValue("collection-cache-mem", String.valueOf(instance.getConfiguration().getInteger(CollectionCache.PROPERTY_CACHE_SIZE_BYTES)));
         this.contentHandler.startElement(NAMESPACE, "pool", PREFIX + ":pool", atts);
         addValue("max", String.valueOf(instance.getMax()));

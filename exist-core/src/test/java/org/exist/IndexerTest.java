@@ -86,7 +86,7 @@ public class IndexerTest {
 	@ClassRule
 	public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
 			propertiesBuilder()
-            	.set(Indexer.PROPERTY_SUPPRESS_WHITESPACE, "none")
+            	.set(Indexer.PROPERTY_SUPPRESS_WHITESPACE.toString(), "none")
             	.build(),
 			true,
 			true);

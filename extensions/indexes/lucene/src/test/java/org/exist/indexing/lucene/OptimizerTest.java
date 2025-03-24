@@ -169,7 +169,7 @@ public class OptimizerTest {
     @ClassRule
     public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
             propertiesBuilder()
-                    .put(FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS, Boolean.FALSE) //Since we use the deprecated text:match-all() function, we have to be sure is is enabled
+                    .put(FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS.toString(), Boolean.FALSE) //Since we use the deprecated text:match-all() function, we have to be sure is is enabled
                     .build(),
             true,
             true);

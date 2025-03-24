@@ -28,10 +28,7 @@ import org.exist.start.Classpath;
 import org.exist.start.EXistClassLoader;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.journal.Journal;
-import org.exist.util.Configuration;
-import org.exist.util.ConfigurationHelper;
-import org.exist.util.DatabaseConfigurationException;
-import org.exist.util.FileUtils;
+import org.exist.util.*;
 import org.junit.rules.ExternalResource;
 
 import javax.annotation.Nullable;
@@ -137,7 +134,7 @@ public class ExistEmbeddedServer extends ExternalResource {
             // override any specified config properties
             configProperties.ifPresent(properties -> {
                 for (final Map.Entry<Object, Object> configProperty : properties.entrySet()) {
-                    config.setProperty(configProperty.getKey().toString(), configProperty.getValue());
+                    config.setProperty(Str.of(configProperty.getKey().toString()), configProperty.getValue());
                 }
             });
 

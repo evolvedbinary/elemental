@@ -47,6 +47,7 @@ import org.exist.source.DBSource;
 import org.exist.source.Source;
 import org.exist.util.Configuration;
 import org.exist.util.Holder;
+import org.exist.util.Str;
 import org.exist.xquery.*;
 
 /**
@@ -69,8 +70,8 @@ public class XQueryPool implements BrokerPoolService {
     public static final String MAX_STACK_SIZE_ATTRIBUTE = "max-stack-size";
     public static final String POOL_SIZE_ATTTRIBUTE = "size";
 
-    public static final String PROPERTY_MAX_STACK_SIZE = "db-connection.query-pool.max-stack-size";
-    public static final String PROPERTY_POOL_SIZE = "db-connection.query-pool.size";
+    public static final Str PROPERTY_MAX_STACK_SIZE = Str.of("db-connection.query-pool.max-stack-size");
+    public static final Str PROPERTY_POOL_SIZE = Str.of("db-connection.query-pool.size");
 
     private static final int DEFAULT_MAX_POOL_SIZE = 128;
     private static final int DEFAULT_MAX_QUERY_STACK_SIZE = 64;

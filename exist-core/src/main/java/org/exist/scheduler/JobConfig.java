@@ -24,6 +24,7 @@ package org.exist.scheduler;
 import java.util.Properties;
 import org.exist.util.Configuration;
 import org.exist.scheduler.JobException.JobExceptionAction;
+import org.exist.util.Str;
 
 /**
  *
@@ -43,7 +44,7 @@ public final class JobConfig {
     public static final String JOB_REPEAT_ATTRIBUTE = "repeat";
     public static final String JOB_NAME_ATTRIBUTE = "name";
     public static final String JOB_UNSCHEDULE_ON_EXCEPTION = "unschedule-on-exception";
-    public static final String PROPERTY_SCHEDULER_JOBS = "scheduler.jobs";
+    public static final Str PROPERTY_SCHEDULER_JOBS = Str.of("scheduler.jobs");
     /** end conf.xml names **/
     
     

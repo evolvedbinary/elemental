@@ -40,6 +40,7 @@ import org.exist.storage.BrokerPoolService;
 import org.exist.storage.BrokerPoolServiceException;
 import org.exist.util.Configuration;
 import org.exist.util.ReadOnlyException;
+import org.exist.util.Str;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,14 +56,14 @@ public class FileLockService implements BrokerPoolService {
     private final static Logger LOG = LogManager.getLogger(FileLockService.class);
 
     private final String lockFileName;
-    private final String confDirPropName;
+    private final Str confDirPropName;
     private final String defaultDirName;
 
     private Path dataDir;
     private boolean writable;
     private AtomicReference<FileLock> dataLock = new AtomicReference<>();
 
-    public FileLockService(final String lockFileName, final String confDirPropName, final String defaultDirName) {
+    public FileLockService(final String lockFileName, final Str confDirPropName, final String defaultDirName) {
         this.lockFileName = lockFileName;
         this.confDirPropName = confDirPropName;
         this.defaultDirName = defaultDirName;

@@ -51,6 +51,7 @@ import java.util.List;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.exist.source.Source;
+import org.exist.util.Str;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.Constants.StringTruncationOperator;
 import org.exist.xquery.parser.XQueryAST;
@@ -64,10 +65,10 @@ import javax.xml.XMLConstants;
 public class FunctionFactory {
 
     public static final String ENABLE_JAVA_BINDING_ATTRIBUTE = "enable-java-binding";
-    public static final String PROPERTY_ENABLE_JAVA_BINDING = "xquery.enable-java-binding";
+    public static final Str PROPERTY_ENABLE_JAVA_BINDING = Str.of("xquery.enable-java-binding");
     public static final boolean ENABLE_JAVA_BINDING_BY_DEFAULT = false;
     public static final String DISABLE_DEPRECATED_FUNCTIONS_ATTRIBUTE = "disable-deprecated-functions";
-    public static final String PROPERTY_DISABLE_DEPRECATED_FUNCTIONS = "xquery.disable-deprecated-functions";
+    public static final Str PROPERTY_DISABLE_DEPRECATED_FUNCTIONS = Str.of("xquery.disable-deprecated-functions");
     public static final boolean DISABLE_DEPRECATED_FUNCTIONS_BY_DEFAULT = false;
 
     public static Expression createFunction(XQueryContext context, XQueryAST ast, PathExpr parent, List<Expression> params) throws XPathException {

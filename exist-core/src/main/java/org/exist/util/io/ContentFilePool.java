@@ -25,6 +25,7 @@ package org.exist.util.io;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.exist.util.Configuration;
+import org.exist.util.Str;
 
 import javax.annotation.Nullable;
 
@@ -38,15 +39,15 @@ public final class ContentFilePool extends GenericObjectPool<ContentFile> {
     /**
      * Variable defining the {@link ContentFile} maximum in memory stored size in bytes.
      */
-    public static final String PROPERTY_IN_MEMORY_SIZE = "rpc-server.content-file.in-memory-size";
+    public static final Str PROPERTY_IN_MEMORY_SIZE = Str.of("rpc-server.content-file.in-memory-size");
     /**
      * Variable defining the maximum mool size holding {@link ContentFile values.}
      */
-    public static final String PROPERTY_POOL_SIZE = "rpc-server.content-file-pool.size";
+    public static final Str PROPERTY_POOL_SIZE = Str.of("rpc-server.content-file-pool.size");
     /**
      * Variable defining the maximum mool size holding {@link ContentFile values.}
      */
-    public static final String PROPERTY_POOL_MAX_IDLE = "rpc-server.content-file-pool.max-idle";
+    public static final Str PROPERTY_POOL_MAX_IDLE = Str.of("rpc-server.content-file-pool.max-idle");
 
     /**
      * Creates a new pool using the givem temporary file manager, configuration and maximum idle time.

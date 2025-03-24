@@ -70,8 +70,8 @@ class ConfigurationTest {
     }
 
     private void validate(final Configuration config) {
-        assertThat(config.hasProperty(BrokerFactory.PROPERTY_DATABASE)).isTrue();
-        assertThat(config.getProperty(BrokerFactory.PROPERTY_DATABASE)).isEqualTo("native");
+        assertThat(config.hasProperty(BrokerFactory.CONFIG_PROPERTY_DATABASE)).isTrue();
+        assertThat(config.getProperty(BrokerFactory.CONFIG_PROPERTY_DATABASE)).isEqualTo("native");
     }
 
     private Document getDocument(final InputStream is) throws SAXException, IOException, ParserConfigurationException {

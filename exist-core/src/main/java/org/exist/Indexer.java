@@ -69,10 +69,7 @@ import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath2;
 import org.exist.storage.RangeIndexSpec;
 import org.exist.storage.txn.Txn;
-import org.exist.util.Configuration;
-import org.exist.util.NodeUtil;
-import org.exist.util.ProgressIndicator;
-import org.exist.util.XMLString;
+import org.exist.util.*;
 import org.exist.util.pool.NodePool;
 import org.exist.xquery.Constants;
 import org.exist.xquery.Expression;
@@ -112,9 +109,9 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
     public static final String SUPPRESS_WHITESPACE_ATTRIBUTE = "suppress-whitespace";
     public static final String PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE = "preserve-whitespace-mixed-content";
 
-    public static final String PROPERTY_INDEXER_CONFIG = "indexer.config";
-    public final static String PROPERTY_SUPPRESS_WHITESPACE = "indexer.suppress-whitespace";
-    public static final String PROPERTY_PRESERVE_WS_MIXED_CONTENT = "indexer.preserve-whitespace-mixed-content";
+    public static final Str PROPERTY_INDEXER_CONFIG = Str.of("indexer.config");
+    public final static Str PROPERTY_SUPPRESS_WHITESPACE = Str.of("indexer.suppress-whitespace");
+    public static final Str PROPERTY_PRESERVE_WS_MIXED_CONTENT = Str.of("indexer.preserve-whitespace-mixed-content");
 
     private final DBBroker broker;
     private final Txn transaction;

@@ -102,18 +102,18 @@ public interface DBBroker extends AutoCloseable {
     String XUPDATE_FRAGMENTATION_FACTOR_ATTRIBUTE = "allowed-fragmentation";
 
     //TODO : move elsewhere
-    String PROPERTY_XUPDATE_FRAGMENTATION_FACTOR = "xupdate.fragmentation";
+    Str PROPERTY_XUPDATE_FRAGMENTATION_FACTOR = Str.of("xupdate.fragmentation");
 
     //TODO : move elsewhere
     String XUPDATE_CONSISTENCY_CHECKS_ATTRIBUTE = "enable-consistency-checks";
 
     //TODO : move elsewhere
-    String PROPERTY_XUPDATE_CONSISTENCY_CHECKS = "xupdate.consistency-checks";
+    Str PROPERTY_XUPDATE_CONSISTENCY_CHECKS = Str.of("xupdate.consistency-checks");
 
     String POSIX_CHOWN_RESTRICTED_ATTRIBUTE = "posix-chown-restricted";
-    String POSIX_CHOWN_RESTRICTED_PROPERTY = "db-connection.posix-chown-restricted";
+    Str POSIX_CHOWN_RESTRICTED_PROPERTY = Str.of("db-connection.posix-chown-restricted");
     String PRESERVE_ON_COPY_ATTRIBUTE = "preserve-on-copy";
-    String PRESERVE_ON_COPY_PROPERTY = "db-connection.preserve-on-copy";
+    Str PRESERVE_ON_COPY_PROPERTY = Str.of("db-connection.preserve-on-copy");
 
     String getId();
 

@@ -137,7 +137,7 @@ public class NativeBroker implements DBBroker {
     public static final String PAGE_SIZE_ATTRIBUTE = "pageSize";
     public static final String INDEX_DEPTH_ATTRIBUTE = "index-depth";
 
-    public static final String PROPERTY_INDEX_DEPTH = "indexer.index-depth";
+    public static final Str PROPERTY_INDEX_DEPTH = Str.of("indexer.index-depth");
     private static final byte[] ALL_STORAGE_FILES = {
         COLLECTIONS_DBX_ID, VALUES_DBX_ID, DOM_DBX_ID
     };
