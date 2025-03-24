@@ -1,4 +1,28 @@
 (:
+ : Elemental
+ : Copyright (C) 2024, Evolved Binary Ltd
+ :
+ : admin@evolvedbinary.com
+ : https://www.evolvedbinary.com | https://www.elemental.xyz
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; version 2.1.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :
+ : NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ :       The original license header is included below.
+ :
+ : =====================================================================
+ :
  : eXist-db Open Source Native XML Database
  : Copyright (C) 2001 The eXist-db Authors
  :
@@ -50,6 +74,14 @@ declare variable $mt:integerKeys := map {
 };
 
 declare variable $mt:mapOfSequences := map {0: (), 1 : ("One", "Two") };
+
+declare variable $mt:nested-places := map {
+      "Italia": map {
+          "Piemonte": map {
+              "Bardonecchia": 1
+          }
+      }
+};
 
 declare
     %test:assertEquals("Wednesday")
@@ -186,6 +218,37 @@ function mt:for-each2() {
 
     return
         $nm?b
+};
+
+declare
+    %test:assertEquals("<country>Italia<region>Piemonte</region></country>")
+function mt:for-each3() {
+    map:for-each($mt:nested-places, function($country-key, $region-map) {
+        <country>{
+            $country-key,
+                map:for-each($region-map, function($region-key, $town-map) {
+                    <region>{$region-key}</region>
+                })
+        }</country>
+    })
+};
+
+declare
+    %test:assertEquals("<country>Italia<region>Piemonte<town>Bardonecchia</town></region></country>")
+function mt:for-each4() {
+    map:for-each($mt:nested-places, function($country-key, $region-map) {
+        <country>{
+            $country-key,
+                map:for-each($region-map, function($region-key, $town-map) {
+                    <region>{
+                        $region-key,
+                          map:for-each($town-map, function($town-key, $town-value) {
+                              <town>{$town-key}</town>
+                          })
+                    }</region>
+                })
+        }</country>
+    })
 };
 
 declare
