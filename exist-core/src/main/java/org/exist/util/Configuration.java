@@ -85,7 +85,6 @@ import org.exist.xslt.TransformerFactoryAllocator;
 import java.io.IOException;
 import java.io.InputStream;
 
-import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,11 +103,6 @@ import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.exist.Namespaces;
 import org.exist.scheduler.JobType;
@@ -471,13 +465,13 @@ public class Configuration implements ErrorHandler {
         if (booleanValue == null)  {
             return defaultValue;
         }
-        return booleanValue.booleanValue();
+        return booleanValue;
     }
 
     @Nullable
     private static Boolean asBoolean(@Nullable final String value) {
         if (value != null) {
-            return Boolean.valueOf("yes".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value));
+            return "yes".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value);
         }
         return null;
     }
@@ -579,7 +573,7 @@ public class Configuration implements ErrorHandler {
         // built-in-modules
         final Map<String, Class<?>> classMap = new HashMap<>();
         final Map<String, String> knownMappings = new HashMap<>();
-        final Map<String, Map<String, List<? extends Object>>> moduleParameters = new HashMap<>();
+        final Map<String, Map<String, List<?>>> moduleParameters = new HashMap<>();
         loadModuleClasses(xquery, classMap, knownMappings, moduleParameters);
         setProperty(PROPERTY_BUILT_IN_MODULES, classMap);
         setProperty(PROPERTY_STATIC_MODULE_MAP, knownMappings);
@@ -598,7 +592,7 @@ public class Configuration implements ErrorHandler {
     private void loadModuleClasses(final Element xquery,
                                    final Map<String, Class<?>> modulesClassMap,
                                    final Map<String, String> modulesSourceMap,
-                                   final Map<String, Map<String, List<? extends Object>>> moduleParameters
+                                   final Map<String, Map<String, List<?>>> moduleParameters
     ) throws DatabaseConfigurationException {
         // add the standard function module
         modulesClassMap.put(XPATH_FUNCTIONS_NS, FnModule.class);
@@ -918,7 +912,7 @@ public class Configuration implements ErrorHandler {
             }
 
             final NodeList nlParam = job.getElementsByTagName(PARAMETER_ELEMENT_NAME);
-            final Map<String, List<? extends Object>> params = ParametersExtractor.extract(nlParam);
+            final Map<String, List<?>> params = ParametersExtractor.extract(nlParam);
 
             for (final Entry<String, List<?>> param : params.entrySet()) {
                 final List<?> values = param.getValue();
@@ -945,8 +939,8 @@ public class Configuration implements ErrorHandler {
     /**
      * DOCUMENT ME!
      *
-     * @param dbHome
-     * @param con
+     * @param dbHome database location
+     * @param con element supplying the configuration
      * @throws DatabaseConfigurationException
      */
     private void configureBackend(final Optional<Path> dbHome, Element con) throws DatabaseConfigurationException {
@@ -1009,22 +1003,7 @@ public class Configuration implements ErrorHandler {
             collectionCache = collectionCache.toLowerCase();
 
             try {
-                final int collectionCacheBytes;
-                if (collectionCache.endsWith("k")) {
-                    collectionCacheBytes = 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 1));
-                } else if (collectionCache.endsWith("kb")) {
-                    collectionCacheBytes = 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 2));
-                } else if (collectionCache.endsWith("m")) {
-                    collectionCacheBytes = 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 1));
-                } else if (collectionCache.endsWith("mb")) {
-                    collectionCacheBytes = 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 2));
-                } else if (collectionCache.endsWith("g")) {
-                    collectionCacheBytes = 1024 * 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 1));
-                } else if (collectionCache.endsWith("gb")) {
-                    collectionCacheBytes = 1024 * 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 2));
-                } else {
-                    collectionCacheBytes = Integer.parseInt(collectionCache);
-                }
+                final int collectionCacheBytes = getCollectionCacheBytes(collectionCache);
 
                 setProperty(PROPERTY_CACHE_SIZE_BYTES, collectionCacheBytes);
             } catch (final NumberFormatException nfe) {
@@ -1072,6 +1051,26 @@ public class Configuration implements ErrorHandler {
         configureElement(con, XQueryPool.CONFIGURATION_ELEMENT_NAME, this::configureXQueryPool);
         configureElement(con, XQueryWatchDog.CONFIGURATION_ELEMENT_NAME, this::configureWatchdog);
         configureElement(con, BrokerPoolConstants.CONFIGURATION_RECOVERY_ELEMENT_NAME, element -> configureRecovery(dbHome, element));
+    }
+
+    private static int getCollectionCacheBytes(String collectionCache) {
+        final int collectionCacheBytes;
+        if (collectionCache.endsWith("k")) {
+            collectionCacheBytes = 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 1));
+        } else if (collectionCache.endsWith("kb")) {
+            collectionCacheBytes = 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 2));
+        } else if (collectionCache.endsWith("m")) {
+            collectionCacheBytes = 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 1));
+        } else if (collectionCache.endsWith("mb")) {
+            collectionCacheBytes = 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 2));
+        } else if (collectionCache.endsWith("g")) {
+            collectionCacheBytes = 1024 * 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 1));
+        } else if (collectionCache.endsWith("gb")) {
+            collectionCacheBytes = 1024 * 1024 * 1024 * Integer.parseInt(collectionCache.substring(0, collectionCache.length() - 2));
+        } else {
+            collectionCacheBytes = Integer.parseInt(collectionCache);
+        }
+        return collectionCacheBytes;
     }
 
     private void configureRecovery(final Optional<Path> dbHome, final Element recovery) throws DatabaseConfigurationException {
@@ -1252,6 +1251,30 @@ public class Configuration implements ErrorHandler {
         setProperty(IndexManager.PROPERTY_INDEXER_MODULES, modConfig);
     }
 
+    private final List<String> getCatalogURIs(final Optional<Path> dbHome, final Path webappHome, final NodeList nlCatalogs) {
+        final List<String> catalogUris = new ArrayList<>();
+        for (int i = 0; i < nlCatalogs.getLength(); i++) {
+            final String uriAttributeValue = ((Element) nlCatalogs.item(i)).getAttribute("uri");
+
+            if (!uriAttributeValue.isEmpty()) {
+                final String uri;
+                // Substitute string, creating an uri from a local file
+                if (uriAttributeValue.contains("${WEBAPP_HOME}")) {
+                    uri = uriAttributeValue.replace("${WEBAPP_HOME}", webappHome.toUri().toString());
+                } else if (uriAttributeValue.contains("${EXIST_HOME}")) {
+                    uri = uriAttributeValue.replace("${EXIST_HOME}", dbHome.toString());
+                } else {
+                    uri = uriAttributeValue;
+                }
+
+                // Add uri to configuration
+                LOG.info("Adding Catalog URI: {}", uri);
+                catalogUris.add(uri);
+            }
+        }
+        return catalogUris;
+    }
+
     private void configureValidation(final Optional<Path> dbHome, final Element validation) {
         // Determine validation mode
         configureProperty(validation, XMLReaderObjectFactory.VALIDATION_MODE_ATTRIBUTE, PROPERTY_VALIDATION_MODE);
@@ -1286,27 +1309,7 @@ public class Configuration implements ErrorHandler {
         }
 
         // Get the Catalog URIs
-        final List<String> catalogUris = new ArrayList<>();
-        for (int i = 0; i < nlCatalogs.getLength(); i++) {
-            final String uriAttributeValue = ((Element) nlCatalogs.item(i)).getAttribute("uri");
-
-            if (!uriAttributeValue.isEmpty()) {
-                final String uri;
-                // Substitute string, creating an uri from a local file
-                if (uriAttributeValue.contains("${WEBAPP_HOME}")) {
-                    uri = uriAttributeValue.replace("${WEBAPP_HOME}", webappHome.toUri().toString());
-                } else if (uriAttributeValue.contains("${EXIST_HOME}")) {
-                    uri = uriAttributeValue.replace("${EXIST_HOME}", dbHome.toString());
-                } else {
-                    uri = uriAttributeValue;
-                }
-
-                // Add uri to configuration
-                LOG.info("Adding Catalog URI: {}", uri);
-                catalogUris.add(uri);
-            }
-        }
-
+        final List<String> catalogUris = getCatalogURIs(dbHome, webappHome, nlCatalogs);
         // Store all configured URIs
         setProperty(XMLReaderObjectFactory.CATALOG_URIS, catalogUris);
 
@@ -1483,7 +1486,7 @@ public class Configuration implements ErrorHandler {
         LOG.error(ERROR_READING_CONFIGURATION_FILE_LINE, exception.getLineNumber(), exception.getMessage(), exception);
     }
 
-    public record StartupTriggerConfig(String clazz, Map<String, List<? extends Object>> params) {
+    public record StartupTriggerConfig(String clazz, Map<String, List<?>> params) {
     }
 
     public record IndexModuleConfig(String id, String className, Element config) {
