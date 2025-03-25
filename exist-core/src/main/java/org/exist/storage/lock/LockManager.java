@@ -35,10 +35,7 @@ package org.exist.storage.lock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.lock.Lock.LockType;
-import org.exist.util.Configuration;
-import org.exist.util.LockException;
-import org.exist.util.Str;
-import org.exist.util.WeakLazyStripes;
+import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import uk.ac.ic.doc.slurp.multilock.MultiLock;
 
@@ -74,10 +71,10 @@ import java.util.function.Consumer;
 public class LockManager {
 
     // org.exist.util.Configuration properties
-    public final static Str CONFIGURATION_UPGRADE_CHECK = Str.of("lock-manager.upgrade-check");
-    public final static Str CONFIGURATION_WARN_WAIT_ON_READ_FOR_WRITE = Str.of("lock-manager.warn-wait-on-read-for-write");
-    public final static Str CONFIGURATION_PATH_LOCKS_FOR_DOCUMENTS = Str.of("lock-manager.document.use-path-locks");
-    public final static Str CONFIGURATION_PATHS_MULTI_WRITER = Str.of("lock-manager.paths-multi-writer");
+    public final static Prop CONFIGURATION_UPGRADE_CHECK = Prop.of("lock-manager.upgrade-check");
+    public final static Prop CONFIGURATION_WARN_WAIT_ON_READ_FOR_WRITE = Prop.of("lock-manager.warn-wait-on-read-for-write");
+    public final static Prop CONFIGURATION_PATH_LOCKS_FOR_DOCUMENTS = Prop.of("lock-manager.document.use-path-locks");
+    public final static Prop CONFIGURATION_PATHS_MULTI_WRITER = Prop.of("lock-manager.paths-multi-writer");
 
     //TODO(AR) remove eventually!
     // legacy properties for overriding the config
@@ -727,7 +724,7 @@ public class LockManager {
      * @return the value of the property
      */
     static boolean getLegacySystemPropertyOrConfigPropertyBool(final String legacyPropertyName,
-            final Configuration configuration, final Str configProperty, final boolean defaultValue) {
+                                                               final Configuration configuration, final Prop configProperty, final boolean defaultValue) {
         final String legacyPropertyValue = System.getProperty(legacyPropertyName);
         if (legacyPropertyValue != null && !legacyPropertyValue.isEmpty()) {
             return Boolean.getBoolean(legacyPropertyName);
@@ -745,7 +742,7 @@ public class LockManager {
      *
      * @return the value of the property
      */
-    static boolean getConfigPropertyBool(final Configuration configuration, final Str configProperty,
+    static boolean getConfigPropertyBool(final Configuration configuration, final Prop configProperty,
             final boolean defaultValue) {
         if (configuration != null) {
             return configuration.getProperty(configProperty, defaultValue);
@@ -767,7 +764,7 @@ public class LockManager {
      * @return the value of the property
      */
     static int getLegacySystemPropertyOrConfigPropertyInt(final String legacyPropertyName,
-            final Configuration configuration, final Str configProperty, final int defaultValue) {
+            final Configuration configuration, final Prop configProperty, final int defaultValue) {
         final String legacyPropertyValue = System.getProperty(legacyPropertyName);
         if (legacyPropertyValue != null && !legacyPropertyValue.isEmpty()) {
             return Integer.getInteger(legacyPropertyName);

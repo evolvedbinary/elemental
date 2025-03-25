@@ -30,7 +30,7 @@ import javax.xml.transform.sax.SAXTransformerFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.BrokerPool;
-import org.exist.util.Str;
+import org.exist.util.Prop;
 
 /**
  * Allows the TransformerFactory that is used for XSLT to be
@@ -48,13 +48,13 @@ public class TransformerFactoryAllocator {
 
     public static final String CONFIGURATION_ELEMENT_NAME = "transformer";
     public final static String TRANSFORMER_CLASS_ATTRIBUTE = "class";
-    public final static Str PROPERTY_TRANSFORMER_CLASS = Str.of("transformer.class");
+    public final static Prop PROPERTY_TRANSFORMER_CLASS = Prop.of("transformer.class");
 
     public final static String CONFIGURATION_TRANSFORMER_ATTRIBUTE_ELEMENT_NAME = "attribute";
-    public final static Str PROPERTY_TRANSFORMER_ATTRIBUTES = Str.of("transformer.attributes");
+    public final static Prop PROPERTY_TRANSFORMER_ATTRIBUTES = Prop.of("transformer.attributes");
 
     public final static String TRANSFORMER_CACHING_ATTRIBUTE = "caching";
-    public final static Str PROPERTY_CACHING_ATTRIBUTE = Str.of("transformer.caching");
+    public final static Prop PROPERTY_CACHING_ATTRIBUTE = Prop.of("transformer.caching");
 
     public final static String PROPERTY_BROKER_POOL = "transformer.brokerPool";
 

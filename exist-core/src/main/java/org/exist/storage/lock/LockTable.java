@@ -42,6 +42,7 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.Lock.LockType;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
+import org.exist.util.Prop;
 import org.exist.util.Str;
 
 import javax.annotation.Nullable;
@@ -67,8 +68,8 @@ import static org.exist.storage.lock.LockTable.LockEventType.*;
 public class LockTable {
 
     // org.exist.util.Configuration properties
-    public static final Str CONFIGURATION_DISABLED = Str.of("lock-table.disabled");
-    public static final Str CONFIGURATION_TRACE_STACK_DEPTH = Str.of("lock-table.trace-stack-depth");
+    public static final Prop CONFIGURATION_DISABLED = Prop.of("lock-table.disabled");
+    public static final Prop CONFIGURATION_TRACE_STACK_DEPTH = Prop.of("lock-table.trace-stack-depth");
 
     //TODO(AR) remove eventually!
     // legacy properties for overriding the config

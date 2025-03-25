@@ -108,7 +108,7 @@ public class IndexerTest2 {
             "</TEI>" +
             "let $stored := doc('" + TestConstants.TEST_COLLECTION_URI.toString() + "/"+ TestConstants.TEST_XML_URI2.toString() + "') " +
             "return " +
-            "<result name=\"" + TestConstants.TEST_COLLECTION_URI.toString() + "/"+ TestConstants.TEST_XML_URI2.toString() + "\">\n" +
+            "<result name=\"" + TestConstants.TEST_COLLECTION_URI + "/"+ TestConstants.TEST_XML_URI2 + "\">\n" +
             "    <inline>{string-join(local:get-text($in-memory))}</inline>\n" +
             "    <stored>{string-join(local:get-text($stored))}</stored>\n" +
             "</result>";
@@ -116,7 +116,7 @@ public class IndexerTest2 {
     @Test
     public void store_preserve_mixed_ws() throws PermissionDeniedException, IOException, EXistException, SAXException, LockException, XPathException, AuthenticationException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        assertTrue(((Boolean) pool.getConfiguration().getProperty(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT)).booleanValue());
+        assertTrue((Boolean) pool.getConfiguration().getProperty(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT));
         assertEquals("none", pool.getConfiguration().getProperty(Indexer.PROPERTY_SUPPRESS_WHITESPACE));
     }
 

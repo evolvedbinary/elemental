@@ -1371,8 +1371,8 @@ public class LuceneIndexTest {
     @ClassRule
     public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
             propertiesBuilder()
-                .set(Indexer.PROPERTY_SUPPRESS_WHITESPACE.toString(), "none")
-                .put(Indexer.PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE, Boolean.TRUE)
+                .set(Indexer.PROPERTY_SUPPRESS_WHITESPACE.string, "none")
+                .put(Indexer.PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE.string, Boolean.TRUE)
                 .build(),
             true,
             false);

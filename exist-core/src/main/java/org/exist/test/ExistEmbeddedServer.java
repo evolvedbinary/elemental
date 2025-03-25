@@ -134,7 +134,7 @@ public class ExistEmbeddedServer extends ExternalResource {
             // override any specified config properties
             configProperties.ifPresent(properties -> {
                 for (final Map.Entry<Object, Object> configProperty : properties.entrySet()) {
-                    config.setProperty(Str.of(configProperty.getKey().toString()), configProperty.getValue());
+                    config.setProperty(Prop.of(configProperty.getKey().toString()), configProperty.getValue());
                 }
             });
 

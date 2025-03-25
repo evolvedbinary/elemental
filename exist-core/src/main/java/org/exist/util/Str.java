@@ -39,11 +39,11 @@ public final class Str implements Comparable<Str> {
      * @param s sequence to store as a Str
      * @return the unique Str to wrap this sequence.
      */
-    public static Str of(final CharSequence s) {
+    public static Str of(final String s) {
         if (s == null) {
             return null;
         } else {
-            return strCache.insertIfAbsent(String.valueOf(s));
+            return strCache.insertIfAbsent(s);
         }
     }
 

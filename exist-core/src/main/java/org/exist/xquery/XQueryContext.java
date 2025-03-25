@@ -154,16 +154,16 @@ public class XQueryContext implements BinaryValueManager, Context {
     public static final String BUILT_IN_MODULE_CLASS_ATTRIBUTE = "class";
     public static final String BUILT_IN_MODULE_SOURCE_ATTRIBUTE = "src";
 
-    public static final Str PROPERTY_XQUERY_BACKWARD_COMPATIBLE = Str.of("xquery.backwardCompatible");
-    public static final Str PROPERTY_ENABLE_QUERY_REWRITING = Str.of("xquery.enable-query-rewriting");
-    public static final Str PROPERTY_XQUERY_RAISE_ERROR_ON_FAILED_RETRIEVAL = Str.of("xquery.raise-error-on-failed-retrieval");
+    public static final Prop PROPERTY_XQUERY_BACKWARD_COMPATIBLE = Prop.of("xquery.backwardCompatible");
+    public static final Prop PROPERTY_ENABLE_QUERY_REWRITING = Prop.of("xquery.enable-query-rewriting");
+    public static final Prop PROPERTY_XQUERY_RAISE_ERROR_ON_FAILED_RETRIEVAL = Prop.of("xquery.raise-error-on-failed-retrieval");
     public static final boolean XQUERY_RAISE_ERROR_ON_FAILED_RETRIEVAL_DEFAULT = false;
-    public static final Str PROPERTY_ENFORCE_INDEX_USE = Str.of("xquery.enforce-index-use");
+    public static final Prop PROPERTY_ENFORCE_INDEX_USE = Prop.of("xquery.enforce-index-use");
 
     //TODO : move elsewhere ?
-    public static final Str PROPERTY_BUILT_IN_MODULES = Str.of("xquery.modules");
-    public static final Str PROPERTY_STATIC_MODULE_MAP = Str.of("xquery.modules.static");
-    public static final Str PROPERTY_MODULE_PARAMETERS = Str.of("xquery.modules.parameters");
+    public static final Prop PROPERTY_BUILT_IN_MODULES = Prop.of("xquery.modules");
+    public static final Prop PROPERTY_STATIC_MODULE_MAP = Prop.of("xquery.modules.static");
+    public static final Prop PROPERTY_MODULE_PARAMETERS = Prop.of("xquery.modules.parameters");
 
     public static final String JAVA_URI_START = "java:";
     //private static final String XMLDB_URI_START = "xmldb:exist://";

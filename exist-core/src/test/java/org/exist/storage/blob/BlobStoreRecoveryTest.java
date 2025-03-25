@@ -41,7 +41,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolServiceException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.SystemTaskManager;
-import org.exist.storage.journal.Journal;
 import org.exist.storage.journal.JournalManager;
 import org.exist.storage.lock.FileLockHeartBeat;
 import org.exist.storage.recovery.RecoveryManager;
@@ -471,7 +470,7 @@ public class BlobStoreRecoveryTest {
 
     private BlobDb newBlobDb(final Path journalDir, final Path blobDbx, final Path blobDir) throws BrokerPoolServiceException, EXistException {
         final Configuration mockConfiguration = createNiceMock(Configuration.class);
-        expect(mockConfiguration.getProperty(Journal.PROPERTY_RECOVERY_JOURNAL_DIR)).andReturn(journalDir);
+        expect(mockConfiguration.getProperty(PROPERTY_RECOVERY_JOURNAL_DIR)).andReturn(journalDir);
         expect(mockConfiguration.getProperty(BrokerPool.PROPERTY_RECOVERY_GROUP_COMMIT, false)).andReturn(false);
 
         expect(mockConfiguration.getProperty(PROPERTY_RECOVERY_SYNC_ON_COMMIT, true)).andReturn(true);

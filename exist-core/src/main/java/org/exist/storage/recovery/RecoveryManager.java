@@ -214,7 +214,7 @@ public class RecoveryManager {
                         } catch (final LogException e) {
                             // if restartOnError == true, we try to bring up the database even if there
                             // are errors. Otherwise, an exception is thrown, which will stop the db initialization
-                            broker.getBrokerPool().reportStatus(BrokerPool.SIGNAL_ABORTED);
+                            broker.getBrokerPool().reportStatus(BrokerPool.SIGNAL_ABORTED.string);
                             if (restartOnError) {
                                 LOG.error("Aborting recovery. Elemental detected an error during recovery. This may not be fatal. Database will start up, but corruptions are likely.");
                             } else {

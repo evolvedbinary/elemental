@@ -23,7 +23,7 @@
 package org.exist.config;
 
 import org.exist.test.ExistEmbeddedServer;
-import org.exist.util.Str;
+import org.exist.util.Prop;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -39,7 +39,7 @@ public class SaxonConfigTest {
     final var brokerPool = existEmbeddedServer.getBrokerPool();
 
     final var existConfiguration = brokerPool.getConfiguration();
-    assertThat(existConfiguration.getProperty(Str.of("saxon.configuration"))).isEqualTo("saxon-config.xml");
+    assertThat(existConfiguration.getProperty(Prop.of("saxon.configuration"))).isEqualTo("saxon-config.xml");
 
     final var saxonConfiguration = brokerPool.getSaxonConfiguration();
 

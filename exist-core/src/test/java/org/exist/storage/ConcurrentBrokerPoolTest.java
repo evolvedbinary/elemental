@@ -110,8 +110,8 @@ public class ConcurrentBrokerPoolTest {
         final UUID uuid = pathUuid._2;
 
         final Properties config = new Properties();
-        config.put(BrokerPool.PROPERTY_DATA_DIR, dataDir);
-        config.put(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, dataDir);
+        config.put(BrokerPool.PROPERTY_DATA_DIR.string, dataDir);
+        config.put(Journal.PROPERTY_RECOVERY_JOURNAL_DIR.string, dataDir);
 
         final ExistEmbeddedServer server = new ExistEmbeddedServer("validate-" + uuid.toString(), getConfigFile(getClass()), config, true, false);
         server.startDb();

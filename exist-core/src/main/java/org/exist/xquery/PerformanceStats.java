@@ -23,12 +23,12 @@ package org.exist.xquery;
 
 import org.exist.dom.QName;
 import org.exist.dom.memtree.MemTreeBuilder;
-import org.exist.util.Str;
+import org.exist.util.Prop;
 
 
 public interface PerformanceStats {
 
-    Str CONFIG_PROPERTY_TRACE = Str.of("xquery.profiling.trace");
+    Prop CONFIG_PROPERTY_TRACE = Prop.of("xquery.profiling.trace");
     String CONFIG_ATTR_TRACE = "trace";
 
     String XML_NAMESPACE = "http://exist-db.org/xquery/profiling";

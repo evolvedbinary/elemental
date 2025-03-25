@@ -104,14 +104,14 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
 
     private final static Logger LOG = LogManager.getLogger(Indexer.class);
 
-    public static final String CONFIGURATION_ELEMENT_NAME = "indexer";
-    public static final String CONFIGURATION_INDEX_ELEMENT_NAME = "index";
-    public static final String SUPPRESS_WHITESPACE_ATTRIBUTE = "suppress-whitespace";
-    public static final String PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE = "preserve-whitespace-mixed-content";
+    public static final Prop CONFIGURATION_ELEMENT_NAME = Prop.of("indexer");
+    public static final Prop CONFIGURATION_INDEX_ELEMENT_NAME = Prop.of("index");
+    public static final Prop SUPPRESS_WHITESPACE_ATTRIBUTE = Prop.of("suppress-whitespace");
+    public static final Prop PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE = Prop.of("preserve-whitespace-mixed-content");
 
-    public static final Str PROPERTY_INDEXER_CONFIG = Str.of("indexer.config");
-    public final static Str PROPERTY_SUPPRESS_WHITESPACE = Str.of("indexer.suppress-whitespace");
-    public static final Str PROPERTY_PRESERVE_WS_MIXED_CONTENT = Str.of("indexer.preserve-whitespace-mixed-content");
+    public static final Prop PROPERTY_INDEXER_CONFIG = Prop.of("indexer.config");
+    public final static Prop PROPERTY_SUPPRESS_WHITESPACE = Prop.of("indexer.suppress-whitespace");
+    public static final Prop PROPERTY_PRESERVE_WS_MIXED_CONTENT = Prop.of("indexer.preserve-whitespace-mixed-content");
 
     private final DBBroker broker;
     private final Txn transaction;
@@ -153,7 +153,7 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
      * phase. later, when storing the nodes, we already know the child count and
      * don't need to update the element a second time.
      */
-    private int childCnt[] = new int[0x1000];
+    private int[] childCnt = new int[0x1000];
 
     // the current position in childCnt
     private int elementCnt = 0;

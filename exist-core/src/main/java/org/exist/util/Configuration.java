@@ -252,7 +252,7 @@ import static org.exist.xslt.TransformerFactoryAllocator.TRANSFORMER_CLASS_ATTRI
 
 
 public class Configuration implements ErrorHandler {
-    public static final Str BINARY_CACHE_CLASS_PROPERTY = Str.of("binary.cache.class");
+    public static final Prop BINARY_CACHE_CLASS_PROPERTY = Prop.of("binary.cache.class");
     private static final String PRP_DETAILS = "{}: {}";
     private static final Logger LOG = LogManager.getLogger(Configuration.class); //Logger
     private static final String XQUERY_CONFIGURATION_ELEMENT_NAME = "xquery";
@@ -333,17 +333,17 @@ public class Configuration implements ErrorHandler {
         reader.parse(src);
 
         Document doc = adapter.getDocument();
-        setProperty(Str.of("config.doc.class"), doc.getClass().getName());
+        setProperty(Prop.of("config.doc.class"), doc.getClass().getName());
 
         return adapter.getDocument();
     }
 
     private void setConfigFromDocument(final Optional<Path> existHomePath, final Document doc) throws DatabaseConfigurationException {
-        configureElement(doc, Indexer.CONFIGURATION_ELEMENT_NAME, element -> configureIndexer(doc, element));
+        configureElement(doc, Indexer.CONFIGURATION_ELEMENT_NAME.string, element -> configureIndexer(doc, element));
         //scheduler settings
         configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
         //db connection settings
-        configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(existHomePath, element));
+        configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME.string, element -> configureBackend(existHomePath, element));
         // lock-table settings
         configureElement(doc, "lock-manager", this::configureLockManager);
         // repository settings
@@ -795,8 +795,8 @@ public class Configuration implements ErrorHandler {
      * @param serializer element with serializer settings
      */
     private void configureSerializer(final Element serializer) {
-        configureProperty(serializer, OMIT_XML_DECLARATION_ATTRIBUTE, PROPERTY_OMIT_XML_DECLARATION);
-        configureProperty(serializer, OMIT_ORIGINAL_XML_DECLARATION_ATTRIBUTE, PROPERTY_OMIT_ORIGINAL_XML_DECLARATION);
+        configureProperty(serializer, OMIT_XML_DECLARATION_ATTRIBUTE.string, PROPERTY_OMIT_XML_DECLARATION);
+        configureProperty(serializer, OMIT_ORIGINAL_XML_DECLARATION_ATTRIBUTE.string, PROPERTY_OMIT_ORIGINAL_XML_DECLARATION);
         configureProperty(serializer, OUTPUT_DOCTYPE_ATTRIBUTE, PROPERTY_OUTPUT_DOCTYPE);
         configureProperty(serializer, ENABLE_XINCLUDE_ATTRIBUTE, PROPERTY_ENABLE_XINCLUDE);
         configureProperty(serializer, ENABLE_XSL_ATTRIBUTE, PROPERTY_ENABLE_XSL);
@@ -948,7 +948,7 @@ public class Configuration implements ErrorHandler {
         configureProperty(con, PROPERTY_DATABASE, CONFIG_PROPERTY_DATABASE);
 
         // directory for database files
-        final String dataFiles = getConfigAttributeValue(con, DATA_DIR_ATTRIBUTE.toString());
+        final String dataFiles = getConfigAttributeValue(con, DATA_DIR_ATTRIBUTE.string);
 
         if (dataFiles != null) {
             final Path df = ConfigurationHelper.lookup(dataFiles, dbHome);
@@ -1015,11 +1015,11 @@ public class Configuration implements ErrorHandler {
         configureProperty(con, NativeBroker.PAGE_SIZE_ATTRIBUTE, PROPERTY_PAGE_SIZE, Configuration::asInteger, null);
 
         //Not clear : rather looks like a buffers count
-        configureProperty(con, BrokerPoolConstants.COLLECTION_CACHE_SIZE_ATTRIBUTE, PROPERTY_COLLECTION_CACHE_SIZE, Configuration::asInteger, null);
+        configureProperty(con, BrokerPoolConstants.COLLECTION_CACHE_SIZE_ATTRIBUTE.string, PROPERTY_COLLECTION_CACHE_SIZE, Configuration::asInteger, null);
 
-        configureProperty(con, BrokerPoolConstants.NODES_BUFFER_ATTRIBUTE, PROPERTY_NODES_BUFFER, Configuration::asInteger, null);
+        configureProperty(con, BrokerPoolConstants.NODES_BUFFER_ATTRIBUTE.string, PROPERTY_NODES_BUFFER, Configuration::asInteger, null);
 
-        String diskSpace = getConfigAttributeValue(con, BrokerPoolConstants.DISK_SPACE_MIN_ATTRIBUTE);
+        String diskSpace = getConfigAttributeValue(con, BrokerPoolConstants.DISK_SPACE_MIN_ATTRIBUTE.string);
         if (diskSpace != null) {
             if (diskSpace.endsWith("M") || diskSpace.endsWith("m")) {
                 diskSpace = diskSpace.substring(0, diskSpace.length() - 1);
@@ -1039,7 +1039,7 @@ public class Configuration implements ErrorHandler {
                 preserveOnCopyStr -> Boolean.parseBoolean(preserveOnCopyStr) ? PreserveType.PRESERVE : PreserveType.NO_PRESERVE,
                 PreserveType.NO_PRESERVE);
 
-        final NodeList startupConf = con.getElementsByTagName(BrokerPoolConstants.CONFIGURATION_STARTUP_ELEMENT_NAME);
+        final NodeList startupConf = con.getElementsByTagName(BrokerPoolConstants.CONFIGURATION_STARTUP_ELEMENT_NAME.string);
         if (startupConf.getLength() > 0) {
             configureStartup((Element) startupConf.item(0));
         } else {
@@ -1048,10 +1048,10 @@ public class Configuration implements ErrorHandler {
             setProperty(PROPERTY_STARTUP_TRIGGERS, startupTriggers);
         }
 
-        configureElement(con, BrokerPoolConstants.CONFIGURATION_POOL_ELEMENT_NAME, this::configurePool);
-        configureElement(con, XQueryPool.CONFIGURATION_ELEMENT_NAME, this::configureXQueryPool);
-        configureElement(con, XQueryWatchDog.CONFIGURATION_ELEMENT_NAME, this::configureWatchdog);
-        configureElement(con, BrokerPoolConstants.CONFIGURATION_RECOVERY_ELEMENT_NAME, element -> configureRecovery(dbHome, element));
+        configureElement(con, BrokerPoolConstants.CONFIGURATION_POOL_ELEMENT_NAME.string, this::configurePool);
+        configureElement(con, XQueryPool.CONFIGURATION_ELEMENT_NAME.string, this::configureXQueryPool);
+        configureElement(con, XQueryWatchDog.CONFIGURATION_ELEMENT_NAME.string, this::configureWatchdog);
+        configureElement(con, BrokerPoolConstants.CONFIGURATION_RECOVERY_ELEMENT_NAME.string, element -> configureRecovery(dbHome, element));
     }
 
     private static int getCollectionCacheBytes(String collectionCache) {
@@ -1075,11 +1075,11 @@ public class Configuration implements ErrorHandler {
     }
 
     private void configureRecovery(final Optional<Path> dbHome, final Element recovery) throws DatabaseConfigurationException {
-        configureProperty(recovery, RECOVERY_ENABLED_ATTRIBUTE, PROPERTY_RECOVERY_ENABLED, Configuration::asBoolean, TRUE);
-        configureProperty(recovery, RECOVERY_SYNC_ON_COMMIT_ATTRIBUTE, PROPERTY_RECOVERY_SYNC_ON_COMMIT, Configuration::asBoolean, TRUE);
-        configureProperty(recovery, RECOVERY_GROUP_COMMIT_ATTRIBUTE, PROPERTY_RECOVERY_GROUP_COMMIT, Configuration::asBoolean, FALSE);
+        configureProperty(recovery, RECOVERY_ENABLED_ATTRIBUTE.string, PROPERTY_RECOVERY_ENABLED, Configuration::asBoolean, TRUE);
+        configureProperty(recovery, RECOVERY_SYNC_ON_COMMIT_ATTRIBUTE.string, PROPERTY_RECOVERY_SYNC_ON_COMMIT, Configuration::asBoolean, TRUE);
+        configureProperty(recovery, RECOVERY_GROUP_COMMIT_ATTRIBUTE.string, PROPERTY_RECOVERY_GROUP_COMMIT, Configuration::asBoolean, FALSE);
 
-        final String journalDir = getConfigAttributeValue(recovery, RECOVERY_JOURNAL_DIR_ATTRIBUTE);
+        final String journalDir = getConfigAttributeValue(recovery, RECOVERY_JOURNAL_DIR_ATTRIBUTE.string);
         if (journalDir != null) {
             final Path rf = ConfigurationHelper.lookup(journalDir, dbHome);
 
@@ -1089,7 +1089,7 @@ public class Configuration implements ErrorHandler {
             setProperty(PROPERTY_RECOVERY_JOURNAL_DIR, rf);
         }
 
-        final String sizeLimit = getConfigAttributeValue(recovery, RECOVERY_SIZE_LIMIT_ATTRIBUTE);
+        final String sizeLimit = getConfigAttributeValue(recovery, RECOVERY_SIZE_LIMIT_ATTRIBUTE.string);
         if (sizeLimit != null) {
             try {
                 final int size;
@@ -1104,8 +1104,8 @@ public class Configuration implements ErrorHandler {
             }
         }
 
-        configureProperty(recovery, RECOVERY_FORCE_RESTART_ATTRIBUTE, PROPERTY_RECOVERY_FORCE_RESTART, Configuration::asBoolean, FALSE);
-        configureProperty(recovery, RECOVERY_POST_RECOVERY_CHECK, PROPERTY_RECOVERY_CHECK, Configuration::asBoolean, FALSE);
+        configureProperty(recovery, RECOVERY_FORCE_RESTART_ATTRIBUTE.string, PROPERTY_RECOVERY_FORCE_RESTART, Configuration::asBoolean, FALSE);
+        configureProperty(recovery, RECOVERY_POST_RECOVERY_CHECK.string, PROPERTY_RECOVERY_CHECK, Configuration::asBoolean, FALSE);
     }
 
     /**
@@ -1124,8 +1124,8 @@ public class Configuration implements ErrorHandler {
      * @param queryPool element with queryPool settings
      */
     private void configureXQueryPool(final Element queryPool) {
-        configureProperty(queryPool, MAX_STACK_SIZE_ATTRIBUTE, PROPERTY_MAX_STACK_SIZE, Configuration::asInteger, null);
-        configureProperty(queryPool, POOL_SIZE_ATTTRIBUTE, XQueryPool.PROPERTY_POOL_SIZE, Configuration::asInteger, null);
+        configureProperty(queryPool, MAX_STACK_SIZE_ATTRIBUTE.string, PROPERTY_MAX_STACK_SIZE, Configuration::asInteger, null);
+        configureProperty(queryPool, POOL_SIZE_ATTTRIBUTE.string, XQueryPool.PROPERTY_POOL_SIZE, Configuration::asInteger, null);
     }
 
     private void configureStartup(final Element startup) throws DatabaseConfigurationException {
@@ -1141,7 +1141,7 @@ public class Configuration implements ErrorHandler {
 
             // Initialize trigger configuration
             var startupTriggers = (List<StartupTriggerConfig>) config
-                    .computeIfAbsent(PROPERTY_STARTUP_TRIGGERS, key -> new ArrayList<StartupTriggerConfig>());
+                    .computeIfAbsent(PROPERTY_STARTUP_TRIGGERS.key, key -> new ArrayList<StartupTriggerConfig>());
 
             // Iterate over <trigger> elements
             for (int i = 0; i < nlTrigger.getLength(); i++) {
@@ -1188,10 +1188,10 @@ public class Configuration implements ErrorHandler {
     }
 
     private void configurePool(final Element pool) {
-        configureProperty(pool, MIN_CONNECTIONS_ATTRIBUTE, PROPERTY_MIN_CONNECTIONS, Configuration::asInteger, null);
-        configureProperty(pool, MAX_CONNECTIONS_ATTRIBUTE, PROPERTY_MAX_CONNECTIONS, Configuration::asInteger, null);
-        configureProperty(pool, SYNC_PERIOD_ATTRIBUTE, PROPERTY_SYNC_PERIOD, Configuration::asLong, null);
-        configureProperty(pool, SHUTDOWN_DELAY_ATTRIBUTE, PROPERTY_SHUTDOWN_DELAY, Configuration::asLong, null);
+        configureProperty(pool, MIN_CONNECTIONS_ATTRIBUTE.string, PROPERTY_MIN_CONNECTIONS, Configuration::asInteger, null);
+        configureProperty(pool, MAX_CONNECTIONS_ATTRIBUTE.string, PROPERTY_MAX_CONNECTIONS, Configuration::asInteger, null);
+        configureProperty(pool, SYNC_PERIOD_ATTRIBUTE.string, PROPERTY_SYNC_PERIOD, Configuration::asLong, null);
+        configureProperty(pool, SHUTDOWN_DELAY_ATTRIBUTE.string, PROPERTY_SHUTDOWN_DELAY, Configuration::asLong, null);
     }
 
     private void configureIndexer(final Document doc, final Element indexer) throws DatabaseConfigurationException {
@@ -1214,11 +1214,11 @@ public class Configuration implements ErrorHandler {
             }
         }
 
-        configureProperty(indexer, SUPPRESS_WHITESPACE_ATTRIBUTE, PROPERTY_SUPPRESS_WHITESPACE);
-        configureProperty(indexer, PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE, PROPERTY_PRESERVE_WS_MIXED_CONTENT, Configuration::asBoolean, FALSE);
+        configureProperty(indexer, SUPPRESS_WHITESPACE_ATTRIBUTE.string, PROPERTY_SUPPRESS_WHITESPACE);
+        configureProperty(indexer, PRESERVE_WS_MIXED_CONTENT_ATTRIBUTE.string, PROPERTY_PRESERVE_WS_MIXED_CONTENT, Configuration::asBoolean, FALSE);
 
         // index settings
-        final NodeList cl = doc.getElementsByTagName(CONFIGURATION_INDEX_ELEMENT_NAME);
+        final NodeList cl = doc.getElementsByTagName(CONFIGURATION_INDEX_ELEMENT_NAME.string);
 
         if (cl.getLength() > 0) {
             final Element elem = (Element) cl.item(0);
@@ -1361,23 +1361,23 @@ public class Configuration implements ErrorHandler {
         return nullIfEmpty(element.getAttribute(attributeName));
     }
 
-    private <T> void configureProperty(final Element element, final String attributeName, final Str propertyName,
+    private <T> void configureProperty(final Element element, final String attributeName, final Prop prop,
                                        final Function<String, T> valueConverter, @Nullable final T defaultValue) {
         @Nullable final String attributeValue = getConfigAttributeValue(element, attributeName);
         if (attributeValue != null) {
             T value = valueConverter.apply(attributeValue);
             if (value != null) {
-                setProperty(propertyName, value);
+                setProperty(prop, value);
                 return;
             }
         }
         if (defaultValue != null) {
-            setProperty(propertyName, defaultValue);
+            setProperty(prop, defaultValue);
         }
     }
 
-    private void configureProperty(final Element element, final String attributeName, final Str propertyName) {
-        configureProperty(element, attributeName, propertyName, Function.identity(), null);
+    private void configureProperty(final Element element, final String attributeName, final Prop prop) {
+        configureProperty(element, attributeName, prop, Function.identity(), null);
     }
 
     /**
@@ -1419,33 +1419,33 @@ public class Configuration implements ErrorHandler {
         return existHome;
     }
 
-    public Object getProperty(final Str name) {
-        return config.get(name);
+    public Object getProperty(final Prop prop) {
+        return config.get(prop.key);
     }
 
-    public <T> T getProperty(final Str name, final T defaultValue) {
-        return Optional.ofNullable((T) config.get(name)).orElse(defaultValue);
+    public <T> T getProperty(final Prop prop, final T defaultValue) {
+        return Optional.ofNullable((T) config.get(prop.key)).orElse(defaultValue);
     }
 
-    public boolean hasProperty(final Str name) {
-        return config.containsKey(name);
+    public boolean hasProperty(final Prop prop) {
+        return config.containsKey(prop.key);
     }
 
-    public void setProperty(final Str name, final Object obj) {
-        config.put(name, obj);
-        LOG.debug(PRP_DETAILS, name, obj);
+    public void setProperty(final Prop prop, final Object obj) {
+        config.put(prop.key, obj);
+        LOG.debug(PRP_DETAILS, prop, obj);
     }
 
-    public void removeProperty(final Str name) {
-        config.remove(name);
+    public void removeProperty(final Prop prop) {
+        config.remove(prop.key);
     }
 
-    public int getInteger(final Str name) {
-        return getInteger(name, -1);
+    public int getInteger(final Prop prop) {
+        return getInteger(prop, -1);
     }
 
-    public int getInteger(final Str name, final int defaultValue) {
-        return Optional.ofNullable(getProperty(name))
+    public int getInteger(final Prop prop, final int defaultValue) {
+        return Optional.ofNullable(getProperty(prop))
                 .filter(Integer.class::isInstance)
                 .map(v -> (int) v)
                 .orElse(defaultValue);

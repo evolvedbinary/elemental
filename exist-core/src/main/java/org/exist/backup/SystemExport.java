@@ -72,10 +72,7 @@ import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.serializers.ChainOfReceiversFactory;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.txn.Txn;
-import org.exist.util.FileUtils;
-import org.exist.util.LockException;
-import org.exist.util.Str;
-import org.exist.util.UTF8;
+import org.exist.util.*;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
 import org.exist.util.serializer.SAXSerializer;
@@ -130,7 +127,7 @@ public class SystemExport {
     private static final XmldbURI LOST_URI = XmldbURI.createInternal("__lost_and_found__");
 
     public final static String CONFIGURATION_ELEMENT = "backup-filter";
-    public final static Str CONFIG_FILTERS = Str.of("backup.serialization.filters");
+    public final static Prop CONFIG_FILTERS = Prop.of("backup.serialization.filters");
 
     private static final int currVersion = 1;
 

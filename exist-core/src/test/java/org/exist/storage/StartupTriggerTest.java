@@ -57,7 +57,7 @@ public class StartupTriggerTest {
         startupTriggers.add(new Configuration.StartupTriggerConfig(TestStartupTrigger.class.getName(), null));
 
         final Properties properties = new Properties();
-        properties.put(BrokerPool.PROPERTY_STARTUP_TRIGGERS, startupTriggers);
+        properties.put(BrokerPool.PROPERTY_STARTUP_TRIGGERS.key, startupTriggers);
         return properties;
     }
 

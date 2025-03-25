@@ -57,10 +57,10 @@ public class XMLReaderObjectFactory extends BasePooledObjectFactory<XMLReader> i
 
     //TOO : move elsewhere ?
     public static final String VALIDATION_MODE_ATTRIBUTE = "mode";
-    public static final Str PROPERTY_VALIDATION_MODE = Str.of("validation.mode");
-    public static final Str CATALOG_RESOLVER = Str.of("validation.resolver");
-    public static final Str CATALOG_URIS = Str.of("validation.catalog_uris");
-    public static final Str GRAMMAR_POOL = Str.of("validation.grammar_pool");
+    public static final Prop PROPERTY_VALIDATION_MODE = Prop.of("validation.mode");
+    public static final Prop CATALOG_RESOLVER = Prop.of("validation.resolver");
+    public static final Prop CATALOG_URIS = Prop.of("validation.catalog_uris");
+    public static final Prop GRAMMAR_POOL = Prop.of("validation.grammar_pool");
 
     // Xerces feature and property names
     public static final String APACHE_FEATURES_VALIDATION_SCHEMA

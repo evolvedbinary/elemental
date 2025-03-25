@@ -129,7 +129,7 @@ public class DOMFile extends BTree implements Lockable {
     private static final Logger LOGSTATS = LogManager.getLogger(NativeBroker.EXIST_STATISTICS_LOGGER);
 
     public static final String FILE_NAME = "dom.dbx";
-    public static final Str CONFIG_KEY_FOR_FILE = Str.of("db-connection.dom");
+    public static final Prop CONFIG_KEY_FOR_FILE = Prop.of("db-connection.dom");
 
     static final int LENGTH_TID = 2; //sizeof short
     static final int LENGTH_DATA_LENGTH = 2; //sizeof short
@@ -291,7 +291,7 @@ public class DOMFile extends BTree implements Lockable {
         return FILE_NAME;
     }
 
-    public static Str getConfigKeyForFile() {
+    public static Prop getConfigKeyForFile() {
         return CONFIG_KEY_FOR_FILE;
     }
 

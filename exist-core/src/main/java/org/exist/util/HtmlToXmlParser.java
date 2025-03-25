@@ -39,9 +39,9 @@ public class HtmlToXmlParser {
     public static final String HTML_TO_XML_PARSER_CLASS_ATTRIBUTE = "class";
     public static final String HTML_TO_XML_PARSER_PROPERTIES_ELEMENT = "properties";
     public static final String HTML_TO_XML_PARSER_FEATURES_ELEMENT = "features";
-    public static final Str HTML_TO_XML_PARSER_PROPERTY = Str.of("parser.html-to-xml-parser");
-    public static final Str HTML_TO_XML_PARSER_PROPERTIES_PROPERTY = Str.of("parser.html-to-xml-parser.properties");
-    public static final Str HTML_TO_XML_PARSER_FEATURES_PROPERTY = Str.of("parser.html-to-xml-parser.features");
+    public static final Prop HTML_TO_XML_PARSER_PROPERTY = Prop.of("parser.html-to-xml-parser");
+    public static final Prop HTML_TO_XML_PARSER_PROPERTIES_PROPERTY = Prop.of("parser.html-to-xml-parser.properties");
+    public static final Prop HTML_TO_XML_PARSER_FEATURES_PROPERTY = Prop.of("parser.html-to-xml-parser.features");
     public static final String PARSER_ELEMENT_NAME = "parser";
 
     /**

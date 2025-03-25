@@ -116,14 +116,14 @@ public final class Journal implements Closeable {
     public static final byte[] JOURNAL_MAGIC_NUMBER = {0x0E, 0x0D, 0x0B, 0x01};
     public static final short JOURNAL_VERSION = 6;
 
-    public static final String RECOVERY_SYNC_ON_COMMIT_ATTRIBUTE = "sync-on-commit";
-    public static final String RECOVERY_JOURNAL_DIR_ATTRIBUTE = "journal-dir";
-    public static final String RECOVERY_SIZE_LIMIT_ATTRIBUTE = "size";
+    public static final Prop RECOVERY_SYNC_ON_COMMIT_ATTRIBUTE = Prop.of("sync-on-commit");
+    public static final Prop RECOVERY_JOURNAL_DIR_ATTRIBUTE = Prop.of("journal-dir");
+    public static final Prop RECOVERY_SIZE_LIMIT_ATTRIBUTE = Prop.of("size");
 
-    public static final Str PROPERTY_RECOVERY_SIZE_MIN = Str.of("db-connection.recovery.size-min");
-    public static final Str PROPERTY_RECOVERY_SIZE_LIMIT = Str.of("db-connection.recovery.size-limit");
-    public static final Str PROPERTY_RECOVERY_JOURNAL_DIR = Str.of("db-connection.recovery.journal-dir");
-    public static final Str PROPERTY_RECOVERY_SYNC_ON_COMMIT = Str.of("db-connection.recovery.sync-on-commit");
+    public static final Prop PROPERTY_RECOVERY_SIZE_MIN = Prop.of("db-connection.recovery.size-min");
+    public static final Prop PROPERTY_RECOVERY_SIZE_LIMIT = Prop.of("db-connection.recovery.size-limit");
+    public static final Prop PROPERTY_RECOVERY_JOURNAL_DIR = Prop.of("db-connection.recovery.journal-dir");
+    public static final Prop PROPERTY_RECOVERY_SYNC_ON_COMMIT = Prop.of("db-connection.recovery.sync-on-commit");
 
     public static final String LOG_FILE_SUFFIX = "log";
     public static final String BAK_FILE_SUFFIX = ".bak";
@@ -301,8 +301,8 @@ public final class Journal implements Closeable {
             LOG.debug("Using directory for the journal: {}", dir.toAbsolutePath().toString());
         }
 
-        this.journalSizeMin = 1024 * 1024 * configuration.getProperty(PROPERTY_RECOVERY_SIZE_MIN, DEFAULT_MIN_SIZE);
-        this.journalSizeLimit = 1024 * 1024 * configuration.getProperty(PROPERTY_RECOVERY_SIZE_LIMIT, DEFAULT_MAX_SIZE);
+        this.journalSizeMin = 1024L * 1024 * configuration.getProperty(PROPERTY_RECOVERY_SIZE_MIN, DEFAULT_MIN_SIZE);
+        this.journalSizeLimit = 1024L * 1024 * configuration.getProperty(PROPERTY_RECOVERY_SIZE_LIMIT, DEFAULT_MAX_SIZE);
 
         final Path lck = dir.resolve(LCK_FILE);
         this.fileLock = new FileLock(pool, lck);

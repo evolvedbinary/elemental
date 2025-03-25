@@ -29,7 +29,7 @@ import org.exist.management.AgentFactory;
 import org.exist.storage.cache.Cache;
 import org.exist.util.Configuration;
 import org.exist.util.DatabaseConfigurationException;
-import org.exist.util.Str;
+import org.exist.util.Prop;
 
 import java.text.NumberFormat;
 
@@ -69,14 +69,14 @@ public class DefaultCacheManager implements CacheManager, BrokerPoolService
 
     public static final int           DEFAULT_CACHE_SIZE              			= 64;
     public static final String  CACHE_SIZE_ATTRIBUTE           			= "cacheSize";
-    public static final Str  PROPERTY_CACHE_SIZE             			= Str.of("db-connection.cache-size");
+    public static final Prop PROPERTY_CACHE_SIZE             			= Prop.of("db-connection.cache-size");
 
     public static final String         DEFAULT_CACHE_CHECK_MAX_SIZE_STRING		= "true";
     public static final String  CACHE_CHECK_MAX_SIZE_ATTRIBUTE 			= "checkMaxCacheSize";
-    public static final Str  PROPERTY_CACHE_CHECK_MAX_SIZE				= Str.of("db-connection.check-max-cache-size");
+    public static final Prop  PROPERTY_CACHE_CHECK_MAX_SIZE				= Prop.of("db-connection.check-max-cache-size");
 
     public static final String  SHRINK_THRESHOLD_ATTRIBUTE     		 	= "cacheShrinkThreshold";
-    public static final Str  SHRINK_THRESHOLD_PROPERTY      			= Str.of("db-connection.cache-shrink-threshold");
+    public static final Prop  SHRINK_THRESHOLD_PROPERTY      			= Prop.of("db-connection.cache-shrink-threshold");
 
     /** Caches maintained by this class. */
     private List<Cache>         caches                          = new ArrayList<>();

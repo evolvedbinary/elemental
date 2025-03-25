@@ -60,7 +60,7 @@ public class XMLReaderSecurityTest extends AbstractXMLReaderSecurityTest {
         secureProperties.put(FEATURE_EXTERNAL_GENERAL_ENTITIES, false);
         secureProperties.put("http://xml.org/sax/features/external-parameter-entities", false);
         secureProperties.put("http://javax.xml.XMLConstants/feature/secure-processing", true);
-        secureConfigProperties.put(XMLReaderPool.XmlParser.XML_PARSER_FEATURES_PROPERTY, secureProperties);
+        secureConfigProperties.put(XMLReaderPool.XmlParser.XML_PARSER_FEATURES_PROPERTY.string, secureProperties);
     }
 
     @Rule
@@ -108,10 +108,9 @@ public class XMLReaderSecurityTest extends AbstractXMLReaderSecurityTest {
 
                     assertNotNull(testDoc);
 
-                    final String expected = EXPECTED_EXPANSION_DISABLED_DOC;
                     final String actual = serialize(testDoc.getDocument());
 
-                    assertEquals(expected, actual);
+                    assertEquals(EXPECTED_EXPANSION_DISABLED_DOC, actual);
                 }
             }
 

@@ -57,6 +57,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.util.Configuration;
+import org.exist.util.Prop;
 import org.exist.util.Str;
 
 import static com.evolvedbinary.j8fu.Either.Left;
@@ -73,7 +74,7 @@ public class BrokerFactory {
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     public static final String PROPERTY_DATABASE = "database";
-    public static final Str CONFIG_PROPERTY_DATABASE = Str.of(PROPERTY_DATABASE);
+    public static final Prop CONFIG_PROPERTY_DATABASE = Prop.of(PROPERTY_DATABASE);
 
     public static void plug(final String brokerId, final Class<? extends DBBroker> clazz) {
         CONSTRUCTORS.computeIfAbsent(formatBrokerId(brokerId), key -> new LazyValE<>(() -> getConstructor(key, clazz)));

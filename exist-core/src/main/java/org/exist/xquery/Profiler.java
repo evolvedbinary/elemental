@@ -29,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.source.Source;
 import org.exist.storage.DBBroker;
-import org.exist.util.Str;
+import org.exist.util.Prop;
 import org.exist.xquery.value.Sequence;
 
 import javax.annotation.Nullable;
@@ -63,7 +63,7 @@ public class Profiler {
     /** For a full representation of the context sequence (TODO) */
     public static final int SEQUENCE_DUMP = 8;
 
-    public static final Str CONFIG_PROPERTY_TRACELOG = Str.of("xquery.profiling.tracelog");
+    public static final Prop CONFIG_PROPERTY_TRACELOG = Prop.of("xquery.profiling.tracelog");
 
     /**
      * The logger where all output goes.

@@ -147,7 +147,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
 
     public static final String FILE_NAME = "values.dbx";
     public static final short FILE_FORMAT_VERSION_ID = 15;
-    public static final Str FILE_KEY_IN_CONFIG = Str.of("db-connection.values");
+    public static final Prop FILE_KEY_IN_CONFIG = Prop.of("db-connection.values");
 
     private static final double DEFAULT_VALUE_CACHE_GROWTH = 1.25;
     private static final double DEFAULT_VALUE_VALUE_THRESHOLD = 0.04;
@@ -160,7 +160,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
     public static final int OFFSET_DATA = OFFSET_VALUE_TYPE + NativeValueIndex.LENGTH_VALUE_TYPE; //3
 
     public final static String INDEX_CASE_SENSITIVE_ATTRIBUTE = "caseSensitive";
-    public final static Str PROPERTY_INDEX_CASE_SENSITIVE = Str.of("indexer.case-sensitive");
+    public final static Prop PROPERTY_INDEX_CASE_SENSITIVE = Prop.of("indexer.case-sensitive");
 
     /**
      * The broker that is using this value index.
@@ -223,7 +223,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         return (FILE_NAME);
     }
 
-    private Str getConfigKeyForFile() {
+    private Prop getConfigKeyForFile() {
         return (FILE_KEY_IN_CONFIG);
     }
 

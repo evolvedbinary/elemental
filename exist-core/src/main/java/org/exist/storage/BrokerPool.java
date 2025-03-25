@@ -530,7 +530,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         this.startupTriggersManager = servicesManager.register(new StartupTriggersManager());
 
         // this is just used for unit tests
-        final BrokerPoolService testBrokerPoolService = (BrokerPoolService) conf.getProperty(Str.of("exist.testBrokerPoolService"));
+        final BrokerPoolService testBrokerPoolService = (BrokerPoolService) conf.getProperty(Prop.of("exist.testBrokerPoolService"));
         if (testBrokerPoolService != null) {
             servicesManager.register(testBrokerPoolService);
         }
@@ -719,7 +719,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 
                     status.process(Event.READY);
 
-                    statusReporter.setStatus(SIGNAL_STARTED);
+                    statusReporter.setStatus(SIGNAL_STARTED.string);
                 } catch(final Throwable t) {
                     transactionManager.shutdown();
                     throw t;
@@ -1630,7 +1630,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
             scheduler.shutdown(true);
 
             try {
-                statusReporter = new StatusReporter(SIGNAL_SHUTDOWN);
+                statusReporter = new StatusReporter(SIGNAL_SHUTDOWN.string);
                 statusObservers.forEach(statusReporter::addObserver);
 
                 synchronized (this) {
