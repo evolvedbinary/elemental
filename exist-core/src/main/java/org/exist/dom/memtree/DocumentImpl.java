@@ -388,7 +388,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
         if(nextAttr == attrName.length) {
             growAttributes();
         }
-        final QName attrQname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), qname.getPrefix(), ElementValue.ATTRIBUTE);
+        final QName attrQname = new QName(qname.getLocalPartStr(), qname.getNamespaceURIStr(), qname.getPrefixStr(), ElementValue.ATTRIBUTE);
         attrParent[nextAttr] = nodeNum;
         attrName[nextAttr] = attrQname;
         attrValue[nextAttr] = value;

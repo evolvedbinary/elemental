@@ -36,6 +36,7 @@ import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.XQueryPool;
 import com.evolvedbinary.j8fu.Either;
+import org.exist.util.Prop;
 import org.exist.util.XMLReaderPool;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
@@ -61,7 +62,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -88,8 +88,8 @@ public class XIncludeFilter implements Receiver {
 
     private static final QName HREF_ATTRIB = new QName("href", XMLConstants.NULL_NS_URI);
     private static final QName XPOINTER_ATTRIB = new QName("xpointer", XMLConstants.NULL_NS_URI);
-    private static final String XI_INCLUDE = "include";
-    private static final String XI_FALLBACK = "fallback";
+    private static final Prop XI_INCLUDE = Prop.of("include");
+    private static final Prop XI_FALLBACK = Prop.of("fallback");
 
     private static class ResourceError {
         private final String message;
@@ -174,12 +174,12 @@ public class XIncludeFilter implements Receiver {
 
     @Override
     public void endElement(final QName qname) throws SAXException {
-        if (Namespaces.XINCLUDE_NS.equals(qname.getNamespaceURI())) {
-            if (XI_FALLBACK.equals(qname.getLocalPart())) {
+        if (Namespaces.XINCLUDE_NS.key.equals(qname.getNamespaceURIStr())) {
+            if (XI_FALLBACK.key.equals(qname.getLocalPartStr())) {
                 inFallback = false;
                 // clear error
                 error = null;
-            } else if (XI_INCLUDE.equals(qname.getLocalPart()) && error != null) {
+            } else if (XI_INCLUDE.key.equals(qname.getLocalPartStr()) && error != null) {
                 // found an error, but there was no fallback element.
                 // throw the exception now
                 final SAXException e = error.cause.map(cause -> new SAXException(error.message, cause)).orElse(new SAXException(error.message));
@@ -232,8 +232,8 @@ public class XIncludeFilter implements Receiver {
 
     @Override
     public void startElement(final QName qname, final AttrList attribs) throws SAXException {
-        if (qname.getNamespaceURI() != null && qname.getNamespaceURI().equals(Namespaces.XINCLUDE_NS)) {
-            if (qname.getLocalPart().equals(XI_INCLUDE)) {
+        if (qname.getNamespaceURIStr() != null && qname.getNamespaceURIStr().equals(Namespaces.XINCLUDE_NS.key)) {
+            if (qname.getLocalPartStr().equals(XI_INCLUDE.key)) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("processing include ...");
                 }
@@ -247,7 +247,7 @@ public class XIncludeFilter implements Receiver {
                     }
                     error = resourceError;
                 }
-            } else if (qname.getLocalPart().equals(XI_FALLBACK)) {
+            } else if (qname.getLocalPartStr().equals(XI_FALLBACK.key)) {
                 inFallback = true;
             }
         } else if (!inFallback || error != null) {
@@ -327,7 +327,7 @@ public class XIncludeFilter implements Receiver {
             // Patch 1520454 start
             if (!docUri.isAbsolute() && document != null) {
                 final String base = document.getCollection().getURI() + "/";
-                final String child = "./" + docUri.toString();
+                final String child = "./" + docUri;
 
                 final URI baseUri = URI.create(base);
                 final URI childUri = URI.create(child);
@@ -430,7 +430,7 @@ public class XIncludeFilter implements Receiver {
                 if (namespaces != null) {
                     context.declareNamespaces(namespaces);
                 }
-                context.declareNamespace("xinclude", Namespaces.XINCLUDE_NS);
+                context.declareNamespace("xinclude", Namespaces.XINCLUDE_NS.string);
 
                 //setup the http context if known
                 if (serializer.httpContext != null) {
@@ -519,7 +519,7 @@ public class XIncludeFilter implements Receiver {
             final URLConnection con = externalUri.toURL().openConnection();
             if (con instanceof HttpURLConnection httpConnection) {
                 if (httpConnection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    return Either.Left(new ResourceError("XInclude: unable to retrieve from URI: " + externalUri.toString() + ", server returned response code: " + httpConnection.getResponseCode()));
+                    return Either.Left(new ResourceError("XInclude: unable to retrieve from URI: " + externalUri + ", server returned response code: " + httpConnection.getResponseCode()));
                 }
             }
 
@@ -543,7 +543,7 @@ public class XIncludeFilter implements Receiver {
                 }
             }
         } catch (final IOException e) {
-            return Either.Left(new ResourceError("XInclude: unable to retrieve and parse document from URI: " + externalUri.toString(), e));
+            return Either.Left(new ResourceError("XInclude: unable to retrieve and parse document from URI: " + externalUri, e));
         }
     }
 
@@ -608,14 +608,10 @@ public class XIncludeFilter implements Receiver {
                 value = args.substring(start, end - 1);
             }
             start = end;
-            try {
-                param = URLDecoder.decode(param, UTF_8.name());
-                value = URLDecoder.decode(value, UTF_8.name());
-                LOG.debug("parameter: {} = {}", param, value);
-                parameters.put(param, value);
-            } catch (final UnsupportedEncodingException e) {
-                LOG.warn(e.getMessage(), e);
-            }
+            param = URLDecoder.decode(param, UTF_8);
+            value = URLDecoder.decode(value, UTF_8);
+            LOG.debug("parameter: {} = {}", param, value);
+            parameters.put(param, value);
         }
         return parameters;
     }
