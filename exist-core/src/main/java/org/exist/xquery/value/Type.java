@@ -157,13 +157,15 @@ public class Type {
     public final static int JAVA_OBJECT = 68;
     public final static int EMPTY_SEQUENCE = 69;  // NOTE(AR) this types does appear in the XQ 3.1 spec - https://www.w3.org/TR/xquery-31/#id-sequencetype-syntax
 
+    private final static int FENCEPOST = 70;
+
     private final static int[] superTypes = new int[69];
     private final static Int2ObjectOpenHashMap<String[]> typeNames = new Int2ObjectOpenHashMap<>(69, Hash.FAST_LOAD_FACTOR);
     private final static Object2IntOpenHashMap<String> typeCodes = new Object2IntOpenHashMap<>(78, Hash.FAST_LOAD_FACTOR);
     static {
         typeCodes.defaultReturnValue(NO_SUCH_VALUE);
     }
-    private final static Int2ObjectMap<IntArraySet> unionTypes = new Int2ObjectArrayMap<>(2);
+    private final static IntArraySet[] unionTypes = new IntArraySet[FENCEPOST];
     private final static Int2IntOpenHashMap primitiveTypes = new Int2IntOpenHashMap(45, Hash.FAST_LOAD_FACTOR);
     static {
         primitiveTypes.defaultReturnValue(NO_SUCH_VALUE);
@@ -450,7 +452,7 @@ public class Type {
      * @param memberTypes the members of the union type
      */
     private static void defineUnionType(final int unionType, final int... memberTypes) {
-        unionTypes.put(unionType, new IntArraySet(memberTypes));
+        unionTypes[unionType] = new IntArraySet(memberTypes);
     }
 
     /**
@@ -555,10 +557,10 @@ public class Type {
             return false;
         }
 
-        if (unionTypes.containsKey(supertype)) {
+        if (unionTypes[supertype] != null) {
             return subTypeOfUnion(subtype, supertype);
         }
-        if (unionTypes.containsKey(subtype)) {
+        if (unionTypes[subtype] != null) {
             return unionMembersHaveSuperType(subtype, supertype);
         }
 
@@ -622,10 +624,10 @@ public class Type {
             return type1;
         }
 
-        if (unionTypes.containsKey(type1) && subTypeOfUnion(type2, type1)) {
+        if (unionTypes[type1] != null && subTypeOfUnion(type2, type1)) {
             return type2;
         }
-        if (unionTypes.containsKey(type2) && subTypeOfUnion(type1, type2)) {
+        if (unionTypes[type2] != null && subTypeOfUnion(type1, type2)) {
             return type1;
         }
 
@@ -661,7 +663,7 @@ public class Type {
      * @return true if the type is a member, false otherwise.
      */
     public static boolean hasMember(final int unionType, final int other) {
-        final IntArraySet members = unionTypes.get(unionType);
+        final IntArraySet members = unionTypes[unionType];
         if (members == null) {
             return false;
         }
@@ -677,7 +679,7 @@ public class Type {
      * @return true if subtype is a sub type of a member of the union type
      */
     public static boolean subTypeOfUnion(final int subtype, final int unionType) {
-        final IntArraySet members = unionTypes.get(unionType);
+        final IntArraySet members = unionTypes[unionType];
         if (members == null) {
             return false;
         }
@@ -702,8 +704,8 @@ public class Type {
     }
 
     public static boolean unionMembersHaveSuperType(final int unionType, final int supertype) {
-        final IntArraySet members = unionTypes.get(unionType);
-        if (members == null || members.size() == 0) {
+        final IntArraySet members = unionTypes[unionType];
+        if (members == null || members.isEmpty()) {
             return false;
         }
 

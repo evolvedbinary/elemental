@@ -40,6 +40,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,16 +57,16 @@ public class XIncludeSerializerTest {
     private final static XmldbURI XINCLUDE_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("xinclude_test");
     private final static XmldbURI XINCLUDE_NESTED_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("xinclude_test/data");
 
-    private final static String getXmlRpcApi() {
+    private static String getXmlRpcApi() {
         return "http://127.0.0.1:" + existWebServer.getPort() + "/xmlrpc";
     }
 
-    private final static String getRestUri()  {
+    private static String getRestUri()  {
         return "http://admin:admin@127.0.0.1:" + existWebServer.getPort() + "/db/xinclude_test";
     }
 
     private final static String XML_DATA1
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='metatags.xml'/>"
             + "</root>"
@@ -79,35 +80,35 @@ public class XIncludeSerializerTest {
             + "</html>";
 
     private final static String XML_DATA3
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='../xinclude_test/data/metatags.xml'/>"
             + "</root>"
             + "</test>";
 
     private final static String XML_DATA4
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='data/metatags.xml'/>"
             + "</root>"
             + "</test>";
 
     private final static String XML_DATA5
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='data/metatags.xml' xpointer='xpointer(//metatag)'/>"
             + "</root>"
             + "</test>";
 
     private final static String XML_DATA6
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='data/metatags.xml' xpointer='metatag'/>"
             + "</root>"
             + "</test>";
 
     private final static String XML_DATA7
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='data/unknown.xml'>"
             + "<xi:fallback><warning>Not found</warning></xi:fallback>"
@@ -116,13 +117,13 @@ public class XIncludeSerializerTest {
             + "</test>";
 
     private final static String XML_DATA8
-            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+            = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<xi:include href='data/unknown.xml'/>"
             + "</root>"
             + "</test>";
 
-    private final static String XML_RESULT = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+    private final static String XML_RESULT = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<html>"
             + "<head>"
@@ -132,13 +133,13 @@ public class XIncludeSerializerTest {
             + "</root>"
             + "</test>";
 
-    private final static String XML_RESULT_XPOINTER = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+    private final static String XML_RESULT_XPOINTER = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<metatag xml:id='metatag' name='test' description='test'/>"
             + "</root>"
             + "</test>";
 
-    private final static String XML_RESULT_FALLBACK1 = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS + "'>"
+    private final static String XML_RESULT_FALLBACK1 = "<test xmlns:xi='" + Namespaces.XINCLUDE_NS.string + "'>"
             + "<root>"
             + "<warning>Not found</warning>"
             + "</root>"
@@ -155,7 +156,7 @@ public class XIncludeSerializerTest {
         connect.connect();
 
         final StringBuilder out = new StringBuilder();
-        try(final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"))) {
+        try(final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 out.append(line);
@@ -178,7 +179,7 @@ public class XIncludeSerializerTest {
         connect.setRequestMethod("GET");
         connect.connect();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8));
         String line;
         final StringBuilder out = new StringBuilder();
         while ((line = reader.readLine()) != null) {
@@ -201,7 +202,7 @@ public class XIncludeSerializerTest {
         connect.setRequestMethod("GET");
         connect.connect();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8));
         String line;
         final StringBuilder out = new StringBuilder();
         while ((line = reader.readLine()) != null) {
@@ -223,7 +224,7 @@ public class XIncludeSerializerTest {
         connect.setRequestMethod("GET");
         connect.connect();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8));
         String line;
         StringBuilder out = new StringBuilder();
         while ((line = reader.readLine()) != null) {
@@ -245,7 +246,7 @@ public class XIncludeSerializerTest {
         connect.setRequestMethod("GET");
         connect.connect();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8));
         String line;
         final StringBuilder out = new StringBuilder();
         while ((line = reader.readLine()) != null) {
@@ -267,7 +268,7 @@ public class XIncludeSerializerTest {
         connect.setRequestMethod("GET");
         connect.connect();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8));
         String line;
         final StringBuilder out = new StringBuilder();
         while ((line = reader.readLine()) != null) {
@@ -290,7 +291,7 @@ public class XIncludeSerializerTest {
         connect.connect();
 
         final StringBuilder out = new StringBuilder();
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"))) {
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 out.append(line);
