@@ -4,23 +4,48 @@
 package org.exist.util;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
 
 /**
- * Always-interned fast string utility.
+ * "Fast" string which uses a combination of cacheing and fingerprinting
+ * to make both equality comparison, and string ordering efficient for
+ * shorter/simpler strings.
+ * <p>
+ * The first tactic is to cache {@code String} to {@code Str} mappings for
+ * most recently used {@code String}s of {@code Str}s.
+ * This allows equality comparisons to often succeed based on identity.
+ * <p>
+ * The second tactic is to create a fingerprint (a {@code long}, i.e. 64 bits) for a string.
+ * The fingerprint holds
+ * - a prefix (the first 8 bits of the first 6 characters)
+ * - a length (0...254, or 255 representing length >= 255).
+ * - bitwise or of the top 8 bits of the first 6 characters.
+ * <p>
+ * Specifically
+ * - byte 7 - or together the msb bits of the first n characters
+ * - byte 6 - min(length of string, 255)
+ * - bytes 5...0 - least significant 8 bits of the first 6 characters; 0-padded
+ * <p>
+ * This means that when byte 7 is 0, we can mask out the top 16 bits of the fingerprint
+ * and compare the remainder to provide a string hint as to which of a pair of {@code Str} precedes the other.
+ * We can also definitively declare two {@code Strs} to be equal when bytes 5...0 are equal, byte 7 is 0, and
+ * lengths are equal, and no longer than 6.
  */
 public final class Str implements Comparable<Str> {
 
-    private final int index;
-    private final boolean isEmpty;
-    private Str(final int i, final boolean isEmpty) {
-        this.index = i;
-        this.isEmpty = isEmpty;
+    private final long fingerprint;
+    private final String value;
+    private Str(final long fingerprint, final String value) {
+        this.fingerprint = fingerprint;
+        this.value = value;
     }
 
-    private final static StrCache<String> strCache = new StrCache<>();
+    private final static Cache<String, Str> strCache = Caffeine.newBuilder()
+      .maximumSize(1_000)
+      .recordStats()
+      .build();
 
     public final static Str EMPTY = Str.of("");
     public final static Str WILDCARD = Str.of("*");
@@ -33,51 +58,145 @@ public final class Str implements Comparable<Str> {
     }
 
     /**
-     * Create a Str while guaranteeing that it is `intern()`-ed
-     * i.e. that equal Str values share an implementation object.
+     * Yield a Str for the supplied String
+     * Efficiently cache it so that mostly the same String yields the same Str
      *
      * @param s sequence to store as a Str
-     * @return the unique Str to wrap this sequence.
+     * @return a Str that wraps this String.
      */
     public static Str of(final String s) {
         if (s == null) {
             return null;
         } else {
-            return strCache.insertIfAbsent(s);
+            return strCache.get(s, Str::from);
         }
     }
 
-    public boolean isEmpty() {
-        return this.isEmpty;
+    public static void invalidateCache() {
+        strCache.invalidateAll();
+    }
+
+    public static CacheStats getCacheStats() {
+        return strCache.stats();
     }
 
     /**
-     * Helper for methods we want to provide directly on the Str
-     *
-     * @return the underlying rope
+     * Helper to create a str object for an uncached String
+     * @param s String to cache
+     * @return a {@link Str} for the string
      */
-    private String item() {
-        return strCache.at(index);
+    private static Str from(final String s) {
+        final long fingerprint = fingerprint(s);
+        return new Str(fingerprint, s);
+    }
+
+    /**
+     * TODO (AP) efficient way is to use the fingerprint,
+     * which should encode the length
+     *
+     * @return true iff the string is empty
+     */
+    public boolean isEmpty() {
+        return value.isEmpty();
     }
 
     public CharSequence toCharSequence() {
-        return item();
+        return value;
     }
 
+    @Override
     public String toString() {
-        return item();
+        return value;
     }
 
+    /**
+     * TODO (AP) use the fingerprint
+     *
+     * @param o the object to be compared.
+     * @return -1, 0, 1 as this <, =, > {@code o}
+     */
+    @Override
     public int compareTo(final Str o) {
-        return item().compareTo(o.item());
+
+        if (lexicographicPrefix() && o.lexicographicPrefix()) {
+            long left = fingerprint & PREFIX_MASK;
+            long right = o.fingerprint & PREFIX_MASK;
+            if (left < right) return -1;
+            if (left > right) return 1;
+            if (shortSimpleString() && o.shortSimpleString()) {
+                return 0;
+            }
+        }
+
+        // revert to actual strings.
+        return value.compareTo(o.value);
     }
 
+    /**
+     * @return true iff the string is entirely encoded in the fingerprint (and no high bits are set)
+     */
+    private boolean shortSimpleString() {
+        return (fingerprint >>> LEN_SHIFT) <= MAX_FINGERPRINT_ENCODED_LEN;
+    }
+
+    /**
+     * @return true iff the string prefix can be used for comparison shortcut (no high bits in the prefix)
+     */
+    private boolean lexicographicPrefix() {
+        return (fingerprint >>> LEN_SHIFT) <= 0xff;
+    }
+
+    /**
+     * Fetch the length of this {@code Str}
+     *
+     * The exact length is encoded in the fingerprint if length < 255.
+     *
+     * @return the length of the string which this @{Str represents}
+     */
     public int length() {
-        return item().length();
+        long lsb = (fingerprint >> LEN_SHIFT) & 0xff;
+        if (lsb < 0xff) {
+            return (int) lsb;
+        }
+        return value.length();
     }
 
-    public static String dumpCache() {
-        return strCache.dump();
+    private final static int LEN_SHIFT = 48;
+    private final static int MAX_FINGERPRINT_ENCODED_LEN = 6;
+
+    private final static long PREFIX_MASK = 0xffffffffffffL;
+
+    /**
+     * Create a fingerprint for a string, to make comparison more efficient
+     * <p>
+     * @param s string to generate fingerprint of
+     * @return the fingerprint of the supplied string
+     */
+    static long fingerprint(String s) {
+
+        long result = 0L;
+
+        final int len = Math.min(s.length(), 0xff);
+        short msbBits = 0;
+
+        // add as many character lower bytes as fit, leaving space for byte 6, byte 7
+        for (int i = 0; i < Math.min(len, Long.BYTES - 2); i++) {
+            //lower byte of the character, which we expect is usually the more variable byte
+            final char c = s.charAt(i);
+            result = (result << 8) | (byte)c;
+            msbBits |= (short)c;
+        }
+
+        // pad with 0s to make compareTo correct
+        // we want abc000 vs abcd00
+        for (int i = len; i < Long.BYTES - 2; i++) {
+            result = (result << 8) | (byte)0;
+        }
+
+        // patch in length at byte 6, and msbBits at byte 7
+        result |= ((msbBits & 0xff00L) | len) << LEN_SHIFT;
+
+        return result;
     }
 
     @Override
@@ -87,17 +206,20 @@ public final class Str implements Comparable<Str> {
 
         Str str = (Str) o;
 
-        return index == str.index;
+        // distinct fingerprints can never be equal
+        if (fingerprint != str.fingerprint) return false;
+
+        // fingerprint for short strings can be definitive
+        // if short enough that all characters are encoded
+        // and none of the characters have a high bit set
+        if (shortSimpleString()) {
+            return true;
+        }
+
+        // fall back to comparing the strings
+        return value.equals(str.value);
     }
 
-    /**
-     * Test if two Str are equal whilst handling null references.
-     *
-     * @param s1 the first Str.
-     * @param s2 the second Str.
-     *
-     * @return true of the Str are equal or both are null, false otherwise.
-     */
     public static boolean equals(@Nullable final Str s1, @Nullable final Str s2) {
         if (s1 == s2) {
             return true;
@@ -110,85 +232,20 @@ public final class Str implements Comparable<Str> {
         return s1.equals(s2);
     }
 
+    /**
+     * Hashcode does not need to look at the string (for efficiency)
+     *
+     * @return a hash calculation based solely on the fingerprint
+     */
     @Override
     public int hashCode() {
-        return index;
+        return (int) (fingerprint ^ (fingerprint >>> 32));
     }
 
-    static int cacheEstimate() {
-        return strCache.generationCount();
-    }
-
-    static void resetGeneration() {
-        strCache.resetGeneration();
-    }
 
     /**
      * Cached string -> index mapping.
      */
-    private static class StrCache<T extends Comparable<T> & CharSequence> {
-
-        final Map<T, Str> entryMap = new ConcurrentSkipListMap<>(T::compareTo);
-
-        // When we clear the cache (which we anyway should only do for testing)
-        // move entryStart up to entryEnd, so that all previous Str indices are
-        // known to be invalid.
-        final ArrayList<T> entries = new ArrayList<>();
-        int generationStart = 0;
-        int end = 0;
-
-        /**
-         * insert a representation; assumes it did not exist in the table before
-         * synchronize recording the position with adding the element;
-         * because adding a new element is exceptional, this synchronization
-         * should not be a performance problem.
-         *
-         * @param key the rope to insert
-         * @return the wrapped Str of the rope
-         */
-        final Str insert(final T key) {
-            int pos;
-            synchronized (this) {
-                pos = end++;
-                entries.add(key);
-            }
-            return new Str(pos, key.isEmpty());
-        }
-
-        final Str insertIfAbsent(final T key) {
-            return entryMap.computeIfAbsent(key, this::insert);
-        }
-
-        final T at(final int index) {
-            return entries.get(index);
-        }
-
-        final int generationCount() {
-            return end - generationStart;
-        }
-
-        /**
-         * Only intended for test use
-         */
-        private synchronized void resetGeneration() {
-            generationStart = end;
-        }
-
-        final synchronized String dump() {
-            StringBuilder sb = new StringBuilder("[");
-            sb.append('(').append(end).append(')');
-            for (int i = 0; i < end; i++) {
-                T val = entries.get(i);
-                sb.append(i).append(":|").append(val);
-                Str mapped = entryMap.get(val);
-                sb.append("|=").append('|').append(mapped == null ? "<<null>>" : mapped).append("|\n");
-            }
-            sb.append(']');
-
-            return sb.toString();
-        }
-    }
-
     public static class XMLConstants {
         public final static Str DEFAULT_NS_PREFIX = Str.of(javax.xml.XMLConstants.DEFAULT_NS_PREFIX);
         public final static Str XML_NS_PREFIX = Str.of(javax.xml.XMLConstants.XML_NS_PREFIX);
