@@ -4,9 +4,6 @@
 package org.exist.util;
 
 import javax.annotation.Nullable;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
 
 /**
  * "Fast" string which uses "fingerprinting"
