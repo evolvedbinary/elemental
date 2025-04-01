@@ -9,15 +9,11 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 
 /**
- * "Fast" string which uses a combination of cacheing and fingerprinting
+ * "Fast" string which uses "fingerprinting"
  * to make both equality comparison, and string ordering efficient for
  * shorter/simpler strings.
  * <p>
- * The first tactic is to cache {@code String} to {@code Str} mappings for
- * most recently used {@code String}s of {@code Str}s.
- * This allows equality comparisons to often succeed based on identity.
- * <p>
- * The second tactic is to create a fingerprint (a {@code long}, i.e. 64 bits) for a string.
+ * The tactic is to create a fingerprint (a {@code long}, i.e. 64 bits) for a string.
  * The fingerprint holds
  * - a prefix (the first 8 bits of the first 6 characters)
  * - a length (0...254, or 255 representing length >= 255).
@@ -84,7 +80,7 @@ public final class Str implements Comparable<Str> {
      * @return true iff the string is empty
      */
     public boolean isEmpty() {
-        return value.isEmpty();
+        return ((fingerprint & LENGTH_MASK) == 0L);
     }
 
     public CharSequence toCharSequence() {
@@ -141,17 +137,20 @@ public final class Str implements Comparable<Str> {
      * @return the length of the string which this @{Str represents}
      */
     public int length() {
-        long lsb = (fingerprint >> LEN_SHIFT) & 0xff;
+        long lsb = (fingerprint >>> LEN_SHIFT) & 0xff;
         if (lsb < 0xff) {
             return (int) lsb;
         }
         return value.length();
     }
 
+    // Configuration for masking
     private final static int LEN_SHIFT = 48;
     private final static int MAX_FINGERPRINT_ENCODED_LEN = 6;
 
     private final static long PREFIX_MASK = 0xffffffffffffL;
+
+    private final static long LENGTH_MASK = 0xffL << LEN_SHIFT;
 
     /**
      * Create a fingerprint for a string, to make comparison more efficient
@@ -226,7 +225,18 @@ public final class Str implements Comparable<Str> {
      */
     @Override
     public int hashCode() {
-        return (int) (fingerprint ^ (fingerprint >>> 32));
+        // fingerprint bytes
+        // 7 or of top 8 bits of each char
+        // 6 length up to 255
+        // 5 char 0 (bottom 8 bits)
+        // 4 char 1
+        // 3 char 2
+        // 2 char 3
+        // 1 char 4
+        // 0 char 5
+        // >>> 40 gets char 0 into the least bit of the hash, length above it
+        // >>> 20 gets char 1 into the middle of the hash
+        return (int) (fingerprint ^ (fingerprint >>> 40) ^ (fingerprint >>> 20));
     }
 
 

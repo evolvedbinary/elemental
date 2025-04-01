@@ -19,6 +19,9 @@ public class StrTest {
 
         assertThat(Str.of("")).isNotEqualTo(Str.of("1"));
         assertThat(Str.of("1")).isNotEqualTo(Str.of(""));
+
+        assertThat(Str.of("").isEmpty()).isTrue();
+        assertThat(Str.of("1").isEmpty()).isFalse();
     }
 
     @Test
