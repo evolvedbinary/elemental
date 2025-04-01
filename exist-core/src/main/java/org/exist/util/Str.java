@@ -42,11 +42,6 @@ public final class Str implements Comparable<Str> {
         this.value = value;
     }
 
-    private final static Cache<String, Str> strCache = Caffeine.newBuilder()
-      .maximumSize(1_000)
-      .recordStats()
-      .build();
-
     public final static Str EMPTY = Str.of("");
     public final static Str WILDCARD = Str.of("*");
 
@@ -68,16 +63,8 @@ public final class Str implements Comparable<Str> {
         if (s == null) {
             return null;
         } else {
-            return strCache.get(s, Str::from);
+            return Str.from(s);
         }
-    }
-
-    public static void invalidateCache() {
-        strCache.invalidateAll();
-    }
-
-    public static CacheStats getCacheStats() {
-        return strCache.stats();
     }
 
     /**

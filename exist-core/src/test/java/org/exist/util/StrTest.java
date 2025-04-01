@@ -1,25 +1,16 @@
 package org.exist.util;
 
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.XMLDBException;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 import static java.lang.Math.signum;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StrTest {
-
-    @BeforeEach
-    public void reset() {
-        Str.invalidateCache();
-    }
 
     @Test
     public void testNullOrEmptyStr() {
@@ -31,23 +22,7 @@ public class StrTest {
     }
 
     @Test
-    public void testCache() {
-        CacheStats before = Str.getCacheStats();
-        Random random = new Random();
-        for (int i = 0; i < 1000000; i++) {
-            final int rand = random.nextInt(1000);
-            Str s = Str.of(String.format("%4d", rand));
-            assertThat(s.toString().getBytes(StandardCharsets.UTF_8)).isEqualTo(String.format("%4d", rand).getBytes(StandardCharsets.UTF_8));
-            assertThat(s.length()).isEqualTo(4);
-        }
-        CacheStats stats = Str.getCacheStats().minus(before);
-        assertThat(stats.evictionCount()).isEqualTo(0);
-        assertThat(stats.hitCount()).isEqualTo(999000);
-    }
-
-    @Test
     public void testOrder() {
-        CacheStats before = Str.getCacheStats();
         for (int i = 0; i < 99; i++) {
             Str si0 = Str.of(String.format("%3d",i));
             Str si1 = Str.of(String.format("%3d",i+1));
@@ -58,10 +33,6 @@ public class StrTest {
             Str si1 = Str.of(String.format("%3d",i-1));
             assertThat(si0.compareTo(si1)).as("[%s] < [%s]", si0, si1).isGreaterThan(0);
         }
-
-        CacheStats stats = Str.getCacheStats().minus(before);
-        assertThat(stats.evictionCount()).isEqualTo(0);
-        assertThat(stats.hitCount()).isEqualTo(296);
     }
 
     @Test

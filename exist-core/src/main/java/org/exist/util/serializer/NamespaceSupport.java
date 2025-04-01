@@ -8,22 +8,16 @@ package org.exist.util.serializer;
 import org.exist.util.Str;
 
 import javax.annotation.Nullable;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
-import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE;
 import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
-import static javax.xml.XMLConstants.XML_NS_PREFIX;
 import static javax.xml.XMLConstants.XML_NS_URI;
 
 /**
  * Inadequately tested drop-in replacement for NamespaceSupport
- *
- * Performance improved because we already assume strings are {@code intern()-ed}
- * and therefore we use a HashMap which compares the keys based on identity.
  */
 public class NamespaceSupport /* implements NamespaceContext */ {
 
@@ -34,7 +28,7 @@ public class NamespaceSupport /* implements NamespaceContext */ {
         if (stack == null) {
             stack = new ArrayDeque<>();
         }
-        stack.addFirst(new IdentityHashMap<>());
+        stack.addFirst(new HashMap<>());
     }
 
 //    @Override
