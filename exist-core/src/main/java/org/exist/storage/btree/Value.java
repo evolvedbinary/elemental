@@ -72,6 +72,8 @@
  */
 package org.exist.storage.btree;
 
+import java.util.Arrays;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -214,14 +216,11 @@ public class Value implements Comparable<Object> {
     }
 
     public final int comparePrefix(final Value value) {
-        for (int i = 0; i < value.len; i++) {
-            final byte b1 = data[pos + i];
-            final byte b2 = value.data[value.pos + i];
-            if (b1 != b2) {
-                final short s1 = (short) (b1 & 0xFF);
-                final short s2 = (short) (b2 & 0xFF);
-                return s1 > s2 ? (i + 1) : -(i + 1);
-            }
+        final int mismatch = Arrays.mismatch(data, pos, pos + value.len, value.data, value.pos, value.pos + value.len);
+        if (mismatch >= 0) {
+            final int v1 = (data[pos + mismatch] & 0xFF);
+            final int v2 = (value.data[value.pos + mismatch] & 0xFF);
+            return v1 > v2 ? (mismatch + 1) : -(mismatch + 1);
         }
         return 0;
     }
