@@ -343,84 +343,61 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
         //LOG.debug("elementCnt = " + childCnt.length);
     }
 
-    private void processText(ElementImpl last, ProcessTextParent ptp) {
-	// if (charBuf != null && charBuf.length() > 0) {
-        //    // remove whitespace if the node has just a single text child,
-        //    // keep whitespace for mixed content.
-	//     final XMLString normalized;
-	//     if ((charBuf.isWhitespaceOnly() && preserveWSmixed) || last.preserveSpace()) {
-	// 	normalized = charBuf;
-	//     } else {
-	// 	if (last.getChildCount() == 0) {
-        //            normalized = charBuf.normalize(normalize);
-	// 	} else {
-	// 	    normalized = charBuf.isWhitespaceOnly() ? null : charBuf;
-	// 	}
-	//     }
-	//     if (normalized != null && normalized.length() > 0) {
-	// 	text.setData(normalized);
-	// 	text.setOwnerDocument(document);
-	// 	last.appendChildInternal(prevNode, text);
-	// 	if (!validate) storeText();
-	// 	setPrevious(text);
-	//     }
-	//     charBuf.reset();
-	// }
-
-        //from startElement method
-	if (charBuf != null && charBuf.length() > 0) {
-	    XMLString normalized = null;
-            switch (ptp) {
-                case COMMENT:
-                case PI:
-                case CDATA_START:
-                    normalized = charBuf;
-                    break;
-                default:
-	    if (charBuf.isWhitespaceOnly()) {
-		if (last.preserveSpace() || last.getChildCount() == 0) {
-		    normalized = charBuf;
-		} else if (preserveWSmixed) {
-		    if (!(last.getChildCount() == 0 && (normalize & XMLString.SUPPRESS_LEADING_WS) != 0)) {
-			normalized = charBuf;
-		    }
+    private XMLString normalizeLast(final ElementImpl last) {
+        if (charBuf.isWhitespaceOnly()) {
+            if (last.preserveSpace() || last.getChildCount() == 0) {
+                return charBuf;
+            } else if (preserveWSmixed) {
+                if (!(last.getChildCount() == 0 && (normalize & XMLString.SUPPRESS_LEADING_WS) != 0)) {
+                    return charBuf;
                 } else {
-                    normalized = charBuf.normalize(normalize);
+                    return null;
                 }
-	    } else {
-		//normalized = charBuf;
-                if (last.preserveSpace()) {
-                    normalized = charBuf;
-                } else if (last.getChildCount() == 0) {
-                    normalized = charBuf.normalize(normalize);
+            } else {
+                return charBuf.normalize(normalize);
+            }
+        } else {
+            //normalized = charBuf;
+            if (last.preserveSpace()) {
+                return charBuf;
+            } else if (last.getChildCount() == 0) {
+                return charBuf.normalize(normalize);
+            } else {
+                // mixed element content: don't normalize the text node,
+                // just check if there is any text at all
+                if (preserveWSmixed) {
+                    return charBuf;
                 } else {
-                    // mixed element content: don't normalize the text node,
-                    // just check if there is any text at all
-                    if (preserveWSmixed) {
-                        normalized = charBuf;
+                    if ((normalize & XMLString.SUPPRESS_LEADING_WS) != 0) {
+                        return charBuf.normalize(XMLString.SUPPRESS_LEADING_WS | XMLString.COLLAPSE_WS);
+                    } else if ((normalize & XMLString.SUPPRESS_TRAILING_WS) != 0) {
+                        return charBuf.normalize(XMLString.SUPPRESS_TRAILING_WS | XMLString.COLLAPSE_WS);
                     } else {
-                        if ((normalize & XMLString.SUPPRESS_LEADING_WS) != 0) {
-                            normalized = charBuf.normalize(XMLString.SUPPRESS_LEADING_WS | XMLString.COLLAPSE_WS);
-                        } else if ((normalize & XMLString.SUPPRESS_TRAILING_WS) != 0) {
-                            normalized = charBuf.normalize(XMLString.SUPPRESS_TRAILING_WS | XMLString.COLLAPSE_WS);
-                        } else {
-                            //normalized = charBuf.normalize(XMLString.COLLAPSE_WS);
-                            normalized = charBuf.normalize(normalize);
-                        }
+                        //normalized = charBuf.normalize(XMLString.COLLAPSE_WS);
+                        return charBuf.normalize(normalize);
                     }
                 }
-
             }
         }
-	    if (normalized != null) {
-		text.setData(normalized);
-		text.setOwnerDocument(document);
-		last.appendChildInternal(prevNode, text);
-		if (!validate) storeText();
-		setPrevious(text);
-	    }
-	    charBuf.reset();
-	}
+    }
+
+    private void processText(ElementImpl last, ProcessTextParent ptp) {
+
+        //from startElement method
+        if (charBuf != null && !charBuf.isEmpty()) {
+            XMLString normalized = switch (ptp) {
+                case COMMENT, PI, CDATA_START -> charBuf;
+                default -> normalizeLast(last);
+            };
+            if (normalized != null) {
+                text.setData(normalized);
+                text.setOwnerDocument(document);
+                last.appendChildInternal(prevNode, text);
+                if (!validate) storeText();
+                setPrevious(text);
+            }
+            charBuf.reset();
+        }
     }
 
     @Override
