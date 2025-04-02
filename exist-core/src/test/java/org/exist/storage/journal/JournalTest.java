@@ -253,14 +253,14 @@ public class JournalTest {
 
     @Test
     public void writeJournalHeader() throws IOException {
-        final SeekableByteChannel mockSeekableByteChannel = mock(SeekableByteChannel.class);
+        final Journal.JournalChannel mockJournalChannel = mock(Journal.JournalChannel.class);
         final Capture<ByteBuffer> captureByteBuffer = newCapture(CaptureType.FIRST);
-        expect(mockSeekableByteChannel.write(capture(captureByteBuffer))).andReturn(Journal.JOURNAL_HEADER_LEN);
+        expect(mockJournalChannel.write(capture(captureByteBuffer))).andReturn(Journal.JOURNAL_HEADER_LEN);
 
-        replay(mockSeekableByteChannel);
+        replay(mockJournalChannel);
 
         // call the operation
-        Journal.writeJournalHeader(mockSeekableByteChannel);
+        Journal.writeJournalHeader(mockJournalChannel);
 
         final ByteBuffer writtenJournalHeader = captureByteBuffer.getValue();
         assertNotNull(writtenJournalHeader);
@@ -274,7 +274,7 @@ public class JournalTest {
         assertArrayEquals(new byte[] {0, Journal.JOURNAL_VERSION}, bufVersion);
 
         // verify the mocks
-        verify(mockSeekableByteChannel);
+        verify(mockJournalChannel);
     }
 
     @Test

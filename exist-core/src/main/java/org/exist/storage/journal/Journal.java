@@ -24,6 +24,7 @@ package org.exist.storage.journal;
 import java.io.*;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -219,7 +220,7 @@ public final class Journal implements Closeable {
      * the current output channel
      * Only valid after switchFiles() was called at least once!
      */
-    @GuardedBy("this") private FileChannel channel;
+    @GuardedBy("this") private JournalChannel channel;
 
     /**
      * the current journal file number
@@ -345,14 +346,10 @@ public final class Journal implements Closeable {
             flushToLog(false);
         }
 
-        try {
-            // TODO(AR) this is needed as the journal is initialised by starting a transaction for loading the SymbolTable... before recovery! which is likely wrong!!! as Recovery Cannot run if the Journal file has been switched!
-            final long pos = channel != null ? channel.position() : 0;
+        // TODO(AR) this is needed as the journal is initialised by starting a transaction for loading the SymbolTable... before recovery! which is likely wrong!!! as Recovery Cannot run if the Journal file has been switched!
+        final long pos = channel != null ? channel.position() : 0;
 
-            currentLsn = new Lsn(currentJournalFileNumber, pos + currentBuffer.position() + 1);
-        } catch (final IOException e) {
-            throw new JournalException("Unable to create LSN for: " + entry.dump());
-        }
+        currentLsn = new Lsn(currentJournalFileNumber, pos + currentBuffer.position() + 1);
         entry.setLsn(currentLsn);
 
         try {
@@ -481,21 +478,18 @@ public final class Journal implements Closeable {
         } else {
             flushToLog(true, true);
         }
-        try {
-            if (switchLogFiles && channel != null && channel.position() > journalSizeMin) {
-                final Path oldFile = getFile(currentJournalFileNumber);
-                final RemoveRunnable removeRunnable = new RemoveRunnable(channel, oldFile); // takes ownership of channel and oldFile when `start` is called
-                try {
-                    switchFiles();
-                } catch (final LogException e) {
-                    LOG.warn("Failed to create new journal: {}", e.getMessage(), e);
-                }
 
-                final Thread removeThread = newInstanceThread(pool, "remove-journal", removeRunnable);
-                removeThread.start();
+        if (switchLogFiles && channel != null && channel.position() > journalSizeMin) {
+            final Path oldFile = getFile(currentJournalFileNumber);
+            final RemoveRunnable removeRunnable = new RemoveRunnable(channel, oldFile); // takes ownership of channel and oldFile when `start` is called
+            try {
+                switchFiles();
+            } catch (final LogException e) {
+                LOG.warn("Failed to create new journal: {}", e.getMessage(), e);
             }
-        } catch (final IOException e) {
-            LOG.warn("IOException while writing checkpoint", e);
+
+            final Thread removeThread = newInstanceThread(pool, "remove-journal", removeRunnable);
+            removeThread.start();
         }
     }
 
@@ -576,7 +570,7 @@ public final class Journal implements Closeable {
             close();
 
             // open new journal file
-            channel = (FileChannel) Files.newByteChannel(newJournalFile, CREATE_NEW, WRITE);
+            channel = new JournalChannel((FileChannel) Files.newByteChannel(newJournalFile, CREATE_NEW, WRITE));
             writeJournalHeader(channel);
             initialised = true;
             currentJournalFileNumber = newJournalFileNumber;
@@ -585,7 +579,7 @@ public final class Journal implements Closeable {
         }
     }
 
-    static void writeJournalHeader(final SeekableByteChannel channel) throws IOException {
+    static void writeJournalHeader(final JournalChannel channel) throws IOException {
         final ByteBuffer buf = ByteBuffer.allocateDirect(JOURNAL_HEADER_LEN);
 
         // write the magic number
@@ -775,10 +769,10 @@ public final class Journal implements Closeable {
     }
 
     private static class RemoveRunnable implements Runnable {
-        private final SeekableByteChannel channel;
+        private final JournalChannel channel;
         private final Path path;
 
-        RemoveRunnable(final SeekableByteChannel channel, final Path path) {
+        RemoveRunnable(final JournalChannel channel, final Path path) {
             this.channel = channel;
             this.path = path;
         }
@@ -793,6 +787,52 @@ public final class Journal implements Closeable {
                 LOG.warn("Exception while closing journal file: {}", e.getMessage(), e);
             }
             FileUtils.deleteQuietly(path);
+        }
+    }
+
+    /**
+     * Wrap journal write channel so that operations are clearly restricted to serial writes
+     */
+    static class JournalChannel {
+        private SeekableByteChannel channel;
+        private long position = -1;
+
+        JournalChannel(final SeekableByteChannel channel) {
+            this.channel = channel;
+            try {
+                this.position = channel.position();
+            } catch (IOException e) {
+                throw new RuntimeException("Journal created with closed channel ", e);
+            }
+        }
+
+        long size() throws IOException {
+            return channel.size();
+        }
+
+        long position() {
+            return position;
+        }
+
+        void force(final boolean metaData) throws IOException {
+            ((FileChannel)channel).force(metaData);
+        }
+
+        int write(final ByteBuffer src) throws IOException {
+            int bytesWritten = channel.write(src);
+            position += bytesWritten;
+            return bytesWritten;
+        }
+
+        void close() throws IOException {
+            try {
+                if (channel != null) {
+                    channel.close();
+                }
+            } finally {
+                channel = null;
+                position = -1;
+            }
         }
     }
 }
