@@ -347,7 +347,7 @@
             <artifactId>ws-commons-util</artifactId>
             <version>1.0.2</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 17's javax.xml module -->
+                <exclusion> <!-- conflicts with Java 21's javax.xml module -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -368,7 +368,7 @@
             <artifactId>xmlresolver</artifactId>
             <version>${xmlresolver.version}</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 17's javax.xml module -->
+                <exclusion> <!-- conflicts with Java 21's javax.xml module -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -382,7 +382,7 @@
             <classifier>data</classifier>
             <scope>runtime</scope>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 17's javax.xml module -->
+                <exclusion> <!-- conflicts with Java 21's javax.xml module -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
