@@ -75,6 +75,7 @@ import org.exist.util.UUIDGenerator;
 import org.exist.util.serializer.DOMSerializer;
 import org.w3c.dom.Element;
 
+import static org.exist.util.StringUtil.notNullOrEmpty;
 import static org.exist.util.StringUtil.notNullOrEmptyOrWs;
 
 /**
@@ -165,7 +166,7 @@ public class JMXServlet extends HttpServlet {
             } else {
                 root = client.generateXMLReport(null, new String[]{"sanity"});
             }
-        } else if (operation != null && operation.length() > 0) {
+        } else if (notNullOrEmpty(operation)) {
             final String mbean = request.getParameter("mbean");
             if (mbean == null) {
                 throw new ServletException("to call an operation, you also need to specify parameter 'mbean'");
