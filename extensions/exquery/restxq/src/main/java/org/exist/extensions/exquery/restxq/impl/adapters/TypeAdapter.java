@@ -26,194 +26,204 @@
  */
 package org.exist.extensions.exquery.restxq.impl.adapters;
 
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import org.exist.xquery.value.Type;
+
+import javax.annotation.Nullable;
 
 /**
  *
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
 public class TypeAdapter {
-    
-    //eXist-db XQuery Type <-> EXQuery Type
-    private final static BidiMap mappings = new DualHashBidiMap();
+
+    private static final Int2ObjectMap<org.exquery.xquery.Type> EXISTDB_TO_EXQUERY_MAP = new Int2ObjectOpenHashMap<>(53);
+    private static final Reference2IntMap<org.exquery.xquery.Type> EXQUERY_TO_EXISTDB_MAP = new Reference2IntOpenHashMap<>(53);
+
+    private static void addMapping(final int existdbType, final org.exquery.xquery.Type exqueryType) {
+        EXISTDB_TO_EXQUERY_MAP.put(existdbType, exqueryType);
+        EXQUERY_TO_EXISTDB_MAP.put(exqueryType, existdbType);
+    }
+
     static {
-            mappings.put(Type.NODE,
+            addMapping(Type.NODE,
                 org.exquery.xquery.Type.NODE);
             
-            mappings.put(Type.ELEMENT,
+            addMapping(Type.ELEMENT,
                 org.exquery.xquery.Type.ELEMENT);
                 
-            mappings.put(Type.ATTRIBUTE,
+            addMapping(Type.ATTRIBUTE,
                 org.exquery.xquery.Type.ATTRIBUTE);
                 
-            mappings.put(Type.TEXT,
+            addMapping(Type.TEXT,
                 org.exquery.xquery.Type.TEXT);
             
-            mappings.put(Type.PROCESSING_INSTRUCTION,
+            addMapping(Type.PROCESSING_INSTRUCTION,
                 org.exquery.xquery.Type.PROCESSING_INSTRUCTION);
                 
-            mappings.put(Type.COMMENT,
+            addMapping(Type.COMMENT,
                 org.exquery.xquery.Type.COMMENT);
                     
-            mappings.put(Type.DOCUMENT,
+            addMapping(Type.DOCUMENT,
                 org.exquery.xquery.Type.DOCUMENT);
                     
-            mappings.put(Type.ITEM,
+            addMapping(Type.ITEM,
                 org.exquery.xquery.Type.ITEM);
                 
-            mappings.put(Type.ANY_TYPE,
+            addMapping(Type.ANY_TYPE,
                 org.exquery.xquery.Type.ANY_TYPE);
                 
-            mappings.put(Type.ANY_SIMPLE_TYPE,
+            addMapping(Type.ANY_SIMPLE_TYPE,
                 org.exquery.xquery.Type.ANY_SIMPLE_TYPE);
                 
-            mappings.put(Type.UNTYPED,
+            addMapping(Type.UNTYPED,
                 org.exquery.xquery.Type.UNTYPED);
                 
-            mappings.put(Type.STRING,
+            addMapping(Type.STRING,
                 org.exquery.xquery.Type.STRING);
                 
-            mappings.put(Type.BOOLEAN,
+            addMapping(Type.BOOLEAN,
                 org.exquery.xquery.Type.BOOLEAN);
                 
-            mappings.put(Type.QNAME,
+            addMapping(Type.QNAME,
                 org.exquery.xquery.Type.QNAME);
                 
-            mappings.put(Type.ANY_URI,
+            addMapping(Type.ANY_URI,
                 org.exquery.xquery.Type.ANY_URI);
                 
-            mappings.put(Type.BASE64_BINARY,
+            addMapping(Type.BASE64_BINARY,
                 org.exquery.xquery.Type.BASE64_BINARY);
                 
-            mappings.put(Type.HEX_BINARY,
+            addMapping(Type.HEX_BINARY,
                 org.exquery.xquery.Type.HEX_BINARY);
             
-            mappings.put(Type.NOTATION,
+            addMapping(Type.NOTATION,
                 org.exquery.xquery.Type.NOTATION);
                
-            mappings.put(Type.INTEGER,
+            addMapping(Type.INTEGER,
                 org.exquery.xquery.Type.INTEGER);
                     
-            mappings.put(Type.DECIMAL,
+            addMapping(Type.DECIMAL,
                 org.exquery.xquery.Type.DECIMAL);
                 
-            mappings.put(Type.FLOAT,
+            addMapping(Type.FLOAT,
                 org.exquery.xquery.Type.FLOAT);
                     
-            mappings.put(Type.DOUBLE,
+            addMapping(Type.DOUBLE,
                 org.exquery.xquery.Type.DOUBLE);
                 
-            mappings.put(Type.NON_POSITIVE_INTEGER,
+            addMapping(Type.NON_POSITIVE_INTEGER,
                 org.exquery.xquery.Type.NON_POSITIVE_INTEGER);
                 
-            mappings.put(Type.NEGATIVE_INTEGER,
+            addMapping(Type.NEGATIVE_INTEGER,
                 org.exquery.xquery.Type.NEGATIVE_INTEGER);
                     
-            mappings.put(Type.LONG,
+            addMapping(Type.LONG,
                 org.exquery.xquery.Type.LONG);
                 
-            mappings.put(Type.INT,
+            addMapping(Type.INT,
                 org.exquery.xquery.Type.INT);
                 
-            mappings.put(Type.SHORT,
+            addMapping(Type.SHORT,
                 org.exquery.xquery.Type.SHORT);
                 
-            mappings.put(Type.BYTE,
+            addMapping(Type.BYTE,
                 org.exquery.xquery.Type.BYTE);
                 
-            mappings.put(Type.NON_NEGATIVE_INTEGER,
+            addMapping(Type.NON_NEGATIVE_INTEGER,
                 org.exquery.xquery.Type.NON_NEGATIVE_INTEGER);
                 
-            mappings.put(Type.UNSIGNED_LONG,
+            addMapping(Type.UNSIGNED_LONG,
                 org.exquery.xquery.Type.UNSIGNED_LONG);
 
-            mappings.put(Type.UNSIGNED_SHORT,
+            addMapping(Type.UNSIGNED_SHORT,
                 org.exquery.xquery.Type.UNSIGNED_SHORT);
                 
-            mappings.put(Type.UNSIGNED_BYTE,
+            addMapping(Type.UNSIGNED_BYTE,
                 org.exquery.xquery.Type.UNSIGNED_BYTE);
                 
-            mappings.put(Type.POSITIVE_INTEGER,
+            addMapping(Type.POSITIVE_INTEGER,
                 org.exquery.xquery.Type.POSITIVE_INTEGER);
     
-            mappings.put(Type.DATE_TIME,
+            addMapping(Type.DATE_TIME,
                 org.exquery.xquery.Type.DATE_TIME);
                     
-            mappings.put(Type.DATE,
+            addMapping(Type.DATE,
                 org.exquery.xquery.Type.DATE);
                 
-            mappings.put(Type.TIME,
+            addMapping(Type.TIME,
                 org.exquery.xquery.Type.TIME);
                 
-            mappings.put(Type.DURATION,
+            addMapping(Type.DURATION,
                 org.exquery.xquery.Type.DURATION);
                 
-            mappings.put(Type.YEAR_MONTH_DURATION,
+            addMapping(Type.YEAR_MONTH_DURATION,
                 org.exquery.xquery.Type.YEAR_MONTH_DURATION);
                 
-            mappings.put(Type.DAY_TIME_DURATION,
+            addMapping(Type.DAY_TIME_DURATION,
                 org.exquery.xquery.Type.DAY_TIME_DURATION);
                 
-            mappings.put(Type.GYEAR,
+            addMapping(Type.GYEAR,
                 org.exquery.xquery.Type.G_YEAR);
                 
-            mappings.put(Type.GMONTH,
+            addMapping(Type.GMONTH,
                 org.exquery.xquery.Type.G_MONTH);
                 
-            mappings.put(Type.GDAY,
+            addMapping(Type.GDAY,
                 org.exquery.xquery.Type.G_DAY);
                 
-            mappings.put(Type.GYEARMONTH,
+            addMapping(Type.GYEARMONTH,
                 org.exquery.xquery.Type.G_YEAR_MONTH);
                 
-            mappings.put(Type.GMONTHDAY,
+            addMapping(Type.GMONTHDAY,
                 org.exquery.xquery.Type.G_MONTH_DAY);
     
-            mappings.put(Type.TOKEN,
+            addMapping(Type.TOKEN,
                 org.exquery.xquery.Type.TOKEN);
                 
-            mappings.put(Type.NORMALIZED_STRING,
+            addMapping(Type.NORMALIZED_STRING,
                 org.exquery.xquery.Type.NORMALIZED_STRING);
                 
-            mappings.put(Type.LANGUAGE,
+            addMapping(Type.LANGUAGE,
                 org.exquery.xquery.Type.LANGUAGE);
                 
-            mappings.put(Type.NMTOKEN,
+            addMapping(Type.NMTOKEN,
                 org.exquery.xquery.Type.NM_TOKEN);
                 
-            mappings.put(Type.NAME,
+            addMapping(Type.NAME,
                 org.exquery.xquery.Type.NAME);
                 
-            mappings.put(Type.NCNAME,
+            addMapping(Type.NCNAME,
                 org.exquery.xquery.Type.NC_NAME);
                 
-            mappings.put(Type.ID,
+            addMapping(Type.ID,
                 org.exquery.xquery.Type.ID);
                 
-            mappings.put(Type.IDREF,
+            addMapping(Type.IDREF,
                 org.exquery.xquery.Type.ID_REF);
                 
-            mappings.put(Type.ENTITY,
+            addMapping(Type.ENTITY,
                 org.exquery.xquery.Type.ENTITY);
     }
     
-    public static org.exquery.xquery.Type toExQueryType(int type) {
-        org.exquery.xquery.Type exQueryType = (org.exquery.xquery.Type)mappings.get(type);
+    public static org.exquery.xquery.Type toExQueryType(final int type) {
+        @Nullable org.exquery.xquery.Type exQueryType = EXISTDB_TO_EXQUERY_MAP.get(type);
         if(exQueryType == null) {
-            exQueryType =  org.exquery.xquery.Type.ANY_TYPE;
+            exQueryType = org.exquery.xquery.Type.ANY_TYPE;
         }
         
         return exQueryType;
     }
     
-    public static int toExistType(org.exquery.xquery.Type type) {
-        Integer existType = (Integer)mappings.getKey(type);
-        if(existType == null) {
+    public static int toExistType(final org.exquery.xquery.Type type) {
+        int existType = EXQUERY_TO_EXISTDB_MAP.getOrDefault(type,-99);
+        if (existType == -99) {
             existType = Type.ANY_TYPE;
         }
-        
+
         return existType;
     }
 }

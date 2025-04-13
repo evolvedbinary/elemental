@@ -45,8 +45,6 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.commons.collections4.MultiMap;
-import org.apache.commons.collections4.map.MultiValueMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -59,6 +57,7 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 public class LuceneIndexConfig {
@@ -100,7 +99,7 @@ public class LuceneIndexConfig {
 
     // This is for the @attr match boosting
     // and the intention is to do a proper predicate check instead in the future. /ljo
-    private MultiMap matchAttrs;
+    private Map<String, List<MatchAttrData>> matchAttrs;
     protected final static Logger LOG = LogManager.getLogger(LuceneIndexConfig.class);
 
 
@@ -222,10 +221,17 @@ public class LuceneIndexConfig {
                                 }
                             }
 
-                            if (matchAttrs == null)
-                                matchAttrs = new MultiValueMap();
+                            final List<MatchAttrData> dataList;
+                            if (matchAttrs == null) {
+                                matchAttrs = new HashMap<>();
+                                dataList = new ArrayList<>();
+                                matchAttrs.put(qname, dataList);
+                            } else {
+                                dataList = matchAttrs.computeIfAbsent(qname, key -> new ArrayList<>());
+                            }
 
-                            matchAttrs.put(qname, new MatchAttrData(qname, value, boost, onSibling));
+                            dataList.add(new MatchAttrData(qname, value, boost, onSibling));
+
                             break;
                         }
                     }
@@ -278,12 +284,11 @@ public class LuceneIndexConfig {
         boolean hasBoost = false;
 
         for (final Attr attr : attributes) {
-            Collection<MatchAttrData> matchAttrData
-                    = (Collection<MatchAttrData>) matchAttrs.get(attr.getName());
-
+            @Nullable final List<MatchAttrData> matchAttrData = matchAttrs == null ? null : matchAttrs.get(attr.getName());
             if (matchAttrData == null) {
                 continue;
             }
+
             for (MatchAttrData matchAttrDatum : matchAttrData) {
                 // if matchAttr value is null we don't care about the value
                 if (matchAttrDatum.value == null
