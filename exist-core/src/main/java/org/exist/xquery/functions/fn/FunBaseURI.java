@@ -45,7 +45,7 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.commons.lang3.ArrayUtils;
+import it.unimi.dsi.fastutil.shorts.ShortSet;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
@@ -62,6 +62,15 @@ import static org.exist.xquery.functions.fn.FnModule.functionSignature;
  * @author wolf
  */
 public class FunBaseURI extends BasicFunction {
+
+    private static final ShortSet QUICK_STOPS = ShortSet.of(
+        Node.ELEMENT_NODE,
+        Node.ATTRIBUTE_NODE,
+        Node.PROCESSING_INSTRUCTION_NODE,
+        Node.COMMENT_NODE,
+        Node.TEXT_NODE,
+        Node.DOCUMENT_NODE
+    );
 
     public static final String FS_BASE_URI = "base-uri";
     public static final String FS_STATIC_BASE_URI = "static-base-uri";
@@ -144,12 +153,9 @@ public class FunBaseURI extends BasicFunction {
         final short type = node.getNodeType();
 
         // Namespace node does not exist in xquery, hence left out of array.
-        final short[] quickStops = {Node.ELEMENT_NODE, Node.ATTRIBUTE_NODE,
-                Node.PROCESSING_INSTRUCTION_NODE, Node.COMMENT_NODE, Node.TEXT_NODE,
-                Node.DOCUMENT_NODE};
 
         // Quick escape
-        if (!ArrayUtils.contains(quickStops, type)) {
+        if (!QUICK_STOPS.contains(type)) {
             return Sequence.EMPTY_SEQUENCE;
         }
 

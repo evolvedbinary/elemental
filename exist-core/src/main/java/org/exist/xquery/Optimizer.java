@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -30,8 +54,6 @@ import org.exist.xquery.util.ExpressionDumper;
 
 import javax.annotation.Nullable;
 import java.util.*;
-
-import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
 /**
  * Analyzes the query and marks optimizable expressions for the query engine.
@@ -315,8 +337,8 @@ public class Optimizer extends DefaultExpressionVisitor {
         final String ns = ref.getName().getNamespaceURI();
         if (ns != null && ns.length() > 0) {
 
-            final Module[] modules = context.getModules(ns);
-            if (isNotEmpty(modules)) {
+            @Nullable final Module[] modules = context.getModules(ns);
+            if (modules != null) {
                 for (final Module module : modules) {
                     if (module != null && !module.isInternalModule()) {
                         final Collection<VariableDeclaration> vars = ((ExternalModule) module).getVariableDeclarations();

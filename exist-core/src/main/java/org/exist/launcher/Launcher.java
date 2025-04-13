@@ -45,8 +45,6 @@
  */
 package org.exist.launcher;
 
-
-import org.apache.commons.lang3.SystemUtils;
 import org.exist.EXistException;
 import org.exist.jetty.JettyStart;
 import org.exist.repo.ExistRepository;
@@ -82,6 +80,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_NEVER_INSTALL_SERVICE;
+import static org.exist.util.OSUtil.IS_LINUX;
+import static org.exist.util.OSUtil.IS_WINDOWS;
 import static org.exist.util.ThreadUtils.newGlobalThread;
 
 /**
@@ -257,7 +257,7 @@ public class Launcher extends Observable implements Observer {
         trayIcon.addActionListener(actionEvent -> showTrayInfoMessage("Right click for menu"));
 
         // add listener for left click on system tray icon. doesn't work well on linux though.
-        if (!SystemUtils.IS_OS_LINUX) {
+        if (!IS_LINUX) {
             trayIcon.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent mouseEvent) {
@@ -372,7 +372,7 @@ public class Launcher extends Observable implements Observer {
             uninstallServiceItem.setEnabled(serviceManager != null);
             uninstallServiceItem.addActionListener(e -> SwingUtilities.invokeLater(this::uninstallService));
 
-            if (SystemUtils.IS_OS_WINDOWS) {
+            if (IS_WINDOWS) {
                 final MenuItem showServices = new MenuItem("Show services console");
                 popup.add(showServices);
                 showServices.addActionListener(e -> SwingUtilities.invokeLater(this::showNativeServiceManagementConsole));
@@ -655,7 +655,7 @@ public class Launcher extends Observable implements Observer {
         final boolean neverInstallService = Boolean.parseBoolean(properties.getProperty(LAUNCHER_PROPERTY_NEVER_INSTALL_SERVICE, "false"));
 
         if (!neverInstallService) {
-            if (SystemUtils.IS_OS_WINDOWS && !isInstallingService && serviceManager != null && !serviceManager.isInstalled()) {
+            if (IS_WINDOWS && !isInstallingService && serviceManager != null && !serviceManager.isInstalled()) {
                 isInstallingService = true;
                 SwingUtilities.invokeLater(() -> {
                     final int installServiceResult = JOptionPane.showOptionDialog(

@@ -250,11 +250,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <version>1.3.0</version>
@@ -685,6 +680,8 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
+                                <include>src/main/java/org/exist/util/JREUtil.java</include>
+                                <include>src/main/java/org/exist/util/OSUtil.java</include>
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/test/java/org/exist/xquery/WatchdogTest.java</include>
@@ -779,6 +776,7 @@
                                 <include>src/main/java/org/exist/launcher/ConfigurationUtility.java</include>
                                 <include>src/main/java/org/exist/launcher/Launcher.java</include>
                                 <include>src/main/java/org/exist/launcher/LauncherWrapper.java</include>
+                                <include>src/main/java/org/exist/launcher/ServiceManagerFactory.java</include>
                                 <include>src/main/java/org/exist/launcher/SplashScreen.java</include>
                                 <include>src/main/java/org/exist/launcher/WindowsServiceManager.java</include>
                                 <include>src/main/java/org/exist/management/impl/ExistMBean.java</include>
@@ -787,6 +785,7 @@
                                 <include>src/main/java/org/exist/repo/ClasspathHelper.java</include>
                                 <include>src/main/java/org/exist/repo/Deployment.java</include>
                                 <include>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</include>
+                                <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
                                 <include>src/main/java/org/exist/security/internal/AccountImpl.java</include>
                                 <include>src/main/java/org/exist/source/Source.java</include>
@@ -797,6 +796,7 @@
                                 <include>src/main/java/org/exist/storage/IndexSpec.java</include>
                                 <include>src/main/java/org/exist/storage/Indexable.java</include>
                                 <include>src/main/java/org/exist/storage/NativeBroker.java</include>
+                                <include>src/main/java/org/exist/storage/ProcessMonitor.java</include>
                                 <include>src/main/java/org/exist/storage/lock/FileLock.java</include>
                                 <include>src/main/java/org/exist/storage/recovery/RecoveryManager.java</include>
                                 <include>src/main/java/org/exist/storage/serializers/Serializer.java</include>
@@ -818,14 +818,22 @@
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
+                                <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
+                                <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDeepEqual.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/ParsingFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/TriggerSystemTask.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/util/FunctionFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/util/ModuleInfo.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</include>
                                 <include>src/test/java/org/exist/xquery/update/UpdateReplaceTest.java</include>
@@ -977,6 +985,7 @@
                                 <exclude>src/main/java/org/exist/repo/ClasspathHelper.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/Deployment.java</exclude>
                                 <exclude>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/AccountImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/source/Source.java</exclude>
@@ -988,6 +997,7 @@
                                 <exclude>src/main/java/org/exist/storage/IndexSpec.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/Indexable.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/NativeBroker.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/ProcessMonitor.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/FileLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/Serializer.java</exclude>
@@ -997,6 +1007,8 @@
                                 <exclude>src/main/java/org/exist/test/runner/XQueryTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/XSuite.java</exclude>
                                 <exclude>src/main/java/org/exist/util/ByteOrderMark.java</exclude>
+                                <exclude>src/main/java/org/exist/util/JREUtil.java</exclude>
+                                <exclude>src/main/java/org/exist/util/OSUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/StringUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/Collations.java</exclude>
                                 <exclude>src/main/java/org/exist/util/Configuration.java</exclude>
@@ -1010,8 +1022,10 @@
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/FunctionFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
@@ -1029,6 +1043,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/transform/ConvertTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformITTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/TriggerSystemTask.java</exclude>
@@ -1053,6 +1068,7 @@
                                 <exclude>src/main/resources/org/exist/client/messages_sv_SE.properties</exclude>
                                 <exclude>src/main/resources/org/exist/client/messages_zh_CN.properties</exclude>
                                 <exclude>src/main/resources/org/exist/launcher/ConfigurationDialog.form</exclude>
+                                <exclude>src/main/java/org/exist/launcher/ServiceManagerFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/http/AbstractHttpTest.java</exclude>
                                 <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
                                 <exclude>src/test/java/org/exist/management/JmxRemoteTest.java</exclude>
@@ -1134,7 +1150,11 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/AbstractXMLDBTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AttributeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/XMLDBAuthenticateTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/Eval.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/util/FunctionFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/util/ModuleInfo.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/pragmas/TimePragma.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/util/SerializerUtils.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/util/URIUtilsTest.java</exclude>

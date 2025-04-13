@@ -80,8 +80,6 @@ header {
     import org.exist.storage.ElementValue;
     import org.exist.xquery.functions.map.MapExpr;
     import org.exist.xquery.functions.array.ArrayConstructor;
-
-    import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 }
 
 /**
@@ -685,12 +683,12 @@ throws PermissionDeniedException, EXistException, XPathException
                 throw xpe;
             }
 
-            if (isNotEmpty(modules)) {
+            if (modules != null) {
                 for (final org.exist.xquery.Module module : modules) {
 
                     // check modules does not import any duplicate function definitions
                     final FunctionSignature[] signatures = module.listFunctions();
-                    if (isNotEmpty(signatures)) {
+                    if (signatures != null) {
                         for (final FunctionSignature signature : signatures) {
                             final String qualifiedNameArity = signature.getName().toURIQualifiedName() + '#' + signature.getArgumentCount();
                             if (importedModuleFunctions != null) {

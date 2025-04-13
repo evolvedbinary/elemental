@@ -68,7 +68,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerException;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.BrokerPool;
@@ -280,8 +279,15 @@ public class JMXServlet extends HttpServlet {
      * @return TRUE if request contains correct value for token, else FALSE
      */
     boolean hasSecretToken(HttpServletRequest request, String token) {
-        String[] tokenValue = request.getParameterValues(TOKEN_KEY);
-        return ArrayUtils.contains(tokenValue, token);
+        final String[] tokenValues = request.getParameterValues(TOKEN_KEY);
+        if (tokenValues != null) {
+            for (final String tokenValue : tokenValues) {
+                if (tokenValue.equals(token)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

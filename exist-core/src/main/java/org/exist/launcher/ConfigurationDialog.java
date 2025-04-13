@@ -60,7 +60,6 @@ import java.util.stream.Stream;
 import javax.swing.*;
 import javax.xml.transform.TransformerException;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.exist.collections.CollectionCache;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DefaultCacheManager;
@@ -71,6 +70,7 @@ import org.exist.util.FileUtils;
 
 import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_MAX_MEM;
 import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_MIN_MEM;
+import static org.exist.util.OSUtil.IS_MAC_OSX;
 
 /**
  *
@@ -147,7 +147,7 @@ public class ConfigurationDialog extends JDialog {
             lbStartupMsg.setVisible(true);
             lbStartupWarn.setVisible(true);
 
-            if (SystemUtils.IS_OS_MAC_OSX) {
+            if (IS_MAC_OSX) {
                 Path dir = Paths.get(System.getProperty("user.home")).resolve("Library").resolve("Application Support").resolve("xyz.elemental");
                 dataDir.setText(dir.toAbsolutePath().toString());
             }

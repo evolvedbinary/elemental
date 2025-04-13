@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,12 +53,11 @@ import org.exist.xquery.*;
 import org.exist.xquery.functions.fn.FunOnFunctions;
 import org.exist.xquery.value.*;
 
+import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.StreamSupport;
-
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * Returns a sequence containing the QNames of all built-in functions
@@ -94,15 +117,15 @@ public class BuiltinFunctions extends BasicFunction {
 			final String uri = args[0].getStringValue();
 
 			// Get 'internal' modules
-			Module[] modules = context.getModules(uri);
+			@Nullable Module[] modules = context.getModules(uri);
 
 			// If not found, try to load Java module
-			if (isEmpty(modules) && context.getRepository().isPresent()) {
+			if ((modules == null || modules.length == 0) && context.getRepository().isPresent()) {
 				modules = new Module[] { context.getRepository().get().resolveJavaModule(uri, context) };
 			}
 
 			// There is no module after all
-			if (isEmpty(modules)) {
+			if (modules == null || modules.length == 0) {
 				throw new XPathException(this, "No module found matching namespace URI: " + uri);
 			}
 
