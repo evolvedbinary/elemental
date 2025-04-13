@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,8 +47,8 @@ package org.exist.management.client;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.lang.management.ManagementFactory;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.lang.management.ManagementFactory.CLASS_LOADING_MXBEAN_NAME;
 import static java.lang.management.ManagementFactory.MEMORY_MXBEAN_NAME;
 import static java.lang.management.ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME;
@@ -34,6 +58,7 @@ import static java.lang.management.ManagementFactory.THREAD_MXBEAN_NAME;
 import java.net.MalformedURLException;
 import java.util.*;
 import java.util.concurrent.*;
+import javax.annotation.Nullable;
 import javax.management.*;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeType;
@@ -45,6 +70,7 @@ import javax.xml.XMLConstants;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerException;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
@@ -137,8 +163,7 @@ public class JMXtoXML {
 
     public static final int VERSION = 1;
 
-    private final MBeanServerConnection platformConnection = ManagementFactory.getPlatformMBeanServer();
-    private MBeanServerConnection connection;
+    private @Nullable List<MBeanServerConnection> connections;
     private JMXServiceURL url;
 
     /**
@@ -146,8 +171,8 @@ public class JMXtoXML {
      */
     public void connect() {
         final List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-        if (servers.size() > 0) {
-            this.connection = servers.get(0);
+        if (!servers.isEmpty()) {
+            this.connections = new ArrayList<>(servers);
         }
     }
 
@@ -166,7 +191,7 @@ public class JMXtoXML {
         env.put(JMXConnector.CREDENTIALS, creds);
 
         final JMXConnector jmxc = JMXConnectorFactory.connect(url, env);
-        this.connection = jmxc.getMBeanServerConnection();
+        this.connections = Collections.singletonList(jmxc.getMBeanServerConnection());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Connected to JMX server at {}", url.toString());
@@ -204,7 +229,24 @@ public class JMXtoXML {
         final long start = System.currentTimeMillis();
         final ThreadFactory jmxPingFactory = new NamedThreadFactory(instance, "jmx.ping");
         final ExecutorService executorService = Executors.newSingleThreadExecutor(jmxPingFactory);
-        final Future<Long> futurePing = executorService.submit(new Ping(instance, connection));
+
+        // find the connection and MBean name for the ping
+        final ObjectName name;
+        final MBeanServerConnection connection;
+        try {
+            name = SanityReport.getName(instance);
+            final List<Tuple2<MBeanServerConnection, Set<ObjectName>>> matches = queryNames(name);
+            if (matches.isEmpty()) {
+                LOG.warn("Unable to locate MBean connection for ping destination");
+                return SanityReport.PING_ERROR;
+            }
+            connection = matches.get(0)._1;
+        } catch (final MalformedObjectNameException | IOException e) {
+            LOG.warn("Unable to locate MBean connection for ping destination: " + e.getMessage(), e);
+            return SanityReport.PING_ERROR;
+        }
+
+        final Future<Long> futurePing = executorService.submit(new Ping(connection, name));
 
         while (true) {
             try {
@@ -224,18 +266,17 @@ public class JMXtoXML {
     }
 
     private static class Ping implements Callable<Long> {
-        private final String instance;
         private final MBeanServerConnection connection;
+        private final ObjectName name;
 
-        public Ping(final String instance, final MBeanServerConnection connection) {
-            this.instance = instance;
+        public Ping(final MBeanServerConnection connection, final ObjectName name) {
             this.connection = connection;
+            this.name = name;
         }
 
         @Override
         public Long call() {
             try {
-                final ObjectName name = SanityReport.getName(instance);
                 return (Long) connection.invoke(name, "ping", new Object[]{Boolean.TRUE}, new String[]{boolean.class.getName()});
             } catch (final Exception e) {
                 LOG.warn(e.getMessage(), e);
@@ -290,23 +331,27 @@ public class JMXtoXML {
 
     public String getDataDir() {
         try {
-            final Object dir = connection.getAttribute(new ObjectName("org.exist.management.exist:type=DiskUsage"), "DataDirectory");
+            final List<Tuple2<MBeanServerConnection, Object>> attributeValues = getAttribute(new ObjectName("org.exist.management.exist:type=DiskUsage"), "DataDirectory");
+            if (attributeValues.isEmpty()) {
+                return null;
+            }
+            final Object dir = attributeValues.get(0)._2;
             return dir == null ? null : dir.toString();
-        } catch (final MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException e) {
+        } catch (final MalformedObjectNameException | IOException e) {
             return null;
         }
     }
 
-    public Element invoke(final String objectName, final String operation, String[] args) throws InstanceNotFoundException, MalformedObjectNameException, MBeanException, IOException, ReflectionException, IntrospectionException {
-        final ObjectName name = new ObjectName(objectName);
-        MBeanServerConnection conn = connection;
-        MBeanInfo info;
-        try {
-            info = conn.getMBeanInfo(name);
-        } catch (InstanceNotFoundException e) {
-            conn = platformConnection;
-            info = conn.getMBeanInfo(name);
+    public Element invoke(final String name, final String operation, final String[] args) throws InstanceNotFoundException, MalformedObjectNameException, MBeanException, IOException, ReflectionException, IntrospectionException {
+        final ObjectName objectName = new ObjectName(name);
+        final List<Tuple2<MBeanServerConnection, MBeanInfo>> mbeanInfos = getMBeanInfo(objectName);
+        if (mbeanInfos.isEmpty()) {
+            return null;
         }
+
+        final MBeanServerConnection conn = mbeanInfos.get(0)._1;
+        final MBeanInfo info = mbeanInfos.get(0)._2;
+
         final MBeanOperationInfo[] operations = info.getOperations();
         for (final MBeanOperationInfo op : operations) {
             if (operation.equals(op.getName())) {
@@ -318,7 +363,7 @@ public class JMXtoXML {
                     types[i] = type;
                     params[i] = mapParameter(type, args[i]);
                 }
-                final Object result = conn.invoke(name, operation, params, types);
+                final Object result = conn.invoke(objectName, operation, params, types);
 
                 final MemTreeBuilder builder = new MemTreeBuilder((Expression) null);
 
@@ -350,46 +395,83 @@ public class JMXtoXML {
         return null;
     }
 
-    private void queryMBeans(final MemTreeBuilder builder, final ObjectName query)
-            throws IOException, InstanceNotFoundException, IntrospectionException, ReflectionException, NullPointerException {
-
-        MBeanServerConnection conn = connection;
-        Set<ObjectName> beans = conn.queryNames(query, null);
-
-        //if the query is not found in the eXist specific MBeans server, then attempt to query the platform for it
-        if (beans.isEmpty()) {
-            beans = platformConnection.queryNames(query, null);
-            conn = platformConnection;
-        } //TODO examine JUnit source code as alternative method
-
-        for (final ObjectName name : beans) {
-            final MBeanInfo info = conn.getMBeanInfo(name);
-            String className = info.getClassName().replace('$', '.');
-            final int p = className.lastIndexOf('.');
-            if (p > -1 && p + 1 < className.length()) {
-                className = className.substring(p + 1);
-            }
-
-            final QName qname = new QName(className, JMX_NAMESPACE, JMX_PREFIX);
-            builder.startElement(qname, null);
-            builder.addAttribute(new QName("name", XMLConstants.NULL_NS_URI), name.toString());
-
-            final MBeanAttributeInfo[] beanAttribs = info.getAttributes();
-            for (MBeanAttributeInfo beanAttrib : beanAttribs) {
-                if (beanAttrib.isReadable()) {
-                    try {
-                        final QName attrQName = new QName(beanAttrib.getName(), JMX_NAMESPACE, JMX_PREFIX);
-                        final Object attrib = conn.getAttribute(name, beanAttrib.getName());
-
-                        builder.startElement(attrQName, null);
-                        serializeObject(builder, attrib);
-                        builder.endElement();
-                    } catch (final Exception e) {
-                        LOG.debug("exception caught: {}", e.getMessage(), e);
-                    }
+    private List<Tuple2<MBeanServerConnection, Set<ObjectName>>> queryNames(final ObjectName nameQuery) throws IOException {
+        final List<Tuple2<MBeanServerConnection, Set<ObjectName>>> matchedNames = new ArrayList<>();
+        if (connections != null ) {
+            for (final MBeanServerConnection connection : connections) {
+                final Set<ObjectName> matches = connection.queryNames(nameQuery, null);
+                if (!matches.isEmpty()) {
+                    matchedNames.add(Tuple(connection, matches));
                 }
             }
-            builder.endElement();
+        }
+        return matchedNames;
+    }
+
+    private List<Tuple2<MBeanServerConnection, Object>> getAttribute(final ObjectName objectName, final String attributeName) throws IOException {
+        final List<Tuple2<MBeanServerConnection, Object>> attributeValues = new ArrayList<>();
+        if (connections != null ) {
+            for (final MBeanServerConnection connection : connections) {
+                try {
+                    attributeValues.add(Tuple(connection, connection.getAttribute(objectName, attributeName)));
+                } catch (final AttributeNotFoundException | MBeanException | InstanceNotFoundException | ReflectionException e) {
+                    // no-op
+                }
+            }
+        }
+        return attributeValues;
+    }
+
+    private List<Tuple2<MBeanServerConnection, MBeanInfo>> getMBeanInfo(final ObjectName objectName) throws IOException {
+        final List<Tuple2<MBeanServerConnection, MBeanInfo>> mbeanInfos = new ArrayList<>();
+        if (connections != null ) {
+            for (final MBeanServerConnection connection : connections) {
+                try {
+                    mbeanInfos.add(Tuple(connection, connection.getMBeanInfo(objectName)));
+                } catch (final IntrospectionException | InstanceNotFoundException | ReflectionException e) {
+                    // no-op
+                }
+            }
+        }
+        return mbeanInfos;
+    }
+
+    private void queryMBeans(final MemTreeBuilder builder, final ObjectName nameQuery)
+            throws IOException, InstanceNotFoundException, IntrospectionException, ReflectionException, NullPointerException {
+
+        final List<Tuple2<MBeanServerConnection, Set<ObjectName>>> matchedNames = queryNames(nameQuery);
+
+        for (final Tuple2<MBeanServerConnection, Set<ObjectName>> matchedName : matchedNames) {
+            final MBeanServerConnection connection = matchedName._1;
+            for (final ObjectName name : matchedName._2) {
+                final MBeanInfo info = connection.getMBeanInfo(name);
+                String className = info.getClassName().replace('$', '.');
+                final int p = className.lastIndexOf('.');
+                if (p > -1 && p + 1 < className.length()) {
+                    className = className.substring(p + 1);
+                }
+
+                final QName qname = new QName(className, JMX_NAMESPACE, JMX_PREFIX);
+                builder.startElement(qname, null);
+                builder.addAttribute(new QName("name", XMLConstants.NULL_NS_URI), name.toString());
+
+                final MBeanAttributeInfo[] beanAttribs = info.getAttributes();
+                for (MBeanAttributeInfo beanAttrib : beanAttribs) {
+                    if (beanAttrib.isReadable()) {
+                        try {
+                            final QName attrQName = new QName(beanAttrib.getName(), JMX_NAMESPACE, JMX_PREFIX);
+                            final Object attrib = connection.getAttribute(name, beanAttrib.getName());
+
+                            builder.startElement(attrQName, null);
+                            serializeObject(builder, attrib);
+                            builder.endElement();
+                        } catch (final Exception e) {
+                            LOG.debug("exception caught: {}", e.getMessage(), e);
+                        }
+                    }
+                }
+                builder.endElement();
+            }
         }
     }
 
