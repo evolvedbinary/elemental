@@ -72,7 +72,7 @@
     <properties>
         <jakarta.activation.version>2.0.1</jakarta.activation.version>
         <jakarta.mail.version>2.0.1</jakarta.mail.version>
-        <greenmail.version>2.0.0-alpha-3</greenmail.version>
+        <greenmail.version>2.0.1</greenmail.version>
     </properties>
 
     <dependencies>
@@ -117,7 +117,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 

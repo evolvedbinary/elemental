@@ -87,7 +87,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 
@@ -117,7 +117,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>2.1.214</version>
+            <version>2.2.224</version>
             <scope>test</scope>
         </dependency>
 
@@ -130,7 +130,7 @@
         <dependency>
             <groupId>com.github.h-thurow</groupId>
             <artifactId>simple-jndi</artifactId>
-            <version>0.23.0</version>
+            <version>0.25.0</version>
             <scope>test</scope>
         </dependency>
 

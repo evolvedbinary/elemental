@@ -219,7 +219,7 @@
                     </dependency>
                     <dependency>
                         <!-- use latest Xerces -->
-                        <groupId>org.exist-db.thirdparty.xerces</groupId>
+                        <groupId>com.evolvedbinary.thirdparty.xerces</groupId>
                         <artifactId>xercesImpl</artifactId>
                         <version>${xerces.version}</version>
                         <classifier>xml-schema-1.1</classifier>

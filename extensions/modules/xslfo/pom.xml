@@ -71,6 +71,7 @@
 
     <properties>
         <avalon.framework.version>4.3.1</avalon.framework.version>
+        <fop.version>2.10</fop.version>
     </properties>
 
     <dependencies>
@@ -101,27 +102,50 @@
             <version>${avalon.framework.version}</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>org.apache.xmlgraphics</groupId>-->
+<!--            <artifactId>fop</artifactId>-->
+<!--            <version>${fop.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    &lt;!&ndash;-->
+<!--                        fop-core depends on javax.servlet:servlet-api:jar:2.2-->
+<!--                        which conflicts with javax.servlet:javax.servlet-api:jar:3.1.0-->
+<!--                        used by Elemental-->
+<!--                    &ndash;&gt;-->
+<!--                    <groupId>javax.servlet</groupId>-->
+<!--                    <artifactId>servlet-api</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    &lt;!&ndash; conflicts with Xerces dependency on xml-apis &ndash;&gt;-->
+<!--                    <groupId>xml-apis</groupId>-->
+<!--                    <artifactId>xml-apis</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
+
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>fop</artifactId>
-            <version>2.8</version>
+            <artifactId>fop-core</artifactId>
+            <version>${fop.version}</version>
             <exclusions>
-                <!--
-                    fop-core depends on javax.servlet:servlet-api:jar:2.2
-                    which conflicts with javax.servlet:javax.servlet-api:jar:3.1.0
-                    used by eXist-db
-                -->
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
+                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>fop-events</artifactId>
+            <version>${fop.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>xmlgraphics-commons</artifactId>
-            <version>2.8</version>
+            <version>2.10</version>
         </dependency>
 
         <dependency>
@@ -130,7 +154,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 

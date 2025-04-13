@@ -70,7 +70,7 @@
     </scm>
 
     <properties>
-        <tika.version>2.9.1</tika.version>
+        <tika.version>2.9.3</tika.version>
     </properties>
 
     <dependencies>
@@ -104,7 +104,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 

@@ -83,20 +83,7 @@
         <dependency>
             <groupId>org.exist-db.thirdparty.com.ettrema</groupId>
             <artifactId>milton-api</artifactId>
-            <version>${milton.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>jdom</groupId>
-                    <artifactId>jdom</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jdom</groupId>
-            <artifactId>jdom</artifactId>
-            <version>${jdom1.version}</version>
-            <scope>runtime</scope>
+            <version>${milton.version}.1</version>
         </dependency>
 
         <dependency>
@@ -136,7 +123,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 
@@ -151,6 +138,12 @@
             <artifactId>milton-client</artifactId>
             <version>${milton.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -284,7 +277,6 @@
                             <failOnWarning>true</failOnWarning>
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>org.junit.vintage:junit-vintage-engine:jar</ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.jdom:jdom:jar:${jdom1.version}</ignoredUnusedDeclaredDependency>
 
                                 <!-- needed for running tests that depend on eXist-db Jetty server -->
                                 <ignoredUnusedDeclaredDependency>${project.groupId}:exist-jetty-config:jar:${project.version}</ignoredUnusedDeclaredDependency>
