@@ -83,7 +83,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.13.4</version>
+            <version>2.18.3</version>
         </dependency>
 
         <!-- dependency>
@@ -118,7 +118,7 @@
             <groupId>com.siemens.ct.exi</groupId>
             <artifactId>exificient</artifactId>
             <exclusions>
-                <exclusion> <!-- conflicts with xerces 2.12.2 -->
+                <exclusion> <!-- conflicts with Xerces -->
                     <groupId>xerces</groupId>
                     <artifactId>xercesImpl</artifactId>
                 </exclusion>
@@ -162,17 +162,17 @@
         <dependency>
             <groupId>org.relaxng</groupId>
             <artifactId>jing</artifactId>
-            <version>20220510</version>
+            <version>20241231</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 17's javax.xml module -->
+                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
-                <exclusion> <!-- conflicts -->
+                <exclusion> <!-- conflicts with Saxon -->
                     <groupId>net.sf.saxon</groupId>
                     <artifactId>saxon</artifactId>
                 </exclusion>
-                <exclusion> <!-- conflicts -->
+                <exclusion> <!-- conflicts with Xerces -->
                     <groupId>xerces</groupId>
                     <artifactId>xercesImpl</artifactId>
                 </exclusion>
@@ -193,7 +193,7 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.78.1</version>
+            <version>1.80</version>
         </dependency>
 
         <dependency>
@@ -245,7 +245,7 @@
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
-            <version>3.27.1</version>
+            <version>3.29.0</version>
         </dependency>
 
         <dependency>
@@ -282,13 +282,13 @@
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-            <version>1.3.4</version>
+            <version>1.3.5</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
-            <version>2.12.0</version>
+            <version>2.12.1</version>
         </dependency>
 
         <dependency>
@@ -317,13 +317,13 @@
         </dependency>
 
         <dependency>
-            <groupId>org.exist-db.thirdparty.xerces</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xerces</groupId>
             <artifactId>xercesImpl</artifactId>
             <version>${xerces.version}</version>
             <classifier>jdk14-xml-schema-1.1</classifier>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 17's javax.xml module -->
-                    <groupId>xml-apis</groupId>
+                <exclusion>  <!-- conflicts with Java 21's javax.xml module -->
+                    <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
             </exclusions>
@@ -335,19 +335,27 @@
             <version>${nekohtml.version}</version>
             <scope>runtime</scope>
             <exclusions>
-                <exclusion>
+                <exclusion>  <!-- conflicts with eXist-db's xercesImpl dependency -->
                     <groupId>xerces</groupId>
                     <artifactId>xercesImpl</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
 
+        <!-- conflicts with Java 21's javax.xml module -->
+        <!--
+        <dependency>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+        </dependency>
+        -->
+
         <dependency>
             <groupId>org.apache.ws.commons.util</groupId>
             <artifactId>ws-commons-util</artifactId>
             <version>1.0.2</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 21's javax.xml module -->
+                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -372,6 +380,11 @@
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xerces:xercesImpl -->
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -386,16 +399,27 @@
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xerces:xercesImpl -->
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
         <!-- xpath2 and java-cup are needed at runtime because xercesImpl declares this as optional,
             but we need them to enable Schema 1.1 support -->
         <dependency>
-            <groupId>org.exist-db.thirdparty.org.eclipse.wst.xml</groupId>
+            <groupId>com.evolvedbinary.thirdparty.org.eclipse.wst.xml</groupId>
             <artifactId>xpath2</artifactId>
-            <version>1.2.0</version>
+            <version>1.2.1.1</version>
             <scope>runtime</scope>
+            <exclusions>
+                <exclusion>  <!-- conflicts with Java 21's javax.xml module -->
+                    <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>edu.princeton.cup</groupId>
@@ -426,9 +450,9 @@
             <groupId>com.evolvedbinary.thirdparty.org.apache.xmlrpc</groupId>
             <artifactId>xmlrpc-common</artifactId>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 17's javax.xml module -->
-                    <artifactId>xml-apis</artifactId>
+                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
                     <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -456,7 +480,7 @@
             <scope>runtime</scope>
             <exclusions>
                 <exclusion>
-                    <!-- conflicts with antlr 2.7.7 -->
+                    <!-- conflicts with Antlr 2.7.7 -->
                     <groupId>org.apache.servicemix.bundles</groupId>
                     <artifactId>org.apache.servicemix.bundles.antlr</artifactId>
                 </exclusion>
@@ -491,13 +515,13 @@
         <dependency>
             <groupId>com.fifesoft</groupId>
             <artifactId>rsyntaxtextarea</artifactId>
-            <version>3.5.1</version>
+            <version>3.6.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.quartz-scheduler</groupId>
             <artifactId>quartz</artifactId>
-            <version>2.3.2</version>  <!-- Quartz 2.3.1 has an issue on Windows, see: https://github.com/quartz-scheduler/quartz/issues/448 -->
+            <version>2.5.0</version>
             <!-- exclude Quartz SQL connectivity options -->
             <exclusions>
                 <exclusion>
@@ -643,7 +667,7 @@
                  NOTE(AR) This is needed to enable loading of Servlets etc
                           that use Java Annotations for configuration.
                           This is less than ideal as it allows any extension to
-                          serve arbitary Web requests, and should ultimately be
+                          serve arbitrary Web requests, and should ultimately be
                           removed. Unfortunately, at this time, it is required for
                           Monex's Remote Console to function.
             -->
@@ -926,6 +950,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</include>
                                 <include>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
+                                <include>src/test/java/org/exist/validation/CollectionConfigurationValidationModeTest.java</include>
                                 <include>src/test/resources/org/exist/validation/catalog.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
@@ -1145,6 +1170,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
+                                <exclude>src/test/java/org/exist/validation/CollectionConfigurationValidationModeTest.java</exclude>
                                 <exclude>src/test/resources/org/exist/validation/catalog.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
                                 <exclude>src/test/xquery/maps/maps.xqm</exclude>
@@ -1481,7 +1507,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                                 <ignoredUnusedDeclaredDependency>org.codelibs:nekohtml:jar:${nekohtml.version}</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>xml-resolver:xml-resolver:jar:1.2</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.xmlresolver:xmlresolver:jar:${xmlresolver.version}</ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.exist-db.thirdparty.org.eclipse.wst.xml:xpath2:jar:1.2.0</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.evolvedbinary.thirdparty.org.eclipse.wst.xml:xpath2:jar:1.2.1.1</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>edu.princeton.cup:java-cup:jar:10k</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.eclipse.jetty:jetty-jaas:jar:${jetty.version}</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.eclipse.jetty:jetty-deploy:jar:${jetty.version}</ignoredUnusedDeclaredDependency>
@@ -1502,7 +1528,6 @@ The BaseX Team. The original license statement is also included below.]]></pream
             <plugin>
                 <groupId>org.omnifaces</groupId>
                 <artifactId>antlr-maven-plugin</artifactId>
-                <version>2.4</version>
                 <configuration>
                     <grammars>
                         org/exist/xquery/parser/XQuery.g,org/exist/xquery/parser/XQueryTree.g,org/exist/xquery/parser/DeclScanner.g,org/exist/xquery/xqdoc/parser/XQDocParser.g
@@ -1556,7 +1581,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
             <plugin>
                 <groupId>dev.aspectj</groupId>
                 <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.14</version>
+                <version>1.14.1</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.aspectj</groupId>

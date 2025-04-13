@@ -70,6 +70,8 @@ public interface ResolverFactory {
         resolverConfiguration.setFeature(ResolverFeature.CATALOG_LOADER_CLASS, "org.xmlresolver.loaders.ValidatingXmlLoader");
         resolverConfiguration.setFeature(ResolverFeature.CLASSPATH_CATALOGS, true);
         resolverConfiguration.setFeature(ResolverFeature.URI_FOR_SYSTEM, true);
+        // See: https://xmlresolver.org/ch06.html#xml.catalog.alwaysResolve
+        resolverConfiguration.setFeature(ResolverFeature.ALWAYS_RESOLVE, false);
 
         for (final Tuple2<String, Optional<InputSource>> catalog : catalogs) {
             String strCatalogUri = catalog._1;

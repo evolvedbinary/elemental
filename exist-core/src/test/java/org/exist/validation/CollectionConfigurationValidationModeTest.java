@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,10 +43,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.validation;
 
-
+import com.evolvedbinary.j8fu.function.RunnableE;
 import org.exist.test.ExistXmldbEmbeddedServer;
 
 import org.junit.*;
@@ -36,7 +59,9 @@ import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_C
 import static org.junit.Assert.*;
 
 /**
- *  Switch validation mode yes/no/auto per collection and validate.
+ * Switch validation mode yes/no/auto per collection and validate.
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author wessels
  */
 public class CollectionConfigurationValidationModeTest {
@@ -98,7 +123,7 @@ public class CollectionConfigurationValidationModeTest {
         // no namespace provided, should pass
         storeDocument("/db/false", "anonymous.xml", anonymous);
 
-        // non resolvable namespace provided, should pass
+        // different namespace provided, should pass
         storeDocument("/db/false", "different.xml", different);
     }
 
@@ -111,39 +136,13 @@ public class CollectionConfigurationValidationModeTest {
         storeDocument("/db/true", "valid.xml", valid);
 
         // namespace provided, invalid document; should fail
-        try {
-            storeDocument("/db/true", "invalid.xml", invalid);
-            fail("should have failed");
-        } catch (XMLDBException ex) {
-            String msg = ex.getMessage();
-            if (!msg.contains("cvc-complex-type.2.4.a: Invalid content was found")) {
-                fail(msg);
-            }
-        }
+        assertThrowsMessage("cvc-complex-type.2.4.a: Invalid content was found", () -> storeDocument("/db/true", "invalid.xml", invalid));
 
         // no namespace provided; should fail
-        try {
-            storeDocument("/db/true", "anonymous.xml", anonymous);
-            fail("should have failed");
-        } catch (XMLDBException ex) {
-            String msg = ex.getMessage();
-            if (!msg.contains("Cannot find the declaration of element 'schema'.")) {
-                fail(msg);
-            }
-        }
+        assertThrowsMessage("Cannot find the declaration of element 'schema'.", () -> storeDocument("/db/true", "anonymous.xml", anonymous));
 
-
-        // non resolvable namespace provided, should fail
-        try {
-            storeDocument("/db/true", "different.xml", different);
-            fail("should have failed");
-        } catch (XMLDBException ex) {
-            String msg = ex.getMessage();
-            if (!msg.contains("schema_reference.4: Failed to read schema document")) {
-                fail(msg);
-            }
-        }
-            
+        // different namespace provided, should fail
+        assertThrowsMessage("Cannot find the declaration of element 'asd:schema'.", () -> storeDocument("/db/true", "different.xml", different));
     }
 
     @Test
@@ -154,37 +153,23 @@ public class CollectionConfigurationValidationModeTest {
         // namespace provided, valid document; should pass
         storeDocument("/db/auto", "valid.xml", valid);
 
-
         // namespace provided, invalid document, should fail
-        try {
-            storeDocument("/db/auto", "invalid.xml", invalid);
-            fail("should have failed");
-        } catch (XMLDBException ex) {
-            String msg = ex.getMessage();
-            if (!msg.contains("cvc-complex-type.2.4.a: Invalid content was found")) {
-                fail(msg);
-            }
-        }
+        assertThrowsMessage("cvc-complex-type.2.4.a: Invalid content was found", () -> storeDocument("/db/auto", "invalid.xml", invalid));
 
         // no namespace reference, should pass
-        try {
-            storeDocument("/db/auto", "anonymous.xml", anonymous);
-        } catch (XMLDBException ex) {
-            String msg = ex.getMessage();
-            if (!msg.contains("Cannot find the declaration of element 'schema'.")) {
-                fail(msg);
-            }
-        }
+        storeDocument("/db/auto", "anonymous.xml", anonymous);
 
-        // non resolvable namespace provided, should fail
+        // different namespace provided, should pass
+        storeDocument("/db/auto", "different.xml", different);
+    }
+
+    private void assertThrowsMessage(final String expectedExceptionMessage, final RunnableE<XMLDBException> runnable) {
         try {
-            storeDocument("/db/auto", "different.xml", different);
-            fail("should have failed");
-        } catch (XMLDBException ex) {
-            String msg = ex.getMessage();
-            if (!msg.contains("schema_reference.4: Failed to read schema document")) {
-                fail(msg);
-            }
+            runnable.run();
+            fail("Should have raised an exception containing the error message: " + expectedExceptionMessage);
+        } catch (final XMLDBException ex) {
+            final String msg = ex.getMessage();
+            assertTrue(expectedExceptionMessage, msg.contains(expectedExceptionMessage));
         }
     }
 }

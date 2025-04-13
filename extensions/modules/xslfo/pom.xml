@@ -106,6 +106,12 @@
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>fop-core</artifactId>
             <version>${xmlgraphics.version}</version>
+            <exclusions>
+                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -126,7 +132,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 
