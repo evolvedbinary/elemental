@@ -132,8 +132,6 @@ import static com.evolvedbinary.j8fu.OptionalUtil.or;
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE;
 import static javax.xml.XMLConstants.XML_NS_PREFIX;
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
-import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 import static org.exist.Namespaces.XML_NS;
 import static org.exist.util.MapUtil.hashMap;
 
@@ -1946,9 +1944,9 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     @Override
     public Variable declareVariable(final QName qn, final Object value) throws XPathException {
-        final Module[] modules = getModules(qn.getNamespaceURI());
+        @Nullable final Module[] modules = getModules(qn.getNamespaceURI());
 
-        if (isNotEmpty(modules)) {
+        if (modules != null && modules.length > 0) {
             if (modules.length > 1) {
                 // TODO(AR) is seems that we will never enter this state...
                 throw new IllegalStateException("There is more than one module, but the variable can only be declared in one!");
@@ -2567,13 +2565,13 @@ public class XQueryContext implements BinaryValueManager, Context {
                     "The first URILiteral in a module import must be of nonzero length.");
         }
 
-        Module[] modules = null;
+        @Nullable Module[] modules = null;
 
         if (namespaceURI != null) {
             modules = getRootModules(namespaceURI);
         }
 
-        if (isNotEmpty(modules)) {
+        if (modules != null && modules.length > 0) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Module {} already present.", namespaceURI);
             }
@@ -2582,23 +2580,23 @@ public class XQueryContext implements BinaryValueManager, Context {
 
         } else {
             // if location is not specified, try to resolve in expath repo
-            if (isEmpty(locationHints) && namespaceURI != null) {
+            if ((locationHints == null || locationHints.length == 0) && namespaceURI != null) {
                 final Module module = resolveInEXPathRepository(namespaceURI, prefix);
                 if (module != null) {
                     modules = new Module[]{ module };
                 }
             }
 
-            if (isEmpty(modules)) {
+            if (modules == null || modules.length == 0) {
 
-                if (isEmpty(locationHints) && namespaceURI != null) {
+                if ((locationHints == null || locationHints.length == 0) && namespaceURI != null) {
                     // check if there's a static mapping in the configuration
                     final String moduleLocation = getModuleLocation(namespaceURI);
                     if (moduleLocation != null) {
                         locationHints = new AnyURIValue[]{ new AnyURIValue(moduleLocation) };
                     }
 
-                    if (isEmpty(locationHints)) {
+                    if (locationHints == null || locationHints.length == 0) {
                         locationHints = new AnyURIValue[] { new AnyURIValue(namespaceURI) };
                     }
                 }
@@ -2618,7 +2616,7 @@ public class XQueryContext implements BinaryValueManager, Context {
             } // NOTE: expathrepo related, closes the EXPath else (if module != null)
         }
 
-        if (isNotEmpty(modules)) {
+        if (modules != null && modules.length > 0) {
             if (namespaceURI == null) {
                 namespaceURI = modules[0].getNamespaceURI();
             }

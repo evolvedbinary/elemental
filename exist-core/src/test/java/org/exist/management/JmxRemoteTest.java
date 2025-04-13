@@ -47,7 +47,6 @@ package org.exist.management;
 
 import com.evolvedbinary.j8fu.function.FunctionE;
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
@@ -68,6 +67,7 @@ import java.util.Map;
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.management.client.JMXtoXML.JMX_NAMESPACE;
 import static org.exist.management.client.JMXtoXML.JMX_PREFIX;
+import static org.exist.util.JREUtil.IS_JAVA_1_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.xmlunit.matchers.HasXPathMatcher.hasXPath;
@@ -92,7 +92,7 @@ public class JmxRemoteTest {
         prefix2Uri.put(JMX_PREFIX, JMX_NAMESPACE);
 
         // Java GC
-        if (SystemUtils.IS_JAVA_1_8) {
+        if (IS_JAVA_1_8) {
             assertThat(jmxXml, hasXPath("//jmx:GarbageCollectorImpl").withNamespaceContext(prefix2Uri));
         } else {
             assertThat(jmxXml, hasXPath("//jmx:GarbageCollectorExtImpl").withNamespaceContext(prefix2Uri));

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -34,12 +58,11 @@ import org.exist.xquery.XQueryWatchDog;
 import org.exist.xquery.functions.request.RequestModule;
 import org.exist.xquery.util.ExpressionDumper;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
-
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * Class to keep track of all running queries in a database instance. The main
@@ -369,8 +392,8 @@ public class ProcessMonitor implements BrokerPoolService {
      * @return HTTP request URI by which a query was called
      */
     public static String getRequestURI(final XQueryWatchDog watchdog) {
-        final Module[] modules = watchdog.getContext().getModules(RequestModule.NAMESPACE_URI);
-        if (isEmpty(modules)) {
+        @Nullable final Module[] modules = watchdog.getContext().getModules(RequestModule.NAMESPACE_URI);
+        if (modules == null || modules.length == 0) {
             return null;
         }
 

@@ -53,12 +53,11 @@ import org.exist.xquery.*;
 import org.exist.xquery.value.Sequence;
 import org.w3c.dom.Element;
 
+import javax.annotation.Nullable;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
-
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 public class ModuleCall extends URLRewrite {
     private static final Logger LOG = LogManager.getLogger(ModuleCall.class);
@@ -84,9 +83,9 @@ public class ModuleCall extends URLRewrite {
         }
         try {
             final QName fqn = QName.parse(context, funcName);
-            final Module[] modules = context.getModules(fqn.getNamespaceURI());
+            @Nullable final Module[] modules = context.getModules(fqn.getNamespaceURI());
             UserDefinedFunction func = null;
-            if (isEmpty(modules)) {
+            if (modules == null || modules.length == 0) {
                 func = context.resolveFunction(fqn, arity);
             } else {
                 for (final Module module : modules) {

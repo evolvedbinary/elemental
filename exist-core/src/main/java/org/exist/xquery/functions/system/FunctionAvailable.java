@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -34,7 +58,7 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
+import javax.annotation.Nullable;
 
 /**
  * Return whether the function is available
@@ -63,9 +87,9 @@ public class FunctionAvailable extends BasicFunction {
         final QName functionName = ((QNameValue)args[0].itemAt(0)).getQName();
         final int arity = ((IntegerValue)args[1].itemAt(0)).getInt();
         
-        final org.exist.xquery.Module[] modules = context.getModules(functionName.getNamespaceURI());
+        @Nullable final org.exist.xquery.Module[] modules = context.getModules(functionName.getNamespaceURI());
         boolean found = false;
-        if (isEmpty(modules)) {
+        if (modules == null || modules.length == 0) {
             found = context.resolveFunction(functionName, arity) != null;
         } else {
             for (final org.exist.xquery.Module module : modules) {
