@@ -89,7 +89,7 @@
             <artifactId>ant</artifactId>
         </dependency>
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 

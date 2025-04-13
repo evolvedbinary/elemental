@@ -87,7 +87,7 @@
         </dependency>
 
         <dependency>
-            <groupId>xml-apis</groupId>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
 
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>6.0.0</version>
+            <version>6.3.0</version>
         </dependency>
 
         <dependency>
@@ -130,7 +130,7 @@
         <dependency>
             <groupId>com.github.h-thurow</groupId>
             <artifactId>simple-jndi</artifactId>
-            <version>0.24.0</version>
+            <version>0.25.0</version>
             <scope>test</scope>
         </dependency>
 

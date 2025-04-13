@@ -1164,7 +1164,7 @@
                             <identifier>org.exist.start.Main</identifier>
                             <mainClassName>org.exist.start.Main</mainClassName>
                             <executableName>elemental-JavaAppLauncher</executableName>
-                            <jvmRequired>1.8</jvmRequired>
+                            <jvmRequired>${project.build.target}</jvmRequired>
                             <minimumSystemVersion>10.9</minimumSystemVersion>
                             <version>${project.version}</version>
                             <shortVersion>${project.version}</shortVersion>

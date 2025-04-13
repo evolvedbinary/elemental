@@ -79,6 +79,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-index-lucene</artifactId>
             <version>${project.version}</version>
