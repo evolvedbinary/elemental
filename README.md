@@ -10,7 +10,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/evolvedbinary/elemental/badge.svg?branch=main)](https://coveralls.io/github/evolvedbinary/elemental?branch=main)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolvedbinary/elemental&amp;utm_campaign=Badge_Grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=evolvedbinary_elemental&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=evolvedbinary_elemental)
-[![Java 17](https://img.shields.io/badge/java-17-blue.svg)](https://adoptopenjdk.net/)
+[![Java 21](https://img.shields.io/badge/java-21-blue.svg)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-LGPL%202.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
 [![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/xyz.elemental/elemental/badge.svg)](https://search.maven.org/search?q=g:xyz.elemental)

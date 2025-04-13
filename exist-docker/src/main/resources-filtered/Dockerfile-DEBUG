@@ -26,7 +26,7 @@ RUN apk update && apk upgrade
 # Install dependencies needed for JDK
 RUN apk add zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
 # Install latest JDK
-RUN apk add openjdk-17
+RUN apk add openjdk-21
 
 # Switch to nonroot user
 USER nonroot
@@ -62,11 +62,11 @@ ENV ELEMENTAL_HOME="/elemental"
 ENV EXIST_HOME="/elemental"
 ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
-ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
+ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
 
 ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE:-75.0} -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=${JVM_JDWP_SUSPEND:-n},address=5005"
 
-ENV PATH="/usr/lib/jvm/java-17-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PATH="/usr/lib/jvm/java-21-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 HEALTHCHECK CMD [ "java", \
     "org.exist.start.Main", "client", \

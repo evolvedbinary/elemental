@@ -19,14 +19,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-# Install latest JRE 17 in Chainguard Wolfi temporary builder image
+# Install latest JRE 21 in Chainguard Wolfi temporary builder image
 FROM cgr.dev/chainguard/wolfi-base AS builder
 
 RUN apk update && apk upgrade
 # Install dependencies needed for JRE
 RUN apk add zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
 # Install latest JRE
-RUN apk add openjdk-17-jre
+RUN apk add openjdk-21-jre
 
 # Use Chainguard distroless glibc base for dynamically linked libraries
 FROM cgr.dev/chainguard/glibc-dynamic:latest
@@ -53,7 +53,7 @@ COPY --from=builder /usr/lib/libbrotlidec.so.1 /usr/lib/libbrotlidec.so.1
 COPY --from=builder /usr/lib/libbrotlienc.so.1 /usr/lib/libbrotlienc.so.1
 
 # Copy over updated JRE from Wolfi
-COPY --from=builder /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17-openjdk
+COPY --from=builder /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-21-openjdk
 
 # Switch to nonroot user
 USER nonroot
@@ -88,11 +88,11 @@ ENV ELEMENTAL_HOME="/elemental"
 ENV EXIST_HOME="/elemental"
 ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
-ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
+ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
 
 ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE:-75.0} -XX:+ExitOnOutOfMemoryError"
 
-ENV PATH="/usr/lib/jvm/java-17-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PATH="/usr/lib/jvm/java-21-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 HEALTHCHECK CMD [ "java", \
     "org.exist.start.Main", "client", \

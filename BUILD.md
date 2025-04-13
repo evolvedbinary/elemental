@@ -1,6 +1,6 @@
 # Building Elemental from Source Code
 
-Elemental itself is written in Java 17. The build system is [Apache Maven](http://maven.apache.org/). If you're not familiar with Git, we recommend [this excellent online interactive tutorial](http://try.github.io).
+Elemental itself is written in Java 21. The build system is [Apache Maven](http://maven.apache.org/). If you're not familiar with Git, we recommend [this excellent online interactive tutorial](http://try.github.io).
 
 To build Elemental:
 
