@@ -77,7 +77,6 @@ import static se.softhouse.jargo.Arguments.helpArgument;
 public class LauncherWrapper {
 
     private static final String LAUNCHER = org.exist.launcher.Launcher.class.getName();
-    private static final String OS = OSUtil.getOS().toLowerCase();
 
     /* general arguments */
     private static final Argument<?> helpArg = helpArgument("-h", "--help");
@@ -89,7 +88,7 @@ public class LauncherWrapper {
             // parse command-line options
             CommandLineParser
                     .withArguments(helpArg)
-                    .programName("launcher" + (OSUtil.isWindows() ? ".bat" : ".sh"))
+                    .programName("launcher" + (OSUtil.IS_WINDOWS ? ".bat" : ".sh"))
                     .parse(args);
 
         } catch (final StartException e) {
@@ -183,7 +182,7 @@ public class LauncherWrapper {
 
     protected String getJavaCmd() {
         final File javaHome = new File(System.getProperty("java.home"));
-        if (OS.startsWith("windows")) {
+        if (OSUtil.IS_WINDOWS) {
             Path javaBin = Paths.get(javaHome.getAbsolutePath(), "bin", "javaw.exe");
             if (Files.isExecutable(javaBin)) {
                 return '"' + javaBin.toString() + '"';
@@ -220,7 +219,7 @@ public class LauncherWrapper {
             args.add("-Dexist.home=\".\"");
         }
 
-        if (command.equals(LAUNCHER) && "mac os x".equals(OS)) {
+        if (command.equals(LAUNCHER) && OSUtil.IS_MAC_OSX) {
             args.add("-Dapple.awt.UIElement=true");
         }
     }
@@ -237,7 +236,7 @@ public class LauncherWrapper {
                 args.add(launcherProperties.getProperty(key));
             } else if (key.startsWith(LAUNCHER_PROPERTY_VMOPTIONS + '.')) {
                 final String os = key.substring((LAUNCHER_PROPERTY_VMOPTIONS + '.').length()).toLowerCase();
-                if (OS.contains(os)) {
+                if (OSUtil.OS_NAME.toLowerCase().contains(os)) {
                     final String value = launcherProperties.getProperty(key);
                     Arrays.stream(value.split("\\s+")).forEach(args::add);
                 }

@@ -21,17 +21,13 @@
 package org.exist.util;
 
 /**
- * Utilities for working with the Operating System.
+ * Utilities for working with the Java Runtime Environment.
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class OSUtil {
+public class JREUtil {
 
-    public static final String OS_NAME = System.getProperty("os.name");
+    public static final String JAVA_SPECIFICATION_VERSION = System.getProperty("java.specification.version");
 
-    public static final boolean IS_WINDOWS = OS_NAME.toLowerCase().startsWith("windows");
-
-    public static final boolean IS_LINUX =  OS_NAME.toLowerCase().startsWith("linux");
-
-    public static final boolean IS_MAC_OSX = OS_NAME.toLowerCase().startsWith("mac os x");
+    public static final boolean IS_JAVA_1_8 = JAVA_SPECIFICATION_VERSION.startsWith("1.8");
 }

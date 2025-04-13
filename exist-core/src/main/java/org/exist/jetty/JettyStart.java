@@ -133,7 +133,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             CommandLineParser
                     .withArguments(jettyConfigFilePath, existConfigFilePath)
                     .andArguments(helpArg)
-                    .programName("startup" + (OSUtil.isWindows() ? ".bat" : ".sh"))
+                    .programName("startup" + (OSUtil.IS_WINDOWS ? ".bat" : ".sh"))
                     .parse(args);
 
         } catch (final StartException e) {
