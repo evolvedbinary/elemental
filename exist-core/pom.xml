@@ -857,6 +857,8 @@
                                 <include>src/test/java/org/exist/http/RESTServiceTest.java</include>
                                 <include>src/test/java/org/exist/management/JmxRemoteTest.java</include>
                                 <include>src/main/java/org/exist/management/client/JMXServlet.java</include>
+                                <include>src/main/java/org/exist/management/client/JMXtoXML.java</include>
+                                <include>src/main/java/org/exist/management/impl/JMXAgent.java</include>
                                 <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunBaseURI.java</include>
@@ -1073,6 +1075,8 @@
                                 <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
                                 <exclude>src/test/java/org/exist/management/JmxRemoteTest.java</exclude>
                                 <exclude>src/main/java/org/exist/management/client/JMXServlet.java</exclude>
+                                <exclude>src/main/java/org/exist/management/client/JMXtoXML.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/JMXAgent.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Options.java</exclude>
