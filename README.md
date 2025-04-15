@@ -6,7 +6,7 @@
 
 ## Elemental - Native XML Database
 
-[![Build Status](https://github.com/evolvedbinary/elemental/actions/workflows/ci-test.yml/badge.svg?branch=main)](https://github.com/evolvedbinary/elemental/actions/workflows/ci-test.yml)
+[![Build Status](https://dl.circleci.com/status-badge/img/gh/evolvedbinary/elemental/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/evolvedbinary/elemental/tree/main)
 [![Coverage Status](https://coveralls.io/repos/github/evolvedbinary/elemental/badge.svg?branch=main)](https://coveralls.io/github/evolvedbinary/elemental?branch=main)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolvedbinary/elemental&amp;utm_campaign=Badge_Grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=evolvedbinary_elemental&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=evolvedbinary_elemental)

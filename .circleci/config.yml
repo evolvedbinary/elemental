@@ -1,0 +1,796 @@
+version: 2.1
+
+parameters:
+  compute_size_small:
+    type: string
+    default: "small"
+  compute_size_large:
+    type: string
+    default: "large"
+  compute_size_mac_medium:
+    type: string
+    default: "macos.m1.medium.gen1"
+  compute_size_windows_medium:
+    type: string
+    default: "windows.medium"
+  maven_version:
+    type: string
+    default: "3.9.9"
+  maven_dependency_plugin_version:
+    type: string
+    default: "3.8.1"
+  maven_dependency_check_plugin_version:
+    type: string
+    default: "12.1.1"
+  java_tool_options:
+    type: string
+    default: "-DtrimStackTrace=false -Djava.awt.headless=true -XX:+UseNUMA -XX:+UseG1GC -XX:+UseStringDeduplication"
+  # NOTE(AR) -XX:+UseZGC seems to exhibit a need for more memory and somehow causes the limits of the CI to be exhausted in Docker contains even though -XX:MaxRAMPercentage=75.0 is set below
+  #    default: "-DtrimStackTrace=false -Djava.awt.headless=true -XX:+UseNUMA -XX:+UseZGC"
+  extra_java_tool_options_docker:
+    type: string
+    default: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+
+executors:
+  linux-docker-jdk21:
+    docker:
+      - image: "cimg/openjdk:21.0"
+    environment:
+      MAVEN_BIN: /opt/apache-maven/bin/mvn
+  macos-vm-xcode13:
+    macos:
+      xcode: 13.4.1
+    environment:
+      MAVEN_BIN: /tmp/maven/bin/mvn
+      JAVA_HOME: /Library/Java/JavaVirtualMachines/liberica-jdk-21.jdk/Contents/Home
+  windows-vm:
+    machine:
+      image: "windows-server-2022-gui:current"
+      shell: bash.exe
+    environment:
+      JAVA_HOME: /c/progra~1/BellSoft/LibericaJDK-21
+      MAVEN_BIN: /tmp/maven/bin/mvn
+
+
+commands:
+  install_jdk:
+    parameters:
+      jdk_major_version:
+        description: "The major version of the JDK to install"
+        type: string
+        default: "21"
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+    steps:
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^macos.+$", value: << parameters.compute_size >> }
+          steps:
+            - run:
+                name: "Brew - Add BellSoft Libercia JDK Tap"
+                command: "brew tap bell-sw/liberica"
+            - run:
+                name: "Brew - Install BellSoft Libercia JDK"
+                command: "brew install --cask liberica-jdk<< parameters.jdk_major_version >>"
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - run:
+                name: "Choco - Install BellSoft Libercia JDK"
+                command: "choco install liberica<< parameters.jdk_major_version >>jdk"
+                shell: cmd.exe
+      - run:
+          name: "Java - Show Version"
+          command: |
+            echo JAVA_HOME="${JAVA_HOME}"
+            $JAVA_HOME/bin/java -version
+
+  install_maven:
+    parameters:
+      maven_version:
+        description: "The version of Maven to install"
+        type: string
+        default: << pipeline.parameters.maven_version >>
+      directory:
+        description: "The directory in which to install Maven. Default: /tmp."
+        type: string
+        default: "/tmp"
+      symlink_target:
+        description: "The target to symlink the Maven folder to. Default: /tmp/maven."
+        type: string
+        default: "/tmp/maven"
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+    steps:
+      - when:
+          condition:
+            or:
+              - matches: { pattern: "^macos.+$", value: << parameters.compute_size >> }
+              - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - run:
+                name: "Install Maven"
+                environment:
+                  MAVEN_VERSION: << parameters.maven_version >>
+                  MAVEN_TARGET_DIR: << parameters.directory >>
+                  MAVEN_SYMLINK_TARGET: << parameters.symlink_target >>
+                command: |
+                  set -x
+                  MAVEN_ARTIFACT=apache-maven-$MAVEN_VERSION
+                  MAVEN_ARCHIVE=$MAVEN_ARTIFACT-bin.tar.gz
+                  TMP_DOWNLOAD=/tmp/$MAVEN_ARCHIVE
+                  if [ -z "$MAVEN_TARGET_DIR" ]; then
+                    MAVEN_TARGET_DIR=$HOME
+                  fi
+                  if [ -z "$MAVEN_SYMLINK_TARGET" ]; then
+                    MAVEN_SYMLINK_TARGET=$HOME/maven
+                  fi
+                  curl --fail --output $TMP_DOWNLOAD --location https://dlcdn.apache.org/maven/maven-3/$MAVEN_VERSION/binaries/$MAVEN_ARCHIVE
+                  tar zxvf $TMP_DOWNLOAD -C $MAVEN_TARGET_DIR
+                  ln -s $MAVEN_TARGET_DIR/$MAVEN_ARTIFACT $MAVEN_SYMLINK_TARGET
+                  rm $TMP_DOWNLOAD
+                  set +x
+      - run:
+          name: "Maven - Show Version"
+          command: |
+            echo MAVEN_BIN="${MAVEN_BIN}"
+            $MAVEN_BIN --version
+
+  maven_with_cache:
+    # NOTE(AR) based on https://circleci.com/developer/orbs/orb/circleci/maven
+    parameters:
+      app_src_directory:
+        description: "The directory containing the pom.xml file for the project."
+        type: string
+        default: ''
+      cache_name_prefix:
+        description: "The cache's name prefix to allow for multiple caches and/or cache invalidation."
+        type: string
+      dependency_plugin_version:
+        description: "Specify the Maven Dependency Plugin"
+        type: string
+        default: << pipeline.parameters.maven_dependency_plugin_version >>
+      verify_dependencies:
+        description: "Verify dependencies are valid and available from public sources"
+        type: boolean
+        default: true
+      steps:
+        description: "The steps to execute with the cache"
+        type: steps
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+    steps:
+      - when:
+          condition:
+            and:
+              - not:
+                  and:
+                    - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - run:
+                name: Generate Cache Checksum (Linux/macOS)
+                working_directory: << parameters.app_src_directory >>
+                command: "/usr/bin/find . -name 'pom.xml' | /usr/bin/sort | xargs cat > /tmp/maven_cache_seed"
+            - restore_cache:
+                keys:
+                  - << parameters.cache_name_prefix >>-{{ checksum "/tmp/maven_cache_seed" }}
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - run:
+                name: Generate Cache Checksum (Windows)
+                working_directory: << parameters.app_src_directory >>
+                command: "/usr/bin/find . -name 'pom.xml' | /usr/bin/sort | xargs cat > /c/Users/circleci/AppData/Local/Temp/maven_cache_seed"
+            - restore_cache:
+                keys:
+                  - << parameters.cache_name_prefix >>-{{ checksum "C:\\Users\\circleci\\AppData\\Local\\Temp\\maven_cache_seed" }}
+      - when:
+          condition: << parameters.verify_dependencies >>
+          steps:
+            - run:
+                name: Maven - Collect and Verify Dependencies
+                environment:
+                  PARAM_DEP_PLUGIN_VER: << parameters.dependency_plugin_version >>
+                working_directory: << parameters.app_src_directory >>
+                command: "$MAVEN_BIN -V -T2C org.apache.maven.plugins:maven-dependency-plugin:$PARAM_DEP_PLUGIN_VER:go-offline"
+      - steps: << parameters.steps >>
+
+      - when:
+          condition:
+            and:
+              - not:
+                  and:
+                    - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - save_cache:
+                key: << parameters.cache_name_prefix >>-{{ checksum "/tmp/maven_cache_seed" }}
+                paths:
+                  - ~/.m2/repository
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - save_cache:
+                key: << parameters.cache_name_prefix >>-{{ checksum "C:\\Users\\circleci\\AppData\\Local\\Temp\\maven_cache_seed" }}
+                paths:
+                  - C:\Users\circleci\.m2\repository
+
+  install_artifacts:
+    parameters:
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+    steps:
+      - run:
+          name: "Maven - Install Artifacts"
+          environment:
+            COMPUTE_SIZE: << parameters.compute_size >>
+          command: |
+            if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+              export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+            else
+              export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+            fi
+            $MAVEN_BIN -V -T2C install -DskipTests -Ddependency-check.skip=true -Dmdep.analyze.skip=true -Dlicense.skip=true --projects '!exist-distribution,!exist-installer' --also-make
+
+  persist_project:
+    parameters:
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+    steps:
+      - when:
+          condition:
+            or:
+              - equal: [ small, << parameters.compute_size >> ]
+              - equal: [ large, << parameters.compute_size >> ]
+          steps:
+            - persist_to_workspace:
+                root: /home/circleci/project
+                paths:
+                  - "**"
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^macos.+$", value: << parameters.compute_size >> }
+          steps:
+            - persist_to_workspace:
+                root: /Users/distiller/project
+                paths:
+                  - "**"
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - persist_to_workspace:
+                root: C:\Users\circleci\project
+                paths:
+                  - "**"
+
+  attach_project:
+    parameters:
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+    steps:
+      - when:
+          condition:
+            or:
+              - equal: [ small, << parameters.compute_size >> ]
+              - equal: [ large, << parameters.compute_size >> ]
+          steps:
+            - attach_workspace:
+                at: /home/circleci/project
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^macos.+$", value: << parameters.compute_size >> }
+          steps:
+            - attach_workspace:
+                at: /Users/distiller/project
+      - when:
+          condition:
+            and:
+              - matches: { pattern: "^windows.+$", value: << parameters.compute_size >> }
+          steps:
+            - attach_workspace:
+                at: C:\Users\circleci\project
+
+jobs:
+  license-check:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    steps:
+      - checkout
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - License Check"
+                    command: "$MAVEN_BIN -V -T2C license:check"
+
+
+  build:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - checkout
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: true
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - Build Package"
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN -V -T2C package -DskipTests -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives
+      - persist_project:
+          compute_size: << parameters.compute_size >>
+
+  dependency-analyze:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - Run Dependency Analysis"
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN -V -T2C dependency:analyze
+
+  owasp-dependency-check:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - restore_cache:
+          keys:
+            - << parameters.maven_cache_name_prefix >>-dependency-check-data-{{ checksum "/tmp/dependency-check-data/odc.mv.db" }}
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - install_artifacts:
+                    compute_size: << parameters.compute_size >>
+                - run:
+                    name: "Maven - Run Dependency Check"
+                    no_output_timeout: 30m
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN -V -T2C -DdataDirectory=/tmp/dependency-check-data dependency-check:<< pipeline.parameters.maven_dependency_check_plugin_version >>:check
+      - save_cache:
+          key: << parameters.maven_cache_name_prefix >>-dependency-check-data-{{ checksum "/tmp/dependency-check-data/odc.mv.db" }}
+          paths:
+            - /tmp/dependency-check-data
+
+  javadoc:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - install_artifacts:
+                    compute_size: << parameters.compute_size >>
+                - run:
+                    name: "Maven - Generate Javadoc"
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN -V -T2C -q javadoc:javadoc --projects '!exist-distribution,!exist-installer' --also-make
+
+  test:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_large >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - Run Tests"
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN test -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            /usr/bin/find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/test-results
+      - when:
+          # NOTE(AR) only persist the workspace when it is `large` as we then reuse it for the `code-coverage` and `sonar-analysis` jobs
+          condition:
+            and:
+              - equal: [ large, << parameters.compute_size >> ]
+          steps:
+            - persist_project:
+                compute_size: << parameters.compute_size >>
+
+  code-coverage:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - Produce Coverage and Coveralls Reports"
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN -V -T1C jacoco:report coveralls:report
+
+  sonar-analysis:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      COMPUTE_SIZE: << parameters.compute_size >>
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - install_jdk:
+          compute_size: << parameters.compute_size >>
+      - install_maven:
+          compute_size: << parameters.compute_size >>
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: false
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - Analyze on SonarQube Cloud"
+                    no_output_timeout: 30m
+                    command: |
+                      if [[ $COMPUTE_SIZE == "small" ]] || [[ $COMPUTE_SIZE == "large" ]]; then
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >>"
+                      else
+                        export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
+                      fi
+                      $MAVEN_BIN -V -T2C -P !installer,!concurrency-stress-tests,!micro-benchmarks sonar:sonar -Dsonar.projectKey=evolvedbinary_elemental
+
+  build-elemental-w3c-xqts-runner:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    steps:
+      - checkout
+      - maven_with_cache:
+          compute_size: << parameters.compute_size >>
+          cache_name_prefix: << parameters.maven_cache_name_prefix >>
+          verify_dependencies: true
+          steps:
+            - steps:
+                - run:
+                    name: "Maven - Build Elemental's XQTS Runner"
+                    command: "$MAVEN_BIN -V -T2C clean package -Dmdep.analyze.skip=true -DskipTests -Ddependency-check.skip=true -Dlicense.skip=true --projects exist-xqts --also-make"
+      - persist_project:
+          compute_size: << parameters.compute_size >>
+
+  run-elemental-w3c-xqts-runner:
+    parameters:
+      os:
+        type: executor
+      compute_size:
+        type: string
+        default: << pipeline.parameters.compute_size_small >>
+      maven_cache_name_prefix:
+        type: string
+    executor: << parameters.os >>
+    resource_class: << parameters.compute_size >>
+    environment:
+      JAVA_OPTS: "<< pipeline.parameters.java_tool_options >> << pipeline.parameters.extra_java_tool_options_docker >> -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -XX:+ExitOnOutOfMemoryError"
+    steps:
+      - attach_project:
+          compute_size: << parameters.compute_size >>
+      - run:
+          name: "Run Elemental's W3C XQTS Runner"
+          command: |
+            #!/usr/bin/env bash
+            DIR="$(find exist-xqts/target -type d -name exist-xqts-*)"
+            $DIR/bin/exist-xqts-runner.sh --xqts-version HEAD --output-dir /tmp/xqts-output --exclude-test-case RangeExpr-411d,RangeExpr-409d,RangeExpr-408d,RangeExpr-409c,RangeExpr-408c,GenCompEq-21
+      - run:
+          name: "Compress (any) Heap Dump files"
+          command: |
+              #!/usr/bin/env bash
+              if [ -f /tmp/*.hprof ]; then
+                tar cvf /tmp/heap-dumps.tar -C /tmp *.hprof
+                zstd --rm -9 --progress -T0 /tmp/heap-dumps.tar
+              fi
+          when: on_fail
+      - store_artifacts:
+          name: "Store (any) Heap Dump files"
+          path: /tmp/heap-dumps.tar.zst
+          destination: heap-dumps
+      - store_artifacts:
+          name: "Archive XQTS Logs"
+          path: /tmp/xqts-output
+          destination: xqts-logs
+
+
+workflows:
+  license-check:
+    jobs:
+      - license-check:
+          os: linux-docker-jdk21
+          maven_cache_name_prefix: linux-docker-jdk21
+
+  build-and-test:
+    jobs:
+      - build:
+          name: build-<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux-docker-jdk21, macos-vm-xcode13, windows-vm]
+              compute_size: [<< pipeline.parameters.compute_size_small >>, << pipeline.parameters.compute_size_mac_medium >>, << pipeline.parameters.compute_size_windows_medium >>]
+              maven_cache_name_prefix: [ << matrix.os >> ]
+            exclude:
+              - os: linux-docker-jdk21
+                compute_size: << pipeline.parameters.compute_size_mac_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: linux-docker-jdk21
+                compute_size: << pipeline.parameters.compute_size_windows_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: macos-vm-xcode13
+                compute_size: << pipeline.parameters.compute_size_small >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: macos-vm-xcode13
+                compute_size: << pipeline.parameters.compute_size_windows_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: windows-vm
+                compute_size: << pipeline.parameters.compute_size_small >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: windows-vm
+                compute_size: << pipeline.parameters.compute_size_mac_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+
+      - dependency-analyze:
+          os: linux-docker-jdk21
+          maven_cache_name_prefix: linux-docker-jdk21
+          requires:
+            - build-linux-docker-jdk21
+      - owasp-dependency-check:
+          os: linux-docker-jdk21
+          maven_cache_name_prefix: linux-docker-jdk21
+          requires:
+            - build-linux-docker-jdk21
+      - javadoc:
+          os: linux-docker-jdk21
+          maven_cache_name_prefix: linux-docker-jdk21
+          requires:
+            - build-linux-docker-jdk21
+      - test:
+          name: test-<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux-docker-jdk21, macos-vm-xcode13, windows-vm]
+              compute_size: [<< pipeline.parameters.compute_size_large >>, << pipeline.parameters.compute_size_mac_medium >>, << pipeline.parameters.compute_size_windows_medium >>]
+              maven_cache_name_prefix: [<< matrix.os >>]
+            exclude:
+              - os: linux-docker-jdk21
+                compute_size: << pipeline.parameters.compute_size_mac_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: linux-docker-jdk21
+                compute_size: << pipeline.parameters.compute_size_windows_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: macos-vm-xcode13
+                compute_size: << pipeline.parameters.compute_size_large >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: macos-vm-xcode13
+                compute_size: << pipeline.parameters.compute_size_windows_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: windows-vm
+                compute_size: << pipeline.parameters.compute_size_large >>
+                maven_cache_name_prefix: << matrix.os >>
+              - os: windows-vm
+                compute_size: << pipeline.parameters.compute_size_mac_medium >>
+                maven_cache_name_prefix: << matrix.os >>
+          requires:
+            - build-<< matrix.os >>
+      - code-coverage:
+          os: linux-docker-jdk21
+          maven_cache_name_prefix: linux-docker-jdk21
+          requires:
+            - test-linux-docker-jdk21
+          filters:
+            branches:
+              only:
+                - main
+      - sonar-analysis:
+          os: linux-docker-jdk21
+          compute_size: << pipeline.parameters.compute_size_large >>
+          maven_cache_name_prefix: linux-docker-jdk21
+          requires:
+            - test-linux-docker-jdk21
+          filters:
+            branches:
+              only:
+                - main
+
+  w3c-xqts:
+    jobs:
+      - build-elemental-w3c-xqts-runner:
+          os: linux-docker-jdk21
+          maven_cache_name_prefix: linux-docker-jdk21
+      - run-elemental-w3c-xqts-runner:
+          os: linux-docker-jdk21
+          compute_size: << pipeline.parameters.compute_size_large >>
+          maven_cache_name_prefix: linux-docker-jdk21
+          requires:
+            - build-elemental-w3c-xqts-runner

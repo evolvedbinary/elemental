@@ -1685,7 +1685,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                         <exclude>org.exist.storage.RemoveCollectionTest</exclude>
                         <exclude>org.exist.xmldb.ShutdownTest</exclude>
 
-                        <!-- NOTE: this never completes under Java 8 on Travis CI Mac platform! -->
+                        <!-- NOTE: this seems to cause intermittent issues under macOS and Windows on CircleCI -->
                         <exclude>org.exist.xmlrpc.MoveResourceTest</exclude>
                     </excludes>
                 </configuration>
@@ -1696,17 +1696,11 @@ The BaseX Team. The original license statement is also included below.]]></pream
 
     <profiles>
         <profile>
-            <!--
-            Disable parallel tests on Windows in CI, seems to cause an occasional issue with
-            Surefire that produces the Maven error: 'Corrupted channel by directly writing to native stream in forked JVM'.
-            -->
-            <id>windows-disable-parallel-ci-testing</id>
+            <!-- Limits the amount of test parallelism in CI -->
+            <id>limit-test-parallelism-in-ci</id>
             <activation>
-                <os>
-                    <family>windows</family>
-                </os>
                 <property>
-                    <name>env.GITHUB_ACTIONS</name>
+                    <name>env.CI</name>
                     <value>true</value>
                 </property>
             </activation>
@@ -1733,9 +1727,51 @@ The BaseX Team. The original license statement is also included below.]]></pream
                             </dependency>
                         </dependencies>
                         <configuration>
-                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />
-                            <forkCount>1C</forkCount>
-                            <reuseForks>false</reuseForks>
+                            <!-- Use 1 thread per CPU (not per core)! -->
+                            <forkCount>0.5C</forkCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!--
+            Disable parallel tests on Windows in CI, seems to cause an occasional issue with
+            Surefire that produces the Maven error: 'Corrupted channel by directly writing to native stream in forked JVM'.
+            -->
+            <id>windows-disable-parallel-ci-testing</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+                <property>
+                    <name>env.CI</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.jupiter.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.junit.vintage</groupId>
+                                <artifactId>junit-vintage-engine</artifactId>
+                                <version>${junit.jupiter.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.objenesis</groupId>
+                                <artifactId>objenesis</artifactId>
+                                <version>${objenesis.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
                             <argLine>-Dfile.encoding=${project.build.sourceEncoding} -Dexist.recovery.progressbar.hide=true</argLine>
                             <systemPropertyVariables>
                                 <jetty.home>${project.basedir}/../exist-jetty-config/target/classes/org/exist/jetty</jetty.home>
@@ -1762,7 +1798,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                                 <exclude>org.exist.storage.RemoveCollectionTest</exclude>
                                 <exclude>org.exist.xmldb.ShutdownTest</exclude>
 
-                                <!-- NOTE: this never completes under Java 8 on Travis CI Mac platform! -->
+                                <!-- NOTE: this seems to cause intermittent issues under macOS and Windows on CircleCI -->
                                 <exclude>org.exist.xmlrpc.MoveResourceTest</exclude>
                             </excludes>
                         </configuration>
