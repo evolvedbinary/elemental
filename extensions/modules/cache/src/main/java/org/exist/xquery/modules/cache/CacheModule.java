@@ -68,7 +68,7 @@ public class CacheModule extends AbstractInternalModule {
             CacheFunctions.FS_CLEANUP,
             CacheFunctions.FS_DESTROY);
 
-    private static final String PARAM_NAME_ENABLE_LAZY_CREATION = "enableLazyCreation";
+    public static final String PARAM_NAME_ENABLE_LAZY_CREATION = "enableLazyCreation";
     private static final String PARAM_NAME_LAZY_MAXIMUM_SIZE = "lazy.maximumSize";
     private static final String PARAM_NAME_LAZY_EXPIRE_AFTER_ACCESS = "lazy.expireAfterAccess";
     private static final String PARAM_NAME_LAZY_EXPIRE_AFTER_WRITE = "lazy.expireAfterWrite";
