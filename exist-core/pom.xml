@@ -868,6 +868,7 @@
                                 <include>src/main/java/org/exist/source/SourceFactory.java</include>
                                 <include>src/main/java/org/exist/storage/BrokerFactory.java</include>
                                 <include>src/main/java/org/exist/storage/BrokerPool.java</include>
+                                <include>src/test/java/org/exist/storage/CopyResourceTest.java</include>
                                 <include>src/main/java/org/exist/storage/DBBroker.java</include>
                                 <include>src/main/java/org/exist/storage/IndexSpec.java</include>
                                 <include>src/main/java/org/exist/storage/Indexable.java</include>
@@ -1078,6 +1079,7 @@
                                 <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/BrokerFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/BrokerPool.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/CopyResourceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/DBBroker.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/FluentBrokerAPI.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/IndexSpec.java</exclude>
