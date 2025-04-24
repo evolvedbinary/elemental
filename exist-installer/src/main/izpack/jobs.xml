@@ -46,10 +46,18 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
+<!--
 <izpack:processing
         xmlns:izpack="https://izpack.github.io/schema/processing"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="https://izpack.github.io/schema/processing https://izpack.org/schema/5.0/izpack-processing-5.0.xsd"
+        version="5.0">
+-->
+<!-- NOTE(AR) see: https://izpack.atlassian.net/browse/IZPACK-1797 -->
+<izpack:processing
+        xmlns:izpack="http://izpack.org/schema/processing"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://izpack.org/schema/processing http://izpack.org/schema/5.0/izpack-processing-5.0.xsd"
         version="5.0">
 
     <logfiledir>$INSTALL_PATH${FILE_SEPARATOR}logs</logfiledir>

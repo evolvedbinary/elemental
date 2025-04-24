@@ -49,10 +49,18 @@
 
 <!-- The English langpack -->
 
+<!--
 <izpack:langpack
         xmlns:izpack="https://izpack.github.io/schema/langpack"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="https://izpack.github.io/schema/langpack https://izpack.org/schema/5.0/izpack-langpack-5.0.xsd"
+        version="5.0">
+-->
+<!-- NOTE(AR) see: https://izpack.atlassian.net/browse/IZPACK-1797 -->
+<izpack:langpack
+        xmlns:izpack="http://izpack.org/schema/langpack"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://izpack.org/schema/langpack http://izpack.org/schema/5.0/izpack-langpack-5.0.xsd"
         version="5.0">
 
     <!-- Heading messages START -->
