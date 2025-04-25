@@ -74,7 +74,8 @@
         <javaversion>@{project.build.target}</javaversion>
         <requiresjdk>no</requiresjdk>
         <run-privileged condition="izpack.windowsinstall"/>
-        <pack-compression-format>xz</pack-compression-format>
+        <!-- NOTE(AR) xz and lzma compression don't work in IzPack installer on Java 21, see: https://izpack.atlassian.net/browse/IZPACK-1798 -->
+        <pack-compression-format>bzip2</pack-compression-format>
         <uninstaller name="izpack-uninstaller.jar" path="$INSTALL_PATH/lib"/>
     </info>
 
