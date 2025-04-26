@@ -8,7 +8,7 @@
 
 [![Build Status](https://dl.circleci.com/status-badge/img/gh/evolvedbinary/elemental/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/evolvedbinary/elemental/tree/main)
 [![Coverage Status](https://coveralls.io/repos/github/evolvedbinary/elemental/badge.svg?branch=main)](https://coveralls.io/github/evolvedbinary/elemental?branch=main)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ae1c8a7eb1164e919b0ac3c8588560c6)](https://www.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolvedbinary/elemental&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/4d074617e63d40839760a5e7b2ec4392?branch=main)](https://app.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=evolvedbinary_elemental&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=evolvedbinary_elemental)
 [![Java 21](https://img.shields.io/badge/java-21-blue.svg)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-LGPL%202.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
