@@ -52,7 +52,7 @@
     <parent>
         <groupId>xyz.elemental.fork.org.exist-db</groupId>
         <artifactId>exist-parent</artifactId>
-        <version>7.0.0-SNAPSHOT</version>
+        <version>7.0.0</version>
         <relativePath>../exist-parent</relativePath>
     </parent>
 
@@ -66,7 +66,7 @@
         <connection>scm:git:https://github.com/evolvedbinary/elemental.git</connection>
         <developerConnection>scm:git:https://github.com/evolvedbinary/elemental.git</developerConnection>
         <url>scm:git:https://github.com/evolvedbinary/elemental.git</url>
-      <tag>HEAD</tag>
+      <tag>elemental-7.0.0</tag>
   </scm>
 
     <properties>
@@ -767,13 +767,13 @@
                         </goals>
                         <configuration>
                             <target>
-                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar"/>
+                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar" />
                                 <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
                                 <unzip src="${dashboard-xar-path}" dest="${expath.pkg.dir}-dashboard-staging/">
                                     <patternset>
-                                        <exclude name="resources/images/existdb.png"/>
-                                        <exclude name="resources/images/existdb-web.svg"/>
-                                        <exclude name="resources/images/x.svg"/>
+                                        <exclude name="resources/images/existdb.png" />
+                                        <exclude name="resources/images/existdb-web.svg" />
+                                        <exclude name="resources/images/x.svg" />
                                     </patternset>
                                 </unzip>
                             </target>
@@ -787,9 +787,9 @@
                         </goals>
                         <configuration>
                             <target>
-                                <replace file="${expath.pkg.dir}-dashboard-staging/existdb-dashboard.html" token="existdb-web.svg" value="elemental-web.svg"/>
-                                <loadfile property="elemental-web-svg" srcFile="${project.build.outputDirectory}/elemental-web.svg"/>
-                                <replaceregexp file="${expath.pkg.dir}-dashboard-staging/bower_components/existdb-launcher/existdb-branding.html" match="&lt;svg.+&lt;/svg&gt;" replace="${elemental-web-svg}"/>
+                                <replace file="${expath.pkg.dir}-dashboard-staging/existdb-dashboard.html" token="existdb-web.svg" value="elemental-web.svg" />
+                                <loadfile property="elemental-web-svg" srcFile="${project.build.outputDirectory}/elemental-web.svg" />
+                                <replaceregexp file="${expath.pkg.dir}-dashboard-staging/bower_components/existdb-launcher/existdb-branding.html" match="&lt;svg.+&lt;/svg&gt;" replace="${elemental-web-svg}" />
                             </target>
                         </configuration>
                     </execution>
@@ -801,11 +801,11 @@
                         </goals>
                         <configuration>
                             <target>
-                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar"/>
+                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar" />
                                 <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
                                 <zip destfile="${dashboard-xar-path}">
-                                    <fileset dir="${expath.pkg.dir}-dashboard-staging"/>
-                                    <zipfileset dir="${project.build.outputDirectory}" includes="elemental-web.svg" fullpath="resources/images/elemental-web.svg"/>
+                                    <fileset dir="${expath.pkg.dir}-dashboard-staging" />
+                                    <zipfileset dir="${project.build.outputDirectory}" includes="elemental-web.svg" fullpath="resources/images/elemental-web.svg" />
                                 </zip>
                             </target>
                         </configuration>
