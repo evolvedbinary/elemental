@@ -26,7 +26,7 @@
 
     <groupId>xyz.elemental</groupId>
     <artifactId>elemental-parent</artifactId>
-    <version>6.4.0</version>
+    <version>6.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Elemental Parent</name>
