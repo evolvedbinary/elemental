@@ -27,7 +27,7 @@
     <parent>
         <groupId>xyz.elemental</groupId>
         <artifactId>elemental-parent</artifactId>
-        <version>7.0.0</version>
+        <version>7.1.0-SNAPSHOT</version>
         <relativePath>elemental-parent</relativePath>
     </parent>
 
@@ -41,7 +41,7 @@
         <connection>scm:git:https://github.com/evolvedbinary/elemental.git</connection>
         <developerConnection>scm:git:https://github.com/evolvedbinary/elemental.git</developerConnection>
         <url>scm:git:https://github.com/evolvedbinary/elemental.git</url>
-      <tag>elemental-7.0.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <modules>
