@@ -58,8 +58,7 @@ We use only two clearly defined forms of `PRERELEASE` label:
 
 A nightly build is similar to a snapshot, except it is automatically built from the latest source code and released once daily. To help distinguish between one day's nightly build and the next's, a 5-component Semantic Versioning version number is used for nightly builds' filenames: "`MAJOR`**.**`MINOR`**.**`PATCH`**-**`PRERELEASE`**+**`BUILD`. We follow Semantic Versioning's definitions for the `BUILD` label scheme:
 
-*   `BUILD` is a series of dot separated identifiers, each identifier must use only ASCII alphanumerics and hyphen [0-9A-Za-z-]
- and must be empty. Build metadata SHOULD be ignored when determining version precedence.
+*   `BUILD` is a series of dot separated identifiers, each identifier must use only ASCII alphanumerics and hyphen [0-9A-Za-z-] and must be empty. Build metadata SHOULD be ignored when determining version precedence.
 
 *   The presence of `BUILD` indicates that the version is pre-release and not yet considered stable. Product releases do not have `BUILD`.
 
@@ -78,7 +77,7 @@ It is trivial for a developer to relate a timestamp back to a Git hash (by using
 ### Where the version number is stored
 
 The version number is stored in the `exist-parent/pom.xml` file, in a single property, `<version>`. The Semantic Versioning number `8.0.0-SNAPSHOT` would be stored as follows:
-```
+```xml
 <version>8.0.0-SNAPSHOT</version>
 ```
 
@@ -95,43 +94,44 @@ You will require a system with:
 * macOS
 * JDK 8
 * Maven 3.6.0+
+* Python 3 with Pip
 * Docker
 * GnuPG
 * A GPG key (for signing release artifacts)
 * A Java KeyStore with key (for signing IzPack Installer)
 * A valid Apple Developer Certificate (for signing Mac DMG)
-* A GitHub account and username / password or GitHub Personal access tokens (https://github.com/settings/tokens) with permission to publish GitHub releases to the Elemental repository.
+* A GitHub account and Personal Access Token (https://github.com/settings/tokens) with permission to publish GitHub releases to the Elemental repository.
 
 1. You will need login credentials for the Elemental organisation on:
-    1. Sonatype OSS staging for Maven Central - https://oss.sonatype.org/
+    1. Sonatype Portal for Maven Central - https://central.sonatype.com/publishing/deployments
     2. DockerHub - https://cloud.docker.com/orgs/elemental/
-    
-    Your credentials for these should be stored securely in the `<servers`> section on your machine in your local `~/.m2/settings.xml` file, e.g.:
+
+    Your credentials for these should be stored securely in the `<servers>` section on your machine in your local `~/.m2/settings.xml` file, e.g.:
     ```xml
     <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
 
         <servers>
-        
-            <!-- Sonatype OSS staging for Maven Central -->
+
+            <!-- Sonatype Portal for Maven Central -->
             <server>
-                <id>sonatype-nexus-staging</id>
-                <username>YOUR-USERNAME</username>
-                <password>YOUR-PASSWORD</password>
+                <id>central-ossrh-staging</id>
+                <username>your-username</username>
+                <password>your-password</password>
             </server>
-            
+
             <!-- Elemental DockerHub -->
             <server>
                 <id>docker.io</id>
-                <username>YOUR-USERNAME</username>
-                <password>YOUR-PASSWORD</password>
+                <username>your-username</username>
+                <password>your-password</password>
             </server>
 
             <!-- Elemental GitHub Release -->
             <server>
                 <id>github</id>
-                <privateKey>[Github Personal access tokens]</privateKey>
+                <privateKey>your-github-personal-access-token</privateKey>
             </server>
         </servers>
     </settings>
@@ -139,47 +139,50 @@ You will require a system with:
 
 2. You will need your GPG Key, Java KeyStore, and Apple Notarization API credentials for signing the release artifacts in the `<activeProfiles`> section on your machine in your local `~/.m2/settings.xml` file, e.g.:
     ```xml
-    <profiles>
-   
-       <profile>
-           <id>elemental-release-signing</id>
-           <properties>
-               <elemental.release.key>ABC1234</elemental.release.key>
-               <elemental.release.public-keyfile>${user.home}/.gnupg/pubring.gpg</elemental.release.public-keyfile>
-               <elemental.release.private-keyfile>${user.home}/.gnupg/secring.gpg</elemental.release.private-keyfile>
-               <elemental.release.key.passphrase>your-password</elemental.release.key.passphrase>
-   
-               <elemental.release.keystore>${user.home}/your.store</elemental.release.keystore>
-               <elemental.release.keystore.pass>your-keystore-password</elemental.release.keystore.pass>
-               <elemental.release.keystore.key.alias>your-alias</elemental.release.keystore.key.alias>
-               <elemental.release.keystore.key.pass>your-key-password</elemental.release.keystore.key.pass>
-   
-               <elemental.release.notarize.username>your-apple-developer-email@your-dom.ain</elemental.release.notarize.username>
-               <elemental.release.notarize.password>your-apple-notarize-api-password</elemental.release.notarize.password>
-           </properties>
-       </profile>
-   
-    </profiles>
+     <profiles>
+
+         <profile>
+             <id>elemental-release-signing</id>
+             <properties>
+                 <elemental.release.key>ABC1234</elemental.release.key>
+                 <elemental.release.public-keyfile>${user.home}/.gnupg/pubring.gpg</elemental.release.public-keyfile>
+                 <elemental.release.private-keyfile>${user.home}/.gnupg/secring.gpg</elemental.release.private-keyfile>
+                 <elemental.release.key.passphrase>your-password</elemental.release.key.passphrase>
+
+                 <elemental.release.keystore>${user.home}/your.store</elemental.release.keystore>
+                 <elemental.release.keystore.pass>your-keystore-password</elemental.release.keystore.pass>
+                 <elemental.release.keystore.key.alias>your-alias</elemental.release.keystore.key.alias>
+                 <elemental.release.keystore.key.pass>your-key-password</elemental.release.keystore.key.pass>
+
+                 <elemental.release.notarize.apple-id>your-apple-developer-email@your-dom.ain</elemental.release.notarize.apple-id>
+                 <elemental.release.notarize.team-id>your-apple-developer-team-id</elemental.release.notarize.team-id>
+                 <elemental.release.notarize.password>your-apple-notarize-api-password</elemental.release.notarize.password>
+
+                 <mac.codesign.identity>signature-of-your-apple-developer-certificate</mac.codesign.identity>
+             </properties>
+         </profile>
+
+     </profiles>
 
 
-    <activeProfiles>
-   
+     <activeProfiles>
+
            <activeProfile>elemental-release-signing</activeProfile>
-   
-    </activeProfiles>
+
+     </activeProfiles>
     ```
 
 3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone (e.g. `elemental-7.1.0`).
 
 4.  Make sure that you have the HEAD of `origin/main` (or `upstream` if you are on a fork).
 
-5.  Prepare the release, if you wish you can do a dry-run first by specifiying `-DdryRun=true`:
-    ```
+5.  Prepare the release, if you wish you can do a dry-run first by specifying `-DdryRun=true`:
+    ```bash
     $ mvn -Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Darguments="-Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true" release:prepare
     ```
-    
+
     Maven will start the release process and prompt you for any information that it requires, for example:
-    
+
     ```
     [INFO] --- maven-release-plugin:2.1:prepare (default-cli) @ elemental ---
     [INFO] Verifying that there are no local modifications...
@@ -192,13 +195,17 @@ You will require a system with:
     What is the new development version for "Elemental"? (xyz.elemental:elemental) 7.2.0-SNAPSHOT: :
     ```
 
-6.  Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven
-Central (staging), Docker images to Docker Hub, and Elemental distributions and installer to GitHub releases:
-    ```
+6.  Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven Central (staging), Docker images to Docker Hub, and Elemental distributions and installer to GitHub releases:
+    ```bash
     $ mvn -Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false -Darguments="-Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false" release:perform
     ```
 
-7.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
+7.  You now need to request the artifacts to be moved from the Portal OSSRH Staging API to the Maven Central staging area:
+    ```bash
+    $ curl -vv -X POST -H "Authorization: Bearer your-bearer-token-for-maven-central" https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/xyz.elemental
+    ```
+
+8.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
     ```bash
     $ git push origin elemental-7.1.0:gold
     ```
@@ -208,7 +215,7 @@ Central (staging), Docker images to Docker Hub, and Elemental distributions and 
 
 2. Check that the new versions are visible on [DockerHub](https://hub.docker.com/r/evolvedbinary/elemental).
 
-3. Login to https://oss.sonatype.org and release the Maven artifacts to Maven central as described [here](https://central.sonatype.org/pages/releasing-the-deployment.html).
+3. Login to https://central.sonatype.com/publishing/deployments and release the Maven artifacts to Maven central as described [here](https://central.sonatype.org/publish/publish-portal-guide/).
 
 4. Update the Mac HomeBrew for Elemental, see: [Releasing to Homebrew](https://github.com/evolvedbinary/elemental/blob/main/VERSIONING_AND_RELEASING.md#releasing-to-homebrew).
 
@@ -224,7 +231,7 @@ Central (staging), Docker images to Docker Hub, and Elemental distributions and 
 
 10. Update the Wikipedia page with the new version details - [https://en.wikipedia.org/wiki/Elemental](https://en.wikipedia.org/wiki/Elemental).
 
-1Go to GitHub and move all issues and PRs which are still open for the release milestone to the next release milestone. Close the release milestone.
+11. Go to GitHub and move all issues and PRs which are still open for the release milestone to the next release milestone. Close the release milestone.
 
 
 ### Releasing to Homebrew
@@ -232,10 +239,10 @@ Central (staging), Docker images to Docker Hub, and Elemental distributions and 
 
 **Terminology:** "Homebrew Cask" is the segment of Homebrew where pre-built binaries and GUI applications go, whereas the original "Homebrew" project is reserved for command-line utilities that can be built from source. Because the macOS version of Elemental is released as an app bundle with GUI components, it is handled as a Homebrew Cask.
 
-When there is a new release, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of Elemental to 6.4.0, use this command:
+When there is a new release, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of Elemental to 7.1.0, use this command:
 
-```
-brew bump-cask-pr --version 6.4.0 elemental
+```bash
+brew bump-cask-pr --version 7.1.0 elemental
 ```
 
-This command will cause your local Homebrew installation to download the new version of Elemental, calculate the installer's new SHA-256 fingerprint value, and construct a pull request under your GitHub account, like [this one](https://github.com/Homebrew/homebrew-cask/pull/107778). Once the pull request is submitted, continuous integration tests will run, and a member of the Homebrew community will review the PR. At times there is a backlog on the CI servers, but once tests pass, the community review is typically completed in a matter of hours.
+This command will cause your local Homebrew installation to download the new version of Elemental, calculate the installer's new SHA-256 fingerprint value, and construct a pull request under your GitHub account, like [this one](https://github.com/Homebrew/homebrew-cask/pull/210264). Once the pull request is submitted, continuous integration tests will run, and a member of the Homebrew community will review the PR. At times there is a backlog on the CI servers, but once tests pass, the community review is typically completed in a matter of hours.
