@@ -8,7 +8,7 @@ To build the .xar file and copy it for use in the tests for this module:
 ```bash
 cd expathrepo-trigger-test
 mvn clean package
-cp target/exist-expathrepo-trigger-test-7.0.0-SNAPSHOT.xar ../src/test/resources/exist-expathrepo-trigger-test.xar
+cp target/exist-expathrepo-trigger-test-7.1.0-SNAPSHOT.xar ../src/test/resources/exist-expathrepo-trigger-test.xar
 ```
 
 Each time you modify the source code of the `expathrepo-trigger-test` module, you should rebuild it and copy the .xar file to the `src/test/resources` folder of this module and re-commit it to Git.
