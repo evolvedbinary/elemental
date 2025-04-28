@@ -40,7 +40,7 @@ import org.xmldb.api.base.XMLDBException;
  *
  * @author <a href="mailto:meier@ifs.tu-darmstadt.de">Wolfgang Meier</a>
  * @author Modified by {Marco.Tampucci, Massimo.Martinelli} @isti.cnr.it
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface UserManagementService extends Service {
 

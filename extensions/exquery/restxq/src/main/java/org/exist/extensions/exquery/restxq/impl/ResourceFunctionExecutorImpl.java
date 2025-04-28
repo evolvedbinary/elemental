@@ -84,7 +84,7 @@ import org.exquery.xquery3.FunctionSignature;
 
 /**
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
     

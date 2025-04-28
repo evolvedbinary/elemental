@@ -31,7 +31,7 @@ import org.xmldb.api.base.XMLDBException;
 /**
  * Security Manager round trip tests against the XML:DB Remote API
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RemoteSecurityManagerRoundtripTest extends AbstractSecurityManagerRoundtripTest {
 

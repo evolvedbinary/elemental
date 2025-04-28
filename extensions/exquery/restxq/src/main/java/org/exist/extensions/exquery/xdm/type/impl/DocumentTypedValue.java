@@ -33,7 +33,7 @@ import org.w3c.dom.Document;
 /**
  * document() Typed value
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DocumentTypedValue extends AbstractTypedValue<Document> {
 

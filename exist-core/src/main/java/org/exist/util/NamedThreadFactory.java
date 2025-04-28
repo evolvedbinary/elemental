@@ -54,7 +54,6 @@ public class NamedThreadFactory implements ThreadFactory {
      *
      * @deprecated use {@link #NamedThreadFactory(Database, String)}.
      */
-    @Deprecated
     public NamedThreadFactory(final String instanceId, final String nameBase) {
         this(null, instanceId, nameBase);
     }

@@ -52,7 +52,7 @@ import java.lang.reflect.InvocationTargetException;
  * its underlying typed node which is available
  * through NodeProxy.getNode()
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 class DomEnhancingNodeProxyAdapter {
 

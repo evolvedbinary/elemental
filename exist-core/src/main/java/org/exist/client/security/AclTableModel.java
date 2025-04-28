@@ -27,7 +27,7 @@ import org.exist.security.Permission;
 
 /**
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class AclTableModel extends DefaultTableModel {
 
@@ -37,7 +37,8 @@ public class AclTableModel extends DefaultTableModel {
         super();
         
         final Object[][] aces;    
-        if(permission instanceof ACLPermission aclPermission) {
+        if (permission instanceof ACLPermission) {
+            final ACLPermission aclPermission = (ACLPermission) permission;
             aces = new Object[aclPermission.getACECount()][6];
             for(int i = 0; i < aclPermission.getACECount(); i++) {
                 aces[i] = new Object[]{

@@ -49,7 +49,7 @@ import static org.exist.xquery.modules.xslfo.XSLFOModule.functionSignatures;
 
 /**
  * @author <a href="mailto:craiggoodyer@gmail.com">Craig Goodyer</a>
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RenderFunction extends BasicFunction {
 

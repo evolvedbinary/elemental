@@ -22,6 +22,8 @@
 package org.exist.client.security;
 
 import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import javax.swing.*;
 import javax.swing.text.*;
 
@@ -54,18 +56,24 @@ public class AutoCompletion<E> extends PlainDocument {
         this.comboBox = comboBox;
         this.model = comboBox.getModel();
 
-        comboBox.addActionListener(e -> {
-            if (!selecting) {
-                highlightCompletedText(0);
+        comboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!selecting){
+                    highlightCompletedText(0);
+                }
             }
         });
 
-        comboBox.addPropertyChangeListener(e -> {
-            if ("editor".equals(e.getPropertyName())) {
-                configureEditor((ComboBoxEditor) e.getNewValue());
-            }
-            if ("model".equals(e.getPropertyName())) {
-                this.model = (ComboBoxModel<E>) e.getNewValue();
+        comboBox.addPropertyChangeListener(new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent e) {
+                if ("editor".equals(e.getPropertyName())){
+                    configureEditor((ComboBoxEditor) e.getNewValue());
+                }
+                if ("model".equals(e.getPropertyName())){
+                    model = (ComboBoxModel) e.getNewValue();
+                }
             }
         });
 

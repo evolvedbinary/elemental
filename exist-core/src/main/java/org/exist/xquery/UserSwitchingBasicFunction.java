@@ -30,7 +30,7 @@ import org.exist.security.Subject;
  * to switch the current broker to a user and then have it switched
  * back when the XQuery expression is reset
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class UserSwitchingBasicFunction extends BasicFunction {
 
@@ -45,9 +45,9 @@ public abstract class UserSwitchingBasicFunction extends BasicFunction {
     }
 
     /**
-     * Switches the current broker to the provided user
+     * Switches the current broker to the provided user.
      *
-     * @param user the user to switch to
+     * @param user the subject authority that the broker will be switched to
      */
     protected void switchUser(final Subject user) {
         context.getBroker().pushSubject(user);

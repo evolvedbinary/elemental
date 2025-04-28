@@ -76,7 +76,7 @@ import static org.exist.samples.Samples.SAMPLES;
  * Test basic {@link org.exist.dom.persistent.NodeSet} operations to ensure that
  * the used algorithms are correct.
  *
- * @author <a href="mailto:adam@exist-db.org">wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">wolf
  * @author Adam Retter</a>
  */
 @RunWith(ParallelRunner.class)

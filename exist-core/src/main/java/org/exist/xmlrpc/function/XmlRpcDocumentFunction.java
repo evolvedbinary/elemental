@@ -36,7 +36,7 @@ import java.io.IOException;
  * XML-RPC server operations; Predominantly converts exceptions
  * from the database into EXistException types
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @FunctionalInterface
 public interface XmlRpcDocumentFunction<R> extends TriFunction2E<DocumentImpl, DBBroker, Txn, R, EXistException, PermissionDeniedException> {
@@ -51,9 +51,9 @@ public interface XmlRpcDocumentFunction<R> extends TriFunction2E<DocumentImpl, D
     }
 
     /**
-     * Signature for lambda function which takes a document
+     * Signature for lambda function which takes a document.
      *
-     * @param document The database collection
+     * @param document the document for the function
      * @param broker the database broker
      * @param transaction the database transaction
 

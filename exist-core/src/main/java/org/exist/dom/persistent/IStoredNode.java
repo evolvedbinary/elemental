@@ -62,25 +62,18 @@ public interface IStoredNode<T extends IStoredNode> extends INode<DocumentImpl, 
 
 
     /**
-     * @return a count of the number of children
+     * Returns a count of the number of children.
      *
+     * @return the number of children
      */
     public int getChildCount(); //TODO also available in memtree.ElementImpl - consider moving to org.exist.dom.INode (also this is only really used for ElementImpl and DocumentImpl)
 
     /**
-     * Returns true if the node was modified recently and nodes
-     * were inserted at the start or in the middle of its children.
-     *
-     * TODO: 2019-07-11 can't we not detect this?
-     **/
-    //public boolean isDirty();
-
-
-    /**
-     * Set the node to dirty to indicated
+     * Set the node to dirty to indicate
      * that nodes were inserted at the start
      * or in the middle of its children.
-     * @param dirty set to true if node is dirty
+     *
+     * @param dirty the dirty status of the node
      */
     public void setDirty(boolean dirty);
 
@@ -89,13 +82,15 @@ public interface IStoredNode<T extends IStoredNode> extends INode<DocumentImpl, 
 
     public NodePath getPath(NodePath parentPath); //TODO seems to be ElementImpl specific see StoredNode
 
-    //TODO clean this up
-
     /**
-     * @see StoredNode#release()
-     * this seems to do two things
-     * clear the state, and then return the object
-     * to NodePool - all a bit of a mess really!
+     * Release the node.
+     *
+     * See {@link StoredNode#release()}.
+     *
+     * This function currently does two things, (1) it clears the state,
+     * and (2) it then returns the object to NodePool.
+     *
+     * NOTE(AR) we should try and clean this up!
      *
      * org.exist.Indexer seems to borrow and return to the pool
      * org.exist.memtree.DOMIndexer only seems to borrow nodes

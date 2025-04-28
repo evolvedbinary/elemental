@@ -24,7 +24,7 @@ package org.exist.xquery;
 /**
  * An interface for providing XPath Error Codes
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface XPathErrorProvider {
 

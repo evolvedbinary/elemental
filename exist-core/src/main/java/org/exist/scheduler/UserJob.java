@@ -26,7 +26,7 @@ package org.exist.scheduler;
  *
  * Classes extending UserJob may have multiple instances executing within the scheduler at once
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class UserJob implements JobDescription, org.quartz.Job {
     

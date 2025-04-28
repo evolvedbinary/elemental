@@ -47,7 +47,7 @@ import java.sql.SQLException;
  * <p>
  * Prepare a SQL statement against a SQL capable Database
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @version 1.0
  * @serial 2010-03-17
  * @see org.exist.xquery.BasicFunction#BasicFunction(org.exist.xquery.XQueryContext, org.exist.xquery.FunctionSignature)

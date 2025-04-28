@@ -176,7 +176,13 @@ You will require a system with:
 
 4.  Make sure that you have the HEAD of `origin/main` (or `upstream` if you are on a fork).
 
-5.  Prepare the release, if you wish you can do a dry-run first by specifying `-DdryRun=true`:
+5.  Update both the change date to today's date in:
+    1. `LICENSE` the `Change Date:` parameter
+    2. `elemental-parent/pom.xml` the `<change-date>` element
+
+6. Run `mvn license:format` for the new change date to be applied, check the git diff, then commit it with a message like: `[license] Update BSL Change Date for upcoming release of version 8.0.0`, push the commit to GitHub.
+
+7. Prepare the release, if you wish you can do a dry-run first by specifying `-DdryRun=true`:
     ```bash
     $ mvn -Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Darguments="-Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true" release:prepare
     ```
@@ -195,17 +201,17 @@ You will require a system with:
     What is the new development version for "Elemental"? (xyz.elemental:elemental) 8.1.0-SNAPSHOT: :
     ```
 
-6.  Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven Central (staging), Docker images to Docker Hub, and Elemental distributions and installer to GitHub releases:
+8. Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven Central (staging), Docker images to Docker Hub, and Elemental distributions and installer to GitHub releases:
     ```bash
     $ mvn -Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false -Darguments="-Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false" release:perform
     ```
 
-7.  You now need to request the artifacts to be moved from the Portal OSSRH Staging API to the Maven Central staging area:
+9. You now need to request the artifacts to be moved from the Portal OSSRH Staging API to the Maven Central staging area:
     ```bash
     $ curl -vv -X POST -H "Authorization: Bearer your-bearer-token-for-maven-central" https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/xyz.elemental
     ```
 
-8.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
+10. Update the stable branch (`gold`) of Elemental to reflect the latest release:
     ```bash
     $ git push origin elemental-8.0.0:gold
     ```

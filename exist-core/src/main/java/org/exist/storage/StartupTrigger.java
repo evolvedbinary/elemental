@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Database Startup Trigger
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface StartupTrigger {
     
@@ -47,8 +47,8 @@ public interface StartupTrigger {
      * from the broker pool. If you wish to work with the broker pool you must obtain this before
      * starting your asynchronous execution by calling sysBroker.getBrokerPool().
      * 
-     * @param sysBroker The single system broker available during database startup
-     * @param transaction Transaction
+     * @param sysBroker the single system broker available during database startup
+     * @param transaction the database transaction to participate in
      * @param params Key, Values
      */
     public void execute(final DBBroker sysBroker, final Txn transaction, final Map<String, List<? extends Object>> params);

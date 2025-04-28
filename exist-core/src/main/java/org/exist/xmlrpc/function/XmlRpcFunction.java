@@ -36,7 +36,7 @@ import java.io.IOException;
  * XML-RPC server operations; Predominantly converts exceptions
  * from the database into EXistException types
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @FunctionalInterface
 public interface XmlRpcFunction<R> extends BiFunction2E<DBBroker, Txn, R, EXistException, PermissionDeniedException> {

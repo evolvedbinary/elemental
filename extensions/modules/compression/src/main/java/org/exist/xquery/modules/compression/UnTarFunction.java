@@ -43,7 +43,7 @@ import static org.exist.xquery.modules.compression.CompressionModule.functionSig
 /**
  * Extracts files and folders from a Tar file
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @version 1.0
  */
 public class UnTarFunction extends AbstractExtractFunction {

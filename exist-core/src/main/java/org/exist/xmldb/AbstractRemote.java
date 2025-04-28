@@ -34,7 +34,7 @@ import org.exist.security.internal.aider.PermissionAiderFactory;
 /**
  * Base class for Remote XMLDB classes
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class AbstractRemote {
 
@@ -61,8 +61,9 @@ public abstract class AbstractRemote {
     
     protected Permission getPermission(final String owner, final String group, final int mode, final Stream<ACEAider> aces) throws PermissionDeniedException {
         final Permission perm = PermissionAiderFactory.getPermission(owner, group, mode);
-        if(perm instanceof ACLPermission aclPermission) {
-            for(final ACEAider ace : aces.collect(Collectors.toList())) {
+        if (perm instanceof ACLPermission) {
+            final ACLPermission aclPermission = (ACLPermission) perm;
+            for (final ACEAider ace : aces.collect(Collectors.toList())) {
                 aclPermission.addACE(ace.getAccessType(), ace.getTarget(), ace.getWho(), ace.getMode());
             }
         }

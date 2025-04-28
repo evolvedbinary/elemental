@@ -33,7 +33,7 @@ import org.exquery.xquery.Type;
 /**
  * String Typed Value
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class StringTypedValue extends AbstractTypedValue<StringValue> {
 

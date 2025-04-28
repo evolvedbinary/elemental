@@ -30,7 +30,7 @@ import java.util.Iterator;
  *
  * @param <T> the type of the iterable.
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class IterableEnumeration<T> implements Enumeration<T> {
     private final Iterator<T> iterator;

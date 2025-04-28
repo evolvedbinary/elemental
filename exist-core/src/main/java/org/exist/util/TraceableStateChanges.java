@@ -32,7 +32,7 @@ import java.util.List;
  * @param <S> Information about the state which was modified
  * @param <C> the change which was applied to the state
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class TraceableStateChanges<S, C> {
     private List<TraceableStateChange<S, C>> stateChangeTrace = new ArrayList<>();
