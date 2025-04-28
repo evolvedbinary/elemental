@@ -10,14 +10,14 @@
 [![Coverage Status](https://coveralls.io/repos/github/evolvedbinary/elemental/badge.svg?branch=main)](https://coveralls.io/github/evolvedbinary/elemental?branch=main)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/4d074617e63d40839760a5e7b2ec4392?branch=main)](https://app.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=evolvedbinary_elemental&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=evolvedbinary_elemental)
-[![Java 21](https://img.shields.io/badge/java-21-blue.svg)](https://adoptopenjdk.net/)
+[![Java 21](https://img.shields.io/badge/java-21-blue.svg?logo=openjdk)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-BSL%201.1-blue.svg)](https://mariadb.com/bsl11/)
 [![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
 [![Maven Central](https://img.shields.io/maven-central/v/xyz.elemental/elemental?logo=apachemaven&label=maven+central&color=green)](https://search.maven.org/search?q=g:xyz.elemental)
 [![Homebrew Cask Version](https://img.shields.io/homebrew/cask/v/elemental?logo=homebrew&logoColor=white)](https://formulae.brew.sh/cask/elemental)
 [![Docker Image Version](https://img.shields.io/docker/v/evolvedbinary/elemental?sort=semver&logo=docker&logoColor=white&label=docker)](https://hub.docker.com/r/evolvedbinary/elemental)
-[![Slack](https://img.shields.io/badge/elemental-slack-3e103f.svg)](https://join.slack.com/t/elemental-xyz/shared_invite/zt-34r53san4-fzHCV0vDT9lYSMChUdn3cQ)
-[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-%235e0d73.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html)
+[![Slack](https://img.shields.io/badge/elemental-slack-56b6f8.svg?logo=slack)](https://join.slack.com/t/elemental-xyz/shared_invite/zt-34r53san4-fzHCV0vDT9lYSMChUdn3cQ)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-5e0d73.svg?logo=contributorcovenant)](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html)
 
 ---
 **NOTE**: Elemental was seeded from a fork of eXist-db's git `develop` branch, commit: `adaa276b9cfcaaeb4ee03ee3822ab882e6779f77` (Fri Oct 25 21:27:35 2024 +0200). The Git history was then rewritten to remove many historic files that we no longer need. This resulted in our commit: [`e065a83bf4dc94abfeebcc353cbfbd496976f440`](https://github.com/evolvedbinary/elemental/commit/e065a83bf4dc94abfeebcc353cbfbd496976f440).
