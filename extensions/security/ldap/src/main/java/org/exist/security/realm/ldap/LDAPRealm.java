@@ -65,7 +65,7 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @ConfigurationClass("realm") //TODO: id = LDAP
 public class LDAPRealm extends AbstractRealm {
