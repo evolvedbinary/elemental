@@ -41,7 +41,7 @@ import org.exist.security.realm.Realm;
 import org.exist.security.realm.ldap.LDAPRealm;
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam retter</a>
  */
 public class AccountFunctions extends BasicFunction {
 

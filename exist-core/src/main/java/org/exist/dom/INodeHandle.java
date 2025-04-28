@@ -1,23 +1,25 @@
 /*
- * eXist-db Open Source Native XML Database
- * Copyright (C) 2001 The eXist-db Authors
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
  *
- * info@exist-db.org
- * http://www.exist-db.org
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * Change Date: 2028-04-27
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
  */
 package org.exist.dom;
 
@@ -31,7 +33,7 @@ import org.exist.numbering.NodeId;
  * @param <D> The type of the persistent
  * or in-memory document
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface INodeHandle<D extends org.w3c.dom.Document> {
     
@@ -44,7 +46,7 @@ public interface INodeHandle<D extends org.w3c.dom.Document> {
     
     /**
      * Get the type of the node
-     * @return the type of the node as short value
+     * @return the type of the node
      */
     public short getNodeType(); //TODO convert to enum? what about persistence of the enum id (if it is ever persisted?)?
     

@@ -37,7 +37,7 @@ import java.util.Set;
  * restoration of a db backup
  *
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class SystemImportHandler extends AbstractRestoreHandler {
 

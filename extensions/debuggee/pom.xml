@@ -129,9 +129,9 @@
 
                         <licenseSet>
                             <!--
-                                Elemental License - (LGPL 2.1 only)
+                                Elemental License (BSL 1.1)
                             -->
-                            <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                            <header>${project.parent.relativePath}/../elemental-parent/elemental-BSL-11-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/**</exclude>
@@ -140,10 +140,10 @@
 
                         <licenseSet>
                             <!--
-                                Combined: Elemental License (LGPL 2.1 only) + eXist-db License (LGPL 2.1 or later)
+                                Combined: Elemental License (BSL 1.1) + eXist-db License (LGPL 2.1 or later)
                             -->
                             <multi>
-                                <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                                <header>${project.parent.relativePath}/../elemental-parent/elemental-BSL-11-license.template.txt</header>
                                 <separator><![CDATA[NOTE: Parts of this file contain code from 'The eXist-db Authors'.
       The original license header is included below.
 

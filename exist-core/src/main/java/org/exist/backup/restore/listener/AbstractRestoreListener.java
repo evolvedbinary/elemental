@@ -22,7 +22,7 @@
 package org.exist.backup.restore.listener;
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class AbstractRestoreListener implements RestoreListener {
 

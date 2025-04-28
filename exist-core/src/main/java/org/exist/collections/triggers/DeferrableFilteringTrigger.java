@@ -42,7 +42,7 @@ import java.util.Deque;
  * either {@link #applyDeferredEvents()} or one or more of the
  * _deferred methods to change this behaviour.
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class DeferrableFilteringTrigger extends FilteringTrigger {
 

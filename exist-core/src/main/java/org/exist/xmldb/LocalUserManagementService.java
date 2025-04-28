@@ -52,7 +52,7 @@ import javax.annotation.Nullable;
  * @author <a href="mailto:meier@ifs.tu-darmstadt.de">Wolfgang Meier</a>
  * @author <a href="mailto:marco.tampucci@isti.cnr.it">Marco Tampucci</a>
  * @author <a href="mailto:massimo.martinelli@isti.cnr.it">Massimo.Martinelli</a>
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LocalUserManagementService extends AbstractLocalService implements EXistUserManagementService {
 

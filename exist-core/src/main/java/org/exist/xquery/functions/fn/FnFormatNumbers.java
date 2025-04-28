@@ -1,49 +1,30 @@
 /*
- * NOTE: Where indicated, this file is in part based on code from
- * The BaseX Team. The original license statement is also included below.
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
  *
- * Copyright (c) 2014, Evolved Binary Ltd
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
  *
- * This file was originally ported from FusionDB to eXist-db by
- * Evolved Binary, for the benefit of the eXist-db Open Source community.
- * Only the ported code as it appears in this file, at the time that
- * it was contributed to eXist-db, was re-licensed under The BSD 3-Clause
- * License by Evolved Binary for use in eXist-db.
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
  *
- * This license grant applies only to a snapshot of the code as it
- * appeared when ported, it does not offer or infer any rights to either
- * updates of this source code or access to the original source code.
+ * Change Date: 2028-04-27
  *
- * The BSD 3-Clause license follows.
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
+ *
+ * NOTE: Parts of this file contain code from 'The BaseX Team'.
+ *       The original license header is included below.
  *
  * =====================================================================
- *
- * Copyright (c) 2014, Evolved Binary Ltd
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of Evolved Binary nor the names of its contributors
- *       may be used to endorse or promote products derived from this software
- *       without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL EVOLVED BINARY BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * ---------------------------------------------------------------------
  *
  * Copyright (c) 2005-20 BaseX Team
  * All rights reserved.

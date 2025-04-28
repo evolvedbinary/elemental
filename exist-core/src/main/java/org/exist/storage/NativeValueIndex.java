@@ -115,7 +115,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * nodeIdDeltaData: byte[], The delta bits of this DLN from `deltaOffset` of the previous DLN
  *
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class NativeValueIndex implements ContentLoadingObserver {
 

@@ -11,7 +11,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/4d074617e63d40839760a5e7b2ec4392?branch=main)](https://app.codacy.com/gh/evolvedbinary/elemental/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=evolvedbinary_elemental&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=evolvedbinary_elemental)
 [![Java 21](https://img.shields.io/badge/java-21-blue.svg)](https://adoptopenjdk.net/)
-[![License](https://img.shields.io/badge/license-LGPL%202.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
+[![License](https://img.shields.io/badge/license-BSL%201.1-blue.svg)](https://mariadb.com/bsl11/)
 [![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
 [![Maven Central](https://img.shields.io/maven-central/v/xyz.elemental/elemental?logo=apachemaven&label=maven+central&color=green)](https://search.maven.org/search?q=g:xyz.elemental)
 [![Docker Image Version](https://img.shields.io/docker/v/evolvedbinary/elemental?sort=semver&logo=docker&logoColor=white&label=docker)](https://hub.docker.com/r/evolvedbinary/elemental)
@@ -23,7 +23,7 @@
 
 ---
 
-Elemental is a high-performance open source native XML database—a NoSQL document database and application platform built entirely around XML technologies. The main homepage for Elemental can be found at [elemental.xyz](https://www.elemental.xyz "Elemental Website"). This is the GitHub repository of Elemental source code, and this page links to resources for downloading, building, and contributing to Elemental, below.
+Elemental is a high-performance Fair Source Native XML Database. A NoSQL document database and application platform built entirely around XML technologies. The main homepage for Elemental can be found at [elemental.xyz](https://www.elemental.xyz "Elemental Website"). This is the GitHub repository of Elemental source code, and this page links to resources for downloading, building, and contributing to Elemental, below.
 
 The Elemental community has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 

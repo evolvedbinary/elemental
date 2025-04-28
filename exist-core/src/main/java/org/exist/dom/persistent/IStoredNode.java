@@ -1,23 +1,25 @@
 /*
- * eXist-db Open Source Native XML Database
- * Copyright (C) 2001 The eXist-db Authors
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
  *
- * info@exist-db.org
- * http://www.exist-db.org
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * Change Date: 2028-04-27
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
  */
 package org.exist.dom.persistent;
 
@@ -62,25 +64,18 @@ public interface IStoredNode<T extends IStoredNode> extends INode<DocumentImpl, 
 
 
     /**
-     * @return a count of the number of children
+     * Returns a count of the number of children.
      *
+     * @return the number of children
      */
     public int getChildCount(); //TODO also available in memtree.ElementImpl - consider moving to org.exist.dom.INode (also this is only really used for ElementImpl and DocumentImpl)
 
     /**
-     * Returns true if the node was modified recently and nodes
-     * were inserted at the start or in the middle of its children.
-     *
-     * TODO: 2019-07-11 can't we not detect this?
-     **/
-    //public boolean isDirty();
-
-
-    /**
-     * Set the node to dirty to indicated
+     * Set the node to dirty to indicate
      * that nodes were inserted at the start
      * or in the middle of its children.
-     * @param dirty set to true if node is dirty
+     *
+     * @param dirty the dirty status of the node
      */
     public void setDirty(boolean dirty);
 
@@ -89,13 +84,15 @@ public interface IStoredNode<T extends IStoredNode> extends INode<DocumentImpl, 
 
     public NodePath getPath(NodePath parentPath); //TODO seems to be ElementImpl specific see StoredNode
 
-    //TODO clean this up
-
     /**
-     * @see StoredNode#release()
-     * this seems to do two things
-     * clear the state, and then return the object
-     * to NodePool - all a bit of a mess really!
+     * Release the node.
+     *
+     * See {@link StoredNode#release()}.
+     *
+     * This function currently does two things, (1) it clears the state,
+     * and (2) it then returns the object to NodePool.
+     *
+     * NOTE(AR) we should try and clean this up!
      *
      * org.exist.Indexer seems to borrow and return to the pool
      * org.exist.memtree.DOMIndexer only seems to borrow nodes

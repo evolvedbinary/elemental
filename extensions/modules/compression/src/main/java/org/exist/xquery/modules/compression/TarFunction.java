@@ -39,7 +39,7 @@ import org.exist.xquery.value.Type;
 /**
  * Compresses a sequence of resources and/or collections into a Tar file
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @version 1.0
  */
 public class TarFunction extends AbstractCompressFunction

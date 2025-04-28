@@ -31,7 +31,7 @@ import org.xmldb.api.base.XMLDBException;
 /**
  * Base class for Local XMLDB Services
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class AbstractLocalService extends AbstractLocal implements Service {
 

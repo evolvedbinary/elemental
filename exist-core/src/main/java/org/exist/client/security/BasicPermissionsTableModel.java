@@ -69,7 +69,7 @@ public class BasicPermissionsTableModel extends DefaultTableModel {
     /**
      * Get the Mode described by the table model
      * 
-     * @return The Unix mode of the permissions
+     * @return the Mode described by the table model
      */
     public ModeDisplay getMode() {
         final ModeDisplay modeDisplay = new ModeDisplay();

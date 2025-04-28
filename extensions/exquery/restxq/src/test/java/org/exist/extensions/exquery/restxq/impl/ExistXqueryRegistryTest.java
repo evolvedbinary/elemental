@@ -35,7 +35,7 @@ import org.junit.runner.RunWith;
 /**
  * Tests for ResourceFunctionFactory
  * 
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @RunWith(ParallelRunner.class)
 public class ExistXqueryRegistryTest {

@@ -38,7 +38,7 @@ import org.exist.storage.BrokerPool;
  * Within eXist this class should be used instead of
  * directly calling SAXTransformerFactory.newInstance() directly
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:andrzej@chaeron.com">Andrzej Taramina</a>
  */
 

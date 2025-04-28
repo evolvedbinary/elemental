@@ -32,7 +32,7 @@ import org.xml.sax.SAXException;
  * in a queue and then applying them at a later
  * date to a SAX Handler
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface SAXEvent<T> {
 

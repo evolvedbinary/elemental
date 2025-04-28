@@ -30,7 +30,7 @@ import org.w3c.dom.Node;
  * Removes duplication between NewArrayNodeSet
  * and ExtArrayNodeSet
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class AbstractArrayNodeSet extends AbstractNodeSet implements DocumentSet {
 

@@ -29,7 +29,7 @@ import java.io.*;
  * An Output Stream filter which executes a callback
  * after the stream has been closed.
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class CloseNotifyingOutputStream extends FilterOutputStream {
 

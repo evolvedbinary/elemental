@@ -1,27 +1,31 @@
 /*
- * eXist-db Open Source Native XML Database
- * Copyright (C) 2001 The eXist-db Authors
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
  *
- * info@exist-db.org
- * http://www.exist-db.org
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * Change Date: 2028-04-27
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
  */
 package org.exist.client.security;
 
 import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import javax.swing.*;
 import javax.swing.text.*;
 
@@ -54,18 +58,24 @@ public class AutoCompletion<E> extends PlainDocument {
         this.comboBox = comboBox;
         this.model = comboBox.getModel();
 
-        comboBox.addActionListener(e -> {
-            if (!selecting) {
-                highlightCompletedText(0);
+        comboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!selecting){
+                    highlightCompletedText(0);
+                }
             }
         });
 
-        comboBox.addPropertyChangeListener(e -> {
-            if ("editor".equals(e.getPropertyName())) {
-                configureEditor((ComboBoxEditor) e.getNewValue());
-            }
-            if ("model".equals(e.getPropertyName())) {
-                this.model = (ComboBoxModel<E>) e.getNewValue();
+        comboBox.addPropertyChangeListener(new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent e) {
+                if ("editor".equals(e.getPropertyName())){
+                    configureEditor((ComboBoxEditor) e.getNewValue());
+                }
+                if ("model".equals(e.getPropertyName())){
+                    model = (ComboBoxModel) e.getNewValue();
+                }
             }
         });
 

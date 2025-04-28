@@ -28,7 +28,7 @@ declare namespace util = "http://exist-db.org/xquery/util";
 :
 : Simple example showing how to use compression:unzip()
 :
-: @author Adam Retter <adam@exist-db.org>
+: @author Adam Retter <adam@evolvedbinary.com>
 :)
 
 

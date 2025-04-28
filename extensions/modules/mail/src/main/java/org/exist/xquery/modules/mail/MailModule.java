@@ -48,7 +48,7 @@ import org.exist.xquery.modules.ModuleUtils.ContextMapModifierWithoutResult;
  * An extension module for the eXist Native XML Database that allows email to
  * be sent from XQuery using either SMTP or Sendmail.  
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:andrzej@chaeron.com">Andrzej Taramina</a>
  * @author ljo
  * @author <a href="mailto:josemariafg@gmail.com">José María Fernández</a>

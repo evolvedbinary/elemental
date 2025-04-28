@@ -34,7 +34,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.anyObject;
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DeferredFunctionCallTest {
 

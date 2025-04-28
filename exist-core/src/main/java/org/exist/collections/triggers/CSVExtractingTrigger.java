@@ -77,7 +77,7 @@ import org.xml.sax.SAXException;
  *      &lt;/properties&gt;
  * &lt;/content&gt;
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class CSVExtractingTrigger extends FilteringTrigger {
 

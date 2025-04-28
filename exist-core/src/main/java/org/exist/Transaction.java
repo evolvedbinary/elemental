@@ -27,7 +27,7 @@ import org.exist.storage.txn.TransactionException;
  * Represents an atomic Transaction on the database
  *
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface Transaction extends AutoCloseable {
     
