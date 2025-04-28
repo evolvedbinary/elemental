@@ -52,7 +52,7 @@
     <parent>
         <groupId>xyz.elemental</groupId>
         <artifactId>elemental-parent</artifactId>
-        <version>7.1.0-SNAPSHOT</version>
+        <version>8.0.0-SNAPSHOT</version>
         <relativePath>../elemental-parent</relativePath>
     </parent>
 
