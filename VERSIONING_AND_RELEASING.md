@@ -41,9 +41,12 @@ For pre-releases, such as [release candidates](https://en.wikipedia.org/wiki/Sof
 
 *   Given two versions in which `MAJOR`, `MINOR`, and `PATCH` are equal, the version with a `PRERELEASE` has lower precedence than one without it. The following rules hold true in terms of version number preference:
 
-    *   `3.0.0` > `3.0.0-RC2`
-    *   `3.0.0-RC2` > `3.0.0-RC1`
-    *   `3.0.0-RC1` > `2.2.4`
+    *   `8.0.0` > `8.0.0-SNAPSHOT`
+    *   `8.0.0` > `8.0.0-RC2`
+    *   `8.0.0-RC2` > `8.0.0-RC1`
+    *   `8.0.0-RC1` > `7.1.0`
+    *   `8.0.0-SNAPSHOT` > `7.1.0`
+    *   `7.2.0-SNAPSHOT` > `7.1.0`
 
 We use only two clearly defined forms of `PRERELEASE` label:
 
@@ -87,7 +90,7 @@ This section details concrete steps for creating and publishing product releases
 
 ### Preparing a Product Release
 
-Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.4.0.
+Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.5.0.
 You will require a system with:
 * macOS
 * JDK 8
@@ -166,7 +169,7 @@ You will require a system with:
     </activeProfiles>
     ```
 
-3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone elemental-6.4.0.
+3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone (e.g. `elemental-6.5.0`).
 
 4.  Make sure that you have the HEAD of `origin/main` (or `upstream` if you are on a fork).
 
@@ -184,9 +187,9 @@ You will require a system with:
     [INFO] Executing: /bin/sh -c cd /Users/aretter/code/evolvedbinary/elemental.maven && git status
     [INFO] Working directory: /Users/aretter/code/evolvedbinary/elemental.maven
     [INFO] Checking dependencies and plugins for snapshots ...
-    What is the release version for "Elemental"? (xyz.elemental:elemental) 6.4.0: :
-    What is SCM release tag or label for "Elemental"? (xyz.elemental:elemental) elemental-6.4.0: :
-    What is the new development version for "Elemental"? (xyz.elemental:elemental) 6.5.0-SNAPSHOT: :
+    What is the release version for "Elemental"? (xyz.elemental:elemental) 6.5.0: :
+    What is SCM release tag or label for "Elemental"? (xyz.elemental:elemental) elemental-6.5.0: :
+    What is the new development version for "Elemental"? (xyz.elemental:elemental) 6.6.0-SNAPSHOT: :
     ```
 
 6.  Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven
@@ -196,8 +199,8 @@ Central (staging), Docker images to Docker Hub, and Elemental distributions and 
     ```
 
 7.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
-    ```
-    $ git push origin elemental-6.4.0:gold
+    ```bash
+    $ git push origin elemental-6.5.0:gold
     ```
 
 #### Publishing/Promoting the Product Release
@@ -211,7 +214,7 @@ Central (staging), Docker images to Docker Hub, and Elemental distributions and 
 
 5. Visit the GitHub releases page [https://github.com/evolvedbinary/elemental/releases](https://github.com/evolvedbinary/elemental/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
 
-6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 8.0.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
+6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.5.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
 
 7. Tweet about it using the `elemental` Twitter account.
 
