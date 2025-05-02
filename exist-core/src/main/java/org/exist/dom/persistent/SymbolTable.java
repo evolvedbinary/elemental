@@ -597,7 +597,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * However, for the in-memory reverse map symbolsById, the attribute name
      * should not be prefixed.
      *
-     * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+     * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
      */
     private class LocalNameSymbolCollection extends SymbolCollection {
 

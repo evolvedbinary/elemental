@@ -31,7 +31,7 @@ import java.io.InputStream;
  * An input stream which calculates a digest of the
  * data that is read.
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DigestInputStream extends FilterInputStream {
 

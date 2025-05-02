@@ -127,7 +127,7 @@ import static java.nio.file.StandardOpenOption.*;
  *
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  *         Modified by {Marco.Tampucci, Massimo.Martinelli} @isti.cnr.it
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RpcConnection implements RpcAPI {
 

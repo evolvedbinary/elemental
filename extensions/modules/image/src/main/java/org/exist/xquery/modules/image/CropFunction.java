@@ -56,7 +56,7 @@ import org.exist.xquery.value.Type;
  * Crops an Image
  * 
  * Written by Christian Wittern, based on the scale function by Adam and Loren, with help from Rafael Troilo
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Loren Cahlander
  * @author Christian Wittern
  * @serial 2011-03-05

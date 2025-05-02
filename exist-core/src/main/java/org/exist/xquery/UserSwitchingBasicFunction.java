@@ -30,7 +30,7 @@ import org.exist.security.Subject;
  * to switch the current broker to a user and then have it switched
  * back when the XQuery expression is reset
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class UserSwitchingBasicFunction extends BasicFunction {
 

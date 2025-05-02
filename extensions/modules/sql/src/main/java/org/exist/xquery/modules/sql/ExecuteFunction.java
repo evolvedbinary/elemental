@@ -109,7 +109,7 @@ import org.xml.sax.XMLReader;
  *
  * Execute a SQL statement against a SQL capable Database
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @version 1.2.0
  */
 public class ExecuteFunction extends BasicFunction {

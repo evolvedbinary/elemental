@@ -54,7 +54,7 @@ import static org.junit.Assert.*;
  * of various locks used by {@link NativeBroker} functions
  * are symmetrical
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class NativeBrokerLockingTest {
 

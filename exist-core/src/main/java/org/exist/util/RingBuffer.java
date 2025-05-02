@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * Simple Ring Buffer implementation.
  *
- * @author Adam Retter adam.retter@googlemail.com
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @NotThreadSafe
 public class RingBuffer<T> {

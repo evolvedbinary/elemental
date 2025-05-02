@@ -33,7 +33,7 @@ import org.exquery.restxq.RestXqServiceRegistryListener;
 
 /**
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 class RestXqServiceRegistryLogger implements RestXqServiceRegistryListener {
 

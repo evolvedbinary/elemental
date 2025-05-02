@@ -26,7 +26,7 @@ package org.exist.storage;
 /**
  * Exception caused by a BrokerPoolService
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class BrokerPoolServiceException extends Exception {
     public BrokerPoolServiceException(final String message, final Throwable cause) {

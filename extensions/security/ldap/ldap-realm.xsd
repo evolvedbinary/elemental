@@ -46,7 +46,7 @@
                         <db:firstname>Adam</db:firstname>
                         <db:surname>Retter</db:surname>
                     </db:personname>
-                    <db:email>adam@exist-db.org</db:email>
+                    <db:email>adam@evolvedbinary.com</db:email>
                 </db:author>
             </db:info>
         </xs:documentation>

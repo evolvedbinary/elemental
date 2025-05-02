@@ -39,7 +39,7 @@ import org.exquery.http.HttpRequest;
 
 /**
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class GeneralFunctions extends AbstractRequestModuleFunction {
 

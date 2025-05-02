@@ -31,7 +31,7 @@ import java.io.InputStream;
  *
  * @version 1.0
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ByteBufferInputStream extends InputStream {
 

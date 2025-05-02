@@ -29,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Instantiates an appropriate Permission class based on the current configuration
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class PermissionAiderFactory {
 

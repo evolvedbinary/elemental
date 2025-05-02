@@ -41,7 +41,7 @@ import java.util.function.Function;
 /**
  * Base class for Local XMLDB classes
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class AbstractLocal {
 

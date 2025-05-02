@@ -53,7 +53,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
- * @author <a href="mailto:adam@exist-db.org">Adam retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam retter</a>
  */
 public class GetData extends StrictRequestFunction {
 

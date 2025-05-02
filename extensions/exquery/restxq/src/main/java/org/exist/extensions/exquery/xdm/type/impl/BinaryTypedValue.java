@@ -33,7 +33,7 @@ import org.exquery.xdm.type.AbstractTypedValue;
 /**
  * xs:base64Binary and xs:hexBinary Typed Values
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class BinaryTypedValue extends AbstractTypedValue<BinaryValue> {
     

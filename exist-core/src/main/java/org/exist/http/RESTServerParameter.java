@@ -27,7 +27,7 @@ package org.exist.http;
  * Enumeration of each Parameter
  * used by the RESTServer
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 enum RESTServerParameter {
         

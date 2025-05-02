@@ -67,7 +67,7 @@ import javax.swing.ListModel;
 import javax.swing.SwingUtilities;
 
 /**
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ConnectionDialog extends javax.swing.JDialog implements DialogWithResponse<Connection> {
 

@@ -34,7 +34,7 @@ import java.io.IOException;
 /**
  * Security Manager round trip tests against the XML:DB Local API
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LocalSecurityManagerRoundtripTest extends AbstractSecurityManagerRoundtripTest {
 

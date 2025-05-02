@@ -37,7 +37,7 @@ import org.junit.ClassRule;
 
 /**
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RestApiSecurityTest extends AbstractApiSecurityTest {
 

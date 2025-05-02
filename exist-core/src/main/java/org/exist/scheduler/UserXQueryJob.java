@@ -53,7 +53,7 @@ import org.quartz.JobExecutionException;
 /**
  * Class to represent a User's XQuery Job Extends UserJob.
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:andrzej@chaeron.com">Andrzej Taramina</a>
  */
 public class UserXQueryJob extends UserJob {

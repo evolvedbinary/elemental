@@ -45,7 +45,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by aretter on 16/05/2017.
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class JSONWriterTest {
 

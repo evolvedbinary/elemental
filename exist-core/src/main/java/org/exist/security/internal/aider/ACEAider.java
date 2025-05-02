@@ -28,7 +28,7 @@ import org.exist.security.ACLPermission.ACE_TARGET;
 
 /**
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ACEAider {
     private ACE_ACCESS_TYPE accessType;

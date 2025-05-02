@@ -27,7 +27,7 @@ import java.util.Comparator;
 
 /**
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class AccountComparator implements Comparator<Account> {
     

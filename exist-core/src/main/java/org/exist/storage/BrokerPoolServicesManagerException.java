@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Exception reported by BrokerPoolServicesManager
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class BrokerPoolServicesManagerException extends Exception {
     private final List<BrokerPoolServiceException> serviceExceptions;

@@ -23,7 +23,7 @@ package org.exist.security;
 
 /**
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface ACLPermission {
 
@@ -98,8 +98,8 @@ public interface ACLPermission {
     /**
      * Convenience method for getting the name of the user or group
      * of which this ace is applied to
-     * @param index of the ACE
-     * @return user or group the ace is applied to
+     * @param index the index of the ACE within the ACL
+     * @return the user or group that the ACE is applied for
      */
     String getACEWho(int index);
    
@@ -107,7 +107,7 @@ public interface ACLPermission {
 
     /**
      * Clears all ACE's
-     * @throws PermissionDeniedException is user has not sufficient rights
+     * @throws PermissionDeniedException if the user does not have permission to clear the ACL
      */
     void clear() throws PermissionDeniedException;
     

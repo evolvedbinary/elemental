@@ -39,7 +39,7 @@ import org.xml.sax.SAXException;
 /**
  * Tests expected behaviour of request:get-header() XQuery function
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @version 1.0
  */
 public class GetHeaderTest extends RESTTest {

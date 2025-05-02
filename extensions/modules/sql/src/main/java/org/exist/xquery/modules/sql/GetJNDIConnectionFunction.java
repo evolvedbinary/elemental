@@ -49,7 +49,7 @@ import javax.sql.DataSource;
  * <p>
  * Get a connection to a SQL Database via JNDI
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Loren Cahlander
  * @version 1.2
  * @serial 2008-05-19

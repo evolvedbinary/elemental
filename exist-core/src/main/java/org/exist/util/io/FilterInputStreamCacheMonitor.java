@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Monitors active {@link FilterInputStreamCacheMonitor} instances.
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class FilterInputStreamCacheMonitor {
 

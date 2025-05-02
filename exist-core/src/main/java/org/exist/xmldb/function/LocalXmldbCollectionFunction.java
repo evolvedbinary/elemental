@@ -41,7 +41,7 @@ import java.io.IOException;
  * local XMLDB operations; Predominantly converts exceptions
  * from the database into XMLDBException types
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @FunctionalInterface
 public interface LocalXmldbCollectionFunction<R> extends TriFunctionE<Collection, DBBroker, Txn, R, XMLDBException> {

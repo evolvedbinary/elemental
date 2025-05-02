@@ -31,7 +31,7 @@ import org.exist.numbering.NodeId;
  * @param <D> The type of the persistent
  * or in-memory document
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface INodeHandle<D extends org.w3c.dom.Document> {
     

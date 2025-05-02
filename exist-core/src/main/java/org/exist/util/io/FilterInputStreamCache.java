@@ -29,7 +29,7 @@ import java.io.IOException;
 /**
  * Interface for Cache Implementations for use by the CachingFilterInputStream
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="tobi.krebsATgmail.com">Tobi Krebs</a>
  * @version 1.1
  */

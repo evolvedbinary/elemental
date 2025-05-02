@@ -62,7 +62,7 @@ import org.w3c.dom.NodeList;
  * Utility class for extracting parameters from 
  * DOM representation into a Map.
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ParametersExtractor {
 

@@ -34,7 +34,7 @@ import java.util.Comparator;
  * Should be able to be removed in future when we further refactor
  * to decouple QName from nameType.
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class TypedQNameComparator implements Comparator<QName> {
 

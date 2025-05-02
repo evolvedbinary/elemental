@@ -81,7 +81,7 @@ import javax.annotation.Nullable;
 
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ApacheFopProcessorAdapter implements ProcessorAdapter {
 

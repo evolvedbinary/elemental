@@ -60,7 +60,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * Compresses a sequence of resources and/or collections
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:ljo@exist-db.org">Leif-Jöran Olsson</a>
  * @version 1.0
  */

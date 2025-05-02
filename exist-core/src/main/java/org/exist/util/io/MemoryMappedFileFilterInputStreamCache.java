@@ -36,7 +36,7 @@ import java.nio.file.Path;
  *
  * @version 1.1
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="tobi.krebsATgmail.com">Tobi Krebs</a>
  */
 public class MemoryMappedFileFilterInputStreamCache extends AbstractFilterInputStreamCache {

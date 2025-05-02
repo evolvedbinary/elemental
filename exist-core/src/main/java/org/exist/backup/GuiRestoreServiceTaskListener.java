@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 import javax.swing.*;
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class GuiRestoreServiceTaskListener extends AbstractRestoreServiceTaskListener {
     private final RestoreDialog dialog;

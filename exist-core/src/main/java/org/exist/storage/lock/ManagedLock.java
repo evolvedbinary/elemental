@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * so that it may be used in a try-with-resources
  * statement
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ManagedLock<T> implements AutoCloseable {
     protected final T lock;

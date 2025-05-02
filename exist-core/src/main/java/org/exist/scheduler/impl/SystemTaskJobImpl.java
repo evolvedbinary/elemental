@@ -35,7 +35,7 @@ import org.quartz.StatefulJob;
  *
  * SystemTaskJobs may only have a Single Instance running in the scheduler at once, intersecting schedules will be queued.
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class SystemTaskJobImpl implements SystemTaskJob, StatefulJob {
     

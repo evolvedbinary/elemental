@@ -27,7 +27,7 @@ import java.sql.PreparedStatement;
 /**
  * DOCUMENT ME!
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class PreparedStatementWithSQL {
     private String sql = null;

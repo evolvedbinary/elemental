@@ -131,7 +131,7 @@ import static org.exist.util.ThreadUtils.newInstanceThread;
  *
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author <a href="mailto:pierrick.brihaye@free.fr">Pierrick Brihaye</a>
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @ConfigurationClass("pool")
 public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Database {

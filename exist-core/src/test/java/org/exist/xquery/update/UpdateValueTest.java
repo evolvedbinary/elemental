@@ -27,7 +27,7 @@ import org.xmldb.api.modules.XQueryService;
 
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class UpdateValueTest extends AbstractTestUpdate {
 

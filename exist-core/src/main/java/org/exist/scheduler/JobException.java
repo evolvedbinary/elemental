@@ -28,7 +28,7 @@ import org.quartz.JobExecutionException;
  *
  * Also provides a mechanism for cleaning up a job after failed execution
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class JobException extends Exception {
     
