@@ -62,7 +62,7 @@
         <xsl:copy><xsl:copy-of select="@*"/><xsl:copy-of select="SystemProperty/Default/Property[@name eq 'jetty.home']"/>/etc/<xsl:value-of select="tokenize(SystemProperty/Default/text(),'/')[last() - 1]"/></xsl:copy>
     </xsl:template>
     <xsl:template match="Property[@name = ('jetty.sslContext.keyStorePath', 'jetty.sslContext.trustStorePath')]">
-        <xsl:copy><xsl:copy-of select="@*[local-name(.) ne 'default']"/><xsl:attribute name="default" select="'etc/jetty/keystore.p12'"/></xsl:copy>
+        <xsl:copy><xsl:copy-of select="@*[local-name(.) ne 'default']"/><xsl:attribute name="default" select="'etc/jetty/elemental-server.p12'"/></xsl:copy>
     </xsl:template>
     <xsl:template match="node()|@*">
         <xsl:copy>
