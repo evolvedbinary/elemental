@@ -322,18 +322,14 @@ public class XMLWriter implements SerializerWriter {
                 writer.write(NAMESPACE_FN_XMLNS_PREFIX);
                 writer.write(prefix);
                 writer.write("=\"");
-                //TODO (AP) - test, just write as a string
-                //writeChars(nsURI, true);
-                writer.write(nsURI);
+                writeChars(nsURI, true);
                 writer.write('"');
             } else {
                 if(defaultNamespace.equals(nsURI)) {
                     return;	
                 }
                 writer.write(NAMESPACE_FN_XMLNS_NO_PREFIX);
-                //TODO (AP) - test, just write as a string
-                //writeChars(nsURI, true);
-                writer.write(nsURI);
+                writeChars(nsURI, true);
                 writer.write('"');
                 defaultNamespace= nsURI;				
             }

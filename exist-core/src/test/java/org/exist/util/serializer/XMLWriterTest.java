@@ -6,6 +6,7 @@
 package org.exist.util.serializer;
 
 import org.apache.commons.io.output.StringBuilderWriter;
+import org.exist.dom.QName;
 import org.junit.Test;
 
 import javax.xml.transform.OutputKeys;
@@ -13,6 +14,7 @@ import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.util.Properties;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 public class XMLWriterTest {
@@ -34,6 +36,36 @@ public class XMLWriterTest {
             final String actualText = writer.toString();
             assertEquals(expectedText, actualText);
         }
+    }
+
+    private String writeNSURI(final String localPart, final String namespaceURI) throws TransformerException {
+
+        final QName qName = new QName(localPart, namespaceURI);
+
+        StringBuilderWriter writer = new StringBuilderWriter();
+        final XMLWriter xmlWriter = new XMLWriter(writer);
+        xmlWriter.startDocument();
+        xmlWriter.startElement(qName);
+
+        xmlWriter.namespace("ns", qName.getNamespaceURI());
+
+        xmlWriter.endElement(qName);
+        xmlWriter.endDocument();
+
+        return writer.getBuilder().toString();
+    }
+
+    @Test
+    public void writeNSURI() throws TransformerException {
+
+        assertThat(writeNSURI("qname", "http://exist.sourceforge.net/NS/exist"))
+          .isEqualTo("<qname xmlns:ns=\"http://exist.sourceforge.net/NS/exist\"/>");
+        assertThat(writeNSURI("qname", "http://exist.source>forge.net/NS/exist"))
+          .isEqualTo("<qname xmlns:ns=\"http://exist.source&gt;forge.net/NS/exist\"/>");
+        assertThat(writeNSURI("qname", "http://exist.source#forge.net/NS/exist"))
+          .isEqualTo("<qname xmlns:ns=\"http://exist.source#forge.net/NS/exist\"/>");
+        assertThat(writeNSURI("qname", "http://exist.source&forge.net/NS/exist"))
+          .isEqualTo("<qname xmlns:ns=\"http://exist.source&amp;forge.net/NS/exist\"/>");
     }
 
     @Test
