@@ -72,7 +72,43 @@
       <tag>HEAD</tag>
     </scm>
 
+    <properties>
+        <keystore.type>PKCS12</keystore.type>
+        <keystore.key.algorithm>RSA</keystore.key.algorithm>
+        <keystore.key.size>2048</keystore.key.size>
+
+        <root.alias>root</root.alias>
+        <root.validity>1825</root.validity>  <!-- 5 years -->
+        <root.keystore.path>${project.build.directory}/root.p12</root.keystore.path>
+        <root.keystore.pass>root-store-secret</root.keystore.pass>
+        <root.certificate.path>${project.build.directory}/root.pem</root.certificate.path>
+
+        <ca.alias>elemental-ca</ca.alias>
+        <ca.validity>1460</ca.validity>  <!-- 4 years -->
+        <ca.keystore.path>${project.build.directory}/elemental-ca.p12</ca.keystore.path>
+        <ca.keystore.pass>ca-store-secret</ca.keystore.pass>
+        <ca.certificate.validity>1459</ca.certificate.validity>  <!-- 4 years less 1 day -->
+        <ca.certificate.path>${project.build.directory}/elemental-ca.pem</ca.certificate.path>
+
+        <server.alias>elemental-server</server.alias>
+        <server.validity>1095</server.validity>  <!-- 3 years -->
+        <server.keystore.path>${project.build.directory}/generated-resources/keytool/org/exist/jetty/etc/elemental-server.p12</server.keystore.path>
+        <server.keystore.pass>secret</server.keystore.pass>
+        <server.certificate.validity>1094</server.certificate.validity>  <!-- 3 years less 1 day -->
+        <server.certificate.path>${project.build.directory}/elemental-server.pem</server.certificate.path>
+    </properties>
+
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>target/generated-resources/keytool</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>com.mycila</groupId>
@@ -125,6 +161,259 @@
                     </licenseSets>
                 </configuration>
             </plugin>
+
+            <!--
+                Generates a chain of certificates for localhost SSL use by Jetty.
+                1. Create a ROOT CA
+                2. Create an intermediate CA for Elemental
+                3. Create a Server Certificate for Elemental
+            -->
+            <plugin>
+                <groupId>com.evolvedbinary.thirdparty.org.codehaus.mojo</groupId>
+                <artifactId>keytool-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+
+                    <!-- 1. Create a ROOT CA -->
+                    <execution>
+                        <!-- 1.1 Generate a ROOT CA key pair -->
+                        <id>generate-elemental-root-ca-keypair</id>
+                        <goals>
+                            <goal>generateKeyPair</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${root.alias}</alias>
+                            <dname>CN=Elemental ROOT CA (local-dev), OU=Release Team, O=Evolved Binary, L=London, S=London, C=GB</dname>
+                            <validity>${root.validity}</validity>
+                            <keyalg>${keystore.key.algorithm}</keyalg>
+                            <keysize>${keystore.key.size}</keysize>
+                            <exts>
+                                <ext>bc:c</ext>
+                            </exts>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${root.keystore.path}</keystore>
+                            <storepass>${root.keystore.pass}</storepass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 1.2 Export a copy of the ROOT CA Public Certificate -->
+                        <id>export-root-ca-certificate</id>
+                        <goals>
+                            <goal>exportCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${root.alias}</alias>
+                            <rfc>true</rfc>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${root.keystore.path}</keystore>
+                            <storepass>${root.keystore.pass}</storepass>
+                            <file>${root.certificate.path}</file>
+                        </configuration>
+                    </execution>
+
+                    <!-- 2. Create an intermediate CA for Elemental -->
+                    <execution>
+                        <!-- 2.1 Generate an Elemental CA key pair -->
+                        <id>generate-elemental-ca-keypair</id>
+                        <goals>
+                            <goal>generateKeyPair</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${ca.alias}</alias>
+                            <dname>CN=Elemental CA (local-dev), OU=Release Team, O=Evolved Binary, L=London, S=London, C=GB</dname>
+                            <validity>${ca.validity}</validity>
+                            <keyalg>${keystore.key.algorithm}</keyalg>
+                            <keysize>${keystore.key.size}</keysize>
+                            <exts>
+                                <ext>bc:c</ext>
+                            </exts>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${ca.keystore.path}</keystore>
+                            <storepass>${ca.keystore.pass}</storepass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 2.2 Generate a Certificate Request for an Elemental CA certificate -->
+                        <id>generate-elemental-ca-certificate-request</id>
+                        <goals>
+                            <goal>generateCertificateRequest</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${ca.alias}</alias>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${ca.keystore.path}</keystore>
+                            <storepass>${ca.keystore.pass}</storepass>
+                            <file>${ca.certificate.path}.req</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 2.3 Create a Certificate for the Elemental CA from the Certificate Request signed by the ROOT CA key pair -->
+                        <id>generate-elemental-ca-certificate</id>
+                        <goals>
+                            <goal>generateCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${root.alias}</alias>
+                            <validity>${ca.certificate.validity}</validity>
+                            <rfc>true</rfc>
+                            <exts>
+                                <ext>bc=0</ext>
+                                <ext>SAN=DNS:ca</ext>
+                            </exts>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${root.keystore.path}</keystore>
+                            <storepass>${root.keystore.pass}</storepass>
+                            <infile>${ca.certificate.path}.req</infile>
+                            <outfile>${ca.certificate.path}</outfile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 2.4 Import the ROOT CA certificate into the Elemental CA keystore (to establish the chain of trust) -->
+                        <id>import-root-ca-certificate-into-elemental-ca-keystore</id>
+                        <goals>
+                            <goal>importCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${root.alias}</alias>
+                            <trustcacerts>true</trustcacerts>
+                            <noprompt>true</noprompt>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${ca.keystore.path}</keystore>
+                            <storepass>${ca.keystore.pass}</storepass>
+                            <file>${root.certificate.path}</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 2.5 Import the Elemental CA certificate into the Elemental CA keystore -->
+                        <id>import-elemental-ca-certificate-into-elemental-ca-keystore</id>
+                        <goals>
+                            <goal>importCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${ca.alias}</alias>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${ca.keystore.path}</keystore>
+                            <storepass>${ca.keystore.pass}</storepass>
+                            <file>${ca.certificate.path}</file>
+                        </configuration>
+                    </execution>
+                    <!-- 3. Create a Server Certificate for Elemental -->
+                    <execution>
+                        <!-- 3.1 Generate an Elemental Server Certificate key pair -->
+                        <id>generate-elemental-server-keypair</id>
+                        <goals>
+                            <goal>generateKeyPair</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${server.alias}</alias>
+                            <dname>CN=Elemental Server Certificate (local-dev), OU=Release Team, O=Evolved Binary, L=London, S=London, C=GB</dname>
+                            <validity>${server.validity}</validity>
+                            <keyalg>${keystore.key.algorithm}</keyalg>
+                            <keysize>${keystore.key.size}</keysize>
+                            <exts>
+                                <ext>bc:c</ext>
+                            </exts>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${server.keystore.path}</keystore>
+                            <storepass>${server.keystore.pass}</storepass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 3.2 Generate a Certificate Request for an Elemental Server certificate -->
+                        <id>generate-elemental-server-certificate-request</id>
+                        <goals>
+                            <goal>generateCertificateRequest</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${server.alias}</alias>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${server.keystore.path}</keystore>
+                            <storepass>${server.keystore.pass}</storepass>
+                            <file>${server.certificate.path}.req</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 3.3 Create a Certificate for the Elemental Server from the Certificate Request signed by the Elemental CA key pair -->
+                        <id>generate-elemental-server-certificate</id>
+                        <goals>
+                            <goal>generateCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${ca.alias}</alias>
+                            <validity>${server.certificate.validity}</validity>
+                            <rfc>true</rfc>
+                            <exts>
+                                <ext>ku:c=dig,keyEnc</ext>
+                                <ext>SAN=IP:127.0.0.1,DNS:localhost</ext>
+                                <ext>eku=sa,ca</ext>
+                            </exts>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${ca.keystore.path}</keystore>
+                            <storepass>${ca.keystore.pass}</storepass>
+                            <infile>${server.certificate.path}.req</infile>
+                            <outfile>${server.certificate.path}</outfile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 3.4 Import the ROOT CA certificate into the Server Certificate keystore (to establish the chain of trust) -->
+                        <id>import-root-ca-certificate-into-server-keystore</id>
+                        <goals>
+                            <goal>importCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${root.alias}</alias>
+                            <trustcacerts>true</trustcacerts>
+                            <noprompt>true</noprompt>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${server.keystore.path}</keystore>
+                            <storepass>${server.keystore.pass}</storepass>
+                            <file>${root.certificate.path}</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 3.5 Import the Elemental CA certificate into the Server Certificate keystore (to establish the chain of trust) -->
+                        <id>import-elemental-ca-certificate-into-server-keystore</id>
+                        <goals>
+                            <goal>importCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${ca.alias}</alias>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${server.keystore.path}</keystore>
+                            <storepass>${server.keystore.pass}</storepass>
+                            <file>${ca.certificate.path}</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- 3.6 Import the Elemental Server certificate into the Elemental Server keystore -->
+                        <id>import-elemental-server-certificate-into-server-keystore</id>
+                        <goals>
+                            <goal>importCertificate</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <alias>${server.alias}</alias>
+                            <storetype>${keystore.type}</storetype>
+                            <keystore>${server.keystore.path}</keystore>
+                            <storepass>${server.keystore.pass}</storepass>
+                            <file>${server.certificate.path}</file>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
