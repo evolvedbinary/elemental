@@ -354,7 +354,7 @@
                             <rfc>true</rfc>
                             <exts>
                                 <ext>ku:c=dig,keyEnc</ext>
-                                <ext>SAN=IP:127.0.0.1,DNS:localhost</ext>
+                                <ext>san=dns:localhost,dns:ip6-localhost,ip:127.0.0.1,ip:127.0.1.1,ip:[::1]</ext>
                                 <ext>eku=sa,ca</ext>
                             </exts>
                             <storetype>${keystore.type}</storetype>
