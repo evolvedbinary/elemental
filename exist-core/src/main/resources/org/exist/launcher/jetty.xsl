@@ -23,7 +23,7 @@
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     
-    <xsl:output indent="no" doctype-public="-//Jetty//Configure//EN" doctype-system="http://www.eclipse.org/jetty/configure_10_0.dtd"/>
+    <xsl:output indent="no" doctype-public="-//Jetty//Configure//EN" doctype-system="https://www.eclipse.org/jetty/configure_10_0.dtd"/>
 
     <xsl:preserve-space elements="*"/>
     <xsl:strip-space elements="Set"/>
