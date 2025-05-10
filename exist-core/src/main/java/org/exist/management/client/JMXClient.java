@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,12 +47,14 @@ package org.exist.management.client;
 
 import org.exist.start.CompatibleJavaVersionCheck;
 import org.exist.start.StartException;
+import org.exist.util.FileUtils;
 import org.exist.util.SystemExitCodes;
 import se.softhouse.jargo.Argument;
 import se.softhouse.jargo.ArgumentException;
 import se.softhouse.jargo.CommandLineParser;
 import se.softhouse.jargo.ParsedArguments;
 
+import javax.annotation.Nullable;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -39,6 +65,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -78,9 +105,9 @@ public class JMXClient {
             final CompositeData composite = (CompositeData) connection.getAttribute(name, "HeapMemoryUsage");
             if (composite != null) {
                 echo("\nMEMORY:");
-                echo(String.format("Current heap: %,12d k        Committed memory:  %,12d k",
-                        ((Long)composite.get("used")) / 1024, ((Long)composite.get("committed")) / 1024));
-                echo(String.format("Max memory:   %,12d k", ((Long)composite.get("max")) / 1024));
+                echo(String.format("Current heap: %12s        Committed memory:  %12s",
+                        FileUtils.humanSize((Long)composite.get("used")), FileUtils.humanSize((Long)composite.get("committed"))));
+                echo(String.format("Max memory:   %12s", FileUtils.humanSize((Long)composite.get("max"))));
             }
         } catch (final Exception e) {
             error(e);
@@ -91,23 +118,24 @@ public class JMXClient {
         try {
             echo("\nINSTANCE:");
             final ObjectName name = new ObjectName("org.exist.management." + instance + ":type=Database");
+            echo(String.format("%25s: %10s", "Name", instance));
             final Long memReserved = (Long) connection.getAttribute(name, "ReservedMem");
-            echo(String.format("%25s: %10d k", "Reserved memory", memReserved / 1024));
+            echo(String.format("%25s: %10s", "Reserved memory", FileUtils.humanSize(memReserved)));
             final Long memCache = (Long) connection.getAttribute(name, "CacheMem");
-            echo(String.format("%25s: %10d k", "Cache memory", memCache / 1024));
+            echo(String.format("%25s: %10s", "Cache memory", FileUtils.humanSize(memCache)));
             final Long memCollCache = (Long) connection.getAttribute(name, "CollectionCacheMem");
-            echo(String.format("%25s: %10d k", "Collection cache memory", memCollCache / 1024));
+            echo(String.format("%25s: %10s", "Collection cache memory", FileUtils.humanSize(memCollCache)));
 
-            final String cols[] = { "MaxBrokers", "AvailableBrokers", "ActiveBrokers" };
+            final String[] cols = { "MaxBrokers", "AvailableBrokers", "ActiveBrokers" };
             echo(String.format("\n%17s %17s %17s", cols[0], cols[1], cols[2]));
             final AttributeList attrs = connection.getAttributes(name, cols);
-            final Object values[] = getValues(attrs);
-            echo(String.format("%17d %17d %17d", values[0], values[1], values[2]));
+            final Object[] values = getValues(attrs);
+            echo(String.format("%17d %17d %17d", (Integer)values[0], (Integer)values[1], (Integer)values[2]));
 
             final TabularData table = (TabularData) connection.getAttribute(name, "ActiveBrokersMap");
-            if (table.size() > 0) {
+//            if (table.size() > 0) {
                 echo("\nCurrently active threads:");
-            }
+//            }
 
             for (Object o : table.values()) {
                 final CompositeData data = (CompositeData) o;
@@ -121,56 +149,97 @@ public class JMXClient {
     public void cacheStats() {
         try {
             ObjectName name = new ObjectName("org.exist.management." + instance + ":type=CacheManager");
-            String cols[] = { "MaxTotal", "CurrentSize" };
+            String[] cols = { "MaxTotal", "CurrentSize" };
             AttributeList attrs = connection.getAttributes(name, cols);
-            Object values[] = getValues(attrs);
+            Object[] values = getValues(attrs);
             echo(String.format("\nCACHE [%8d pages max. / %8d pages allocated]", values[0], values[1]));
 
             final Set<ObjectName> beans = connection.queryNames(new ObjectName("org.exist.management." + instance + ":type=CacheManager.Cache,*"), null);
-            cols = new String[] {"Type", "FileName", "Size", "Used", "Hits", "Fails"};
+            cols = new String[] {"Type", "CacheName", "Size", "Used", "Hits", "Fails"};
             echo(String.format("%10s %20s %10s %10s %10s %10s", cols[0], cols[1], cols[2], cols[3], cols[4], cols[5]));
-            for (ObjectName bean : beans) {
+            for (final ObjectName bean : beans) {
                 name = bean;
                 attrs = connection.getAttributes(name, cols);
                 values = getValues(attrs);
                 echo(String.format("%10s %20s %,10d %,10d %,10d %,10d", values[0], values[1], values[2], values[3], values[4], values[5]));
             }
-            
+
             echo("");
-           name = new ObjectName("org.exist.management." + instance + ":type=CollectionCacheManager");
-            cols = new String[] { "MaxTotal", "CurrentSize" };
+            name = new ObjectName("org.exist.management." + instance + ":type=CollectionCache");
+            cols = new String[] { "MaxCacheSize", "Statistics" };
             attrs = connection.getAttributes(name, cols);
             values = getValues(attrs);
-           echo(String.format("Collection Cache: %10d k max / %10d k allocated",
-               ((Long)values[0] / 1024), ((Long)values[1] / 1024)));
+
+
+            echo(String.format("COLLECTION CACHE: [%10s max]", FileUtils.humanSize((Integer)values[0])));
+
+            cols = new String[] {"Hit Count", "Miss Count", "Load Success Count", "Load Failure Count", "Total Load Time", "Eviction Count", "Eviction Weight"};
+            echo(String.format("%10s %20s %20s %20s %20s %20s %20s", cols[0], cols[1], cols[2], cols[3], cols[4], cols[5], cols[6]));
+            final CompositeDataSupport statistics = (CompositeDataSupport) values[1];
+            echo(String.format("%10d %20d %20d %20d %20d %20d %20d", (Long)statistics.get("hitCount"), (Long)statistics.get("missCount"), (Long)statistics.get("loadSuccessCount"), (Long)statistics.get("loadFailureCount"), (Long)statistics.get("totalLoadTime"), (Long)statistics.get("evictionCount"), (Long)statistics.get("evictionWeight")));
+
         } catch (final Exception e) {
             error(e);
         }
     }
 
     public void lockTable() {
-        echo("\nList of threads currently waiting for a lock:");
+        echo("\nList of threads attempting to acquire a lock:");
         echo("-----------------------------------------------");
         try {
-            final TabularData table = (TabularData) connection.getAttribute(new ObjectName("org.exist.management:type=LockManager"), "WaitingThreads");
-            for (Object o : table.values()) {
-                final CompositeData data = (CompositeData) o;
-                echo("Thread " + data.get("waitingThread"));
-                echo(String.format("%20s: %s", "Lock type", data.get("lockType")));
-                echo(String.format("%20s: %s", "Lock mode", data.get("lockMode")));
-                echo(String.format("%20s: %s", "Lock id", data.get("id")));
-                echo(String.format("%20s: %s", "Held by", Arrays.toString((String[]) data.get("owner"))));
-                final String[] readers = (String[]) data.get("waitingForRead");
-                if (readers.length > 0) {
-                    echo(String.format("%20s: %s", "Wait for read", Arrays.toString(readers)));
-                }
-                final String[] writers = (String[]) data.get("waitingForWrite");
-                if (writers.length > 0) {
-                    echo(String.format("%20s: %s", "Wait for write", Arrays.toString(writers)));
-                }
-            }
+            final TabularData table = (TabularData) connection.getAttribute(new ObjectName("org.exist.management." + instance + ":type=LockTable"), "Attempting");
+            printLockTable(table);
         } catch (final MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException e) {
             error(e);
+        }
+
+        echo("");
+
+        echo("\nList of threads holding a lock:");
+        echo("-----------------------------------------------");
+        try {
+            final TabularData table = (TabularData) connection.getAttribute(new ObjectName("org.exist.management." + instance + ":type=LockTable"), "Acquired");
+            printLockTable(table);
+        } catch (final MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException e) {
+            error(e);
+        }
+    }
+
+    private void printLockTable(final TabularData table) {
+        for (final Object tv : table.values()) {
+            final CompositeData data = (CompositeData) tv;
+
+            final String resourceUri = (String) data.get("key");
+            echo("URI: " + resourceUri);
+
+            final TabularData valueData = (TabularData) data.get("value");
+            for (final Object vdv : valueData.values()) {
+                final CompositeData cvdv = (CompositeData) vdv;
+                final String resourceType = (String) cvdv.get("key");
+                echo(String.format("%20s: %s", "Lock type", resourceType));
+
+                final TabularData resourceData = (TabularData) cvdv.get("value");
+
+                for (final Object rvdv : resourceData.values()) {
+                    final CompositeData crvdv = (CompositeData) rvdv;
+                    final String lockMode = (String) crvdv.get("key");
+                    echo(String.format("%20s: %s", "Lock type", lockMode));
+
+                    final TabularData lockData = (TabularData) crvdv.get("value");
+
+                    for (final Object lrvdv : lockData.values()) {
+                        final CompositeData clrvdv = (CompositeData) lrvdv;
+                        final String owner = (String) clrvdv.get("key");
+                        echo(String.format("%20s: %s", "Held by", owner));
+
+                        final CompositeData ownerData = (CompositeData) clrvdv.get("value");
+
+                        final Integer holdCount = (Integer) ownerData.get("count");
+                        echo(String.format("%20s: %d", "Hold count", holdCount));
+                    }
+                }
+
+            }
         }
     }
 
@@ -188,12 +257,27 @@ public class JMXClient {
             if (lastCheckStart != null && lastCheckEnd != null)
                 {echo(String.format("%22s: %dms", "Check took", (lastCheckEnd.getTime() - lastCheckStart.getTime())));}
 
-            final TabularData table = (TabularData)
-                    connection.getAttribute(name, "Errors");
-            for (Object o : table.values()) {
-                final CompositeData data = (CompositeData) o;
-                echo(String.format("%22s: %s", "Error code", data.get("errcode")));
-                echo(String.format("%22s: %s", "Description", data.get("description")));
+            @Nullable final Object result = connection.getAttribute(name, "Errors");
+            if (result != null) {
+                @Nullable final CompositeData table;
+                if (result.getClass().isArray()) {
+                    final CompositeData[] tables = ((CompositeData[]) result);
+                    if (tables.length > 0) {
+                        table = tables[0];
+                    } else {
+                        table = null;
+                    }
+                } else {
+                    table = (CompositeData) result;
+                }
+
+                if (table != null) {
+                    for (final Object o : table.values()) {
+                        final CompositeData data = (CompositeData) o;
+                        echo(String.format("%22s: %s", "Error code", data.get("errcode")));
+                        echo(String.format("%22s: %s", "Description", data.get("description")));
+                    }
+                }
             }
         } catch (final MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException e) {
             error(e);
@@ -230,10 +314,10 @@ public class JMXClient {
         }
     }
 
-    private Object[] getValues(AttributeList attribs) {
+    private Object[] getValues(final AttributeList attribs) {
         final Object[] v = new Object[attribs.size()];
         for (int i = 0; i < attribs.size(); i++) {
-            v[i] = ((Attribute)attribs.get(i)).getValue();
+            v[i] = ((Attribute) attribs.get(i)).getValue();
         }
         return v;
     }
@@ -256,17 +340,14 @@ public class JMXClient {
     /* connection arguments */
     private static final Argument<String> addressArg = stringArgument("-a", "--address")
             .description("RMI address of the server")
-            .required()
             .defaultValue("localhost")
             .build();
     private static final Argument<Integer> portArg = integerArgument("-p", "--port")
             .description("RMI port of the server")
-            .required()
             .defaultValue(DEFAULT_PORT)
             .build();
     private static final Argument<String> instanceArg = stringArgument("-i", "--instance")
             .description("The ID of the database instance to connect to")
-            .required()
             .defaultValue("exist")
             .build();
     private static final Argument<Integer> waitArg = integerArgument("-w", "--wait")

@@ -800,7 +800,12 @@
                                 <include>src/main/java/org/exist/launcher/ServiceManagerFactory.java</include>
                                 <include>src/main/java/org/exist/launcher/SplashScreen.java</include>
                                 <include>src/main/java/org/exist/launcher/WindowsServiceManager.java</include>
+                                <include>src/main/java/org/exist/management/client/JMXClient.java</include>
+                                <include>src/main/java/org/exist/management/impl/Database.java</include>
+                                <include>src/main/java/org/exist/management/impl/DatabaseMXBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/ExistMBean.java</include>
+                                <include>src/main/java/org/exist/management/impl/CollectionCache.java</include>
+                                <include>src/main/java/org/exist/management/impl/CollectionCacheMXBean.java</include>
                                 <include>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</include>
                                 <include>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</include>
                                 <include>src/main/java/org/exist/repo/ClasspathHelper.java</include>
@@ -1004,7 +1009,12 @@
                                 <exclude>src/main/java/org/exist/launcher/LauncherWrapper.java</exclude>
                                 <exclude>src/main/java/org/exist/launcher/SplashScreen.java</exclude>
                                 <exclude>src/main/java/org/exist/launcher/WindowsServiceManager.java</exclude>
+                                <exclude>src/main/java/org/exist/management/client/JMXClient.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/Database.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/DatabaseMXBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/ExistMBean.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/CollectionCache.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/CollectionCacheMXBean.java</exclude>
                                 <exclude>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</exclude>
                                 <exclude>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/ClasspathHelper.java</exclude>
