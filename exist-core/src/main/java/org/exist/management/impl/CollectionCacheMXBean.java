@@ -1,6 +1,6 @@
 /*
- * Elemental
- * Copyright (C) 2024, Evolved Binary Ltd
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
  * admin@evolvedbinary.com
  * https://www.evolvedbinary.com | https://www.elemental.xyz
@@ -31,6 +31,13 @@ import org.exist.collections.CollectionCache;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface CollectionCacheMXBean extends PerInstanceMBean {
+
+    /**
+     * Returns the maximum size of the cache in bytes
+     *
+     * @return maximum size of the cache in bytes
+     */
+    int getMaxCacheSize();
 
     /**
      * Get a statistics snapshot of the Collection Cache
