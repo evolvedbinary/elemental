@@ -21,7 +21,6 @@
  * date we make the Software available; or offers the same or substantially
  * similar functionality as the Software.
  */
-
 package org.exist.management.impl;
 
 import org.exist.storage.BrokerPool;
@@ -58,6 +57,11 @@ public class CollectionCache implements CollectionCacheMXBean {
     @Override
     public String getInstanceId() {
         return instance.getId();
+    }
+
+    @Override
+    public int getMaxCacheSize() {
+        return instance.getCollectionsCache().getMaxCacheSize();
     }
 
     @Override

@@ -805,6 +805,7 @@
                                 <include>src/main/java/org/exist/management/impl/BinaryInputStreamCacheInfo.java</include>
                                 <include>src/main/java/org/exist/management/impl/BinaryValues.java</include>
                                 <include>src/main/java/org/exist/management/impl/BinaryValuesMXBean.java</include>
+                                <include>src/main/java/org/exist/management/impl/CollectionCache.java</include>
                                 <include>src/main/java/org/exist/management/impl/CollectionCacheMXBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/ExistMBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/PerInstanceMBean.java</include>
@@ -1227,6 +1228,8 @@
                                 <include>src/main/java/org/exist/management/client/JMXClient.java</include>
                                 <include>src/main/java/org/exist/management/client/JMXServlet.java</include>
                                 <include>src/main/java/org/exist/management/client/JMXtoXML.java</include>
+                                <include>src/main/java/org/exist/management/impl/Database.java</include>
+                                <include>src/main/java/org/exist/management/impl/DatabaseMXBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/JMXAgent.java</include>
                                 <include>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</include>
                                 <include>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</include>
@@ -1465,7 +1468,10 @@
                                 <exclude>src/main/java/org/exist/management/impl/BinaryInputStreamCacheInfo.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/BinaryValues.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/BinaryValuesMXBean.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/CollectionCache.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/CollectionCacheMXBean.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/Database.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/DatabaseMXBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/ExistMBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/JMXAgent.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/PerInstanceMBean.java</exclude>

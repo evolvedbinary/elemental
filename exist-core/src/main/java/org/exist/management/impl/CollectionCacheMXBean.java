@@ -33,6 +33,13 @@ import org.exist.collections.CollectionCache;
 public interface CollectionCacheMXBean extends PerInstanceMBean {
 
     /**
+     * Returns the maximum size of the cache in bytes
+     *
+     * @return maximum size of the cache in bytes
+     */
+    int getMaxCacheSize();
+
+    /**
      * Get a statistics snapshot of the Collection Cache
      *
      * @return Statistics for the Collection Cache
