@@ -1,4 +1,31 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
+ *
+ * Change Date: 2028-04-27
+ *
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -68,10 +95,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Joe Wicentowski
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
- * @author Adam Retter
  */
 public class DocTest {
 
@@ -257,6 +283,25 @@ public class DocTest {
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
             assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+        }
+    }
+
+    @Test
+    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException {
+        final BrokerPool pool = BrokerPool.getInstance();
+        final String query = "('/db/test.xml', '/db/test/test.xml', '/db/non-existent.xml')[fn:doc-available(.)]";
+
+        try (final DBBroker broker = pool.getBroker()) {
+            final XQueryContext context = new XQueryContext(pool);
+
+            final XQuery xqueryService = pool.getXQueryService();
+            final CompiledXQuery compiled = xqueryService.compile(context, query);
+            final Sequence result = xqueryService.execute(broker, compiled, null);
+
+            assertFalse(result.isEmpty());
+            assertEquals(2, result.getItemCount());
+            assertEquals("/db/test.xml", result.itemAt(0).getStringValue());
+            assertEquals("/db/test/test.xml", result.itemAt(1).getStringValue());
         }
     }
 

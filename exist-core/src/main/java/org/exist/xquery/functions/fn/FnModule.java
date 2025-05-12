@@ -1,4 +1,31 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
+ *
+ * Change Date: 2028-04-27
+ *
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,6 +60,7 @@ import org.exist.xquery.value.FunctionReturnSequenceType;
 /**
  * Module function definitions for xpath-functions module.
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author ljo
  */
@@ -73,7 +101,7 @@ public class FnModule extends AbstractInternalModule {
         new FunctionDef(FunDistinctValues.signatures[0], FunDistinctValues.class),
         new FunctionDef(FunDistinctValues.signatures[1], FunDistinctValues.class),
         new FunctionDef(FunDoc.signature, FunDoc.class),
-        new FunctionDef(FunDocAvailable.signature, FunDocAvailable.class),
+        new FunctionDef(FunDocAvailable.FS_DOC_AVAILABLE, FunDocAvailable.class),
         new FunctionDef(FunDocumentURI.FS_DOCUMENT_URI_0, FunDocumentURI.class),
         new FunctionDef(FunDocumentURI.FS_DOCUMENT_URI_1, FunDocumentURI.class),
         new FunctionDef(FunElementWithId.FS_ELEMENT_WITH_ID_SIGNATURES[0], FunElementWithId.class),

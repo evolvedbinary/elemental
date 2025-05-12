@@ -993,6 +993,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnHasChildren.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnTransform.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Convert.java</include>
@@ -1275,6 +1276,8 @@
                                 <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/DocTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnModule.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunBaseURI.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDeepEqual.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunParseIetfDate.java</include>
@@ -1703,14 +1706,17 @@
                                 <exclude>src/test/java/org/exist/xquery/XQueryContextAttributesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryIsLibraryModuleTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/DocTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnDefaultLanguage.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnFormatIntegers.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnFormatNumbers.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnHasChildren.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnTransform.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunBaseURI.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDeepEqual.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunParseIetfDate.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunTrace.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
