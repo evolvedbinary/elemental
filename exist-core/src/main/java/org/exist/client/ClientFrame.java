@@ -768,6 +768,13 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                     }
                 }
 
+                try {
+                    removeRootCollection.close();
+                    client.reloadCollection();
+                } catch (final XMLDBException e) {
+                    showErrorMessage(e.getMessage(), e);
+                }
+
                 ClientAction.call(client::getResources, e -> showErrorMessage(e.getMessage(), e));
             };
             client.newClientThread("remove", removeTask).start();
