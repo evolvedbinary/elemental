@@ -1168,6 +1168,7 @@
                                 <include>src/main/java/org/exist/client/DocumentView.java</include>
                                 <include>src/main/java/org/exist/client/IndexDialog.java</include>
                                 <include>src/main/java/org/exist/client/InteractiveClient.java</include>
+                                <include>src/main/java/org/exist/client/NewResourceDialog.java</include>
                                 <include>src/main/java/org/exist/client/QueryDialog.java</include>
                                 <include>src/main/java/org/exist/client/TriggersDialog.java</include>
                                 <include>src/main/java/org/exist/client/UploadDialog.java</include>
@@ -1352,6 +1353,7 @@
                                 <exclude>src/main/java/org/exist/client/DocumentView.java</exclude>
                                 <exclude>src/main/java/org/exist/client/IndexDialog.java</exclude>
                                 <exclude>src/main/java/org/exist/client/InteractiveClient.java</exclude>
+                                <exclude>src/main/java/org/exist/client/NewResourceDialog.java</exclude>
                                 <exclude>src/main/java/org/exist/client/QueryDialog.java</exclude>
                                 <exclude>src/main/java/org/exist/client/TriggersDialog.java</exclude>
                                 <exclude>src/main/java/org/exist/client/UploadDialog.java</exclude>
