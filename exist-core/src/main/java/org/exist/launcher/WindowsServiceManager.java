@@ -126,7 +126,9 @@ class WindowsServiceManager implements ServiceManager {
         final Optional<String> minMemory = asJavaCmdlineMemoryString(launcherProperties.getProperty(LAUNCHER_PROPERTY_MIN_MEM, "128"));
 
         final StringBuilder jvmOptions = new StringBuilder();
-        jvmOptions.append("-XX:+ExitOnOutOfMemoryError");
+        jvmOptions.append("-XX:+UseNUMA");
+        jvmOptions.append(";-XX:+UseZGC");
+        jvmOptions.append(";-XX:+ExitOnOutOfMemoryError");
         jvmOptions.append(";-Dfile.encoding=UTF-8");
         for (final String propertyName : System.getProperties().stringPropertyNames()) {
             if (propertyName.startsWith("exist.") ||
