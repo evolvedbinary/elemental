@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -68,10 +92,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Joe Wicentowski
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
- * @author Adam Retter
  */
 public class DocTest {
 
@@ -257,6 +280,25 @@ public class DocTest {
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
             assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+        }
+    }
+
+    @Test
+    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException {
+        final BrokerPool pool = BrokerPool.getInstance();
+        final String query = "('/db/test.xml', '/db/test/test.xml', '/db/non-existent.xml')[fn:doc-available(.)]";
+
+        try (final DBBroker broker = pool.getBroker()) {
+            final XQueryContext context = new XQueryContext(pool);
+
+            final XQuery xqueryService = pool.getXQueryService();
+            final CompiledXQuery compiled = xqueryService.compile(context, query);
+            final Sequence result = xqueryService.execute(broker, compiled, null);
+
+            assertFalse(result.isEmpty());
+            assertEquals(2, result.getItemCount());
+            assertEquals("/db/test.xml", result.itemAt(0).getStringValue());
+            assertEquals("/db/test/test.xml", result.itemAt(1).getStringValue());
         }
     }
 
