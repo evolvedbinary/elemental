@@ -201,6 +201,9 @@ public class LauncherWrapper {
     }
 
     protected void getJavaOpts(final List<String> args, final Properties launcherProperties) {
+        args.add("-XX:+UseNUMA");
+        args.add("-XX:+UseZGC");
+
         args.add("-XX:+ExitOnOutOfMemoryError");
 
         getLauncherOpts(args, launcherProperties);
