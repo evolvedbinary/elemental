@@ -884,12 +884,11 @@
                         <extraArguments>
                             <extraArgument>-XX:+UseNUMA</extraArgument>
                             <extraArgument>-XX:+UseZGC</extraArgument>
-                            <extraArgument>-XX:+UseStringDeduplication</extraArgument>
 
                             <extraArgument>-XX:+ExitOnOutOfMemoryError</extraArgument>
 
                             <!-- Option to generate JDWP debuggable app -->
-                            <!-- extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005</extraArgument -->
+                            <!-- extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005</extraArgument -->
 
                         </extraArguments>
                         <systemProperties>
