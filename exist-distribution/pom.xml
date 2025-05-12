@@ -882,10 +882,13 @@
                     <defaultJvmSettings>
                         <initialMemorySize>128m</initialMemorySize>
 
-                        <!-- Option to generate JDWP debuggable app -->
-                        <!-- extraArguments>
-                            <extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005</extraArgument>
-                        </extraArguments -->
+                        <extraArguments>
+
+                            <extraArgument>-XX:+ExitOnOutOfMemoryError</extraArgument>
+
+                            <!-- Option to generate JDWP debuggable app -->
+                            <!-- extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005</extraArgument -->
+                        </extraArguments>
 
                         <systemProperties>
                             <systemProperty>file.encoding=UTF-8</systemProperty>
