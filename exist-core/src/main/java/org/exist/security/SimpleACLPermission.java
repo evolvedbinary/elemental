@@ -1,4 +1,31 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
+ *
+ * Change Date: 2028-04-27
+ *
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,6 +53,8 @@ import java.util.Arrays;
 
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutputStream;
+
+import javax.annotation.Nullable;
 
 import static org.exist.security.PermissionRequired.IS_DBA;
 import static org.exist.security.PermissionRequired.IS_OWNER;
@@ -85,10 +114,68 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
             throw new PermissionDeniedException("Maximum of " + MAX_ACL_LENGTH + " ACEs has been reached.");
         }
 
-        final int[] newAcl = new int[acl.length + 1];
-        System.arraycopy(acl, 0, newAcl, 0, acl.length);
-        newAcl[newAcl.length - 1] = encodeAsACE(access_type, target, id, mode);
-        this.acl = newAcl;
+        // this is the final mode of all ACEs in the ACL for the targeted `id`
+        @Nullable Integer computedAclMode = null;
+
+        // Walk through the existing ACE and see what the permissions are for the id
+        for (int i = 0; i < acl.length; i++) {
+            final ACE_TARGET aceTarget = getACETarget(i);
+            final int aceId = getACEId(i);
+            final int aceMode = getACEMode(i);
+            final ACE_ACCESS_TYPE aceAccessType = getACEAccessType(i);
+
+            if (aceId == id && aceTarget == target) {
+                // ids match, and existing ACE is `user` and requested addition is `user`, or existing ACE is `group` and requested addition is `group`
+
+                if (aceMode == mode) {
+                    // NOTE(AR) exit - we do not want to add a duplicate mode entry for same target and id
+                    return;
+                }
+
+                computedAclMode = computeCumulativeAclMode(computedAclMode, aceAccessType, aceMode);
+            }
+        }
+
+        final int newMode;
+        if (computedAclMode == null) {
+            newMode = mode;
+        } else {
+            newMode = (computedAclMode ^ mode) & mode;
+        }
+
+        if (newMode > 0) {
+            final int[] newAcl = new int[acl.length + 1];
+            System.arraycopy(acl, 0, newAcl, 0, acl.length);
+            newAcl[newAcl.length - 1] = encodeAsACE(access_type, target, id, newMode);
+            this.acl = newAcl;
+        }
+    }
+
+    private int computeCumulativeAclMode(@Nullable final Integer existingComputedAclMode, final ACE_ACCESS_TYPE aceAccessType, final int aceMode) {
+        if (existingComputedAclMode == null) {
+            return aceMode;
+        }
+
+        if (aceAccessType == ACE_ACCESS_TYPE.ALLOWED) {
+            // ALLOWED, so we set bits
+            return existingComputedAclMode | aceMode;
+        } else {
+            int computedAclMode = existingComputedAclMode;
+            // DENIED, so we unset bits
+            if ((aceMode & READ) == READ) {
+                // unset read bit
+                computedAclMode = computedAclMode & 3;
+            }
+            if ((aceMode & WRITE) == WRITE) {
+                // unset write bit
+                computedAclMode = computedAclMode & 5;
+            }
+            if ((aceMode & EXECUTE) == EXECUTE) {
+                // unset execute bit
+                computedAclMode = computedAclMode & 6;
+            }
+            return computedAclMode;
+        }
     }
 
     public void insertUserACE(final int index, final ACE_ACCESS_TYPE access_type, final int userId, final int mode) throws PermissionDeniedException {
