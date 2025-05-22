@@ -764,6 +764,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
+                                <include>src/test/xquery/securitymanager/acl.xqm</include>
                             </includes>
                         </licenseSet>
 
@@ -869,6 +870,7 @@
                                 <include>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</include>
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
+                                <include>src/main/java/org/exist/security/SimpleACLPermission.java</include>
                                 <include>src/main/java/org/exist/security/internal/AccountImpl.java</include>
                                 <include>src/main/java/org/exist/source/Source.java</include>
                                 <include>src/main/java/org/exist/source/SourceFactory.java</include>
@@ -1087,6 +1089,7 @@
                                 <exclude>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
+                                <exclude>src/main/java/org/exist/security/SimpleACLPermission.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/AccountImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/source/Source.java</exclude>
                                 <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
@@ -1283,6 +1286,7 @@
                                 <exclude>src/test/xquery/operator-mapping.xqm</exclude>
                                 <exclude>src/test/xquery/order.xqm</exclude>
                                 <exclude>src/test/xquery/type-promotion.xqm</exclude>
+                                <exclude>src/test/xquery/securitymanager/acl.xqm</exclude>
                                 <exclude>src/test/xquery/xqsuite/xqsuite-assertions-dynamic.xqm</exclude>
                                 <exclude>src/test/xquery/xqsuite/xqsuite-assertions-inline.xqm</exclude>
                                 <exclude>src/test/xquery/xqsuite/xqsuite-assertions.resources.xqm.ignore</exclude>
