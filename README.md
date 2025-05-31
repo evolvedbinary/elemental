@@ -24,7 +24,7 @@
 
 ---
 
-Elemental is a high-performance Fair Source Native XML Database. A NoSQL document database and application platform built entirely around XML technologies. The main homepage for Elemental can be found at [elemental.xyz](https://www.elemental.xyz "Elemental Website"). This is the GitHub repository of Elemental source code, and this page links to resources for downloading, building, and contributing to Elemental, below.
+Elemental is a high-performance Fair Source Native XML Database. It is a NoSQL document database and application platform built entirely around XML technologies. The main homepage for Elemental can be found at [elemental.xyz](https://www.elemental.xyz "Elemental Website"). This is the GitHub repository of Elemental source code, and this page links to resources for downloading, building, and contributing to Elemental, below.
 
 The Elemental community has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 
