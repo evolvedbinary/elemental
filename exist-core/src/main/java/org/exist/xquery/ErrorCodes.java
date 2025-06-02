@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -262,6 +286,10 @@ public class ErrorCodes {
     public static final ErrorCode EXXQDY0005 = new EXistErrorCode("EXXQDY0005", "No function call details were provided when trying to execute a Library Module.");
     public static final ErrorCode EXXQDY0006 = new EXistErrorCode("EXXQDY0006", "Unable to find named function when trying to execute a Library Module.");
 
+    public static final ErrorCode EXXQST0001 = new EXistErrorCode("EXXQST0001", "Java binding is disabled in the current configuration.");
+    public static final ErrorCode EXXQST0002 = new EXistErrorCode("EXXQST0002", "No Java binding possible for the indicated Java class.");
+    public static final ErrorCode EXXQST0003 = new EXistErrorCode("EXXQST0003", "No Java binding possible for the indicated Java field/method.");
+
     public static final ErrorCode ERROR = new EXistErrorCode("ERROR", "Error.");
 
     public static class ErrorCode {
@@ -309,12 +337,12 @@ public class ErrorCodes {
 
     public static class JavaErrorCode extends ErrorCode {
 
-        public JavaErrorCode(Throwable throwable) {
+        public JavaErrorCode(final Throwable throwable) {
             super(new QName(
                         throwable.getClass().getName(),
                         Namespaces.EXIST_JAVA_BINDING_NS,
                         Namespaces.EXIST_JAVA_BINDING_NS_PREFIX),
-                  throwable.getMessage());
+                  throwable.getMessage() != null ? throwable.getMessage() : throwable.getCause().getMessage());
         }
     }
 }

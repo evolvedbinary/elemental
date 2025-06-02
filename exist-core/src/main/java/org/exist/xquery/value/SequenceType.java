@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,6 +53,8 @@ import org.exist.xquery.XPathException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import java.util.Objects;
 
 /**
  * Represents an XQuery SequenceType and provides methods to check
@@ -249,4 +275,23 @@ public class SequenceType {
         return str + cardinality.toXQueryCardinalityString();
     }
 
+    @Override
+    public final boolean equals(final Object other) {
+        if (!(other instanceof SequenceType)) {
+            return false;
+        }
+
+        final SequenceType otherSequenceType = (SequenceType) other;
+        return primaryType == otherSequenceType.primaryType
+            && cardinality == otherSequenceType.cardinality
+            && Objects.equals(nodeName, otherSequenceType.nodeName);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = primaryType;
+        result = 31 * result + cardinality.hashCode();
+        result = 31 * result + Objects.hashCode(nodeName);
+        return result;
+    }
 }

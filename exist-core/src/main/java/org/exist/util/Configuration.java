@@ -229,6 +229,7 @@ import static org.exist.util.io.VirtualTempPath.DEFAULT_IN_MEMORY_SIZE;
 import static org.exist.xquery.FunctionFactory.DISABLE_DEPRECATED_FUNCTIONS_ATTRIBUTE;
 import static org.exist.xquery.FunctionFactory.DISABLE_DEPRECATED_FUNCTIONS_BY_DEFAULT;
 import static org.exist.xquery.FunctionFactory.ENABLE_JAVA_BINDING_ATTRIBUTE;
+import static org.exist.xquery.FunctionFactory.ENABLE_JAVA_BINDING_BY_DEFAULT;
 import static org.exist.xquery.FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS;
 import static org.exist.xquery.FunctionFactory.PROPERTY_ENABLE_JAVA_BINDING;
 import static org.exist.xquery.XQueryContext.BUILT_IN_MODULE_CLASS_ATTRIBUTE;
@@ -544,7 +545,7 @@ public class Configuration implements ErrorHandler {
 
     private void configureXQuery(final Element xquery) throws DatabaseConfigurationException {
         //java binding
-        configureProperty(xquery, ENABLE_JAVA_BINDING_ATTRIBUTE, PROPERTY_ENABLE_JAVA_BINDING);
+        configureProperty(xquery, ENABLE_JAVA_BINDING_ATTRIBUTE, PROPERTY_ENABLE_JAVA_BINDING, Configuration::asBoolean, ENABLE_JAVA_BINDING_BY_DEFAULT);
         configureProperty(xquery, DISABLE_DEPRECATED_FUNCTIONS_ATTRIBUTE, PROPERTY_DISABLE_DEPRECATED_FUNCTIONS, Configuration::asBoolean, DISABLE_DEPRECATED_FUNCTIONS_BY_DEFAULT);
         configureProperty(xquery, ENABLE_QUERY_REWRITING_ATTRIBUTE, PROPERTY_ENABLE_QUERY_REWRITING);
         configureProperty(xquery, ENFORCE_INDEX_USE_ATTRIBUTE, PROPERTY_ENFORCE_INDEX_USE);

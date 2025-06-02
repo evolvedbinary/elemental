@@ -65,6 +65,7 @@ public class FunctionFactory {
 
     public static final String ENABLE_JAVA_BINDING_ATTRIBUTE = "enable-java-binding";
     public static final String PROPERTY_ENABLE_JAVA_BINDING = "xquery.enable-java-binding";
+    public static final boolean ENABLE_JAVA_BINDING_BY_DEFAULT = false;
     public static final String DISABLE_DEPRECATED_FUNCTIONS_ATTRIBUTE = "disable-deprecated-functions";
     public static final String PROPERTY_DISABLE_DEPRECATED_FUNCTIONS = "xquery.disable-deprecated-functions";
     public static final boolean DISABLE_DEPRECATED_FUNCTIONS_BY_DEFAULT = false;
@@ -125,7 +126,7 @@ public class FunctionFactory {
         //Check if the namespace URI starts with "java:". If yes, treat
         //the function call as a call to an arbitrary Java function.
         } else if (uri.startsWith("java:")) {
-            step = javaFunctionBinding(context, ast, params, qname);
+            step = javaBinding(context, ast, qname, params);
         }
         //None of the above matched: function is either a built-in function or
         //a user-defined function
@@ -273,20 +274,14 @@ public class FunctionFactory {
         return castExpr;
     }
 
-    private static JavaCall javaFunctionBinding(XQueryContext context,
-            XQueryAST ast, List<Expression> params, QName qname) throws XPathException {
-        //Only allow java binding if specified in config file <xquery enable-java-binding="yes">
-        final String javabinding = (String) context.getBroker().getConfiguration()
-            .getProperty(PROPERTY_ENABLE_JAVA_BINDING);
-        if(javabinding == null || !"yes".equals(javabinding)) {
-            throw new XPathException(ast.getLine(), ast.getColumn(),
-                "Java binding is disabled in the current configuration (see conf.xml)." +
-                " Call to " + qname.getStringValue() + " denied.");
+    private static JavaBinding javaBinding(final XQueryContext context, final XQueryAST ast, final QName qname, final List<Expression> params) throws XPathException {
+        // NOTE(AR) Only allow java binding if specified in config file <xquery enable-java-binding="yes">
+        final boolean enableJavaBinding = context.getBroker().getConfiguration().getProperty(PROPERTY_ENABLE_JAVA_BINDING, false);
+        if (!enableJavaBinding) {
+            throw new XPathException(ast.getLine(), ast.getColumn(), ErrorCodes.EXXQST0001, "Java binding is disabled in the current configuration (see conf.xml). Call to " + qname.getStringValue() + " denied.");
         }
-        final JavaCall call = new JavaCall(context, qname);
-        call.setLocation(ast.getLine(), ast.getColumn());
-        call.setArguments(params);
-        return call;
+
+        return JavaBinding.createFunction(ast.getLine(), ast.getColumn(), context, qname, params);
     }
 
     private static Function functionCall(final XQueryContext context,
