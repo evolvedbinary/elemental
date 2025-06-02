@@ -132,7 +132,7 @@ public class Type {
     public final static int ARRAY = 103;
     private final static Logger LOG = LogManager.getLogger(Type.class);
 
-    private static int NO_SUCH_VALUE = -99;
+    private static final int NO_SUCH_VALUE = -99;
 
     private final static int[] superTypes = new int[512];
     private final static Int2ObjectOpenHashMap<String[]> typeNames = new Int2ObjectOpenHashMap<>(64, Hash.FAST_LOAD_FACTOR);

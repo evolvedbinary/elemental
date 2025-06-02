@@ -395,4 +395,21 @@ public class MapType extends AbstractMapType {
     public int getKeyType() {
         return keyType;
     }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T toJavaObject(final Class<T> target) throws XPathException {
+        if (java.util.Map.class.isAssignableFrom(target)) {
+            final java.util.Map<Object, Object> javaMap = new java.util.HashMap<>((int) (map.size() & Integer.MAX_VALUE));
+            for (final IEntry<AtomicValue, Sequence> entry : map.entries()) {
+                final AtomicValue key = entry.key();
+                final Object javaKey = key.toJavaObject(XPathUtil.xdmTypeToJavaClass(key.getType(), Cardinality.EXACTLY_ONE));
+                final Object javaValue = XPathUtil.xpathToJavaObject(entry.value());
+                javaMap.put(javaKey, javaValue);
+            }
+            return (T) javaMap;
+        }
+
+        return super.toJavaObject(target);
+    }
 }

@@ -390,12 +390,10 @@ public class Configuration implements ErrorHandler
     private void configureXQuery( Element xquery ) throws DatabaseConfigurationException
     {
         //java binding
-        final String javabinding = getConfigAttributeValue( xquery, FunctionFactory.ENABLE_JAVA_BINDING_ATTRIBUTE );
+        final boolean enableJavaBinding = parseBoolean(getConfigAttributeValue(xquery, FunctionFactory.ENABLE_JAVA_BINDING_ATTRIBUTE), false);
 
-        if( javabinding != null ) {
-            config.put( FunctionFactory.PROPERTY_ENABLE_JAVA_BINDING, javabinding );
-            LOG.debug(FunctionFactory.PROPERTY_ENABLE_JAVA_BINDING + ": {}", config.get(FunctionFactory.PROPERTY_ENABLE_JAVA_BINDING));
-        }
+        config.put(FunctionFactory.PROPERTY_ENABLE_JAVA_BINDING, enableJavaBinding);
+        LOG.debug(FunctionFactory.PROPERTY_ENABLE_JAVA_BINDING + ": {}", enableJavaBinding);
 
         final String disableDeprecated = getConfigAttributeValue( xquery, FunctionFactory.DISABLE_DEPRECATED_FUNCTIONS_ATTRIBUTE );
         config.put( FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS, Configuration.parseBoolean( disableDeprecated, FunctionFactory.DISABLE_DEPRECATED_FUNCTIONS_BY_DEFAULT ) );

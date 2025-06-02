@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -59,39 +83,68 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
 
     private XQueryContext context;
 
-    public ArrayType(XQueryContext context, List<Sequence> items) {
+    /**
+     * The common super-type of items in the array.
+     * Initialised to {@link Type#ANY_TYPE} when the type is unknown.
+     */
+    private int itemType = Type.ANY_TYPE;
+
+    public ArrayType(final XQueryContext context, final List<Sequence> items) {
         this(null, context, items);
     }
 
-    public ArrayType(final Expression expression, XQueryContext context, List<Sequence> items) {
+    public ArrayType(final Expression expression, final XQueryContext context, final List<Sequence> items) {
         this(expression, context);
-        vector = PersistentVector.create(items);
-    }
-
-    public ArrayType(XQueryContext context, Sequence items) throws XPathException {
-        this(null, context, items);
-    }
-
-    public ArrayType(final Expression expression, XQueryContext context, Sequence items) throws XPathException {
-        this(expression, context);
-
-        List<Sequence> itemList = new ArrayList<>(items.getItemCount());
-        for (SequenceIterator i = items.iterate(); i.hasNext(); ) {
-            itemList.add(i.nextItem().toSequence());
+        this.vector = PersistentVector.create(items);
+        for (int i = 0; i < items.size(); i++) {
+            final Sequence sequence = items.get(i);
+            if (i == 0) {
+                this.itemType = sequence.getItemType();
+            } else {
+                this.itemType = Type.getCommonSuperType(sequence.getItemType(), itemType);
+            }
         }
-        vector = PersistentVector.create(itemList);
     }
 
-    public ArrayType(XQueryContext context, IPersistentVector<Sequence> vector) {
+    public ArrayType(final XQueryContext context, final Sequence items) throws XPathException {
+        this(null, context, items);
+    }
+
+    public ArrayType(final Expression expression, final XQueryContext context, final Sequence items) throws XPathException {
+        this(expression, context);
+        final int itemCount = items.getItemCount();
+        final Sequence[] itemList = new Sequence[itemCount];
+        for (int i = 0; i < itemCount;  i++) {
+            final Item item = items.itemAt(i);
+            if (i == 0) {
+                this.itemType = item.getType();
+            } else {
+                this.itemType = Type.getCommonSuperType(item.getType(), itemType);
+            }
+            final Sequence sequence = item.toSequence();
+            itemList[i] = sequence;
+        }
+        this.vector = PersistentVector.create(itemList);
+    }
+
+    public ArrayType(final XQueryContext context, final IPersistentVector<Sequence> vector) {
         this(null, context, vector);
     }
 
-    public ArrayType(final Expression expression, XQueryContext context, IPersistentVector<Sequence> vector) {
+    public ArrayType(final Expression expression, final XQueryContext context, final IPersistentVector<Sequence> vector) {
         this(expression, context);
         this.vector = vector;
+        for (int i = 0; i < vector.count(); i++) {
+            final Sequence sequence = vector.nth(i);
+            if (i == 0) {
+                this.itemType = sequence.getItemType();
+            } else{
+                this.itemType = Type.getCommonSuperType(sequence.getItemType(), itemType);
+            }
+        }
     }
 
-    private ArrayType(final Expression expression, XQueryContext context) {
+    private ArrayType(final Expression expression, final XQueryContext context) {
         super(expression, null);
         this.context = context;
         final Function fn = new AccessorFunc(context);
@@ -145,7 +198,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return new ArrayType(getExpression(), context, (IPersistentVector<Sequence>)ret.persistent());
     }
 
-    public ArrayType insertBefore(int position, Sequence member) throws XPathException {
+    public ArrayType insertBefore(final int position, final Sequence member) throws XPathException {
         ITransientCollection<Sequence> ret = PersistentVector.emptyVector().asTransient();
 
         for(int i = 0; i < vector.length(); i++) {
@@ -161,13 +214,13 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return new ArrayType(getExpression(), context, (IPersistentVector<Sequence>)ret.persistent());
     }
 
-    public ArrayType put(int position, Sequence member) throws XPathException {
+    public ArrayType put(final int position, final Sequence member) throws XPathException {
         return new ArrayType(getExpression(), context, vector.assocN(position,member));
     }
 
-    public static ArrayType join(XQueryContext context, List<ArrayType> arrays) {
+    public static ArrayType join(final XQueryContext context, final List<ArrayType> arrays) {
         final ITransientCollection<Sequence> ret = PersistentVector.emptyVector().asTransient();
-        for (ArrayType type: arrays) {
+        for (final ArrayType type: arrays) {
             for (ISeq<Sequence> seq = type.vector.seq(); seq != null; seq = seq.next()) {
                 ret.conj(seq.first());
             }
@@ -178,10 +231,11 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
     /**
      * Add member. Modifies the array! Don't use unless you're constructing a new array.
      *
-     * @param seq the member sequence to add
+     * @param sequence the member sequence to add
      */
-    public void add(Sequence seq) {
-        vector = vector.cons(seq);
+    public void add(final Sequence sequence) {
+        this.vector = vector.cons(sequence);
+        this.itemType = itemType == Type.ANY_TYPE ? sequence.getItemType() : Type.getCommonSuperType(sequence.getItemType(), itemType);
     }
 
     /**
@@ -190,7 +244,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
      * @param seq the member sequence to append
      * @return new array
      */
-    public ArrayType append(Sequence seq) {
+    public ArrayType append(final Sequence seq) {
         return new ArrayType(getExpression(), this.context, vector.cons(seq));
     }
 
@@ -200,7 +254,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
     }
 
     public Sequence asSequence() throws XPathException {
-        ValueSequence result = new ValueSequence(vector.length());
+        final ValueSequence result = new ValueSequence(vector.length());
         for (int i = 0; i < vector.length(); i++) {
             result.addAll(vector.nth(i));
         }
@@ -217,12 +271,12 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
     }
 
     @Override
-    public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
+    public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
         accessorFunc.analyze(contextInfo);
     }
 
     @Override
-    public Sequence eval(Sequence contextSequence) throws XPathException {
+    public Sequence eval(final Sequence contextSequence) throws XPathException {
         return accessorFunc.eval(contextSequence, null);
     }
 
@@ -238,12 +292,12 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
     }
 
     @Override
-    public void setArguments(List<Expression> arguments) throws XPathException {
+    public void setArguments(final List<Expression> arguments) throws XPathException {
         accessorFunc.setArguments(arguments);
     }
 
     @Override
-    public void resetState(boolean postOptimization) {
+    public void resetState(final boolean postOptimization) {
         accessorFunc.resetState(postOptimization);
     }
 
@@ -254,7 +308,9 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
 
     @Override
     public int getItemType() {
+        // TODO(AR) investigate why returning the type of items in the array causes tests to fail
         return Type.ARRAY;
+//        return itemType == Type.ANY_TYPE ? Type.ITEM : itemType;
     }
 
     @Override
@@ -299,7 +355,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return new ArrayType(getExpression(), context, (IPersistentVector<Sequence>)PersistentVector.create(sorted));
     }
 
-    public ArrayType forEach(FunctionReference ref) throws XPathException {
+    public ArrayType forEach(final FunctionReference ref) throws XPathException {
         final ITransientCollection<Sequence> ret = PersistentVector.emptyVector().asTransient();
         final Sequence[] fargs = new Sequence[1];
         for (ISeq<Sequence> seq = vector.seq(); seq != null; seq = seq.next()) {
@@ -309,7 +365,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return new ArrayType(getExpression(), context, (IPersistentVector<Sequence>)ret.persistent());
     }
 
-    public ArrayType forEachPair(ArrayType other, FunctionReference ref) throws XPathException {
+    public ArrayType forEachPair(final ArrayType other, final FunctionReference ref) throws XPathException {
         final ITransientCollection<Sequence> ret = PersistentVector.emptyVector().asTransient();
         for (ISeq<Sequence> i1 = vector.seq(), i2 = other.vector.seq(); i1 != null && i2 != null; i1 = i1.next(), i2 = i2.next()) {
             ret.conj(ref.evalFunction(null, null, new Sequence[]{ i1.first(), i2.first() }));
@@ -317,7 +373,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return new ArrayType(getExpression(), context, (IPersistentVector<Sequence>)ret.persistent());
     }
 
-    public ArrayType filter(FunctionReference ref) throws XPathException {
+    public ArrayType filter(final FunctionReference ref) throws XPathException {
         final ITransientCollection<Sequence> ret = PersistentVector.emptyVector().asTransient();
         final Sequence[] fargs = new Sequence[1];
         for (ISeq<Sequence> seq = vector.seq(); seq != null; seq = seq.next()) {
@@ -330,19 +386,19 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return new ArrayType(getExpression(), context, (IPersistentVector<Sequence>)ret.persistent());
     }
 
-    public Sequence foldLeft(FunctionReference ref, Sequence zero) throws XPathException {
+    public Sequence foldLeft(final FunctionReference ref, Sequence zero) throws XPathException {
         for (ISeq<Sequence> seq = vector.seq(); seq != null; seq = seq.next()) {
             zero = ref.evalFunction(null, null, new Sequence[] { zero, seq.first() });
         }
         return zero;
     }
 
-    public Sequence foldRight(FunctionReference ref, Sequence zero) throws XPathException {
-        ISeq<Sequence> seq = vector.seq();
+    public Sequence foldRight(final FunctionReference ref, final Sequence zero) throws XPathException {
+        final ISeq<Sequence> seq = vector.seq();
         return foldRight(ref, zero, seq);
     }
 
-    private Sequence foldRight(FunctionReference ref, Sequence zero, ISeq<Sequence> seq) throws XPathException {
+    private Sequence foldRight(final FunctionReference ref, final Sequence zero, final ISeq<Sequence> seq) throws XPathException {
         if (seq == null) {
             return zero;
         }
@@ -351,8 +407,8 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return ref.evalFunction(null, null, new Sequence[] { head, tailResult });
     }
 
-    protected static Sequence flatten(Sequence input, ValueSequence result) throws XPathException {
-        for (SequenceIterator i = input.iterate(); i.hasNext(); ) {
+    protected static Sequence flatten(final Sequence input, final ValueSequence result) throws XPathException {
+        for (final SequenceIterator i = input.iterate(); i.hasNext(); ) {
             final Item item = i.nextItem();
             if (item.getType() == Type.ARRAY) {
                 final Sequence members = ((ArrayType)item).asSequence();
@@ -364,7 +420,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return result;
     }
 
-    public static Sequence flatten(Item item) throws XPathException {
+    public static Sequence flatten(final Item item) throws XPathException {
         if (item.getType() == Type.ARRAY) {
             final Sequence members = ((ArrayType)item).asSequence();
             return flatten(members, new ValueSequence(members.getItemCount()));
@@ -379,7 +435,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
      * @return flattened sequence
      * @throws XPathException in case of dynamic error
      */
-    public static Sequence flatten(Sequence input) throws XPathException {
+    public static Sequence flatten(final Sequence input) throws XPathException {
         if (input.hasOne()) {
             return flatten(input.itemAt(0));
         }
@@ -389,7 +445,7 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
             flatten = true;
         } else if (itemType == Type.ITEM) {
             // may contain arrays - check
-            for (SequenceIterator i = input.iterate(); i.hasNext(); ) {
+            for (final SequenceIterator i = input.iterate(); i.hasNext(); ) {
                 if (i.nextItem().getType() == Type.ARRAY) {
                     flatten = true;
                     break;
@@ -442,8 +498,141 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
         return builder.toString();
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T toJavaObject(final Class<T> target) throws XPathException {
+        if (byte[].class.isAssignableFrom(target)) {
+            final byte[] javaArray = new byte[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(byte.class);
+            }
+            return (T) javaArray;
+
+        } else if (Byte[].class.isAssignableFrom(target)) {
+            final Byte[] javaArray = new Byte[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Byte.class);
+            }
+            return (T) javaArray;
+
+        } else if (short[].class.isAssignableFrom(target)) {
+            final short[] javaArray = new short[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(short.class);
+            }
+            return (T) javaArray;
+
+        } else if (Short[].class.isAssignableFrom(target)) {
+            final Short[] javaArray = new Short[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Short.class);
+            }
+            return (T) javaArray;
+
+        } else if (int[].class.isAssignableFrom(target)) {
+            final int[] javaArray = new int[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(int.class);
+            }
+            return (T) javaArray;
+
+        } else if (Integer[].class.isAssignableFrom(target)) {
+            final Integer[] javaArray = new Integer[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Integer.class);
+            }
+            return (T) javaArray;
+
+        } else if (long[].class.isAssignableFrom(target)) {
+            final long[] javaArray = new long[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(long.class);
+            }
+            return (T) javaArray;
+
+        } else if (Long[].class.isAssignableFrom(target)) {
+            final Long[] javaArray = new Long[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Long.class);
+            }
+            return (T) javaArray;
+
+        } else if (float[].class.isAssignableFrom(target)) {
+            final float[] javaArray = new float[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(float.class);
+            }
+            return (T) javaArray;
+
+        } else if (Float[].class.isAssignableFrom(target)) {
+            final Float[] javaArray = new Float[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Float.class);
+            }
+            return (T) javaArray;
+
+        } else if (double[].class.isAssignableFrom(target)) {
+            final double[] javaArray = new double[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(double.class);
+            }
+            return (T) javaArray;
+
+        } else if (Double[].class.isAssignableFrom(target)) {
+            final Double[] javaArray = new Double[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Double.class);
+            }
+            return (T) javaArray;
+
+        } else if (boolean[].class.isAssignableFrom(target)) {
+            final boolean[] javaArray = new boolean[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(boolean.class);
+            }
+            return (T) javaArray;
+
+        } else if (Boolean[].class.isAssignableFrom(target)) {
+            final Boolean[] javaArray = new Boolean[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Boolean.class);
+            }
+            return (T) javaArray;
+
+        } else if (char[].class.isAssignableFrom(target)) {
+            final char[] javaArray = new char[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(char.class);
+            }
+            return (T) javaArray;
+
+        } else if (Character[].class.isAssignableFrom(target)) {
+            final Character[] javaArray = new Character[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Character.class);
+            }
+            return (T) javaArray;
+
+        } else if (String[].class.isAssignableFrom(target)) {
+            final String[] javaArray = new String[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(String.class);
+            }
+            return (T) javaArray;
+
+        } else if (Object[].class.isAssignableFrom(target)) {
+            final Object[] javaArray = new Object[vector.length()];
+            for (int i = 0; i < vector.length(); i++) {
+                javaArray[i] = vector.nth(i).toJavaObject(Object.class);
+            }
+            return (T) javaArray;
+        }
+
+        return super.toJavaObject(target);
+    }
+
     /**
-     * The accessor function which will be evaluated if the map is called
+     * The accessor function which will be evaluated if the Array is called
      * as a function item.
      */
     private class AccessorFunc extends BasicFunction {
