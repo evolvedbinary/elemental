@@ -179,6 +179,20 @@ public enum Cardinality {
         throw new IllegalArgumentException("No know cardinality for intValue: " + intValue);
     }
 
+    /**
+     * Compare this Cardinality to another Cardinality.
+     *
+     * NOTE we can't implement (override) {@link Comparable#compareTo(Object)}
+     * here as it is final in {@link java.lang.Enum}.
+     *
+     * @param other the other Cardinality to be compared.
+     *
+     * @return a negative integer, zero, or a positive integer as this Cardinality is less than, equal to, or greater than the other Cardinality.
+     */
+    public int compare(final Cardinality other) {
+        return Byte.compare(val, other.val);
+    }
+
     static class InternalValue {
         static final byte ZERO = 1;
         static final byte ONE = 2;

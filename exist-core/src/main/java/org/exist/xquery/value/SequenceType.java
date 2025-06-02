@@ -1,4 +1,31 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * Use of this software is governed by the Business Source License 1.1
+ * included in the LICENSE file and at www.mariadb.com/bsl11.
+ *
+ * Change Date: 2028-04-27
+ *
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by the Apache License, Version 2.0.
+ *
+ * Additional Use Grant: Production use of the Licensed Work for a permitted
+ * purpose. A Permitted Purpose is any purpose other than a Competing Use.
+ * A Competing Use means making the Software available to others in a commercial
+ * product or service that: substitutes for the Software; substitutes for any
+ * other product or service we offer using the Software that exists as of the
+ * date we make the Software available; or offers the same or substantially
+ * similar functionality as the Software.
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,6 +56,8 @@ import org.exist.xquery.XPathException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import java.util.Objects;
 
 /**
  * Represents an XQuery SequenceType and provides methods to check
@@ -249,4 +278,23 @@ public class SequenceType {
         return str + cardinality.toXQueryCardinalityString();
     }
 
+    @Override
+    public final boolean equals(final Object other) {
+        if (!(other instanceof SequenceType)) {
+            return false;
+        }
+
+        final SequenceType otherSequenceType = (SequenceType) other;
+        return primaryType == otherSequenceType.primaryType
+            && cardinality == otherSequenceType.cardinality
+            && Objects.equals(nodeName, otherSequenceType.nodeName);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = primaryType;
+        result = 31 * result + cardinality.hashCode();
+        result = 31 * result + Objects.hashCode(nodeName);
+        return result;
+    }
 }
