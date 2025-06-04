@@ -13,7 +13,7 @@
 [![Java 21](https://img.shields.io/badge/java-21-blue.svg?logo=openjdk)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-BSL%201.1-blue.svg)](https://mariadb.com/bsl11/)
 [![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
-[![Maven Central](https://img.shields.io/maven-central/v/xyz.elemental/elemental?logo=apachemaven&label=maven+central&color=green)](https://search.maven.org/search?q=g:xyz.elemental)
+[![Maven Central](https://img.shields.io/maven-central/v/xyz.elemental/elemental?logo=apachemaven&label=maven+central&color=green)](https://central.sonatype.com/search?namespace=xyz.elemental)
 [![Homebrew Cask Version](https://img.shields.io/homebrew/cask/v/elemental?logo=homebrew&logoColor=white)](https://formulae.brew.sh/cask/elemental)
 [![Docker Image Version](https://img.shields.io/docker/v/evolvedbinary/elemental?sort=semver&logo=docker&logoColor=white&label=docker)](https://hub.docker.com/r/evolvedbinary/elemental)
 [![Slack](https://img.shields.io/badge/elemental-slack-56b6f8.svg?logo=slack)](https://join.slack.com/t/elemental-xyz/shared_invite/zt-34r53san4-fzHCV0vDT9lYSMChUdn3cQ)
