@@ -95,8 +95,8 @@
         <sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
 
         <!-- Dependencies -->
-        <junit.platform.version>1.12.2</junit.platform.version>
-        <junit.jupiter.version>5.12.2</junit.jupiter.version>
+        <junit.platform.version>1.13.0</junit.platform.version>
+        <junit.jupiter.version>5.13.0</junit.jupiter.version>
         <objenesis.version>3.4</objenesis.version>
         <jaxb.api.version>3.0.1</jaxb.api.version>
         <jaxb.impl.version>3.0.2</jaxb.impl.version>
@@ -211,7 +211,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>3.4.1</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>com.mycila</groupId>
