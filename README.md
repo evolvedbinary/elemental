@@ -13,7 +13,7 @@
 [![Java 8](https://img.shields.io/badge/java-8-blue.svg)](https://adoptopenjdk.net/)
 [![License](https://img.shields.io/badge/license-LGPL%202.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
 [![Download](https://img.shields.io/github/v/release/evolvedbinary/elemental.svg)](https://github.com/evolvedbinary/elemental/releases/)
-[![Maven Central](https://img.shields.io/maven-central/v/xyz.elemental/elemental?logo=apachemaven&label=maven+central&color=green)](https://search.maven.org/search?q=g:xyz.elemental)
+[![Maven Central](https://img.shields.io/maven-central/v/xyz.elemental/elemental?logo=apachemaven&label=maven+central&color=green)](https://central.sonatype.com/search?namespace=xyz.elemental)
 [![Docker Image Version](https://img.shields.io/docker/v/evolvedbinary/elemental?sort=semver&logo=docker&logoColor=white&label=docker)](https://hub.docker.com/r/evolvedbinary/elemental)
 [![Slack](https://img.shields.io/badge/elemental-slack-3e103f.svg)](https://join.slack.com/t/elemental-xyz/shared_invite/zt-34r53san4-fzHCV0vDT9lYSMChUdn3cQ)
 [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-%235e0d73.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html)
