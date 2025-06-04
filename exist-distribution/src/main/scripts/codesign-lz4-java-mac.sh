@@ -25,7 +25,7 @@
 
 
 # $1 is .app/Contents/Java dir
-# $2 is the jansi version
+# $2 is the lz4-java version
 # $3 is temp work directory
 # $4 the mac codesign identity
 
@@ -34,31 +34,32 @@ set -e
 #set -x  ## enable to help debug
 
 # ensure a clean temp work directory
-if [ -d "${3}/org" ]
+if [ -d "${3}/net" ]
 then
-  rm -rf "${3}/org"
+  rm -rf "${3}/net"
 fi
 
 # for each native arch
-archs=('arm64' 'x86' 'x86_64')
+archs=('aarch64' 'x86_64')
 for arch in ${archs[@]}
 do
   # create the temp output dirs
-  mkdir -p "${3}/org/jline/nativ/Mac/${arch}"
+  mkdir -p "${3}/net/jpountz/util/darwin/${arch}"
 
   # switch to temp output dir
   pushd "${3}"
 
   # extract the native files
-  jar -xf "${1}/jansi-${2}.jar" "org/jline/nativ/Mac/${arch}/libjlinenative.jnilib"
+  jar -xf "${1}/lz4-java-${2}.jar" "net/jpountz/util/darwin/${arch}/liblz4-java.dylib"
 
   # test if the file is unsigned, and sign if needed
-  /usr/bin/codesign --verbose --test-requirement="=anchor trusted" --verify "org/jline/nativ/Mac/${arch}/libjlinenative.jnilib" || /usr/bin/codesign --verbose --force --timestamp --sign "${4}" "org/jline/nativ/Mac/${arch}/libjlinenative.jnilib"
+  /usr/bin/codesign --verbose --test-requirement="=anchor trusted" --verify "net/jpountz/util/darwin/${arch}/liblz4-java.dylib" || /usr/bin/codesign --verbose --force --timestamp --sign "${4}" "net/jpountz/util/darwin/${arch}/liblz4-java.dylib"
 
   # overwrite the file in the jar
-  jar -uf "${1}/jansi-${2}.jar" "org/jline/nativ/Mac/${arch}/libjlinenative.jnilib"
+  jar -uf "${1}/lz4-java-${2}.jar" "net/jpountz/util/darwin/${arch}/liblz4-java.dylib"
 
   # switch back from temp output dir
   popd
 
 done
+

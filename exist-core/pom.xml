@@ -202,7 +202,7 @@
         <dependency>
             <groupId>org.lz4</groupId>
             <artifactId>lz4-java</artifactId>
-            <version>1.8.0</version>
+            <version>${lz4-java.version}</version>
         </dependency>
 
         <dependency>
@@ -249,17 +249,6 @@
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
             <version>${jline.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jansi</artifactId>
-            <version>${jline.version}</version>
-            <!--
-                Optionally used by jline at runtime on Linux and macOS,
-                and required by jline at runtime on Windows.
-            -->
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>
