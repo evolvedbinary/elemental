@@ -70,7 +70,7 @@
   </scm>
 
     <properties>
-        <geotools.version>33.0</geotools.version>
+        <geotools.version>33.1</geotools.version>
     </properties>
     
     <dependencies>

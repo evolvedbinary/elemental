@@ -98,7 +98,7 @@
         <exquery.distribution.version>0.2.1</exquery.distribution.version>
         <icu.version>59.1</icu.version>
         <izpack.version>5.2.4</izpack.version>
-        <jline.version>3.29.0</jline.version>
+        <jline.version>3.30.4</jline.version>
         <lz4-java.version>1.8.0</lz4-java.version>
         <jdom1.version>1.1.3</jdom1.version>
         <jetty.version>11.0.25</jetty.version>
@@ -107,10 +107,10 @@
         <nekohtml.version>2.1.3</nekohtml.version>
         <saxon.version>9.9.1-8</saxon.version>
         <xerces.version>2.12.2.2</xerces.version>
-        <xmlresolver.version>6.0.14</xmlresolver.version>
-        <xmlunit.version>2.10.0</xmlunit.version>
+        <xmlresolver.version>6.0.17</xmlresolver.version>
+        <xmlunit.version>2.10.2</xmlunit.version>
         <junit.version>4.13.2</junit.version>
-        <easymock.version>5.5.0</easymock.version>
+        <easymock.version>5.6.0</easymock.version>
         <assertj.version>3.27.3</assertj.version>
         <awaitility.version>4.3.0</awaitility.version>
         <junit.toolbox.version>2.4</junit.toolbox.version>
@@ -619,7 +619,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.5.1</version>
                 </plugin>
                 <plugin>
                     <groupId>de.jutzig</groupId>
