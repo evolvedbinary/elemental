@@ -377,7 +377,8 @@
                             <includes>
                                 <include>src/app/entitlements.plist</include>
                                 <include>src/dmgbuild/settings.py</include>
-                                <include>src/main/scripts/codesign-jansi-mac.sh</include>
+                                <include>src/main/scripts/codesign-jline-mac.sh</include>
+                                <include>src/main/scripts/codesign-lz4-java-mac.sh</include>
                                 <include>src/main/scripts/create-dmg-mac.sh</include>
                             </includes>
                             <excludes>
@@ -1241,20 +1242,40 @@
                         <executions>
                             <execution>
                                 <!--
-                                    Signs the jansi native binaries
+                                    Signs the JLine native binaries
                                 -->
-                                <id>mac-codesign-jansi-native</id>
+                                <id>mac-codesign-jline-native</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
                                     <useMavenLogger>true</useMavenLogger>
-                                    <executable>${project.basedir}/src/main/scripts/codesign-jansi-mac.sh</executable>
+                                    <executable>${project.basedir}/src/main/scripts/codesign-jline-mac.sh</executable>
                                     <arguments>
                                         <argument>${mac.bundle.java.dir}</argument>
-                                        <argument>${jansi.version}</argument>
-                                        <argument>${project.build.directory}/jansi-native</argument>
+                                        <argument>${jline.version}</argument>
+                                        <argument>${project.build.directory}/jline-native</argument>
+                                        <argument>${mac.codesign.identity}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <!--
+                                    Signs the LZ4 Java native binaries
+                                -->
+                                <id>mac-codesign-lz4-java-native</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <useMavenLogger>true</useMavenLogger>
+                                    <executable>${project.basedir}/src/main/scripts/codesign-lz4-java-mac.sh</executable>
+                                    <arguments>
+                                        <argument>${mac.bundle.java.dir}</argument>
+                                        <argument>${lz4-java.version}</argument>
+                                        <argument>${project.build.directory}/lz4-java-native</argument>
                                         <argument>${mac.codesign.identity}</argument>
                                     </arguments>
                                 </configuration>
@@ -1416,12 +1437,30 @@
                                         <argument>notarytool</argument>
                                         <argument>submit</argument>
                                         <argument>--verbose</argument>
+                                        <argument>--wait</argument>
                                         <argument>--apple-id</argument>
                                         <argument>${elemental.release.notarize.apple-id}</argument>
                                         <argument>--team-id</argument>
                                         <argument>${elemental.release.notarize.team-id}</argument>
                                         <argument>--password</argument>
                                         <argument>${elemental.release.notarize.password}</argument>
+                                        <argument>${mac.dmg}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>mac-stapler-staple-dmg</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <useMavenLogger>true</useMavenLogger>
+                                    <executable>/usr/bin/xcrun</executable>
+                                    <arguments>
+                                        <argument>stapler</argument>
+                                        <argument>staple</argument>
+                                        <argument>--verbose</argument>
                                         <argument>${mac.dmg}</argument>
                                     </arguments>
                                 </configuration>
