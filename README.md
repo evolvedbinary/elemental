@@ -1,6 +1,6 @@
 <div align="center" id="logo">
 <a href="https://www.elemental.xyz" target="_blank">
-<img src="https://www.elemental.xyz/images/elemental-logo-horizontal-light.png" alt="Elemental logo"></img>
+<img src="https://www.elemental.xyz/assets/images/logos/elemental-logo-horizontal-light.png" alt="Elemental logo"></img>
 </a>
 </div>
 
