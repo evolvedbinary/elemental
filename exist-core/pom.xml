@@ -806,6 +806,7 @@
                                 <include>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</include>
                                 <include>src/main/java/org/exist/repo/ClasspathHelper.java</include>
                                 <include>src/main/java/org/exist/repo/Deployment.java</include>
+                                <include>src/main/java/org/exist/repo/ExistRepository.java</include>
                                 <include>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</include>
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
@@ -1025,6 +1026,7 @@
                                 <exclude>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/ClasspathHelper.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/Deployment.java</exclude>
+                                <exclude>src/main/java/org/exist/repo/ExistRepository.java</exclude>
                                 <exclude>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
