@@ -546,6 +546,10 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
+     * Get the Document Type.
+     *
+     * @return the document type.
+     *
      * @deprecated use {@link #getDoctype()}.
      */
     @Deprecated

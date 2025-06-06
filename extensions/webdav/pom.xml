@@ -230,6 +230,8 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/main/java/org/exist/webdav/ExistCollection.java</include>
+                                <include>src/main/java/org/exist/webdav/ExistDocument.java</include>
                                 <include>src/main/java/org/exist/webdav/ExistResourceFactory.java</include>
                                 <include>src/main/java/org/exist/webdav/MiltonCollection.java</include>
                                 <include>src/main/java/org/exist/webdav/MiltonDocument.java</include>
@@ -246,6 +248,8 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/main/java/org/exist/webdav/ExistCollection.java</exclude>
+                                <exclude>src/main/java/org/exist/webdav/ExistDocument.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/ExistResourceFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/MiltonCollection.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/MiltonDocument.java</exclude>
