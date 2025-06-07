@@ -89,7 +89,7 @@ This section details concrete steps for creating and publishing product releases
 
 ### Preparing a Product Release
 
-Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.5.0.
+Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.6.0.
 You will require a system with:
 * macOS
 * JDK 8
@@ -172,7 +172,7 @@ You will require a system with:
      </activeProfiles>
     ```
 
-3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone (e.g. `elemental-6.5.0`).
+3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone (e.g. `elemental-6.6.0`).
 
 4.  Make sure that you have the HEAD of `origin/main` (or `upstream` if you are on a fork).
 
@@ -190,9 +190,9 @@ You will require a system with:
     [INFO] Executing: /bin/sh -c cd /Users/aretter/code/evolvedbinary/elemental.maven && git status
     [INFO] Working directory: /Users/aretter/code/evolvedbinary/elemental.maven
     [INFO] Checking dependencies and plugins for snapshots ...
-    What is the release version for "Elemental"? (xyz.elemental:elemental) 6.5.0: :
-    What is SCM release tag or label for "Elemental"? (xyz.elemental:elemental) elemental-6.5.0: :
-    What is the new development version for "Elemental"? (xyz.elemental:elemental) 6.6.0-SNAPSHOT: :
+    What is the release version for "Elemental"? (xyz.elemental:elemental) 6.6.0: :
+    What is SCM release tag or label for "Elemental"? (xyz.elemental:elemental) elemental-6.6.0: :
+    What is the new development version for "Elemental"? (xyz.elemental:elemental) 6.7.0-SNAPSHOT: :
     ```
 
 6.  Once the prepare process completes you can perform the release. This will upload Maven Artifacts to Maven Central (staging), Docker images to Docker Hub, and Elemental distributions and installer to GitHub releases:
@@ -207,7 +207,7 @@ You will require a system with:
 
 8.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
     ```bash
-    $ git push origin elemental-6.5.0:gold
+    $ git push origin elemental-6.6.0:gold
     ```
 
 #### Publishing/Promoting the Product Release
@@ -221,7 +221,7 @@ You will require a system with:
 
 5. Visit the GitHub releases page [https://github.com/evolvedbinary/elemental/releases](https://github.com/evolvedbinary/elemental/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
 
-6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.5.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
+6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.6.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
 
 7. Tweet about it using the `elemental` Twitter account.
 
@@ -239,10 +239,10 @@ You will require a system with:
 
 **Terminology:** "Homebrew Cask" is the segment of Homebrew where pre-built binaries and GUI applications go, whereas the original "Homebrew" project is reserved for command-line utilities that can be built from source. Because the macOS version of Elemental is released as an app bundle with GUI components, it is handled as a Homebrew Cask.
 
-When there is a new release, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of Elemental to 6.5.0, use this command:
+When there is a new release, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of Elemental to 6.6.0, use this command:
 
 ```bash
-brew bump-cask-pr --version 6.5.0 elemental
+brew bump-cask-pr --version 6.6.0 elemental
 ```
 
 This command will cause your local Homebrew installation to download the new version of Elemental, calculate the installer's new SHA-256 fingerprint value, and construct a pull request under your GitHub account, like [this one](https://github.com/Homebrew/homebrew-cask/pull/210264). Once the pull request is submitted, continuous integration tests will run, and a member of the Homebrew community will review the PR. At times there is a backlog on the CI servers, but once tests pass, the community review is typically completed in a matter of hours.
