@@ -117,9 +117,9 @@
                             -->
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
+                                <exclude>exi-functions-demo.xql</exclude>
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/**</exclude>
-                                <exclude>exi-functions-demo.xql</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -138,6 +138,8 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
+                                <include>src/main/java/org/exist/xquery/modules/exi/DecodeExiFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/exi/EncodeExiFunction.java</include>
                             </includes>
                         </licenseSet>
 
@@ -148,6 +150,8 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/exi/DecodeExiFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/exi/EncodeExiFunction.java</exclude>
                             </excludes>
                         </licenseSet>
 
