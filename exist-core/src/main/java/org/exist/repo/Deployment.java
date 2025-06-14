@@ -849,7 +849,7 @@ public class Deployment {
                             storeBinary(broker, transaction, targetCollection, file, mime, name, permission);
                         } else {
                             // could neither store as xml nor binary: give up and report failure in outer catch
-                            throw new EXistException(FileUtils.fileName(file) + " cannot be stored");
+                            throw new EXistException(FileUtils.fileName(file) + " cannot be stored", e);
                         }
                     }
                 } catch (final SAXException | EXistException | PermissionDeniedException | LockException | IOException e) {
