@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,11 +43,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn.transform;
 
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.serialize.SerializationProperties;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.memtree.DocumentBuilderReceiver;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
@@ -32,7 +56,6 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 
-import java.io.StringWriter;
 import java.util.Objects;
 
 class Delivery {
@@ -47,7 +70,7 @@ class Delivery {
     final Format format;
     final SerializationProperties serializationProperties;
     MemTreeBuilder builder;
-    StringWriter stringWriter;
+    StringBuilderWriter stringWriter;
 
     RawDestination rawDestination;
 
@@ -77,7 +100,7 @@ class Delivery {
                                 serializationProperties);
 
                 serializer.setOutputProperties(combinedProperties);
-                stringWriter = new StringWriter();
+                stringWriter = new StringBuilderWriter();
                 serializer.setOutputWriter(stringWriter);
                 return serializer;
             case RAW:
@@ -93,7 +116,7 @@ class Delivery {
         if (stringWriter == null) {
             return null;
         }
-        return stringWriter.getBuffer().toString();
+        return stringWriter.toString();
     }
 
     private DocumentImpl getDocument() {

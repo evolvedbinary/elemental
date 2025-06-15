@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,6 +48,8 @@ package org.exist.xmldb;
 import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.evolvedbinary.j8fu.tuple.Tuple3;
 import net.sf.cglib.proxy.*;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.StoredNode;
@@ -58,7 +84,6 @@ import org.xmldb.api.modules.XMLResource;
 import javax.annotation.Nullable;
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -115,7 +140,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 
         // Case 1: content is an external DOM node
         else if (root != null && !(root instanceof NodeValue)) {
-            try(final StringWriter writer = new StringWriter()) {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 final DOMSerializer serializer = new DOMSerializer(writer, getProperties());
                 try {
                     serializer.serialize(root);
@@ -124,8 +149,6 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                     throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
                 }
                 return content;
-            } catch(final IOException e) {
-                throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(), e);
             }
 
         // Case 2: content is an atomic value
@@ -198,7 +221,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             serializer.setProperties(getProperties());
             saxSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
 
-            try (final StringWriter writer = new StringWriter()) {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 saxSerializer.setOutput(writer, getProperties());
                 serializer.setSAXHandlers(saxSerializer, saxSerializer);
 
@@ -576,7 +599,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
         
     private class InternalXMLSerializer extends SAXSerializer {
         public InternalXMLSerializer() {
-            super(new StringWriter(), null);
+            super(new StringBuilderWriter(), null);
         }
 
         @Override
