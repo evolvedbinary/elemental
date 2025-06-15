@@ -183,7 +183,7 @@ public abstract class TestCase {
 			for(SequenceIterator i = result.iterate(); i.hasNext(); ) {
 				Resource xmldbResource = getResource(i.nextItem());
 				
-//		        StringWriter writer = new StringWriter();
+//		        StringBuilderWriter writer = new StringBuilderWriter();
 //		        Properties outputProperties = new Properties();
 //		        outputProperties.setProperty("indent", "yes");
 //		        SAXSerializer serializer = new SAXSerializer(writer, outputProperties);

@@ -45,6 +45,7 @@
  */
 package org.exist.http;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -1301,15 +1302,16 @@ public class RESTServer {
 
         final InputStream is = request.getInputStream();
         final Reader reader = new InputStreamReader(is, encoding);
-        final StringWriter content = new StringWriter();
-        final char ch[] = new char[4096];
-        int len = 0;
-        while ((len = reader.read(ch)) > -1) {
-            content.write(ch, 0, len);
-        }
+        try (final StringBuilderWriter content = new StringBuilderWriter()) {
+            final char ch[] = new char[4096];
+            int len = 0;
+            while ((len = reader.read(ch)) > -1) {
+                content.write(ch, 0, len);
+            }
 
-        final String xml = content.toString();
-        return xml;
+            final String xml = content.toString();
+            return xml;
+        }
     }
 
     /**

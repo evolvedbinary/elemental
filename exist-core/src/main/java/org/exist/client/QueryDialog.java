@@ -86,6 +86,7 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.xml.transform.OutputKeys;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.security.PermissionDeniedException;
 import org.exist.util.Holder;
 import org.exist.xmldb.EXistXQueryService;
@@ -538,9 +539,10 @@ public class QueryDialog extends JFrame {
             tCompiled = t1 - t0;
 
             // In this way we can see the parsed structure meanwhile the query is
-            final StringWriter writer = new StringWriter();
-            service.dump(compiled, writer);
-            exprDisplay.setText(writer.toString());
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                service.dump(compiled, writer);
+                exprDisplay.setText(writer.toString());
+            }
             resultTabs.setSelectedComponent(exprDisplayScrollPane);
 
             statusMessage.setText(Messages.getString(QUERY_DIALOG_COMPILATION) + ": " + tCompiled + "ms");
@@ -610,9 +612,10 @@ public class QueryDialog extends JFrame {
                 tCompiled = t1 - t0;
 
                 // In this way we can see the parsed structure meanwhile the query is
-                StringWriter writer = new StringWriter();
-                service.dump(compiled, writer);
-                exprDisplay.setText(writer.toString());
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    service.dump(compiled, writer);
+                    exprDisplay.setText(writer.toString());
+                }
 
                 result = service.execute(compiled);
                 tResult = System.currentTimeMillis() - t1;
@@ -623,9 +626,10 @@ public class QueryDialog extends JFrame {
                 }
 
                 // jmfg: Is this still needed? I don't think so
-                writer = new StringWriter();
-                service.dump(compiled, writer);
-                exprDisplay.setText(writer.toString());
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    service.dump(compiled, writer);
+                    exprDisplay.setText(writer.toString());
+                }
 
                 statusMessage.setText(Messages.getString("QueryDialog.retrievingmessage"));
                 final int howmany = count.getNumber().intValue();
