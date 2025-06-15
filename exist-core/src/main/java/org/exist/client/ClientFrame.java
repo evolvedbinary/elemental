@@ -45,6 +45,7 @@
  */
 package org.exist.client;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.SystemProperties;
 import org.exist.backup.Backup;
 import org.exist.backup.CreateBackupDialog;
@@ -1750,16 +1751,17 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         msgArea.setEditable(false);
         msgArea.setBackground(null);
         if (t != null) {
-            final StringWriter out = new StringWriter();
-            final PrintWriter writer = new PrintWriter(out);
-            t.printStackTrace(writer);
-            final JTextArea stacktrace = new JTextArea(out.toString(), 20, 50);
-            stacktrace.setBackground(null);
-            stacktrace.setEditable(false);
-            scroll = new JScrollPane(stacktrace);
-            scroll.setPreferredSize(new Dimension(250, 300));
-            scroll.setBorder(BorderFactory
+            try (final StringBuilderWriter out = new StringBuilderWriter();
+                 final PrintWriter writer = new PrintWriter(out)) {
+                t.printStackTrace(writer);
+                final JTextArea stacktrace = new JTextArea(out.toString(), 20, 50);
+                stacktrace.setBackground(null);
+                stacktrace.setEditable(false);
+                scroll = new JScrollPane(stacktrace);
+                scroll.setPreferredSize(new Dimension(250, 300));
+                scroll.setBorder(BorderFactory
                     .createTitledBorder(Messages.getString("ClientFrame.215"))); //$NON-NLS-1$
+            }
         }
         final JOptionPane optionPane = new JOptionPane();
         optionPane.setMessage(new Object[]{msgArea, scroll});
@@ -1783,7 +1785,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
 
         JScrollPane scrollStacktrace = null;
         if (t != null) {
-            try (final StringWriter out = new StringWriter();
+            try (final StringBuilderWriter out = new StringBuilderWriter();
                  final PrintWriter writer = new PrintWriter(out)) {
                 t.printStackTrace(writer);
                 final JTextArea stacktrace = new JTextArea(out.toString(), 20, 50);
@@ -1795,8 +1797,6 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                 scrollStacktrace.setPreferredSize(new Dimension(600, 300));
                 scrollStacktrace.setBorder(BorderFactory
                         .createTitledBorder(Messages.getString("ClientFrame.218"))); //$NON-NLS-1$
-            } catch (final IOException ioe) {
-                ioe.printStackTrace();
             }
         }
 

@@ -47,11 +47,11 @@ package org.exist.xquery;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -515,7 +515,7 @@ public class TryCatchExpression extends AbstractExpression {
             return null;
         }
 
-        try(final StringWriter sw = new StringWriter();
+        try (final StringBuilderWriter sw = new StringBuilderWriter();
             final PrintWriter pw = new PrintWriter(sw)) {
 
             t.printStackTrace(pw);

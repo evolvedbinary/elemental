@@ -45,6 +45,7 @@
  */
 package org.exist.xquery.functions.xmldb;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,7 +68,6 @@ import org.xmldb.api.modules.XUpdateQueryService;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerException;
-import java.io.StringWriter;
 import java.util.Properties;
 
 /**
@@ -102,17 +102,17 @@ public class XMLDBXUpdate extends XMLDBAbstractCollectionManipulator
 	public Sequence evalWithCollection(Collection c, Sequence[] args, Sequence contextSequence)
         throws XPathException {
 		final NodeValue data = (NodeValue) args[1].itemAt(0);
-		final StringWriter writer = new StringWriter();
-		final Properties properties = new Properties();
-		properties.setProperty(OutputKeys.INDENT, "yes");
-        final DOMSerializer serializer = new DOMSerializer(writer, properties);
-		try {
+		final String xupdate;
+		try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+			final Properties properties = new Properties();
+			properties.setProperty(OutputKeys.INDENT, "yes");
+			final DOMSerializer serializer = new DOMSerializer(writer, properties);
 			serializer.serialize(data.getNode());
+			xupdate = writer.toString();
 		} catch(final TransformerException e) {
 			logger.debug("Exception while serializing XUpdate document", e);
 			throw new XPathException(this, "Exception while serializing XUpdate document: " + e.getMessage(), e);
 		}
-		final String xupdate = writer.toString();
 
 		long modifications = 0;
 		try {
