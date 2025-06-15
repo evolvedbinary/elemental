@@ -881,6 +881,7 @@
                                 <include>src/main/java/org/exist/util/serializer/SerializerObjectFactory.java</include>
                                 <include>src/main/java/org/exist/util/serializer/json/JSONObject.java</include>
                                 <include>src/test/java/org/exist/util/serializer/json/JSONObjectTest.java</include>
+                                <include>src/main/java/org/exist/util/serializer/json/JSONSerializer.java</include>
                                 <include>src/test/java/org/exist/util/serializer/json/JSONWriterTest.java</include>
                                 <include>src/test/resources/org/exist/validation/catalog.xml</include>
                                 <include>src/test/java/org/exist/validation/CollectionConfigurationValidationModeTest.java</include>
@@ -1203,6 +1204,7 @@
                                 <exclude>src/main/java/org/exist/util/serializer/SerializerObjectFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/json/JSONObject.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/json/JSONObjectTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/serializer/json/JSONSerializer.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/json/JSONWriterTest.java</exclude>
                                 <exclude>src/test/resources/org/exist/validation/catalog.xml</exclude>
                                 <exclude>src/test/java/org/exist/validation/CollectionConfigurationValidationModeTest.java</exclude>

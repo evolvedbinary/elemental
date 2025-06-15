@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,6 +48,7 @@ package org.exist.util.serializer.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.lacuna.bifurcan.IEntry;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
@@ -69,7 +94,11 @@ public class JSONSerializer {
             } else {
                 generator.disable(JsonGenerator.Feature.STRICT_DUPLICATE_DETECTION);
             }
-            serializeSequence(sequence, generator);
+
+            try (final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
+                serializeSequence(sequence, generator, sbWriter);
+            }
+
             if ("yes".equals(outputProperties.getProperty(EXistOutputKeys.INSERT_FINAL_NEWLINE, "no"))) {
                 generator.writeRaw('\n');
             }
@@ -79,25 +108,25 @@ public class JSONSerializer {
         }
     }
 
-    private void serializeSequence(Sequence sequence, JsonGenerator generator) throws IOException, XPathException, SAXException {
+    private void serializeSequence(final Sequence sequence, final JsonGenerator generator, final StringBuilderWriter sbWriter) throws IOException, XPathException, SAXException {
         if (sequence.isEmpty()) {
             generator.writeNull();
         } else if (sequence.hasOne() && "no".equals(outputProperties.getProperty(EXistOutputKeys.JSON_ARRAY_OUTPUT, "no"))) {
-            serializeItem(sequence.itemAt(0), generator);
+            serializeItem(sequence.itemAt(0), generator, sbWriter);
         } else {
             generator.writeStartArray();
-            for (SequenceIterator i = sequence.iterate(); i.hasNext(); ) {
-                serializeItem(i.nextItem(), generator);
+            for (final SequenceIterator i = sequence.iterate(); i.hasNext(); ) {
+                serializeItem(i.nextItem(), generator, sbWriter);
             }
             generator.writeEndArray();
         }
     }
 
-    private void serializeItem(Item item, JsonGenerator generator) throws IOException, XPathException, SAXException {
+    private void serializeItem(final Item item, final JsonGenerator generator, final StringBuilderWriter sbWriter) throws IOException, XPathException, SAXException {
         if (item.getType() == Type.ARRAY) {
-            serializeArray((ArrayType) item, generator);
+            serializeArray((ArrayType) item, generator, sbWriter);
         } else if (item.getType() == Type.MAP) {
-            serializeMap((MapType) item, generator);
+            serializeMap((MapType) item, generator, sbWriter);
         } else if (Type.subTypeOf(item.getType(), Type.ATOMIC)) {
             if (Type.subTypeOfUnion(item.getType(), Type.NUMBER)) {
                 generator.writeNumber(item.getStringValue());
@@ -112,11 +141,11 @@ public class JSONSerializer {
                 }
             }
         } else if (Type.subTypeOf(item.getType(), Type.NODE)) {
-            serializeNode(item, generator);
+            serializeNode(item, generator, sbWriter);
         }
     }
 
-    private void serializeNode(Item item, JsonGenerator generator) throws SAXException {
+    private void serializeNode(final Item item, final JsonGenerator generator, final StringBuilderWriter sbWriter) throws SAXException {
         final Serializer serializer = broker.borrowSerializer();
         final Properties xmlOutput = new Properties();
         xmlOutput.setProperty(OutputKeys.METHOD, outputProperties.getProperty(EXistOutputKeys.JSON_NODE_OUTPUT_METHOD, "xml"));
@@ -124,7 +153,9 @@ public class JSONSerializer {
         xmlOutput.setProperty(OutputKeys.INDENT, outputProperties.getProperty(OutputKeys.INDENT, "no"));
         try {
             serializer.setProperties(xmlOutput);
-            generator.writeString(serializer.serialize((NodeValue)item));
+            sbWriter.getBuilder().setLength(0);
+            serializer.serialize((NodeValue) item, sbWriter);
+            generator.writeString(sbWriter.toString());
         } catch (IOException e) {
             throw new SAXException(e.getMessage(), e);
         } finally {
@@ -132,20 +163,20 @@ public class JSONSerializer {
         }
     }
 
-    private void serializeArray(ArrayType array, JsonGenerator generator) throws IOException, XPathException, SAXException {
+    private void serializeArray(final ArrayType array, final JsonGenerator generator, final StringBuilderWriter sbWriter) throws IOException, XPathException, SAXException {
         generator.writeStartArray();
         for (int i = 0; i < array.getSize(); i++) {
             final Sequence member = array.get(i);
-            serializeSequence(member, generator);
+            serializeSequence(member, generator, sbWriter);
         }
         generator.writeEndArray();
     }
 
-    private void serializeMap(MapType map, JsonGenerator generator) throws IOException, XPathException, SAXException {
+    private void serializeMap(final MapType map, final JsonGenerator generator, final StringBuilderWriter sbWriter) throws IOException, XPathException, SAXException {
         generator.writeStartObject();
         for (final IEntry<AtomicValue, Sequence> entry: map) {
             generator.writeFieldName(entry.key().getStringValue());
-            serializeSequence(entry.value(), generator);
+            serializeSequence(entry.value(), generator, sbWriter);
         }
         generator.writeEndObject();
     }
