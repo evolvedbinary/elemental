@@ -211,11 +211,11 @@
                             -->
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
-                                <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
                                 <exclude>access_imap_mailbox_example.xql</exclude>
                                 <exclude>get_messages_example.xql</exclude>
+                                <exclude>pom.xml</exclude>
                                 <exclude>send-*.xql</exclude>
+                                <exclude>src/**</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -234,8 +234,8 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
-                                <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/MailSessionFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</include>
@@ -249,14 +249,14 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/MailSessionFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</exclude>
-                                <exclude>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/Util.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -267,8 +267,8 @@
                             <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</include>
-                                <include>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</include>
                                 <include>src/test/java/org/exist/xquery/modules/mail/Util.java</include>
+                                <include>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</include>
                             </includes>
 
                         </licenseSet>
