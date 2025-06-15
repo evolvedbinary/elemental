@@ -153,10 +153,10 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
-                                <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
-                                <include>src/test/java/org/exist/debugger/DebuggerTest.java</include>
+                                <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/test/java/org/exist/debugger/DebuggerTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -167,10 +167,10 @@
                             <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
-                                <exclude>src/test/java/org/exist/debugger/DebuggerTest.java</exclude>
+                                <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/test/java/org/exist/debugger/DebuggerTest.java</exclude>
                             </excludes>
                         </licenseSet>
 
