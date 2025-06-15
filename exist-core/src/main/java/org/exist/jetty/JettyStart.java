@@ -117,7 +117,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             .description("Path to Jetty Config File")
             .build();
     private static final Argument<String> existConfigFilePath = stringArgument()
-            .description("Path to eXist-db Config File")
+            .description("Path to Elemental Config File")
             .build();
     private static final Argument<?> helpArg = helpArgument("-h", "--help");
 
@@ -240,9 +240,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             logger.info("Number of processors available to JVM: {}", Runtime.getRuntime().availableProcessors());
 
             logger.info("Running as user '{}'", System.getProperty("user.name", "(unknown user.name)"));
-            logger.info("[eXist Home : {}]", System.getProperty("exist.home", "unknown"));
-            logger.info("[eXist Version : {}]", SystemProperties.getInstance().getSystemProperty("product-version", "unknown"));
-            logger.info("[eXist Build : {}]", SystemProperties.getInstance().getSystemProperty("product-build", "unknown"));
+            logger.info("[Elemental Home : {}]", System.getProperty("exist.home", "unknown"));
+            logger.info("[Elemental Version : {}]", SystemProperties.getInstance().getSystemProperty("product-version", "unknown"));
+            logger.info("[Elemental Build : {}]", SystemProperties.getInstance().getSystemProperty("product-build", "unknown"));
             logger.info("[Git commit : {}]", SystemProperties.getInstance().getSystemProperty("git-commit", "unknown"));
             logger.info("[Git commit timestamp : {}]", SystemProperties.getInstance().getSystemProperty("git-commit-timestamp", "unknown"));
 
