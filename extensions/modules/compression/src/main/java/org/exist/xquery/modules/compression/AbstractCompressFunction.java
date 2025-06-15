@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,6 +46,7 @@
 package org.exist.xquery.modules.compression;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
@@ -120,17 +145,18 @@ public abstract class AbstractCompressFunction extends BasicFunction
                 encoding = StandardCharsets.UTF_8;
             }
 
-            try(final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream();
-                    OutputStream os = stream(baos, encoding)) {
+            try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream();
+                 final OutputStream os = stream(baos, encoding);
+                 final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
 
                 // iterate through the argument sequence
                 for (SequenceIterator i = args[0].iterate(); i.hasNext(); ) {
                     Item item = i.nextItem();
 
                     if (item instanceof Element element) {
-                        compressElement(os, element, useHierarchy, stripOffset);
+                        compressElement(os, element, useHierarchy, stripOffset, sbWriter);
                     } else {
-                        compressFromUri(os, ((AnyURIValue) item).toURI(), useHierarchy, stripOffset, "", null);
+                        compressFromUri(os, ((AnyURIValue) item).toURI(), useHierarchy, stripOffset, "", null, sbWriter);
                     }
                 }
 
@@ -147,7 +173,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		}
 	}
 
-    private void compressFromUri(OutputStream os, URI uri, boolean useHierarchy, String stripOffset, String method, String resourceName) throws XPathException
+    private void compressFromUri(final OutputStream os, final URI uri, final boolean useHierarchy, final String stripOffset, final String method, final String resourceName, final StringBuilderWriter sbWriter) throws XPathException
         {
             try {
                 if ("file".equals(uri.getScheme())) {
@@ -169,7 +195,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                     // try for a collection
                     try(final Collection collection = context.getBroker().openCollection(xmldburi, LockMode.READ_LOCK)) {
                         if(collection != null) {
-                            compressCollection(os, collection, useHierarchy, stripOffset);
+                            compressCollection(os, collection, useHierarchy, stripOffset, sbWriter);
                             return;
                         }
                     } catch(final PermissionDeniedException | LockException | SAXException | IOException pde) {
@@ -192,7 +218,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                                 throw new XPathException(this, "Invalid URI: " + uri.toString());
                             }
 
-                            compressResource(os, doc.getDocument(), useHierarchy, stripOffset, method, resourceName);
+                            compressResource(os, doc.getDocument(), useHierarchy, stripOffset, method, resourceName, sbWriter);
                             return;
                         }
                     } catch(final PermissionDeniedException | LockException | SAXException | IOException pde) {
@@ -267,9 +293,11 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	 * @param useHierarchy
 	 *            Whether to use a folder hierarchy in the archive file that
 	 *            reflects the collection hierarchy
+     *
+     * @param sbWriter a StringBuilderWriter to reuse
 	 */
 	private void compressElement(final OutputStream os, final Element element, final boolean useHierarchy,
-            final String stripOffset) throws XPathException {
+            final String stripOffset, final StringBuilderWriter sbWriter) throws XPathException {
 
         final String ns = element.getNamespaceURI();
         if(!(element.getNodeName().equals("entry") || (ns != null && !ns.isEmpty()))) {
@@ -287,7 +315,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
         final String type = element.getAttribute("type");
 
         if("uri".equals(type)) {
-            compressFromUri(os, URI.create(element.getFirstChild().getNodeValue()), useHierarchy, stripOffset, element.getAttribute("method"), name);
+            compressFromUri(os, URI.create(element.getFirstChild().getNodeValue()), useHierarchy, stripOffset, element.getAttribute("method"), name, sbWriter);
             return;
         }
 
@@ -329,7 +357,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
                             serializer.setUser(context.getSubject());
                             serializer.setProperty("omit-xml-declaration", "no");
                             getDynamicSerializerOptions(serializer);
-                            value = serializer.serialize((NodeValue) content).getBytes();
+                            sbWriter.getBuilder().setLength(0);
+                            serializer.serialize((NodeValue) content, sbWriter);
+                            value = sbWriter.toString().getBytes(StandardCharsets.UTF_8);
                         } finally {
                             context.getBroker().returnSerializer(serializer);
                         }
@@ -382,8 +412,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	 * @param useHierarchy
 	 *            Whether to use a folder hierarchy in the archive file that
 	 *            reflects the collection hierarchy
+     * @param sbWriter a StringBuilderWriter to reuse
 	 */
-	private void compressResource(OutputStream os, DocumentImpl doc, boolean useHierarchy, String stripOffset, String method, String name) throws IOException, SAXException {
+	private void compressResource(final OutputStream os, final DocumentImpl doc, final boolean useHierarchy, final String stripOffset, final String method, final String name, final StringBuilderWriter sbWriter) throws IOException, SAXException {
 		// create an entry in the Tar for the document
         final Object entry;
         if(name != null) {
@@ -404,7 +435,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
                 serializer.setUser(context.getSubject());
                 serializer.setProperty("omit-xml-declaration", "no");
                 getDynamicSerializerOptions(serializer);
-                String strDoc = serializer.serialize(doc);
+                sbWriter.getBuilder().setLength(0);
+                serializer.serialize(doc, sbWriter);
+                String strDoc = sbWriter.toString();
                 value = strDoc.getBytes();
             } finally {
                 context.getBroker().returnSerializer(serializer);
@@ -447,7 +480,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	 *            Whether to use a folder hierarchy in the archive file that
 	 *            reflects the collection hierarchy
 	 */
-	private void compressCollection(OutputStream os, Collection col, boolean useHierarchy, String stripOffset) throws IOException, SAXException, LockException, PermissionDeniedException {
+	private void compressCollection(final OutputStream os, final Collection col, final boolean useHierarchy, final String stripOffset, final StringBuilderWriter sbWriter) throws IOException, SAXException, LockException, PermissionDeniedException {
 		// iterate over child documents
         final DBBroker broker = context.getBroker();
         final LockManager lockManager = broker.getBrokerPool().getLockManager();
@@ -456,7 +489,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		for (final Iterator<DocumentImpl> itChildDocs = childDocs.getDocumentIterator(); itChildDocs.hasNext();) {
 			DocumentImpl childDoc = itChildDocs.next();
 			try(final ManagedDocumentLock updateLock = lockManager.acquireDocumentReadLock(childDoc.getURI())) {
-				compressResource(os, childDoc, useHierarchy, stripOffset, "", null);
+				compressResource(os, childDoc, useHierarchy, stripOffset, "", null, sbWriter);
 			}
 		}
 		// iterate over child collections
@@ -465,7 +498,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 			XmldbURI childColURI = itChildCols.next();
 			Collection childCol = broker.getCollection(col.getURI().append(childColURI));
 			// recurse
-			compressCollection(os, childCol, useHierarchy, stripOffset);
+			compressCollection(os, childCol, useHierarchy, stripOffset, sbWriter);
 		}
 	}
 	

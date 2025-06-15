@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +45,7 @@
  */
 package org.exist.xquery.modules.cache;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.storage.serializers.Serializer;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.FunctionSignature;
@@ -467,14 +492,16 @@ public class CacheFunctions extends BasicFunction {
         final String[] mapKeys = new String[keys.getItemCount()];
 
         final Serializer serializer = context.getBroker().borrowSerializer();
-        try {
+        try (final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
             serializer.setProperties(OUTPUT_PROPERTIES);
             int i = 0;
             for (final SequenceIterator it = keys.iterate(); it.hasNext(); ) {
                 final Item item = it.nextItem();
                 try {
                     final NodeValue node = (NodeValue) item;
-                    mapKeys[i] = serializer.serialize(node);
+                    sbWriter.getBuilder().setLength(0);
+                    serializer.serialize(node, sbWriter);
+                    mapKeys[i] = sbWriter.toString();
                 } catch (final ClassCastException e) {
                     mapKeys[i] = item.getStringValue();
                 }
@@ -490,20 +517,19 @@ public class CacheFunctions extends BasicFunction {
     }
 
     private String serializeKey(final Sequence key) throws XPathException {
-        final StringBuilder builder = new StringBuilder();
         final Serializer serializer = context.getBroker().borrowSerializer();
-        try {
+        try (final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
             serializer.setProperties(OUTPUT_PROPERTIES);
             for (final SequenceIterator i = key.iterate(); i.hasNext(); ) {
                 final Item item = i.nextItem();
                 try {
                     final NodeValue node = (NodeValue) item;
-                    builder.append(serializer.serialize(node));
+                    serializer.serialize(node, sbWriter);
                 } catch (final ClassCastException e) {
-                    builder.append(item.getStringValue());
+                    sbWriter.getBuilder().append(item.getStringValue());
                 }
             }
-            return builder.toString();
+            return sbWriter.toString();
         } catch (final SAXException e) {
             throw new XPathException(this, KEY_SERIALIZATION, e);
         } finally {

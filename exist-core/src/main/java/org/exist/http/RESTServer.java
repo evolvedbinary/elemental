@@ -2236,7 +2236,7 @@ public class RESTServer {
         outputProperties.setProperty(Serializer.GENERATE_DOC_EVENTS, "false");
         try {
             serializer.setProperties(outputProperties);
-            try (Writer writer = new OutputStreamWriter(response.getOutputStream(), getEncoding(outputProperties))) {
+            try (final Writer writer = new OutputStreamWriter(response.getOutputStream(), getEncoding(outputProperties))) {
                 final JSONObject root = new JSONObject();
                 root.addObject(new JSONSimpleProperty("start", Integer.toString(start), true));
                 root.addObject(new JSONSimpleProperty("count", Integer.toString(howmany), true));
@@ -2251,24 +2251,29 @@ public class RESTServer {
                 final JSONObject data = new JSONObject("data");
                 root.addObject(data);
 
-                Item item;
-                for (int i = --start; i < start + howmany; i++) {
-                    item = results.itemAt(i);
-                    if (Type.subTypeOf(item.getType(), Type.NODE)) {
-                        final NodeValue value = (NodeValue) item;
-                        JSONValue json;
-                        if ("json".equals(outputProperties.getProperty("method", "xml"))) {
-                            json = new JSONValue(serializer.serialize(value), false);
-                            json.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
+                try (final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
+                    for (int i = --start; i < start + howmany; i++) {
+                        final Item item = results.itemAt(i);
+                        if (Type.subTypeOf(item.getType(), Type.NODE)) {
+                            final NodeValue value = (NodeValue) item;
+                            sbWriter.getBuilder().setLength(0);
+                            serializer.serialize(value, sbWriter);
+
+                            final JSONValue json;
+                            if ("json".equals(outputProperties.getProperty("method", "xml"))) {
+                                json = new JSONValue(sbWriter.toString(), false);
+                                json.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
+                            } else {
+                                json = new JSONValue(sbWriter.toString());
+                                json.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
+                            }
+
+                            data.addObject(json);
                         } else {
-                            json = new JSONValue(serializer.serialize(value));
+                            final JSONValue json = new JSONValue(item.getStringValue());
                             json.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
+                            data.addObject(json);
                         }
-                        data.addObject(json);
-                    } else {
-                        final JSONValue json = new JSONValue(item.getStringValue());
-                        json.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
-                        data.addObject(json);
                     }
                 }
 
