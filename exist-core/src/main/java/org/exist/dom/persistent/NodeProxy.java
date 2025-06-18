@@ -137,6 +137,8 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     private final Expression expression;
 
+    private @Nullable WeakReference<Node> cachedNode = null;
+
     /**
      * Creates a new <code>NodeProxy</code> instance.
      *
@@ -233,6 +235,10 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
         this.nodeId = nodeId;
     }
 
+    private void invalidateCachedNode() {
+        this.cachedNode = null;
+    }
+
     public void update(final ElementImpl element) {
         invalidateCachedNode();
         this.doc = element.getOwnerDocument();
@@ -322,6 +328,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     @Override
     public QName getQName() {
         if (qname == null) {
+            // NOTE(AR) get the node from the database, which will also update the `qname`
             getNode();
         }
         return qname;
@@ -446,14 +453,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
      * @return a <code>boolean</code> value
      */
     public boolean isDocument() {
-        return nodeType == Node.DOCUMENT_NODE;
-    }
-
-
-    private @Nullable WeakReference<Node> cachedNode = null;
-
-    private void invalidateCachedNode() {
-        this.cachedNode = null;
+        return getNodeType() == Node.DOCUMENT_NODE;
     }
 
     /**
@@ -463,7 +463,8 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
      */
     @Override
     public Node getNode() {
-        if (isDocument()) {
+        // NOTE(AR) we don't call isDocument() or getNodeType() here as it would call back to getNode() and cause a StackOverflowError
+        if (nodeType == Node.DOCUMENT_NODE) {
             return doc;
         }
 
@@ -480,7 +481,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
                 this.nodeType = realNode.getNodeType();
                 this.qname = realNode.getQName();
             }
-            cachedNode = new WeakReference<>(realNode);
+            this.cachedNode = new WeakReference<>(realNode);
             node = realNode;
         }
 
@@ -489,6 +490,10 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public short getNodeType() {
+        if (nodeType == UNKNOWN_NODE_TYPE) {
+            // NOTE(AR) get the node from the database, which will also update the `nodeType`
+            getNode();
+        }
         return nodeType;
     }
 
@@ -738,6 +743,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     //	methods of interface Item
     @Override
     public int getType() {
+        final short nodeType = getNodeType();
         if (nodeType == UNKNOWN_NODE_TYPE) {
             return Type.NODE;
         }
@@ -835,12 +841,9 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public void copyTo(final DBBroker broker, final DocumentBuilderReceiver receiver) throws SAXException {
-        NodeImpl node = null;
-        if(nodeType < 0) {
-            node = (NodeImpl) getNode();
-        }
-        if(nodeType == Node.ATTRIBUTE_NODE) {
-            final AttrImpl attr = (node == null ? (AttrImpl) getNode() : (AttrImpl) node);
+        final Node node = getNode();
+        if (node.getNodeType() == Node.ATTRIBUTE_NODE) {
+            final AttrImpl attr = (AttrImpl) node;
             receiver.attribute(attr.getQName(), attr.getValue());
         } else {
             receiver.addReferenceNode(this);
@@ -1328,6 +1331,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public NodeSet directSelectAttribute(final DBBroker broker, final NodeTest test, final int contextId) {
+        final short nodeType = getNodeType();
         if(nodeType != UNKNOWN_NODE_TYPE && nodeType != Node.ELEMENT_NODE) {
             return NodeSet.EMPTY_SET;
         }
@@ -1371,6 +1375,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     }
 
     public NodeSet directSelectChild(final QName qname, final int contextId) {
+        final short nodeType = getNodeType();
         if(nodeType != UNKNOWN_NODE_TYPE && nodeType != Node.ELEMENT_NODE) {
             return NodeSet.EMPTY_SET;
         }
@@ -1593,6 +1598,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
 
     @Override
     public boolean directMatchAttribute(final DBBroker broker, final NodeTest test, final int contextId) {
+        final short nodeType = getNodeType();
         if(nodeType != UNKNOWN_NODE_TYPE && nodeType != Node.ELEMENT_NODE) {
             return false;
         }
@@ -1622,6 +1628,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     }
 
     public boolean directMatchChild(final QName qname, final int contextId) {
+        final short nodeType = getNodeType();
         if(nodeType != UNKNOWN_NODE_TYPE && nodeType != Node.ELEMENT_NODE) {
             return false;
         }
