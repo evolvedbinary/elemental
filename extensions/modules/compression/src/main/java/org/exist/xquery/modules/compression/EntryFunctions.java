@@ -50,8 +50,12 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.NodeImpl;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
 import org.exist.util.BinaryValueInputSource;
@@ -61,11 +65,12 @@ import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import javax.annotation.Nullable;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -253,8 +258,31 @@ public class EntryFunctions extends BasicFunction {
                     if(data.isPresent()) {
                         // store the resource
                         try (final OutputStream os = new BufferedOutputStream(Files.newOutputStream(destPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
-                            ((BinaryValue)data.get()).streamBinaryTo(os);
-                        } catch (final IOException e) {
+                            if (data.get() instanceof BinaryValue) {
+                                // binary
+                                ((BinaryValue)data.get()).streamBinaryTo(os);
+                            } else {
+                                // XML
+                                final Serializer serializer = context.getBroker().borrowSerializer();
+                                try {
+                                    serializer.setUser(context.getSubject());
+                                    serializer.setProperty("omit-xml-declaration", "no");
+
+                                    final NodeValue nodeValue;
+                                    if (data.get() instanceof NodeValue || data.get() instanceof NodeProxy) {
+                                        nodeValue = (NodeValue) data.get();
+                                    } else {
+                                        final NodeImpl n = (NodeImpl) data.get();
+                                        nodeValue = new NodeProxy(n instanceof DocumentImpl ? (DocumentImpl)n : (DocumentImpl)n.getOwnerDocument(), n.getNodeId());
+                                    }
+                                    try (final Writer writer = new OutputStreamWriter(os)) {
+                                        serializer.serialize(nodeValue, writer);
+                                    }
+                                } finally {
+                                    context.getBroker().returnSerializer(serializer);
+                                }
+                            }
+                        } catch (final IOException | SAXException e) {
                             throw new XPathException(this, "Cannot serialize file. A problem occurred while serializing the binary data: " + e.getMessage(), e);
                         }
                     }
@@ -307,9 +335,16 @@ public class EntryFunctions extends BasicFunction {
                         try (final Txn transaction = context.getBroker().getBrokerPool().getTransactionManager().beginTransaction()) {
 
                             try (final Collection collection = context.getBroker().openCollection(destPath.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
-                                final BinaryValue binaryValue = (BinaryValue) data.get();
                                 final MimeType mimeType = MimeTable.getInstance().getContentTypeFor(destPath.lastSegment());
-                                context.getBroker().storeDocument(transaction, destPath.lastSegment(), new BinaryValueInputSource(binaryValue), mimeType, collection);
+
+                                if (data.get() instanceof BinaryValue) {
+                                    // binary
+                                    final BinaryValue binaryValue = (BinaryValue) data.get();
+                                    context.getBroker().storeDocument(transaction, destPath.lastSegment(), new BinaryValueInputSource(binaryValue), mimeType, collection);
+                                } else {
+                                    // XML
+                                    context.getBroker().storeDocument(transaction, destPath.lastSegment(), (Node)data.get(), mimeType, collection);
+                                }
                             }
                             transaction.commit();
                         } catch (final IOException | PermissionDeniedException | EXistException | LockException | SAXException e) {

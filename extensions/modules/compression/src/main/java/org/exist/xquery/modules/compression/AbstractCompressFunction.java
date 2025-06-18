@@ -88,10 +88,10 @@ import static org.exist.util.StringUtil.isNullOrEmpty;
 
 /**
  * Compresses a sequence of resources and/or collections
- * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:ljo@exist-db.org">Leif-Jöran Olsson</a>
- * @version 1.0
+ * @version 2.0
  */
 public abstract class AbstractCompressFunction extends BasicFunction
 {
@@ -227,7 +227,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                             collection.close();
 
                             if (doc == null) {
-                                throw new XPathException(this, "Invalid URI: " + uri.toString());
+                                throw new XPathException(this, "No document available at URI: " + uri.toString());
                             }
 
                             compressResource(os, doc.getDocument(), useHierarchy, stripOffset, method, resourceName, sbWriter, chksum);

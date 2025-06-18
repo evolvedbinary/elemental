@@ -162,8 +162,14 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/test/xquery/modules/compression/unzip-tests.xql</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/AbstractCompressFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/compression/AbstractExtractFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/compression/CompressionModule.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/EntryFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/compression/UnTarFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/compression/UnZipFunction.java</include>
+
                             </includes>
                         </licenseSet>
 
@@ -176,9 +182,15 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/xquery/modules/compression/unzip-tests.xql</exclude>
+                                <exclude>src/test/xquery/modules/compression/zip-tests.xql</exclude>
                                 <exclude>src/test/xquery/modules/compression/zip-unzip-tests.xqm</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/AbstractCompressFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/compression/AbstractExtractFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/compression/CompressionModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/EntryFunctions.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/compression/UnTarFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/compression/UnZipFunction.java</exclude>
                             </excludes>
                         </licenseSet>
 
