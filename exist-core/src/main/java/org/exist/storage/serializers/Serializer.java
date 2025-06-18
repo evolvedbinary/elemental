@@ -72,6 +72,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
+import org.exist.dom.memtree.reference.AbstractReferenceNodeImpl;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
@@ -602,8 +603,15 @@ public abstract class Serializer implements XMLReader {
             applyXSLHandler(writer);
             prettyPrinter = null;
         } else {
-            prettyPrinter = setPrettyPrinter(writer, "no".equals(outputProperties.getProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")),
-                    n.getImplementationType() == NodeValue.PERSISTENT_NODE ? (NodeProxy) n : null, false);
+            final NodeProxy root;
+            if (n.getImplementationType() == NodeValue.PERSISTENT_NODE) {
+                root = (NodeProxy) n;
+            } else if (n instanceof AbstractReferenceNodeImpl<?, ?>) {
+                root = ((AbstractReferenceNodeImpl<?, ?>) n).getNodeProxy();
+            } else {
+                root = null;
+            }
+            prettyPrinter = setPrettyPrinter(writer, "no".equals(outputProperties.getProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")), root, false);
         }
 
         try {
@@ -1232,6 +1240,8 @@ public abstract class Serializer implements XMLReader {
             throws SAXException {
         if (v.getImplementationType() == NodeValue.PERSISTENT_NODE) {
             serializeToReceiver((NodeProxy) v, generateDocEvents, true);
+        } else if (v instanceof AbstractReferenceNodeImpl<?, ?>) {
+            serializeToReceiver(((AbstractReferenceNodeImpl<?, ?>) v).getNodeProxy(), generateDocEvents, true);
         } else {
             serializeToReceiver((org.exist.dom.memtree.NodeImpl) v, generateDocEvents);
         }
