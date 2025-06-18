@@ -829,6 +829,7 @@
                                 <include>src/main/java/org/exist/config/ConfigurationImpl.java</include>
                                 <include>src/main/java/org/exist/config/Configurator.java</include>
                                 <include>src/main/java/org/exist/dom/NodeListImpl.java</include>
+                                <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DOMIndexer.java</include>
@@ -836,7 +837,9 @@
                                 <include>src/test/java/org/exist/dom/memtree/DOMTest.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/ElementImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/MemTreeBuilder.java</include>
+                                <exclude>src/main/java/org/exist/dom/memtree/NamespaceNode.java</exclude>
                                 <include>src/main/java/org/exist/dom/memtree/NodeImpl.java</include>
+                                <exclude>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</exclude>
                                 <include>src/main/java/org/exist/dom/persistent/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/CommentImpl.java</include>
@@ -1103,6 +1106,7 @@
                                 <exclude>src/main/java/org/exist/config/ConfigurationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configurator.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/NodeListImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</exclude>
@@ -1111,7 +1115,9 @@
                                 <exclude>src/test/java/org/exist/dom/memtree/DOMTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/ElementImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/MemTreeBuilder.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/memtree/NamespaceNode.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/NodeImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceNodeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/CommentReferenceImpl.java</exclude>
