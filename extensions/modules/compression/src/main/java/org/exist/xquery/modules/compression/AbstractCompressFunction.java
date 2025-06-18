@@ -66,6 +66,7 @@ import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.annotation.Nullable;
@@ -310,13 +311,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
             throw new XPathException(this, "Item must be type of xs:anyURI or element entry.");
         }
 
-        if (element.getChildNodes().getLength() > 1) {
-            throw new XPathException(this, "Entry content is not valid XML fragment.");
-        }
-
         String name = element.getAttribute("name");
-//            if(name == null)
-//                throw new XPathException(this, "Entry must have name attribute.");
 
         final String type = element.getAttribute("type");
         ZipMethod method;
@@ -327,7 +322,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
         }
 
         if ("uri".equals(type)) {
-            @Nullable final String uri = element.getFirstChild().getNodeValue();
+            @Nullable final String uri = getChildTextValues(element);
             if (isNullOrEmpty(uri)) {
                 throw new XPathException(this, "Entry with type uri must contain a URI.");
             }
@@ -350,32 +345,57 @@ public abstract class AbstractCompressFunction extends BasicFunction
             entry = newEntry(name);
 
             if (!"collection".equals(type)) {
-                final byte[] value;
-                final Node content = element.getFirstChild();
+                final NodeList children = element.getChildNodes();
 
-                if (content == null) {
+                final byte[] value;
+                if (children.getLength() == 0) {
                     value = new byte[0];
                 } else {
-                    if (content.getNodeType() == Node.TEXT_NODE) {
-                        String text = content.getNodeValue();
-                        if ("binary".equals(type)) {
-                            //base64 binary
-                            value = Base64.decodeBase64(text);
-                        } else {
-                            //text
-                            value = text.getBytes();
+                    @Nullable Serializer serializer = null;
+                    try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
+                        int elementCount = 0;
+                        for (int i = 0; i < children.getLength(); i++) {
+                            final Node child = children.item(i);
+
+                            if (child.getNodeType() == Node.TEXT_NODE) {
+                                final String text = child.getNodeValue();
+                                if ("binary".equals(type)) {
+                                    // Base64 encoded binary
+                                    baos.write(Base64.decodeBase64(text));
+                                } else {
+                                    // Text
+                                    baos.write(text.getBytes());
+                                }
+                            } else {
+                                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                                    elementCount++;
+                                    if (elementCount > 1) {
+                                        throw new XPathException(this, "More than one Element is not permitted within an Entry.");
+                                    }
+                                }
+
+                                // XML
+                                if (serializer == null) {
+                                    serializer = context.getBroker().borrowSerializer();
+                                    serializer.setUser(context.getSubject());
+                                    serializer.setProperty("omit-xml-declaration", "no");
+                                    getDynamicSerializerOptions(serializer);
+                                } else {
+                                    serializer.reset();
+                                    serializer.setUser(context.getSubject());
+                                    getDynamicSerializerOptions(serializer);
+                                    serializer.setProperty("omit-xml-declaration", "yes");
+                                }
+
+                                sbWriter.getBuilder().setLength(0);
+                                serializer.serialize((NodeValue) child, sbWriter);
+                                baos.write(sbWriter.toString().getBytes(StandardCharsets.UTF_8));
+                            }
                         }
-                    } else {
-                        //xml
-                        final Serializer serializer = context.getBroker().borrowSerializer();
-                        try {
-                            serializer.setUser(context.getSubject());
-                            serializer.setProperty("omit-xml-declaration", "no");
-                            getDynamicSerializerOptions(serializer);
-                            sbWriter.getBuilder().setLength(0);
-                            serializer.serialize((NodeValue) content, sbWriter);
-                            value = sbWriter.toString().getBytes(StandardCharsets.UTF_8);
-                        } finally {
+
+                        value = baos.toByteArray();
+                    } finally {
+                        if (serializer != null) {
                             context.getBroker().returnSerializer(serializer);
                         }
                     }
@@ -404,6 +424,36 @@ public abstract class AbstractCompressFunction extends BasicFunction
             }
         }
 	}
+
+    /**
+     * Get the node values of direct children of the Element
+     * that are Text nodes.
+     *
+     * @param element the element to get child text values from.
+     *
+     * @return the value of the direct child Text nodes, or null if there are no such children.
+     */
+    private @Nullable String getChildTextValues(final Element element) {
+        final NodeList children = element.getChildNodes();
+        final int childLen = children.getLength();
+
+        StringBuilder builder = null;
+        for (int i = 0; i < childLen; i++) {
+            final Node child = children.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE) {
+                if (builder == null) {
+                    builder = new StringBuilder();
+                }
+                builder.append(child.getNodeValue());
+            }
+        }
+
+        if (builder != null) {
+            return builder.toString();
+        }
+
+        return null;
+    }
 
     private void getDynamicSerializerOptions(final Serializer serializer) throws SAXException {
         final Option option = context.getOption(Option.SERIALIZE_QNAME);
