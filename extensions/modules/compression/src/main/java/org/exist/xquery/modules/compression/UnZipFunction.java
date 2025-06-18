@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,7 +57,6 @@ import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
-import org.xmldb.api.base.XMLDBException;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.modules.compression.CompressionModule.functionSignatures;
@@ -41,44 +64,44 @@ import static org.exist.xquery.modules.compression.CompressionModule.functionSig
 /**
  * Extracts files and folders from a Zip file
  *
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
- * @version 1.0
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ * @version 2.0
  */
 public class UnZipFunction extends AbstractExtractFunction {
 
-    private static final FunctionParameterSequenceType FS_PARAM_ZIP_DATA = param("zip-data", Type.BASE64_BINARY,"The zip file data");
+    private static final FunctionParameterSequenceType FS_PARAM_ZIP_DATA = param("zip-data", Type.BASE64_BINARY,"The Zip file data");
     private static final FunctionParameterSequenceType FS_PARAM_ENTRY_FILTER = param("entry-filter", Type.FUNCTION,
-            "A user defined function for filtering resources from the zip file. The function takes 2 parameters e.g. "
-            + "user:unzip-entry-filter($path as xs:string, $data-type as xs:string) as xs:boolean. "
-            + "$data-type may be 'resource' or 'folder'. If the return type is true() it indicates the entry "
-            + "should be processed and passed to the $entry-data function, else the resource is skipped. "
-            + "If you wish to extract all resources you can use the provided compression:no-filter#2 function.");
+            "A function for filtering resources from the Zip file. The function takes 2 parameters e.g. " +
+                "user:unzip-entry-filter($path as xs:string, $data-type as xs:string) as xs:boolean. " +
+                "The provided value of $data-type will be either 'resource' or 'folder'. " +
+                "If the return type is true() it indicates the entry " +
+                "should be processed and passed to the $entry-data function, else the resource is skipped. " +
+                "If you wish to extract all resources you can use the provided compression:no-filter#2 function.");
     private static final FunctionParameterSequenceType FS_PARAM_ENTRY_FILTER_WITH_PARAMS = param("entry-filter", Type.FUNCTION,
-            "A user defined function for filtering resources from the zip file. The function takes 3 parameters e.g. "
-            + "user:unzip-entry-filter($path as xs:string, $data-type as xs:string, $param as item()*) as xs:boolean. "
-            + "$data-type may be 'resource' or 'folder'. $param is a sequence with any additional parameters, "
-            + "for example a list of extracted files. If the return type is true() it indicates the entry "
-            + "should be processed and passed to the $entry-data function, else the resource is skipped. "
-            + "If you wish to extract all resources you can use the provided compression:no-filter#3 function.");
+            "A function for filtering resources from the Zip file. The function takes 3 parameters e.g. " +
+                "user:unzip-entry-filter($path as xs:string, $data-type as xs:string, $param as item()*) as xs:boolean. " +
+                "The provided value of $data-type will be either 'resource' or 'folder'. " +
+                "$param is a sequence with any additional parameters, for example a list of extracted files. " +
+                "If the return type is true() it indicates the entry " +
+                "should be processed and passed to the $entry-data function, else the resource is skipped. " +
+                "If you wish to extract all resources you can use the provided compression:no-filter#3 function.");
     private static final FunctionParameterSequenceType FS_PARAM_ENTRY_FILTER_PARAM = optManyParam("entry-filter-param", Type.ANY_TYPE, "A sequence with an additional parameters for filtering function.");
     private static final FunctionParameterSequenceType FS_PARAM_ENTRY_DATA = param("entry-data", Type.FUNCTION,
-            "A user defined function for storing an extracted resource from the zip file. The function takes 3 parameters e.g. "
-            + "user:unzip-entry-data($path as xs:string, $data-type as xs:string, $data as item()?). "
-            + "Or a user defined function which returns a db path for storing an extracted resource from the zip file. "
-            + "The function takes 3 parameters e.g. user:entry-path($path as xs:string, $data-type as xs:string, "
-            + "$param as item()*) as xs:anyURI. $data-type may be 'resource' or 'folder'. "
-            + "Functions for storing the entries to a folder on the filesystem or a collection in the database "
-            + "provided by compression:fs-store-entry3($dest) and compression:db-store-entry3($dest).");
+        "A function for working with the entry from the Zip file. You must supply one of two different types of functions, either: " +
+                "(1) A function that receives the data of the Zip entry, it must have a signature like: user:entry-data($path as xs:string, $data-type as xs:string, $data as item()?) as item()*, " +
+                "or (2) a function that receives details of the entry and returns a database path to store the file at, it must have a signature like: user:entry-path($path as xs:string, $data-type as xs:string) as xs:anyURI. " +
+                "For convenience we provide the built-in functions: " +
+                "(1) compression:fs-store-entry3($folder-path) for storing the entries to a folder on the filesystem, " +
+                "and (2) compression:db-store-entry3($collection-uri) for storing entries to a collection in the database.");
     private static final FunctionParameterSequenceType FS_PARAM_ENTRY_DATA_WITH_PARAMS = param("entry-data", Type.FUNCTION,
-            "A user defined function for storing an extracted resource from the zip file. The function takes 4 parameters e.g. "
-            + "user:unzip-entry-data($path as xs:string, $data-type as xs:string, $data as item()?, $param as item()*). "
-            + "Or a user defined function which returns a db path for storing an extracted resource from the zip file. The function takes 3 parameters e.g. "
-            + "user:entry-path($path as xs:string, $data-type as xs:string, $param as item()*) as xs:anyURI. "
-            + "$data-type may be 'resource' or 'folder'. $param is a sequence with any additional parameters. "
-            + "Functions for storing the entries to a folder on the filesystem or a collection in the database "
-            + "provided by compression:fs-store-entry4($dest) and compression:db-store-entry4($dest).");
+        "A function for working with the entry from the Zip file. You must supply one of two different types of functions, either: " +
+                "(1) A function that receives the data of the Zip entry, it must have a signature like: user:entry-data($path as xs:string, $data-type as xs:string, $data as item()?, $param as item()*) as item()*, " +
+                "or (2) a function that receives details of the entry and returns a database path to store the file at, it must have a signature like: user:entry-path($path as xs:string, $data-type as xs:string, $param as item()*) as xs:anyURI. " +
+                "For convenience we provide the built-in functions: " +
+                "(1) compression:fs-store-entry4($folder-path) for storing the entries to a folder on the filesystem, " +
+                "and (2) compression:db-store-entry4($collection-uri) for storing entries to a collection in the database.");
     private static final FunctionParameterSequenceType FS_PARAM_ENTRY_DATA_PARAM = optManyParam("entry-data-param", Type.ANY_TYPE, "A sequence with an additional parameters for storing function.");
-
+    private static final FunctionParameterSequenceType FS_PARAM_ENCODING =  param("encoding", Type.STRING, "The encoding to be used during uncompressing eg: UTF8 or Cp437 from https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html");
 
     private static final String FS_UNZIP_NAME = "unzip";
     static final FunctionSignature[] FS_UNZIP = functionSignatures(
@@ -93,6 +116,12 @@ public class UnZipFunction extends AbstractExtractFunction {
                 ),
                 arity(
                     FS_PARAM_ZIP_DATA,
+                    FS_PARAM_ENTRY_FILTER,
+                    FS_PARAM_ENTRY_DATA,
+                    FS_PARAM_ENCODING
+                ),
+                arity(
+                    FS_PARAM_ZIP_DATA,
                     FS_PARAM_ENTRY_FILTER_WITH_PARAMS,
                     FS_PARAM_ENTRY_FILTER_PARAM,
                     FS_PARAM_ENTRY_DATA_WITH_PARAMS,
@@ -104,7 +133,7 @@ public class UnZipFunction extends AbstractExtractFunction {
                     FS_PARAM_ENTRY_FILTER_PARAM,
                     FS_PARAM_ENTRY_DATA_WITH_PARAMS,
                     FS_PARAM_ENTRY_DATA_PARAM,
-                    param("encoding", Type.STRING, "The encoding to be used during uncompressing eg: UTF8 or Cp437 from https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html")
+                    FS_PARAM_ENCODING
                 )
             )
     );
@@ -114,14 +143,14 @@ public class UnZipFunction extends AbstractExtractFunction {
     }
 
     @Override
-    protected Sequence processCompressedData(final BinaryValue compressedData, final Charset encoding) throws XPathException, XMLDBException {
+    protected Sequence processCompressedData(final BinaryValue compressedData, final Charset encoding) throws XPathException {
         try (final ZipInputStream zis = new ZipInputStream(compressedData.getInputStream(), encoding)) {
             ZipEntry entry = null;
 
             final Sequence results = new ValueSequence();
 
             while ((entry = zis.getNextEntry()) != null) {
-                final Sequence processCompressedEntryResults = processCompressedEntry(entry.getName(), entry.isDirectory(), zis, filterParam, storeParam);
+                final Sequence processCompressedEntryResults = processCompressedEntry(entry.getName(), entry.isDirectory(), zis);
                 results.addAll(processCompressedEntryResults);
 
                 zis.closeEntry();

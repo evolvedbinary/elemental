@@ -81,3 +81,62 @@ function zut:entry-of-doc-child-nodes-including-pis() {
                 count(doc($output-collection-path || "/" || $zut:DOC_WITH_PIS_1_NAME)/node())
 };
 
+declare
+	%test:assertEquals("<test>123</test>", "<test>abc</test>")
+function zut:round-trip-no-filter2-db-store-entry-3-without-encoding() {
+    let $entries := (
+        <entry type="xml" name="test1.xml"><test>123</test></entry>,
+        <entry type="xml" name="test2.xml"><test>abc</test></entry>
+    ) return
+        let $zip-data := compression:zip($entries, true())
+        return
+            let $output-collection-path := $zut:TEST_COLLECTION_PATH || "/round-trip-no-filter2-db-store-entry-3-without-encoding"
+            let $_ := compression:unzip($zip-data, compression:no-filter#2, compression:db-store-entry3($output-collection-path))
+            return
+                collection($output-collection-path)
+};
+
+declare
+	%test:assertEquals("<test>123</test>", "<test>abc</test>")
+function zut:round-trip-no-filter2-db-store-entry-3-utf8-encoding() {
+    let $entries := (
+        <entry type="xml" name="test1.xml"><test>123</test></entry>,
+        <entry type="xml" name="test2.xml"><test>abc</test></entry>
+    ) return
+        let $zip-data := compression:zip($entries, true())
+        return
+            let $output-collection-path := $zut:TEST_COLLECTION_PATH || "/round-trip-no-filter2-db-store-entry-3-utf8-encoding"
+            let $_ := compression:unzip($zip-data, compression:no-filter#2, compression:db-store-entry3($output-collection-path), "UTF-8")
+            return
+                collection($output-collection-path)
+};
+
+declare
+	%test:assertEquals("<test>123</test>", "<test>abc</test>")
+function zut:round-trip-no-filter3-db-store-entry-4-without-encoding() {
+    let $entries := (
+        <entry type="xml" name="test1.xml"><test>123</test></entry>,
+        <entry type="xml" name="test2.xml"><test>abc</test></entry>
+    ) return
+        let $zip-data := compression:zip($entries, true())
+        return
+            let $output-collection-path := $zut:TEST_COLLECTION_PATH || "/round-trip-no-filter3-db-store-entry-4-without-encoding"
+            let $_ := compression:unzip($zip-data, compression:no-filter#3, <params/>, compression:db-store-entry4($output-collection-path), <params/>)
+            return
+                collection($output-collection-path)
+};
+
+declare
+	%test:assertEquals("<test>123</test>", "<test>abc</test>")
+function zut:round-trip-no-filter3-db-store-entry-4-utf8-encoding() {
+    let $entries := (
+        <entry type="xml" name="test1.xml"><test>123</test></entry>,
+        <entry type="xml" name="test2.xml"><test>abc</test></entry>
+    ) return
+        let $zip-data := compression:zip($entries, true())
+        return
+            let $output-collection-path := $zut:TEST_COLLECTION_PATH || "/round-trip-no-filter3-db-store-entry-4-utf8-encoding"
+            let $_ := compression:unzip($zip-data, compression:no-filter#3, <params/>, compression:db-store-entry4($output-collection-path), <params/>, "UTF-8")
+            return
+                collection($output-collection-path)
+};
