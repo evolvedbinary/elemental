@@ -775,6 +775,7 @@
                                 <include>src/main/java/org/exist/config/Configuration.java</include>
                                 <include>src/main/java/org/exist/config/ConfigurationImpl.java</include>
                                 <include>src/main/java/org/exist/config/Configurator.java</include>
+                                <include>src/main/java/org/exist/dom/NodeListImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DOMIndexer.java</include>
@@ -1035,6 +1036,7 @@
                                 <exclude>src/main/java/org/exist/config/Configuration.java</exclude>
                                 <exclude>src/main/java/org/exist/config/ConfigurationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configurator.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/NodeListImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</exclude>
