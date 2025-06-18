@@ -289,12 +289,13 @@ public class XIncludeSerializerTest {
         connect.setRequestMethod("GET");
         connect.connect();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
-        String line;
         final StringBuilder out = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            out.append(line);
-            out.append("\r\n");
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                out.append(line);
+                out.append("\r\n");
+            }
         }
         final String responseXML = out.toString();
     }
