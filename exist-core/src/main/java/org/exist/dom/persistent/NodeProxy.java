@@ -290,8 +290,16 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
         final DocumentImpl doc = node instanceof DocumentImpl ? (DocumentImpl) node : (DocumentImpl) node.getOwnerDocument();
         expression = expression != null ? expression : doc.getExpression();
 
-        final NodeProxy wrapper = new NodeProxy(expression, doc, node.getNodeId(), node.getNodeType());
+        final long address;
+        if (node instanceof StoredNode<?>) {
+            address = ((StoredNode<?>) node).getInternalAddress();
+        } else {
+            address = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
+        }
+
+        final NodeProxy wrapper = new NodeProxy(expression, doc, node.getNodeId(), node.getNodeType(), address);
         wrapper.cachedNode = new WeakReference<>(node);
+        wrapper.qname = node.getQName();
 
         return wrapper;
     }
