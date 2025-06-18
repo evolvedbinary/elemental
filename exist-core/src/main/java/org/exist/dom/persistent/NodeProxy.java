@@ -236,8 +236,8 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     public void update(final ElementImpl element) {
         invalidateCachedNode();
         this.doc = element.getOwnerDocument();
-        this.nodeType = UNKNOWN_NODE_TYPE;
-        this.internalAddress = StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
+        this.nodeType = Node.ELEMENT_NODE;
+        this.internalAddress = element.getInternalAddress();
         this.nodeId = element.getNodeId();
         this.match = null;
         this.context = null;
