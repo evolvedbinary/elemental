@@ -157,14 +157,16 @@ public abstract class AbstractCompressFunction extends BasicFunction
                  final OutputStream os = stream(baos, encoding);
                  final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
 
+                final CRC32 chksum = new CRC32();
+
                 // iterate through the argument sequence
                 for (final SequenceIterator i = args[0].iterate(); i.hasNext(); ) {
                     final Item item = i.nextItem();
 
                     if (item instanceof Element element) {
-                        compressElement(os, element, useHierarchy, stripOffset, sbWriter);
+                        compressElement(os, element, useHierarchy, stripOffset, sbWriter, chksum);
                     } else {
-                        compressFromUri(os, ((AnyURIValue) item).toURI(), useHierarchy, stripOffset, ZipMethod.DEFLATE, null, sbWriter);
+                        compressFromUri(os, ((AnyURIValue) item).toURI(), useHierarchy, stripOffset, ZipMethod.DEFLATE, null, sbWriter, chksum);
                     }
                 }
 
@@ -181,7 +183,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		}
 	}
 
-    private void compressFromUri(final OutputStream os, final URI uri, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final String resourceName, final StringBuilderWriter sbWriter) throws XPathException
+    private void compressFromUri(final OutputStream os, final URI uri, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final String resourceName, final StringBuilderWriter sbWriter, final CRC32 chksum) throws XPathException
         {
             try {
                 if ("file".equals(uri.getScheme())) {
@@ -194,7 +196,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 
                     // got a file
                     final Path file = Paths.get(uri.getPath());
-                    compressFile(os, file, useHierarchy, stripOffset, method, resourceName);
+                    compressFile(os, file, useHierarchy, stripOffset, method, resourceName, chksum);
 
                 } else {
 
@@ -203,7 +205,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                     // try for a collection
                     try (final Collection collection = context.getBroker().openCollection(xmldburi, LockMode.READ_LOCK)) {
                         if(collection != null) {
-                            compressCollection(os, collection, useHierarchy, stripOffset, method, sbWriter);
+                            compressCollection(os, collection, useHierarchy, stripOffset, method, sbWriter, chksum);
                             return;
                         }
                     } catch (final PermissionDeniedException | LockException | SAXException | IOException pde) {
@@ -226,7 +228,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                                 throw new XPathException(this, "Invalid URI: " + uri.toString());
                             }
 
-                            compressResource(os, doc.getDocument(), useHierarchy, stripOffset, method, resourceName, sbWriter);
+                            compressResource(os, doc.getDocument(), useHierarchy, stripOffset, method, resourceName, sbWriter, chksum);
                             return;
                         }
                     } catch (final PermissionDeniedException | LockException | SAXException | IOException pde) {
@@ -249,8 +251,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
      * @param stripOffset a string that should be stripped from the start of the entry name.
      * @param method the Zip method.
      * @param name the name of the entry.
+     * @param chksum an object that is used to calculate the checksum.
      */
-    private void compressFile(final OutputStream os, final Path file, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final String name) throws IOException {
+    private void compressFile(final OutputStream os, final Path file, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final String name, final CRC32 chksum) throws IOException {
 
         if (!Files.isDirectory(file)) {
 
@@ -269,6 +272,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
             // close the entry
             if (entry instanceof ZipEntry && method == ZipMethod.STORE) {
                 ((ZipEntry) entry).setMethod(ZipOutputStream.STORED);
+                chksum.reset();
                 chksum.update(value);
                 ((ZipEntry) entry).setCrc(chksum.getValue());
                 ((ZipEntry) entry).setSize(value.length);
@@ -281,7 +285,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
         } else {
 
             for (final Path child : FileUtils.list(file)) {
-                compressFile(os, file.resolve(child), useHierarchy, stripOffset, method, null);
+                compressFile(os, file.resolve(child), useHierarchy, stripOffset, method, null, chksum);
             }
 
         }
@@ -296,9 +300,10 @@ public abstract class AbstractCompressFunction extends BasicFunction
      * @param useHierarchy Whether to use a folder hierarchy in the archive file that reflects the collection hierarchy.
      * @param stripOffset a string that should be stripped from the start of the entry name.
      * @param sbWriter a StringBuilderWriter to reuse
+     * @param chksum an object that is used to calculate the checksum.
      */
 	private void compressElement(final OutputStream os, final Element element, final boolean useHierarchy,
-            final String stripOffset, final StringBuilderWriter sbWriter) throws XPathException {
+            final String stripOffset, final StringBuilderWriter sbWriter, final CRC32 chksum) throws XPathException {
 
         final String ns = element.getNamespaceURI();
         if (!(element.getNodeName().equals("entry") || (ns != null && !ns.isEmpty()))) {
@@ -326,7 +331,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
             if (isNullOrEmpty(uri)) {
                 throw new XPathException(this, "Entry with type uri must contain a URI.");
             }
-            compressFromUri(os, URI.create(uri), useHierarchy, stripOffset, method, name, sbWriter);
+            compressFromUri(os, URI.create(uri), useHierarchy, stripOffset, method, name, sbWriter, chksum);
             return;
         }
 
@@ -346,7 +351,6 @@ public abstract class AbstractCompressFunction extends BasicFunction
 
             if (!"collection".equals(type)) {
                 final byte[] value;
-                final CRC32 chksum = new CRC32();
                 final Node content = element.getFirstChild();
 
                 if (content == null) {
@@ -379,6 +383,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 
                 if (entry instanceof ZipEntry && method == ZipMethod.STORE) {
                     ((ZipEntry) entry).setMethod(ZipOutputStream.STORED);
+                    chksum.reset();
                     chksum.update(value);
                     ((ZipEntry) entry).setCrc(chksum.getValue());
                     ((ZipEntry) entry).setSize(value.length);
@@ -422,8 +427,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	 * @param method the Zip method.
 	 * @param name the name of the entry.
 	 * @param sbWriter a StringBuilderWriter to reuse
+	 * @param chksum an object that is used to calculate the checksum.
 	 */
-	private void compressResource(final OutputStream os, final DocumentImpl doc, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final String name, final StringBuilderWriter sbWriter) throws IOException, SAXException {
+	private void compressResource(final OutputStream os, final DocumentImpl doc, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final String name, final StringBuilderWriter sbWriter, final CRC32 chksum) throws IOException, SAXException {
 		// create an entry in the Tar for the document
         final Object entry;
         if (name != null) {
@@ -463,9 +469,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
         }
 
 		// close the entry
-        final CRC32 chksum = new CRC32();
         if (entry instanceof ZipEntry && method == ZipMethod.STORE) {
             ((ZipEntry) entry).setMethod(ZipOutputStream.STORED);
+            chksum.reset();
             chksum.update(value);
             ((ZipEntry) entry).setCrc(chksum.getValue());
             ((ZipEntry) entry).setSize(value.length);
@@ -485,8 +491,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	 * @param stripOffset a string that should be stripped from the start of the entry name.
 	 * @param method the Zip method.
 	 * @param sbWriter a StringBuilderWriter to reuse
+	 * @param chksum an object that is used to calculate the checksum.
 	 */
-	private void compressCollection(final OutputStream os, final Collection col, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final StringBuilderWriter sbWriter) throws IOException, SAXException, LockException, PermissionDeniedException {
+	private void compressCollection(final OutputStream os, final Collection col, final boolean useHierarchy, final String stripOffset, final ZipMethod method, final StringBuilderWriter sbWriter, final CRC32 chksum) throws IOException, SAXException, LockException, PermissionDeniedException {
 		// iterate over child documents
         final DBBroker broker = context.getBroker();
         final LockManager lockManager = broker.getBrokerPool().getLockManager();
@@ -495,7 +502,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		for (final Iterator<DocumentImpl> itChildDocs = childDocs.getDocumentIterator(); itChildDocs.hasNext();) {
 			final DocumentImpl childDoc = itChildDocs.next();
 			try (final ManagedDocumentLock updateLock = lockManager.acquireDocumentReadLock(childDoc.getURI())) {
-				compressResource(os, childDoc, useHierarchy, stripOffset, method, null, sbWriter);
+				compressResource(os, childDoc, useHierarchy, stripOffset, method, null, sbWriter, chksum);
 			}
 		}
 		// iterate over child collections
@@ -504,7 +511,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
             final XmldbURI childColURI = itChildCols.next();
             final Collection childCol = broker.getCollection(col.getURI().append(childColURI));
 			// recurse
-			compressCollection(os, childCol, useHierarchy, stripOffset, method, sbWriter);
+			compressCollection(os, childCol, useHierarchy, stripOffset, method, sbWriter, chksum);
 		}
 	}
 	
