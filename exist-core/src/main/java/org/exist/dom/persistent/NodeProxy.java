@@ -319,7 +319,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
         return qname;
     }
 
-    public void setQName(QName qname) {
+    public void setQName(final QName qname) {
         this.qname = qname;
     }
 

@@ -1062,7 +1062,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @EnsureContainerLocked(mode=READ_LOCK)
     public NodeList getChildNodes() {
         final org.exist.dom.NodeListImpl list = new org.exist.dom.NodeListImpl();
-        try(final DBBroker broker = pool.getBroker()) {
+        try (final DBBroker broker = pool.getBroker()) {
             for(int i = 0; i < children; i++) {
                 final Node child = broker.objectWith(new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE, childAddress[i]));
                 list.add(child);
@@ -1604,8 +1604,9 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
 
     @Override
     public String toString() {
+        @Nullable final Element documentElement = getDocumentElement();
         return getURI() + " - <" +
-            (getDocumentElement() != null ? getDocumentElement().getNodeName() : null) + ">";
+            (documentElement != null ? documentElement.getNodeName() : null) + ">";
     }
 
     @Override

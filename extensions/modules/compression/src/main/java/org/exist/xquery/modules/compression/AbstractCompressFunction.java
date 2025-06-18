@@ -68,6 +68,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -81,6 +82,8 @@ import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static org.exist.util.StringUtil.isNullOrEmpty;
 
 /**
  * Compresses a sequence of resources and/or collections
@@ -102,12 +105,11 @@ public abstract class AbstractCompressFunction extends BasicFunction
     protected final static SequenceType ENCODING_PARAM = new FunctionParameterSequenceType("encoding", Type.STRING, Cardinality.EXACTLY_ONE, "This encoding to be used for filenames inside the compressed file");
 
 
-    public AbstractCompressFunction(XQueryContext context, FunctionSignature signature)
-    {
+    public AbstractCompressFunction(final XQueryContext context, final FunctionSignature signature) {
         super(context, signature);
     }
 	
-	private String removeLeadingOffset(String uri, String stripOffset){
+	private String removeLeadingOffset(String uri, final String stripOffset) {
 		// remove leading offset
 		if (uri.startsWith(stripOffset)) {
 			uri = uri.substring(stripOffset.length());
@@ -120,21 +122,22 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	}
 
     @Override
-    public Sequence eval(Sequence[] args, Sequence contextSequence)
-			throws XPathException {
+    public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
 		// are there some uri's to tar?
 		if (args[0].isEmpty()) {
 			return Sequence.EMPTY_SEQUENCE;
 		}
 
 		// use a hierarchy in the tar file?
-		boolean useHierarchy = args[1].effectiveBooleanValue();
+        final boolean useHierarchy = args[1].effectiveBooleanValue();
 
 		// Get offset
-		String stripOffset = "";
+        final String stripOffset;
 		if (args.length == 3) {
 			stripOffset = args[2].getStringValue();
-		}
+		} else {
+            stripOffset = "";
+        }
 
 		// Get encoding
         try {
@@ -150,8 +153,8 @@ public abstract class AbstractCompressFunction extends BasicFunction
                  final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
 
                 // iterate through the argument sequence
-                for (SequenceIterator i = args[0].iterate(); i.hasNext(); ) {
-                    Item item = i.nextItem();
+                for (final SequenceIterator i = args[0].iterate(); i.hasNext(); ) {
+                    final Item item = i.nextItem();
 
                     if (item instanceof Element element) {
                         compressElement(os, element, useHierarchy, stripOffset, sbWriter);
@@ -163,7 +166,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                 os.flush();
 
                 if(os instanceof DeflaterOutputStream) {
-                    ((DeflaterOutputStream)os).finish();
+                    ((DeflaterOutputStream) os).finish();
                 }
 
                 return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), new UnsynchronizedByteArrayInputStream(baos.toByteArray()), this);
@@ -185,7 +188,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                     }
 
                     // got a file
-                    Path file = Paths.get(uri.getPath());
+                    final Path file = Paths.get(uri.getPath());
                     compressFile(os, file, useHierarchy, stripOffset, method, resourceName);
 
                 } else {
@@ -193,35 +196,35 @@ public abstract class AbstractCompressFunction extends BasicFunction
                     final XmldbURI xmldburi = XmldbURI.create(uri);
 
                     // try for a collection
-                    try(final Collection collection = context.getBroker().openCollection(xmldburi, LockMode.READ_LOCK)) {
+                    try (final Collection collection = context.getBroker().openCollection(xmldburi, LockMode.READ_LOCK)) {
                         if(collection != null) {
                             compressCollection(os, collection, useHierarchy, stripOffset, sbWriter);
                             return;
                         }
-                    } catch(final PermissionDeniedException | LockException | SAXException | IOException pde) {
+                    } catch (final PermissionDeniedException | LockException | SAXException | IOException pde) {
                         throw new XPathException(this, pde.getMessage());
                     }
 
 
                     // otherwise, try for a doc
-                    try(final Collection collection = context.getBroker().openCollection(xmldburi.removeLastSegment(), LockMode.READ_LOCK)) {
+                    try (final Collection collection = context.getBroker().openCollection(xmldburi.removeLastSegment(), LockMode.READ_LOCK)) {
                         if(collection == null) {
                             throw new XPathException(this, "Invalid URI: " + uri.toString());
                         }
 
-                        try(final LockedDocument doc = collection.getDocumentWithLock(context.getBroker(), xmldburi.lastSegment(), LockMode.READ_LOCK)) {
+                        try (final LockedDocument doc = collection.getDocumentWithLock(context.getBroker(), xmldburi.lastSegment(), LockMode.READ_LOCK)) {
 
                             // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
                             collection.close();
 
-                            if(doc == null) {
+                            if (doc == null) {
                                 throw new XPathException(this, "Invalid URI: " + uri.toString());
                             }
 
                             compressResource(os, doc.getDocument(), useHierarchy, stripOffset, method, resourceName, sbWriter);
                             return;
                         }
-                    } catch(final PermissionDeniedException | LockException | SAXException | IOException pde) {
+                    } catch (final PermissionDeniedException | LockException | SAXException | IOException pde) {
                         throw new XPathException(this, pde.getMessage());
                     }
                 }
@@ -233,17 +236,16 @@ public abstract class AbstractCompressFunction extends BasicFunction
         }
 
     /**
-     * Adds a element to a archive
+     * Adds a file to an archive.
      *
-     * @param os
-     *            The Output Stream to add the element to
-     * @param file
-     *            The file to add to the archive
-     * @param useHierarchy
-     *            Whether to use a folder hierarchy in the archive file that
-     *            reflects the collection hierarchy
+     * @param os The Output Stream to add the file to.
+     * @param file The file to add to the archive.
+     * @param useHierarchy Whether to use a folder hierarchy in the archive file that reflects the collection hierarchy.
+     * @param stripOffset a string that should be stripped from the start of the entry name.
+     * @param method the Zip method.
+     * @param name the name of the entry.
      */
-    private void compressFile(final OutputStream os, final Path file, boolean useHierarchy, String stripOffset, String method, String name) throws IOException {
+    private void compressFile(final OutputStream os, final Path file, final boolean useHierarchy, final String stripOffset, final String method, final String name) throws IOException {
 
         if (!Files.isDirectory(file)) {
 
@@ -284,27 +286,23 @@ public abstract class AbstractCompressFunction extends BasicFunction
     }
 
     /**
-	 * Adds a element to a archive
-	 * 
-	 * @param os
-	 *            The Output Stream to add the element to
-	 * @param element
-	 *            The element to add to the archive
-	 * @param useHierarchy
-	 *            Whether to use a folder hierarchy in the archive file that
-	 *            reflects the collection hierarchy
+     * Adds an element to an archive.
      *
+     * @param os The Output Stream to add the element to.
+     * @param element The element to add to the archive.
+     * @param useHierarchy Whether to use a folder hierarchy in the archive file that reflects the collection hierarchy.
+     * @param stripOffset a string that should be stripped from the start of the entry name.
      * @param sbWriter a StringBuilderWriter to reuse
-	 */
+     */
 	private void compressElement(final OutputStream os, final Element element, final boolean useHierarchy,
             final String stripOffset, final StringBuilderWriter sbWriter) throws XPathException {
 
         final String ns = element.getNamespaceURI();
-        if(!(element.getNodeName().equals("entry") || (ns != null && !ns.isEmpty()))) {
+        if (!(element.getNodeName().equals("entry") || (ns != null && !ns.isEmpty()))) {
             throw new XPathException(this, "Item must be type of xs:anyURI or element entry.");
         }
 
-        if(element.getChildNodes().getLength() > 1) {
+        if (element.getChildNodes().getLength() > 1) {
             throw new XPathException(this, "Entry content is not valid XML fragment.");
         }
 
@@ -314,8 +312,12 @@ public abstract class AbstractCompressFunction extends BasicFunction
 
         final String type = element.getAttribute("type");
 
-        if("uri".equals(type)) {
-            compressFromUri(os, URI.create(element.getFirstChild().getNodeValue()), useHierarchy, stripOffset, element.getAttribute("method"), name, sbWriter);
+        if ("uri".equals(type)) {
+            @Nullable final String uri = element.getFirstChild().getNodeValue();
+            if (isNullOrEmpty(uri)) {
+                throw new XPathException(this, "Entry with type uri must contain a URI.");
+            }
+            compressFromUri(os, URI.create(uri), useHierarchy, stripOffset, element.getAttribute("method"), name, sbWriter);
             return;
         }
 
@@ -325,25 +327,25 @@ public abstract class AbstractCompressFunction extends BasicFunction
             name = name.substring(name.lastIndexOf("/") + 1);
         }
 
-        if("collection".equals(type)) {
+        if ("collection".equals(type)) {
             name += "/";
         }
 
-        Object entry = null;
+        @Nullable Object entry = null;
         try {
             entry = newEntry(name);
 
-            if(!"collection".equals(type)) {
-                byte[] value;
+            if (!"collection".equals(type)) {
+                final byte[] value;
                 final CRC32 chksum = new CRC32();
                 final Node content = element.getFirstChild();
 
-                if(content == null) {
+                if (content == null) {
                     value = new byte[0];
                 } else {
-                    if(content.getNodeType() == Node.TEXT_NODE) {
+                    if (content.getNodeType() == Node.TEXT_NODE) {
                         String text = content.getNodeValue();
-                        if("binary".equals(type)) {
+                        if ("binary".equals(type)) {
                             //base64 binary
                             value = Base64.decodeBase64(text);
                         } else {
@@ -377,10 +379,10 @@ public abstract class AbstractCompressFunction extends BasicFunction
 
                 os.write(value);
             }
-        } catch(final IOException | SAXException ioe) {
+        } catch (final IOException | SAXException ioe) {
             throw new XPathException(this, ioe.getMessage(), ioe);
         } finally {
-            if(entry != null) {
+            if (entry != null) {
                 try {
                     closeEntry(os);
                 } catch (final IOException ioe) {
@@ -390,7 +392,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
         }
 	}
 
-    private void getDynamicSerializerOptions(Serializer serializer) throws SAXException {
+    private void getDynamicSerializerOptions(final Serializer serializer) throws SAXException {
         final Option option = context.getOption(Option.SERIALIZE_QNAME);
         if (option != null) {
             final String[] params = option.tokenizeContents();
@@ -403,25 +405,24 @@ public abstract class AbstractCompressFunction extends BasicFunction
     }
 
 	/**
-	 * Adds a document to a archive
-	 * 
-	 * @param os
-	 *            The Output Stream to add the document to
-	 * @param doc
-	 *            The document to add to the archive
-	 * @param useHierarchy
-	 *            Whether to use a folder hierarchy in the archive file that
-	 *            reflects the collection hierarchy
-     * @param sbWriter a StringBuilderWriter to reuse
+	 * Adds a document to an archive.
+	 *
+	 * @param os The Output Stream to add the document to.
+	 * @param doc The document to add to the archive.
+	 * @param useHierarchy Whether to use a folder hierarchy in the archive file that reflects the collection hierarchy.
+	 * @param stripOffset a string that should be stripped from the start of the entry name.
+	 * @param method the Zip method.
+	 * @param name the name of the entry.
+	 * @param sbWriter a StringBuilderWriter to reuse
 	 */
 	private void compressResource(final OutputStream os, final DocumentImpl doc, final boolean useHierarchy, final String stripOffset, final String method, final String name, final StringBuilderWriter sbWriter) throws IOException, SAXException {
 		// create an entry in the Tar for the document
         final Object entry;
-        if(name != null) {
+        if (name != null) {
             entry = newEntry(name);
         } else if (useHierarchy) {
-			String docCollection = doc.getCollection().getURI().toString();
-			XmldbURI collection = XmldbURI.create(removeLeadingOffset(docCollection, stripOffset));
+            final String docCollection = doc.getCollection().getURI().toString();
+            final XmldbURI collection = XmldbURI.create(removeLeadingOffset(docCollection, stripOffset));
 			entry = newEntry(collection.append(doc.getFileURI()).toString());
 		} else {
 			entry = newEntry(doc.getFileURI().toString());
@@ -469,16 +470,13 @@ public abstract class AbstractCompressFunction extends BasicFunction
 	}
 	
 	/**
-	 * Adds a Collection and its child collections and resources recursively to
-	 * a archive
-	 * 
-	 * @param os
-	 *            The Output Stream to add the document to
-	 * @param col
-	 *            The Collection to add to the archive
-	 * @param useHierarchy
-	 *            Whether to use a folder hierarchy in the archive file that
-	 *            reflects the collection hierarchy
+	 * Adds a Collection and its child collections and resources recursively to an archive.
+	 *
+	 * @param os The Output Stream to add the Collection to.
+	 * @param col The Collection to add to the archive.
+	 * @param useHierarchy Whether to use a folder hierarchy in the archive file that reflects the collection hierarchy.
+	 * @param stripOffset a string that should be stripped from the start of the entry name.
+	 * @param sbWriter a StringBuilderWriter to reuse
 	 */
 	private void compressCollection(final OutputStream os, final Collection col, final boolean useHierarchy, final String stripOffset, final StringBuilderWriter sbWriter) throws IOException, SAXException, LockException, PermissionDeniedException {
 		// iterate over child documents
@@ -487,16 +485,16 @@ public abstract class AbstractCompressFunction extends BasicFunction
         final MutableDocumentSet childDocs = new DefaultDocumentSet();
 		col.getDocuments(broker, childDocs);
 		for (final Iterator<DocumentImpl> itChildDocs = childDocs.getDocumentIterator(); itChildDocs.hasNext();) {
-			DocumentImpl childDoc = itChildDocs.next();
-			try(final ManagedDocumentLock updateLock = lockManager.acquireDocumentReadLock(childDoc.getURI())) {
+            final DocumentImpl childDoc = itChildDocs.next();
+			try (final ManagedDocumentLock updateLock = lockManager.acquireDocumentReadLock(childDoc.getURI())) {
 				compressResource(os, childDoc, useHierarchy, stripOffset, "", null, sbWriter);
 			}
 		}
 		// iterate over child collections
 		for (final Iterator<XmldbURI> itChildCols = col.collectionIterator(broker); itChildCols.hasNext();) {
 			// get the child collection
-			XmldbURI childColURI = itChildCols.next();
-			Collection childCol = broker.getCollection(col.getURI().append(childColURI));
+            final XmldbURI childColURI = itChildCols.next();
+            final Collection childCol = broker.getCollection(col.getURI().append(childColURI));
 			// recurse
 			compressCollection(os, childCol, useHierarchy, stripOffset, sbWriter);
 		}
