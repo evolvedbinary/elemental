@@ -1300,12 +1300,19 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
      */
     @Override
     public Element getDocumentElement() {
-        final NodeList cl = getChildNodes();
-        for(int i = 0; i < cl.getLength(); i++) {
-            if(cl.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                return (Element) cl.item(i);
+        try (final DBBroker broker = pool.getBroker()) {
+            final NodeProxy childNodeProxy = new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE);
+            for (int i = 0; i < children; i++) {
+                childNodeProxy.setInternalAddress(childAddress[i]);
+                final Node child = broker.objectWith(childNodeProxy);
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    return (Element) child;
+                }
             }
+        } catch(final EXistException e) {
+            LOG.warn("Exception while retrieving document element: {}", e.getMessage(), e);
         }
+
         return null;
     }
 
