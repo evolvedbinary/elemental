@@ -955,14 +955,13 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @Override
     @EnsureContainerLocked(mode=READ_LOCK)
     public Node getFirstChild() {
-        if(children == 0) {
+        if (children == 0) {
             return null;
         }
-        try(final DBBroker broker = pool.getBroker()) {
-            return broker.objectWith(new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE, childAddress[0]));
-        } catch(final EXistException e) {
+        try (final DBBroker broker = pool.getBroker()) {
+            return broker.objectWith(getFirstChildProxy());
+        } catch (final EXistException e) {
             LOG.warn("Exception while inserting node: {}", e.getMessage(), e);
-            //TODO : throw exception ?
         }
         return null;
     }
@@ -995,14 +994,18 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @EnsureContainerLocked(mode=READ_LOCK)
     public NodeList getChildNodes() {
         final org.exist.dom.NodeListImpl list = new org.exist.dom.NodeListImpl();
+
+        @Nullable final NodeProxy nodeProxy = children > 0 ? new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE) : null;
         try (final DBBroker broker = pool.getBroker()) {
-            for(int i = 0; i < children; i++) {
-                final Node child = broker.objectWith(new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE, childAddress[i]));
+            for (int i = 0; i < children; i++) {
+                nodeProxy.setInternalAddress(childAddress[i]);
+                final Node child = broker.objectWith(nodeProxy);
                 list.add(child);
             }
-        } catch(final EXistException e) {
+        } catch (final EXistException e) {
             LOG.warn("Exception while retrieving child nodes: {}", e.getMessage(), e);
         }
+
         return list;
     }
 
@@ -1308,7 +1311,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @Override
     public Element getDocumentElement() {
         try (final DBBroker broker = pool.getBroker()) {
-            final NodeProxy childNodeProxy = new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE);
+            @Nullable final NodeProxy childNodeProxy = children > 0 ? new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE) : null;
             for (int i = 0; i < children; i++) {
                 childNodeProxy.setInternalAddress(childAddress[i]);
                 final Node child = broker.objectWith(childNodeProxy);
