@@ -731,12 +731,14 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
-     * The method <code>getNode</code>
+     * Retrieve a node from the document
+     * by its nodeId
      *
-     * @param nodeId a <code>NodeId</code> value
-     * @return a <code>Node</code> value
+     * @param nodeId the nodeId of the node to find.
+     *
+     * @return the node, or null if it does not exist.
      */
-    public Node getNode(final NodeId nodeId) {
+    @Nullable Node getNode(final NodeId nodeId) {
         try(final DBBroker broker = pool.getBroker()) {
             return broker.objectWith(this, nodeId);
         } catch(final EXistException e) {
@@ -746,16 +748,21 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
-     * The method <code>getNode</code>
+     * Retrieve a node from the document
+     * by its nodeProxy
      *
-     * @param p a <code>NodeProxy</code> value
-     * @return a <code>Node</code> value
+     * This should only be called from {@link NodeProxy#getNode()}.
+     *
+     * @param p the proxy of the node to find.
+     *
+     * @return the node, or null if it does not exist.
      */
-    public Node getNode(final NodeProxy p) {
-        if(p.getNodeId().getTreeLevel() == 1) {
-            return getDocumentElement();
+    Node getNode(final NodeProxy p) {
+        if (p.getNodeId() == NodeId.DOCUMENT_NODE || p.getNodeId().equals(NodeId.DOCUMENT_NODE)) {
+            return this;
         }
-        try(final DBBroker broker = pool.getBroker()) {
+
+        try (final DBBroker broker = pool.getBroker()) {
             return broker.objectWith(p);
         } catch(final Exception e) {
             LOG.warn("Error occurred while retrieving node: {}", e.getMessage(), e);

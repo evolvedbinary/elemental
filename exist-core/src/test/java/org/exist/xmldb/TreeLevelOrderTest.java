@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,6 +49,8 @@ import org.exist.TestUtils;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.xmldb.api.base.*;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -32,6 +58,7 @@ import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the TreeLevelOrder function.
@@ -75,16 +102,18 @@ public class TreeLevelOrderTest {
         store(DOC1, DOC1_NAME);
 
         // read document back from database
-        Node elem = load(DOC1_NAME);
-        assertNotNull(elem);
+        final Node doc = load(DOC1_NAME);
+        assertNotNull(doc);
+        assertTrue(doc instanceof Document);
 
         //get node using DOM
         String strTo = null;
 
-        NodeList rootChildren = elem.getChildNodes();
-        for (int r = 0; r < rootChildren.getLength(); r++) {
-            if (rootChildren.item(r).getLocalName().equals("to")) {
-                Node to = rootChildren.item(r);
+        final Element elem = ((Document) doc).getDocumentElement();
+        final NodeList elemChildNodes = elem.getChildNodes();
+        for (int r = 0; r < elemChildNodes.getLength(); r++) {
+            if (elemChildNodes.item(r).getLocalName().equals("to")) {
+                final Node to = elemChildNodes.item(r);
                 strTo = to.getTextContent();
                 break;
             }
