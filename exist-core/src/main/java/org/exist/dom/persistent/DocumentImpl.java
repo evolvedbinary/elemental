@@ -1046,9 +1046,9 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
-     * The method <code>getFirstChildAddress</code>
+     * Get the address of the first child.
      *
-     * @return a <code>long</code> value
+     * @return the address of the first child.
      */
     @EnsureContainerLocked(mode=READ_LOCK)
     public long getFirstChildAddress() {
@@ -1058,6 +1058,37 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         return childAddress[0];
     }
 
+    @Override
+    @EnsureContainerLocked(mode=READ_LOCK)
+    public Node getLastChild() {
+        if (children == 0) {
+            return null;
+        }
+        try (final DBBroker broker = pool.getBroker()) {
+            return broker.objectWith(getLastChildProxy());
+        } catch (final EXistException e) {
+            LOG.warn("Exception while inserting node: {}", e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @EnsureContainerLocked(mode=READ_LOCK)
+    protected NodeProxy getLastChildProxy() {
+        return new NodeProxy(getExpression(), this, NodeId.ROOT_NODE, Node.ELEMENT_NODE, childAddress[children - 1]);
+    }
+
+    /**
+     * Get the address of the last child.
+     *
+     * @return the address of the last child.
+     */
+    @EnsureContainerLocked(mode=READ_LOCK)
+    public long getLastChildAddress() {
+        if (children == 0) {
+            return StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
+        }
+        return childAddress[children - 1];
+    }
 
     @Override
     public boolean hasChildNodes() {
