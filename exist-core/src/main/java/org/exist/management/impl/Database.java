@@ -45,12 +45,12 @@
  */
 package org.exist.management.impl;
 
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 
@@ -151,11 +151,14 @@ public class Database implements DatabaseMXBean {
 
     public String printStackTrace(final Thread thread) {
         final StackTraceElement[] stackElements = thread.getStackTrace();
-        final StringWriter writer = new StringWriter();
-        final int showItems = stackElements.length > 20 ? 20 : stackElements.length;
-        for (int i = 0; i < showItems; i++) {
-            writer.append(stackElements[i].toString()).append('\n');
+        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+            final int showItems = stackElements.length > 20 ? 20 : stackElements.length;
+            for (int i = 0; i < showItems; i++) {
+                writer.append(stackElements[i].toString());
+                writer.append('\n');
+
+            }
+            return writer.toString();
         }
-        return writer.toString();
     }
 }

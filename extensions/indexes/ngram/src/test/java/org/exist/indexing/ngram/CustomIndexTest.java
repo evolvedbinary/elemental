@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +45,7 @@
  */
 package org.exist.indexing.ngram;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationException;
@@ -56,7 +81,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
@@ -543,7 +567,7 @@ public class CustomIndexTest {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             XQuery xquery = pool.getXQueryService();
             assertNotNull(xquery);
-            
+
             Sequence seq = xquery.execute(broker, "util:index-key-occurrences(/test/item, 'cha', 'ngram-index')", null);
             //Sequence seq = xquery.execute("util:index-key-occurrences(/test/item, 'cha', 'org.exist.indexing.impl.NGramIndex')", null);
             assertNotNull(seq);
@@ -558,37 +582,38 @@ public class CustomIndexTest {
             //seq = xquery.execute("util:index-key-documents(/test/item, 'le8', 'org.exist.indexing.impl.NGramIndex')", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
-            
+
             seq = xquery.execute(broker, "util:index-key-documents(/test/item, 'le8', 'ngram-index')", null);
             //seq = xquery.execute("util:index-key-doucments(/test/item, 'le8', 'org.exist.indexing.impl.NGramIndex')", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
-            
+
             String queryBody =
                 "declare function local:callback($key as item(), $data as xs:int+)\n" +
-                "as element()+ {\n" + 
-                "    <item>\n" + 
-                "        <key>{$key}</key>\n" + 
-                "        <frequency>{$data[1]}</frequency>\n" + 
-                "    </item>\n" + 
-                "};\n" + 
-                "\n";
-            
+                    "as element()+ {\n" +
+                    "    <item>\n" +
+                    "        <key>{$key}</key>\n" +
+                    "        <frequency>{$data[1]}</frequency>\n" +
+                    "    </item>\n" +
+                    "};\n" +
+                    "\n";
+
             String query = queryBody + "util:index-keys(/test/item, \'\', util:function(xs:QName(\'local:callback\'), 2), 1000, 'ngram-index')";
             //String query = queryBody + "util:index-keys(/test/item, \'\', util:function(xs:QName(\'local:callback\'), 2), 1000, 'org.exist.indexing.impl.NGramIndex')";
             seq = xquery.execute(broker, query, null);
             assertNotNull(seq);
             //TODO : check cardinality
-            StringWriter out = new StringWriter();
-            Properties props = new Properties();
-            props.setProperty(OutputKeys.INDENT, "yes");
-            SAXSerializer serializer = new SAXSerializer(out, props);
-            serializer.startDocument();
-            for (SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                Item next = i.nextItem();
-                next.toSAX(broker, serializer, props);
+            try (final StringBuilderWriter out = new StringBuilderWriter()) {
+                Properties props = new Properties();
+                props.setProperty(OutputKeys.INDENT, "yes");
+                SAXSerializer serializer = new SAXSerializer(out, props);
+                serializer.startDocument();
+                for (SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                    Item next = i.nextItem();
+                    next.toSAX(broker, serializer, props);
+                }
+                serializer.endDocument();
             }
-            serializer.endDocument();
             //TODO : check content
 
 

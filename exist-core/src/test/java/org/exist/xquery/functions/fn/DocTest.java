@@ -65,6 +65,7 @@ import static org.junit.Assert.*;
 
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.LocalXMLResource;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import org.xml.sax.InputSource;
@@ -152,7 +153,8 @@ public class DocTest {
         LocalXMLResource res = (LocalXMLResource)result.getResource(0);
         assertNotNull(res);
         Node n = res.getContentAsDOM();
-        assertEquals("y", n.getLocalName());
+        assertTrue(n instanceof Document);
+        assertEquals("y", ((Document) n).getDocumentElement().getLocalName());
 
         query = "util:eval(xs:anyURI('/db/test/test1.xq'), false(), ())";
         result = existEmbeddedServer.executeQuery(query);
@@ -160,7 +162,8 @@ public class DocTest {
         res = (LocalXMLResource)result.getResource(0);
         assertNotNull(res);
         n = res.getContentAsDOM();
-        assertEquals("x", n.getLocalName());
+        assertTrue(n instanceof Document);
+        assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
 
         query = "util:eval(xs:anyURI('/db/test/test2.xq'), false(), ())";
         result = existEmbeddedServer.executeQuery(query);
@@ -168,7 +171,8 @@ public class DocTest {
         res = (LocalXMLResource)result.getResource(0);
         assertNotNull(res);
         n = res.getContentAsDOM();
-        assertEquals("x", n.getLocalName());
+        assertTrue(n instanceof Document);
+        assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
     }
 
     @Test

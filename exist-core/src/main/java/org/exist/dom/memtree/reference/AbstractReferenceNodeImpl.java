@@ -71,12 +71,20 @@ public abstract class AbstractReferenceNodeImpl<T extends AbstractReferenceNodeI
 
     @Override
     public String getNamespaceURI() {
-        return getProxiedNode().getNamespaceURI();
+        final QName qname = getNodeProxy().getQName();
+        if (qname == null) {
+            return null;
+        }
+        return qname.getNamespaceURI();
     }
 
     @Override
     public String getLocalName() {
-        return getProxiedNode().getLocalName();
+        final QName qname = getNodeProxy().getQName();
+        if (qname == null) {
+            return null;
+        }
+        return qname.getLocalPart();
     }
 
     @Override
@@ -158,11 +166,11 @@ public abstract class AbstractReferenceNodeImpl<T extends AbstractReferenceNodeI
 
     @Override
     public short getNodeType() {
-        return getProxiedNode().getNodeType();
+        return getNodeProxy().getNodeType();
     }
 
     @Override
     public QName getQName() {
-        return getProxiedNode().getQName();
+        return getNodeProxy().getQName();
     }
 }
