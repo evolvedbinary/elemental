@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,7 +47,6 @@ package org.exist.xquery;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.custommonkey.xmlunit.DetailedDiff;
 import org.exist.EXistException;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
@@ -40,6 +63,7 @@ import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.junit.*;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -63,7 +87,6 @@ import java.net.URLConnection;
 import java.util.Arrays;
 
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
-import static org.custommonkey.xmlunit.XMLUnit.compareXML;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
@@ -620,7 +643,9 @@ public class XQueryTest {
         assertEquals("XQuery: " + query, 1, result.getSize());
         //TODO : no way to test the node type ?
         //assertEquals( "XQuery: " + query, Node.DOCUMENT_NODE, ((XMLResource)result.getResource(0)));
-        assertEquals("XQuery: " + query, "test", ((XMLResource) result.getResource(0)).getContentAsDOM().getNodeName());
+        final Node n = ((XMLResource) result.getResource(0)).getContentAsDOM();
+        assertTrue(n instanceof Document);
+        assertEquals("XQuery: " + query, "test", ((Document) n).getDocumentElement().getNodeName());
     }
 
     @Test
@@ -1270,9 +1295,16 @@ public class XQueryTest {
         result = service.query(query);
         assertEquals("XQuery: " + query, 1, result.getSize());
 
-        Node n = ((XMLResource) result.getResource(0)).getContentAsDOM();
-        DetailedDiff d = new DetailedDiff(compareXML(numbers, n.toString()));
-        assertEquals(0, d.getAllDifferences().size());
+        final Node n = ((XMLResource) result.getResource(0)).getContentAsDOM();
+        assertTrue(n instanceof Document);
+        final Source expected = Input.fromString(numbers).build();
+        final Source actual = Input.fromNode(n).build();
+
+        final Diff diff = DiffBuilder.compare(expected).withTest(actual)
+            .checkForSimilar()
+            .build();
+        assertFalse(diff.toString(), diff.hasDifferences());
+
         //ignore eXist namespace's attributes
         //assertEquals(1, d.getAllDifferences().size());
 
