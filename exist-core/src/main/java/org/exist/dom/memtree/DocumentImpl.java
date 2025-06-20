@@ -660,7 +660,17 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
     @Override
     public Node getLastChild() {
-        return getFirstChild();
+        if (size > 1) {
+            int nodeNum = 1;
+            for (; nodeNum < size; nodeNum++) {
+                if (treeLevel[nodeNum] > 1) {
+                   nodeNum--;
+                   break;
+                }
+            }
+            return getNode(nodeNum);
+        }
+        return null;
     }
 
     public int getAttributesCountFor(final int nodeNumber) {
