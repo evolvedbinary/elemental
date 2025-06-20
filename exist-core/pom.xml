@@ -813,6 +813,7 @@
                                 <include>src/main/java/org/exist/http/urlrewrite/Redirect.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/RewriteConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/Index.java</include>
+                                <include>src/main/java/org/exist/indexing/IndexController.java</include>
                                 <include>src/main/java/org/exist/indexing/IndexManager.java</include>
                                 <include>src/main/java/org/exist/jetty/JettyStart.java</include>
                                 <include>src/main/java/org/exist/jetty/WebAppContext.java</include>
@@ -1087,6 +1088,7 @@
                                 <exclude>src/main/java/org/exist/http/urlrewrite/Redirect.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/RewriteConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/Index.java</exclude>
+                                <include>src/main/java/org/exist/indexing/IndexController.java</include>
                                 <exclude>src/main/java/org/exist/indexing/IndexManager.java</exclude>
                                 <exclude>src/main/java/org/exist/jetty/JettyStart.java</exclude>
                                 <exclude>src/main/java/org/exist/jetty/WebAppContext.java</exclude>
