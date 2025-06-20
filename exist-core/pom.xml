@@ -850,6 +850,7 @@
                                 <include>src/test/java/org/exist/dom/persistent/NodeTest.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/PersistentDomTest.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/ProcessingInstructionImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/SortedNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/StoredNode.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/SymbolTable.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/TextImpl.java</include>
@@ -954,6 +955,7 @@
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
                                 <include>src/test/java/org/exist/xmldb/ResourceTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</include>
+                                <include>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
@@ -971,6 +973,7 @@
                                 <include>src/main/java/org/exist/xquery/XPathUtil.java</include>
                                 <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/XQueryTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/array/ArrayType.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/DocTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnModule.java</include>
@@ -1134,6 +1137,7 @@
                                 <exclude>src/test/java/org/exist/dom/persistent/NodeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/PersistentDomTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/ProcessingInstructionImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/SortedNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/StoredNode.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/SymbolTable.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/TextImpl.java</exclude>
@@ -1299,6 +1303,7 @@
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ResourceTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderSerializer.java</exclude>
@@ -1330,6 +1335,7 @@
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryContextAttributesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/XQueryTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/array/ArrayType.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/DocTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnModule.java</exclude>
