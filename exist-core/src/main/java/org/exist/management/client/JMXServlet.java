@@ -56,6 +56,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -337,6 +340,13 @@ public class JMXServlet extends HttpServlet {
 
         // Create and write when needed
         if (!Files.exists(tokenFile) || token == null) {
+
+            final Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rw-r-----");
+            try {
+                tokenFile = Files.createFile(tokenFile, PosixFilePermissions.asFileAttribute(permissions));
+            } catch (final Throwable t) {
+                LOG.warn("Unable to restrict permissions on: " + tokenFile);
+            }
 
             // Create random token
             token = UUIDGenerator.getUUIDversion4();
