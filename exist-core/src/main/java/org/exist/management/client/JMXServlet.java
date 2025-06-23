@@ -116,7 +116,7 @@ public class JMXServlet extends HttpServlet {
     }
 
     private JMXtoXML client;
-    private final Set<String> localhostAddresses = new HashSet<>();
+    private final Set<String> serverAddresses = new HashSet<>();
 
     private Path dataDir;
     private Path tokenFile;
@@ -128,11 +128,15 @@ public class JMXServlet extends HttpServlet {
         // Verify if request is from localhost or if user has specific servlet/container managed role.
         if (isFromLocalHost(request)) {
             // Localhost is always authorized to access
-            LOG.debug("Local access granted");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Local access granted");
+            }
 
         } else if (hasSecretToken(request, getToken())) {
             // Correct token is provided
-            LOG.debug("Correct token provided by {}", request.getRemoteHost());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Correct token provided by {}", request.getRemoteHost());
+            }
 
         } else {
             // Check if user is already authorized, e.g. via MONEX allow user too
@@ -218,7 +222,7 @@ public class JMXServlet extends HttpServlet {
         client.connect();
 
         // Register all known localhost addresses
-        registerLocalHostAddresses();
+        registerServerAddresses();
 
         // Get directory for token file
         final String jmxDataDir = client.getDataDir();
@@ -239,27 +243,36 @@ public class JMXServlet extends HttpServlet {
     }
 
     /**
-     * Register all known IP-addresses for localhost.
+     * Register all known IP-addresses for server.
      */
-    void registerLocalHostAddresses() {
-        // The external IP address of the server
+    void registerServerAddresses() {
+        // The IPv4 address of the loopback interface of the server - 127.0.0.1 on Windows/Linux/macOS, or 127.0.1.1 on Debian/Ubuntu
         try {
-            localhostAddresses.add(InetAddress.getLocalHost().getHostAddress());
-        } catch (UnknownHostException ex) {
-            LOG.warn("Unable to get HostAddress for localhost: {}", ex.getMessage());
+            serverAddresses.add(InetAddress.getLocalHost().getHostAddress());
+        } catch (final UnknownHostException ex) {
+            LOG.warn("Unable to get loopback IP address for localhost: {}", ex.getMessage());
         }
 
-        // The configured Localhost addresses
+        // Any additional IPv4 and IPv6 addresses associated with the loopback interface of the server
         try {
-            for (InetAddress address : InetAddress.getAllByName("localhost")) {
-                localhostAddresses.add(address.getHostAddress());
+            for (final InetAddress loopBackAddress : InetAddress.getAllByName("localhost")) {
+                serverAddresses.add(loopBackAddress.getHostAddress());
             }
-        } catch (UnknownHostException ex) {
-            LOG.warn("Unable to retrieve ipaddresses for localhost: {}", ex.getMessage());
+        } catch (final UnknownHostException ex) {
+            LOG.warn("Unable to retrieve additional loopback IP addresses for localhost: {}", ex.getMessage());
         }
 
-        if (localhostAddresses.isEmpty()) {
-            LOG.error("Unable to determine addresses for localhost, jmx servlet might be disfunctional.");
+        // Any IPv4 and IPv6 addresses associated with other interfaces in the server
+        try {
+            for (final InetAddress hostAddress : InetAddress.getAllByName(InetAddress.getLocalHost().getHostName())) {
+                serverAddresses.add(hostAddress.getHostAddress());
+            }
+        } catch (final UnknownHostException ex) {
+            LOG.warn("Unable to retrieve additional interface IP addresses for localhost: {}", ex.getMessage());
+        }
+
+        if (serverAddresses.isEmpty()) {
+            LOG.error("Unable to determine IP addresses for localhost, JMXServlet might be dysfunctional.");
         }
     }
 
@@ -269,8 +282,13 @@ public class JMXServlet extends HttpServlet {
      * @param request The HTTP request
      * @return TRUE if request is from LOCALHOST otherwise FALSE
      */
-    boolean isFromLocalHost(HttpServletRequest request) {
-        return localhostAddresses.contains(request.getRemoteAddr());
+    boolean isFromLocalHost(final HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
+        if (remoteAddr.charAt(0) == '[') {
+            // Handle IPv6 addresses that are wrapped in []
+            remoteAddr = remoteAddr.substring(1, remoteAddr.length() - 1);
+        }
+        return serverAddresses.contains(remoteAddr);
     }
 
     /**
