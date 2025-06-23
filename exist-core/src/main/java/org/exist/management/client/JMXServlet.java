@@ -236,10 +236,14 @@ public class JMXServlet extends HttpServlet {
         }
 
         // Setup token and tokenfile
-        obtainTokenFileReference();
+        if (tokenFile == null) {
+            tokenFile = dataDir.resolve(TOKEN_FILE);
+            LOG.info("Token file:  {}", tokenFile.toAbsolutePath().toAbsolutePath());
+        }
 
-        LOG.info("JMXservlet token: {}", getToken());
-
+        // NOTE(AR) make sure to create the token in init when the servlet is loaded at startup so that it is present for Monex
+        final String token = getToken();
+        LOG.info("JMXServlet token: {}", token);
     }
 
     /**
@@ -307,17 +311,6 @@ public class JMXServlet extends HttpServlet {
             }
         }
         return false;
-    }
-
-    /**
-     * Obtain reference to token file
-     */
-    private void obtainTokenFileReference() {
-
-        if (tokenFile == null) {
-            tokenFile = dataDir.resolve(TOKEN_FILE);
-            LOG.info("Token file:  {}", tokenFile.toAbsolutePath().toAbsolutePath());
-        }
     }
 
     /**

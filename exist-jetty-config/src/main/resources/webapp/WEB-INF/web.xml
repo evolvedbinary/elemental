@@ -176,6 +176,11 @@
     <servlet>
         <servlet-name>JMXServlet</servlet-name>
         <servlet-class>org.exist.management.client.JMXServlet</servlet-class>
+        <!-- NOTE(AR) required for Monex to correctly retrieve the JMX Token
+            as the JMXServlet has to create it before Monex makes its first request
+            for the status page
+        -->
+        <load-on-startup>3</load-on-startup>
     </servlet>
 
     <!--
