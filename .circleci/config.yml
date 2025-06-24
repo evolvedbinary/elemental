@@ -131,7 +131,7 @@ commands:
                   if [ -z "$MAVEN_SYMLINK_TARGET" ]; then
                     MAVEN_SYMLINK_TARGET=$HOME/maven
                   fi
-                  curl --fail --output $TMP_DOWNLOAD --location https://dlcdn.apache.org/maven/maven-3/$MAVEN_VERSION/binaries/$MAVEN_ARCHIVE
+                  curl --fail --output $TMP_DOWNLOAD --location https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/$MAVEN_ARCHIVE
                   tar zxvf $TMP_DOWNLOAD -C $MAVEN_TARGET_DIR
                   ln -s $MAVEN_TARGET_DIR/$MAVEN_ARTIFACT $MAVEN_SYMLINK_TARGET
                   rm $TMP_DOWNLOAD
