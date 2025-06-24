@@ -45,14 +45,13 @@
  */
 package org.exist.xquery.functions.fn;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 import org.xml.sax.SAXException;
 
 import javax.xml.transform.OutputKeys;
-import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Properties;
 
 import static org.exist.util.StringUtil.notNullOrEmptyOrWs;
@@ -134,14 +133,14 @@ public Sequence eval(final Sequence[] args, final Sequence contextSequence) thro
 
                     position++;
 
-                    try (final StringWriter writer = new StringWriter()) {
+                    try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                         final XQuerySerializer xqs = new XQuerySerializer(context.getBroker(), props, writer);
                         xqs.serialize(next.toSequence());
 
                         // Write to log
                         LOG.debug("{} [{}] [{}]: {}", label, position, Type.getTypeName(next.getType()), writer.toString());
 
-                    } catch (final IOException | SAXException e) {
+                    } catch (final SAXException e) {
                         throw new XPathException(this, e.getMessage());
                     }
 

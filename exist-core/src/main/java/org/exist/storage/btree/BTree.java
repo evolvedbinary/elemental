@@ -72,6 +72,7 @@
  */
 package org.exist.storage.btree;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -810,14 +811,13 @@ public class BTree extends Paged implements Lockable {
         if (!node.page.getPageHeader().getLsn().equals(Lsn.LSN_INVALID) && requiresRedo(loggable, node.page)) {
             if (loggable.idx > node.ptrs.length) {
                 LOG.warn("{}; loggable.idx = {}; node.ptrs.length = {}", node.page.getPageInfo(), loggable.idx, node.ptrs.length);
-                final StringWriter writer = new StringWriter();
-                try {
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                     dump(writer);
+                    LOG.warn(writer.toString());
                 } catch (final Exception e) {
                     LOG.warn(e);
                     e.printStackTrace();
                 }
-                LOG.warn(writer.toString());
                 throw new LogException("Critical error during recovery");
             }
             node.ptrs[loggable.idx] = loggable.pointer;
@@ -1687,14 +1687,14 @@ public class BTree extends Paged implements Lockable {
 
         @Override
         public String toString() {
-            final StringWriter writer = new StringWriter();
-            try {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 dump(writer);
+                return writer.toString();
             } catch (final Exception e) {
                 LOG.error(e);
                 //TODO : add something here ! -pb
             }
-            return writer.toString();
+            return null;
         }
 
         private void treeStatistics(final TreeMetrics metrics) throws IOException {

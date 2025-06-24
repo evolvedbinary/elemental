@@ -34,12 +34,12 @@ package org.exist.xquery.modules.mail;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.util.UUIDGenerator;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -588,7 +588,7 @@ public class WriteMessageTest {
 
     private String[] writeMessage(final SendEmailFunction.Mail mail) throws IOException {
         final String[] lines;
-        try (final StringWriter writer = new StringWriter();
+        try (final StringBuilderWriter writer = new StringBuilderWriter();
              final PrintWriter printWriter = new PrintWriter(writer)) {
             SendEmailFunction.writeMessage(printWriter, mail, true, CHARSET);
 

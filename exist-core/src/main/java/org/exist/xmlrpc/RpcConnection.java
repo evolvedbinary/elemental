@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +45,7 @@
  */
 package org.exist.xmlrpc;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.backup.Restore;
@@ -358,9 +383,10 @@ public class RpcConnection implements RpcAPI {
         return withDb((broker, transaction) -> {
             try {
                 return this.<String>compileQuery(broker, transaction, source, parameters).apply(compiledQuery -> {
-                    final StringWriter writer = new StringWriter();
-                    compiledQuery.dump(writer);
-                    return writer.toString();
+                    try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                        compiledQuery.dump(writer);
+                        return writer.toString();
+                    }
                 });
             } catch (final XPathException e) {
                 throw new EXistException(e);
@@ -644,7 +670,7 @@ public class RpcConnection implements RpcAPI {
 
     private String getDocumentAsString(final XmldbURI docUri, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
         return this.<String>readDocument(docUri).apply((document, broker, transaction) -> {
-            try (final StringWriter writer = new StringWriter()) {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
                 return writer.toString();
             }
@@ -1622,38 +1648,39 @@ public class RpcConnection implements RpcAPI {
             throw new EXistException("start parameter out of range");
         }
 
-        final StringWriter writer = new StringWriter();
-        writer.write(EXIST_RESULT_XMLNS_EXIST);
-        writer.write(Namespaces.EXIST_NS);
-        writer.write("\" hits=\"");
-        writer.write(Integer.toString(resultSet.getItemCount()));
-        writer.write("\" start=\"");
-        writer.write(Integer.toString(start));
-        writer.write("\" count=\"");
-        writer.write(Integer.toString(howmany));
-        writer.write("\">\n");
+        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+            writer.write(EXIST_RESULT_XMLNS_EXIST);
+            writer.write(Namespaces.EXIST_NS);
+            writer.write("\" hits=\"");
+            writer.write(Integer.toString(resultSet.getItemCount()));
+            writer.write("\" start=\"");
+            writer.write(Integer.toString(start));
+            writer.write("\" count=\"");
+            writer.write(Integer.toString(howmany));
+            writer.write("\">\n");
 
-        final Properties serializationProps = toProperties(properties);
+            final Properties serializationProps = toProperties(properties);
 
-        Item item;
-        for (int i = --start; i < start + howmany; i++) {
-            item = resultSet.itemAt(i);
-            if (item == null) {
-                continue;
+            Item item;
+            for (int i = --start; i < start + howmany; i++) {
+                item = resultSet.itemAt(i);
+                if (item == null) {
+                    continue;
+                }
+                if (item.getType() == Type.ELEMENT) {
+                    final NodeValue node = (NodeValue) item;
+                    serialize(broker, serializationProps, saxSerializer -> saxSerializer.toSAX(node), writer);
+                } else {
+                    writer.write("<exist:value type=\"");
+                    writer.write(Type.getTypeName(item.getType()));
+                    writer.write("\">");
+                    writer.write(item.getStringValue());
+                    writer.write("</exist:value>");
+                }
             }
-            if (item.getType() == Type.ELEMENT) {
-                final NodeValue node = (NodeValue) item;
-                serialize(broker, serializationProps, saxSerializer -> saxSerializer.toSAX(node), writer);
-            } else {
-                writer.write("<exist:value type=\"");
-                writer.write(Type.getTypeName(item.getType()));
-                writer.write("\">");
-                writer.write(item.getStringValue());
-                writer.write("</exist:value>");
-            }
+            writer.write("\n</exist:result>");
+            return writer.toString();
         }
-        writer.write("\n</exist:result>");
-        return writer.toString();
     }
 
     public Map<String, Object> compile(final String query, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
@@ -2154,7 +2181,7 @@ public class RpcConnection implements RpcAPI {
             final NodeId nodeId = factory.getBrokerPool().getNodeFactory().createFromString(s_id);
             final NodeProxy node = new NodeProxy(null, document, nodeId);
 
-            try (final StringWriter writer = new StringWriter()) {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.serialize(node), writer);
                 return writer.toString();
             }
@@ -2249,7 +2276,7 @@ public class RpcConnection implements RpcAPI {
                 for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
                     parameters.put(entry.getKey().toString(), entry.getValue().toString());
                 }
-                try (final StringWriter writer = new StringWriter()) {
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                   serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
                   return writer.toString();
                 }
@@ -2337,7 +2364,7 @@ public class RpcConnection implements RpcAPI {
             qr.touch();
 
             final SAXSerializer handler = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
-            try (final StringWriter writer = new StringWriter()) {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                 handler.setOutput(writer, toProperties(parameters));
 
 //			serialize results

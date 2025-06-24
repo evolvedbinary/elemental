@@ -45,6 +45,7 @@
  */
 package org.exist.http;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -110,6 +111,8 @@ import org.xml.sax.helpers.XMLFilterImpl;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLStreamException;
@@ -1301,15 +1304,16 @@ public class RESTServer {
 
         final InputStream is = request.getInputStream();
         final Reader reader = new InputStreamReader(is, encoding);
-        final StringWriter content = new StringWriter();
-        final char ch[] = new char[4096];
-        int len = 0;
-        while ((len = reader.read(ch)) > -1) {
-            content.write(ch, 0, len);
-        }
+        try (final StringBuilderWriter content = new StringBuilderWriter()) {
+            final char ch[] = new char[4096];
+            int len = 0;
+            while ((len = reader.read(ch)) > -1) {
+                content.write(ch, 0, len);
+            }
 
-        final String xml = content.toString();
-        return xml;
+            final String xml = content.toString();
+            return xml;
+        }
     }
 
     /**
@@ -1849,14 +1853,22 @@ public class RESTServer {
                     outputProperties.setProperty("omit-xml-declaration", "no");
                 }
 
-                final OutputStreamWriter writer = new OutputStreamWriter(response.getOutputStream(), encoding);
-                sax.setOutput(writer, outputProperties);
-                serializer.setSAXHandlers(sax, sax);
+                // NOTE(AR) we only close the OutputStreamWriter if serialization succeeds, otherwise we raise a BadRequestException below which needs the OutputStream to remain open so that it can report the issue via the HTTP response to the client
+                @Nullable Writer writerToClose = null;
+                try {
+                    final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
+                    sax.setOutput(writer, outputProperties);
+                    serializer.setSAXHandlers(sax, sax);
 
-                serializer.toSAX(resource);
+                    serializer.toSAX(resource);
 
-                writer.flush();
-                writer.close(); // DO NOT use in try-write-resources, otherwise ther response stream is always closed, and we can't report the errors
+                    writer.flush();
+                    writerToClose = writer;
+                } finally {
+                    if (writerToClose != null) {
+                        writerToClose.close();
+                    }
+                }
             } catch (final SAXException saxe) {
                 LOG.warn(saxe);
                 throw new BadRequestException("Error while serializing XML: " + saxe.getMessage());
@@ -1892,28 +1904,36 @@ public class RESTServer {
 
         response.setContentType(MimeType.HTML_TYPE.getName() + "; charset=" + encoding);
 
-        final OutputStreamWriter writer = new OutputStreamWriter(response.getOutputStream(), encoding);
-        writer.write(QUERY_ERROR_HEAD);
-        writer.write("<p class=\"path\"><span class=\"high\">Path</span>: ");
-        writer.write("<a href=\"");
-        writer.write(path);
-        writer.write("\">");
-        writer.write(path);
-        writer.write("</a>");
+        // NOTE(AR) we only close the OutputStreamWriter if serialization succeeds, otherwise we raise a BadRequestException below which needs the OutputStream to remain open so that it can report the issue via the HTTP response to the client
+        @Nullable Writer writerToClose = null;
+        try {
+            final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
+            writer.write(QUERY_ERROR_HEAD);
+            writer.write("<p class=\"path\"><span class=\"high\">Path</span>: ");
+            writer.write("<a href=\"");
+            writer.write(path);
+            writer.write("\">");
+            writer.write(path);
+            writer.write("</a>");
 
-        writer.write("<p class=\"errmsg\">");
-        final String message = e.getMessage() == null ? e.toString() : e.getMessage();
-        writer.write(XMLUtil.encodeAttrMarkup(message));
-        writer.write("");
-        if (query != null) {
-            writer.write("<span class=\"high\">Query</span>:<pre>");
-            writer.write(XMLUtil.encodeAttrMarkup(query));
-            writer.write("</pre>");
+            writer.write("<p class=\"errmsg\">");
+            final String message = e.getMessage() == null ? e.toString() : e.getMessage();
+            writer.write(XMLUtil.encodeAttrMarkup(message));
+            writer.write("");
+            if (query != null) {
+                writer.write("<span class=\"high\">Query</span>:<pre>");
+                writer.write(XMLUtil.encodeAttrMarkup(query));
+                writer.write("</pre>");
+            }
+            writer.write("</body></html>");
+
+            writer.flush();
+            writerToClose = writer;
+        } finally {
+            if (writerToClose != null) {
+                writerToClose.close();
+            }
         }
-        writer.write("</body></html>");
-
-        writer.flush();
-        writer.close();
     }
 
     /**
@@ -1935,8 +1955,10 @@ public class RESTServer {
 
         response.setContentType(MimeType.XML_TYPE.getName() + "; charset=" + encoding);
 
-        try(final OutputStreamWriter writer =
-                new OutputStreamWriter(response.getOutputStream(), encoding)) {
+        // NOTE(AR) we only close the OutputStreamWriter if serialization succeeds, otherwise we raise a BadRequestException below which needs the OutputStream to remain open so that it can report the issue via the HTTP response to the client
+        @Nullable Writer writerToClose = null;
+        try {
+            final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
 
             writer.write("<?xml version=\"1.0\" ?>");
             writer.write("<exception><path>");
@@ -1952,6 +1974,13 @@ public class RESTServer {
                 writer.write("</query>");
             }
             writer.write("</exception>");
+
+            writer.flush();
+            writerToClose = writer;
+        } finally {
+            if (writerToClose != null) {
+                writerToClose.close();
+            }
         }
     }
 
@@ -1969,17 +1998,23 @@ public class RESTServer {
 
         response.setContentType(MimeType.XML_TYPE.getName() + "; charset=" + encoding);
 
-        final OutputStreamWriter writer =
-                new OutputStreamWriter(response.getOutputStream(), encoding);
-
-        writer.write("<?xml version=\"1.0\" ?>");
-        writer.write("<exist:modifications xmlns:exist=\""
+        // NOTE(AR) we only close the OutputStreamWriter if serialization succeeds, otherwise we raise a BadRequestException below which needs the OutputStream to remain open so that it can report the issue via the HTTP response to the client
+        @Nullable Writer writerToClose = null;
+        try {
+            final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
+            writer.write("<?xml version=\"1.0\" ?>");
+            writer.write("<exist:modifications xmlns:exist=\""
                 + Namespaces.EXIST_NS + "\" count=\"" + updateCount + "\">");
-        writer.write(updateCount + " modifications processed.");
-        writer.write("</exist:modifications>");
+            writer.write(updateCount + " modifications processed.");
+            writer.write("</exist:modifications>");
 
-        writer.flush();
-        writer.close();
+            writer.flush();
+            writerToClose = writer;
+        } finally {
+            if (writerToClose != null) {
+                writerToClose.close();
+            }
+        }
     }
 
     /**
@@ -2002,12 +2037,12 @@ public class RESTServer {
 
         setCreatedAndLastModifiedHeaders(response, collection.getCreated(), collection.getCreated());
 
-        final OutputStreamWriter writer =
-                new OutputStreamWriter(response.getOutputStream(), encoding);
-
         SAXSerializer serializer = null;
 
+        // NOTE(AR) we only close the OutputStreamWriter if serialization succeeds, otherwise we raise a BadRequestException below which needs the OutputStream to remain open so that it can report the issue via the HTTP response to the client
+        @Nullable Writer writerToClose = null;
         try {
+            final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
             serializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
 
             serializer.setOutput(writer, defaultProperties);
@@ -2107,7 +2142,7 @@ public class RESTServer {
             serializer.endDocument();
 
             writer.flush();
-            writer.close();
+            writerToClose = writer;
 
         } catch (final SAXException e) {
             // should never happen
@@ -2115,6 +2150,9 @@ public class RESTServer {
         } finally {
             if (serializer != null) {
                 SerializerPool.getInstance().returnObject(serializer);
+            }
+            if (writerToClose != null) {
+                writerToClose.close();
             }
         }
     }
@@ -2191,14 +2229,23 @@ public class RESTServer {
             if (wrap) {
                 outputProperties.setProperty("method", "xml");
             }
-            final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
-            final XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, writer);
 
-            //Marshaller.marshall(broker, results, start, howmany, serializer.getContentHandler());
-            serializer.serialize(results, start, howmany, wrap, typed, compilationTime, executionTime);
+            // NOTE(AR) we only close the OutputStreamWriter if serialization succeeds, otherwise we raise a BadRequestException below which needs the OutputStream to remain open so that it can report the issue via the HTTP response to the client
+            @Nullable Writer writerToClose = null;
+            try {
+                final Writer writer = new OutputStreamWriter(response.getOutputStream(), encoding);
+                final XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, writer);
 
-            writer.flush();
-            writer.close();
+                //Marshaller.marshall(broker, results, start, howmany, serializer.getContentHandler());
+                serializer.serialize(results, start, howmany, wrap, typed, compilationTime, executionTime);
+
+                writer.flush();
+                writerToClose = writer;
+            } finally {
+                if (writerToClose != null) {
+                    writerToClose.close();
+                }
+            }
 
         } catch (final SAXException e) {
             LOG.warn(e);
@@ -2234,7 +2281,9 @@ public class RESTServer {
         outputProperties.setProperty(Serializer.GENERATE_DOC_EVENTS, "false");
         try {
             serializer.setProperties(outputProperties);
-            try (Writer writer = new OutputStreamWriter(response.getOutputStream(), getEncoding(outputProperties))) {
+            @Nullable Writer writerToClose = null;
+            try {
+                final Writer writer = new OutputStreamWriter(response.getOutputStream(), getEncoding(outputProperties));
                 final JSONObject root = new JSONObject();
                 root.addObject(new JSONSimpleProperty("start", Integer.toString(start), true));
                 root.addObject(new JSONSimpleProperty("count", Integer.toString(howmany), true));
@@ -2249,30 +2298,41 @@ public class RESTServer {
                 final JSONObject data = new JSONObject("data");
                 root.addObject(data);
 
-                Item item;
-                for (int i = --start; i < start + howmany; i++) {
-                    item = results.itemAt(i);
-                    if (Type.subTypeOf(item.getType(), Type.NODE)) {
-                        final NodeValue value = (NodeValue) item;
-                        JSONValue json;
-                        if ("json".equals(outputProperties.getProperty("method", "xml"))) {
-                            json = new JSONValue(serializer.serialize(value), false);
-                            json.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
+                try (final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
+                    for (int i = --start; i < start + howmany; i++) {
+                        final Item item = results.itemAt(i);
+                        if (Type.subTypeOf(item.getType(), Type.NODE)) {
+                            final NodeValue value = (NodeValue) item;
+                            sbWriter.getBuilder().setLength(0);
+                            serializer.serialize(value, sbWriter);
+
+                            final JSONValue json;
+                            if ("json".equals(outputProperties.getProperty("method", "xml"))) {
+                                json = new JSONValue(sbWriter.toString(), false);
+                                json.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
+                            } else {
+                                json = new JSONValue(sbWriter.toString());
+                                json.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
+                            }
+
+                            data.addObject(json);
                         } else {
-                            json = new JSONValue(serializer.serialize(value));
+                            final JSONValue json = new JSONValue(item.getStringValue());
                             json.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
+                            data.addObject(json);
                         }
-                        data.addObject(json);
-                    } else {
-                        final JSONValue json = new JSONValue(item.getStringValue());
-                        json.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
-                        data.addObject(json);
                     }
                 }
 
                 root.serialize(writer, true);
 
                 writer.flush();
+                writerToClose = writer;
+
+            } finally {
+                if (writerToClose != null) {
+                    writerToClose.close();
+                }
             }
         } catch (final IOException | XPathException | SAXException e) {
             throw new BadRequestException("Error while serializing xml: " + e.toString(), e);

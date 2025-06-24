@@ -51,7 +51,11 @@ public class ElementReferenceImpl extends AbstractReferenceNodeImpl<ElementRefer
 
     @Override
     public String getTagName() {
-        return getProxiedNode().getTagName();
+        final QName qname = getNodeProxy().getQName();
+        if (qname == null) {
+            return null;
+        }
+        return qname.getStringValue();
     }
 
     @Override

@@ -49,6 +49,7 @@ import com.evolvedbinary.j8fu.fsm.AtomicFSM;
 import com.evolvedbinary.j8fu.fsm.FSM;
 import com.evolvedbinary.j8fu.lazy.AtomicLazyVal;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Database;
@@ -98,7 +99,6 @@ import org.exist.xquery.XQuery;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.ref.Reference;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -1864,7 +1864,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     }
 
     public void printSystemInfo() {
-        try(final StringWriter sout = new StringWriter();
+        try(final StringBuilderWriter sout = new StringBuilderWriter();
             final PrintWriter writer = new PrintWriter(sout)) {
 
             writer.println("SYSTEM INFO");
@@ -1875,8 +1875,6 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
             final String s = sout.toString();
             LOG.info(s);
             System.err.println(s);
-        } catch(final IOException e) {
-            LOG.error(e);
         }
     }
 

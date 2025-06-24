@@ -1108,7 +1108,7 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
         Node node = null;
         if (!isDirty) {
             final NodeId child = nodeId.getChild(children);
-            node = ownerDocument.getNode(new NodeProxy(getExpression(), ownerDocument, child));
+            node = new NodeProxy(getExpression(), ownerDocument, child).getNode();
         }
         if (node == null) {
             final NodeList cl;

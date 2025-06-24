@@ -99,11 +99,6 @@ public class AttrImpl extends NodeImpl implements Attr {
     }
 
     @Override
-    public Node getFirstChild() {
-        return null;
-    }
-
-    @Override
     public Node getPreviousSibling() {
         return null;
     }

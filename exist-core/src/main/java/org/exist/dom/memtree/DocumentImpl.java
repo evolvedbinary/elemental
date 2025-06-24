@@ -584,7 +584,8 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
     private NodeImpl referenceFromNodeProxy(final int nodeNum, final NodeProxy nodeProxy) {
         final NodeImpl<?> node;
-        switch (nodeProxy.getNodeType()) {
+        final int nodeType = nodeProxy.getNodeType();
+        switch (nodeType) {
             case Node.ELEMENT_NODE:
                 node = new ElementReferenceImpl(getExpression(), this, nodeNum, nodeProxy);
                 break;
@@ -651,7 +652,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
     @Override
     public Node getFirstChild() {
-        if(size > 1) {
+        if (size > 1) {
             return getNode(1);
         }
         return null;
@@ -659,7 +660,17 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
     @Override
     public Node getLastChild() {
-        return getFirstChild();
+        if (size > 1) {
+            int nodeNum = 1;
+            for (; nodeNum < size; nodeNum++) {
+                if (treeLevel[nodeNum] > 1) {
+                   nodeNum--;
+                   break;
+                }
+            }
+            return getNode(nodeNum);
+        }
+        return null;
     }
 
     public int getAttributesCountFor(final int nodeNumber) {
@@ -706,9 +717,10 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
         final short level = treeLevel[nodeNumber];
         final int nextNode = nodeNumber + 1;
-        if((nextNode < size) && (treeLevel[nextNode] > level)) {
+        if ((nextNode < size) && (treeLevel[nextNode] > level)) {
             return nextNode;
         }
+
         return -1;
     }
 

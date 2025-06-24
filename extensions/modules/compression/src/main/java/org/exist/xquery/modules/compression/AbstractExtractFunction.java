@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,91 +53,170 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.exist.util.FileUtils;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
-import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
-import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
-import org.exist.xmldb.EXistResource;
-import org.exist.xmldb.LocalCollection;
-import org.exist.xquery.BasicFunction;
-import org.exist.xquery.FunctionSignature;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
-import org.exist.xquery.functions.xmldb.XMLDBAbstractCollectionManipulator;
+import org.apache.commons.io.input.CloseShieldInputStream;
+import org.exist.EXistException;
+import org.exist.collections.Collection;
+import org.exist.security.PermissionDeniedException;
+import org.exist.storage.DBBroker;
+import org.exist.util.*;
+import org.exist.util.io.CachingFilterInputStream;
+import org.exist.util.io.FilterInputStreamCache;
+import org.exist.util.io.FilterInputStreamCacheFactory;
+import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.*;
 import org.exist.xquery.modules.ModuleUtils;
 import org.exist.xquery.value.*;
 
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.BinaryResource;
-import org.xmldb.api.modules.XMLResource;
 
 /**
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
- * @version 1.0
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ * @version 2.0
  */
-public abstract class AbstractExtractFunction extends BasicFunction
-{
-    private FunctionReference entryFilterFunction = null;
-    protected Sequence filterParam = null;
-    private FunctionReference entryDataFunction = null;
-    protected Sequence storeParam = null;
+public abstract class AbstractExtractFunction extends BasicFunction {
+
     private Sequence contextSequence;
-    
-    public AbstractExtractFunction(XQueryContext context, FunctionSignature signature)
-    {
+    private FunctionReference entryFilterFunction;
+    private Sequence[] filterParams;
+    private FunctionReference entryDataFunction;
+    private Sequence[] dataParams;
+    private Charset encoding;
+
+
+    public AbstractExtractFunction(final XQueryContext context, final FunctionSignature signature) {
         super(context, signature);
     }
 
     @Override
-    public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException
-    {
-        this.contextSequence = contextSequence;
-
-        if(args[0].isEmpty())
+    public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
+        // get the parameters and check their types
+        if (args[0].isEmpty()) {
             return Sequence.EMPTY_SEQUENCE;
+        }
+        final BinaryValue compressedData = ((BinaryValue) args[0].itemAt(0));
 
-        //get the entry-filter function and check its types
-        if(!(args[1].itemAt(0) instanceof FunctionReference))
+        if(!(args[1].itemAt(0) instanceof FunctionReference)) {
             throw new XPathException(this, "No entry-filter function provided.");
-        entryFilterFunction = (FunctionReference)args[1].itemAt(0);
-        FunctionSignature entryFilterFunctionSig = entryFilterFunction.getSignature();
-        if(entryFilterFunctionSig.getArgumentCount() < 3)
-            throw new XPathException(this, "entry-filter function must take at least 3 arguments.");
-
-        filterParam = args[2];
-
-        //get the entry-data function and check its types
-        if(!(args[3].itemAt(0) instanceof FunctionReference))
-            throw new XPathException(this, "No entry-data function provided.");
-        entryDataFunction = (FunctionReference)args[3].itemAt(0);
-        FunctionSignature entryDataFunctionSig = entryDataFunction.getSignature();
-        if(entryDataFunctionSig.getArgumentCount() < 3)
-            throw new XPathException(this, "entry-data function must take at least 3 arguments");
-
-        storeParam = args[4];
+        }
 
         try {
-            final Charset encoding;
-            if ((args.length >= 6) && !args[5].isEmpty()) {
-                encoding = Charset.forName(args[5].getStringValue());
+            entryFilterFunction = (FunctionReference) args[1].itemAt(0);
+            final FunctionSignature entryFilterFunctionSignature = entryFilterFunction.getSignature();
+
+            if (args.length < 5) {
+                if (!validateFunctionSignature(entryFilterFunctionSignature, new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE))) {
+                    throw new XPathException(this, "entry-filter function must have a signature that matches: entry-filter($path as xs:string, $data-type as xs:string) as xs:boolean");
+                }
+
+                filterParams = new Sequence[2];
+
+                if (!(args[2].itemAt(0) instanceof FunctionReference)) {
+                    throw new XPathException(this, "No entry-data function provided.");
+                }
+                entryDataFunction = (FunctionReference) args[2].itemAt(0);
+                final FunctionSignature entryDataFunctionSignature = entryDataFunction.getSignature();
+                if (entryDataFunctionSignature.getArgumentCount() == 2) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE))) {
+                        throw new XPathException(this, "entry-path function must have a signature that matches: entry-path($path as xs:string, $data-type as xs:string) as xs:anyURI");
+                    }
+                    dataParams = new Sequence[2];
+                } else if (entryDataFunctionSignature.getArgumentCount() == 3) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_ONE))) {
+                        throw new XPathException(this, "entry-data function must have a signature that matches: entry-data($path as xs:string, $data-type as xs:string, $data as item()?) as item()*");
+                    }
+                    dataParams = new Sequence[3];
+                } else {
+                    throw new XPathException(this, "entry-data/entry-path function must have a signature that matches either: entry-data($path as xs:string, $data-type as xs:string, $data as item()?) as item()*, or entry-path($path as xs:string, $data-type as xs:string) as xs:anyURI");
+                }
+
+                if (args.length == 4) {
+                    encoding = Charset.forName(args[3].itemAt(0).getStringValue());
+                } else {
+                    encoding = StandardCharsets.UTF_8;
+                }
+
             } else {
-                encoding = StandardCharsets.UTF_8;
+                if (!validateFunctionSignature(entryFilterFunctionSignature, new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE))) {
+                    throw new XPathException(this, "entry-filter function must have a signature that matches: entry-filter($path as xs:string, $data-type as xs:string, $param as item()*) as xs:boolean");
+                }
+
+                filterParams = new Sequence[3];
+                filterParams[2] = args[2];
+
+                if (!(args[3].itemAt(0) instanceof FunctionReference)) {
+                    throw new XPathException(this, "No entry-data function provided.");
+                }
+                entryDataFunction = (FunctionReference) args[3].itemAt(0);
+                final FunctionSignature entryDataFunctionSignature = entryDataFunction.getSignature();
+                if (entryDataFunctionSignature.getArgumentCount() == 3) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE))) {
+                        throw new XPathException(this, "entry-path function must have a signature that matches: entry-path($path as xs:string, $data-type as xs:string, $param as item()*) as xs:anyURI");
+                    }
+                    dataParams = new Sequence[3];
+                    dataParams[2] = args[4];
+                } else if (entryDataFunctionSignature.getArgumentCount() == 4) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE))) {
+                        throw new XPathException(this, "entry-data function must have a signature that matches: entry-data($path as xs:string, $data-type as xs:string, $data as item()?, $param as item()*) as item()*");
+                    }
+                    dataParams = new Sequence[4];
+                    dataParams[3] = args[4];
+                } else {
+                    throw new XPathException(this, "entry-data/entry-path function must have a signature that matches either: entry-data($path as xs:string, $data-type as xs:string, $data as item()?, $param as item()*) as item()*, or entry-path($path as xs:string, $data-type as xs:string, $param as item()*) as xs:anyURI");
+                }
+
+                if (args.length == 6) {
+                    encoding = Charset.forName(args[5].itemAt(0).getStringValue());
+                } else {
+                    encoding = StandardCharsets.UTF_8;
+                }
             }
 
-            BinaryValue compressedData = ((BinaryValue) args[0].itemAt(0));
+            this.contextSequence = contextSequence;
 
             return processCompressedData(compressedData, encoding);
-        } catch(final UnsupportedCharsetException | XMLDBException e) {
+
+        } catch(final UnsupportedCharsetException e) {
             throw new XPathException(this, e.getMessage(), e);
-		} finally {
-            entryDataFunction.close();
-            entryFilterFunction.close();
+        } finally {
+            if (entryDataFunction != null) {
+                entryDataFunction.close();
+            }
+            if (entryFilterFunction != null) {
+                entryFilterFunction.close();
+            }
         }
+    }
+
+    private boolean validateFunctionSignature(final FunctionSignature functionSignature, final SequenceType expectedReturnType, final SequenceType... expectedArgumentTypes) {
+        final SequenceType actualReturnType = functionSignature.getReturnType();
+
+        if (!areSequenceTypesCompatible(expectedReturnType, actualReturnType)) {
+            return false;
+        }
+
+        final SequenceType[] actualArgumentTypes = functionSignature.getArgumentTypes();
+        for (int i = 0; i < expectedArgumentTypes.length; i++) {
+            final SequenceType expectedArgumentType = expectedArgumentTypes[i];
+            final SequenceType actualArgumentType = actualArgumentTypes[i];
+
+            if (!areSequenceTypesCompatible(expectedArgumentType, actualArgumentType)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean areSequenceTypesCompatible(final SequenceType expectedSequenceType, final SequenceType actualSequenceType) {
+        if (!Type.subTypeOf(expectedSequenceType.getPrimaryType(), actualSequenceType.getPrimaryType()) && !(actualSequenceType.getPrimaryType() == Sequence.EMPTY_SEQUENCE.getItemType() && expectedSequenceType.getCardinality().isSuperCardinalityOrEqualOf(Cardinality.EMPTY_SEQUENCE))) {
+            return false;
+        }
+
+        if (!expectedSequenceType.getCardinality().isSuperCardinalityOrEqualOf(actualSequenceType.getCardinality())) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -124,9 +227,8 @@ public abstract class AbstractExtractFunction extends BasicFunction
      * @return Sequence of results
      *
      * @throws XPathException if a query error occurs
-     * @throws XMLDBException if a database error occurs
      */
-    protected abstract Sequence processCompressedData(BinaryValue compressedData, Charset encoding) throws XPathException, XMLDBException;
+    protected abstract Sequence processCompressedData(BinaryValue compressedData, Charset encoding) throws XPathException;
 
     /**
      * Processes a compressed entry from an archive
@@ -134,120 +236,99 @@ public abstract class AbstractExtractFunction extends BasicFunction
      * @param name The name of the entry
      * @param isDirectory true if the entry is a directory, false otherwise
      * @param is an InputStream for reading the uncompressed data of the entry
-     * @param filterParam is an additional param for entry filtering function  
-     * @param storeParam is an additional param for entry storing function
      *
      * @return the result of processing the compressed entry.
      *
      * @throws XPathException if a query error occurs
-     * @throws XMLDBException if a database error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected Sequence processCompressedEntry(String name, boolean isDirectory, InputStream is, Sequence filterParam, Sequence storeParam) throws IOException, XPathException, XMLDBException
-    {
-        String dataType = isDirectory ? "folder" : "resource";
+    protected Sequence processCompressedEntry(String name, final boolean isDirectory, final InputStream is) throws IOException, XPathException {
+        final String dataType = isDirectory ? "folder" : "resource";
 
-        //call the entry-filter function
-        Sequence filterParams[] = new Sequence[3];
+        // call the entry-filter function
         filterParams[0] = new StringValue(this, name);
         filterParams[1] = new StringValue(this, dataType);
-        filterParams[2] = filterParam;
-        Sequence entryFilterFunctionResult = entryFilterFunction.evalFunction(contextSequence, null, filterParams);
-
-        if(BooleanValue.FALSE == entryFilterFunctionResult.itemAt(0))
-        {
+        final Sequence entryFilterFunctionResult = entryFilterFunction.evalFunction(contextSequence, null, filterParams);
+        if (BooleanValue.FALSE == entryFilterFunctionResult.itemAt(0)) {
             return Sequence.EMPTY_SEQUENCE;
         }
-        else {
-            Sequence entryDataFunctionResult;
-            Sequence uncompressedData = Sequence.EMPTY_SEQUENCE;
 
-            if (entryDataFunction.getSignature().getReturnType().getPrimaryType() != Type.EMPTY_SEQUENCE && entryDataFunction.getSignature().getArgumentCount() == 3) {
+        // set common data params
+        dataParams[0] = filterParams[0];
+        dataParams[1] = filterParams[1];
 
-                Sequence dataParams[] = new Sequence[3];
-                System.arraycopy(filterParams, 0, dataParams, 0, 2);
-                dataParams[2] = storeParam;
-                entryDataFunctionResult = entryDataFunction.evalFunction(contextSequence, null, dataParams);
+        // Are we be calling an entry-data or an entry-path function?
+        final boolean isEntryPathFunction = Type.subTypeOf(entryDataFunction.getSignature().getReturnType().getPrimaryType(), Type.ANY_URI);
+        if (isEntryPathFunction) {
+            // an entry-path function
+            return callEntryPathFunction(isDirectory, is);
 
-                String path = entryDataFunctionResult.itemAt(0).getStringValue();
-
-                Collection root = new LocalCollection(context.getSubject(), context.getBroker().getBrokerPool(), new AnyURIValue(this, "/db").toXmldbURI());
-
-                if (isDirectory) {
-
-                    XMLDBAbstractCollectionManipulator.createCollection(root, path);
-
-                } else {
-                    Path file = Paths.get(path).normalize();
-                    name = FileUtils.fileName(file);
-                    path = file.getParent().toAbsolutePath().toString();
-
-                    Collection target = (path == null) ? root : XMLDBAbstractCollectionManipulator.createCollection(root, path);
-
-                    MimeType mime = MimeTable.getInstance().getContentTypeFor(name);
-
-                    //copy the input data
-                    final byte[] entryData;
-                    try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
-                        baos.write(is);
-                        entryData = baos.toByteArray();
-                    }
-
-                    try (final InputStream bis = new UnsynchronizedByteArrayInputStream(entryData)) {
-                        NodeValue content = ModuleUtils.streamToXML(context, bis, this);
-                        try (Resource  resource = target.createResource(name, XMLResource.class)) {
-                            ContentHandler handler = ((XMLResource) resource).setContentAsSAX();
-                            handler.startDocument();
-                            content.toSAX(context.getBroker(), handler, null);
-                            handler.endDocument();
-                            storeResource(target, mime, resource);
-                        }
-                    } catch (SAXException e) {
-                        try (Resource  resource = target.createResource(name, BinaryResource.class)) {
-                            resource.setContent(entryData);
-                            storeResource(target, mime, resource);
-                        }
-                    }
-                }
-
-            } else {
-
-                //copy the input data
-                final byte[] entryData;
-                try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
-                    baos.write(is);
-                    entryData = baos.toByteArray();
-                }
-
-                //try and parse as xml, fall back to binary
-                try (final InputStream bis = new UnsynchronizedByteArrayInputStream(entryData)) {
-                    uncompressedData = ModuleUtils.streamToXML(context, bis, this);
-                } catch (SAXException saxe) {
-                    if (entryData.length > 0) {
-                        try (final InputStream bis = new UnsynchronizedByteArrayInputStream(entryData)) {
-                            uncompressedData = BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), bis, this);
-                        }
-                    }
-                }
-
-                //call the entry-data function
-                Sequence dataParams[] = new Sequence[4];
-                System.arraycopy(filterParams, 0, dataParams, 0, 2);
-                dataParams[2] = uncompressedData;
-                dataParams[3] = storeParam;
-                entryDataFunctionResult = entryDataFunction.evalFunction(contextSequence, null, dataParams);
-
-            }
-
-            return entryDataFunctionResult;
+        } else {
+            // an entry-data function
+            return callEntryDataFunction(isDirectory, is);
         }
     }
 
-    private void storeResource(Collection target, MimeType mime, Resource resource) throws XMLDBException {
-        if (mime != null) {
-            ((EXistResource) resource).setMimeType(mime.getName());
+    private Sequence callEntryPathFunction(final boolean isDirectory, final InputStream is) throws XPathException, IOException {
+        final Sequence entryDataFunctionResult = entryDataFunction.evalFunction(contextSequence, null, dataParams);
+        String path = entryDataFunctionResult.itemAt(0).getStringValue();
+
+        final DBBroker broker = context.getBroker();
+
+        try {
+            // handle directory entries
+            if (isDirectory) {
+                try (final Collection collection = broker.getOrCreateCollection(broker.getCurrentTransaction(), XmldbURI.create(path))) {
+                    return entryDataFunctionResult;
+                }
+            }
+
+            // handle file entries
+            final Path file = Paths.get(path).normalize();
+            path = file.getParent().toAbsolutePath().toString();
+            final String name = FileUtils.fileName(file);
+            final MimeType mediaType = MimeTable.getInstance().getContentTypeFor(name);
+
+            // store document
+            try (final Collection collection = broker.getOrCreateCollection(broker.getCurrentTransaction(), XmldbURI.create(path));
+                 final FilterInputStreamCache cache = FilterInputStreamCacheFactory.getCacheInstance(() -> (String) broker.getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY), new CloseShieldInputStream(is));
+                 final CachingFilterInputStream cfis = new CachingFilterInputStream(cache)) {
+                broker.storeDocument(broker.getCurrentTransaction(), XmldbURI.create(name), new CachingFilterInputStreamInputSource(cfis), mediaType, collection);
+            }
+
+            return entryDataFunctionResult;
+        } catch (final PermissionDeniedException | SAXException | LockException | EXistException e) {
+            throw new XPathException(this, e.getMessage(), e);
         }
-        target.storeResource(resource);
+    }
+
+    private Sequence callEntryDataFunction(final boolean isDirectory, final InputStream is) throws XPathException, IOException {
+        // handle directory entries
+        final Sequence uncompressedData;
+        if (isDirectory) {
+            uncompressedData = Sequence.EMPTY_SEQUENCE;
+        } else {
+            uncompressedData = parseDataToXdm(is);
+        }
+
+        //call the entry-data function
+        dataParams[2] = uncompressedData;
+        return entryDataFunction.evalFunction(contextSequence, null, dataParams);
+    }
+
+    private Sequence parseDataToXdm(final InputStream is) throws IOException, XPathException {
+        final DBBroker broker = context.getBroker();
+
+        //try and parse as an XML Document, fallback to xs:base64Binary
+        try (final FilterInputStreamCache cache = FilterInputStreamCacheFactory.getCacheInstance(() -> (String) broker.getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY), new CloseShieldInputStream(is));
+             final CachingFilterInputStream cfis = new CachingFilterInputStream(cache)) {
+            try {
+                return ModuleUtils.streamToXML(context, cfis, this);
+            } catch (final SAXException saxe) {
+                cfis.reset();
+                return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), cfis, this);
+            }
+        }
     }
 
 }

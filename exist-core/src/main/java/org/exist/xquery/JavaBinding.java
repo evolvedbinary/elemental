@@ -558,7 +558,7 @@ public class JavaBinding extends BasicFunction {
             return XPathUtil.javaObjectToXPath(javaResult, context, true, false, false, this);
 
         } catch (final IllegalAccessException | InvocationTargetException | InstantiationException | IllegalArgumentException e) {
-            throw new XPathException(this, new ErrorCodes.JavaErrorCode(e), e.getMessage());
+            throw new XPathException(this, ErrorCodes.JavaErrorCode.fromThrowable(e), e.getMessage());
         }
     }
 
