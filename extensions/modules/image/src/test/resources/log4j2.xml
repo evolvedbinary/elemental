@@ -26,9 +26,12 @@
     <Properties>
         <Property name="logs">${log4j:configParentLocation}/../../target/test-logs-${date:yyyyMMddHHmmssSSS}</Property>
         <Property name="rollover.max.size">10MB</Property>
+        <Property name="rollover.daily">0 0 0 * * ?</Property>
         <Property name="rollover.max">14</Property>
         <Property name="rollover.file.pattern">%d{yyyyMMddHHmmss}</Property>
-        <Property name="exist.file.pattern">%d [%t] %-5p (%F [%M]:%L) - %m %n</Property>
+        <Property name="rollover.daily.file.pattern">%d{yyyy-MM-dd}</Property>
+        <Property name="elemental.file.pattern">%d [%t] %-5p (%F [%M]:%L) - %m%n</Property>
+        <Property name="request.file.pattern">%m%n</Property>
     </Properties>
     
     <Appenders>
@@ -104,7 +107,15 @@
             <DefaultRolloverStrategy max="${rollover.max}"/>
             <PatternLayout pattern="${exist.file.pattern}"/>
         </RollingRandomAccessFile>
-        
+
+        <RollingRandomAccessFile name="jetty.request" filePattern="${logs}/request.${rollover.daily.file.pattern}.log.gz" fileName="${logs}/request.log">
+            <Policies>
+                <CronTriggeringPolicy schedule="${rollover.daily}"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${rollover.max}"/>
+            <PatternLayout pattern="${request.file.pattern}"/>
+        </RollingRandomAccessFile>
+
         <RollingRandomAccessFile name="exist.backup" filePattern="${logs}/backup.${rollover.file.pattern}.log.gz" fileName="${logs}/backup.log">
             <Policies>
                 <SizeBasedTriggeringPolicy size="${rollover.max.size}"/>
@@ -193,6 +204,10 @@
         
         <Logger name="org.exist.extensions.exquery.restxq" additivity="false" level="info">
             <AppenderRef ref="exist.restxq"/>
+        </Logger>
+
+        <Logger name="org.eclipse.jetty.server.RequestLog" additivity="false" level="info">
+            <AppenderRef ref="jetty.request"/>
         </Logger>
 
         <Logger name="org.eclipse.jetty" additivity="false" level="info">
