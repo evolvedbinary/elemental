@@ -8,10 +8,6 @@
 
 
 
-### Jetty log redirection
-# jetty-logging.xml		# enable to redirect stdout and stderr to jetty.home/logs
-
-
 ### Main Server Config
 jetty-bytebufferpool.xml
 jetty-threadpool.xml
