@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -29,6 +53,7 @@
         <author>LordGeoffrey</author>
     </description>
     <setup>
+        <create-collection parent="/db" name="test-correct-error"/>
     </setup>
     <!-- 
     <test output="text">
@@ -55,5 +80,39 @@ declare function local:plus($x, $total) {
 local:plus(1000, 0)
 </code>
         <expected>500500</expected>
+    </test>
+    <test output="text">
+        <!-- See: https://github.com/eXist-db/exist/issues/5139 -->
+        <task>correct-error</task>
+        <code><![CDATA[
+        xquery version "3.1";
+
+declare function local:parent-collection($collection-path as xs:string) as xs:string? {
+   let $parent-collection-path := replace($collection-path, "(/.+)/.*", "$1")
+   return
+       if ($parent-collection-path eq $collection-path or not(starts-with($parent-collection-path, "/db")))
+       then
+           ()
+       else
+           $parent-collection-path
+};
+
+declare %private function local:ascend($collection-path as xs:string, $group-name as xs:string, $collection-permission as xs:string) as empty-sequence() {
+    if (not(starts-with($collection-path, "/db")))
+    then
+       ()
+    else
+       let $_ := sm:add-group-ace(xs:anyURI($collection-path), $group-name, true(), $collection-permission)
+       return
+            local:ascend(local:parent-collection($collection-path), $group-name, $collection-permission)
+};
+
+try {
+    local:ascend("/db/test-correct-error", "guest", "r-x")
+} catch * {
+    substring-before($err:description, ", source:")
+}
+        ]]></code>
+        <expected>exerr:ERROR XPTY0004: The actual cardinality for parameter 1 does not match the cardinality declared in the function's signature: local:ascend($collection-path as xs:string, $group-name as xs:string, $collection-permission as xs:string) empty-sequence(). Expected cardinality: exactly one, got 0. [at line 21, column 26</expected>
     </test>
 </TestSet>
