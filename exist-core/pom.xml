@@ -731,6 +731,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/test/xquery/tail-recursion.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/util/util.xml</include>
                                 <include>src/test/xquery/xquery3/parse-xml.xqm</include>
@@ -911,6 +912,8 @@
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
+                                <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
+                                <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
@@ -998,6 +1001,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
                                 <exclude>src/test/xquery/binary-value.xqm</exclude>
+                                <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/maps/maps.xqm</exclude>
                                 <exclude>src/test/xquery/securitymanager/acl.xqm</exclude>
                                 <exclude>src/test/xquery/util/util.xml</exclude>
@@ -1247,6 +1251,8 @@
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</exclude>
+                                <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
+                                <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
