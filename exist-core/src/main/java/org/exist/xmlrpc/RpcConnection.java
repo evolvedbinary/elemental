@@ -1845,6 +1845,10 @@ public class RpcConnection implements RpcAPI {
                             entry.add(String.valueOf(((NodeImpl) next).getNodeNumber()));
                         }
                         result.add(entry);
+
+                    } else if (Type.subTypeOf(next.getType(), Type.MAP_ITEM) || Type.subTypeOf(next.getType(), Type.ARRAY_ITEM)) {
+                        result.add(next.toString());
+
                     } else {
                         result.add(next.getStringValue());
                     }
@@ -2009,7 +2013,14 @@ public class RpcConnection implements RpcAPI {
 
         final int type = item.getType();
         result.put("type", Type.getTypeName(type));
-        result.put("value", item.getStringValue());
+
+        final String value;
+        if (Type.subTypeOf(item.getType(), Type.MAP_ITEM) || Type.subTypeOf(item.getType(), Type.ARRAY_ITEM)) {
+            value = item.toString();
+        } else {
+            value = item.getStringValue();
+        }
+        result.put("value", value);
 
         return result;
     }
