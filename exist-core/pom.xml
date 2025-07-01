@@ -917,8 +917,11 @@
                                 <include>src/test/java/org/exist/w3c/tests/TestCase.java</include>
                                 <include>src/main/java/org/exist/webstart/JnlpJarFiles.java</include>
                                 <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/LocalXMLResource.java</include>
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
+                                <include>src/test/java/org/exist/xmldb/SerializationTest.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
@@ -1214,10 +1217,13 @@
                                 <exclude>src/test/java/org/exist/w3c/tests/TestCase.java</exclude>
                                 <exclude>src/main/java/org/exist/webstart/JnlpJarFiles.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/LocalXMLResource.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/SerializationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CastExpressionTest.java</exclude>
