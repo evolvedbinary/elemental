@@ -69,6 +69,8 @@
                             <header>${project.parent.relativePath}/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <!-- NOTE(AR) we only check ourself as every other Maven module will be checked separately -->
+                                <include>build.sh</include>
+                                <include>build.bat</include>
                                 <include>pom.xml</include>
                             </includes>
                         </licenseSet>
