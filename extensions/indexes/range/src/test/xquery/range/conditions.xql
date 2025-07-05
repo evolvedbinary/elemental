@@ -199,6 +199,7 @@ declare variable $ct:DATA :=
                             <note type="other2" other1:type="start_end">foo</note>
                             <note type="bar" other2:type="other2">foo</note>
                             <note type="something" other2:type="other2">literarisch</note>
+                            <note xmlns:other1="http://not-other-one" other1:type="other1">other1-not-same-namespace</note>
                         </msItemStruct>
                     </msContents>
                 </msDesc>
