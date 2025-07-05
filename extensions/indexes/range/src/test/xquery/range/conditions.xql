@@ -1,4 +1,28 @@
 (:
+ : Elemental
+ : Copyright (C) 2024, Evolved Binary Ltd
+ :
+ : admin@evolvedbinary.com
+ : https://www.evolvedbinary.com | https://www.elemental.xyz
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; version 2.1.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :
+ : NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ :       The original license header is included below.
+ :
+ : =====================================================================
+ :
  : eXist-db Open Source Native XML Database
  : Copyright (C) 2001 The eXist-db Authors
  :
@@ -36,7 +60,9 @@ declare namespace stats="http://exist-db.org/xquery/profiling";
 declare variable $ct:COLLECTION_CONFIG :=
     <collection xmlns="http://exist-db.org/collection-config/1.0">
         <index xmlns:xs="http://www.w3.org/2001/XMLSchema"
-        xmlns:tei="http://www.tei-c.org/ns/1.0">
+        xmlns:tei="http://www.tei-c.org/ns/1.0"
+        xmlns:other1="http://other1"
+        xmlns:other2="http://other2">
             <range>
                 <create qname="tei:note">
                     <condition attribute="type" value="availability" />
@@ -59,6 +85,14 @@ declare variable $ct:COLLECTION_CONFIG :=
                     <field name="orig_place" match="tei:place/tei:placeName" type="xs:string" case="no"></field>
                 </create>
                 <create qname="tei:note" type="xs:string" case="no" />
+                <create qname="tei:note">
+                    <condition attribute="other1:type" value="other1" />
+                    <field name="other1" type="xs:string" case="no"/>
+                </create>
+                <create qname="tei:note">
+                    <condition attribute="other2:type" value="other2" />
+                    <field name="other2" type="xs:string" case="no"/>
+                </create>
                 <create qname="tei:placeName">
                     <condition attribute="type" value="someType" />
                     <condition attribute="cert" value="high" />
@@ -134,7 +168,7 @@ declare variable $ct:COLLECTION_CONFIG :=
 
 
 declare variable $ct:DATA :=
-    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:other1="http://other1" xmlns:other2="http://other2">
         <teiHeader>
             <fileDesc>
                 <titleStmt><title>conditional fields!</title></titleStmt>
@@ -143,7 +177,7 @@ declare variable $ct:DATA :=
                 <msDesc>
                     <msContents>
                         <msItemStruct>
-                            <note type="availability">publiziert</note>
+                            <note type="availability" other1:type="other1">publiziert</note>
                             <note type="text_type">literarisch</note>
                             <note type="orig_place">
                                 <place>
@@ -161,10 +195,10 @@ declare variable $ct:DATA :=
                                     <placeName cert="high" type="someOtherType">Alexandria</placeName>
                                 </place>
                             </note>
-                            <note type="start_end">startswithendswith</note>
-                            <note>foo</note>
-                            <note type="bar">foo</note>
-                            <note type="something">literarisch</note>
+                            <note type="start_end" other1:type="other1" other2:type="other2">startswithendswith</note>
+                            <note type="other2" other1:type="start_end">foo</note>
+                            <note type="bar" other2:type="other2">foo</note>
+                            <note type="something" other2:type="other2">literarisch</note>
                         </msItemStruct>
                     </msContents>
                 </msDesc>
@@ -533,3 +567,20 @@ function ct:optimize-matches-no-case() {
 collection($ct:COLLECTION)//tei:p[matches(@type, "bb")][. = "something"]
 };
 
+(:~
+ : See: https://github.com/eXist-db/exist/issues/5189
+ :)
+declare
+    %test:assertEquals("publiziert", "startswithendswith")
+function ct:other1-index-keys() {
+  range:index-keys-for-field("other1", function($k, $n) { $k }, 10)
+};
+
+(:~
+ : See: https://github.com/eXist-db/exist/issues/5189
+ :)
+declare
+    %test:assertEquals("foo", "literarisch", "startswithendswith")
+function ct:other2-index-keys() {
+  range:index-keys-for-field("other2", function($k, $n) { $k }, 10)
+};
