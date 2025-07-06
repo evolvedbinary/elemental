@@ -248,9 +248,9 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
                 default:
                     return new TextField(fieldName, content, store ? Field.Store.YES : Field.Store.NO);
             }
-        } catch (NumberFormatException | XPathException e) {
-            // wrong type: ignore
-            LOG.trace("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
+        } catch (final NumberFormatException | XPathException e) {
+            // NOTE(AR) report inability to index value
+            LOG.warn("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
         }
         return null;
     }
@@ -297,8 +297,8 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
                     return new BinaryDocValuesField(fieldName, new BytesRef(content));
             }
         } catch (final NumberFormatException | XPathException e) {
-            // wrong type: ignore
-            LOG.error("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
+            // NOTE(AR) report inability to index value
+            LOG.warn("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
             return null;
         }
     }
