@@ -377,7 +377,11 @@ public class Predicate extends PathExpr {
         final NodeSet contextSet = contextSequence.toNodeSet();
         final boolean contextIsVirtual = contextSet instanceof VirtualNodeSet;
         contextSet.setTrackMatches(false);
-        final NodeSet nodes = super.eval(contextSet, null).toNodeSet();
+        final Sequence x = super.eval(contextSet, null);
+        if(!(x instanceof NodeSet))
+            return x;
+        final NodeSet nodes = result.toNodeSet();
+
         /*
          * if the predicate expression returns results from the cache we can
          * also return the cached result.
