@@ -36,6 +36,7 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
+import org.exist.xquery.value.BooleanValue;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -377,10 +378,13 @@ public class Predicate extends PathExpr {
         final NodeSet contextSet = contextSequence.toNodeSet();
         final boolean contextIsVirtual = contextSet instanceof VirtualNodeSet;
         contextSet.setTrackMatches(false);
-        final Sequence x = super.eval(contextSet, null);
-        if(!(x instanceof NodeSet))
-            return x;
-        final NodeSet nodes = result.toNodeSet();
+        final Sequence res = super.eval(contextSet, null);
+        if(!(res instanceof NodeSet)) {
+            if(res == BooleanValue.FALSE)
+                return NodeSet.EMPTY_SET;
+            return res;
+        }
+        final NodeSet nodes = res.toNodeSet();
 
         /*
          * if the predicate expression returns results from the cache we can
