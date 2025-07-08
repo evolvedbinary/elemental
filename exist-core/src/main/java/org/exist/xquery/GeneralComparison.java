@@ -648,6 +648,9 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                     }
                 }
             }
+            if (result.isEmpty()) {
+                return BooleanValue.FALSE;
+            }
         }
 
         if( context.getProfiler().traceFunctions() ) {
