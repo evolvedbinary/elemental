@@ -72,7 +72,7 @@ import org.exist.security.PermissionFactory;
 import org.exist.security.Subject;
 import org.exist.storage.*;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.storage.lock.*;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.Lock.LockType;
@@ -195,7 +195,7 @@ public class MutableCollection implements Collection {
     /**
      * Deserializes a Collection object
      *
-     * Counterpart method to {@link #serialize(VariableByteOutputStream)}
+     * Counterpart method to {@link #serialize(VariableByteOutput)}
      *
      * @param broker The database broker
      * @param path The path of the Collection
@@ -896,7 +896,7 @@ public class MutableCollection implements Collection {
      * @param outputStream The output stream to write the collection contents to
      */
     @Override
-    public void serialize(final VariableByteOutputStream outputStream) throws IOException, LockException {
+    public void serialize(final VariableByteOutput outputStream) throws IOException, LockException {
         outputStream.writeInt(collectionId);
 
         final int size;
@@ -926,7 +926,7 @@ public class MutableCollection implements Collection {
     /**
      * Read collection contents from the stream
      *
-     * Counterpart method to {@link #serialize(VariableByteOutputStream)}
+     * Counterpart method to {@link #serialize(VariableByteOutput)}
      *
      * @param broker The database broker
      * @param path The path of the Collection

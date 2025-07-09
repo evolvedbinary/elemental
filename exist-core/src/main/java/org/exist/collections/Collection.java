@@ -54,7 +54,7 @@ import org.exist.security.*;
 import org.exist.security.SecurityManager;
 import org.exist.storage.*;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.storage.lock.*;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
@@ -1207,7 +1207,7 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * @throws IOException in case of I/O errors
 
      */
-    @EnsureContainerLocked(mode=READ_LOCK) void serialize(final VariableByteOutputStream outputStream) throws IOException, LockException;
+    @EnsureContainerLocked(mode=READ_LOCK) void serialize(final VariableByteOutput outputStream) throws IOException, LockException;
 
     @Override void close();
 

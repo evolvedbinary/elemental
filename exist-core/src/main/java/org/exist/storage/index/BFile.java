@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -40,7 +64,7 @@ import org.exist.storage.cache.Cacheable;
 import org.exist.storage.cache.LRUCache;
 import org.exist.storage.io.VariableByteArrayInput;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.storage.journal.JournalException;
 import org.exist.storage.journal.LogEntryTypes;
 import org.exist.storage.journal.Loggable;
@@ -2235,6 +2259,26 @@ public class BFile extends BTree {
         }
 
         @Override
+        public short readFixedShort() throws IOException {
+            if (offset == pageLen) {
+                advance();
+            }
+            // do we have to read across a page boundary?
+            if (offset + 2 < pageLen) {
+                return (short) ((nextPage.data[offset++] & 0xff) |
+                    ((nextPage.data[offset++] & 0xff) << 8));
+            }
+
+            short r = (short) (nextPage.data[offset++] & 0xff);
+            if (offset == pageLen) {
+                advance();
+            }
+            r |= (nextPage.data[offset++] & 0xff) << 8;
+
+            return r;
+        }
+
+        @Override
         public final int readInt() throws IOException {
             if (offset == pageLen) {
                 advance();
@@ -2263,6 +2307,7 @@ public class BFile extends BTree {
                     ( (nextPage.data[offset++] & 0xff) << 16 ) |
                     ( (nextPage.data[offset++] & 0xff) << 24 );
             }
+
             int r = nextPage.data[offset++] & 0xff;
             int shift = 8;
             for (int i = 0; i < 3; i++) {
@@ -2290,6 +2335,35 @@ public class BFile extends BTree {
                 i |= (b & 0177L) << shift;
             }
             return i;
+        }
+
+        @Override
+        public long readFixedLong() throws IOException {
+            if (offset == pageLen) {
+                advance();
+            }
+            // do we have to read across a page boundary?
+            if (offset + 8 < pageLen) {
+                return ((nextPage.data[offset++] & 0xff) << 56) |
+                    ((nextPage.data[offset++] & 0xff) << 48) |
+                    ((nextPage.data[offset++] & 0xff) << 40) |
+                    ((nextPage.data[offset++] & 0xff) << 32) |
+                    ((nextPage.data[offset++] & 0xff) << 24) |
+                    ((nextPage.data[offset++] & 0xff) << 16) |
+                    ((nextPage.data[offset++] & 0xff) << 8) |
+                    (nextPage.data[offset++] & 0xff);
+            }
+
+            int r = (nextPage.data[offset++] & 0xff) << 56;
+            int shift = 48;
+            for (int i = 0; i < 7; i++) {
+                if (offset == pageLen) {
+                    advance();
+                }
+                r |= (nextPage.data[offset++] & 0xff) << shift;
+                shift -= 8;
+            }
+            return r;
         }
 
         @Override
@@ -2385,7 +2459,7 @@ public class BFile extends BTree {
         }
 
         @Override
-        public final void copyTo(final VariableByteOutputStream os) throws IOException {
+        public final void copyTo(final VariableByteOutput os) throws IOException {
             byte more;
             do {
                 if (offset == pageLen) {
@@ -2398,7 +2472,7 @@ public class BFile extends BTree {
         }
 
         @Override
-        public final void copyTo(final VariableByteOutputStream os, final int count) throws IOException {
+        public final void copyTo(final VariableByteOutput os, final int count) throws IOException {
             byte more;
             for (int i = 0; i < count; i++) {
                 do {
@@ -2412,7 +2486,7 @@ public class BFile extends BTree {
         }
 
         @Override
-        public void copyRaw(final VariableByteOutputStream os, final int count) throws IOException {
+        public void copyRaw(final VariableByteOutput os, final int count) throws IOException {
             for (int i = count; i != 0; ) {
                 if (offset == pageLen) {
                     advance();

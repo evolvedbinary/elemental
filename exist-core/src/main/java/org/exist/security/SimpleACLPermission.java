@@ -49,7 +49,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 
 import javax.annotation.Nullable;
 
@@ -378,7 +378,7 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
     }
 
     @Override
-    public void write(final VariableByteOutputStream ostream) throws IOException {
+    public void write(final VariableByteOutput ostream) throws IOException {
         super.write(ostream);
         ostream.write(acl.length);
         for (final int ace : acl) {
