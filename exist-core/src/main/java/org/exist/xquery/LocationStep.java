@@ -71,6 +71,7 @@ import java.io.IOException;
  * to the {@link #eval(Sequence, Item)} method) has changed.
  *
  * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LocationStep extends Step {
 
@@ -526,6 +527,9 @@ public class LocationStep extends Step {
                     if (ns != null) {
                         @Nullable final NodeProxy np = ns.get(p);
                         if (np != null) {
+                            if (p.getMatches() != null) {
+                                np.addMatch(p.getMatches());
+                            }
                             p = np;
                         }
                     }
