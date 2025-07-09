@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,17 +47,17 @@ package org.exist.security;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.storage.DBBroker;
-import org.exist.storage.io.VariableByteInputStream;
 
 import java.io.IOException;
-import org.exist.storage.io.VariableByteOutputStream;
+
+import org.exist.storage.io.VariableByteArrayInput;
 import org.exist.Database;
 import org.exist.security.ACLPermission.ACE_TARGET;
 import org.exist.security.ACLPermission.ACE_ACCESS_TYPE;
 import org.exist.security.internal.SecurityManagerImpl;
 import java.util.Random;
 import org.easymock.EasyMock;
-import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
+import org.exist.storage.io.VariableByteArrayOutputStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -682,7 +706,7 @@ public class SimpleACLPermissionTest {
         final int mode2 = Permission.READ;
         permission.addGroupACE(ACE_ACCESS_TYPE.DENIED, groupId2, mode2);
         
-        final VariableByteOutputStream os = new VariableByteOutputStream();
+        final VariableByteArrayOutputStream os = new VariableByteArrayOutputStream();
         
         //write the acl out
         permission.write(os);
@@ -708,7 +732,7 @@ public class SimpleACLPermissionTest {
         SimpleACLPermission permission2 = new SimpleACLPermission(mockSecurityManager);
         
         //read the acl in
-        permission2.read(new VariableByteInputStream(new UnsynchronizedByteArrayInputStream(data)));
+        permission2.read(new VariableByteArrayInput(data));
         
         assertEquals(2, permission2.getACECount());
         

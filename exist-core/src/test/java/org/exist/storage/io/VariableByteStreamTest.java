@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -47,7 +71,7 @@ public class VariableByteStreamTest {
 
 	@Test
 	public void inOutLong() throws IOException {
-		VariableByteOutputStream os = new VariableByteOutputStream();
+		VariableByteArrayOutputStream os = new VariableByteArrayOutputStream();
 		for(int i = 0; i < SIZE * 3; i++) {
 			os.writeLong(values[i++]);
 			os.writeInt((int)values[i++]);
@@ -74,7 +98,7 @@ public class VariableByteStreamTest {
 		Random rand = new Random(System.currentTimeMillis());
 		int valuesWritten = 0;
 		int dataLen = 0;
-		VariableByteOutputStream os = new VariableByteOutputStream();
+		VariableByteArrayOutputStream os = new VariableByteArrayOutputStream();
 		for(int i = 0; i < 1000; i++) {
 			int count = rand.nextInt(0xfff);
 			os.writeShort((short)count);
@@ -92,7 +116,7 @@ public class VariableByteStreamTest {
 		int valuesCopied = 0;
 		dataLen = 0;
 		VariableByteArrayInput is = new VariableByteArrayInput(data);
-		os = new VariableByteOutputStream();
+		os = new VariableByteArrayOutputStream();
 		while(is.available() > 0) {
 			int count = is.readShort();
 			boolean skip = rand.nextBoolean();

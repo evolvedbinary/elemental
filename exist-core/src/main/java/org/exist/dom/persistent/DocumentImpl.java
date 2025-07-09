@@ -59,7 +59,7 @@ import org.exist.security.SecurityManager;
 import org.exist.security.*;
 import org.exist.storage.*;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.storage.lock.EnsureContainerLocked;
 import org.exist.storage.lock.EnsureLocked;
 import org.exist.storage.txn.Txn;
@@ -859,11 +859,11 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     /**
      * The method <code>write</code>
      *
-     * @param ostream a <code>VariableByteOutputStream</code> value
+     * @param ostream a <code>VariableByteOutput</code> value
      * @throws IOException if an error occurs
      */
     @EnsureContainerLocked(mode=READ_LOCK)
-    public void write(final VariableByteOutputStream ostream) throws IOException {
+    public void write(final VariableByteOutput ostream) throws IOException {
         try {
             ostream.writeInt(docId);
             ostream.writeUTF(fileURI.toString());
@@ -885,7 +885,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         }
     }
 
-    void writeDocumentAttributes(final SymbolTable symbolTable, final VariableByteOutputStream ostream) throws IOException {
+    void writeDocumentAttributes(final SymbolTable symbolTable, final VariableByteOutput ostream) throws IOException {
         ostream.writeLong(created);
         ostream.writeLong(lastModified);
         ostream.writeInt(symbolTable.getMimeTypeId(mimeType));
