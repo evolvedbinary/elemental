@@ -973,6 +973,7 @@
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
+                                <include>src/main/java/org/exist/xquery/LocationStep.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
@@ -1338,6 +1339,7 @@
                                 <exclude>src/main/java/org/exist/xquery/JavaBinding.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/xquery/JavaBindingTest.conf.xml</exclude>
                                 <exclude>src/test/java/org/exist/xquery/JavaBindingTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/LocationStep.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Materializable.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
