@@ -209,39 +209,49 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
         }
     }
 
-    private Field convertToField(String content) {
+    private Field convertToField(final String content) {
         try {
             switch (type) {
                 case Type.INTEGER:
                 case Type.LONG:
                 case Type.UNSIGNED_LONG:
-                    long lvalue = Long.parseLong(content);
-                    return new LongField(fieldName, lvalue, LongField.TYPE_STORED);
+                    final long longValue = new IntegerValue(content, type).getLong();
+                    return new LongField(fieldName, longValue, LongField.TYPE_STORED);
+
                 case Type.INT:
                 case Type.UNSIGNED_INT:
                 case Type.SHORT:
                 case Type.UNSIGNED_SHORT:
-                    int ivalue = Integer.parseInt(content);
-                    return new IntField(fieldName, ivalue, IntField.TYPE_STORED);
+                    final int intValue = new IntegerValue(content, type).getInt();
+                    return new IntField(fieldName, intValue, IntField.TYPE_STORED);
+
                 case Type.DECIMAL:
+                    final double decimalValue = new DecimalValue(content).getDouble();
+                    return new DoubleField(fieldName, decimalValue, DoubleField.TYPE_STORED);
+
                 case Type.DOUBLE:
-                    double dvalue = Double.parseDouble(content);
-                    return new DoubleField(fieldName, dvalue, DoubleField.TYPE_STORED);
+                    final double doubleValue = new DoubleValue(content).getDouble();
+                    return new DoubleField(fieldName, doubleValue, DoubleField.TYPE_STORED);
+
                 case Type.FLOAT:
-                    float fvalue = Float.parseFloat(content);
-                    return new FloatField(fieldName, fvalue, FloatField.TYPE_STORED);
+                    final float floatValue = new FloatValue(content).getFloat();
+                    return new FloatField(fieldName, floatValue, FloatField.TYPE_STORED);
+
                 case Type.DATE:
-                    DateValue dv = new DateValue(content);
-                    long dl = dateToLong(dv);
-                    return new LongField(fieldName, dl, LongField.TYPE_STORED);
+                    final DateValue dateValue = new DateValue(content);
+                    final long longDateValue = dateToLong(dateValue);
+                    return new LongField(fieldName, longDateValue, LongField.TYPE_STORED);
+
                 case Type.TIME:
-                    TimeValue tv = new TimeValue(content);
-                    long tl = timeToLong(tv);
-                    return new LongField(fieldName, tl, LongField.TYPE_STORED);
+                    final TimeValue timeValue = new TimeValue(content);
+                    final long longTimeValue = timeToLong(timeValue);
+                    return new LongField(fieldName, longTimeValue, LongField.TYPE_STORED);
+
                 case Type.DATE_TIME:
-                    DateTimeValue dtv = new DateTimeValue(content);
-                    String dateStr = dateTimeToString(dtv);
-                    return new TextField(fieldName, dateStr, Field.Store.YES);
+                    final DateTimeValue dateTimeValue = new DateTimeValue(content);
+                    final String strDateTimeValue = dateTimeToString(dateTimeValue);
+                    return new TextField(fieldName, strDateTimeValue, Field.Store.YES);
+
                 default:
                     return new TextField(fieldName, content, store ? Field.Store.YES : Field.Store.NO);
             }
