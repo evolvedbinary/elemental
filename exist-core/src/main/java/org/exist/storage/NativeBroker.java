@@ -79,8 +79,8 @@ import org.exist.storage.dom.NodeIterator;
 import org.exist.storage.dom.RawNodeIterator;
 import org.exist.storage.index.BFile;
 import org.exist.storage.index.CollectionStore;
+import org.exist.storage.io.VariableByteArrayOutputStream;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.*;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.Lock.LockType;
@@ -2010,7 +2010,7 @@ public class NativeBroker implements DBBroker {
 
         try(final ManagedLock<ReentrantLock> collectionsDbLock = lockManager.acquireBtreeWriteLock(collectionsDb.getLockName())) {
             final Value name = new CollectionStore.CollectionKey(collection.getURI().toString());
-            try(final VariableByteOutputStream os = new VariableByteOutputStream(256)) {
+            try(final VariableByteArrayOutputStream os = new VariableByteArrayOutputStream(256)) {
                 collection.serialize(os);
                 final long address = collectionsDb.put(transaction, name, os.data(), true);
                 if (address == BFile.UNKNOWN_ADDRESS) {
@@ -2326,8 +2326,8 @@ public class NativeBroker implements DBBroker {
      */
     @Override
     public void storeXMLResource(final Txn transaction, final DocumentImpl doc) {
-        try(final VariableByteOutputStream os = new VariableByteOutputStream(256);
-                final ManagedLock<ReentrantLock> collectionsDbLock = lockManager.acquireBtreeWriteLock(collectionsDb.getLockName())) {
+        try(final VariableByteArrayOutputStream os = new VariableByteArrayOutputStream(256);
+            final ManagedLock<ReentrantLock> collectionsDbLock = lockManager.acquireBtreeWriteLock(collectionsDb.getLockName())) {
             doc.write(os);
             final Value key = new CollectionStore.DocumentKey(doc.getCollection().getId(), doc.getResourceType(), doc.getDocId());
             collectionsDb.put(transaction, key, os.data(), true);

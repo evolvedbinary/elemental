@@ -33,7 +33,7 @@
 package org.exist.dom.persistent;
 
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -93,7 +93,7 @@ public class XMLDeclarationImpl {
      *
      * @throws IOException if an error occurs whilst writing to the output stream.
      */
-    public void write(final VariableByteOutputStream ostream) throws IOException {
+    public void write(final VariableByteOutput ostream) throws IOException {
         ostream.writeUTF(version != null ? version : "");
         ostream.writeUTF(encoding != null ? encoding : "");
         ostream.writeUTF(standalone != null ? standalone : "");

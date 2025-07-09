@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,7 +48,7 @@ package org.exist.numbering;
 import java.io.IOException;
 
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 
 /**
  * Represents a node id in the form of a dynamic level number (DLN). DLN's are
@@ -110,7 +134,7 @@ public class DLN extends DLNBase implements NodeId {
     /**
      * Reads a DLN from the given {@link VariableByteInput} stream.
      * 
-     * @see #write(VariableByteOutputStream)
+     * @see #write(VariableByteOutput)
      * @param bitCnt total number of bits to read
      * @param is the input stream to read from
      * @throws IOException in case of an error reading the DLN
@@ -358,19 +382,19 @@ public class DLN extends DLNBase implements NodeId {
     }
 
     /**
-     * Write the node id to a {@link VariableByteOutputStream}.
+     * Write the node id to a {@link VariableByteOutput}.
      *
      * @param os the output stream to write to
      * @throws IOException in case of write error
      */
     @Override
-    public void write(final VariableByteOutputStream os) throws IOException {
+    public void write(final VariableByteOutput os) throws IOException {
         os.writeShort((short) units());
         os.write(bits, 0, bits.length);
     }
 
     @Override
-    public NodeId write(final NodeId prevId, final VariableByteOutputStream os) throws IOException {
+    public NodeId write(final NodeId prevId, final VariableByteOutput os) throws IOException {
         int i = 0;
         if(prevId != null) {
             final DLN previous = (DLN) prevId;

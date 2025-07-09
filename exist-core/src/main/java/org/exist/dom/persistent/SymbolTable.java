@@ -52,10 +52,16 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.backup.RawDataBackup;
 import org.exist.dom.QName;
-import org.exist.storage.*;
+
+import org.exist.storage.BrokerPool;
+import org.exist.storage.BrokerPoolService;
+import org.exist.storage.BrokerPoolServiceException;
+import org.exist.storage.DBBroker;
+import org.exist.storage.ElementValue;
+import org.exist.storage.io.VariableByteFilterInputStream;
+import org.exist.storage.io.VariableByteFilterOutputStream;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteInputStream;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.util.Configuration;
 import org.exist.util.FileUtils;
 import org.w3c.dom.Attr;
@@ -135,8 +141,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * the underlying symbols.dbx file
      */
     private Path file;
-    private final VariableByteOutputStream outBuffer = new VariableByteOutputStream(256);
-    private OutputStream os = null;
+    private VariableByteFilterOutputStream os = null;
 
     @Override
     public void configure(final Configuration configuration) {
@@ -287,7 +292,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * @param os outputstream
      * @throws IOException in response to an IO error
      */
-    private synchronized void writeAll(final VariableByteOutputStream os) throws IOException {
+    private synchronized void writeAll(final VariableByteOutput os) throws IOException {
         os.writeFixedInt(FILE_FORMAT_VERSION_ID);
         localNameSymbols.write(os);
         namespaceSymbols.write(os);
@@ -383,10 +388,8 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * @throws EXistException in response to the error
      */
     private void saveSymbols() throws EXistException {
-        try(final VariableByteOutputStream os = new VariableByteOutputStream(8192);
-                final OutputStream fos =  new BufferedOutputStream(Files.newOutputStream(getFile()))) {
+        try (final VariableByteFilterOutputStream os = new VariableByteFilterOutputStream(new BufferedOutputStream(Files.newOutputStream(getFile())))) {
             writeAll(os);
-            fos.write(os.toByteArray());
         } catch(final FileNotFoundException e) {
             throw new EXistException("File not found: " + this.getFile().toAbsolutePath().toString(), e);
         } catch(final IOException e) {
@@ -402,9 +405,8 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * @throws EXistException in response to the error
      */
     private synchronized void loadSymbols() throws EXistException {
-        try(final InputStream fis = new BufferedInputStream(Files.newInputStream(getFile()))) {
+        try (final VariableByteFilterInputStream is = new VariableByteFilterInputStream(new BufferedInputStream(Files.newInputStream(getFile())))) {
 
-            final VariableByteInput is = new VariableByteInputStream(fis);
             final int magic = is.readFixedInt();
             if(magic == LEGACY_FILE_FORMAT_VERSION_ID) {
                 LOG.info("Converting legacy symbols.dbx to new format...");
@@ -444,16 +446,15 @@ public class SymbolTable implements BrokerPoolService, Closeable {
         //Noting to do ? -pb
     }
 
-    private OutputStream getOutputStream() throws IOException {
-        if(os == null) {
-            os = new BufferedOutputStream(Files.newOutputStream(getFile(), StandardOpenOption.APPEND));
+    private VariableByteFilterOutputStream getOutputStream() throws IOException {
+        if (os == null) {
+            os = new VariableByteFilterOutputStream(new BufferedOutputStream(Files.newOutputStream(getFile(), StandardOpenOption.APPEND)));
         }
         return os;
     }
 
     @Override
     public void close() throws IOException {
-        outBuffer.close();
         if(os != null) {
             os.close();
         }
@@ -551,7 +552,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
             return id;
         }
 
-        protected final void write(final VariableByteOutputStream os) throws IOException {
+        protected final void write(final VariableByteOutput os) throws IOException {
             for (final String symbol : symbolsByName.keySet()) {
                 final int id = symbolsByName.getInt(symbol);
                 if (id < 0) {
@@ -564,10 +565,8 @@ public class SymbolTable implements BrokerPoolService, Closeable {
 
         // Append a new entry to the .dbx file
         private void write(final int id, final String key) {
-            outBuffer.clear();
             try {
-                writeEntry(id, key, outBuffer);
-                getOutputStream().write(outBuffer.toByteArray());
+                writeEntry(id, key, getOutputStream());
                 getOutputStream().flush();
             } catch(final FileNotFoundException e) {
                 LOG.error("Symbol table: file not found!", e);
@@ -578,7 +577,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
             }
         }
 
-        private void writeEntry(final int id, final String key, final VariableByteOutputStream os) throws IOException {
+        private void writeEntry(final int id, final String key, final VariableByteOutput os) throws IOException {
             os.writeByte(getSymbolType().getTypeId());
             os.writeInt(id);
             os.writeUTF(key);

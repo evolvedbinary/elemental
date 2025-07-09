@@ -90,8 +90,8 @@ import org.exist.storage.btree.BTreeException;
 import org.exist.storage.btree.IndexQuery;
 import org.exist.storage.btree.Value;
 import org.exist.storage.index.BFile;
+import org.exist.storage.io.VariableByteArrayOutputStream;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.Txn;
@@ -135,7 +135,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     @SuppressWarnings("unused")
     private IndexController controller;
     private final Map<QNameTerm, OccurrenceList> ngrams = new TreeMap<>();
-    private final VariableByteOutputStream os = new VariableByteOutputStream(128);
+    private final VariableByteArrayOutputStream os = new VariableByteArrayOutputStream(128);
 
     private NGramMatchListener matchListener = null;
 
@@ -206,64 +206,73 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             return;
         }
 
-        final VariableByteOutputStream buf = new VariableByteOutputStream();
-        for (final Map.Entry<QNameTerm, OccurrenceList> entry : ngrams.entrySet()) {
-            final QNameTerm key = entry.getKey();
-            final OccurrenceList occurences = entry.getValue();
-            occurences.sort();
-            os.clear();
-            os.writeInt(currentDoc.getDocId());
-            os.writeByte(key.qname.getNameType());
-            os.writeInt(occurences.getTermCount());
-
-            // write nodeids, freq, and offsets to a `temp` buf
-            try {
-                NodeId previous = null;
-                for (int m = 0; m < occurences.getSize(); ) {
-                    previous = occurences.getNode(m).write(previous, buf);
-
-                    final int freq = occurences.getOccurrences(m);
-                    buf.writeInt(freq);
-                    for (int n = 0; n < freq; n++) {
-                        buf.writeInt(occurences.getOffset(m + n));
-                    }
-                    m += freq;
+        try (final VariableByteArrayOutputStream buf = new VariableByteArrayOutputStream()) {
+            for (final Map.Entry<QNameTerm, OccurrenceList> entry : ngrams.entrySet()) {
+                final QNameTerm key = entry.getKey();
+                final OccurrenceList occurences = entry.getValue();
+                occurences.sort();
+                os.clear();
+                try {
+                    os.writeInt(currentDoc.getDocId());
+                    os.writeByte(key.qname.getNameType());
+                    os.writeInt(occurences.getTermCount());
+                } catch (final IOException e) {
+                    LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
+                    os.clear();
+                    continue;
                 }
 
-                final byte[] bufData = buf.toByteArray();
+                // write nodeids, freq, and offsets to a `temp` buf
+                try {
+                    NodeId previous = null;
+                    for (int m = 0; m < occurences.getSize(); ) {
+                        previous = occurences.getNode(m).write(previous, buf);
 
-                // clear the buf for the next iteration
-                buf.clear();
+                        final int freq = occurences.getOccurrences(m);
+                        buf.writeInt(freq);
+                        for (int n = 0; n < freq; n++) {
+                            buf.writeInt(occurences.getOffset(m + n));
+                        }
+                        m += freq;
+                    }
 
-                // Write length of node IDs + frequency + offsets (bytes)
-                os.writeFixedInt(bufData.length);
+                    final byte[] bufData = buf.toByteArray();
 
-                // Write the node IDs + frequency + offset
-                os.write(bufData);
-            } catch (final IOException e) {
-                LOG.error("IOException while writing nGram index: {}", e.getMessage(), e);
-            }
+                    // clear the buf for the next iteration
+                    buf.clear();
 
-            final ByteArray data = os.data();
-            if (data.size() == 0) {
-                continue;
-            }
+                    // Write length of node IDs + frequency + offsets (bytes)
+                    os.writeFixedInt(bufData.length);
 
-            try (final ManagedLock<ReentrantLock> dbLock = lockManager.acquireBtreeWriteLock(index.db.getLockName())) {
-                final NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
+                    // Write the node IDs + frequency + offset
+                    os.write(bufData);
+                } catch (final IOException e) {
+                    LOG.error("IOException while writing nGram index: {}", e.getMessage(), e);
+                }
+
+                final ByteArray data = os.data();
+                if (data.size() == 0) {
+                    continue;
+                }
+
+                try (final ManagedLock<ReentrantLock> dbLock = lockManager.acquireBtreeWriteLock(index.db.getLockName())) {
+                    final NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
                         index.getBrokerPool().getSymbols(), key.term);
-                index.db.append(value, data);
-            } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock for file {}", FileUtils.fileName(index.db.getFile()), e);
-            } catch (final IOException e) {
-                LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
-            } catch (final ReadOnlyException e) {
-                LOG.warn("Read-only error for file {}", FileUtils.fileName(index.db.getFile()), e);
-            } finally {
-                os.clear();
+                    index.db.append(value, data);
+                } catch (final LockException e) {
+                    LOG.warn("Failed to acquire lock for file {}", FileUtils.fileName(index.db.getFile()), e);
+                } catch (final IOException e) {
+                    LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
+                } catch (final ReadOnlyException e) {
+                    LOG.warn("Read-only error for file {}", FileUtils.fileName(index.db.getFile()), e);
+                } finally {
+                    os.clear();
+                }
             }
+            ngrams.clear();
+        } catch (final IOException e) {
+            LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
         }
-        ngrams.clear();
     }
 
     private void dropIndex(final ReindexMode mode) {
@@ -271,117 +280,120 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             return;
         }
 
-        final VariableByteOutputStream buf = new VariableByteOutputStream();
+        try (final VariableByteArrayOutputStream buf = new VariableByteArrayOutputStream()) {
 
-        for (final Map.Entry<QNameTerm, OccurrenceList> entry : ngrams.entrySet()) {
-            final QNameTerm key = entry.getKey();
-            final OccurrenceList occurencesList = entry.getValue();
-            occurencesList.sort();
-            os.clear();
+            for (final Map.Entry<QNameTerm, OccurrenceList> entry : ngrams.entrySet()) {
+                final QNameTerm key = entry.getKey();
+                final OccurrenceList occurencesList = entry.getValue();
+                occurencesList.sort();
+                os.clear();
 
-            try (final ManagedLock<ReentrantLock> dbLock = lockManager.acquireBtreeWriteLock(index.db.getLockName())) {
-                final NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
+                try (final ManagedLock<ReentrantLock> dbLock = lockManager.acquireBtreeWriteLock(index.db.getLockName())) {
+                    final NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
                         index.getBrokerPool().getSymbols(), key.term);
-                boolean changed = false;
-                os.clear();
-                final VariableByteInput is = index.db.getAsStream(value);
-                if (is == null) {
-                    continue;
-                }
-                while (is.available() > 0) {
-                    final int storedDocId = is.readInt();
-                    final byte nameType = is.readByte();
-                    final int occurrences = is.readInt();
-                    //Read (variable) length of node IDs + frequency + offsets
-                    final int length = is.readFixedInt();
-                    if (storedDocId != currentDoc.getDocId()) {
-                        // data are related to another document:
-                        // copy them to any existing data
-                        os.writeInt(storedDocId);
-                        os.writeByte(nameType);
-                        os.writeInt(occurrences);
-                        os.writeFixedInt(length);
-                        is.copyRaw(os, length);
-                    } else {
-                        // data are related to our document:
-                        if (mode == ReindexMode.REMOVE_ALL_NODES) {
-                            // skip them
-                            is.skipBytes(length);
+                    boolean changed = false;
+                    os.clear();
+                    final VariableByteInput is = index.db.getAsStream(value);
+                    if (is == null) {
+                        continue;
+                    }
+                    while (is.available() > 0) {
+                        final int storedDocId = is.readInt();
+                        final byte nameType = is.readByte();
+                        final int occurrences = is.readInt();
+                        //Read (variable) length of node IDs + frequency + offsets
+                        final int length = is.readFixedInt();
+                        if (storedDocId != currentDoc.getDocId()) {
+                            // data are related to another document:
+                            // copy them to any existing data
+                            os.writeInt(storedDocId);
+                            os.writeByte(nameType);
+                            os.writeInt(occurrences);
+                            os.writeFixedInt(length);
+                            is.copyRaw(os, length);
                         } else {
-                            // removing nodes: need to filter out the node ids to be removed
-                            // feed the new list with the GIDs
+                            // data are related to our document:
+                            if (mode == ReindexMode.REMOVE_ALL_NODES) {
+                                // skip them
+                                is.skipBytes(length);
+                            } else {
+                                // removing nodes: need to filter out the node ids to be removed
+                                // feed the new list with the GIDs
 
-                            final OccurrenceList newOccurrences = new OccurrenceList();
-                            NodeId previous = null;
-                            for (int m = 0; m < occurrences; m++) {
-                                final NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromStream(previous, is);
-                                previous = nodeId;
-                                final int freq = is.readInt();
-                                // add the node to the new list if it is not
-                                // in the list of removed nodes
-                                if (!occurencesList.contains(nodeId)) {
-                                    for (int n = 0; n < freq; n++) {
-                                        newOccurrences.add(nodeId, is.readInt());
+                                final OccurrenceList newOccurrences = new OccurrenceList();
+                                NodeId previous = null;
+                                for (int m = 0; m < occurrences; m++) {
+                                    final NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromStream(previous, is);
+                                    previous = nodeId;
+                                    final int freq = is.readInt();
+                                    // add the node to the new list if it is not
+                                    // in the list of removed nodes
+                                    if (!occurencesList.contains(nodeId)) {
+                                        for (int n = 0; n < freq; n++) {
+                                            newOccurrences.add(nodeId, is.readInt());
+                                        }
+                                    } else {
+                                        is.skip(freq);
                                     }
-                                } else {
-                                    is.skip(freq);
+                                }
+                                // append the data from the new list
+                                if (newOccurrences.getSize() > 0) {
+                                    //Don't forget this one
+                                    newOccurrences.sort();
+                                    os.writeInt(currentDoc.getDocId());
+                                    os.writeByte(nameType);
+                                    os.writeInt(newOccurrences.getTermCount());
+
+                                    // write nodeids, freq, and offsets to a `temp` buf
+                                    previous = null;
+                                    for (int m = 0; m < newOccurrences.getSize(); ) {
+                                        previous = newOccurrences.getNode(m).write(previous, buf);
+                                        final int freq = newOccurrences.getOccurrences(m);
+                                        buf.writeInt(freq);
+                                        for (int n = 0; n < freq; n++) {
+                                            buf.writeInt(newOccurrences.getOffset(m + n));
+                                        }
+                                        m += freq;
+                                    }
+
+                                    final byte[] bufData = buf.toByteArray();
+
+                                    // clear the buf for the next iteration
+                                    buf.clear();
+
+                                    // Write length of node IDs + frequency + offsets (bytes)
+                                    os.writeFixedInt(bufData.length);
+
+                                    // Write the node IDs + frequency + offset
+                                    os.write(bufData);
                                 }
                             }
-                            // append the data from the new list
-                            if (newOccurrences.getSize() > 0) {
-                                //Don't forget this one
-                                newOccurrences.sort();
-                                os.writeInt(currentDoc.getDocId());
-                                os.writeByte(nameType);
-                                os.writeInt(newOccurrences.getTermCount());
-
-                                // write nodeids, freq, and offsets to a `temp` buf
-                                previous = null;
-                                for (int m = 0; m < newOccurrences.getSize(); ) {
-                                    previous = newOccurrences.getNode(m).write(previous, buf);
-                                    final int freq = newOccurrences.getOccurrences(m);
-                                    buf.writeInt(freq);
-                                    for (int n = 0; n < freq; n++) {
-                                        buf.writeInt(newOccurrences.getOffset(m + n));
-                                    }
-                                    m += freq;
-                                }
-
-                                final byte[] bufData = buf.toByteArray();
-
-                                // clear the buf for the next iteration
-                                buf.clear();
-
-                                // Write length of node IDs + frequency + offsets (bytes)
-                                os.writeFixedInt(bufData.length);
-
-                                // Write the node IDs + frequency + offset
-                                os.write(bufData);
+                            changed = true;
+                        }
+                    }
+                    //Store new data, if relevant
+                    if (changed) {
+                        //Well, nothing to store : remove the existing data
+                        if (os.data().size() == 0) {
+                            index.db.remove(value);
+                        } else {
+                            if (index.db.put(value, os.data()) == BFile.UNKNOWN_ADDRESS) {
+                                LOG.error("Could not put index data for token '{}' in '{}'", key.term, FileUtils.fileName(index.db.getFile()));
                             }
                         }
-                        changed = true;
                     }
+                } catch (final LockException e) {
+                    LOG.warn("Failed to acquire lock for file {}", FileUtils.fileName(index.db.getFile()), e);
+                } catch (final IOException e) {
+                    LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
+                } finally {
+                    os.clear();
                 }
-                //Store new data, if relevant
-                if (changed) {
-                    //Well, nothing to store : remove the existing data
-                    if (os.data().size() == 0) {
-                        index.db.remove(value);
-                    } else {
-                        if (index.db.put(value, os.data()) == BFile.UNKNOWN_ADDRESS) {
-                            LOG.error("Could not put index data for token '{}' in '{}'", key.term, FileUtils.fileName(index.db.getFile()));
-                        }
-                    }
-                }
-            } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock for file {}", FileUtils.fileName(index.db.getFile()), e);
-            } catch (final IOException e) {
-                LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
-            } finally {
-                os.clear();
             }
+            ngrams.clear();
+        } catch (final IOException e) {
+            LOG.warn("IO error for file {}", FileUtils.fileName(index.db.getFile()), e);
         }
-        ngrams.clear();
     }
 
     @Override

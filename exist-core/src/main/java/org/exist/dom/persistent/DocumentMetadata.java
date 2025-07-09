@@ -23,7 +23,7 @@ package org.exist.dom.persistent;
 
 import org.exist.ResourceMetadata;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.w3c.dom.DocumentType;
 
 import java.io.IOException;
@@ -100,7 +100,7 @@ public class DocumentMetadata implements ResourceMetadata {
     }
 
     @Deprecated
-    public void write(final SymbolTable symbolTable, final VariableByteOutputStream ostream) throws IOException {
+    public void write(final SymbolTable symbolTable, final VariableByteOutput ostream) throws IOException {
         doc.writeDocumentAttributes(symbolTable, ostream);
     }
 

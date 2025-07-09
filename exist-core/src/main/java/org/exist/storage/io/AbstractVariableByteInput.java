@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,7 +60,9 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
     @Override
     public byte readByte() throws IOException {
         final int i = read();
-        if (i < 0) {throw new EOFException();}
+        if (i < 0) {
+            throw new EOFException();
+        }
         return (byte) i;
     }
 
@@ -49,6 +75,12 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
             i |= (b & 0177L) << shift;
         }
         return i;
+    }
+
+    @Override
+    public short readFixedShort() throws IOException {
+        return (short) ((readByte() & 0xff) |
+            ((readByte() & 0xff) << 8));
     }
 
     @Override
@@ -79,6 +111,19 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
             i |= (b & 0177L) << shift;
         }
         return i;
+    }
+
+    @Override
+    public long readFixedLong() throws IOException {
+        return
+            ((readByte() & 0xff) << 56) |
+            ((readByte() & 0xff) << 48) |
+            ((readByte() & 0xff) << 40) |
+            ((readByte() & 0xff) << 32) |
+            ((readByte() & 0xff) << 24) |
+            ((readByte() & 0xff) << 16) |
+            ((readByte() & 0xff) << 8) |
+            (readByte() & 0xff);
     }
 
     @Override
@@ -140,7 +185,8 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
         return i;
     }
 
-    public void copyTo(final VariableByteOutputStream os) throws IOException {
+    @Override
+    public void copyTo(final VariableByteOutput os) throws IOException {
         int more;
         do {
             more = read();
@@ -150,7 +196,7 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
     }
 
     @Override
-    public void copyTo(final VariableByteOutputStream os, final int count)
+    public void copyTo(final VariableByteOutput os, final int count)
             throws IOException {
         int more;
         for (int i = 0; i < count; i++) {
@@ -163,7 +209,7 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
     }
 
     @Override
-    public void copyRaw(final VariableByteOutputStream os, final int count) throws IOException {
+    public void copyRaw(final VariableByteOutput os, final int count) throws IOException {
         final byte buf[] = new byte[count];
         int totalRead = 0;
         int read;
@@ -171,9 +217,5 @@ public abstract class AbstractVariableByteInput implements VariableByteInput {
             os.write(buf, 0, read);
             totalRead += read;
         }
-    }
-
-    public void release() {
-        //Nothing to do
     }
 }

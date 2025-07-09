@@ -45,63 +45,35 @@
  */
 package org.exist.storage.io;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 /**
- * A byte array input using VBE (Variable Byte Encoding).
- * 
+ * Variable Byte Output to an Output Stream.
+ *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class VariableByteArrayInput extends AbstractVariableByteInput {
+public class VariableByteOutputToOutputStream extends AbstractVariableByteOutput {
 
-    private byte[] data;
-    protected int position;
-    private int end;
+    private OutputStream os;
 
-    public VariableByteArrayInput(final byte[] data) {
+    public VariableByteOutputToOutputStream(final OutputStream os) {
         super();
-        this.data = data;
-        this.position = 0;
-        this.end = data.length;
-    }
-
-    public VariableByteArrayInput(final byte[] data, final int offset, final int length) {
-        super();
-        this.data = data;
-        this.position = offset;
-        this.end = offset + length;
-    }
-
-    public void initialize(final byte[] data, final int offset, final int length) {
-        this.data = data;
-        this.position = offset;
-        this.end = offset + length;
+        this.os = os;
     }
 
     @Override
-    public int read() {
-        if (position == end) {
-            return -1;
-        }
-        return data[position++] & 0xFF;
+    public void write(final int b) throws IOException {
+        os.write(b);
     }
 
     @Override
-    public int available() {
-        return end - position;
+    public void write(final byte[] b) throws IOException {
+        os.write(b);
     }
 
     @Override
-    public void skip(final int count) {
-        for (int i = 0; i < count; i++) {
-            while (position < end && (data[position++] & 128) > 0) {
-                //Nothing to do
-            }
-        }
-    }
-
-    @Override
-    public void skipBytes(final long count) {
-        for (long i = 0; i < count && position < end; i++) {
-            position++;
-        }
+    public void write(final byte[] b, final int off, final int len) throws IOException {
+        os.write(b, off, len);
     }
 }

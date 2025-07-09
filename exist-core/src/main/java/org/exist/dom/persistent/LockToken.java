@@ -22,7 +22,7 @@
 package org.exist.dom.persistent;
 
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.util.UUIDGenerator;
 
 import javax.annotation.Nullable;
@@ -123,7 +123,8 @@ public class LockToken {
         return UUIDGenerator.getUUID();
     }
 
-    public void write(final VariableByteOutputStream ostream) throws IOException {
+    public void write(final VariableByteOutput
+                          ostream) throws IOException {
         // TODO(AR) these 3 bytes could be encoded into 1
         ostream.writeByte(type.getValue());
         ostream.writeByte(depth.getValue());

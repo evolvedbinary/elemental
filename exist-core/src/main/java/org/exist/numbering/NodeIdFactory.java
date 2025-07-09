@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,7 +48,7 @@ package org.exist.numbering;
 import java.io.IOException;
 
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 
 /**
  * A factory for creating node ids. To support different numbering
@@ -56,7 +80,7 @@ public interface NodeIdFactory {
     /**
      * Read a NodeId from the given input stream.
      *
-     * @see NodeId#write(org.exist.storage.io.VariableByteOutputStream)
+     * @see NodeId#write(VariableByteOutput)
      *
      * @param is the input stream to read from
      * @return the NodeId read
@@ -69,7 +93,7 @@ public interface NodeIdFactory {
      * stored with prefix-compression, i.e. only the bytes differing from the previous
      * node were written out.
      *
-     * @see NodeId#write(NodeId, org.exist.storage.io.VariableByteOutputStream)
+     * @see NodeId#write(NodeId, VariableByteOutput)
      * 
      * @param previous the previous node id read or null if there is none
      * @param is the input stream to read from
@@ -121,6 +145,6 @@ public interface NodeIdFactory {
      */
     NodeId documentNodeId();
 
-    void writeEndOfDocument(VariableByteOutputStream os);
+    void writeEndOfDocument(VariableByteOutput os) throws IOException;
 
 }
