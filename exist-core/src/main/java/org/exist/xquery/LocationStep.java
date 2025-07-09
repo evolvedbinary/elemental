@@ -501,6 +501,9 @@ public class LocationStep extends Step {
                     if (ns != null) {
                         @Nullable final NodeProxy np = ns.get(p);
                         if (np != null) {
+                            if (p.getMatches() != null) {
+                                np.addMatch(p.getMatches());
+                            }
                             p = np;
                         }
                     }
