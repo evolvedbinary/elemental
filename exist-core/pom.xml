@@ -999,6 +999,7 @@
                                 <include>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</include>
                                 <include>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/SequenceType.java</include>
+                                <include>src/main/java/org/exist/xquery/value/TimeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
@@ -1412,6 +1413,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/SubSequence.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/SubSequenceRangeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/SubSequenceTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/TimeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
