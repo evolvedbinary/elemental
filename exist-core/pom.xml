@@ -742,6 +742,8 @@
                                 <include>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</include>
                                 <include>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteArrayOutputStream.java</include>
+                                <include>src/main/java/org/exist/storage/io/VariableByteBufferInput.java</include>
+                                <include>src/main/java/org/exist/storage/io/VariableByteBufferOutput.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterInputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteOutput.java</include>
@@ -838,6 +840,7 @@
                                 <include>src/main/java/org/exist/config/ConfigurationImpl.java</include>
                                 <include>src/main/java/org/exist/config/Configurator.java</include>
                                 <include>src/main/java/org/exist/dom/NodeListImpl.java</include>
+                                <include>src/main/java/org/exist/dom/QName.java</include>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
@@ -1052,7 +1055,28 @@
                                 <include>src/main/java/org/exist/xquery/util/ExpressionDumper.java</include>
                                 <include>src/main/java/org/exist/xquery/util/SerializerUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/AnyURIValue.java</include>
                                 <include>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</include>
+                                <include>src/main/java/org/exist/xquery/value/BinaryValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/BooleanValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DateTimeStampValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DateTimeValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DateValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DayTimeDurationValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DecimalValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DoubleValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/DurationValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/FloatValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/GDayValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/GMonthDayValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/GMonthValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/GYearMonthValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/GYearValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/IntegerValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/QNameValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/StringValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/TimeValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/SequenceType.java</include>
                                 <include>src/main/java/org/exist/xquery/value/TimeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
@@ -1152,6 +1176,7 @@
                                 <exclude>src/main/java/org/exist/config/ConfigurationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configurator.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/NodeListImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/QName.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
@@ -1287,6 +1312,8 @@
                                 <exclude>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/io/VariableByteArrayInput.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/io/VariableByteArrayOutputStream.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/io/VariableByteBufferInput.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/io/VariableByteBufferOutput.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/io/VariableByteFilterInputStream.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/io/VariableByteFilterOutputStream.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/io/VariableByteInput.java</exclude>
@@ -1470,19 +1497,40 @@
                                 <exclude>src/main/java/org/exist/xquery/util/SerializerUtils.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/util/URIUtilsTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AbstractDateTimeValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/AnyURIValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ArrayListValueSequence.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AtomicValueComparator.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/BifurcanMapTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/BinaryValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/BooleanValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DateTimeStampValue.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DateTimeValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DateValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DayTimeDurationValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DecimalValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DoubleValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/DurationValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/FloatValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/GDayValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/GMonthDayValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/GMonthValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/GYearMonthValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/GYearValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/IntegerValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ItemComparator.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/QNameValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceComparator.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceType.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/StringValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SubSequence.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/SubSequenceRangeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/SubSequenceTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/TimeValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/TimeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/RemoveAppendTest.java</exclude>

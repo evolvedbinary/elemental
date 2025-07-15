@@ -23,6 +23,8 @@ package org.exist.storage.io;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * An output stream filter using VBE (Variable Byte Encoding).
@@ -86,6 +88,26 @@ public class VariableByteFilterOutputStream extends FilterOutputStream implement
     @Override
     public void writeFixedLong(final long l) throws IOException {
         vbo.writeFixedLong(l);
+    }
+
+    @Override
+    public void writeBigInteger(final BigInteger bi) throws IOException {
+        vbo.writeBigInteger(bi);
+    }
+
+    @Override
+    public void writeFixedBigInteger(final BigInteger bi) throws IOException {
+        vbo.writeFixedBigInteger(bi);
+    }
+
+    @Override
+    public void writeBigDecimal(final BigDecimal bd) throws IOException {
+        vbo.writeBigDecimal(bd);
+    }
+
+    @Override
+    public void writeFixedBigDecimal(final BigDecimal bd) throws IOException {
+        vbo.writeFixedBigDecimal(bd);
     }
 
     @Override

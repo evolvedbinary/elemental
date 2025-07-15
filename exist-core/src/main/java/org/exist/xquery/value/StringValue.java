@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,6 +48,9 @@ package org.exist.xquery.value;
 import com.ibm.icu.text.Collator;
 import org.apache.xerces.util.XMLChar;
 import org.exist.dom.QName;
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteBufferInput;
+import org.exist.storage.io.VariableByteBufferOutput;
 import org.exist.util.Collations;
 import org.exist.util.UTF8;
 import org.exist.util.XMLCharUtil;
@@ -34,11 +61,18 @@ import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.exist.dom.QName.Validity.VALID;
 
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class StringValue extends AtomicValue {
 
     public final static StringValue EMPTY_STRING = new StringValue("");
@@ -603,39 +637,47 @@ public class StringValue extends AtomicValue {
 
     @Override
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(StringValue.class)) {
-            return (T) this;
-        } else if (target == Object.class || target == String.class || target == CharSequence.class) {
-            return (T) value;
-        } else if (target == double.class || target == Double.class) {
-            final DoubleValue v = (DoubleValue) convertTo(Type.DOUBLE);
-            return (T) Double.valueOf(v.getValue());
-        } else if (target == float.class || target == Float.class) {
-            final FloatValue v = (FloatValue) convertTo(Type.FLOAT);
-            return (T) Float.valueOf(v.value);
-        } else if (target == long.class || target == Long.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.LONG);
-            return (T) Long.valueOf(v.getInt());
-        } else if (target == int.class || target == Integer.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.INT);
-            return (T) Integer.valueOf(v.getInt());
-        } else if (target == short.class || target == Short.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.SHORT);
-            return (T) Short.valueOf((short) v.getInt());
-        } else if (target == byte.class || target == Byte.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.BYTE);
-            return (T) Byte.valueOf((byte) v.getInt());
-        } else if (target == boolean.class || target == Boolean.class) {
-            return (T) Boolean.valueOf(effectiveBooleanValue());
-        } else if (target == char.class || target == Character.class) {
-            if (value.length() > 1 || value.length() == 0) {
-                throw new XPathException(getExpression(), "cannot convert string with length = 0 or length > 1 to Java character");
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(StringValue.class)) {
+                return (T) this;
+            } else if (target == Object.class || target == String.class || target == CharSequence.class) {
+                return (T) value;
+            } else if (target == double.class || target == Double.class) {
+                final DoubleValue v = (DoubleValue) convertTo(Type.DOUBLE);
+                return (T) Double.valueOf(v.getValue());
+            } else if (target == float.class || target == Float.class) {
+                final FloatValue v = (FloatValue) convertTo(Type.FLOAT);
+                return (T) Float.valueOf(v.value);
+            } else if (target == long.class || target == Long.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.LONG);
+                return (T) Long.valueOf(v.getInt());
+            } else if (target == int.class || target == Integer.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.INT);
+                return (T) Integer.valueOf(v.getInt());
+            } else if (target == short.class || target == Short.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.SHORT);
+                return (T) Short.valueOf((short) v.getInt());
+            } else if (target == byte.class || target == Byte.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.BYTE);
+                return (T) Byte.valueOf((byte) v.getInt());
+            } else if (target == boolean.class || target == Boolean.class) {
+                return (T) Boolean.valueOf(effectiveBooleanValue());
+            } else if (target == char.class || target == Character.class) {
+                if (value.length() > 1 || value.length() == 0) {
+                    throw new XPathException(getExpression(), "cannot convert string with length = 0 or length > 1 to Java character");
+                }
+                return (T) Character.valueOf(value.charAt(0));
+            } else if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                return (T) ByteBuffer.wrap(serialize());
             }
-            return (T) Character.valueOf(value.charAt(0));
+        } catch (final IOException e) {
+            throwable = e;
         }
 
-        throw new XPathException(getExpression(), "cannot convert value of type " + Type.getTypeName(type) +
-                " to Java object of type " + target.getName());
+        throw new XPathException(getExpression(), "cannot convert value of type " + Type.getTypeName(type) + " to Java object of type " + target.getName(), throwable);
     }
 
     @Override
@@ -803,5 +845,70 @@ public class StringValue extends AtomicValue {
             return false;
         }
         return value.equals(obj.toString());
+    }
+
+    /**
+     * Serializes to a byte array.
+     *
+     * Return value is formatted like:
+     *  byte[0]  indicates the {@link Type}
+     *  byte[...] VBE int encoded length of the following string
+     *  byte[...] the string as UTF-8
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(6)) {
+            vbos.writeByte((byte) (type & 0xFF));
+            vbos.writeUTF(value);
+            return vbos.toByteArray();
+        }
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * Return value is formatted like:
+     *  byte[0]  indicates the {@link Type}
+     *  byte[...] VBE int encoded length of the following string
+     *  byte[...] the string as UTF-8
+     *
+     * @param buf the ByteBuffer to serialize to.
+     */
+    public void serialize(final ByteBuffer buf) throws IOException {
+        final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
+        vbb.writeByte((byte) (type & 0xFF));
+        vbb.writeUTF(value);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the StringValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the StringValue.
+     */
+    public static StringValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
+        return deserialize(expression, buf, null);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the StringValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     * @param checkType an XDM type to check that matches against the deserialized StringValue type.
+     *
+     * @return the StringValue.
+     */
+    public static StringValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType) throws IOException, XPathException {
+        final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
+        final int type = vbbi.read();
+        if (checkType != null && type != checkType.intValue()) {
+            throw new XPathException(expression, "Expected deserialized StringValue of type: " + Type.getTypeName(checkType) + ", but found: " + Type.getTypeName(type));
+        }
+        final String value = vbbi.readUTF();
+        return new StringValue(expression, value, type);
     }
 }

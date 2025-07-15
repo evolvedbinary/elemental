@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,21 +46,25 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
+import org.exist.util.ByteConversion;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import java.io.*;
+import java.nio.ByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * @author <a href="mailto:adam@existsolutions.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class BinaryValue extends AtomicValue implements Closeable {
 
@@ -138,22 +166,24 @@ public abstract class BinaryValue extends AtomicValue implements Closeable {
     }
 
     @Override
-    public <T> T toJavaObject(Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(getClass())) {
-            return (T) this;
-        }
+    public <T> T toJavaObject(final Class<T> target) throws XPathException {
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(getClass())) {
+                return (T) this;
 
-        if (target == byte[].class) {
-            try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
-                streamBinaryTo(baos);
-                return (T) baos.toByteArray();
-            } catch (final IOException ioe) {
-                LOG.error("Unable to Stream BinaryValue to byte[]: {}", ioe.getMessage(), ioe);
-                throw new XPathException(getExpression(), "Unable to Stream BinaryValue to byte[]: " + ioe.getMessage(), ioe);
+            } else if (target == byte[].class) {
+                return (T) serializeRaw();
+
+            } else if (target == ByteBuffer.class) {
+                return (T) ByteBuffer.wrap(serializeRaw());
             }
+        } catch (final IOException e) {
+            LOG.error("Unable to Stream BinaryValue to byte[]: {}", e.getMessage(), e);
+            throwable = e;
         }
 
-        throw new XPathException(getExpression(), "Cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName());
+        throw new XPathException(getExpression(), "Cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName(), throwable);
     }
 
     /**
@@ -305,5 +335,65 @@ public abstract class BinaryValue extends AtomicValue implements Closeable {
             } while (read != -1);
         }
         return hash;
+    }
+
+    /**
+     * Serializes to a byte array.
+     *
+     * @return the serialized data.
+     */
+    private byte[] serializeRaw() throws IOException {
+        try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
+            streamBinaryTo(baos);
+            return baos.toByteArray();
+        }
+    }
+
+    /**
+     * Serializes to a byte array.
+     *
+     * Return value is formatted like:
+     *  byte[0..3]  int encoded length of the data
+     *  byte[4..] the data
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        final byte[] serialized;
+        try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
+            // NOTE(AR) leave space for 4 bytes for the data len to be added later
+            baos.write(0);
+            baos.write(0);
+            baos.write(0);
+            baos.write(0);
+
+            streamBinaryTo(baos); // write the data
+
+            serialized = baos.toByteArray();
+        }
+
+        // calculate the length of the data written
+        final int dataLen = serialized.length - 4;
+
+        ByteConversion.intToByteH(dataLen, serialized, 0);  // NOTE(AR) now write the data len
+
+        return serialized;
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the IntegerValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the IntegerValue.
+     */
+    public static BinaryValue deserialize(@Nullable final Expression expression, final BinaryValueType binaryValueType, final ByteBuffer buf) throws XPathException {
+        final int dataLen = ByteConversion.byteToIntH(buf);
+        final byte[] data = new byte[dataLen];
+        buf.get(data);
+
+        final InputStream is = new UnsynchronizedByteArrayInputStream(data);
+        return BinaryValueFromInputStream.getInstance(expression != null ? expression.getContext() : null, binaryValueType, is, expression);
     }
 }

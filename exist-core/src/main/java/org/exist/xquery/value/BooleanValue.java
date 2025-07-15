@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,7 +52,17 @@ import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class BooleanValue extends AtomicValue {
+
+    public static final int SERIALIZED_SIZE = 1;
 
     public final static BooleanValue TRUE = new BooleanValue(true);
     public final static BooleanValue FALSE = new BooleanValue(false);
@@ -48,27 +82,50 @@ public class BooleanValue extends AtomicValue {
      * Returns one of the static fields TRUE or FALSE depending on
      * the value of the parameter.
      *
-     * @param bool the boolean value to map
+     * @param value the boolean value to map
      * @return either {@link #TRUE} or {@link #FALSE}
      */
-    public final static BooleanValue valueOf(boolean bool) {
-        return bool ? TRUE : FALSE;
+    public static BooleanValue valueOf(final boolean value) {
+        return value ? TRUE : FALSE;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#getType()
+    /**
+     * Returns one of the static fields TRUE or FALSE depending on
+     * the value of the parameter.
+     *
+     * @param expression the calling expression
+     * @param value the string value to map
+     *
+     * @return either {@link #TRUE} or {@link #FALSE}
+     *
+     * @throws XPathException if the value cannot be converted to an xs:boolean
      */
+    public static BooleanValue valueOf(@Nullable final Expression expression, String value) throws XPathException {
+        if (value != null) {
+            value = value.trim();
+
+            if("true".equals(value)) {
+                return BooleanValue.TRUE;
+
+            } else if ("false".equals(value)) {
+                return BooleanValue.FALSE;
+            }
+        }
+
+        throw new XPathException(expression, ErrorCodes.FORG0001, "can not convert '" + value + "' to xs:boolean");
+    }
+
+    @Override
     public int getType() {
         return Type.BOOLEAN;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Item#getStringValue()
-     */
+    @Override
     public String getStringValue() throws XPathException {
         return value ? "true" : "false";
     }
 
+    @Override
     public AtomicValue convertTo(final int requiredType) throws XPathException {
         switch (requiredType) {
             case Type.BOOLEAN:
@@ -113,7 +170,8 @@ public class BooleanValue extends AtomicValue {
                 "cannot convert 'xs:boolean(" + value + ")' to " + Type.getTypeName(other.getType()));
     }
 
-    public int compareTo(Collator collator, AtomicValue other) throws XPathException {
+    @Override
+    public int compareTo(final Collator collator, final AtomicValue other) throws XPathException {
         if (Type.subTypeOf(other.getType(), Type.BOOLEAN)) {
             final boolean otherVal = other.effectiveBooleanValue();
             if (otherVal == value) {
@@ -127,9 +185,7 @@ public class BooleanValue extends AtomicValue {
         return Constants.INFERIOR;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#effectiveBooleanValue()
-     */
+    @Override
     public boolean effectiveBooleanValue() throws XPathException {
         return value;
     }
@@ -138,10 +194,8 @@ public class BooleanValue extends AtomicValue {
         return value;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#max(org.exist.xquery.value.AtomicValue)
-     */
-    public AtomicValue max(Collator collator, AtomicValue other) throws XPathException {
+    @Override
+    public AtomicValue max(final Collator collator, final AtomicValue other) throws XPathException {
         if (other.getType() == Type.BOOLEAN) {
             boolean otherValue = ((BooleanValue) other).value;
             return value && (!otherValue) ? this : other;
@@ -152,7 +206,8 @@ public class BooleanValue extends AtomicValue {
         }
     }
 
-    public AtomicValue min(Collator collator, AtomicValue other) throws XPathException {
+    @Override
+    public AtomicValue min(final Collator collator, final AtomicValue other) throws XPathException {
         if (other.getType() == Type.BOOLEAN) {
             final boolean otherValue = ((BooleanValue) other).value;
             return (!value) && otherValue ? this : other;
@@ -163,10 +218,8 @@ public class BooleanValue extends AtomicValue {
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Item#conversionPreference(java.lang.Class)
-     */
-    public int conversionPreference(Class<?> javaClass) {
+    @Override
+    public int conversionPreference(final Class<?> javaClass) {
         if (javaClass.isAssignableFrom(BooleanValue.class)) {
             return 0;
         }
@@ -183,28 +236,33 @@ public class BooleanValue extends AtomicValue {
         return Integer.MAX_VALUE;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Item#toJavaObject(java.lang.Class)
-     */
     @Override
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(BooleanValue.class)) {
-            return (T) this;
-        } else if (target == Boolean.class || target == boolean.class || target == Object.class) {
-            return (T) Boolean.valueOf(value);
-        } else if (target == String.class || target == CharSequence.class) {
-            final StringValue v = (StringValue) convertTo(Type.STRING);
-            return (T) v.value;
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(BooleanValue.class)) {
+                return (T) this;
+            } else if (target == Boolean.class || target == boolean.class || target == Object.class) {
+                return (T) Boolean.valueOf(value);
+            } else if (target == String.class || target == CharSequence.class) {
+                final StringValue v = (StringValue) convertTo(Type.STRING);
+                return (T) v.value;
+            } else if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+                serialize(buf);
+                return (T) buf;
+            }
+        } catch (final IOException e) {
+            throwable = e;
         }
 
-        throw new XPathException(getExpression(), "cannot convert value of type " + Type.getTypeName(getType()) +
-                " to Java object of type " + target.getName());
+        throw new XPathException(getExpression(), "cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName(), throwable);
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     */
-    public int compareTo(Object o) {
+    @Override
+    public int compareTo(final Object o) {
         final AtomicValue other = (AtomicValue) o;
         if (Type.subTypeOf(other.getType(), Type.BOOLEAN)) {
             if (value == ((BooleanValue) other).value) {
@@ -225,5 +283,46 @@ public class BooleanValue extends AtomicValue {
             return value == ((BooleanValue) obj).value;
         }
         return false;
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * 1 byte.
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+        serialize(buf);
+        return buf.array();
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * 1 byte.
+     *
+     * @param buf the ByteBuffer to serialize to.
+     */
+    public void serialize(final ByteBuffer buf) {
+        buf.put((byte) (value == true ? 1 : 0));
+    }
+
+    /**
+     * Deserializes from a BooleanValue.
+     *
+     * @param expression the expression that creates the BooleanValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the BooleanValue.
+     */
+    public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws XPathException {
+        final byte b = buf.get();
+        if (b == 1) {
+            return BooleanValue.TRUE;
+        } else {
+            return BooleanValue.FALSE;
+        }
     }
 }

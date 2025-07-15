@@ -23,6 +23,8 @@ package org.exist.storage.io;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * An input stream filter using VBE (Variable Byte Encoding).
@@ -86,6 +88,26 @@ public class VariableByteFilterInputStream extends FilterInputStream implements 
     @Override
     public long readFixedLong() throws IOException {
         return vbi.readFixedLong();
+    }
+
+    @Override
+    public BigInteger readBigInteger() throws IOException {
+        return vbi.readBigInteger();
+    }
+
+    @Override
+    public BigInteger readFixedBigInteger() throws IOException {
+        return vbi.readFixedBigInteger();
+    }
+
+    @Override
+    public BigDecimal readBigDecimal() throws IOException {
+        return vbi.readBigDecimal();
+    }
+
+    @Override
+    public BigDecimal readFixedBigDecimal() throws IOException {
+        return vbi.readFixedBigDecimal();
     }
 
     @Override

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,12 +48,24 @@ package org.exist.indexing.lucene;
 import org.exist.dom.QName;
 import org.exist.util.XMLString;
 
+import javax.annotation.Nullable;
+import java.util.Map;
+
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class DefaultTextExtractor extends AbstractTextExtractor {
 
     private int stack = 0;
     private boolean addSpaceBeforeNext = false;
-    
-    public int startElement(QName name) {
+
+    public DefaultTextExtractor(final LuceneConfig config, final LuceneIndexConfig idxConfig, @Nullable final Map<String, String> prefixToNamespaceMappings) {
+        super(config, idxConfig, prefixToNamespaceMappings);
+    }
+
+    @Override
+    public int startElement(final QName name) {
         if (isInlineNode(name)) {
             // discard not yet applied whitespaces
             addSpaceBeforeNext = false;
@@ -52,6 +88,7 @@ public class DefaultTextExtractor extends AbstractTextExtractor {
 		return (config.isInlineNode(name) || (idxConfig != null && idxConfig.isInlineNode(name)));
 	}
 
+    @Override
     public int endElement(final QName name) {
         if (isIgnoredNode(name)) {
             stack--;
@@ -62,6 +99,7 @@ public class DefaultTextExtractor extends AbstractTextExtractor {
         return 0;
     }
 
+    @Override
     public int beforeCharacters() {
     	if (addSpaceBeforeNext && !buffer.isEmpty() && buffer.charAt(buffer.length() - 1) != ' ') {
     		// separate the previous element's text from following text
@@ -71,8 +109,9 @@ public class DefaultTextExtractor extends AbstractTextExtractor {
     	}
     	return 0;
     }
-    
-    public int characters(XMLString text) {
+
+    @Override
+    public int characters(final XMLString text) {
         if (stack == 0) {
             buffer.append(text);
             return text.length();

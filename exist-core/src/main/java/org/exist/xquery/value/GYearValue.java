@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,16 +45,26 @@
  */
 package org.exist.xquery.value;
 
+import org.exist.util.ByteConversion;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.GregorianCalendar;
 
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class GYearValue extends AbstractDateTimeValue {
+
+    public static final int SERIALIZED_SIZE = 6;
 
     public GYearValue() throws XPathException {
         super(null, stripCalendar(TimeUtils.getInstance().newXMLGregorianCalendar(new GregorianCalendar())));
@@ -108,5 +142,71 @@ public class GYearValue extends AbstractDateTimeValue {
     public ComputableValue minus(ComputableValue other) throws XPathException {
         throw new XPathException(getExpression(), "Subtraction is not supported on values of type " +
                 Type.getTypeName(getType()));
+    }
+
+    @Override
+    public <T> T toJavaObject(final Class<T> target) throws XPathException {
+        Throwable throwable = null;
+        try {
+            if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+                serialize(buf);
+                return (T) buf;
+            } else {
+                return super.toJavaObject(target);
+            }
+        } catch (final IOException e) {
+            throwable = e;
+        }
+        throw new XPathException(getExpression(), ErrorCodes.XPTY0004, "cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName(), throwable);
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * 6 bytes where: [0-3 (Year), 4-5 (Timezone)]
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+        serialize(buf);
+        return buf.array();
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * 6 bytes where: [0-3 (Year), 4-5 (Timezone)]
+     *
+     * @param buf the ByteBuffer to serialize to.
+     */
+    public void serialize(final ByteBuffer buf) {
+        ByteConversion.intToByteH(calendar.getYear(), buf);
+        // values for timezone range from -14*60 to 14*60, so we can use a short, but
+        // need to choose a different value for FIELD_UNDEFINED, which is not the same as 0 (= UTC)
+        final int timezone = calendar.getTimezone();
+        ByteConversion.shortToByteH((short) (timezone == DatatypeConstants.FIELD_UNDEFINED ? Short.MAX_VALUE : timezone), buf);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the GYearValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the GYearValue.
+     */
+    public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws XPathException {
+        final int year = ByteConversion.byteToIntH(buf);
+        int timezone = ByteConversion.byteToShortH(buf);
+        if (timezone == Short.MAX_VALUE) {
+            timezone = DatatypeConstants.FIELD_UNDEFINED;
+        }
+
+        final XMLGregorianCalendar xmlGregorianCalendar = TimeUtils.getInstance().newXMLGregorianCalendar(year, DatatypeConstants.FIELD_UNDEFINED, DatatypeConstants.FIELD_UNDEFINED, DatatypeConstants.FIELD_UNDEFINED, DatatypeConstants.FIELD_UNDEFINED, DatatypeConstants.FIELD_UNDEFINED, DatatypeConstants.FIELD_UNDEFINED, timezone);
+        return new GYearValue(expression, xmlGregorianCalendar);
     }
 }

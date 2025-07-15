@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,14 +45,17 @@
  */
 package org.exist.xquery.value;
 
+import com.evolvedbinary.j8fu.function.BiFunctionE;
 import org.exist.util.ByteConversion;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Date;
@@ -39,6 +66,7 @@ import java.util.GregorianCalendar;
  *
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DateTimeValue extends AbstractDateTimeValue {
 
@@ -58,7 +86,7 @@ public class DateTimeValue extends AbstractDateTimeValue {
         this(null, calendar);
     }
 
-    public DateTimeValue(final Expression expression, XMLGregorianCalendar calendar) {
+    public DateTimeValue(@Nullable final Expression expression, final XMLGregorianCalendar calendar) {
         super(expression, fillCalendar(cloneXMLGregorianCalendar(calendar)));
         normalize();
     }
@@ -79,10 +107,6 @@ public class DateTimeValue extends AbstractDateTimeValue {
     public DateTimeValue(final Expression expression, Date date) {
         super(expression, dateToXMLGregorianCalendar(date));
         normalize();
-    }
-
-    public DateTimeValue(final int year, final int month, final int day, final int hour, final int minute, final int second, final int millisecond, final int timezone) {
-        super(TimeUtils.getInstance().newXMLGregorianCalendar(year, month, day, hour, minute, second, millisecond, timezone));
     }
 
     public DateTimeValue(String dateTime) throws XPathException {
@@ -196,17 +220,34 @@ public class DateTimeValue extends AbstractDateTimeValue {
 
     @Override
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
-        if (target == byte[].class) {
-            final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-            serialize(buf);
-            return (T) buf.array();
-        } else if (target == ByteBuffer.class) {
-            final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-            serialize(buf);
-            return (T) buf;
-        } else {
-            return super.toJavaObject(target);
+        Throwable throwable = null;
+        try {
+            if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+                serialize(buf);
+                return (T) buf;
+            } else {
+                return super.toJavaObject(target);
+            }
+        } catch (final IOException e) {
+            throwable = e;
         }
+        throw new XPathException(getExpression(), ErrorCodes.XPTY0004, "cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName(), throwable);
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * 13 bytes where: [0-3 (Year), 4 (Month), 5 (Day), 6 (Hour), 7 (Minute), 8 (Second), 9-10 (Milliseconds), 11-12 (Timezone)]
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
+        serialize(buf);
+        return buf.array();
     }
 
     /**
@@ -237,7 +278,27 @@ public class DateTimeValue extends AbstractDateTimeValue {
         ByteConversion.shortToByteH((short) (timezone == DatatypeConstants.FIELD_UNDEFINED ? Short.MAX_VALUE : timezone), buf);
     }
 
-    public static AtomicValue deserialize(final ByteBuffer buf) {
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the DateTimeValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the DateTimeValue.
+     */
+    public static AtomicValue deserialize(final @Nullable Expression expression, final ByteBuffer buf) throws XPathException {
+        return deserialize(expression, buf, DateTimeValue::new);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the DateTimeValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the DateTimeValue.
+     */
+    protected static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf, final BiFunctionE<Expression, XMLGregorianCalendar, AtomicValue, XPathException> cstr) throws XPathException {
         final int year = ByteConversion.byteToIntH(buf);
         final int month = buf.get();
         final int day = buf.get();
@@ -245,13 +306,14 @@ public class DateTimeValue extends AbstractDateTimeValue {
         final int minute = buf.get();
         final int second = buf.get();
 
-        final int ms = ByteConversion.byteToShortH(buf);
+        final int millisecond = ByteConversion.byteToShortH(buf);
 
         int timezone = ByteConversion.byteToShortH(buf);
         if (timezone == Short.MAX_VALUE) {
             timezone = DatatypeConstants.FIELD_UNDEFINED;
         }
 
-        return new DateTimeValue(year, month, day, hour, minute, second, ms, timezone);
+        final XMLGregorianCalendar xmlGregorianCalendar = TimeUtils.getInstance().newXMLGregorianCalendar(year, month, day, hour, minute, second, millisecond, timezone);
+        return cstr.apply(expression, xmlGregorianCalendar);
     }
 }

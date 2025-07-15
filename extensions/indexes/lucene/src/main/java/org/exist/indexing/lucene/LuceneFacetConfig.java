@@ -46,6 +46,7 @@
 package org.exist.indexing.lucene;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetField;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.numbering.NodeId;
@@ -69,6 +70,7 @@ import java.util.Map;
  * A facet has a dimension and content returned by an XQuery expression.
  *
  * @author Wolfgang Meier
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LuceneFacetConfig extends AbstractFieldConfig {
 
@@ -98,7 +100,7 @@ public class LuceneFacetConfig extends AbstractFieldConfig {
     }
 
     @Override
-    protected void processResult(final Sequence result, final Document luceneDoc) throws XPathException {
+    protected void processResult(final Sequence result, final Map<String, String> prefixToNamespaceMappings, final Document luceneDoc) throws XPathException {
         if (isHierarchical) {
             // hierarchical facets may be multi-valued, so if we receive an array,
             // create one hierarchical facet for each member
@@ -135,15 +137,16 @@ public class LuceneFacetConfig extends AbstractFieldConfig {
     }
 
     @Override
-    protected void processText(CharSequence text, Document luceneDoc) {
+    protected void processText(final NodeId nodeId, final CharSequence text, final Map<String, String> prefixToNamespaceMappings, final Document luceneDoc) {
         if (!text.isEmpty()) {
-            luceneDoc.add(new FacetField(dimension, text.toString()));
+            final Field field = new FacetField(dimension, text.toString());
+            luceneDoc.add(field);
         }
     }
 
-    public void build(DBBroker broker, DocumentImpl document, NodeId nodeId, Document luceneDoc, CharSequence text) {
+    public void build(final DBBroker broker, final DocumentImpl document, final NodeId nodeId, final Document luceneDoc, final CharSequence text, final Map<String, String> prefixToNamespaceMappings) {
         try {
-            doBuild(broker, document, nodeId, luceneDoc, text);
+            doBuild(broker, document, nodeId, luceneDoc, text, prefixToNamespaceMappings);
         } catch (PermissionDeniedException e) {
             LOG.warn("Permission denied while evaluating expression for facet '{}': {}", dimension, expression, e);
         } catch (XPathException e) {

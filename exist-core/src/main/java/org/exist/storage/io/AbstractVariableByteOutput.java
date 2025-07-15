@@ -21,6 +21,8 @@
 package org.exist.storage.io;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -118,6 +120,38 @@ public abstract class AbstractVariableByteOutput implements VariableByteOutput {
         write((byte) ((l >>> 16) & 0xff));
         write((byte) ((l >>> 8) & 0xff));
         write((byte) ((l >>> 0) & 0xff));
+    }
+
+    @Override
+    public void writeBigInteger(final BigInteger bi) throws IOException {
+        final byte[] data = bi.toByteArray();
+        writeInt(data.length);
+        write(data);
+    }
+
+    @Override
+    public void writeFixedBigInteger(final BigInteger bi) throws IOException {
+        final byte[] data = bi.toByteArray();
+        writeFixedInt(data.length);
+        write(data);
+    }
+
+    @Override
+    public void writeBigDecimal(final BigDecimal bd) throws IOException {
+        final byte[] data = bd.unscaledValue().toByteArray();
+        writeInt(bd.scale());
+        writeInt(bd.precision());
+        writeInt(data.length);
+        write(data);
+    }
+
+    @Override
+    public void writeFixedBigDecimal(final BigDecimal bd) throws IOException {
+        final byte[] data = bd.unscaledValue().toByteArray();
+        writeFixedInt(bd.scale());
+        writeFixedInt(bd.precision());
+        writeFixedInt(data.length);
+        write(data);
     }
 
     @Override

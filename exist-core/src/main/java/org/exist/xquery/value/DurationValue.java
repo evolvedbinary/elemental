@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,20 +46,28 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteBufferInput;
+import org.exist.storage.io.VariableByteBufferOutput;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.xquery.Constants;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.Duration;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.nio.ByteBuffer;
 
 /**
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DurationValue extends ComputableValue {
 
@@ -398,13 +430,23 @@ public class DurationValue extends ComputableValue {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T toJavaObject(Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(getClass())) {
-            return (T) this;
-        } else if (target.isAssignableFrom(Duration.class)) {
-            return (T) duration;
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(getClass())) {
+                return (T) this;
+            } else if (target.isAssignableFrom(Duration.class)) {
+                return (T) duration;
+            } else if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                return (T) ByteBuffer.wrap(serialize());
+            }
+        } catch (final IOException e) {
+            throwable = e;
         }
-        throw new XPathException(getExpression(), ErrorCodes.XPTY0004, "cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName());
+        throw new XPathException(getExpression(), ErrorCodes.XPTY0004, "cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName(), throwable);
     }
 
     public boolean effectiveBooleanValue() throws XPathException {
@@ -421,5 +463,99 @@ public class DurationValue extends ComputableValue {
             return duration.equals(((DurationValue) obj).duration);
         }
         return false;
+    }
+
+    /**
+     * Serializes to a byte array.
+     *
+     * Return value is formatted like:
+     *  byte[0] sign of the duration, -1, 0, or 1.
+     *  byte[...] VBE BigInteger encoded year
+     *  byte[...] VBE BigInteger encoded month
+     *  byte[...] VBE BigInteger encoded day
+     *  byte[...] VBE BigInteger encoded hour
+     *  byte[...] VBE BigInteger encoded minute
+     *  byte[...] VBE BigDecimal encoded seconds
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(37)) {
+
+            vbos.write((byte) duration.getSign());
+            serializeBigIntegerField(vbos, DatatypeConstants.YEARS);
+            serializeBigIntegerField(vbos, DatatypeConstants.MONTHS);
+            serializeBigIntegerField(vbos, DatatypeConstants.DAYS);
+            serializeBigIntegerField(vbos, DatatypeConstants.HOURS);
+            serializeBigIntegerField(vbos, DatatypeConstants.MINUTES);
+            serializeBigDecimalField(vbos, DatatypeConstants.SECONDS);
+
+            return vbos.toByteArray();
+        }
+    }
+
+    protected void serializeBigIntegerField(final VariableByteOutput vbo, final DatatypeConstants.Field field) throws IOException {
+        @Nullable BigInteger value = (BigInteger) duration.getField(field);
+        if (value == null) {
+            value = BigInteger.ZERO;
+        }
+        vbo.writeBigInteger(value);
+    }
+
+    protected void serializeBigDecimalField(final VariableByteOutput vbo, final DatatypeConstants.Field field) throws IOException {
+        @Nullable BigDecimal value = (BigDecimal) duration.getField(field);
+        if (value == null) {
+            value = BigDecimal.ZERO;
+        }
+        vbo.writeBigDecimal(value);
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * Return value is formatted like:
+     *  byte[0] sign of the duration, -1, 0, or 1.
+     *  byte[...] VBE BigInteger encoded year
+     *  byte[...] VBE BigInteger encoded month
+     *  byte[...] VBE BigInteger encoded day
+     *  byte[...] VBE BigInteger encoded hour
+     *  byte[...] VBE BigInteger encoded minute
+     *  byte[...] VBE BigDecimal encoded seconds
+     *
+     * @param buf the ByteBuffer to serialize to.
+     */
+    public void serialize(final ByteBuffer buf) throws IOException {
+        final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
+
+        vbb.write((byte) duration.getSign());
+        serializeBigIntegerField(vbb, DatatypeConstants.YEARS);
+        serializeBigIntegerField(vbb, DatatypeConstants.MONTHS);
+        serializeBigIntegerField(vbb, DatatypeConstants.DAYS);
+        serializeBigIntegerField(vbb, DatatypeConstants.HOURS);
+        serializeBigIntegerField(vbb, DatatypeConstants.MINUTES);
+        serializeBigDecimalField(vbb, DatatypeConstants.SECONDS);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the DurationValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the DurationValue.
+     */
+    public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
+        final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
+
+        final boolean isPositive = vbbi.read() != -1;
+        final BigInteger years = vbbi.readBigInteger();
+        final BigInteger months = vbbi.readBigInteger();
+        final BigInteger days = vbbi.readBigInteger();
+        final BigInteger hours = vbbi.readBigInteger();
+        final BigInteger minutes = vbbi.readBigInteger();
+        final BigDecimal seconds = vbbi.readBigDecimal();
+
+        final Duration duration = TimeUtils.getInstance().newDuration(isPositive, years,months, days, hours, minutes, seconds);
+        return new DurationValue(expression, duration);
     }
 }

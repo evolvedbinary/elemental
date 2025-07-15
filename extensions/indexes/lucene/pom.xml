@@ -202,7 +202,12 @@
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
+                                <exclude>src/main/**</exclude>
+                                <exclude>src/test/java/**</exclude>
+                                <exclude>src/test/resources/**</exclude>
+                                <exclude>src/test/resources-filtered/**</exclude>
+                                <exclude>src/test/xquery/lucene/*.xml</exclude>
+                                <exclude>src/test/xquery/lucene/*.xql</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -224,14 +229,21 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/main/java/org/exist/indexing/lucene/AbstractFieldConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/AbstractTextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/AnalyzerConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/DefaultTextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/FieldType.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneFacetConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/TextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/Field.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/LuceneModule.java</include>
                             </includes>
                         </licenseSet>
 
@@ -244,15 +256,23 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/xquery/lucene/fields.xqm</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/AbstractFieldConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/AbstractTextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/AnalyzerConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/DefaultTextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/FieldType.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneFacetConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/Field.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/LuceneModule.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

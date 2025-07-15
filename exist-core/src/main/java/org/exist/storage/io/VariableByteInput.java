@@ -46,6 +46,8 @@
 package org.exist.storage.io;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * Interface for reading variable byte encoded values.
@@ -146,6 +148,42 @@ public interface VariableByteInput {
      * @return the long.
      */
     long readFixedLong() throws IOException;
+
+    /**
+     * Read a big integer in variable byte encoding.
+     *
+     * @throws IOException in case of an I/O error
+     *
+     * @return the big integer read
+     */
+    BigInteger readBigInteger() throws IOException;
+
+    /**
+     * Read a fixed size big integer from input.
+     *
+     * @throws IOException in case of an I/O error
+     *
+     * @return the big integer read
+     */
+    BigInteger readFixedBigInteger() throws IOException;
+
+    /**
+     * Read a big decimal in variable byte encoding.
+     *
+     * @throws IOException in case of an I/O error
+     *
+     * @return the big decimal read
+     */
+    BigDecimal readBigDecimal() throws IOException;
+
+    /**
+     * Read a fixed size big decimal from input.
+     *
+     * @throws IOException in case of an I/O error
+     *
+     * @return the big decimal read
+     */
+    BigDecimal readFixedBigDecimal() throws IOException;
 
     /**
      * Read a string as UTF-8 encoded bytes from the input.

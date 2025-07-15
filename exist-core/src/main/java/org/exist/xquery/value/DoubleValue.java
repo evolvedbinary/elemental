@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,6 +60,10 @@ import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.util.function.IntSupplier;
 
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class DoubleValue extends NumericValue {
 
     public static final int SERIALIZED_SIZE = 8;
@@ -74,12 +102,24 @@ public class DoubleValue extends NumericValue {
     public DoubleValue(final Expression expression, final String stringValue) throws XPathException {
         super(expression);
         try {
-            value = switch (stringValue) {
-                case "INF" -> Double.POSITIVE_INFINITY;
-                case "-INF" -> Double.NEGATIVE_INFINITY;
-                case "NaN" -> Double.NaN;
-                default -> Double.parseDouble(stringValue);
-            };
+            switch (stringValue) {
+                case "INF":
+                    this.value = Double.POSITIVE_INFINITY;
+                    break;
+
+                case "-INF":
+                    this.value = Double.NEGATIVE_INFINITY;
+                    break;
+
+                case "NaN":
+                    this.value = Double.NaN;
+                    break;
+
+                default:
+                    this.value = Double.parseDouble(stringValue);
+                    break;
+
+            }
         } catch (final NumberFormatException e) {
             throw new XPathException(getExpression(), ErrorCodes.FORG0001,
                     "Cannot construct " + Type.getTypeName(getItemType()) + " from '" + stringValue + "'");
@@ -506,9 +546,9 @@ public class DoubleValue extends NumericValue {
         ByteConversion.longToByte(dBits, buf);
     }
 
-    public static AtomicValue deserialize(final ByteBuffer buf) {
+    public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) {
         final long bits = ByteConversion.byteToLong(buf) ^ 0x8000000000000000L;
         final double d = Double.longBitsToDouble(bits);
-        return new DoubleValue(d);
+        return new DoubleValue(expression, d);
     }
 }
