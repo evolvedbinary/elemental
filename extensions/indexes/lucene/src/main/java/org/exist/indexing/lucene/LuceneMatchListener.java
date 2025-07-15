@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -45,6 +69,7 @@ import org.exist.storage.NodePath2;
 import org.exist.util.serializer.AttrList;
 import org.xml.sax.SAXException;
 
+import javax.annotation.Nullable;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
@@ -56,6 +81,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeSource.State;
 
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class LuceneMatchListener extends AbstractMatchListener {
 
     private static final Logger LOG = LogManager.getLogger(LuceneMatchListener.class);
@@ -174,10 +203,11 @@ public class LuceneMatchListener extends AbstractMatchListener {
         // Collect the text content of all descendants of p. 
         // Remember the start offsets of the text nodes for later use.
         final NodePath path = getPath(p);
-        final LuceneIndexConfig idxConf = config.getConfig(path).next();
-
-        final TextExtractor extractor = new DefaultTextExtractor();
-        extractor.configure(config, idxConf);
+        @Nullable final LuceneIndexConfig idxConf = config.getConfig(path).next();
+        if(idxConf == null) {
+            return;  // there is no index config so there can not be any matches
+        }
+        final TextExtractor extractor = new DefaultTextExtractor(config, idxConf, null);
 
         final OffsetList offsets = new OffsetList();
         int level = 0;

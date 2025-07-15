@@ -80,6 +80,9 @@ import org.exist.xquery.TerminatedException;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -2364,6 +2367,48 @@ public class BFile extends BTree {
                 shift -= 8;
             }
             return r;
+        }
+
+        @Override
+        public BigInteger readBigInteger() throws IOException {
+            final int dataLength = readInt();
+            final byte[] data = new byte[dataLength];
+            read(data);
+
+            return new BigInteger(data);
+        }
+
+        @Override
+        public BigInteger readFixedBigInteger() throws IOException {
+            final int dataLength = readFixedInt();
+            final byte[] data = new byte[dataLength];
+            read(data);
+
+            return new BigInteger(data);
+        }
+
+        @Override
+        public BigDecimal readBigDecimal() throws IOException {
+            final int scale = readInt();
+            final int precision = readInt();
+            final int dataLength = readInt();
+            final byte[] data = new byte[dataLength];
+            read(data);
+
+            final MathContext mathContext = new java.math.MathContext(precision);
+            return new BigDecimal(new BigInteger(data), scale, mathContext);
+        }
+
+        @Override
+        public BigDecimal readFixedBigDecimal() throws IOException {
+            final int scale = readFixedInt();
+            final int precision = readFixedInt();
+            final int dataLength = readFixedInt();
+            final byte[] data = new byte[dataLength];
+            read(data);
+
+            final MathContext mathContext = new java.math.MathContext(precision);
+            return new BigDecimal(new BigInteger(data), scale, mathContext);
         }
 
         @Override

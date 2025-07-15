@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,16 +50,19 @@ import org.exist.storage.ElementValue;
 import org.exist.util.XMLNames;
 import org.exist.xquery.Constants;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.exist.dom.QName.Validity.*;
+import static org.exist.util.StringUtil.isNullOrEmpty;
 
 /**
  * Represents a QName, consisting of a local name, a namespace URI and a prefix.
  *
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class QName implements Comparable<QName> {
 
@@ -136,7 +163,18 @@ public class QName implements Comparable<QName> {
      * @return the string representation of this qualified name.
      * */
     public String getStringValue() {
-        return getStringRepresentation(false);
+        return getStringRepresentation(false, false);
+    }
+
+    /**
+     * Get an extended string representation of this qualified name.
+     *
+     * Will be of the format `local-name`, `{namespace}local-name`, or `{namespace}prefix:local-name`.
+     *
+     * @return the string representation of this qualified name.
+     */
+    public String getExtendedStringValue() {
+        return getStringRepresentation(false, true);
     }
 
     /**
@@ -148,23 +186,32 @@ public class QName implements Comparable<QName> {
      */
     @Override
     public String toString() {
-        return getStringRepresentation(true);
+        return getStringRepresentation(true, false);
     }
 
     /**
      * Get a string representation of this qualified name.
      *
      * @param showNsWithoutPrefix true if the namespace should be shown even when there is no prefix, false otherwise.
-     *         When shown, it will be output using Clark notation, e.g. `{http://namespace}local-name`.
+     *         When shown, it will be output using Clark notation, e.g. `{namespace}local-name`.
+     *
+     * @param extended true if the namespace and prefix should be shown, requires showNsWithoutPrefix == false.
      *
      * @return the string representation of this qualified name.
      */
-    private String getStringRepresentation(final boolean showNsWithoutPrefix) {
+    private String getStringRepresentation(final boolean showNsWithoutPrefix, final boolean extended) {
         if (prefix != null && !prefix.isEmpty()) {
-            return prefix + COLON + localPart;
-        } else if (showNsWithoutPrefix && namespaceURI != null && !XMLConstants.NULL_NS_URI.equals(namespaceURI)) {
+            if (extended) {
+                return LEFT_BRACE + namespaceURI + RIGHT_BRACE + prefix + COLON + localPart;
+            } else {
+                return prefix + COLON + localPart;
+            }
+        }
+
+        if (showNsWithoutPrefix && namespaceURI != null && !XMLConstants.NULL_NS_URI.equals(namespaceURI)) {
             return LEFT_BRACE + namespaceURI + RIGHT_BRACE + localPart;
         }
+
         return localPart;
     }
 
@@ -342,6 +389,52 @@ public class QName implements Comparable<QName> {
 
     private final static Pattern ptnClarkNotation = Pattern.compile("\\{([^&{}]*)\\}([^&{}:]+)");
     private final static Pattern ptnEqNameNotation = Pattern.compile("Q" + ptnClarkNotation);
+
+    /**
+     * Extract a QName from a namespace and qualified name string.
+     *
+     * @param extendedStringValue a string representation as produced by {@link #getExtendedStringValue()}, i.e.: `local-name`, `{namespace}local-name`, or `{namespace}prefix:local-name`.
+     * @return The QName
+     * @throws IllegalQNameException if the qname component is invalid
+     */
+    public static QName parse(String extendedStringValue) throws IllegalQNameException {
+        if (isNullOrEmpty(extendedStringValue)) {
+            throw new IllegalQNameException(ILLEGAL_FORMAT.val, "Illegal extended string QName is empty");
+        }
+
+        final String namespaceUri;
+        if (extendedStringValue.charAt(0) == LEFT_BRACE) {
+            final int idxNsEnd = extendedStringValue.indexOf(RIGHT_BRACE);
+            if (idxNsEnd == Constants.STRING_NOT_FOUND) {
+                throw new IllegalQNameException(ILLEGAL_FORMAT.val, "Illegal extended string QName, missing right brace: '" + extendedStringValue + "'");
+            }
+            namespaceUri = extendedStringValue.substring(1, idxNsEnd);
+            extendedStringValue = extendedStringValue.substring(idxNsEnd + 1);
+        } else if (extendedStringValue.indexOf(RIGHT_BRACE) != Constants.STRING_NOT_FOUND) {
+            throw new IllegalQNameException(ILLEGAL_FORMAT.val, "Illegal extended string QName, missing left brace: '" + extendedStringValue + "'");
+        } else {
+            namespaceUri = XMLConstants.NULL_NS_URI;
+        }
+
+        @Nullable final String prefix;
+        final int idxColon = extendedStringValue.indexOf(COLON);
+        if (idxColon == Constants.STRING_NOT_FOUND) {
+            prefix = null;
+        } else {
+            prefix = extendedStringValue.substring(0, idxColon);
+            if (!XMLNames.isNCName(prefix)) {
+                throw new IllegalQNameException(INVALID_PREFIX.val, "Illegal extended string QName, invalid prefix: '" + extendedStringValue + "'");
+            }
+            extendedStringValue = extendedStringValue.substring(idxColon + 1);
+        }
+
+        final String localPart = extendedStringValue;
+        if (!XMLNames.isNCName(localPart)) {
+            throw new IllegalQNameException(INVALID_LOCAL_PART.val, "Illegal extended string QName, invalid prefix: '" + extendedStringValue + "'");
+        }
+
+        return new QName(localPart, namespaceUri, prefix);
+    }
 
     /**
      * Parses the given string into a QName. The method uses context to look up

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,6 +50,7 @@ import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
@@ -35,6 +60,7 @@ import java.util.GregorianCalendar;
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DateValue extends AbstractDateTimeValue {
 
@@ -71,8 +97,8 @@ public class DateValue extends AbstractDateTimeValue {
         super(expression, stripCalendar(cloneXMLGregorianCalendar(calendar)));
     }
 
-    public DateValue(final int year, final int month, final int day, final int timezone) {
-        super(TimeUtils.getInstance().newXMLGregorianCalendarDate(year, month, day, timezone));
+    public DateValue(@Nullable final Expression expression, final int year, final int month, final int day, final int timezone) {
+        super(expression, TimeUtils.getInstance().newXMLGregorianCalendarDate(year, month, day, timezone));
     }
     
     private static XMLGregorianCalendar stripCalendar(XMLGregorianCalendar calendar) {
@@ -144,6 +170,7 @@ public class DateValue extends AbstractDateTimeValue {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
         if (target == byte[].class) {
             final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
@@ -153,6 +180,8 @@ public class DateValue extends AbstractDateTimeValue {
             final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
             serialize(buf);
             return (T) buf;
+        } else if (target == Long.class || target == long.class) {
+            return (T) Long.valueOf(serializeToLong());
         } else {
             return super.toJavaObject(target);
         }
@@ -176,7 +205,7 @@ public class DateValue extends AbstractDateTimeValue {
         ByteConversion.shortToByteH((short) (timezone == DatatypeConstants.FIELD_UNDEFINED ? Short.MAX_VALUE : timezone), buf);
     }
 
-    public static AtomicValue deserialize(final ByteBuffer buf) {
+    public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) {
         final int year = ByteConversion.byteToIntH(buf);
         final int month = buf.get();
         final int day = buf.get();
@@ -186,6 +215,53 @@ public class DateValue extends AbstractDateTimeValue {
             timezone = DatatypeConstants.FIELD_UNDEFINED;
         }
 
-        return new DateValue(year, month, day, timezone);
+        return new DateValue(expression, year, month, day, timezone);
+    }
+
+    /**
+     * Bit-packs a DateValue into a long (64 bits)
+     *
+     * @return the long value
+     */
+    public long serializeToLong() {
+        final int year = calendar.getYear();
+        final int month = calendar.getMonth();
+        final int day = calendar.getDay();
+        int timezone = calendar.getTimezone();
+
+        // values for timezone range from -14*60 to 14*60, so we can use a short, but
+        // need to choose a different value for FIELD_UNDEFINED, which is not the same as 0 (= UTC)
+        if (timezone == DatatypeConstants.FIELD_UNDEFINED) {
+            timezone = Short.MAX_VALUE;
+        }
+
+        return ((long) year & 0xFFFFFFFFL) << 32
+            | ((long) month & 0xFFL) << 24
+            | ((long) day & 0xFFL) << 16
+            | ((long) timezone & 0xFFFFL);
+    }
+
+    /**
+     * Deserializes a DateValue that has been bit-packed into a long (64 bits)
+     *
+     * @return the DateValue
+     */
+    public static DateValue deserialize(@Nullable final Expression expression, final long l) {
+        final int year = (int) (l >>> 32);
+        final int month = (int) ((l >>> 24) & 0xFFL);
+        final int day = (int) ((l >>> 16) & 0xFFL);
+        int timezone = (int) (l & 0xFFFFL);
+        // manual sign extension as timezone can be negative
+        timezone = (timezone >= 0x8000)
+            ? (short)(timezone - 0x10000)
+            : (short) timezone;
+
+        // values for timezone range from -14*60 to 14*60, so we can use a short, but
+        // need to choose a different value for FIELD_UNDEFINED, which is not the same as 0 (= UTC)
+        if (timezone == Short.MAX_VALUE) {
+            timezone = DatatypeConstants.FIELD_UNDEFINED;
+        }
+
+        return new DateValue(expression, year, month, day, timezone);
     }
 }

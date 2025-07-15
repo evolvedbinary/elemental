@@ -26,6 +26,8 @@ import org.exist.util.FixedByteArray;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * A byte array output stream using VBE (Variable Byte Encoding).
@@ -133,6 +135,26 @@ public class VariableByteArrayOutputStream extends OutputStream implements Varia
     @Override
     public void writeFixedLong(final long l) throws IOException {
         vbfo.writeFixedLong(l);
+    }
+
+    @Override
+    public void writeBigInteger(final BigInteger bi) throws IOException {
+        vbfo.writeBigInteger(bi);
+    }
+
+    @Override
+    public void writeFixedBigInteger(final BigInteger bi) throws IOException {
+        vbfo.writeFixedBigInteger(bi);
+    }
+
+    @Override
+    public void writeBigDecimal(final BigDecimal bd) throws IOException {
+        vbfo.writeBigDecimal(bd);
+    }
+
+    @Override
+    public void writeFixedBigDecimal(final BigDecimal bd) throws IOException {
+        vbfo.writeFixedBigDecimal(bd);
     }
 
     @Override

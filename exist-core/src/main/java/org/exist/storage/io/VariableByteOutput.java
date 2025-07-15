@@ -21,6 +21,8 @@
 package org.exist.storage.io;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * Interface for writing variable byte encoded values.
@@ -139,6 +141,54 @@ public interface VariableByteOutput {
      * @param l the long to write.
      */
     void writeFixedLong(final long l) throws IOException;
+
+    /**
+     * Writes a VBE BigInteger to the output.
+     *
+     * The BigInteger will be written as:
+     *  VBE int - data length
+     *  byte[] - data
+     *
+     * @param bi the big integer to write
+     */
+    void writeBigInteger(final BigInteger bi) throws IOException;
+
+    /**
+     * Writes a BigInteger to the output.
+     *
+     * The BigInteger will be written as:
+     *  int - data length
+     *  byte[] - data
+     *
+     * @param bi the big integer to write
+     */
+    void writeFixedBigInteger(final BigInteger bi) throws IOException;
+
+    /**
+     * Writes a VBE BigDecimal to the output.
+     *
+     * The BigInteger will be written as:
+     *  VBE int - scale
+     *  VBE int - precision
+     *  VBE int - data length
+     *  byte[] - data
+     *
+     * @param bd the big decimal to write.
+     */
+    void writeBigDecimal(final BigDecimal bd) throws IOException;
+
+    /**
+     * Writes a BigDecimal to the output.
+     *
+     * The BigInteger will be written as:
+     *  int - scale
+     *  int - precision
+     *  int - data length
+     *  byte[] - data
+     *
+     * @param bd the big decimal to write.
+     */
+    void writeFixedBigDecimal(final BigDecimal bd) throws IOException;
 
     /**
      * Write a string as UTF-8 encoded bytes to the output.
