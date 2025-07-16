@@ -102,13 +102,13 @@
         <lz4-java.version>1.8.0</lz4-java.version>
         <jdom1.version>1.1.3</jdom1.version>
         <jetty.version>11.0.25</jetty.version>
-        <log4j.version>2.24.3</log4j.version>
+        <log4j.version>2.25.1</log4j.version>
         <lucene.version>4.10.4</lucene.version>
         <nekohtml.version>2.1.3</nekohtml.version>
         <saxon.version>9.9.1-8</saxon.version>
         <xerces.version>2.12.2.2</xerces.version>
-        <xmlresolver.version>6.0.17</xmlresolver.version>
-        <xmlunit.version>2.10.2</xmlunit.version>
+        <xmlresolver.version>6.0.19</xmlresolver.version>
+        <xmlunit.version>2.10.3</xmlunit.version>
         <junit.version>4.13.2</junit.version>
         <easymock.version>5.6.0</easymock.version>
         <assertj.version>3.27.3</assertj.version>
@@ -162,7 +162,7 @@
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
-                <version>3.2.0</version>
+                <version>3.2.2</version>
             </dependency>
 
             <dependency>
@@ -430,7 +430,7 @@
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.17.5</version>
+                <version>1.17.6</version>
             </dependency>
 
             <dependency>
@@ -442,7 +442,7 @@
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
-                <version>8.5.15</version>
+                <version>8.5.16</version>
             </dependency>
 
             <dependency>
@@ -565,7 +565,7 @@
                 <plugin>
                     <groupId>software.xdev</groupId>
                     <artifactId>find-and-replace-maven-plugin</artifactId>
-                    <version>1.0.3</version>
+                    <version>1.0.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.omnifaces</groupId>
