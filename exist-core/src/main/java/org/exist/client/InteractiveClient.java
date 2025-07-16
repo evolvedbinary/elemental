@@ -2494,12 +2494,6 @@ public class InteractiveClient {
         builder.append(Calendar.getInstance().get(Calendar.YEAR));
         builder.append(" Evolved Binary Ltd");
         builder.append(EOL);
-        builder.append("Elemental comes with ABSOLUTELY NO WARRANTY.");
-        builder.append(EOL);
-        builder.append("This is free software, and you are welcome to redistribute it");
-        builder.append(EOL);
-        builder.append("under certain conditions; for details read the license file.");
-        builder.append(EOL);
         return builder.toString();
     }
 
