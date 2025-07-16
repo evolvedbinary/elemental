@@ -111,6 +111,7 @@
             </Policies>
             <DefaultRolloverStrategy max="${rollover.max}"/>
             <PatternLayout pattern="${elemental.file.pattern}"/>
+        </RollingRandomAccessFile>
         
         <RollingRandomAccessFile name="elemental.restxq" filePattern="${logs}/restxq.${rollover.file.pattern}.log.gz" fileName="${logs}/restxq.log">
             <Policies>
