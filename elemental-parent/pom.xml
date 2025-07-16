@@ -95,8 +95,8 @@
         <sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
 
         <!-- Dependencies -->
-        <junit.platform.version>1.13.0</junit.platform.version>
-        <junit.jupiter.version>5.13.0</junit.jupiter.version>
+        <junit.platform.version>1.13.3</junit.platform.version>
+        <junit.jupiter.version>5.13.3</junit.jupiter.version>
         <objenesis.version>3.4</objenesis.version>
         <jaxb.api.version>3.0.1</jaxb.api.version>
         <jaxb.impl.version>3.0.2</jaxb.impl.version>
@@ -314,14 +314,13 @@
                     <configuration>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <tagNameFormat>elemental-@{project.version}</tagNameFormat>
-                        <useReleaseProfile>true</useReleaseProfile>
                         <releaseProfiles>elemental-release</releaseProfiles>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.sonatype.central</groupId>
                     <artifactId>central-publishing-maven-plugin</artifactId>
-                    <version>0.7.0</version>
+                    <version>0.8.0</version>
                     <extensions>true</extensions>
                 </plugin>
                 <plugin>
@@ -335,7 +334,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>3.2.7</version>
+                    <version>3.2.8</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
