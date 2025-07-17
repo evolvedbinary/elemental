@@ -915,12 +915,12 @@ public class XQueryTest {
         result = service.query(query);
         assertEquals("XQuery: " + query,
                 "<result xmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n" +
-                "    <rdf:Description xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" id=\"3\">\n" +
+                "    <Description id=\"3\">\n" +
                 "        <dc:title xmlns:dc=\"http://purl.org/dc/elements/1.1/\">title</dc:title>\n" +
                 "        <dc:creator xmlns:dc=\"http://purl.org/dc/elements/1.1/\">creator</dc:creator>\n" +
                 "        <x:place xmlns:x=\"http://exist.sourceforge.net/dc-ext\">place</x:place>\n" +
                 "        <x:edition xmlns:x=\"http://exist.sourceforge.net/dc-ext\">place</x:edition>\n" +
-                "    </rdf:Description>\n" +
+                "    </Description>\n" +
                 "</result>",
                 result.getResource(0).getContent());
 
