@@ -1,4 +1,28 @@
 (:
+ : Elemental
+ : Copyright (C) 2024, Evolved Binary Ltd
+ :
+ : admin@evolvedbinary.com
+ : https://www.evolvedbinary.com | https://www.elemental.xyz
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; version 2.1.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :
+ : NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ :       The original license header is included below.
+ :
+ : =====================================================================
+ :
  : eXist-db Open Source Native XML Database
  : Copyright (C) 2001 The eXist-db Authors
  :
@@ -21,9 +45,9 @@
  :)
 xquery version "3.1";
 
-module namespace xtj="http://exist-db.org/xquery/test/xml-to-json";
+module namespace xtj = "http://exist-db.org/xquery/test/xml-to-json";
 
-declare namespace test="http://exist-db.org/xquery/xqsuite";
+declare namespace test = "http://exist-db.org/xquery/xqsuite";
 
 declare
     %test:assertEmpty
@@ -34,11 +58,31 @@ function xtj:xml-to-json-empty-sequence() {
 
 declare
     %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', ' ')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-null-no-ns($arg1) {
+    let $node := <null>{$arg1}</null>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
     %test:assertEquals('null')
     %test:arg('arg1', ' ')
     %test:assertError('FOJS0006')
-function xtj:xml-to-json-null($arg1) {
-    let $node := <null>{$arg1}</null>
+function xtj:xml-to-json-null-fn-ns($arg1) {
+    let $node := <fn:null>{$arg1}</fn:null>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1','0')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1','1')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-boolean-no-ns($arg1) {
+    let $node := <boolean>{$arg1}</boolean>
     return fn:xml-to-json($node)
 };
 
@@ -49,9 +93,23 @@ declare
     %test:assertEquals('false')
     %test:arg('arg1','1')
     %test:assertEquals('true')
-function xtj:xml-to-json-boolean($arg1) {
-    let $node := <boolean>{$arg1}</boolean>
+function xtj:xml-to-json-boolean-fn-ns($arg1) {
+    let $node := <fn:boolean>{$arg1}</fn:boolean>
     return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', '0')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', '1')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', '-1')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-number-no-ns($arg1) {
+    let $node := <number>{$arg1}</number>
+    return lower-case(fn:xml-to-json($node))
 };
 
 declare
@@ -75,9 +133,23 @@ declare
     %test:assertEquals('3.1415')
     %test:arg('arg1', '31.415e-1')
     %test:assertEquals('3.1415')
-function xtj:xml-to-json-number($arg1) {
-    let $node := <number>{$arg1}</number>
+function xtj:xml-to-json-number-fn-ns($arg1) {
+    let $node := <fn:number>{$arg1}</fn:number>
     return lower-case(fn:xml-to-json($node))
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', ' ')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', 'a')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', 'ab')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-string-unescaped-no-ns($arg1) {
+    let $node := <string>{$arg1}</string>
+    return fn:xml-to-json($node)
 };
 
 declare
@@ -101,8 +173,22 @@ declare
     %test:arg('arg1', '&#127;')
     %test:assertEquals('"\u007F"')
 :)
-function xtj:xml-to-json-string-unescaped($arg1) {
-    let $node := <string>{$arg1}</string>
+function xtj:xml-to-json-string-unescaped-fn-ns($arg1) {
+    let $node := <fn:string>{$arg1}</fn:string>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', ' ')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', 'a')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', 'ab')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-string-escaped-no-ns($arg1) {
+    let $node := <string escaped="true">{$arg1}</string>
     return fn:xml-to-json($node)
 };
 
@@ -133,76 +219,148 @@ declare
     %test:arg('arg1', '""')
     %test:assertEquals('"\"\""')
 :)
-function xtj:xml-to-json-string-escaped($arg1) {
-    let $node := <string escaped="true">{$arg1}</string>
-    return fn:xml-to-json($node)
-};
-
-declare
-    %test:arg('arg1', '')
-    %test:assertEquals('[]')
-    %test:arg('arg1', ' ')
-    %test:assertEquals('[]')
-function xtj:xml-to-json-array($arg1) {
-    let $node := <array>{$arg1}</array>
-    return fn:xml-to-json($node)
-};
-
-declare
-    %test:arg('arg1', '')
-    %test:assertEquals('[null]')
-function xtj:xml-to-json-array-1-element($arg1) {
-    let $node := <array><null>{$arg1}</null></array>
-    return fn:xml-to-json($node)
-};
-
-declare
-    %test:arg('arg1', '')
-    %test:assertEquals('[null,null]')
-function xtj:xml-to-json-array-2-elements($arg1) {
-    let $node := <array><null>{$arg1}</null><null>{$arg1}</null></array>
-    return fn:xml-to-json($node)
-};
-
-declare
-    %test:arg('arg1', '')
-    %test:assertEquals('[null,null,null]')
-function xtj:xml-to-json-array-3-elements($arg1) {
-    let $node := <array><null>{$arg1}</null><null>{$arg1}</null><null>{$arg1}</null></array>
-    return fn:xml-to-json($node)
-};
-
-declare
-    %test:arg('arg1', '')
-    %test:assertEquals('{}')
-    %test:arg('arg1', ' ')
-    %test:assertEquals('{}')
-function xtj:xml-to-json-map-empty($arg1) {
-    let $node := <map>{$arg1}</map>
-    return fn:xml-to-json($node)
-};
-
-declare
-    %test:arg('arg1', '')
-    %test:assertEquals('{"":null}')
-function xtj:xml-to-json-map-emptyKey-element($arg1) {
-    let $node := <map><null key="">{$arg1}</null></map>
+function xtj:xml-to-json-string-escaped-fn-ns($arg1) {
+    let $node := <fn:string escaped="true">{$arg1}</fn:string>
     return fn:xml-to-json($node)
 };
 
 declare
     %test:arg('arg1', '')
     %test:assertError('FOJS0006')
-function xtj:xml-to-json-map-nokey-element($arg1) {
-    let $node := <map><null>{$arg1}</null></map>
+    %test:arg('arg1', ' ')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-array-no-ns($arg1) {
+    let $node := <array>{$arg1}</array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertEquals('[]')
+    %test:arg('arg1', ' ')
+    %test:assertEquals('[]')
+function xtj:xml-to-json-array-fn-ns($arg1) {
+    let $node := <fn:array>{$arg1}</fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-array-1-element-no-ns($arg1) {
+    let $node := <fn:array><null>{$arg1}</null></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertEquals('[null]')
+function xtj:xml-to-json-array-1-element-fn-ns($arg1) {
+    let $node := <fn:array><fn:null>{$arg1}</fn:null></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-array-2-elements-no-ns($arg1) {
+    let $node := <fn:array><fn:null>{$arg1}</fn:null><null>{$arg1}</null></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertEquals('[null,null]')
+function xtj:xml-to-json-array-2-elements-fn-ns($arg1) {
+    let $node := <fn:array><fn:null>{$arg1}</fn:null><fn:null>{$arg1}</fn:null></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertEquals('[null,null,null]')
+function xtj:xml-to-json-array-3-elements-fn-ns($arg1) {
+    let $node := <fn:array><fn:null>{$arg1}</fn:null><fn:null>{$arg1}</fn:null><fn:null>{$arg1}</fn:null></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', ' ')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-empty-no-ns($arg1) {
+    let $node := <map>{$arg1}</map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertEquals('{}')
+    %test:arg('arg1', ' ')
+    %test:assertEquals('{}')
+function xtj:xml-to-json-map-empty-fn-ns($arg1) {
+    let $node := <fn:map>{$arg1}</fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-emptyKey-element-no-ns($arg1) {
+    let $node := <fn:map><null key="">{$arg1}</null></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertEquals('{"":null}')
+function xtj:xml-to-json-map-emptyKey-element-fn-ns($arg1) {
+    let $node := <fn:map><fn:null key="">{$arg1}</fn:null></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-nokey-element-no-ns($arg1) {
+    let $node := <fn:map><null>{$arg1}</null></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-nokey-element-fn-ns($arg1) {
+    let $node := <fn:map><fn:null>{$arg1}</fn:null></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-key-nullElement-no-ns($arg1) {
+    let $node := <fn:map><null key="key1">{$arg1}</null></fn:map>
     return fn:xml-to-json($node)
 };
 
 declare
     %test:arg('arg1', '')
     %test:assertEquals('{"key1":null}')
-function xtj:xml-to-json-map-key-nullElement($arg1) {
-    let $node := <map><null key="key1">{$arg1}</null></map>
+function xtj:xml-to-json-map-key-nullElement-fn-ns($arg1) {
+    let $node := <fn:map><fn:null key="key1">{$arg1}</fn:null></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', 'ke\y1')
+    %test:arg('arg2', 'false')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', 'ke\y1')
+    %test:arg('arg2', 'true')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-escapedKey-element-no-ns($arg1, $arg2) {
+    let $node := <fn:map><null key="{$arg1}" escaped-key="{$arg2}"></null></fn:map>
     return fn:xml-to-json($node)
 };
 
@@ -219,8 +377,18 @@ declare
     %test:arg('arg1', 'ke\y1')
     %test:arg('arg2', 'true')
     %test:assertError('FOJS0007')
-function xtj:xml-to-json-map-escapedKey-element($arg1, $arg2) {
-    let $node := <map><null key="{$arg1}" escaped-key="{$arg2}"></null></map>
+function xtj:xml-to-json-map-escapedKey-element-fn-ns($arg1, $arg2) {
+    let $node := <fn:map><fn:null key="{$arg1}" escaped-key="{$arg2}"></fn:null></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '0')
+    %test:assertError('FOJS0006')
+    %test:arg('arg1', '1')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-key-element-no-ns($arg1) {
+    let $node := <map><boolean key="key1">{$arg1}</boolean></map>
     return fn:xml-to-json($node)
 };
 
@@ -229,8 +397,8 @@ declare
     %test:assertEquals('{"key1":false}')
     %test:arg('arg1', '1')
     %test:assertEquals('{"key1":true}')
-function xtj:xml-to-json-map-key-element($arg1) {
-    let $node := <map><boolean key="key1">{$arg1}</boolean></map>
+function xtj:xml-to-json-map-key-element-fn-ns($arg1) {
+    let $node := <fn:map><fn:boolean key="key1">{$arg1}</fn:boolean></fn:map>
     return fn:xml-to-json($node)
 };
 
@@ -250,8 +418,8 @@ declare
     %test:arg('arg3', 'key1')
     %test:arg('arg4', '1')
     %test:assertError('FOJS0006')
-function xtj:xml-to-json-map-multipleKeys-multipleElements($arg1, $arg2, $arg3, $arg4) {
-    let $node := <map><boolean key="{$arg1}">{$arg2}</boolean><boolean key="{$arg3}">{$arg4}</boolean></map>
+function xtj:xml-to-json-map-multipleKeys-multipleElements-fn-ns($arg1, $arg2, $arg3, $arg4) {
+    let $node := <fn:map><fn:boolean key="{$arg1}">{$arg2}</fn:boolean><fn:boolean key="{$arg3}">{$arg4}</fn:boolean></fn:map>
     let $rc := fn:xml-to-json($node)
     return
         if (compare($rc, concat('{"', $arg1, '":false,"', $arg3, '":true}')) = 0) then (
@@ -265,46 +433,86 @@ function xtj:xml-to-json-map-multipleKeys-multipleElements($arg1, $arg2, $arg3, 
 
 declare
     %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-array-array-no-ns($arg1) {
+    let $node := <fn:array><array>{$arg1}</array></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
     %test:assertEquals('[[]]')
-function xtj:xml-to-json-array-array($arg1) {
-    let $node := <array><array>{$arg1}</array></array>
+function xtj:xml-to-json-array-array-fn-ns($arg1) {
+    let $node := <fn:array><fn:array>{$arg1}</fn:array></fn:array>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-array-map-no-ns($arg1) {
+    let $node := <fn:array><map>{$arg1}</map></fn:array>
     return fn:xml-to-json($node)
 };
 
 declare
     %test:arg('arg1', '')
     %test:assertEquals('[{}]')
-function xtj:xml-to-json-array-map($arg1) {
-    let $node := <array><map>{$arg1}</map></array>
+function xtj:xml-to-json-array-map-fn-ns($arg1) {
+    let $node := <fn:array><fn:map>{$arg1}</fn:map></fn:array>
+    return fn:xml-to-json($node)
+};
+
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-map-emptyKey-array-no-ns($arg1) {
+    let $node := <fn:map><array key="">{$arg1}</array></fn:map>
     return fn:xml-to-json($node)
 };
 
 declare
     %test:arg('arg1', '')
     %test:assertEquals('{"":[]}')
-function xtj:xml-to-json-map-emptyKey-array($arg1) {
-    let $node := <map><array key="">{$arg1}</array></map>
+function xtj:xml-to-json-map-emptyKey-array-fn-ns($arg1) {
+    let $node := <fn:map><fn:array key="">{$arg1}</fn:array></fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:arg('arg1', '')
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-toplevelElementKey-no-ns($arg1) {
+    let $node := <null key="key1"/>
     return fn:xml-to-json($node)
 };
 
 declare
     %test:arg('arg1', '')
     %test:assertEquals('null')
-function xtj:xml-to-json-toplevelElementKey($arg1) {
-    let $node := <null key="key1"/>
+function xtj:xml-to-json-toplevelElementKey-fn-ns($arg1) {
+    let $node := <fn:null key="key1"/>
     return fn:xml-to-json($node)
 };
 
 declare
-    %test:assertEquals('"<test> \\ </test>"')
-function xtj:xml-to-json-xmlInJsonString() {
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-xmlInJsonString-no-ns() {
     let $node := <string>&lt;test&gt; \ &lt;/test&gt;</string>
     return fn:xml-to-json($node)
 };
 
 declare
+    %test:assertEquals('"<test> \\ </test>"')
+function xtj:xml-to-json-xmlInJsonString-fn-ns() {
+    let $node := <fn:string>&lt;test&gt; \ &lt;/test&gt;</fn:string>
+    return fn:xml-to-json($node)
+};
+
+declare
     %test:assertEquals('{"pcM9qSs":"YbFYeK10.e01xgS1DEJFaxxvm372Ru","wh5J8qAmnZx8WAHnHCeBpM":-1270212191.431,"ssEhB3U9zZhRNNH2Vm":["A","OIQwg4ICB9fkzihwpE.cQv1",false]}')
-function xtj:xml-to-json-generatedFromSchema-1() {
+function xtj:xml-to-json-generatedFromSchema-1-fn-ns() {
     let $node :=
 <map xmlns="http://www.w3.org/2005/xpath-functions"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -321,7 +529,7 @@ function xtj:xml-to-json-generatedFromSchema-1() {
 
 declare
     %test:assertEquals('{"v-DhbQUwZO3zpW":[{"fRcP.5e9btnuR3dOnd":[false,"_aQ",null],"yVlXSsyg1pPatQ7ilEaSSA9":"DVbrO2wpIRJimrskkRk.7wg1Gvh","K9xGofqp":true,"PatQ7iK9xGof":false},11145450.201,584608693.252],"IU6lSWbLYTzc3QvIVAdmJ.CG":1600374222.048,"_o3UT5zEy":"WFUwRRW5Jc3rdwKCoO8iV3RYDu_5"}')
-function xtj:xml-to-json-generatedFromSchema-2() {
+function xtj:xml-to-json-generatedFromSchema-2-fn-ns() {
     let $node :=
 <map xmlns="http://www.w3.org/2005/xpath-functions"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -347,19 +555,28 @@ function xtj:xml-to-json-generatedFromSchema-2() {
 
 declare
     %test:assertError('FOJS0006')
-function xtj:xml-to-json-unsupportedElement() {
+function xtj:xml-to-json-unsupportedElement-no-ns() {
     let $node :=
-<map xmlns="http://www.w3.org/2005/xpath-functions"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <my-element key=""></my-element>
-</map>
+    <fn:map>
+        <my-element key=""></my-element>
+    </fn:map>
+    return fn:xml-to-json($node)
+};
+
+declare
+    %test:assertError('FOJS0006')
+function xtj:xml-to-json-unsupportedElement-fn-ns() {
+    let $node :=
+    <fn:map>
+        <fn:my-element key=""></fn:my-element>
+    </fn:map>
     return fn:xml-to-json($node)
 };
 
 declare
     %test:assertEquals('[[],""]')
-function xtj:xml-to-json-clearTextnodeBufferForNewElement() {
-    let $node := <array><array> </array><string/></array>
+function xtj:xml-to-json-clearTextnodeBufferForNewElement-fn-ns() {
+    let $node := <fn:array><fn:array> </fn:array><fn:string/></fn:array>
     return fn:xml-to-json($node)
 };
 
@@ -370,11 +587,11 @@ declare
     %test:arg("int", "0.0") %test:assertEquals('{"integer":0.0}')
     %test:arg("int", "1") %test:assertEquals('{"integer":1}')
     %test:arg("int", "1.0") %test:assertEquals('{"integer":1.0}')
-function xtj:xmlmap-to-json-for-int-precision($int as xs:string) as xs:string {
+function xtj:xmlmap-to-json-for-int-precision-fn-ns($int as xs:string) as xs:string {
     fn:xml-to-json(
-        <map xmlns="http://www.w3.org/2005/xpath-functions">
-          <number key="integer">{$int}</number>
-        </map>
+        <fn:map>
+            <fn:number key="integer">{$int}</fn:number>
+        </fn:map>
     )
 };
 
@@ -404,11 +621,11 @@ declare
     %test:arg("int", "1.1e9") %test:assertEquals('{"integer":1.1E+9}')
     %test:arg("int", "1.1e+9") %test:assertEquals('{"integer":1.1E+9}')
     %test:arg("int", "1.1e-9") %test:assertEquals('{"integer":1.1E-9}')
-function xtj:xmlmap-to-json-for-exponent($int as xs:string) as xs:string {
+function xtj:xmlmap-to-json-for-exponent-fn-ns($int as xs:string) as xs:string {
     fn:xml-to-json(
-        <map xmlns="http://www.w3.org/2005/xpath-functions">
-          <number key="integer">{$int}</number>
-        </map>
+        <fn:map>
+            <fn:number key="integer">{$int}</fn:number>
+        </fn:map>
     )
 };
 

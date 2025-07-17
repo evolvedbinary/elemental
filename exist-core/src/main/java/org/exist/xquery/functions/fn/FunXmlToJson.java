@@ -143,6 +143,7 @@ public class FunXmlToJson extends BasicFunction {
                 status = reader.next();
                 switch (status) {
                     case XMLStreamReader.START_ELEMENT:
+                        checkNamespace(reader.getNamespaceURI());
                         tempStringBuilder.setLength(0);
                         final String elementAttributeEscapedValue = reader.getAttributeValue(null, "escaped");
                         elementValueIsEscaped = "true".equals(elementAttributeEscapedValue);
@@ -167,11 +168,9 @@ public class FunXmlToJson extends BasicFunction {
                         }
                         switch (reader.getLocalName()) {
                             case "array":
-                                checkNamespace(reader.getNamespaceURI());
                                 jsonGenerator.writeStartArray();
                                 break;
                             case "map":
-                                checkNamespace(reader.getNamespaceURI());
                                 mapkeyArrayList.add(stackSeparator);
                                 jsonGenerator.writeStartObject();
                                 break;
@@ -187,7 +186,6 @@ public class FunXmlToJson extends BasicFunction {
                         final String tempString = tempStringBuilder.toString();
                         switch (reader.getLocalName()) {
                             case "array":
-                                checkNamespace(reader.getNamespaceURI());
                                 jsonGenerator.writeEndArray();
                                 break;
                             case "boolean":
@@ -195,7 +193,6 @@ public class FunXmlToJson extends BasicFunction {
                                 jsonGenerator.writeBoolean(tempBoolean);
                                 break;
                             case "map":
-                                checkNamespace(reader.getNamespaceURI());
                                 while (!mapkeyArrayList.isEmpty() && mapkeyArrayList.remove(mapkeyArrayList.size() - 1) != stackSeparator) {
                                 }
                                 jsonGenerator.writeEndObject();
