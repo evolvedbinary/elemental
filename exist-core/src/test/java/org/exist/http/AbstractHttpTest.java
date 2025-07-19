@@ -95,7 +95,7 @@ public abstract class AbstractHttpTest {
     }
 
     /**
-     * Execute a function with a HTTP Client.
+     * Execute a function with an HTTP Client.
      *
      * @param <T> the return type of the <code>fn</code> function.
      * @param fn the function which accepts the HTTP Client.
@@ -105,16 +105,40 @@ public abstract class AbstractHttpTest {
      * @throws IOException if an I/O error occurs
      */
     protected static <T> T withHttpClient(final FunctionE<HttpClient, T, IOException> fn) throws IOException {
-        try (final CloseableHttpClient client = HttpClientBuilder
-                .create()
-                .disableAutomaticRetries()
-                .build()) {
+        return withHttpClient(false, fn);
+    }
+
+    /**
+     * Execute a function with an HTTP Client.
+     *
+     * @param <T> the return type of the <code>fn</code> function.
+     * @param disableRedirectHandling true to disable redirect handling, false to leave it enabled (default).
+     * @param fn the function which accepts the HTTP Client.
+     *
+     * @return the result of the <code>fn</code> function.
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    protected static <T> T withHttpClient(final boolean disableRedirectHandling, final FunctionE<HttpClient, T, IOException> fn) throws IOException {
+        try (final CloseableHttpClient client = buildHttpClient(disableRedirectHandling)) {
             return fn.apply(client);
         }
     }
 
+    private static CloseableHttpClient buildHttpClient(final boolean disableRedirectHandling) {
+        HttpClientBuilder builder = HttpClientBuilder
+            .create()
+            .disableAutomaticRetries();
+
+        if (disableRedirectHandling) {
+            builder = builder.disableRedirectHandling();
+        }
+
+        return builder.build();
+    }
+
     /**
-     * Execute a function with a HTTP Executor.
+     * Execute a function with an HTTP Executor.
      *
      * @param <T> the return type of the <code>fn</code> function.
      * @param existWebServer the Web Server.
@@ -125,11 +149,27 @@ public abstract class AbstractHttpTest {
      * @throws IOException if an I/O error occurs
      */
     protected static <T> T withHttpExecutor(final ExistWebServer existWebServer, final FunctionE<Executor, T, IOException> fn) throws IOException {
-        return withHttpClient(client -> {
+        return withHttpExecutor(existWebServer, false, fn);
+    }
+
+    /**
+     * Execute a function with an HTTP Executor.
+     *
+     * @param <T> the return type of the <code>fn</code> function.
+     * @param existWebServer the Web Server.
+     * @param disableRedirectHandling true to disable redirect handling, false to leave it enabled (default).
+     * @param fn the function which accepts the HTTP Executor.
+     *
+     * @return the result of the <code>fn</code> function.
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    protected static <T> T withHttpExecutor(final ExistWebServer existWebServer, final boolean disableRedirectHandling, final FunctionE<Executor, T, IOException> fn) throws IOException {
+        return withHttpClient(disableRedirectHandling, client -> {
             final Executor executor = Executor
-                    .newInstance(client)
-                    .auth(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)
-                    .authPreemptive(new HttpHost("localhost", existWebServer.getPort()));
+                .newInstance(client)
+                .auth(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)
+                .authPreemptive(new HttpHost("localhost", existWebServer.getPort()));
             return fn.apply(executor);
         });
     }
