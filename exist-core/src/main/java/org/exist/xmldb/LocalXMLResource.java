@@ -159,7 +159,11 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
         } else if (value != null) {
             try {
                 if (Type.subTypeOf(value.getType(),Type.STRING)) {
-                    return ((StringValue)value).getStringValue(true);
+                    return ((StringValue) value).getStringValue(true);
+
+                } else if (Type.subTypeOf(value.getType(), Type.MAP_ITEM) || Type.subTypeOf(value.getType(), Type.ARRAY_ITEM)) {
+                    return value.toString();
+
                 } else {
                     return value.getStringValue();
                 }

@@ -489,10 +489,36 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
             builder.append(' ');
         }
         for (int i = 0; i < vector.length(); i++) {
-            final Sequence value = vector.nth(i);
-            builder.append(value.toString());
-            if (i < vector.length() - 1) {
+
+            if (i > 0) {
                 builder.append(", ");
+            }
+
+            final Sequence sequence = vector.nth(i);
+
+            if (!sequence.hasOne()) {
+                builder.append('(');
+            }
+
+            for (int j = 0; j < sequence.getItemCount(); j++) {
+                if (j > 0) {
+                    builder.append(", ");
+                }
+
+                final Item item = sequence.itemAt(j);
+                if (Type.subTypeOf(item.getType(), Type.STRING)) {
+                    builder.append('"');
+                }
+
+                builder.append(item.toString());
+
+                if (Type.subTypeOf(item.getType(), Type.STRING)) {
+                    builder.append('"');
+                }
+            }
+
+            if (!sequence.hasOne()) {
+                builder.append(')');
             }
         }
         if (vector.length() > 0) {
