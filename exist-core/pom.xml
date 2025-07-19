@@ -739,6 +739,7 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ElementReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
+                                <include>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</include>
                                 <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
@@ -1155,6 +1156,7 @@
                                 <exclude>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/PathForward.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/Redirect.java</exclude>
+                                <exclude>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/RewriteConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/Index.java</exclude>
                                 <include>src/main/java/org/exist/indexing/IndexController.java</include>
