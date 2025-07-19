@@ -233,10 +233,7 @@ class InteractiveClientTest {
         replay(collection, mgtService, perm, resource, clientFrame, account, group, propertyAction);
 
         String expected = "Elemental version testVersion (gitCommitId), Copyright (C) 2024-" +
-                Calendar.getInstance().get(Calendar.YEAR) + " Evolved Binary Ltd" + EOL +
-                "Elemental comes with ABSOLUTELY NO WARRANTY." + EOL +
-                "This is free software, and you are welcome to redistribute it" + EOL +
-                "under certain conditions; for details read the license file." + EOL;
+                Calendar.getInstance().get(Calendar.YEAR) + " Evolved Binary Ltd" + EOL;
         assertThat(client.getNotice(propertyAction)).isNotNull().isEqualTo(expected);
     }
 
