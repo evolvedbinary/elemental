@@ -46,6 +46,8 @@
 package org.exist.indexing.range;
 
 import org.exist.dom.QName;
+import org.exist.dom.persistent.ElementImpl;
+import org.exist.dom.persistent.NodeImpl;
 import org.exist.storage.ElementValue;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
@@ -77,8 +79,7 @@ import static org.exist.util.StringUtil.nullIfEmpty;
  */
 public class RangeIndexConfigAttributeCondition extends RangeIndexConfigCondition{
 
-    private final String attributeName;
-    private final QName attribute;
+    private final QName attributeName;
     private @Nullable final String value;
     private final Operator operator;
     private final boolean caseSensitive;
@@ -94,13 +95,23 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
             throw new DatabaseConfigurationException("Range index module: Attribute condition cannot be defined for an attribute:" + parentPath.toString());
         }
 
-        this.attributeName = elem.getAttribute("attribute");
-        if (this.attributeName.isEmpty()) {
+        final String attributeValue = elem.getAttribute("attribute");
+        if (attributeValue.isEmpty()) {
             throw new DatabaseConfigurationException("Range index module: Empty or no attribute qname in condition");
         }
 
         try {
-            this.attribute = new QName(QName.extractLocalName(this.attributeName), XMLConstants.NULL_NS_URI, QName.extractPrefix(this.attributeName), ElementValue.ATTRIBUTE);
+            final String attrLocalName = QName.extractLocalName(attributeValue);
+            @Nullable final String attrPrefix = QName.extractPrefix(attributeValue);
+            if (attrPrefix != null) {
+                @Nullable final String attrNamespace = findNamespaceForPrefix(attrPrefix, (ElementImpl) elem);
+                if (attrNamespace == null) {
+                    throw new DatabaseConfigurationException("Range index module: Missing namespace declaration for attribute qname in condition");
+                }
+                this.attributeName = new QName(attrLocalName, attrNamespace, attrPrefix, ElementValue.ATTRIBUTE);
+            } else {
+                this.attributeName = new QName(attrLocalName, XMLConstants.NULL_NS_URI, null, ElementValue.ATTRIBUTE);
+            }
         } catch (final QName.IllegalQNameException e) {
             throw new DatabaseConfigurationException("Rand index module error: " + e.getMessage(), e);
         }
@@ -169,6 +180,24 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
 
     }
 
+    private static @Nullable String findNamespaceForPrefix(final String prefix, ElementImpl contextElem) {
+        while (contextElem != null) {
+            final String namespace = contextElem.getNamespaceForPrefix(prefix);
+            if (namespace != null) {
+                return namespace;
+            }
+
+            @Nullable final Node parentNode = contextElem.getParentNode();
+            if (parentNode != null && parentNode instanceof ElementImpl) {
+                contextElem = (ElementImpl) parentNode;
+            } else {
+                contextElem = null;
+            }
+        }
+
+        return null;
+    }
+
     // lazily evaluate lowercase value to convert once when needed
     private String getLowercaseValue() {
         if (this.lowercaseValue == null) {
@@ -180,15 +209,18 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
         return this.lowercaseValue;
     }
 
-
     @Override
-    public boolean matches(Node node) {
-
-        if (node.getNodeType() == Node.ELEMENT_NODE && matchValue(((Element)node).getAttribute(attributeName))) {
-            return true;
+    public boolean matches(final Node node) {
+        final String attrValue;
+        if (attributeName.hasNamespace()) {
+            attrValue = ((Element) node).getAttributeNS(attributeName.getNamespaceURI(), attributeName.getLocalPart());
+        } else {
+            attrValue = ((Element) node).getAttribute(attributeName.getLocalPart());
         }
 
-        return false;
+        return node.getNodeType() == Node.ELEMENT_NODE
+                && matchValue(attrValue);
+
     }
 
     private boolean matchValue(String testValue) {
@@ -365,7 +397,7 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
 
                 if (qname.getNameType() == ElementValue.ATTRIBUTE
                         && operator.equals(this.operator)
-                        && qname.equals(this.attribute)
+                        && qname.equals(attributeName)
                         && valueTypeMatches
                         && foundValue.equals(requiredValue)) {
 
