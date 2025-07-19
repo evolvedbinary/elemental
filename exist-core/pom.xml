@@ -792,6 +792,7 @@
                                 <include>src/test/xquery/util/util.xml</include>
                                 <include>src/test/xquery/xquery3/parse-xml.xqm</include>
                                 <include>src/test/xquery/xquery3/serialize.xql</include>
+                                <include>src/test/xquery/xquery3/xml-to-json.xql</include>
                                 <include>src/main/java/org/exist/Indexer.java</include>
                                 <include>src/test/java/org/exist/IndexerTest.java</include>
                                 <include>src/test/java/org/exist/IndexerTest2.java</include>
@@ -1128,6 +1129,7 @@
                                 <exclude>src/test/xquery/xquery3/parse-xml.xqm</exclude>
                                 <exclude>src/test/xquery/xquery3/postfix-expr.xqm</exclude>
                                 <exclude>src/test/xquery/xquery3/serialize.xql</exclude>
+                                <exclude>src/test/xquery/xquery3/xml-to-json.xql</exclude>
                                 <exclude>src/main/java/org/exist/Indexer.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest2.java</exclude>
