@@ -93,12 +93,12 @@ public class ElementImpl extends NodeImpl implements Element {
 
     @Override
     public Node getFirstChild() {
-        final short level = document.treeLevel[nodeNumber];
-        final int nextNode = nodeNumber + 1;
-        if(nextNode < document.size && document.treeLevel[nextNode] > level) {
-            return document.getNode(nextNode);
+        final int firstChildNodeNumber = document.getFirstChildFor(nodeNumber);
+        if (firstChildNodeNumber == -1) {
+            return null;
         }
-        return null;
+
+        return document.getNode(firstChildNodeNumber);
     }
 
     @Override

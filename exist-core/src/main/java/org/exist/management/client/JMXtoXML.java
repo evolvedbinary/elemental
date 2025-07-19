@@ -46,7 +46,6 @@
 package org.exist.management.client;
 
 import java.io.IOException;
-import java.io.StringWriter;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.lang.management.ManagementFactory.CLASS_LOADING_MXBEAN_NAME;
@@ -71,6 +70,7 @@ import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerException;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
@@ -208,10 +208,11 @@ public class JMXtoXML {
      */
     public String generateReport(final String categories[]) throws TransformerException {
         final Element root = generateXMLReport(null, categories);
-        final StringWriter writer = new StringWriter();
-        final DOMSerializer streamer = new DOMSerializer(writer, defaultProperties);
-        streamer.serialize(root);
-        return writer.toString();
+        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+            final DOMSerializer streamer = new DOMSerializer(writer, defaultProperties);
+            streamer.serialize(root);
+            return writer.toString();
+        }
     }
 
     /**

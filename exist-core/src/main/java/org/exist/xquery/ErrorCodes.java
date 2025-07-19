@@ -48,6 +48,8 @@ package org.exist.xquery;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 
+import javax.annotation.Nullable;
+
 /**
  *
  * @author aretter
@@ -291,14 +293,14 @@ public class ErrorCodes {
     public static class ErrorCode {
 
         private final QName errorQName;
-        private final String description;
+        private @Nullable final String description;
 
-        public ErrorCode(String code, String description) {
+        public ErrorCode(final String code, @Nullable final String description) {
             this.errorQName = new QName(code, Namespaces.EXIST_XQUERY_XPATH_ERROR_NS, Namespaces.EXIST_XQUERY_XPATH_ERROR_PREFIX);
             this.description = description;
         }
 
-        public ErrorCode(QName errorQName, String description) {
+        public ErrorCode(final QName errorQName, final String description) {
             this.errorQName = errorQName;
             this.description = description;
         }
@@ -309,10 +311,10 @@ public class ErrorCodes {
 
         @Override
         public String toString() {
-            return "(" + errorQName.getNamespaceURI() + "#" + errorQName.getLocalPart() + "):" + description;
+            return "(" + errorQName.toString() + "): " + description;
         }
 
-        public String getDescription(){
+        public @Nullable String getDescription(){
             return description;
         }
     }
@@ -333,12 +335,21 @@ public class ErrorCodes {
 
     public static class JavaErrorCode extends ErrorCode {
 
-        public JavaErrorCode(final Throwable throwable) {
-            super(new QName(
-                        throwable.getClass().getName(),
-                        Namespaces.EXIST_JAVA_BINDING_NS,
-                        Namespaces.EXIST_JAVA_BINDING_NS_PREFIX),
-                  throwable.getMessage() != null ? throwable.getMessage() : throwable.getCause().getMessage());
+        private JavaErrorCode(final QName errorQName, @Nullable final String description) {
+            super(errorQName, description);
+        }
+
+        public static JavaErrorCode fromThrowable(final Throwable throwable) {
+            final QName errorQName = new QName(throwable.getClass().getName(), Namespaces.EXIST_JAVA_BINDING_NS, Namespaces.EXIST_JAVA_BINDING_NS_PREFIX);
+            @Nullable final String description;
+            if (throwable.getMessage() != null) {
+                description = throwable.getMessage();
+            } else if (throwable.getCause() != null) {
+                description = throwable.getCause().getMessage();
+            } else {
+                description = null;
+            }
+            return new JavaErrorCode(errorQName, description);
         }
     }
 }

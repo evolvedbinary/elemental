@@ -94,7 +94,6 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -212,6 +211,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/main/java/org/exist/xquery/modules/file/FileModuleHelper.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/file/FileReadUnicode.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/file/Sync.java</include>
                             </includes>
                         </licenseSet>
@@ -227,6 +227,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/file/FileModuleHelper.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/file/FileReadUnicode.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/file/Sync.java</exclude>
                             </excludes>
                         </licenseSet>

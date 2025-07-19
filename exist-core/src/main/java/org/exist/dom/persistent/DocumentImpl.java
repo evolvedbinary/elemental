@@ -731,12 +731,14 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
-     * The method <code>getNode</code>
+     * Retrieve a node from the document
+     * by its nodeId
      *
-     * @param nodeId a <code>NodeId</code> value
-     * @return a <code>Node</code> value
+     * @param nodeId the nodeId of the node to find.
+     *
+     * @return the node, or null if it does not exist.
      */
-    public Node getNode(final NodeId nodeId) {
+    @Nullable Node getNode(final NodeId nodeId) {
         try(final DBBroker broker = pool.getBroker()) {
             return broker.objectWith(this, nodeId);
         } catch(final EXistException e) {
@@ -746,16 +748,21 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
-     * The method <code>getNode</code>
+     * Retrieve a node from the document
+     * by its nodeProxy
      *
-     * @param p a <code>NodeProxy</code> value
-     * @return a <code>Node</code> value
+     * This should only be called from {@link NodeProxy#getNode()}.
+     *
+     * @param p the proxy of the node to find.
+     *
+     * @return the node, or null if it does not exist.
      */
-    public Node getNode(final NodeProxy p) {
-        if(p.getNodeId().getTreeLevel() == 1) {
-            return getDocumentElement();
+    Node getNode(final NodeProxy p) {
+        if (p.getNodeId() == NodeId.DOCUMENT_NODE || p.getNodeId().equals(NodeId.DOCUMENT_NODE)) {
+            return this;
         }
-        try(final DBBroker broker = pool.getBroker()) {
+
+        try (final DBBroker broker = pool.getBroker()) {
             return broker.objectWith(p);
         } catch(final Exception e) {
             LOG.warn("Error occurred while retrieving node: {}", e.getMessage(), e);
@@ -948,14 +955,13 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @Override
     @EnsureContainerLocked(mode=READ_LOCK)
     public Node getFirstChild() {
-        if(children == 0) {
+        if (children == 0) {
             return null;
         }
-        try(final DBBroker broker = pool.getBroker()) {
-            return broker.objectWith(new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE, childAddress[0]));
-        } catch(final EXistException e) {
+        try (final DBBroker broker = pool.getBroker()) {
+            return broker.objectWith(getFirstChildProxy());
+        } catch (final EXistException e) {
             LOG.warn("Exception while inserting node: {}", e.getMessage(), e);
-            //TODO : throw exception ?
         }
         return null;
     }
@@ -966,9 +972,9 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     }
 
     /**
-     * The method <code>getFirstChildAddress</code>
+     * Get the address of the first child.
      *
-     * @return a <code>long</code> value
+     * @return the address of the first child.
      */
     @EnsureContainerLocked(mode=READ_LOCK)
     public long getFirstChildAddress() {
@@ -978,6 +984,37 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         return childAddress[0];
     }
 
+    @Override
+    @EnsureContainerLocked(mode=READ_LOCK)
+    public Node getLastChild() {
+        if (children == 0) {
+            return null;
+        }
+        try (final DBBroker broker = pool.getBroker()) {
+            return broker.objectWith(getLastChildProxy());
+        } catch (final EXistException e) {
+            LOG.warn("Exception while inserting node: {}", e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @EnsureContainerLocked(mode=READ_LOCK)
+    protected NodeProxy getLastChildProxy() {
+        return new NodeProxy(getExpression(), this, NodeId.ROOT_NODE, Node.ELEMENT_NODE, childAddress[children - 1]);
+    }
+
+    /**
+     * Get the address of the last child.
+     *
+     * @return the address of the last child.
+     */
+    @EnsureContainerLocked(mode=READ_LOCK)
+    public long getLastChildAddress() {
+        if (children == 0) {
+            return StoredNode.UNKNOWN_NODE_IMPL_ADDRESS;
+        }
+        return childAddress[children - 1];
+    }
 
     @Override
     public boolean hasChildNodes() {
@@ -988,14 +1025,18 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @EnsureContainerLocked(mode=READ_LOCK)
     public NodeList getChildNodes() {
         final org.exist.dom.NodeListImpl list = new org.exist.dom.NodeListImpl();
-        try(final DBBroker broker = pool.getBroker()) {
-            for(int i = 0; i < children; i++) {
-                final Node child = broker.objectWith(new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE, childAddress[i]));
+
+        @Nullable final NodeProxy nodeProxy = children > 0 ? new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE) : null;
+        try (final DBBroker broker = pool.getBroker()) {
+            for (int i = 0; i < children; i++) {
+                nodeProxy.setInternalAddress(childAddress[i]);
+                final Node child = broker.objectWith(nodeProxy);
                 list.add(child);
             }
-        } catch(final EXistException e) {
+        } catch (final EXistException e) {
             LOG.warn("Exception while retrieving child nodes: {}", e.getMessage(), e);
         }
+
         return list;
     }
 
@@ -1300,12 +1341,19 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
      */
     @Override
     public Element getDocumentElement() {
-        final NodeList cl = getChildNodes();
-        for(int i = 0; i < cl.getLength(); i++) {
-            if(cl.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                return (Element) cl.item(i);
+        try (final DBBroker broker = pool.getBroker()) {
+            @Nullable final NodeProxy childNodeProxy = children > 0 ? new NodeProxy(getExpression(), this, NodeId.DOCUMENT_NODE) : null;
+            for (int i = 0; i < children; i++) {
+                childNodeProxy.setInternalAddress(childAddress[i]);
+                final Node child = broker.objectWith(childNodeProxy);
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    return (Element) child;
+                }
             }
+        } catch(final EXistException e) {
+            LOG.warn("Exception while retrieving document element: {}", e.getMessage(), e);
         }
+
         return null;
     }
 
@@ -1515,8 +1563,9 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
 
     @Override
     public String toString() {
+        @Nullable final Element documentElement = getDocumentElement();
         return getURI() + " - <" +
-            (getDocumentElement() != null ? getDocumentElement().getNodeName() : null) + ">";
+            (documentElement != null ? documentElement.getNodeName() : null) + ">";
     }
 
     @Override

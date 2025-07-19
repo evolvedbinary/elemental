@@ -46,7 +46,6 @@
 package org.exist.storage.serializers;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -69,11 +68,12 @@ import javax.xml.transform.stream.StreamSource;
 
 import com.evolvedbinary.j8fu.lazy.LazyVal;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
+import org.exist.dom.memtree.reference.AbstractReferenceNodeImpl;
 import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.XMLUtil;
@@ -472,23 +472,46 @@ public abstract class Serializer implements XMLReader {
         this.documentStarted = false;
     }
 
+    /**
+     * Serialize a Document.
+     * Note if you have multiple documents to serialize, you may instead
+     * prefer to call {@link #serialize(DocumentImpl, Writer)} and reuse
+     * the writer for each call after clearing its buffer.
+     *
+     * @param doc the document to serialize.
+     *
+     * @return the serialized representation.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
     public String serialize(final DocumentImpl doc) throws SAXException {
-        final StringWriter writer = new StringWriter();
-        serialize(doc, writer);
-        return writer.toString();
+        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+            serialize(doc, writer);
+            return writer.toString();
+        }
     }
 
     /**
-     * Serialize a document to the supplied writer.
+     * Serialize a Document to the supplied writer.
      *
-     * @param doc    the document
-     * @param writer the output writer
-     * @throws SAXException if an error occurs during serialization
+     * @param doc the document to serialize.
+     * @param writer the output writer.
+     *
+     * @throws SAXException if an error occurs during serialization.
      */
     public void serialize(final DocumentImpl doc, final Writer writer) throws SAXException {
         serialize(doc, writer, true);
     }
 
+    /**
+     * Serialize a Document to the supplied Writer.
+     *
+     * @param doc the document to serialize.
+     * @param writer the output writer.
+     * @param prepareStylesheet true if stylesheets should be prepared, false otherwise.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
     public void serialize(final DocumentImpl doc, final Writer writer, final boolean prepareStylesheet) throws SAXException {
         if (prepareStylesheet) {
             try {
@@ -515,17 +538,47 @@ public abstract class Serializer implements XMLReader {
         }
     }
 
+    /**
+     * Serialize a Node.
+     * Note if you have multiple node to serialize, you may instead
+     * prefer to call {@link #serialize(DocumentImpl, Writer)} and reuse
+     * the writer for each call after clearing its buffer.
+     *
+     * @param n the node to serialize.
+     *
+     * @return the serialized representation.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
     public String serialize(final NodeValue n) throws SAXException {
-        final StringWriter out = new StringWriter();
-        serialize(n, out);
-        return out.toString();
+        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+            serialize(n, writer);
+            return writer.toString();
+        }
     }
 
-    public void serialize(final NodeValue n, final Writer out) throws SAXException {
-        serialize(n, out, true);
+    /**
+     * Serialize a Node to the supplied Writer.
+     *
+     * @param n the node to serialize.
+     * @param writer the output writer.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
+    public void serialize(final NodeValue n, final Writer writer) throws SAXException {
+        serialize(n, writer, true);
     }
 
-    public void serialize(final NodeValue n, final Writer out, final boolean prepareStylesheet) throws SAXException {
+    /**
+     * Serialize a Node to the supplied Writer.
+     *
+     * @param n the node to serialize.
+     * @param writer the output writer.
+     * @param prepareStylesheet true if stylesheets should be prepared, false otherwise.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
+    public void serialize(final NodeValue n, final Writer writer, final boolean prepareStylesheet) throws SAXException {
         final Document doc;
         if (n.getItemType() == Type.DOCUMENT && !(n instanceof NodeProxy)) {
             doc = (Document) n;
@@ -543,11 +596,18 @@ public abstract class Serializer implements XMLReader {
 
         final SAXSerializer prettyPrinter;
         if (templates != null) {
-            applyXSLHandler(out);
+            applyXSLHandler(writer);
             prettyPrinter = null;
         } else {
-            prettyPrinter = setPrettyPrinter(out, "no".equals(outputProperties.getProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")),
-                    n.getImplementationType() == NodeValue.PERSISTENT_NODE ? (NodeProxy) n : null, false);
+            final NodeProxy root;
+            if (n.getImplementationType() == NodeValue.PERSISTENT_NODE) {
+                root = (NodeProxy) n;
+            } else if (n instanceof AbstractReferenceNodeImpl<?, ?>) {
+                root = ((AbstractReferenceNodeImpl<?, ?>) n).getNodeProxy();
+            } else {
+                root = null;
+            }
+            prettyPrinter = setPrettyPrinter(writer, "no".equals(outputProperties.getProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")), root, false);
         }
 
         try {
@@ -560,26 +620,49 @@ public abstract class Serializer implements XMLReader {
     }
 
     /**
-     * Serialize a single NodeProxy.
+     * Serialize a Node.
+     * Note if you have multiple node to serialize, you may instead
+     * prefer to call {@link #serialize(DocumentImpl, Writer)} and reuse
+     * the writer for each call after clearing its buffer.
      *
-     * @param p the node proxy
-     * @return the serialized result
-     * @throws SAXException if a SAX error occurs
+     * @param n the node to serialize.
+     *
+     * @return the serialized representation.
+     *
+     * @throws SAXException if an error occurs during serialization.
      */
-    public String serialize(final NodeProxy p) throws SAXException {
-        final StringWriter out = new StringWriter();
-        serialize(p, out);
-        return out.toString();
+    public String serialize(final NodeProxy n) throws SAXException {
+        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+            serialize(n, writer);
+            return writer.toString();
+        }
     }
 
-    public void serialize(final NodeProxy p, final Writer out) throws SAXException {
-        serialize(p, out, true);
+    /**
+     * Serialize a Node to the supplied Writer.
+     *
+     * @param n the node to serialize.
+     * @param writer the output writer.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
+    public void serialize(final NodeProxy n, final Writer writer) throws SAXException {
+        serialize(n, writer, true);
     }
 
-    public void serialize(final NodeProxy p, final Writer out, final boolean prepareStylesheet) throws SAXException {
+    /**
+     * Serialize a Node to the supplied Writer.
+     *
+     * @param n the node to serialize.
+     * @param writer the output writer.
+     * @param prepareStylesheet true if stylesheets should be prepared, false otherwise.
+     *
+     * @throws SAXException if an error occurs during serialization.
+     */
+    public void serialize(final NodeProxy n, final Writer writer, final boolean prepareStylesheet) throws SAXException {
         if (prepareStylesheet) {
             try {
-                prepareStylesheets(p.getOwnerDocument());
+                prepareStylesheets(n.getOwnerDocument());
             } catch (final TransformerConfigurationException e) {
                 throw new SAXException(e.getMessage(), e);
             }
@@ -587,14 +670,14 @@ public abstract class Serializer implements XMLReader {
 
         final SAXSerializer prettyPrinter;
         if (templates != null) {
-            applyXSLHandler(out);
+            applyXSLHandler(writer);
             prettyPrinter = null;
         } else {
-            prettyPrinter = setPrettyPrinter(out, "no".equals(outputProperties.getProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")), p, false);
+            prettyPrinter = setPrettyPrinter(writer, "no".equals(outputProperties.getProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")), n, false);
         }
 
         try {
-            serializeToReceiver(p, false);
+            serializeToReceiver(n, false);
         } finally {
             if (prettyPrinter != null) {
                 releasePrettyPrinter(prettyPrinter);
@@ -1153,6 +1236,8 @@ public abstract class Serializer implements XMLReader {
             throws SAXException {
         if (v.getImplementationType() == NodeValue.PERSISTENT_NODE) {
             serializeToReceiver((NodeProxy) v, generateDocEvents, true);
+        } else if (v instanceof AbstractReferenceNodeImpl<?, ?>) {
+            serializeToReceiver(((AbstractReferenceNodeImpl<?, ?>) v).getNodeProxy(), generateDocEvents, true);
         } else {
             serializeToReceiver((org.exist.dom.memtree.NodeImpl) v, generateDocEvents);
         }

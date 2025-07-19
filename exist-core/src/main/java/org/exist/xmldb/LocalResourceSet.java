@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,9 +46,9 @@
 package org.exist.xmldb;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.*;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
@@ -124,9 +148,9 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
         return this.<Resource>withDb((broker, transaction) -> {
             final Serializer serializer = broker.borrowSerializer();
             final SAXSerializer handler = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
-            final StringWriter writer = new StringWriter();
-            handler.setOutput(writer, outputProperties);
-            try {
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                handler.setOutput(writer, outputProperties);
+
                 // configure the serializer
                 collection.setProperty(Serializer.GENERATE_DOC_EVENTS, "false");
                 serializer.setProperties(outputProperties);
