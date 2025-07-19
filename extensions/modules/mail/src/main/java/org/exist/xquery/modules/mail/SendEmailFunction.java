@@ -46,6 +46,7 @@
 package org.exist.xquery.modules.mail;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Version;
@@ -701,7 +702,7 @@ public class SendEmailFunction extends BasicFunction {
                                         //Convert everything inside <xhtml></xhtml> to text
                                         final Transformer transformer = TRANSFORMER_FACTORY.newTransformer();
                                         final DOMSource source = new DOMSource(bodyPart.getFirstChild());
-                                        try (final StringWriter strWriter = new StringWriter()) {
+                                        try (final StringBuilderWriter strWriter = new StringBuilderWriter()) {
                                             final StreamResult result = new StreamResult(strWriter);
                                             transformer.transform(source, result);
                                             mail.setXHTML(strWriter.toString());
@@ -840,7 +841,7 @@ public class SendEmailFunction extends BasicFunction {
                                             //Convert everything inside <xhtml></xhtml> to text
                                             final Transformer transformer = TRANSFORMER_FACTORY.newTransformer();
                                             final DOMSource source = new DOMSource(bodyPart.getFirstChild());
-                                            try (final StringWriter strWriter = new StringWriter()) {
+                                            try (final StringBuilderWriter strWriter = new StringBuilderWriter()) {
                                                 final StreamResult result = new StreamResult(strWriter);
                                                 transformer.transform(source, result);
                                                 content = strWriter.toString();
@@ -907,7 +908,7 @@ public class SendEmailFunction extends BasicFunction {
                                     if (Node.ELEMENT_NODE == attachChild.getNodeType()) {
                                         final Transformer transformer = TRANSFORMER_FACTORY.newTransformer();
                                         final DOMSource source = new DOMSource(attachChild);
-                                        try (final StringWriter strWriter = new StringWriter()) {
+                                        try (final StringBuilderWriter strWriter = new StringBuilderWriter()) {
                                             final StreamResult result = new StreamResult(strWriter);
                                             transformer.transform(source, result);
                                             content.append(strWriter);

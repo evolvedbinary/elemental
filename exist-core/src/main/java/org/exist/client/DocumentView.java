@@ -83,6 +83,7 @@ import javax.swing.KeyStroke;
 import javax.swing.border.BevelBorder;
 import javax.xml.transform.OutputKeys;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.security.Account;
 import org.exist.storage.ElementIndex;
 import org.exist.util.ProgressIndicator;
@@ -186,16 +187,17 @@ class DocumentView extends JFrame {
         msgArea.setEditable(false);
         msgArea.setBackground(null);
         if (t != null) {
-            final StringWriter out = new StringWriter();
-            final PrintWriter writer = new PrintWriter(out);
-            t.printStackTrace(writer);
-            final JTextArea stacktrace = new JTextArea(out.toString(), 20, 50);
-            stacktrace.setBackground(null);
-            stacktrace.setEditable(false);
-            scroll = new JScrollPane(stacktrace);
-            scroll.setPreferredSize(new Dimension(250, 300));
-            scroll.setBorder(BorderFactory
+            try (final StringBuilderWriter out = new StringBuilderWriter();
+                 final PrintWriter writer = new PrintWriter(out)) {
+                t.printStackTrace(writer);
+                final JTextArea stacktrace = new JTextArea(out.toString(), 20, 50);
+                stacktrace.setBackground(null);
+                stacktrace.setEditable(false);
+                scroll = new JScrollPane(stacktrace);
+                scroll.setPreferredSize(new Dimension(250, 300));
+                scroll.setBorder(BorderFactory
                     .createTitledBorder("Exception Stacktrace:")); //$NON-NLS-1$
+            }
         }
         final JOptionPane optionPane = new JOptionPane();
         optionPane.setMessage(new Object[]{msgArea, scroll});

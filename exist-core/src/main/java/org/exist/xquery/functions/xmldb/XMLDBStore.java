@@ -47,7 +47,6 @@ package org.exist.xquery.functions.xmldb;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,6 +56,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -220,13 +220,11 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
                             item.toSAX(context.getBroker(), handler, SERIALIZATION_PROPERTIES);
                             handler.endDocument();
                         } else {
-                            try (final StringWriter writer = new StringWriter()) {
+                            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
                                 final SAXSerializer serializer = new SAXSerializer();
                                 serializer.setOutput(writer, null);
                                 item.toSAX(context.getBroker(), serializer, SERIALIZATION_PROPERTIES);
                                 resource.setContent(writer.toString());
-                            } catch (final IOException e) {
-                                LOGGER.error(e.getMessage(), e);
                             }
                         }
                     } else {
