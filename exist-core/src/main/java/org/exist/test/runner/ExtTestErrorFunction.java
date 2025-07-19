@@ -105,12 +105,11 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
 
         final XPathException xpe = new XPathException(lineNumber, columnNumber, errorCode, description);
 
-        final Sequence seqJavaStackTrace = errorMap.get(new StringValue(this, "java-stack-trace"));
+        @Nullable final Sequence seqJavaStackTrace = errorMap.get(new StringValue(this, "java-stack-trace"));
         if (seqJavaStackTrace != null && !seqJavaStackTrace.isEmpty()) {
-            try {
-                xpe.setStackTrace(convertStackTraceElements(seqJavaStackTrace));
-            } catch (final NullPointerException e) {
-                e.printStackTrace();
+            @Nullable final StackTraceElement[] stackTraceElements = convertStackTraceElements(seqJavaStackTrace);
+            if (stackTraceElements != null) {
+                xpe.setStackTrace(stackTraceElements);
             }
         }
 
