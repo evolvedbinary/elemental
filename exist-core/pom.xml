@@ -914,7 +914,7 @@
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
-                                <include>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</include>
+                                <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
                                 <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/XPathUtil.java</include>
@@ -1256,7 +1256,7 @@
                                 <exclude>src/main/java/org/exist/xquery/Materializable.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
-                                <exclude>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/PerformanceStats.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/TryCatchExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>

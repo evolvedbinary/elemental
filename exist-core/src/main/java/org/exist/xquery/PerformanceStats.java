@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery;
 
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -317,9 +340,10 @@ public class PerformanceStats implements BrokerPoolService {
         return stats;
     }
 
-    public synchronized void toXML(MemTreeBuilder builder) {
+    public synchronized void toXML(final MemTreeBuilder builder) {
         final AttributesImpl attrs = new AttributesImpl();
-        builder.startElement(new QName("calls", XML_NAMESPACE, XML_PREFIX), null);
+        attrs.addAttribute("", "tracing-enabled", "tracing-enabled", "CDATA", Boolean.toString(isEnabled()));
+        builder.startElement(new QName("calls", XML_NAMESPACE, XML_PREFIX), attrs);
         for (final QueryStats stats : queries.values()) {
             attrs.clear();
             attrs.addAttribute("", "source", "source", "CDATA", stats.source);
@@ -333,20 +357,19 @@ public class PerformanceStats implements BrokerPoolService {
             attrs.addAttribute("", "name", "name", "CDATA", stats.qname.getStringValue());
             attrs.addAttribute("", "elapsed", "elapsed", "CDATA", Double.toString(stats.executionTime / 1000.0));
             attrs.addAttribute("", "calls", "calls", "CDATA", Integer.toString(stats.callCount));
-            if (stats.source != null)
-                {attrs.addAttribute("", "source", "source", "CDATA", stats.source);}
+            if (stats.source != null) {
+                attrs.addAttribute("", "source", "source", "CDATA", stats.source);
+            }
             builder.startElement(new QName("function", XML_NAMESPACE, XML_PREFIX), attrs);
             builder.endElement();
         }
         for (final IndexStats stats: indexStats.values()) {
             attrs.clear();
             attrs.addAttribute("", "type", "type", "CDATA", stats.indexType);
-            attrs.addAttribute("", "source", "source", "CDATA", stats.source + " [" + stats.line + ":" +
-                stats.column + "]");
+            attrs.addAttribute("", "source", "source", "CDATA", stats.source + " [" + stats.line + ":" + stats.column + "]");
             attrs.addAttribute("", "elapsed", "elapsed", "CDATA", Double.toString(stats.executionTime / 1000.0));
             attrs.addAttribute("", "calls", "calls", "CDATA", Integer.toString(stats.usageCount));
-            attrs.addAttribute("", "optimization", "optimization", "CDATA",
-                Integer.toString(stats.mode));
+            attrs.addAttribute("", "optimization", "optimization", "CDATA", Integer.toString(stats.mode));
             builder.startElement(new QName("index", XML_NAMESPACE, XML_PREFIX), attrs);
             builder.endElement();
         }
