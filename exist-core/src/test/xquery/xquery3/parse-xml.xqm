@@ -46,9 +46,43 @@
 xquery version "3.0";
 
 (:~ Additional tests for the fn:parse-xml and fn:parse-xml-fragment functions :)
-module namespace px="http://exist-db.org/xquery/test/parse-xml";
+module namespace px ="http://exist-db.org/xquery/test/parse-xml";
 
-declare namespace test="http://exist-db.org/xquery/xqsuite";
+declare namespace tei = "http://www.tei-c.org/ns/1.0";
+declare namespace test = "http://exist-db.org/xquery/xqsuite";
+declare namespace xmldb = "http://exist-db.org/xquery/xmldb";
+
+
+declare %private variable $px:test-collection-name := "test-parse-xml";
+declare %private variable $px:test-collection-uri := "/db/" || $px:test-collection-name;
+
+declare %private variable $px:example1-doc := document {
+    <notes xmlns="http://www.tei-c.org/ns/1.0">
+        <note><hi>Adam</hi></note>
+    </notes>
+};
+
+declare %private variable $px:example1-inmemory-inserter := function($note) as document-node(element(tei:listPerson)) {
+    document {
+        <notes xmlns="http://www.tei-c.org/ns/1.0">
+            <note><hi>Adam</hi></note>
+            {$note}
+        </notes>
+    }
+};
+
+
+declare
+    %test:setUp
+function px:setup() {
+    xmldb:create-collection("/db", $px:test-collection-name)
+};
+
+declare
+    %test:tearDown
+function px:teardown() {
+    xmldb:remove("/db/" || $px:test-collection-name)
+};
 
 declare
     %test:assertEmpty
@@ -144,4 +178,337 @@ declare
     %test:assertError("FODC0006")
 function px:fragment-xml-decl-encoding-standalone-no() {
     fn:parse-xml-fragment('<?xml version="1.0" encoding="utf8" standalone="no"?><a/>')
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-no-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-document-parse-xml-no-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi>insert-document-parse-xml-no-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-document-into-persistent-dom("insert-document-parse-xml-no-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-no-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-element-parse-xml-no-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi>insert-element-parse-xml-no-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-element-into-persistent-dom("insert-element-parse-xml-no-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-no-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-document-parse-xml-no-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi>insert-document-parse-xml-no-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-document-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-no-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-element-parse-xml-no-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi>insert-element-parse-xml-no-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-element-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-document-into-persistent-dom("insert-document-parse-xml-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-element-into-persistent-dom("insert-element-parse-xml-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-document-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-element-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-prefix-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-prefix-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-prefix-into-persistent-dom</tei:hi>")
+    let $notes := px:insert-document-into-persistent-dom("insert-document-parse-xml-prefix-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-prefix-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-prefix-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-prefix-into-persistent-dom</tei:hi>")
+    let $notes := px:insert-element-into-persistent-dom("insert-element-parse-xml-prefix-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-prefix-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-prefix-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-prefix-into-inmemory-dom</tei:hi>")
+    let $notes := px:insert-document-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-prefix-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-prefix-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-prefix-into-inmemory-dom</tei:hi>")
+    let $notes := px:insert-element-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-fragment-no-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-document-parse-xml-fragment-no-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi>insert-document-parse-xml-fragment-no-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-document-into-persistent-dom("insert-document-parse-xml-fragment-no-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-fragment-no-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-element-parse-xml-fragment-no-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi>insert-element-parse-xml-fragment-no-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-element-into-persistent-dom("insert-element-parse-xml-fragment-no-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-fragment-no-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-document-parse-xml-fragment-no-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi>insert-document-parse-xml-fragment-no-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-document-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-fragment-no-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi xmlns="">insert-element-parse-xml-fragment-no-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi>insert-element-parse-xml-fragment-no-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-element-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-fragment-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-fragment-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-fragment-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-document-into-persistent-dom("insert-document-parse-xml-fragment-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-fragment-ns-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-fragment-ns-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-fragment-ns-into-persistent-dom</hi>")
+    let $notes := px:insert-element-into-persistent-dom("insert-element-parse-xml-fragment-ns-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-fragment-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-fragment-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-fragment-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-document-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-fragment-ns-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document {<notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-fragment-ns-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<hi xmlns='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-fragment-ns-into-inmemory-dom</hi>")
+    let $notes := px:insert-element-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-fragment-prefix-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-fragment-prefix-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-fragment-prefix-into-persistent-dom</tei:hi>")
+    let $notes := px:insert-document-into-persistent-dom("insert-document-parse-xml-fragment-prefix-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-fragment-prefix-into-persistent-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-fragment-prefix-into-persistent-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-fragment-prefix-into-persistent-dom</tei:hi>")
+    let $notes := px:insert-element-into-persistent-dom("insert-element-parse-xml-fragment-prefix-into-persistent-dom.xml", $note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-document-parse-xml-fragment-prefix-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-document-parse-xml-fragment-prefix-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-document-parse-xml-fragment-prefix-into-inmemory-dom</tei:hi>")
+    let $notes := px:insert-document-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %test:assertTrue
+function px:insert-element-parse-xml-fragment-prefix-into-inmemory-dom() {
+    let $expected-serialized := fn:serialize(document { <notes xmlns="http://www.tei-c.org/ns/1.0"><note><hi>Adam</hi></note><note><hi>insert-element-parse-xml-fragment-prefix-into-inmemory-dom</hi></note></notes> })
+
+    let $note-content := parse-xml-fragment("<tei:hi xmlns:tei='http://www.tei-c.org/ns/1.0'>insert-element-parse-xml-fragment-prefix-into-inmemory-dom</tei:hi>")
+    let $notes := px:insert-element-into-inmemory-dom($note-content)
+    let $actual := fn:serialize($notes)
+    return
+        $expected-serialized eq $actual
+};
+
+declare
+    %private
+function px:insert-document-into-persistent-dom($test-doc-name as xs:string, $note-content) as document-node(element(tei:listPerson)) {
+    let $test-doc-uri := xmldb:store($px:test-collection-uri, $test-doc-name, $px:example1-doc)
+
+    let $note := document {
+        <note xmlns="http://www.tei-c.org/ns/1.0">{$note-content}</note>
+    }
+    let $notes := doc($test-doc-uri)/tei:notes
+    let $_ := update insert $note into $notes
+    return
+        doc($test-doc-uri)
+};
+
+declare
+    %private
+function px:insert-element-into-persistent-dom($test-doc-name as xs:string, $note-content) as document-node(element(tei:listPerson)) {
+    let $test-doc-uri := xmldb:store($px:test-collection-uri, $test-doc-name, $px:example1-doc)
+
+    let $note := <note xmlns="http://www.tei-c.org/ns/1.0">{$note-content}</note>
+
+    let $notes := doc($test-doc-uri)/tei:notes
+    let $_ := update insert $note into $notes
+    return
+        doc($test-doc-uri)
+};
+
+declare
+    %private
+function px:insert-document-into-inmemory-dom($note-content) as document-node(element(tei:listPerson)) {
+    let $note := document {
+        <note xmlns="http://www.tei-c.org/ns/1.0">{$note-content}</note>
+    }
+    return
+        $px:example1-inmemory-inserter($note)
+};
+
+declare
+    %private
+function px:insert-element-into-inmemory-dom($note-content) as document-node(element(tei:listPerson)) {
+    let $note := <note xmlns="http://www.tei-c.org/ns/1.0">{$note-content}</note>
+    return
+        $px:example1-inmemory-inserter($note)
 };
