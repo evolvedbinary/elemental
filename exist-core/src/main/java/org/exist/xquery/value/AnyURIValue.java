@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,6 +46,9 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteBufferInput;
+import org.exist.storage.io.VariableByteBufferOutput;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.ErrorCodes;
@@ -29,16 +56,20 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.functions.fn.FunEscapeURI;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class    AnyURIValue extends AtomicValue {
+public class AnyURIValue extends AtomicValue {
 
     public static final AnyURIValue EMPTY_URI = new AnyURIValue();
     static final int caseDiff = ('a' - 'A');
@@ -387,31 +418,36 @@ public class    AnyURIValue extends AtomicValue {
      */
     @Override
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(AnyURIValue.class)) {
-            return (T) this;
-        } else if (target == XmldbURI.class) {
-            return (T) toXmldbURI();
-        } else if (target == URI.class) {
-            return (T) toURI();
-        } else if (target == URL.class) {
-            try {
-                return (T) new URL(uri);
-            } catch (final MalformedURLException e) {
-                throw new XPathException(getExpression(), ErrorCodes.FORG0001,
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(AnyURIValue.class)) {
+                return (T) this;
+            } else if (target == XmldbURI.class) {
+                return (T) toXmldbURI();
+            } else if (target == URI.class) {
+                return (T) toURI();
+            } else if (target == URL.class) {
+                try {
+                    return (T) new URL(uri);
+                } catch (final MalformedURLException e) {
+                    throw new XPathException(getExpression(), ErrorCodes.FORG0001,
                         "failed to convert " + uri + " into a Java URL: " + e.getMessage(),
                         e);
+                }
+            } else if (target == String.class || target == CharSequence.class) {
+                return (T) uri;
+            } else if (target == Object.class) {
+                return (T) uri;
+            } else if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                return (T) ByteBuffer.wrap(serialize());
             }
-        } else if (target == String.class || target == CharSequence.class) {
-            return (T) uri;
-        } else if (target == Object.class) {
-            return (T) uri;
+        } catch (final IOException e) {
+            throwable = e;
         }
 
-        throw new XPathException(getExpression(), 
-                "cannot convert value of type "
-                        + Type.getTypeName(getType())
-                        + " to Java object of type "
-                        + target.getName());
+        throw new XPathException(getExpression(), "cannot convert value of type " + Type.getTypeName(getType()) + " to Java object of type " + target.getName(), throwable);
     }
 
     public XmldbURI toXmldbURI() throws XPathException {
@@ -466,5 +502,41 @@ public class    AnyURIValue extends AtomicValue {
             }
         }
         return builder.toString();
+    }
+
+    /**
+     * Serializes to a byte array.
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream()) {
+            vbos.writeUTF(uri);
+            return vbos.toByteArray();
+        }
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * @param buf the ByteBuffer to serialize to.
+     */
+    public void serialize(final ByteBuffer buf) throws IOException {
+        final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
+        vbb.writeUTF(uri);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the AnyURIValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the AnyURIValue.
+     */
+    public static AnyURIValue deserialize(@Nullable Expression expression, final ByteBuffer buf) throws IOException, XPathException {
+        final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
+        final String uri = vbbi.readUTF();
+        return new AnyURIValue(expression, uri);
     }
 }

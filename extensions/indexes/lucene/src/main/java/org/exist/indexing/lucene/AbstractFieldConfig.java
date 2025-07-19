@@ -75,6 +75,7 @@ import java.util.Optional;
  * on an arbitrary XQuery expression.
  *
  * @author Wolfgang Meier
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public abstract class AbstractFieldConfig {
 
@@ -117,16 +118,16 @@ public abstract class AbstractFieldConfig {
         return null;
     }
 
-    protected abstract void processResult(Sequence result, Document luceneDoc) throws XPathException;
+    protected abstract void processResult(final Sequence result, final Map<String, String> prefixToNamespaceMappings, final Document luceneDoc) throws XPathException;
 
-    protected abstract void processText(CharSequence text, Document luceneDoc);
+    protected abstract void processText(final NodeId nodeId, final CharSequence text, final Map<String, String> prefixToNamespaceMappings, final Document luceneDoc);
 
-    protected abstract void build(DBBroker broker, DocumentImpl document, NodeId nodeId, Document luceneDoc, CharSequence text);
+    protected abstract void build( final DBBroker broker,  final DocumentImpl document,  final NodeId nodeId,  final Document luceneDoc, final CharSequence text, final Map<String, String> prefixToNamespaceMappings);
 
-    protected void doBuild(DBBroker broker, DocumentImpl document, NodeId nodeId, Document luceneDoc, CharSequence text)
+    protected void doBuild(final DBBroker broker,  final DocumentImpl document,  final NodeId nodeId,  final Document luceneDoc, final CharSequence text, final Map<String, String> prefixToNamespaceMappings)
             throws PermissionDeniedException, XPathException {
         if (!expression.isPresent()) {
-            processText(text, luceneDoc);
+            processText(nodeId, text, prefixToNamespaceMappings, luceneDoc);
             return;
         }
 
@@ -142,7 +143,7 @@ public abstract class AbstractFieldConfig {
             Sequence result = xquery.execute(broker, compiled, currentNode);
 
             if (!result.isEmpty()) {
-                processResult(result, luceneDoc);
+                processResult(result, prefixToNamespaceMappings, luceneDoc);
             }
         } catch (PermissionDeniedException | XPathException e) {
             isValid = false;

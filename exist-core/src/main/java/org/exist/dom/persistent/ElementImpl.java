@@ -75,6 +75,7 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.value.StringValue;
 import org.w3c.dom.*;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -1385,6 +1386,10 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
             return null;
         }
         return namespaceMappings.get(prefix);
+    }
+
+    public @Nullable Map<String, String> getNamespaceMappings() {
+        return namespaceMappings;
     }
 
     /**

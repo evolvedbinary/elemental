@@ -109,6 +109,7 @@ import java.util.*;
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author <a href="mailto:dannes@exist-db.org">Dannes Wessels</a>
  * @author <a href="mailto:ljo@exist-db.org">Leif-Jöran Olsson</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
@@ -151,6 +152,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public static final String FIELD_DOC_URI = "docUri";
 
     private final StreamListener listener = new LuceneStreamListener();
+
+    private final InScopeNamespaces inScopeNamespaces = new InScopeNamespaces();
 
     public LuceneIndexWorker(LuceneIndex parent, DBBroker broker) {
         this.index = parent;
@@ -905,11 +908,15 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         });
     }
 
-    public IndexableField[] getField(final int docId, final String field) throws IOException {
-        final Set<String> fields = ObjectArraySet.of(field);
+    public @Nullable IndexableField[] getField(final int docId, final String field) throws IOException {
         return index.withReader(reader -> {
+            final Set<String> fields = ObjectArraySet.of(field);
             final Document doc = reader.document(docId, fields);
-            return doc.getFields(field);
+            final IndexableField[] indexableFields = doc.getFields(field);
+            if (indexableFields.length > 0) {
+                return indexableFields;
+            }
+            return null;
         });
     }
 
@@ -1340,9 +1347,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * @param path the node path
      * @param config the lucene index config
      * @param content the content of the node
+     * @param prefixToNamespaceMappings any prefix to namespace mappings that are in-scope
      */
-    protected void indexText(final NodeId nodeId, final QName qname, final NodePath path, final LuceneIndexConfig config, final CharSequence content) {
-        final PendingDoc pending = new PendingDoc(nodeId, qname, path, content, config.getBoost(), config);
+    protected void indexText(final NodeId nodeId, final QName qname, final NodePath path, final LuceneIndexConfig config, final CharSequence content, final Map<String, String> prefixToNamespaceMappings) {
+        final PendingDoc pending = new PendingDoc(nodeId, qname, path, content, prefixToNamespaceMappings, config.getBoost(), config);
         addPending(pending);
     }
 
@@ -1356,9 +1364,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * @param path the path of the node
      * @param config the lucene index config
      * @param content the content of the node
+     * @param prefixToNamespaceMappings any prefix to namespace mappings that are in-scope
      */
-    protected void indexText(final java.util.Collection<AttrImpl> attribs, final NodeId nodeId, final QName qname, final NodePath path, final LuceneIndexConfig config, final CharSequence content) {
-        final PendingDoc pending = new PendingDoc(nodeId, qname, path, content, config.getAttrBoost(attribs), config);
+    protected void indexText(final java.util.Collection<AttrImpl> attribs, final NodeId nodeId, final QName qname, final NodePath path, final LuceneIndexConfig config, final CharSequence content, final Map<String, String> prefixToNamespaceMappings) {
+        final PendingDoc pending = new PendingDoc(nodeId, qname, path, content, prefixToNamespaceMappings, config.getAttrBoost(attribs), config);
         addPending(pending);
     }
     
@@ -1371,33 +1380,34 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     private static class PendingDoc {
-        private final NodeId nodeId;
-        private final QName qname;
-        private final NodePath path;
-        private final CharSequence text;
-        private final float boost;
-        private final LuceneIndexConfig idxConf;
+        final NodeId nodeId;
+        final QName qname;
+        final NodePath path;
+        final CharSequence text;
+        final Map<String, String> prefixToNamespaceMappings;
+        final float boost;
+        final LuceneIndexConfig idxConf;
 
-        private PendingDoc(final NodeId nodeId, final QName qname, final NodePath path, final CharSequence text,
-                final float boost, final LuceneIndexConfig idxConf) {
+        public PendingDoc(final NodeId nodeId, final QName qname, final NodePath path, final CharSequence text, final Map<String, String> prefixToNamespaceMappings, final float boost, final LuceneIndexConfig idxConf) {
             this.nodeId = nodeId;
             this.qname = qname;
             this.path = path;
             this.text = text;
-            this.idxConf = idxConf;
+            this.prefixToNamespaceMappings = prefixToNamespaceMappings;
             this.boost = boost;
+            this.idxConf = idxConf;
         }
     }
 
     private static class PendingAttr {
-	    private final AttrImpl attr;
-	    private final LuceneIndexConfig conf;
-	    private final NodePath path;
+        final AttrImpl attr;
+        final NodePath path;
+        final LuceneIndexConfig conf;
 
-        public PendingAttr(final AttrImpl attr, final NodePath path, final LuceneIndexConfig conf) {
+        private PendingAttr(final AttrImpl attr, final NodePath path, final LuceneIndexConfig conf) {
             this.attr = attr;
-            this.conf = conf;
             this.path = path;
+            this.conf = conf;
         }
     }
     
@@ -1424,13 +1434,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             // docId also needs to be indexed
             IntField fDocIdIdx = new IntField(FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
 
-            for (PendingDoc pending : nodesToWrite) {
+            for (final PendingDoc pending : nodesToWrite) {
                 final Document doc = new Document();
 
 
-                List<AbstractFieldConfig> facetConfigs = pending.idxConf.getFacetsAndFields();
-                facetConfigs.forEach(config ->
-                    config.build(broker, currentDoc, pending.nodeId, doc, pending.text)
+                final List<AbstractFieldConfig> fieldAndFacetConfigs = pending.idxConf.getFacetsAndFields();
+                fieldAndFacetConfigs.forEach(config ->
+                    config.build(broker, currentDoc, pending.nodeId, doc, pending.text, pending.prefixToNamespaceMappings)
                 );
 
                 fDocId.setLongValue(currentDoc.getDocId());
@@ -1538,10 +1548,28 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
             currentElement = element;
 
+            // push in-scope namespaces
+            @Nullable Map<String, String> nsMappings = element.getNamespaceMappings();
+            if (nsMappings != null) {
+                nsMappings = new HashMap<>(nsMappings);  // clone the map
+            }
+            final QName qname = element.getQName();
+            if (qname.hasNamespace()) {
+                if (nsMappings != null) {
+                    nsMappings.put(qname.getPrefix(), qname.getNamespaceURI());
+                } else {
+                    nsMappings = Collections.singletonMap(qname.getPrefix(), qname.getNamespaceURI());
+                }
+            }
+            if (nsMappings == null) {
+                nsMappings = Collections.emptyMap();
+            }
+            inScopeNamespaces.push(nsMappings);
+
             if (mode == ReindexMode.STORE && config != null) {
                 if (contentStack != null) {
                     for (final TextExtractor extractor : contentStack) {
-                        extractor.startElement(element.getQName());
+                        extractor.startElement(qname);
                     }
                 }
 
@@ -1553,8 +1581,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     while (configIter.hasNext()) {
                         LuceneIndexConfig configuration = configIter.next();
                         if (configuration.match(path)) {
-                            TextExtractor extractor = new DefaultTextExtractor();
-                            extractor.configure(config, configuration);
+                            final TextExtractor extractor = new DefaultTextExtractor(config, configuration, inScopeNamespaces.getPrefixToNamespaceMappings());
                             contentStack.push(extractor);
                         }
                     }
@@ -1594,13 +1621,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                                             attributes.add((AttrImpl) attributes1.item(i));
                                         }
                                     }
-                                    indexText(attributes, element.getNodeId(), element.getQName(), path, extractor.getIndexConfig(), extractor.getText());
+                                    indexText(attributes, element.getNodeId(), element.getQName(), path, extractor.getIndexConfig(), extractor.getText(), extractor.getPrefixToNamespaceMappings());
                                     if (wasEmpty) {
                                         attributes.clear();
                                     }
                                 } else {
                                     // no attribute matching, index normally
-                                    indexText(element.getNodeId(), element.getQName(), path, extractor.getIndexConfig(), extractor.getText());
+                                    indexText(element.getNodeId(), element.getQName(), path, extractor.getIndexConfig(), extractor.getText(), extractor.getPrefixToNamespaceMappings());
                                 }
                             }
                         }
@@ -1609,6 +1636,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
 
             indexPendingAttrs();
+            // pop in-scope namespaces
+            inScopeNamespaces.pop();
             currentElement = null;
 
             super.endElement(transaction, element, path);
@@ -1640,7 +1669,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 			    if (configuration.shouldReindexOnAttributeChange()) {
 				appendAttrToBeIndexedLater(attribCopy, new NodePath(path), configuration);
 			    } else {
-				indexText(attrib.getNodeId(), attrib.getQName(), path, configuration, attrib.getValue());
+				indexText(attrib.getNodeId(), attrib.getQName(), path, configuration, attrib.getValue(), inScopeNamespaces.getPrefixToNamespaceMappings());
 			    }
                         }
                     }
@@ -1691,7 +1720,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (mode == ReindexMode.STORE && config != null) {
                         for (PendingAttr pending : pendingAttrs) {
                             AttrImpl attr = pending.attr;
-                            indexText(attributes, attr.getNodeId(), attr.getQName(), pending.path, pending.conf, attr.getValue());
+                            indexText(attributes, attr.getNodeId(), attr.getQName(), pending.path, pending.conf, attr.getValue(), inScopeNamespaces.getPrefixToNamespaceMappings());
                         }
                     }
                 } finally {
@@ -1708,6 +1737,40 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             } finally {
                 attributes.clear();
             }
+        }
+    }
+
+    private static class InScopeNamespaces {
+        private final Deque<Map<String, String>> prefixToNamespace;
+
+        public InScopeNamespaces() {
+            this.prefixToNamespace = new ArrayDeque<>();
+        }
+
+        public void push(final Map<String, String> prefixToNamespaceMappings) {
+            this.prefixToNamespace.push(prefixToNamespaceMappings);
+        }
+
+        public void pop() {
+            this.prefixToNamespace.pop();
+        }
+
+        public Map<String, String> getPrefixToNamespaceMappings() {
+            if (prefixToNamespace.isEmpty()) {
+                return Collections.emptyMap();
+            }
+
+            final Map<String, String> mappings = new HashMap<>();
+            final Iterator<Map<String, String>> it = prefixToNamespace.descendingIterator();
+            while (it.hasNext()) {
+                final Map<String, String> map = it.next();
+                mappings.putAll(map);
+            }
+            return mappings;
+        }
+
+        public void clear() {
+            prefixToNamespace.clear();
         }
     }
 

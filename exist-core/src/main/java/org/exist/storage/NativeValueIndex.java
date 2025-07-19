@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -43,8 +67,8 @@ import org.exist.storage.btree.IndexQuery;
 import org.exist.storage.btree.Value;
 import org.exist.storage.index.BFile;
 import org.exist.storage.io.VariableByteArrayInput;
+import org.exist.storage.io.VariableByteArrayOutputStream;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedLock;
 import org.exist.storage.txn.Txn;
@@ -169,7 +193,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
     /**
      * Work output Stream that should be cleared before every use.
      */
-    private VariableByteOutputStream os = new VariableByteOutputStream();
+    private VariableByteArrayOutputStream os = new VariableByteArrayOutputStream();
 
     private final boolean caseSensitive;
 
@@ -370,65 +394,69 @@ public class NativeValueIndex implements ContentLoadingObserver {
     }
 
     private <T> void flush(final PendingChanges<T> pending, final FunctionE<T, Value, EXistException> dbKeyFn) {
-        final VariableByteOutputStream nodeIdOs = new VariableByteOutputStream();
+        try (final VariableByteArrayOutputStream nodeIdOs = new VariableByteArrayOutputStream()) {
 
-        for (final Map.Entry<T, List<NodeId>> entry : pending.changes.entrySet()) {
-            final T key = entry.getKey();
+            for (final Map.Entry<T, List<NodeId>> entry : pending.changes.entrySet()) {
+                final T key = entry.getKey();
 
-            final List<NodeId> gids = entry.getValue();
-            final int gidsCount = gids.size();
+                final List<NodeId> gids = entry.getValue();
+                final int gidsCount = gids.size();
 
-            //Don't forget this one
-            FastQSort.sort(gids, 0, gidsCount - 1);
-            os.clear();
-            os.writeInt(this.doc.getDocId());
-            os.writeInt(gidsCount);
-
-            //Compute the GID list
-            try {
-                NodeId previous = null;
-                for (final NodeId nodeId : gids) {
-                    previous = nodeId.write(previous, nodeIdOs);
-                }
-
-                final byte[] nodeIdsData = nodeIdOs.toByteArray();
-
-                // clear the buf for the next iteration
-                nodeIdOs.clear();
-
-                // Write length of node IDs (bytes)
-                os.writeFixedInt(nodeIdsData.length);
-
-                // write the node IDs
-                os.write(nodeIdsData);
-
-            } catch (final IOException e) {
-                LOG.warn("IO error while writing range index: {}", e.getMessage(), e);
-                //TODO : throw exception?
-            }
-
-            try(final ManagedLock<ReentrantLock> bfileLock = lockManager.acquireBtreeWriteLock(dbValues.getLockName())) {
-                final Value v = dbKeyFn.apply(key);
-
-                if (dbValues.append(v, os.data()) == BFile.UNKNOWN_ADDRESS) {
-                    LOG.warn("Could not append index data for key '{}'", key);
-                    //TODO : throw exception ?
-                }
-            } catch (final EXistException | IOException e) {
-                LOG.error(e.getMessage(), e);
-            } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(dbValues.getFile()), e);
-                //TODO : return ?
-            } catch (final ReadOnlyException e) {
-                LOG.warn(e.getMessage(), e);
-
-                //Return without clearing the pending entries
-                return;
-            } finally {
+                //Don't forget this one
+                FastQSort.sort(gids, 0, gidsCount - 1);
                 os.clear();
+                try {
+                    os.writeInt(this.doc.getDocId());
+                    os.writeInt(gidsCount);
+
+                    //Compute the GID list
+                    NodeId previous = null;
+                    for (final NodeId nodeId : gids) {
+                        previous = nodeId.write(previous, nodeIdOs);
+                    }
+
+                    final byte[] nodeIdsData = nodeIdOs.toByteArray();
+
+                    // clear the buf for the next iteration
+                    nodeIdOs.clear();
+
+                    // Write length of node IDs (bytes)
+                    os.writeFixedInt(nodeIdsData.length);
+
+                    // write the node IDs
+                    os.write(nodeIdsData);
+
+                } catch (final IOException e) {
+                    LOG.warn("IO error while writing range index: {}", e.getMessage(), e);
+                    //TODO : throw exception?
+                }
+
+                try (final ManagedLock<ReentrantLock> bfileLock = lockManager.acquireBtreeWriteLock(dbValues.getLockName())) {
+                    final Value v = dbKeyFn.apply(key);
+
+                    if (dbValues.append(v, os.data()) == BFile.UNKNOWN_ADDRESS) {
+                        LOG.warn("Could not append index data for key '{}'", key);
+                        //TODO : throw exception ?
+                    }
+                } catch (final EXistException | IOException e) {
+                    LOG.error(e.getMessage(), e);
+                } catch (final LockException e) {
+                    LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(dbValues.getFile()), e);
+                    //TODO : return ?
+                } catch (final ReadOnlyException e) {
+                    LOG.warn(e.getMessage(), e);
+
+                    //Return without clearing the pending entries
+                    return;
+                } finally {
+                    os.clear();
+                }
             }
+            pending.changes.clear();
+        } catch (final IOException e) {
+            LOG.warn("IO error while writing range index: {}", e.getMessage(), e);
+            //TODO : throw exception?
         }
-        pending.changes.clear();
     }
 
     @Override
@@ -444,112 +472,116 @@ public class NativeValueIndex implements ContentLoadingObserver {
     }
 
     private <T> void remove(final PendingChanges<T> pending, final FunctionE<T, Value, EXistException> dbKeyFn) {
-        final VariableByteOutputStream nodeIdOs = new VariableByteOutputStream();
-        for (final Map.Entry<T, List<NodeId>> entry : pending.changes.entrySet()) {
-            final T key = entry.getKey();
-            final List<NodeId> storedGIDList = entry.getValue();
-            final List<NodeId> newGIDList = new ArrayList<>();
-            os.clear();
+        try (final VariableByteArrayOutputStream nodeIdOs = new VariableByteArrayOutputStream()) {
+            for (final Map.Entry<T, List<NodeId>> entry : pending.changes.entrySet()) {
+                final T key = entry.getKey();
+                final List<NodeId> storedGIDList = entry.getValue();
+                final List<NodeId> newGIDList = new ArrayList<>();
+                os.clear();
 
-            try(final ManagedLock<ReentrantLock> bfileLock = lockManager.acquireBtreeWriteLock(dbValues.getLockName())) {
+                try (final ManagedLock<ReentrantLock> bfileLock = lockManager.acquireBtreeWriteLock(dbValues.getLockName())) {
 
-                //Compute a key for the value
-                final Value searchKey = dbKeyFn.apply(key);
-                final Value value = dbValues.get(searchKey);
+                    //Compute a key for the value
+                    final Value searchKey = dbKeyFn.apply(key);
+                    final Value value = dbValues.get(searchKey);
 
-                //Does the value already has data in the index ?
-                if (value != null) {
+                    //Does the value already has data in the index ?
+                    if (value != null) {
 
-                    //Add its data to the new list
-                    final VariableByteArrayInput is = new VariableByteArrayInput(value.getData());
+                        //Add its data to the new list
+                        final VariableByteArrayInput is = new VariableByteArrayInput(value.getData());
 
-                    while (is.available() > 0) {
-                        final int storedDocId = is.readInt();
-                        final int gidsCount = is.readInt();
-                        final int size = is.readFixedInt();
+                        while (is.available() > 0) {
+                            final int storedDocId = is.readInt();
+                            final int gidsCount = is.readInt();
+                            final int size = is.readFixedInt();
 
-                        if (storedDocId != this.doc.getDocId()) {
+                            if (storedDocId != this.doc.getDocId()) {
 
-                            // data are related to another document:
-                            // append them to any existing data
-                            os.writeInt(storedDocId);
-                            os.writeInt(gidsCount);
-                            os.writeFixedInt(size);
-                            is.copyRaw(os, size);
-                        } else {
+                                // data are related to another document:
+                                // append them to any existing data
+                                os.writeInt(storedDocId);
+                                os.writeInt(gidsCount);
+                                os.writeFixedInt(size);
+                                is.copyRaw(os, size);
+                            } else {
 
-                            // data are related to our document:
-                            // feed the new list with the GIDs
-                            NodeId previous = null;
+                                // data are related to our document:
+                                // feed the new list with the GIDs
+                                NodeId previous = null;
 
-                            for (int j = 0; j < gidsCount; j++) {
-                                final NodeId nodeId = broker.getBrokerPool().getNodeFactory().createFromStream(previous, is);
-                                previous = nodeId;
+                                for (int j = 0; j < gidsCount; j++) {
+                                    final NodeId nodeId = broker.getBrokerPool().getNodeFactory().createFromStream(previous, is);
+                                    previous = nodeId;
 
-                                // add the node to the new list if it is not
-                                // in the list of removed nodes
-                                if (!containsNode(storedGIDList, nodeId)) {
-                                    newGIDList.add(nodeId);
+                                    // add the node to the new list if it is not
+                                    // in the list of removed nodes
+                                    if (!containsNode(storedGIDList, nodeId)) {
+                                        newGIDList.add(nodeId);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    //append the data from the new list
-                    if (newGIDList.size() > 0) {
-                        final int gidsCount = newGIDList.size();
+                        //append the data from the new list
+                        if (newGIDList.size() > 0) {
+                            final int gidsCount = newGIDList.size();
 
-                        //Don't forget this one
-                        FastQSort.sort(newGIDList, 0, gidsCount - 1);
-                        os.writeInt(this.doc.getDocId());
-                        os.writeInt(gidsCount);
+                            //Don't forget this one
+                            FastQSort.sort(newGIDList, 0, gidsCount - 1);
+                            os.writeInt(this.doc.getDocId());
+                            os.writeInt(gidsCount);
 
-                        //Compute the new GID list
-                        try {
-                            NodeId previous = null;
-                            for (final NodeId nodeId : newGIDList) {
-                                previous = nodeId.write(previous, nodeIdOs);
+                            //Compute the new GID list
+                            try {
+                                NodeId previous = null;
+                                for (final NodeId nodeId : newGIDList) {
+                                    previous = nodeId.write(previous, nodeIdOs);
+                                }
+
+                                final byte[] nodeIdsData = nodeIdOs.toByteArray();
+
+                                // clear the buf for the next iteration
+                                nodeIdOs.clear();
+
+                                // Write length of node IDs (bytes)
+                                os.writeFixedInt(nodeIdsData.length);
+
+                                // write the node IDs
+                                os.write(nodeIdsData);
+                            } catch (final IOException e) {
+                                LOG.warn("IO error while writing range index: {}", e.getMessage(), e);
+                                //TODO : throw exception?
                             }
-
-                            final byte[] nodeIdsData = nodeIdOs.toByteArray();
-
-                            // clear the buf for the next iteration
-                            nodeIdOs.clear();
-
-                            // Write length of node IDs (bytes)
-                            os.writeFixedInt(nodeIdsData.length);
-
-                            // write the node IDs
-                            os.write(nodeIdsData);
-                        } catch (final IOException e) {
-                            LOG.warn("IO error while writing range index: {}", e.getMessage(), e);
-                            //TODO : throw exception?
                         }
-                    }
 
 //                        if(os.data().size() == 0)
 //                            dbValues.remove(value);
-                    if (dbValues.update(value.getAddress(), searchKey, os.data()) == BFile.UNKNOWN_ADDRESS) {
-                        LOG.error("Could not update index data for value '{}'", searchKey);
-                        //TODO: throw exception ?
-                    }
-                } else {
+                        if (dbValues.update(value.getAddress(), searchKey, os.data()) == BFile.UNKNOWN_ADDRESS) {
+                            LOG.error("Could not update index data for value '{}'", searchKey);
+                            //TODO: throw exception ?
+                        }
+                    } else {
 
-                    if (dbValues.put(searchKey, os.data()) == BFile.UNKNOWN_ADDRESS) {
-                        LOG.error("Could not put index data for value '{}'", searchKey);
-                        //TODO : throw exception ?
+                        if (dbValues.put(searchKey, os.data()) == BFile.UNKNOWN_ADDRESS) {
+                            LOG.error("Could not put index data for value '{}'", searchKey);
+                            //TODO : throw exception ?
+                        }
                     }
+                } catch (final EXistException | IOException e) {
+                    LOG.error(e.getMessage(), e);
+                } catch (final LockException e) {
+                    LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(dbValues.getFile()), e);
+                    //TODO : return ?
+                } finally {
+                    os.clear();
                 }
-            } catch (final EXistException | IOException e) {
-                LOG.error(e.getMessage(), e);
-            } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(dbValues.getFile()), e);
-                //TODO : return ?
-            } finally {
-                os.clear();
             }
+            pending.changes.clear();
+        } catch (final IOException e) {
+            LOG.warn("IO error while writing range index: {}", e.getMessage(), e);
+            //TODO : throw exception?
         }
-        pending.changes.clear();
     }
 
     private static boolean containsNode(final List<NodeId> list, final NodeId nodeId) {
@@ -1076,7 +1108,8 @@ public class NativeValueIndex implements ContentLoadingObserver {
         try(final ManagedLock<ReentrantLock> bfileLock = lockManager.acquireBtreeWriteLock(dbValues.getLockName())) {
             config.setProperty(getConfigKeyForFile(), null);
             dbValues.close();
-        } catch (final LockException e) {
+            os.close();
+        } catch (final LockException | IOException e) {
             LOG.warn("Failed to acquire lock for '{}'", FileUtils.fileName(dbValues.getFile()), e);
         }
     }

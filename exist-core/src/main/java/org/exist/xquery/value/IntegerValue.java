@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,7 +46,9 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
-import org.exist.util.ByteConversion;
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteBufferInput;
+import org.exist.storage.io.VariableByteBufferOutput;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
@@ -40,7 +66,10 @@ import java.util.function.IntSupplier;
  * This results in the standard mathematical concept of the integer numbers.
  * The value space of integer is the infinite set {...,-2,-1,0,1,2,...}.
  * The base type of integer is decimal.
- * See http://www.w3.org/TR/xmlschema-2/#integer
+ * See <a href="http://www.w3.org/TR/xmlschema-2/#integer">http://www.w3.org/TR/xmlschema-2/#integer</a>
+ *
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class IntegerValue extends NumericValue {
 
@@ -523,42 +552,46 @@ public class IntegerValue extends NumericValue {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(IntegerValue.class)) {
-            return (T) this;
-        } else if (target == Long.class || target == long.class) {
-            // ?? jmv: return new Long(value);
-            return (T) Long.valueOf(value.longValue());
-        } else if (target == Integer.class || target == int.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.INT);
-            return (T) Integer.valueOf(v.value.intValue());
-        } else if (target == Short.class || target == short.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.SHORT);
-            return (T) Short.valueOf(v.value.shortValue());
-        } else if (target == Byte.class || target == byte.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.BYTE);
-            return (T) Byte.valueOf(v.value.byteValue());
-        } else if (target == Double.class || target == double.class) {
-            final DoubleValue v = (DoubleValue) convertTo(Type.DOUBLE);
-            return (T) Double.valueOf(v.getValue());
-        } else if (target == Float.class || target == float.class) {
-            final FloatValue v = (FloatValue) convertTo(Type.FLOAT);
-            return (T) Float.valueOf(v.value);
-        } else if (target == Boolean.class || target == boolean.class) {
-            return (T) new BooleanValue(getExpression(), effectiveBooleanValue());
-        } else if (target == byte[].class) {
-            return (T) serialize();
-        } else if (target == ByteBuffer.class) {
-            return (T) ByteBuffer.wrap(serialize());
-        } else if (target == String.class) {
-            return (T) value.toString();
-        } else if (target == BigInteger.class) {
-            return (T) new BigInteger(value.toByteArray());
-        } else if (target == Object.class) {
-            return (T) value; // Long(value);
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(IntegerValue.class)) {
+                return (T) this;
+            } else if (target == Long.class || target == long.class) {
+                return (T) Long.valueOf(value.longValue());
+            } else if (target == Integer.class || target == int.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.INT);
+                return (T) Integer.valueOf(v.value.intValue());
+            } else if (target == Short.class || target == short.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.SHORT);
+                return (T) Short.valueOf(v.value.shortValue());
+            } else if (target == Byte.class || target == byte.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.BYTE);
+                return (T) Byte.valueOf(v.value.byteValue());
+            } else if (target == Double.class || target == double.class) {
+                final DoubleValue v = (DoubleValue) convertTo(Type.DOUBLE);
+                return (T) Double.valueOf(v.getValue());
+            } else if (target == Float.class || target == float.class) {
+                final FloatValue v = (FloatValue) convertTo(Type.FLOAT);
+                return (T) Float.valueOf(v.value);
+            } else if (target == Boolean.class || target == boolean.class) {
+                return (T) new BooleanValue(getExpression(), effectiveBooleanValue());
+            } else if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                return (T) ByteBuffer.wrap(serialize());
+            } else if (target == String.class) {
+                return (T) value.toString();
+            } else if (target == BigInteger.class) {
+                return (T) new BigInteger(value.toByteArray());
+            } else if (target == Object.class) {
+                return (T) value;
+            }
+        } catch (final IOException e) {
+            throwable = e;
         }
 
-        throw new XPathException(getExpression(), "cannot convert value of type " + Type.getTypeName(getType()) +
-                " to Java object of type " + target.getName());
+        throw new XPathException(getExpression(), "Cannot convert value of type " + Type.getTypeName(getType()) +
+                " to Java object of type " + target.getName(), throwable);
     }
 
     @Override
@@ -576,37 +609,68 @@ public class IntegerValue extends NumericValue {
         return value.hashCode();
     }
 
-    //TODO(AR) this is not a very good serialization method, the size of the IntegerValue is unbounded and may not fit in 8 bytes.
     /**
      * Serializes to a byte array.
      *
-     * 8 bytes.
+     * Return value is formatted like:
+     *  byte[0]  indicates the {@link Type}
+     *  byte[...] VBE int encoded length of the following big integer byte[] value
+     *  byte[...] the big integer byte[] value
      *
      * @return the serialized data.
      */
-    public byte[] serialize() {
-        final byte[] buf = new byte[8];
-        final long l = value.longValue() - Long.MIN_VALUE;
-        ByteConversion.longToByte(l, buf, 0);
-        return buf;
+    public byte[] serialize() throws IOException {
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(6)) {
+            vbos.writeByte((byte) (type & 0xFF));
+            vbos.writeBigInteger(value);
+            return vbos.toByteArray();
+        }
     }
 
-    //TODO(AR) this is not a very good serialization method, the size of the IntegerValue is unbounded and may not fit in 8 bytes.
     /**
      * Serializes to a ByteBuffer.
      *
-     * 8 bytes.
+     * Return value is formatted like:
+     *  byte[0]  indicates the {@link Type}
+     *. byte[...] VBE int encoded length of the following big integer byte[] value
+     *  byte[...] the big integer byte[] value
      *
      * @param buf the ByteBuffer to serialize to.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
-        final long l = value.longValue() - Long.MIN_VALUE;
-        ByteConversion.longToByte(l, buf);
+        final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
+        vbb.writeByte((byte) (type & 0xFF));
+        vbb.writeBigInteger(value);
     }
 
-    //TODO(AR) this is not a very good deserialization method, the size of the IntegerValue is unbounded and may not fit in 8 bytes.
-    public static IntegerValue deserialize(final ByteBuffer buf) {
-        final long l = ByteConversion.byteToLong(buf) ^ 0x8000000000000000L;
-        return new IntegerValue(l);
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the IntegerValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the IntegerValue.
+     */
+    public static IntegerValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
+        return deserialize(expression, buf, null);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the IntegerValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     * @param checkType an XDM type to check that matches against the deserialized IntegerValue type.
+     *
+     * @return the IntegerValue.
+     */
+    public static IntegerValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType) throws IOException, XPathException {
+        final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
+        final int type = vbbi.read();
+        if (checkType != null && type != checkType.intValue()) {
+            throw new XPathException(expression, "Expected deserialized IntegerValue of type: " + Type.getTypeName(checkType) + ", but found: " + Type.getTypeName(type));
+        }
+        final BigInteger value = vbbi.readBigInteger();
+        return new IntegerValue(expression, value, type);
     }
 }

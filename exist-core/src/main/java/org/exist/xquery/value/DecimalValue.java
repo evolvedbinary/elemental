@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,13 +46,16 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
-import org.exist.util.ByteConversion;
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteBufferInput;
+import org.exist.storage.io.VariableByteBufferOutput;
 import org.exist.xquery.Constants;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -40,10 +67,9 @@ import java.util.regex.Pattern;
 
 /**
  * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DecimalValue extends NumericValue {
-
-    public static final int SERIALIZED_SIZE = 8;
 
     public static final BigInteger BIG_INTEGER_TEN = BigInteger.valueOf(10);
     // i × 10^-n where i, n = integers  and n >= 0
@@ -569,67 +595,97 @@ public class DecimalValue extends NumericValue {
         return Integer.MAX_VALUE;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Item#toJavaObject(java.lang.Class)
-     */
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
-        if (target.isAssignableFrom(DecimalValue.class)) {
-            return (T) this;
-        } else if (target == BigDecimal.class) {
-            return (T) value;
-        } else if (target == Double.class || target == double.class) {
-            return (T) Double.valueOf(value.doubleValue());
-        } else if (target == Float.class || target == float.class) {
-            return (T) Float.valueOf(value.floatValue());
-        } else if (target == Long.class || target == long.class) {
-            return (T) Long.valueOf(((IntegerValue) convertTo(Type.LONG)).getValue());
-        } else if (target == Integer.class || target == int.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.INT);
-            return (T) Integer.valueOf((int) v.getValue());
-        } else if (target == Short.class || target == short.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.SHORT);
-            return (T) Short.valueOf((short) v.getValue());
-        } else if (target == Byte.class || target == byte.class) {
-            final IntegerValue v = (IntegerValue) convertTo(Type.BYTE);
-            return (T) Byte.valueOf((byte) v.getValue());
-        } else if (target == byte[].class) {
-            final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-            serialize(buf);
-            return (T) buf.array();
-        } else if (target == ByteBuffer.class) {
-            final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
-            serialize(buf);
-            return (T) buf;
-        } else if (target == String.class) {
-            return (T) getStringValue();
-        } else if (target == Boolean.class) {
-            return (T) Boolean.valueOf(effectiveBooleanValue());
+        Throwable throwable = null;
+        try {
+            if (target.isAssignableFrom(DecimalValue.class)) {
+                return (T) this;
+            } else if (target == BigDecimal.class) {
+                return (T) value;
+            } else if (target == Double.class || target == double.class) {
+                return (T) Double.valueOf(value.doubleValue());
+            } else if (target == Float.class || target == float.class) {
+                return (T) Float.valueOf(value.floatValue());
+            } else if (target == Long.class || target == long.class) {
+                return (T) Long.valueOf(((IntegerValue) convertTo(Type.LONG)).getValue());
+            } else if (target == Integer.class || target == int.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.INT);
+                return (T) Integer.valueOf((int) v.getValue());
+            } else if (target == Short.class || target == short.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.SHORT);
+                return (T) Short.valueOf((short) v.getValue());
+            } else if (target == Byte.class || target == byte.class) {
+                final IntegerValue v = (IntegerValue) convertTo(Type.BYTE);
+                return (T) Byte.valueOf((byte) v.getValue());
+            } else if (target == byte[].class) {
+                return (T) serialize();
+            } else if (target == ByteBuffer.class) {
+                return (T) ByteBuffer.wrap(serialize());
+            } else if (target == String.class) {
+                return (T) getStringValue();
+            } else if (target == Boolean.class) {
+                return (T) Boolean.valueOf(effectiveBooleanValue());
+            }
+        } catch (final IOException e) {
+            throwable = e;
         }
 
-        throw new XPathException(getExpression(), 
-                "cannot convert value of type "
-                        + Type.getTypeName(getType())
-                        + " to Java object of type "
-                        + target.getName());
+        throw new XPathException(getExpression(), "Cannot convert value of type " + Type.getTypeName(getType()) +
+            " to Java object of type " + target.getName(), throwable);
     }
     //End of copy
 
     /**
+     * Serializes to a byte array.
+     *
+     * Return value is formatted like:
+     *  byte[0..] VBE int encoded scale of the big decimal value
+     *  byte[...] VBE int encoded precision of the big decimal value
+     *  byte[...] VBE int encoded length of the following big decimal byte[] value
+     *  byte[...] the big decimal byte[] value
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        final byte[] data = value.unscaledValue().toByteArray();
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(16)) {
+            vbos.writeInt(value.scale());
+            vbos.writeInt(value.precision());
+            vbos.writeInt(data.length);
+            vbos.write(data);
+            return vbos.toByteArray();
+        }
+    }
+
+    /**
      * Serializes to a ByteBuffer.
      *
-     * 8 bytes.
+     * Return value is formatted like:
+     *  byte[0..] VBE int encoded scale of the big decimal value
+     *  byte[...] VBE int encoded precision of the big decimal value
+     *  byte[...] VBE int encoded length of the following big decimal byte[] value
+     *  byte[...] the big decimal byte[] value
      *
      * @param buf the ByteBuffer to serialize to.
      */
-    public void serialize(final ByteBuffer buf) {
-        final long ddBits = Double.doubleToLongBits(value.doubleValue()) ^ 0x8000000000000000L;
-        ByteConversion.longToByte(ddBits, buf);
+    public void serialize(final ByteBuffer buf) throws IOException {
+        final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
+        vbb.writeBigDecimal(value);
     }
 
-    public static DecimalValue deserialize(final ByteBuffer buf) {
-        final long dBits = ByteConversion.byteToLong(buf) ^ 0x8000000000000000L;
-        final double d = Double.longBitsToDouble(dBits);
-        return new DecimalValue(d);
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the DecimalValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the DecimalValue.
+     */
+    public static DecimalValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
+        final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
+        final BigDecimal value = vbbi.readBigDecimal();
+        return new DecimalValue(expression, value);
     }
 }

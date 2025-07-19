@@ -49,13 +49,13 @@ import org.exist.storage.dom.AddValueLoggable;
 import org.exist.storage.dom.RemovePageLoggable;
 import org.exist.storage.dom.WriteOverflowPageLoggable;
 import org.exist.storage.index.StoreValueLoggable;
-import org.exist.storage.io.VariableByteInputStream;
+import org.exist.storage.io.VariableByteArrayInput;
+import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.*;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
-import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.Ignore;
@@ -1897,7 +1897,7 @@ public abstract class AbstractJournalTest<T> {
             }
 
             try {
-                final VariableByteInputStream vis = new VariableByteInputStream(new UnsynchronizedByteArrayInputStream(o.getValue()));
+                final VariableByteInput vis = new VariableByteArrayInput(o.getValue());
                 final int thatDocId = vis.readInt();
                 final String thatDocName = vis.readUTF();
 
@@ -1958,7 +1958,7 @@ public abstract class AbstractJournalTest<T> {
             }
 
             try {
-                final VariableByteInputStream vis = new VariableByteInputStream(new UnsynchronizedByteArrayInputStream(o.getOldData(), o.getOffset(), o.getLen()));
+                final VariableByteInput vis = new VariableByteArrayInput(o.getOldData(), o.getOffset(), o.getLen());
                 final int thatDocId = vis.readInt();
                 final String thatDocName = vis.readUTF();
 

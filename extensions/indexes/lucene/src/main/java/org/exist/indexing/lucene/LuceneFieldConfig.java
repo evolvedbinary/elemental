@@ -48,11 +48,13 @@ package org.exist.indexing.lucene;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
+import org.exist.dom.QName;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.numbering.NodeId;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
+import org.exist.storage.ElementValue;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.StringUtil;
 import org.exist.xquery.CompiledXQuery;
@@ -63,7 +65,10 @@ import org.w3c.dom.Element;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.xml.datatype.XMLGregorianCalendar;
+import javax.xml.XMLConstants;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Map;
 import java.util.Optional;
 
@@ -79,8 +84,14 @@ import java.util.Optional;
  * A field may also be associated with an analyzer, could have a type and may be stored or not.
  *
  * @author Wolfgang Meier
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LuceneFieldConfig extends AbstractFieldConfig {
+
+    private static final BigDecimal BD_DOUBLE_MAX_VALUE = BigDecimal.valueOf(Double.MAX_VALUE);
+    private static final BigDecimal BD_DOUBLE_MIN_VALUE = BigDecimal.valueOf(Double.MIN_VALUE);
+    private static final BigInteger BI_LONG_MAX_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
+    private static final BigInteger BI_LONG_MIN_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
 
     private static final String ATTR_FIELD_NAME = "name";
     private static final String ATTR_TYPE = "type";
@@ -92,7 +103,7 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
     protected String fieldName;
     protected int type = Type.STRING;
     protected boolean binary = false;
-    protected boolean store = true;
+    protected Field.Store store = Field.Store.YES;
     protected Analyzer analyzer= null;
     protected Optional<String> condition = Optional.empty();
     protected CompiledXQuery compiledCondition = null;
@@ -116,7 +127,7 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
 
         final String storeStr = configElement.getAttribute(ATTR_STORE);
         if (!storeStr.isEmpty()) {
-            this.store = storeStr.equalsIgnoreCase("yes") || storeStr.equalsIgnoreCase("true");
+            this.store = (storeStr.equalsIgnoreCase("yes") || storeStr.equalsIgnoreCase("true")) ? Field.Store.YES : Field.Store.NO;
         }
 
         final String analyzerOpt = configElement.getAttribute(ATTR_ANALYZER);
@@ -150,10 +161,10 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
     }
 
     @Override
-    protected void build(DBBroker broker, DocumentImpl document, NodeId nodeId, Document luceneDoc, CharSequence text) {
+    protected void build(final DBBroker broker, final DocumentImpl document, final NodeId nodeId, final Document luceneDoc, final CharSequence text, final Map<String, String> prefixToNamespaceMappings) {
         try {
             if (checkCondition(broker, document, nodeId)) {
-                doBuild(broker, document, nodeId, luceneDoc, text);
+                doBuild(broker, document, nodeId, luceneDoc, text, prefixToNamespaceMappings);
             }
         } catch (XPathException e) {
             LOG.warn("XPath error while evaluating expression for field named '{}': {}: {}", fieldName, expression, e.getMessage(), e);
@@ -189,10 +200,11 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
     }
 
     @Override
-    protected void processResult(Sequence result, Document luceneDoc) throws XPathException {
-        for (SequenceIterator i = result.unorderedIterator(); i.hasNext(); ) {
-            final String text = i.nextItem().getStringValue();
-            final Field field = binary ? convertToDocValue(text) : convertToField(text);
+    protected void processResult(final Sequence result, final Map<String, String> prefixToNamespaceMappings, final Document luceneDoc) throws XPathException {
+        for (final SequenceIterator i = result.unorderedIterator(); i.hasNext(); ) {
+            final Item item = i.nextItem();
+            final String content = item.getStringValue();
+            final Field field = binary ? convertToDocValue(content, prefixToNamespaceMappings) : convertToField(content, prefixToNamespaceMappings);
             if (field != null) {
                 luceneDoc.add(field);
             }
@@ -200,147 +212,327 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
     }
 
     @Override
-    protected void processText(CharSequence text, Document luceneDoc) {
+    protected void processText(final NodeId nodeId, final CharSequence text, final Map<String, String> prefixToNamespaceMappings, final Document luceneDoc) {
         final Field field;
         if (binary) {
-            field = convertToDocValue(text.toString());
+            field = convertToDocValue(text.toString(), prefixToNamespaceMappings);
         } else {
-            field = convertToField(text.toString());
+            field = convertToField(text.toString(), prefixToNamespaceMappings);
         }
         if (field != null) {
             luceneDoc.add(field);
         }
     }
 
-    private Field convertToField(String content) {
+    private @Nullable Field convertToField(final String content, final Map<String, String> prefixToNamespaceMappings) {
         try {
             switch (type) {
+
                 case Type.INTEGER:
+                case Type.NON_POSITIVE_INTEGER:
+                case Type.NEGATIVE_INTEGER:
+                case Type.NON_NEGATIVE_INTEGER:
+                case Type.POSITIVE_INTEGER:
+                    final BigInteger integerValue = new IntegerValue(content, type).toJavaObject(BigInteger.class);
+                    // NOTE(AR) we can only store this as a Java `long` type in Lucene, so we have to check if it will fit!
+                    if (integerValue.subtract(BI_LONG_MAX_VALUE).compareTo(BigInteger.ZERO) > 0 || integerValue.subtract(BI_LONG_MIN_VALUE).compareTo(BigInteger.ZERO) < 0) {
+                        LOG.warn("Field {} has an xs:integer value outside of the range {} to {}, this is unsupported due to limitations with Lucene 4.10.4. Content was: {}", fieldName, Long.MIN_VALUE, Long.MAX_VALUE, content);
+                        return null;
+                    }
+                    return new LongField(fieldName, integerValue.longValue(), store == Field.Store.YES ? LongField.TYPE_STORED : LongField.TYPE_NOT_STORED);
+
                 case Type.LONG:
                 case Type.UNSIGNED_LONG:
-                    long lvalue = Long.parseLong(content);
-                    return new LongField(fieldName, lvalue, LongField.TYPE_STORED);
+                    final long longValue = new IntegerValue(content, type).getLong();
+                    return new LongField(fieldName, longValue, store == Field.Store.YES ? LongField.TYPE_STORED : LongField.TYPE_NOT_STORED);
+
                 case Type.INT:
                 case Type.UNSIGNED_INT:
                 case Type.SHORT:
                 case Type.UNSIGNED_SHORT:
-                    int ivalue = Integer.parseInt(content);
-                    return new IntField(fieldName, ivalue, IntField.TYPE_STORED);
+                case Type.BYTE:
+                case Type.UNSIGNED_BYTE:
+                    final int intValue = new IntegerValue(content, type).getInt();
+                    return new IntField(fieldName, intValue, store == Field.Store.YES ? IntField.TYPE_STORED : IntField.TYPE_NOT_STORED);
+
                 case Type.DECIMAL:
+                    final BigDecimal bigDecimal = new DecimalValue(content).toJavaObject(BigDecimal.class);
+                    // NOTE(AR) we can only store this as a Java `double` type in Lucene, so we have to check if it will fit!
+                    if (bigDecimal.subtract(BD_DOUBLE_MAX_VALUE).compareTo(BigDecimal.ZERO) > 0 || bigDecimal.subtract(BD_DOUBLE_MIN_VALUE).compareTo(BigDecimal.ZERO) < 0) {
+                        LOG.warn("Field {} has an xs:decimal value outside of the range {} to {}, this is unsupported due to limitations with Lucene 4.10.4. Content was: {}", fieldName, Double.MIN_VALUE, Double.MAX_VALUE, content);
+                        return null;
+                    }
+                    return new DoubleField(fieldName, bigDecimal.doubleValue(), store == Field.Store.YES ? DoubleField.TYPE_STORED : DoubleField.TYPE_NOT_STORED);
+
                 case Type.DOUBLE:
-                    double dvalue = Double.parseDouble(content);
-                    return new DoubleField(fieldName, dvalue, DoubleField.TYPE_STORED);
+                    final double doubleValue = new DoubleValue(content).getDouble();
+                    return new DoubleField(fieldName, doubleValue, store == Field.Store.YES ? DoubleField.TYPE_STORED : DoubleField.TYPE_NOT_STORED);
+
                 case Type.FLOAT:
-                    float fvalue = Float.parseFloat(content);
-                    return new FloatField(fieldName, fvalue, FloatField.TYPE_STORED);
+                    final float floatValue = new FloatValue(content).getFloat();
+                    return new FloatField(fieldName, floatValue, store == Field.Store.YES ? FloatField.TYPE_STORED : FloatField.TYPE_NOT_STORED);
+
                 case Type.DATE:
-                    DateValue dv = new DateValue(content);
-                    long dl = dateToLong(dv);
-                    return new LongField(fieldName, dl, LongField.TYPE_STORED);
+                    final DateValue dateValue = new DateValue(content);
+                    final long longDateValue = dateValue.toJavaObject(long.class);
+                    return new LongField(fieldName, longDateValue, store == Field.Store.YES ? LongField.TYPE_STORED : LongField.TYPE_NOT_STORED);
+
                 case Type.TIME:
-                    TimeValue tv = new TimeValue(content);
-                    long tl = timeToLong(tv);
-                    return new LongField(fieldName, tl, LongField.TYPE_STORED);
+                    final TimeValue timeValue = new TimeValue(content);
+                    final long longTimeValue = timeValue.toJavaObject(long.class);
+                    return new LongField(fieldName, longTimeValue, store == Field.Store.YES ? LongField.TYPE_STORED : LongField.TYPE_NOT_STORED);
+
                 case Type.DATE_TIME:
-                    DateTimeValue dtv = new DateTimeValue(content);
-                    String dateStr = dateTimeToString(dtv);
-                    return new TextField(fieldName, dateStr, Field.Store.YES);
+                    final DateTimeValue dateTimeValue = new DateTimeValue(content);
+                    return new TextField(fieldName, dateTimeValue.toString(), store);
+
+                case Type.DATE_TIME_STAMP:
+                    final DateTimeStampValue dateTimeStampValue = new DateTimeStampValue(content);
+                    return new TextField(fieldName, dateTimeStampValue.toString(), store);
+
+                case Type.DURATION:
+                    final DurationValue durationValue = new DurationValue(content);
+                    return new TextField(fieldName, durationValue.toString(), store);
+
+                case Type.YEAR_MONTH_DURATION:
+                    final YearMonthDurationValue yearMonthDurationValue = new YearMonthDurationValue(content);
+                    return new TextField(fieldName, yearMonthDurationValue.toString(), store);
+
+                case Type.DAY_TIME_DURATION:
+                    final DayTimeDurationValue dayTimeDurationValue = new DayTimeDurationValue(content);
+                    return new TextField(fieldName, dayTimeDurationValue.toString(), store);
+
+                case Type.GYEARMONTH:
+                    final GYearMonthValue gYearMonthValue = new GYearMonthValue(content);
+                    return new TextField(fieldName, gYearMonthValue.toString(), store);
+
+                case Type.GYEAR:
+                    final GYearValue gYearValue = new GYearValue(content);
+                    return new TextField(fieldName, gYearValue.toString(), store);
+
+                case Type.GMONTHDAY:
+                    final GMonthDayValue gMonthDayValue = new GMonthDayValue(content);
+                    return new TextField(fieldName, gMonthDayValue.toString(), store);
+
+                case Type.GMONTH:
+                    final GMonthValue gMonthValue = new GMonthValue(content);
+                    return new TextField(fieldName, gMonthValue.toString(), store);
+
+                case Type.GDAY:
+                    final GDayValue gDayValue = new GDayValue(content);
+                    return new TextField(fieldName, gDayValue.toString(), store);
+
+                case Type.BOOLEAN:
+                    final BooleanValue booleanValue = BooleanValue.valueOf(null, content);
+                    return new IntField(fieldName, booleanValue.getValue() ? 1 : 0, store);
+
+                case Type.BASE64_BINARY:
+                    final BinaryValue base64Binary = new BinaryValueFromBinaryString(new Base64BinaryValueType(), content);
+                    return new TextField(fieldName, base64Binary.getStringValue(), store);
+
+                case Type.HEX_BINARY:
+                    final BinaryValue hexBinary = new BinaryValueFromBinaryString(new HexBinaryValueType(), content);
+                    return new TextField(fieldName, hexBinary.getStringValue(), store);
+
+                case Type.ANY_URI:
+                    final AnyURIValue anyURIValue = new AnyURIValue(content);
+                    return new TextField(fieldName, anyURIValue.getStringValue(), store);
+
+                case Type.QNAME:
+                    final QNameValue qnameValue = getQNameValue(content, prefixToNamespaceMappings);
+                    return new TextField(fieldName, qnameValue.getQName().getExtendedStringValue(), store);
+
+                case Type.STRING:
+                case Type.NORMALIZED_STRING:
+                case Type.TOKEN:
+                case Type.LANGUAGE:
+                case Type.NMTOKEN:
+                case Type.NAME:
+                case Type.NCNAME:
+                case Type.ID:
+                case Type.IDREF:
+                case Type.ENTITY:
+                    final StringValue stringValue = new StringValue(content, type);
+                    return new TextField(fieldName, stringValue.getStringValue(), store);
+
+                case Type.NOTATION:
                 default:
-                    return new TextField(fieldName, content, store ? Field.Store.YES : Field.Store.NO);
+                    // NOTE(AR) report inability to index value
+                    LOG.warn("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
             }
-        } catch (NumberFormatException | XPathException e) {
-            // wrong type: ignore
-            LOG.trace("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
+        } catch (final NumberFormatException | XPathException | QName.IllegalQNameException e) {
+            // NOTE(AR) report inability to index value
+            LOG.warn("Cannot convert field {} to type {}. Content was: {}. Error was: {}", fieldName, Type.getTypeName(type), content, e.getMessage());
         }
         return null;
     }
 
-    private Field convertToDocValue(final String content) {
+    private @Nullable Field convertToDocValue(final String content, final Map<String, String> prefixToNamespaceMappings) {
         try {
+            final BytesRef bytesRef;
             switch (type) {
-                case Type.TIME:
-                    final TimeValue timeValue = new TimeValue(content);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(timeValue.toJavaObject(byte[].class)));
-
-                case Type.DATE_TIME:
-                    final DateTimeValue dateTimeValue = new DateTimeValue(content);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(dateTimeValue.toJavaObject(byte[].class)));
-
-                case Type.DATE:
-                    final DateValue dateValue = new DateValue(content);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(dateValue.toJavaObject(byte[].class)));
 
                 case Type.INTEGER:
+                case Type.NON_POSITIVE_INTEGER:
+                case Type.NEGATIVE_INTEGER:
                 case Type.LONG:
-                case Type.UNSIGNED_LONG:
                 case Type.INT:
-                case Type.UNSIGNED_INT:
                 case Type.SHORT:
+                case Type.BYTE:
+                case Type.NON_NEGATIVE_INTEGER:
+                case Type.UNSIGNED_LONG:
+                case Type.UNSIGNED_INT:
                 case Type.UNSIGNED_SHORT:
-                    final IntegerValue iv = new IntegerValue(content, Type.INTEGER);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(iv.serialize()));
-
-                case Type.DOUBLE:
-                    final DoubleValue dbv = new DoubleValue(content);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(dbv.toJavaObject(byte[].class)));
-
-                case Type.FLOAT:
-                    final FloatValue fv = new FloatValue(content);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(fv.toJavaObject(byte[].class)));
+                case Type.UNSIGNED_BYTE:
+                case Type.POSITIVE_INTEGER:
+                    final IntegerValue iv = new IntegerValue(content, type);
+                    bytesRef = new BytesRef(iv.toJavaObject(byte[].class));
+                    break;
 
                 case Type.DECIMAL:
                     final DecimalValue dv = new DecimalValue(content);
-                    return new BinaryDocValuesField(fieldName, new BytesRef(dv.toJavaObject(byte[].class)));
+                    bytesRef = new BytesRef(dv.toJavaObject(byte[].class));
+                    break;
 
-                // everything else treated as string
+                case Type.DOUBLE:
+                    final DoubleValue dbv = new DoubleValue(content);
+                    bytesRef = new BytesRef(dbv.toJavaObject(byte[].class));
+                    break;
+
+                case Type.FLOAT:
+                    final FloatValue fv = new FloatValue(content);
+                    bytesRef = new BytesRef(fv.toJavaObject(byte[].class));
+                    break;
+
+                case Type.DATE:
+                    final DateValue dateValue = new DateValue(content);
+                    bytesRef = new BytesRef(dateValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.TIME:
+                    final TimeValue timeValue = new TimeValue(content);
+                    bytesRef = new BytesRef(timeValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.DATE_TIME:
+                    final DateTimeValue dateTimeValue = new DateTimeValue(content);
+                    bytesRef = new BytesRef(dateTimeValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.DATE_TIME_STAMP:
+                    final DateTimeStampValue dateTimeStampValue = new DateTimeStampValue(content);
+                    bytesRef = new BytesRef(dateTimeStampValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.DURATION:
+                    final DurationValue durationValue = new DurationValue(content);
+                    bytesRef = new BytesRef(durationValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.YEAR_MONTH_DURATION:
+                    final YearMonthDurationValue yearMonthDurationValue = new YearMonthDurationValue(content);
+                    bytesRef = new BytesRef(yearMonthDurationValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.DAY_TIME_DURATION:
+                    final DayTimeDurationValue dayTimeDurationValue = new DayTimeDurationValue(content);
+                    bytesRef = new BytesRef(dayTimeDurationValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.GYEARMONTH:
+                    final GYearMonthValue gYearMonthValue = new GYearMonthValue(content);
+                    bytesRef = new BytesRef(gYearMonthValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.GYEAR:
+                    final GYearValue gYearValue = new GYearValue(content);
+                    bytesRef = new BytesRef(gYearValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.GMONTHDAY:
+                    final GMonthDayValue gMonthDayValue = new GMonthDayValue(content);
+                    bytesRef = new BytesRef(gMonthDayValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.GMONTH:
+                    final GMonthValue gMonthValue = new GMonthValue(content);
+                    bytesRef = new BytesRef(gMonthValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.GDAY:
+                    final GDayValue gDayValue = new GDayValue(content);
+                    bytesRef = new BytesRef(gDayValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.BOOLEAN:
+                    final BooleanValue booleanValue = BooleanValue.valueOf(null, content);
+                    bytesRef = new BytesRef(booleanValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.BASE64_BINARY:
+                    final BinaryValue base64BinaryValue = new BinaryValueFromBinaryString(new Base64BinaryValueType(), content);
+                    bytesRef = new BytesRef(base64BinaryValue.serialize());
+                    break;
+
+                case Type.HEX_BINARY:
+                    final BinaryValue hexBinaryValue = new BinaryValueFromBinaryString(new HexBinaryValueType(), content);
+                    bytesRef = new BytesRef(hexBinaryValue.serialize());
+                    break;
+
+                case Type.ANY_URI:
+                    final AnyURIValue anyURIValue = new AnyURIValue(content);
+                    bytesRef = new BytesRef(anyURIValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.QNAME:
+                    final QNameValue qnameValue = getQNameValue(content, prefixToNamespaceMappings);
+                    bytesRef = new BytesRef(qnameValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.STRING:
+                case Type.NORMALIZED_STRING:
+                case Type.TOKEN:
+                case Type.LANGUAGE:
+                case Type.NMTOKEN:
+                case Type.NAME:
+                case Type.NCNAME:
+                case Type.ID:
+                case Type.IDREF:
+                case Type.ENTITY:
+                    final StringValue stringValue = new StringValue(content, type);
+                    bytesRef = new BytesRef(stringValue.toJavaObject(byte[].class));
+                    break;
+
+                case Type.NOTATION:
                 default:
-                    return new BinaryDocValuesField(fieldName, new BytesRef(content));
+                    // NOTE(AR) report inability to index value
+                    LOG.warn("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
+                    return null;
             }
-        } catch (final NumberFormatException | XPathException e) {
-            // wrong type: ignore
-            LOG.error("Cannot convert field {} to type {}. Content was: {}", fieldName, Type.getTypeName(type), content);
+
+            return new BinaryDocValuesField(fieldName, bytesRef);
+
+        } catch (final NumberFormatException | XPathException | QName.IllegalQNameException | IOException e) {
+            // NOTE(AR) report inability to index value
+            LOG.warn("Cannot convert field {} to type {}. Content was: {}. Error was: {}", fieldName, Type.getTypeName(type), content, e.getMessage());
             return null;
         }
     }
 
-    private static long dateToLong(DateValue date) {
-        final XMLGregorianCalendar utccal = date.calendar.normalize();
-        return ((long)utccal.getYear() << 16) + ((long)utccal.getMonth() << 8) + ((long)utccal.getDay());
-    }
-
-    private static long timeToLong(TimeValue time) {
-        return time.getTimeInMillis();
-    }
-
-    private static String dateTimeToString(DateTimeValue dtv) {
-        final XMLGregorianCalendar utccal = dtv.calendar.normalize();
-        final StringBuilder sb = new StringBuilder();
-        formatNumber(utccal.getMillisecond(), 3, sb);
-        formatNumber(utccal.getSecond(), 2, sb);
-        formatNumber(utccal.getMinute(), 2, sb);
-        formatNumber(utccal.getHour(), 2, sb);
-        formatNumber(utccal.getDay(), 2, sb);
-        formatNumber(utccal.getMonth(), 2, sb);
-        formatNumber(utccal.getYear(), 4, sb);
-        return sb.toString();
-    }
-
-    private static void formatNumber(int number, int digits, StringBuilder sb) {
-        int count = 0;
-        long n = number;
-        while (n > 0) {
-            final int digit = '0' + (int)n % 10;
-            sb.insert(0, (char)digit);
-            count++;
-            if (count == digits) {
-                break;
+    private static QNameValue getQNameValue(final String content, final Map<String, String> prefixToNamespaceMappings) throws XPathException, QName.IllegalQNameException {
+        final QName qname;
+        final String qnameLocalName = QName.extractLocalName(content);
+        @Nullable final String qnamePrefix = QName.extractPrefix(content);
+        if (qnamePrefix != null) {
+            @Nullable final String qnameNamespace = prefixToNamespaceMappings.get(qnamePrefix);
+            if (qnameNamespace == null) {
+                throw new XPathException("Lucene index module: Missing namespace declaration for qname value in field config");
             }
-            n = n / 10;
+            qname = new QName(qnameLocalName, qnameNamespace, qnamePrefix, ElementValue.ATTRIBUTE);
+        } else {
+            qname = new QName(qnameLocalName, XMLConstants.NULL_NS_URI, null, ElementValue.ATTRIBUTE);
         }
-        if (count < digits) {
-            for (int i = count; i < digits; i++) {
-                sb.insert(0, '0');
-            }
-        }
+
+        return new QNameValue(null, qname);
     }
 }

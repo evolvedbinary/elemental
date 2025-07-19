@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,6 +50,7 @@ import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
@@ -36,6 +61,7 @@ import java.util.GregorianCalendar;
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class TimeValue extends AbstractDateTimeValue {
 
@@ -72,8 +98,8 @@ public class TimeValue extends AbstractDateTimeValue {
         }
     }
 
-    public TimeValue(final int hour, final int minute, final int second, final int millisecond, final int timezone) {
-        super(TimeUtils.getInstance().newXMLGregorianCalendarTime(hour, minute, second, millisecond, timezone));
+    public TimeValue(@Nullable final Expression expression, final int hour, final int minute, final int second, final int millisecond, final int timezone) {
+        super(expression, TimeUtils.getInstance().newXMLGregorianCalendarTime(hour, minute, second, millisecond, timezone));
     }
     private static XMLGregorianCalendar stripCalendar(XMLGregorianCalendar calendar) {
         calendar = (XMLGregorianCalendar) calendar.clone();
@@ -146,6 +172,8 @@ public class TimeValue extends AbstractDateTimeValue {
             final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
             serialize(buf);
             return (T) buf;
+        } else if (target == Long.class || target == long.class) {
+            return (T) Long.valueOf(serializeToLong());
         } else {
             return super.toJavaObject(target);
         }
@@ -176,7 +204,7 @@ public class TimeValue extends AbstractDateTimeValue {
         ByteConversion.shortToByteH((short) (timezone == DatatypeConstants.FIELD_UNDEFINED ? Short.MAX_VALUE : timezone), buf);
     }
 
-    public static TimeValue deserialize(final ByteBuffer buf) {
+    public static TimeValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) {
         final int hour = buf.get();
         final int minute = buf.get();
         final int second = buf.get();
@@ -188,6 +216,60 @@ public class TimeValue extends AbstractDateTimeValue {
             timezone = DatatypeConstants.FIELD_UNDEFINED;
         }
 
-        return new TimeValue(hour, minute, second, ms, timezone);
+        return new TimeValue(expression, hour, minute, second, ms, timezone);
+    }
+
+    /**
+     * Bit-packs a TimeValue into a long (64 bits)
+     *
+     * @return the long value
+     */
+    public long serializeToLong() {
+        final int hour = calendar.getHour();
+        final int minute = calendar.getMinute();
+        final int second = calendar.getSecond();
+        int ms = calendar.getMillisecond();
+        if (ms == DatatypeConstants.FIELD_UNDEFINED) {
+            ms = 0;
+        }
+
+        int timezone = calendar.getTimezone();
+
+        // values for timezone range from -14*60 to 14*60, so we can use a short, but
+        // need to choose a different value for FIELD_UNDEFINED, which is not the same as 0 (= UTC)
+        if (timezone == DatatypeConstants.FIELD_UNDEFINED) {
+            timezone = Short.MAX_VALUE;
+        }
+
+        return ((long) hour & 0xFFL) << 48
+            | ((long) minute & 0xFFL) << 40
+            | ((long) second & 0xFFL) << 32
+            | ((long) ms & 0xFFFFL) << 16
+            | ((long) timezone & 0xFFFFL);
+    }
+
+    /**
+     * Deserializes a TimeValue that has been bit-packed into a long (64 bits)
+     *
+     * @return the TimeValue
+     */
+    public static TimeValue deserialize(@Nullable final Expression expression, final long l) {
+        final int hour = (int) (l >>> 48);
+        final int minute = (int) ((l >>> 40) & 0xFFL);
+        final int second = (int) ((l >>> 32) & 0xFFL);
+        final int ms = (int) ((l >>> 16) & 0xFFFFL);
+        int timezone = (int) (l & 0xFFFFL);
+        // manual sign extension as timezone can be negative
+        timezone = (timezone >= 0x8000)
+            ? (short)(timezone - 0x10000)
+            : (short) timezone;
+
+        // values for timezone range from -14*60 to 14*60, so we can use a short, but
+        // need to choose a different value for FIELD_UNDEFINED, which is not the same as 0 (= UTC)
+        if (timezone == Short.MAX_VALUE) {
+            timezone = DatatypeConstants.FIELD_UNDEFINED;
+        }
+
+        return new TimeValue(expression, hour, minute, second, ms, timezone);
     }
 }
