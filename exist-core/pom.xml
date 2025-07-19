@@ -904,6 +904,7 @@
                                 <include>src/main/java/org/exist/xmldb/LocalXMLResource.java</include>
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
                                 <include>src/test/java/org/exist/xmldb/ResourceTest.java</include>
+                                <include>src/test/java/org/exist/xmldb/SerializationTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</include>
                                 <include>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</include>
@@ -1240,6 +1241,7 @@
                                 <exclude>src/main/java/org/exist/xmldb/LocalXMLResource.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ResourceTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/SerializationTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</exclude>
