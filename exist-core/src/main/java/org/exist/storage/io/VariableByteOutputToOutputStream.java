@@ -43,44 +43,37 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.indexing.lucene;
+package org.exist.storage.io;
 
-import org.exist.util.XMLString;
-
-import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.Map;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * Variable Byte Output to an Output Stream.
+ *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public abstract class AbstractTextExtractor implements TextExtractor {
+public class VariableByteOutputToOutputStream extends AbstractVariableByteOutput {
 
-    protected final LuceneConfig config;
-    protected final LuceneIndexConfig idxConfig;
-    protected final Map<String, String> prefixToNamespaceMappings;
+    private OutputStream os;
 
-    protected XMLString buffer = new XMLString();
-
-    public AbstractTextExtractor(final LuceneConfig config, final LuceneIndexConfig idxConfig, @Nullable final Map<String, String> prefixToNamespaceMappings) {
-        this.config = config;
-        this.idxConfig = idxConfig;
-        this.prefixToNamespaceMappings = prefixToNamespaceMappings != null ? prefixToNamespaceMappings : Collections.emptyMap();
+    public VariableByteOutputToOutputStream(final OutputStream os) {
+        super();
+        this.os = os;
     }
 
     @Override
-    public LuceneIndexConfig getIndexConfig() {
-    	return idxConfig;
+    public void write(final int b) throws IOException {
+        os.write(b);
     }
 
     @Override
-    public XMLString getText() {
-        return buffer;
+    public void write(final byte[] b) throws IOException {
+        os.write(b);
     }
 
     @Override
-    public Map<String, String> getPrefixToNamespaceMappings() {
-        return prefixToNamespaceMappings;
+    public void write(final byte[] b, final int off, final int len) throws IOException {
+        os.write(b, off, len);
     }
 }

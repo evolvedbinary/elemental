@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -38,7 +62,7 @@ import org.exist.xquery.value.FunctionReturnSequenceType;
  *
  * @author wolf
  * @author ljo
- *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class LuceneModule extends AbstractInternalModule {
 
@@ -52,6 +76,9 @@ public class LuceneModule extends AbstractInternalModule {
     public final static ErrorCode EXXQDYFT0002 = new LuceneErrorCode("EXXQDYFT0002", "IO Exception in lucene index.");
     public final static ErrorCode EXXQDYFT0003 = new LuceneErrorCode("EXXQDYFT0003", "Document not found.");
     public final static ErrorCode EXXQDYFT0004 = new LuceneErrorCode("EXXQDYFT0004", "Wrong configuration passed to ft:query");
+    public final static ErrorCode EXXQDYFT0005 = new LuceneErrorCode("EXXQDYFT0005", "Unable to deserialize binary value in call to ft:field");
+    public final static ErrorCode EXXQDYFT0006 = new LuceneErrorCode("EXXQDYFT0006", "Unable to deserialize string value in call to ft:field");
+    public final static ErrorCode EXXQDYFT0007 = new LuceneErrorCode("EXXQDYFT0007", "Unable to deserialize numeric value in call to ft:field");
     
     public static final FunctionDef[] functions = {
         new FunctionDef(Query.signatures[0], Query.class),
@@ -74,7 +101,8 @@ public class LuceneModule extends AbstractInternalModule {
         new FunctionDef(Facets.signatures[2], Facets.class),
         new FunctionDef(Field.FS_FIELD[0], Field.class),
         new FunctionDef(Field.FS_FIELD[1], Field.class),
-        new FunctionDef(Field.FS_BINARY_FIELD, Field.class),
+        new FunctionDef(Field.FS_BINARY_FIELD[0], Field.class),
+        new FunctionDef(Field.FS_BINARY_FIELD[1], Field.class),
         new FunctionDef(Field.FS_HIGHLIGHT_FIELD_MATCHES, Field.class),
         new FunctionDef(LuceneIndexKeys.signatures[0], LuceneIndexKeys.class)
     };

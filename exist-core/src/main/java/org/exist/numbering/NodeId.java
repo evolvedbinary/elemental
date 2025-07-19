@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,7 +45,7 @@
  */
 package org.exist.numbering;
 
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 
 import java.io.IOException;
 
@@ -197,15 +221,15 @@ public interface NodeId extends Comparable<NodeId> {
     void serialize(byte[] data, int offset);
 
     /**
-     * Write the node id to a {@link org.exist.storage.io.VariableByteOutputStream}.
+     * Write the node id to a {@link VariableByteOutput}.
      *
      * @param os the output stream
      * @throws java.io.IOException if there's a problem with the underlying output stream
      */
-    void write(VariableByteOutputStream os) throws IOException;
+    void write(VariableByteOutput os) throws IOException;
 
     /**
-     * Write the node id to a {@link org.exist.storage.io.VariableByteOutputStream}. To save
+     * Write the node id to a {@link VariableByteOutput}. To save
      * storage space, only store those byte which are different from the previous node id.
      *
      * @param previous the node id previously written or null
@@ -213,6 +237,6 @@ public interface NodeId extends Comparable<NodeId> {
      * @return this node id
      * @throws IOException if there's a problem with the underlying output stream
      */
-    NodeId write(NodeId previous, VariableByteOutputStream os) throws IOException;
+    NodeId write(NodeId previous, VariableByteOutput os) throws IOException;
 
 }

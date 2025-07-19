@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -31,6 +55,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.exist.Namespaces;
+import org.exist.dom.QName;
 import org.exist.dom.memtree.InMemoryNodeSet;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.dom.persistent.Match;
@@ -41,19 +66,20 @@ import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
 import javax.annotation.Nullable;
-import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.ByteBuffer;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Map;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.modules.lucene.LuceneModule.functionSignature;
 import static org.exist.xquery.modules.lucene.LuceneModule.functionSignatures;
 
+/**
+ * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
 public class Field extends BasicFunction {
 
     private static final FunctionParameterSequenceType FS_PARAM_NODE = param("node", Type.NODE, "the context node to check for attached fields");
@@ -82,16 +108,24 @@ public class Field extends BasicFunction {
     );
 
     private static final String FS_BINARY_FIELD_NAME = "binary-field";
-    static final FunctionSignature FS_BINARY_FIELD = functionSignature(
+    static final FunctionSignature[] FS_BINARY_FIELD = functionSignatures(
             FS_BINARY_FIELD_NAME,
             "Returns the value of a binary field attached to a particular node obtained via a full text search." +
             "Accepts an additional parameter to name the target type into which the field " +
             "value should be cast. This is mainly relevant for fields having a different type than xs:string. " +
             "As lucene does not record type information, numbers or dates would be returned as strings by default.",
             returnsOptMany(Type.ITEM, "Sequence corresponding to the values of the field attached, cast to the desired target type"),
-            FS_PARAM_NODE,
-            FS_PARAM_FIELD,
-            TYPE_PARAMETER
+            arities(
+                arity(
+                    FS_PARAM_NODE,
+                    FS_PARAM_FIELD
+                ),
+                arity(
+                    FS_PARAM_NODE,
+                    FS_PARAM_FIELD,
+                    TYPE_PARAMETER
+                )
+            )
     );
 
     private static final String FS_HIGHLIGHT_FIELD_MATCHES_NAME = "highlight-field-matches";
@@ -133,30 +167,47 @@ public class Field extends BasicFunction {
 
         final LuceneIndexWorker index = (LuceneIndexWorker) context.getBroker().getIndexController().getWorkerByIndexId(LuceneIndex.ID);
         try {
-            return switch (called) {
-                case FS_FIELD_NAME -> getFieldValues(fieldName, type, match, index);
-                case FS_HIGHLIGHT_FIELD_MATCHES_NAME -> {
-                    final Sequence result = getFieldValues(fieldName, type, match, index);
-                    yield highlightMatches(fieldName, proxy, match, result);
-                }
-                case FS_BINARY_FIELD_NAME -> getBinaryFieldValue(fieldName, type, match, index);
-                default -> throw new XPathException(this, ErrorCodes.FOER0000, "Unknown function: " + getName());
-            };
+            Sequence result;
+            switch (called) {
+                case FS_FIELD_NAME:
+                     result = getFieldValues(fieldName, type, match, index);
+                     break;
+
+                case FS_HIGHLIGHT_FIELD_MATCHES_NAME:
+                    result = getFieldValues(fieldName, type, match, index);
+                    result = highlightMatches(fieldName, proxy, match, result);
+                    break;
+
+                case FS_BINARY_FIELD_NAME:
+                    result = getBinaryFieldValue(fieldName, type, match, index);
+                    break;
+
+                default:
+                    throw new XPathException(this, ErrorCodes.FOER0000, "Unknown function: " + getName());
+            }
+
+            return result;
+
         } catch (final IOException e) {
-            throw new XPathException(this, LuceneModule.EXXQDYFT0002, "Error retrieving field: " + e.getMessage());
+            throw new XPathException(this, LuceneModule.EXXQDYFT0002, "Error retrieving field: " + e.getMessage(), e);
         }
     }
 
-    private Sequence getBinaryFieldValue(final String fieldName, final int type, final LuceneMatch match, final LuceneIndexWorker index) throws IOException {
+    private Sequence getBinaryFieldValue(final String fieldName, final int type, final LuceneMatch match, final LuceneIndexWorker index) throws IOException, XPathException {
         final BytesRef fieldValue = index.getBinaryField(match.getLuceneDocId(), fieldName);
         if (fieldValue == null) {
             return Sequence.EMPTY_SEQUENCE;
         }
+
         return bytesToAtomic(fieldValue, type);
     }
 
     private Sequence getFieldValues(final String fieldName, final int type, final LuceneMatch match, final LuceneIndexWorker index) throws IOException, XPathException {
-        final IndexableField[] fields = index.getField(match.getLuceneDocId(), fieldName);
+        @Nullable final IndexableField[] fields = index.getField(match.getLuceneDocId(), fieldName);
+        if (fields == null) {
+            return Sequence.EMPTY_SEQUENCE;
+        }
+
         final Sequence result = new ValueSequence(fields.length);
         for (final IndexableField field : fields) {
             if (field.numericValue() != null) {
@@ -285,70 +336,267 @@ public class Field extends BasicFunction {
         return null;
     }
 
-    static AtomicValue bytesToAtomic(final BytesRef field, final int type) {
-        return switch (type) {
-            case Type.TIME -> TimeValue.deserialize(ByteBuffer.wrap(field.bytes));
-            case Type.DATE_TIME -> DateTimeValue.deserialize(ByteBuffer.wrap(field.bytes));
-            case Type.DATE -> DateValue.deserialize(ByteBuffer.wrap(field.bytes));
-            case Type.INTEGER, Type.LONG, Type.UNSIGNED_LONG, Type.INT, Type.UNSIGNED_INT, Type.SHORT, Type.UNSIGNED_SHORT ->
-                    IntegerValue.deserialize(ByteBuffer.wrap(field.bytes));
-            case Type.DOUBLE -> DoubleValue.deserialize(ByteBuffer.wrap(field.bytes));
-            case Type.FLOAT -> FloatValue.deserialize(ByteBuffer.wrap(field.bytes));
-            case Type.DECIMAL -> DecimalValue.deserialize(ByteBuffer.wrap(field.bytes));
-            default -> new StringValue(field.utf8ToString());
-        };
+    AtomicValue bytesToAtomic(final BytesRef field, final int type) throws XPathException, IOException {
+        try {
+            switch (type) {
+
+                case Type.INTEGER:
+                case Type.NON_POSITIVE_INTEGER:
+                case Type.NEGATIVE_INTEGER:
+                case Type.LONG:
+                case Type.INT:
+                case Type.SHORT:
+                case Type.BYTE:
+                case Type.NON_NEGATIVE_INTEGER:
+                case Type.UNSIGNED_LONG:
+                case Type.UNSIGNED_INT:
+                case Type.UNSIGNED_SHORT:
+                case Type.UNSIGNED_BYTE:
+                case Type.POSITIVE_INTEGER:
+                    return IntegerValue.deserialize(this, ByteBuffer.wrap(field.bytes), type);
+
+                case Type.DECIMAL:
+                    return DecimalValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.DOUBLE:
+                    return DoubleValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.FLOAT:
+                    return FloatValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.DATE:
+                    return DateValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.TIME:
+                    return TimeValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.DATE_TIME:
+                    return DateTimeValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.DATE_TIME_STAMP:
+                    return DateTimeStampValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.DURATION:
+                    return DurationValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.YEAR_MONTH_DURATION:
+                    return YearMonthDurationValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.DAY_TIME_DURATION:
+                    return DayTimeDurationValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.G_YEAR_MONTH:
+                    return GYearMonthValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.G_YEAR:
+                    return GYearValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.G_MONTH_DAY:
+                    return GMonthDayValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.G_MONTH:
+                    return GMonthValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.G_DAY:
+                    return GDayValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.BOOLEAN:
+                    return BooleanValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.BASE64_BINARY:
+                    return BinaryValue.deserialize(this, new Base64BinaryValueType(), ByteBuffer.wrap(field.bytes));
+
+                case Type.HEX_BINARY:
+                    return BinaryValue.deserialize(this, new HexBinaryValueType(), ByteBuffer.wrap(field.bytes));
+
+                case Type.ANY_URI:
+                    return AnyURIValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.QNAME:
+                    return QNameValue.deserialize(this, ByteBuffer.wrap(field.bytes));
+
+                case Type.STRING:
+                case Type.NORMALIZED_STRING:
+                case Type.TOKEN:
+                case Type.LANGUAGE:
+                case Type.NMTOKEN:
+                case Type.NAME:
+                case Type.NCNAME:
+                case Type.ID:
+                case Type.IDREF:
+                case Type.ENTITY:
+                    return StringValue.deserialize(this, ByteBuffer.wrap(field.bytes), type);
+
+                case Type.NOTATION:
+                default:
+                    throw new XPathException(this, LuceneModule.EXXQDYFT0005, "Cannot convert binary field to " + Type.getTypeName(type));
+            }
+        } catch (final NumberFormatException e) {
+            throw new XPathException(this, e.getMessage(), e);
+        }
     }
 
-    static AtomicValue stringToAtomic(final int type, final String value) throws XPathException {
-        return switch (type) {
-            case Type.TIME -> new TimeValue(value);
-            case Type.DATE_TIME -> new DateTimeValue(value);
-            case Type.DATE -> new DateValue(value);
-            case Type.INTEGER, Type.LONG, Type.UNSIGNED_LONG, Type.INT, Type.UNSIGNED_INT, Type.SHORT, Type.UNSIGNED_SHORT ->
-                    new IntegerValue(value);
-            case Type.DOUBLE -> new DoubleValue(value);
-            case Type.FLOAT -> new FloatValue(value);
-            case Type.DECIMAL -> new DecimalValue(value);
-            default -> new StringValue(value);
-        };
-    }
-
-    static AtomicValue numberToAtomic(final int type, final Number value) throws XPathException {
-        switch(type) {
-            case Type.TIME:
-                final Date time = new Date(value.longValue());
-                final GregorianCalendar gregorianCalendar = new GregorianCalendar();
-                gregorianCalendar.setTime(time);
-                final XMLGregorianCalendar calendar = TimeUtils.getInstance().newXMLGregorianCalendar(gregorianCalendar);
-                return new TimeValue(calendar);
-            case Type.DATE_TIME:
-                throw new XPathException(LuceneModule.EXXQDYFT0004, "Cannot convert numeric field to xs:dateTime");
-            case Type.DATE:
-                final long dl = value.longValue();
-                final int year = (int)(dl >> 16) & 0xFFFF;
-                final int month = (int)(dl >> 8) & 0xFF;
-                final int day = (int)(dl & 0xFF);
-                final DateValue date = new DateValue();
-                date.calendar.setYear(year);
-                date.calendar.setMonth(month);
-                date.calendar.setDay(day);
-                return date;
+    private AtomicValue stringToAtomic(final int type, final String value) throws XPathException {
+        switch (type) {
             case Type.INTEGER:
+            case Type.NON_POSITIVE_INTEGER:
+            case Type.NEGATIVE_INTEGER:
             case Type.LONG:
-            case Type.UNSIGNED_LONG:
             case Type.INT:
-            case Type.UNSIGNED_INT:
             case Type.SHORT:
+            case Type.BYTE:
+            case Type.NON_NEGATIVE_INTEGER:
+            case Type.UNSIGNED_LONG:
+            case Type.UNSIGNED_INT:
             case Type.UNSIGNED_SHORT:
-                return new IntegerValue(value.longValue());
-            case Type.DOUBLE:
-                return new DoubleValue(value.doubleValue());
-            case Type.FLOAT:
-                return new FloatValue(value.floatValue());
+            case Type.UNSIGNED_BYTE:
+            case Type.POSITIVE_INTEGER:
+                return new IntegerValue(this, value, type);
+
             case Type.DECIMAL:
-                return new DecimalValue(value.doubleValue());
+                return new DecimalValue(this, value);
+
+            case Type.DOUBLE:
+                return new DoubleValue(this, value);
+
+            case Type.FLOAT:
+                return new FloatValue(this, value);
+
+            case Type.DATE:
+                return new DateValue(this, value);
+
+            case Type.TIME:
+                return new TimeValue(this, value);
+
+            case Type.DATE_TIME:
+                return new DateTimeValue(this, value);
+
+            case Type.DATE_TIME_STAMP:
+                return new DateTimeStampValue(this, value);
+
+            case Type.DURATION:
+                return new DurationValue(this, value);
+
+            case Type.YEAR_MONTH_DURATION:
+                return new YearMonthDurationValue(this, value);
+
+            case Type.DAY_TIME_DURATION:
+                return new DayTimeDurationValue(this, value);
+
+            case Type.G_YEAR_MONTH:
+                return new GYearMonthValue(this, value);
+
+            case Type.G_YEAR:
+                return new GYearValue(this, value);
+
+            case Type.G_MONTH_DAY:
+                return new GMonthDayValue(this, value);
+
+            case Type.G_MONTH:
+                return new GMonthValue(this, value);
+
+            case Type.G_DAY:
+                return new GDayValue(this, value);
+
+            case Type.BOOLEAN:
+                return BooleanValue.valueOf(this, value);
+
+            case Type.BASE64_BINARY:
+                return new BinaryValueFromBinaryString(this, new Base64BinaryValueType(), value);
+
+            case Type.HEX_BINARY:
+                return new BinaryValueFromBinaryString(this, new HexBinaryValueType(), value);
+
+            case Type.ANY_URI:
+                return new AnyURIValue(value);
+
+            case Type.QNAME:
+                try {
+                    return new QNameValue(null, QName.parse(value));
+                } catch (final QName.IllegalQNameException e) {
+                    throw new XPathException(this, LuceneModule.EXXQDYFT0006, "Cannot convert string field to " + Type.getTypeName(type), e);
+                }
+
+            case Type.STRING:
+            case Type.NORMALIZED_STRING:
+            case Type.TOKEN:
+            case Type.LANGUAGE:
+            case Type.NMTOKEN:
+            case Type.NAME:
+            case Type.NCNAME:
+            case Type.ID:
+            case Type.IDREF:
+            case Type.ENTITY:
+                return new StringValue(this, value, type);
+
+            case Type.NOTATION:
             default:
-                return new StringValue(value.toString());
+                throw new XPathException(this, LuceneModule.EXXQDYFT0006, "Cannot convert string field to " + Type.getTypeName(type));
+        }
+    }
+
+    private AtomicValue numberToAtomic(final int type, final Number value) throws XPathException {
+        switch (type) {
+            case Type.INTEGER:
+            case Type.NON_POSITIVE_INTEGER:
+            case Type.NEGATIVE_INTEGER:
+            case Type.LONG:
+            case Type.INT:
+            case Type.SHORT:
+            case Type.BYTE:
+            case Type.NON_NEGATIVE_INTEGER:
+            case Type.UNSIGNED_LONG:
+            case Type.UNSIGNED_INT:
+            case Type.UNSIGNED_SHORT:
+            case Type.UNSIGNED_BYTE:
+            case Type.POSITIVE_INTEGER:
+                return new IntegerValue(this, value.longValue(), type);
+
+            case Type.DECIMAL:
+                return new DecimalValue(this, value.doubleValue());
+
+            case Type.DOUBLE:
+                return new DoubleValue(this, value.doubleValue());
+
+            case Type.FLOAT:
+                return new FloatValue(this, value.floatValue());
+
+            case Type.DATE:
+                return DateValue.deserialize(this, value.longValue());
+
+            case Type.TIME:
+                return TimeValue.deserialize(this, value.longValue());
+
+            case Type.BOOLEAN:
+                return value.intValue() == 1 ? BooleanValue.TRUE : BooleanValue.FALSE;
+
+            case Type.DATE_TIME:
+            case Type.DATE_TIME_STAMP:
+            case Type.DURATION:
+            case Type.YEAR_MONTH_DURATION:
+            case Type.DAY_TIME_DURATION:
+            case Type.G_YEAR_MONTH:
+            case Type.G_YEAR:
+            case Type.G_MONTH_DAY:
+            case Type.G_MONTH:
+            case Type.G_DAY:
+            case Type.BASE64_BINARY:
+            case Type.HEX_BINARY:
+            case Type.ANY_URI:
+            case Type.QNAME:
+            case Type.NOTATION:
+            case Type.STRING:
+            case Type.NORMALIZED_STRING:
+            case Type.TOKEN:
+            case Type.LANGUAGE:
+            case Type.NMTOKEN:
+            case Type.NAME:
+            case Type.NCNAME:
+            case Type.ID:
+            case Type.IDREF:
+            case Type.ENTITY:
+            default:
+                throw new XPathException(this, LuceneModule.EXXQDYFT0007, "Cannot convert numeric field to " + Type.getTypeName(type));
         }
     }
 }

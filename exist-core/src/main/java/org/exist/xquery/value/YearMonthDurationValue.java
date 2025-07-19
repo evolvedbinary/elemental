@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,19 +45,28 @@
  */
 package org.exist.xquery.value;
 
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteBufferInput;
+import org.exist.storage.io.VariableByteBufferOutput;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.Duration;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 
 /**
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class YearMonthDurationValue extends OrderedDurationValue {
+
+    public static final int SERIALIZED_SIZE = 9;
 
     public static final Duration CANONICAL_ZERO_DURATION =
             TimeUtils.getInstance().newDuration(true, null, BigInteger.ZERO, null, null, null, null);
@@ -227,5 +260,63 @@ public class YearMonthDurationValue extends OrderedDurationValue {
         throw new XPathException(getExpression(), ErrorCodes.FORG0006,
                 "value of type " + Type.getTypeName(getType()) +
                         " has no boolean value.");
+    }
+
+    /**
+     * Serializes to a byte array.
+     *
+     * Return value is formatted like:
+     *  byte[0] sign of the duration, -1, 0, or 1.
+     *  byte[...] VBE BigInteger encoded year
+     *  byte[...] VBE BigInteger encoded month
+     *
+     * @return the serialized data.
+     */
+    public byte[] serialize() throws IOException {
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(37)) {
+
+            vbos.write((byte) duration.getSign());
+            serializeBigIntegerField(vbos, DatatypeConstants.YEARS);
+            serializeBigIntegerField(vbos, DatatypeConstants.MONTHS);
+
+            return vbos.toByteArray();
+        }
+    }
+
+    /**
+     * Serializes to a ByteBuffer.
+     *
+     * Return value is formatted like:
+     *  byte[0] sign of the duration, -1, 0, or 1.
+     *  byte[...] VBE BigInteger encoded year
+     *  byte[...] VBE BigInteger encoded month
+     *
+     * @param buf the ByteBuffer to serialize to.
+     */
+    public void serialize(final ByteBuffer buf) throws IOException {
+        final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
+
+        vbb.write((byte) duration.getSign());
+        serializeBigIntegerField(vbb, DatatypeConstants.YEARS);
+        serializeBigIntegerField(vbb, DatatypeConstants.MONTHS);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the YearMonthDurationValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     *
+     * @return the YearMonthDurationValue.
+     */
+    public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
+        final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
+
+        final boolean isPositive = vbbi.read() != -1;
+        final BigInteger years = vbbi.readBigInteger();
+        final BigInteger months = vbbi.readBigInteger();
+
+        final Duration duration = TimeUtils.getInstance().newDuration(isPositive, years, months, null, null, null, null);
+        return new YearMonthDurationValue(duration);
     }
 }

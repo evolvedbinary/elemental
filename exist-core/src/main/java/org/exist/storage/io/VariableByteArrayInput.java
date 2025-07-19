@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,25 +45,16 @@
  */
 package org.exist.storage.io;
 
-import java.io.EOFException;
-import java.io.IOException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
- * Implements VariableByteInput on top of a byte array.
+ * A byte array input using VBE (Variable Byte Encoding).
  * 
- * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class VariableByteArrayInput extends AbstractVariableByteInput {
 
     private byte[] data;
     protected int position;
     private int end;
-
-    public VariableByteArrayInput() {
-        super();
-    }
 
     public VariableByteArrayInput(final byte[] data) {
         super();
@@ -62,15 +77,7 @@ public class VariableByteArrayInput extends AbstractVariableByteInput {
     }
 
     @Override
-    public byte readByte() throws IOException {
-        if (position == end) {
-            throw new EOFException();
-        }
-        return data[position++];
-    }
-
-    @Override
-    public int read() throws IOException {
+    public int read() {
         if (position == end) {
             return -1;
         }
@@ -78,121 +85,23 @@ public class VariableByteArrayInput extends AbstractVariableByteInput {
     }
 
     @Override
-    public int available() throws IOException {
+    public int available() {
         return end - position;
     }
 
     @Override
-    public short readShort() throws IOException {
-        if (position == end) {
-            throw new EOFException();
-        }
-        byte b = data[position++];
-        short i = (short) (b & 0177);
-        for (int shift = 7; (b & 0200) != 0; shift += 7) {
-            if (position == end) {
-                throw new EOFException();
-            }
-            b = data[position++];
-            i |= (b & 0177) << shift;
-        }
-        return i;
-    }
-
-    @Override
-    public int readInt() throws IOException {
-        if (position == end) {
-            throw new EOFException();
-        }
-        byte b = data[position++];
-        int i = b & 0177;
-        for (int shift = 7; (b & 0200) != 0; shift += 7) {
-            if (position == end) {
-                throw new EOFException();
-            }
-            b = data[position++];
-            i |= (b & 0177) << shift;
-        }
-        return i;
-    }
-
-    @Override
-    public int readFixedInt() throws IOException {
-        return ( data[position++] & 0xff ) |
-            ( ( data[position++] & 0xff ) << 8 ) |
-            ( ( data[position++] & 0xff ) << 16 ) |
-            ( ( data[position++] & 0xff ) << 24 );
-    }
-
-    @Override
-    public long readLong() throws IOException {
-        if (position == end) {
-            throw new EOFException();
-        }
-        byte b = data[position++];
-        long i = b & 0177L;
-        for (int shift = 7; (b & 0200) != 0; shift += 7) {
-            if (position == end) {
-                throw new EOFException();
-            }
-            b = data[position++];
-            i |= (b & 0177L) << shift;
-        }
-        return i;
-    }
-
-    @Override
-    public String readUTF() throws IOException {
-        final int len = readInt();
-        final String s = new String(data, position, len, UTF_8);
-        position += len;
-    	return s;
-    }
-
-    @Override
-    public void copyTo(final VariableByteOutputStream os, final int count) throws IOException {
-        byte more;
+    public void skip(final int count) {
         for (int i = 0; i < count; i++) {
-            do {
-                more = data[position++];
-                os.write(more);
-            } while ((more & 0x200) > 0);
-        }
-    }
-
-    @Override
-    public void copyRaw(final VariableByteOutputStream os, final int count) throws IOException {
-        os.write(data, position, count);
-        position += count;
-    }
-
-    @Override
-    public void skip(final int count) throws IOException {
-        for (int i = 0; i < count; i++) {
-            while (position < end && (data[position++] & 0200) > 0) {
+            while (position < end && (data[position++] & 128) > 0) {
                 //Nothing to do
             }
         }
     }
 
     @Override
-    public void skipBytes(final long count) throws IOException {
-        for(long i = 0; i < count && position < end; i++) {
+    public void skipBytes(final long count) {
+        for (long i = 0; i < count && position < end; i++) {
             position++;
         }
-    }
-
-    public String toString(final int len) {
-        final byte[] subArray = new byte[len];
-        System.arraycopy(data, position, subArray, 0, len);
-        final StringBuilder buf = new StringBuilder("[");
-        for (int i = 0 ; i < len; i++) {
-            if (i > 0) {
-                buf.append(" ");
-            }
-            buf.append(subArray[i]);
-        }
-        buf.append("]");
-        return buf.toString();
     }
 }
