@@ -796,6 +796,8 @@
                                 <include>src/main/java/org/exist/dom/persistent/DocumentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/DocumentSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/ElementImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/Match.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeProxy.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/NodeTest.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/PersistentDomTest.java</include>
@@ -912,13 +914,16 @@
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
+                                <include>src/main/java/org/exist/xquery/CombiningExpression.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
                                 <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
+                                <include>src/main/java/org/exist/xquery/FilteredExpression.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
+                                <include>src/main/java/org/exist/xquery/LocationStep.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
@@ -962,6 +967,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</include>
                                 <include>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</include>
+                                <include>src/main/java/org/exist/xquery/pragmas/Optimize.java</include>
                                 <include>src/test/java/org/exist/xquery/update/UpdateReplaceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/util/ExpressionDumper.java</include>
                                 <include>src/main/java/org/exist/xquery/util/SerializerUtils.java</include>
@@ -1076,6 +1082,8 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/ElementImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/Match.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeProxy.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/NodeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/PersistentDomTest.java</exclude>
@@ -1252,13 +1260,16 @@
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/CombiningExpression.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</exclude>
                                 <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/FilteredExpression.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/FunctionFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/LocationStep.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportModuleTest.java</exclude>
@@ -1326,6 +1337,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</exclude>
                                 <exclude>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</exclude>
+                                <exclude>src/main/java/org/exist/xquery/pragmas/Optimize.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/pragmas/TimePragma.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/update/UpdateReplaceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/util/ExpressionDumper.java</exclude>

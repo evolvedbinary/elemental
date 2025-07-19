@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,11 +57,11 @@ import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.annotation.Nullable;
 import javax.xml.stream.StreamFilter;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Processes all location path steps (like descendant::*, ancestor::XXX).
@@ -487,26 +511,37 @@ public class LocationStep extends Step {
             final MemoryNodeSet nodes = contextSequence.toMemNodeSet();
             return nodes.getSelf(test);
         }
-        if (hasPreloadedData() && !test.isWildcardTest()) {
-            final NodeSet ns;
+
+        if (hasPreloadedData()) {
+            @Nullable final NodeSet ns;
             if (contextSequence instanceof NodeSet) {
                 ns = (NodeSet) contextSequence;
             } else {
                 ns = null;
             }
 
-            for (final NodeProxy p : currentSet) {
-                p.addContextNode(contextId, p);
-
-                if (ns != null) {
-                    final NodeProxy np = ns.get(p);
-
-                    if (np != null && np.getMatches() != null) {
-                        p.addMatch(np.getMatches());
+            final NewArrayNodeSet newCurrentSet = new NewArrayNodeSet(currentSet.getItemCount());
+            for (NodeProxy p : currentSet) {
+                if (test.isWildcardTest()) {
+                    if (ns != null) {
+                        @Nullable final NodeProxy np = ns.get(p);
+                        if (np != null) {
+                            p = np;
+                        }
+                    }
+                } else {
+                    if (ns != null) {
+                        @Nullable final NodeProxy np = ns.get(p);
+                        if (np != null && np.getMatches() != null) {
+                            p.addMatch(np.getMatches());
+                        }
                     }
                 }
+                p.addContextNode(contextId, p);
+                newCurrentSet.add(p);
             }
-            return currentSet;
+            currentSet = newCurrentSet;
+            return newCurrentSet;
         }
 
         final NodeSet contextSet = contextSequence.toNodeSet();

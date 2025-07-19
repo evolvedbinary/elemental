@@ -129,6 +129,11 @@
         </dependency>
 
         <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>net.sf.xmldb-org</groupId>
             <artifactId>xmldb-api</artifactId>
         </dependency>
@@ -226,7 +231,11 @@
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</include>
+                                <include>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/Query.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/QueryField.java</include>
                             </includes>
                         </licenseSet>
 
@@ -247,7 +256,11 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/Query.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/QueryField.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
