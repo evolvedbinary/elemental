@@ -64,7 +64,6 @@ import org.xml.sax.XMLReader;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 
 import static org.exist.util.ByteOrderMark.stripXmlBom;
 
@@ -104,10 +103,6 @@ public class ParsingFunctions extends BasicFunction {
 			return Sequence.EMPTY_SEQUENCE;
 		}
 		final String xmlContent = args[0].itemAt(0).getStringValue();
-		if (xmlContent.isEmpty()) {
-			return Sequence.EMPTY_SEQUENCE;
-		}
-        
         return parse(xmlContent, args);
 	}
 
@@ -134,7 +129,27 @@ public class ParsingFunctions extends BasicFunction {
         xmlContent = stripXmlBom(xmlContent);
         final String xml;
 	    if (isCalledAs("parse-xml-fragment")) {
-            xml = "<" + FRAGMENT_WRAPPER_NAME + ">" + xmlContent + "</" + FRAGMENT_WRAPPER_NAME + ">";
+            String declStr = xmlContent.toLowerCase();
+            final int startIdx = declStr.indexOf("<?xml ");
+            if (startIdx > -1) {
+
+                // NOTE(AR) for parsing fragments the input must be an external entity, so validate that the declaration is a TextDecl (https://www.w3.org/TR/REC-xml/#NT-TextDecl) and not a full XMLDecl (https://www.w3.org/TR/REC-xml/#NT-XMLDecl) with standalone attribute
+
+                declStr = declStr.substring(startIdx);
+                int endIdx = declStr.indexOf("?>");
+                if (endIdx > -1) {
+                    endIdx += 2;
+                }
+                declStr = declStr.substring(0, endIdx);
+                if (declStr.contains("standalone=")) {
+                    throw new XPathException(this, ErrorCodes.FODC0006, "Input to fn:parse-xml-fragment must be a valid external entity, but 'standalone' attribute was detected in the declaration");
+                }
+
+                xml = xmlContent;
+
+            } else {
+                xml = "<" + FRAGMENT_WRAPPER_NAME + ">" + xmlContent + "</" + FRAGMENT_WRAPPER_NAME + ">";
+            }
         } else {
 	        xml = xmlContent;
         }
