@@ -921,6 +921,7 @@
                                 <include>src/main/java/org/exist/util/serializer/DOMStreamer.java</include>
                                 <include>src/main/java/org/exist/util/serializer/EXISerializer.java</include>
                                 <include>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</include>
+                                <include>src/main/java/org/exist/util/serializer/SAXSerializer.java</include>
                                 <include>src/main/java/org/exist/util/serializer/SerializerObjectFactory.java</include>
                                 <include>src/main/java/org/exist/util/serializer/json/JSONObject.java</include>
                                 <include>src/test/java/org/exist/util/serializer/json/JSONObjectTest.java</include>
@@ -1320,6 +1321,7 @@
                                 <exclude>src/main/java/org/exist/util/serializer/DOMStreamer.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/EXISerializer.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/serializer/SAXSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/SerializerObjectFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/json/JSONObject.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/json/JSONObjectTest.java</exclude>

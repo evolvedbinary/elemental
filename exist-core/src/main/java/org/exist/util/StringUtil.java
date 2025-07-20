@@ -293,4 +293,24 @@ public class StringUtil {
 
         return string.substring(0, idx);
     }
+
+    /**
+     * Test if two strings are equal whilst handling null references.
+     *
+     * @param s1 the first string.
+     * @param s2 the second string.
+     *
+     * @return true of the strings are equal or both are null, false otherwise.
+     */
+    public static boolean equals(@Nullable final String s1, @Nullable final String s2) {
+        if (s1 == s2) {
+            return true;
+        }
+
+        if (s1 == null) {
+            return false;
+        }
+
+        return s1.equals(s2);
+    }
 }

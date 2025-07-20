@@ -119,10 +119,10 @@ public class SerializationTest {
 
 	private static final String XML_EXPECTED2 =
 		"<exist:result xmlns:exist=\"" + Namespaces.EXIST_NS + "\" hitCount=\"1\">" + EOL +
-		"    <c:Site xmlns:c=\"urn:content\" xmlns=\"urn:content\">" + EOL +
+		"    <Site xmlns=\"urn:content\">" + EOL +
         "        <config xmlns=\"urn:config\">123</config>" + EOL +
         "        <serverconfig xmlns=\"urn:config\">123</serverconfig>" + EOL +
-		"    </c:Site>" + EOL +
+		"    </Site>" + EOL +
 		"</exist:result>";
 
 	private static final String XML_UPDATED_EXPECTED =
