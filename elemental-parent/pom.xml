@@ -363,7 +363,8 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.3</version>
+                    <!-- NOTE(AR) Rolled back to version 3.5.2 due to https://github.com/apache/maven-surefire/issues/2634#issuecomment-3092462501 -->
+                    <version>3.5.2</version>
                     <dependencies>
                         <dependency>
                             <groupId>org.junit.platform</groupId>

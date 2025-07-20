@@ -537,10 +537,11 @@ jobs:
       - store_test_results:
           path: ~/test-results
       - when:
-          # NOTE(AR) only persist the workspace when it is `large` as we then reuse it for the `code-coverage` and `sonar-analysis` jobs
+          # NOTE(AR) only persist the workspace when we are on the `main` branch, and it has a `large` compute, as we then reuse it for the `code-coverage` and `sonar-analysis` jobs
           condition:
             and:
               - equal: [ large, << parameters.compute_size >> ]
+              - equal: [ main, << pipeline.git.branch >> ]
           steps:
             - persist_project:
                 compute_size: << parameters.compute_size >>
