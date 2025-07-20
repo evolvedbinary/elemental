@@ -91,7 +91,7 @@ function fnt:doc-available-remote($uri as xs:string) {
 
 declare
     %test:args("\adamretter")
-    %test:assertError("FODC0005")
+    %test:assertFalse
 function fnt:doc-available-invalid-uri($uri as xs:string) {
     fn:doc-available($uri)
 };
