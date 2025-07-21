@@ -104,7 +104,7 @@ public abstract class AbstractExtractFunction extends BasicFunction {
             final FunctionSignature entryFilterFunctionSignature = entryFilterFunction.getSignature();
 
             if (args.length < 5) {
-                if (!validateFunctionSignature(entryFilterFunctionSignature, new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE))) {
+                if (!validateFunctionSignature(entryFilterFunctionSignature, new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE), new SequenceType[]{ new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) })) {
                     throw new XPathException(this, "entry-filter function must have a signature that matches: entry-filter($path as xs:string, $data-type as xs:string) as xs:boolean");
                 }
 
@@ -116,12 +116,12 @@ public abstract class AbstractExtractFunction extends BasicFunction {
                 entryDataFunction = (FunctionReference) args[2].itemAt(0);
                 final FunctionSignature entryDataFunctionSignature = entryDataFunction.getSignature();
                 if (entryDataFunctionSignature.getArgumentCount() == 2) {
-                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE))) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType[]{ new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) })) {
                         throw new XPathException(this, "entry-path function must have a signature that matches: entry-path($path as xs:string, $data-type as xs:string) as xs:anyURI");
                     }
                     dataParams = new Sequence[2];
                 } else if (entryDataFunctionSignature.getArgumentCount() == 3) {
-                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_ONE))) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE), new SequenceType[]{ new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.ITEM, Cardinality.ZERO_OR_ONE) })) {
                         throw new XPathException(this, "entry-data function must have a signature that matches: entry-data($path as xs:string, $data-type as xs:string, $data as item()?) as item()*");
                     }
                     dataParams = new Sequence[3];
@@ -136,7 +136,7 @@ public abstract class AbstractExtractFunction extends BasicFunction {
                 }
 
             } else {
-                if (!validateFunctionSignature(entryFilterFunctionSignature, new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE))) {
+                if (!validateFunctionSignature(entryFilterFunctionSignature, new SequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE), new SequenceType[]{ new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE) })) {
                     throw new XPathException(this, "entry-filter function must have a signature that matches: entry-filter($path as xs:string, $data-type as xs:string, $param as item()*) as xs:boolean");
                 }
 
@@ -149,13 +149,13 @@ public abstract class AbstractExtractFunction extends BasicFunction {
                 entryDataFunction = (FunctionReference) args[3].itemAt(0);
                 final FunctionSignature entryDataFunctionSignature = entryDataFunction.getSignature();
                 if (entryDataFunctionSignature.getArgumentCount() == 3) {
-                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE))) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType[]{ new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE) })) {
                         throw new XPathException(this, "entry-path function must have a signature that matches: entry-path($path as xs:string, $data-type as xs:string, $param as item()*) as xs:anyURI");
                     }
                     dataParams = new Sequence[3];
                     dataParams[2] = args[4];
                 } else if (entryDataFunctionSignature.getArgumentCount() == 4) {
-                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_ONE), new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE))) {
+                    if (!validateFunctionSignature(entryDataFunctionSignature, new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE), new SequenceType[]{ new SequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE), new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.STRING, Cardinality.EXACTLY_ONE) }, new SequenceType[]{ new SequenceType(Type.ITEM, Cardinality.ZERO_OR_ONE) }, new SequenceType[]{ new SequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE) })) {
                         throw new XPathException(this, "entry-data function must have a signature that matches: entry-data($path as xs:string, $data-type as xs:string, $data as item()?, $param as item()*) as item()*");
                     }
                     dataParams = new Sequence[4];
@@ -187,7 +187,7 @@ public abstract class AbstractExtractFunction extends BasicFunction {
         }
     }
 
-    private boolean validateFunctionSignature(final FunctionSignature functionSignature, final SequenceType expectedReturnType, final SequenceType... expectedArgumentTypes) {
+    private boolean validateFunctionSignature(final FunctionSignature functionSignature, final SequenceType expectedReturnType, final SequenceType[]...expectedArgumentTypePossibilities) {
         final SequenceType actualReturnType = functionSignature.getReturnType();
 
         if (!areSequenceTypesCompatible(expectedReturnType, actualReturnType)) {
@@ -195,11 +195,29 @@ public abstract class AbstractExtractFunction extends BasicFunction {
         }
 
         final SequenceType[] actualArgumentTypes = functionSignature.getArgumentTypes();
-        for (int i = 0; i < expectedArgumentTypes.length; i++) {
-            final SequenceType expectedArgumentType = expectedArgumentTypes[i];
+        if (actualArgumentTypes.length != expectedArgumentTypePossibilities.length) {
+            return false;
+        }
+
+        // iterate through the actual argument types
+        for (int i = 0; i < actualArgumentTypes.length; i++) {
             final SequenceType actualArgumentType = actualArgumentTypes[i];
 
-            if (!areSequenceTypesCompatible(expectedArgumentType, actualArgumentType)) {
+            // the actualArgumentType must match any one of the possibleExpectedArgumentTypes
+            final SequenceType[] possibleExpectedArgumentTypes = expectedArgumentTypePossibilities[i];
+
+            boolean actualArgumentTypeMatchedPossibleExpectedArgumentType = false;
+            for (int j = 0; j < possibleExpectedArgumentTypes.length; j++) {
+                final SequenceType possibleExpectedArgumentType = possibleExpectedArgumentTypes[j];
+
+                if (areSequenceTypesCompatible(possibleExpectedArgumentType, actualArgumentType)) {
+                    actualArgumentTypeMatchedPossibleExpectedArgumentType = true;
+                    break;
+                }
+            }
+
+            if (!actualArgumentTypeMatchedPossibleExpectedArgumentType) {
+                // actual argument type did NOT match any of the possibleExpectedArgumentTypes
                 return false;
             }
         }
