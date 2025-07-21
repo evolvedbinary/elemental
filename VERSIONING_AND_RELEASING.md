@@ -200,12 +200,7 @@ You will require a system with:
     $ mvn -Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false -Darguments="-Ddocker=true -Dmac-signing=true -P installer -Dizpack-signing=true -Djarsigner.skip=false" release:perform
     ```
 
-7.  You now need to request the artifacts to be moved from the Portal OSSRH Staging API to the Maven Central staging area:
-    ```bash
-    $ curl -vv -X POST -H "Authorization: Bearer your-bearer-token-for-maven-central" https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/xyz.elemental
-    ```
-
-8.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
+7.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
     ```bash
     $ git push origin elemental-7.3.0:gold
     ```
@@ -217,7 +212,7 @@ You will require a system with:
 
 3. Login to https://central.sonatype.com/publishing/deployments and release the Maven artifacts to Maven central as described [here](https://central.sonatype.org/publish/publish-portal-guide/).
 
-4. Update the Mac HomeBrew for Elemental, see: [Releasing to Homebrew](https://github.com/evolvedbinary/elemental/blob/main/VERSIONING_AND_RELEASING.md#releasing-to-homebrew).
+4. Check that the HomeBrew for Elemental delivers the latest version, see: [Releasing to Homebrew](https://github.com/evolvedbinary/elemental/blob/main/VERSIONING_AND_RELEASING.md#releasing-to-homebrew).
 
 5. Visit the GitHub releases page [https://github.com/evolvedbinary/elemental/releases](https://github.com/evolvedbinary/elemental/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
 
@@ -235,14 +230,10 @@ You will require a system with:
 
 
 ### Releasing to Homebrew
-[Homebrew](http://brew.sh) is a popular command-line package manager for macOS. Once Homebrew is installed, applications like Elemental can be installed via a simple command. Elemental's presence on Homebrew is found in the Caskroom project, as a "cask", at [https://github.com/caskroom/homebrew-cask/blob/master/Casks/elemental.rb](https://github.com/caskroom/homebrew-cask/blob/master/Casks/elemental.rb).
+[Homebrew](http://brew.sh) is a popular command-line package manager for macOS. Once Homebrew is installed, applications like Elemental can be installed via a simple command. Elemental's presence on Homebrew is found in the Caskroom project, as a "cask", at [https://github.com/Homebrew/homebrew-cask/blob/master/Casks/e/elemental.rb](https://github.com/Homebrew/homebrew-cask/blob/master/Casks/e/elemental.rb).
 
-**Terminology:** "Homebrew Cask" is the segment of Homebrew where pre-built binaries and GUI applications go, whereas the original "Homebrew" project is reserved for command-line utilities that can be built from source. Because the macOS version of Elemental is released as an app bundle with GUI components, it is handled as a Homebrew Cask.
+**Terminology:** "Homebrew Cask" is the aspect of Homebrew that provides pre-built application binaries, whereas the original "Homebrew" project is reserved for applications that can be built from source. The macOS version of Elemental is released as an app bundle with GUI components, and therefore it is delivered as a Homebrew Cask.
 
-When there is a new release, registering the new release with Homebrew can be easily accomplished using Homebrew's `brew bump-cask-pr` command. Full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md), but, a simple version bump is a one-line command. For example, to update Homebrew's version of Elemental to 7.1.0, use this command:
+When there is a new release, Homebrew should automatically register the new release. This can be tested by running `brew install --cask elemental`.
 
-```bash
-brew bump-cask-pr --version 7.1.0 elemental
-```
-
-This command will cause your local Homebrew installation to download the new version of Elemental, calculate the installer's new SHA-256 fingerprint value, and construct a pull request under your GitHub account, like [this one](https://github.com/Homebrew/homebrew-cask/pull/210264). Once the pull request is submitted, continuous integration tests will run, and a member of the Homebrew community will review the PR. At times there is a backlog on the CI servers, but once tests pass, the community review is typically completed in a matter of hours.
+Should the new version not be available via Homebrew, full directions for this utility as well as procedures for more complex PRs can be found on [the Homebrew Cask CONTRIBUTING page](https://github.com/Homebrew/homebrew-cask/blob/master/CONTRIBUTING.md).
