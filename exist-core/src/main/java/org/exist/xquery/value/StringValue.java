@@ -890,7 +890,20 @@ public class StringValue extends AtomicValue {
      * @return the StringValue.
      */
     public static StringValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
-        return deserialize(expression, buf, null);
+        return deserialize(expression, buf, false);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the StringValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     * @param expand if entities need to be expanded
+     *
+     * @return the StringValue.
+     */
+    public static StringValue deserialize(@Nullable final Expression expression, final ByteBuffer buf, final boolean expand) throws IOException, XPathException {
+        return deserialize(expression, buf, null, expand);
     }
 
     /**
@@ -903,12 +916,26 @@ public class StringValue extends AtomicValue {
      * @return the StringValue.
      */
     public static StringValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType) throws IOException, XPathException {
+        return deserialize(expression, buf, checkType, false);
+    }
+
+    /**
+     * Deserializes from a ByteBuffer.
+     *
+     * @param expression the expression that creates the StringValue object.
+     * @param buf the ByteBuffer to deserialize from.
+     * @param checkType an XDM type to check that matches against the deserialized StringValue type.
+     * @param expand if entities need to be expanded
+     *
+     * @return the StringValue.
+     */
+    public static StringValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType, final boolean expand) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
         final int type = vbbi.read();
         if (checkType != null && type != checkType.intValue()) {
             throw new XPathException(expression, "Expected deserialized StringValue of type: " + Type.getTypeName(checkType) + ", but found: " + Type.getTypeName(type));
         }
         final String value = vbbi.readUTF();
-        return new StringValue(expression, value, type);
+        return new StringValue(expression, value, type, expand);
     }
 }
