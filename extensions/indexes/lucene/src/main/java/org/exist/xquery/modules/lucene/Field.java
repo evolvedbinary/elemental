@@ -527,7 +527,7 @@ public class Field extends BasicFunction {
             case Type.ID:
             case Type.IDREF:
             case Type.ENTITY:
-                return new StringValue(this, value, type);
+                return new StringValue(this, value, type, false);
 
             case Type.NOTATION:
             default:

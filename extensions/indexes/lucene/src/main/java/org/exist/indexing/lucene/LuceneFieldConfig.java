@@ -349,7 +349,7 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
                 case Type.ID:
                 case Type.IDREF:
                 case Type.ENTITY:
-                    final StringValue stringValue = new StringValue(content, type);
+                    final StringValue stringValue = new StringValue(content, type, false);
                     return new TextField(fieldName, stringValue.getStringValue(), store);
 
                 case Type.NOTATION:
@@ -496,7 +496,7 @@ public class LuceneFieldConfig extends AbstractFieldConfig {
                 case Type.ID:
                 case Type.IDREF:
                 case Type.ENTITY:
-                    final StringValue stringValue = new StringValue(content, type);
+                    final StringValue stringValue = new StringValue(content, type, false);
                     bytesRef = new BytesRef(stringValue.toJavaObject(byte[].class));
                     break;
 
