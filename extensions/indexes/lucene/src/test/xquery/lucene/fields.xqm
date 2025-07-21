@@ -412,6 +412,7 @@ declare variable $fields:TYPES_DOC := document {
         <NOTATION>xs:valid</NOTATION>
         <string>AB C</string>
         <string>ABC</string>
+        <string>AB&amp;C</string>
         <normalizedString>ABC	A</normalizedString>
         <normalizedString>ABC</normalizedString>
         <token>AB   C</token>
@@ -1399,7 +1400,14 @@ declare
         '<field name="string-typed-string" instance-of="xs:string" node-id="1.104">true</field>',
         '<binary-field name="string" instance-of="xs:string" node-id="1.104">true</binary-field>',
         '<binary-field name="string" instance-of="xs:string" node-id="1.104">true</binary-field>',
-        '<binary-field name="string-typed-string-binary" instance-of="xs:string" node-id="1.104">true</binary-field>'
+        '<binary-field name="string-typed-string-binary" instance-of="xs:string" node-id="1.104">true</binary-field>',
+
+        '<field name="string" instance-of="xs:string" node-id="1.105">true</field>',
+                '<field name="string" instance-of="xs:string" node-id="1.105">true</field>',
+                '<field name="string-typed-string" instance-of="xs:string" node-id="1.105">true</field>',
+                '<binary-field name="string" instance-of="xs:string" node-id="1.105">true</binary-field>',
+                '<binary-field name="string" instance-of="xs:string" node-id="1.105">true</binary-field>',
+                '<binary-field name="string-typed-string-binary" instance-of="xs:string" node-id="1.105">true</binary-field>'
     )
 function fields:string-type-fields() {
     fields:assert-field-types("A*", "string", function($field-value) { $field-value instance of xs:string })
@@ -1407,19 +1415,19 @@ function fields:string-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="normalizedString" instance-of="xs:string" node-id="1.105">true</field>',
-        '<field name="normalizedString" instance-of="xs:string" node-id="1.105">true</field>',
-        '<field name="normalizedString-typed-normalizedString" instance-of="xs:normalizedString" node-id="1.105">true</field>',
-        '<binary-field name="normalizedString" instance-of="xs:string" node-id="1.105">true</binary-field>',
-        '<binary-field name="normalizedString" instance-of="xs:string" node-id="1.105">true</binary-field>',
-        '<binary-field name="normalizedString-typed-normalizedString-binary" instance-of="xs:normalizedString" node-id="1.105">true</binary-field>',
-
         '<field name="normalizedString" instance-of="xs:string" node-id="1.106">true</field>',
         '<field name="normalizedString" instance-of="xs:string" node-id="1.106">true</field>',
         '<field name="normalizedString-typed-normalizedString" instance-of="xs:normalizedString" node-id="1.106">true</field>',
         '<binary-field name="normalizedString" instance-of="xs:string" node-id="1.106">true</binary-field>',
         '<binary-field name="normalizedString" instance-of="xs:string" node-id="1.106">true</binary-field>',
-        '<binary-field name="normalizedString-typed-normalizedString-binary" instance-of="xs:normalizedString" node-id="1.106">true</binary-field>'
+        '<binary-field name="normalizedString-typed-normalizedString-binary" instance-of="xs:normalizedString" node-id="1.106">true</binary-field>',
+
+        '<field name="normalizedString" instance-of="xs:string" node-id="1.107">true</field>',
+        '<field name="normalizedString" instance-of="xs:string" node-id="1.107">true</field>',
+        '<field name="normalizedString-typed-normalizedString" instance-of="xs:normalizedString" node-id="1.107">true</field>',
+        '<binary-field name="normalizedString" instance-of="xs:string" node-id="1.107">true</binary-field>',
+        '<binary-field name="normalizedString" instance-of="xs:string" node-id="1.107">true</binary-field>',
+        '<binary-field name="normalizedString-typed-normalizedString-binary" instance-of="xs:normalizedString" node-id="1.107">true</binary-field>'
     )
 function fields:normalizedString-type-fields() {
     fields:assert-field-types("A*", "normalizedString", function($field-value) { $field-value instance of xs:normalizedString })
@@ -1427,19 +1435,19 @@ function fields:normalizedString-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="token" instance-of="xs:string" node-id="1.107">true</field>',
-        '<field name="token" instance-of="xs:string" node-id="1.107">true</field>',
-        '<field name="token-typed-token" instance-of="xs:token" node-id="1.107">true</field>',
-        '<binary-field name="token" instance-of="xs:string" node-id="1.107">true</binary-field>',
-        '<binary-field name="token" instance-of="xs:string" node-id="1.107">true</binary-field>',
-        '<binary-field name="token-typed-token-binary" instance-of="xs:token" node-id="1.107">true</binary-field>',
-
         '<field name="token" instance-of="xs:string" node-id="1.108">true</field>',
         '<field name="token" instance-of="xs:string" node-id="1.108">true</field>',
         '<field name="token-typed-token" instance-of="xs:token" node-id="1.108">true</field>',
         '<binary-field name="token" instance-of="xs:string" node-id="1.108">true</binary-field>',
         '<binary-field name="token" instance-of="xs:string" node-id="1.108">true</binary-field>',
-        '<binary-field name="token-typed-token-binary" instance-of="xs:token" node-id="1.108">true</binary-field>'
+        '<binary-field name="token-typed-token-binary" instance-of="xs:token" node-id="1.108">true</binary-field>',
+
+        '<field name="token" instance-of="xs:string" node-id="1.109">true</field>',
+        '<field name="token" instance-of="xs:string" node-id="1.109">true</field>',
+        '<field name="token-typed-token" instance-of="xs:token" node-id="1.109">true</field>',
+        '<binary-field name="token" instance-of="xs:string" node-id="1.109">true</binary-field>',
+        '<binary-field name="token" instance-of="xs:string" node-id="1.109">true</binary-field>',
+        '<binary-field name="token-typed-token-binary" instance-of="xs:token" node-id="1.109">true</binary-field>'
     )
 function fields:token-type-fields() {
     fields:assert-field-types("A*", "token", function($field-value) { $field-value instance of xs:token })
@@ -1447,19 +1455,19 @@ function fields:token-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="language" instance-of="xs:string" node-id="1.109">true</field>',
-        '<field name="language" instance-of="xs:string" node-id="1.109">true</field>',
-        '<field name="language-typed-language" instance-of="xs:language" node-id="1.109">false</field>',
-        '<binary-field name="language" instance-of="xs:string" node-id="1.109">true</binary-field>',
-        '<binary-field name="language" instance-of="xs:string" node-id="1.109">true</binary-field>',
-        '<binary-field name="language-typed-language-binary" instance-of="xs:language" node-id="1.109">false</binary-field>',
+        '<field name="language" instance-of="xs:string" node-id="1.110">true</field>',
+        '<field name="language" instance-of="xs:string" node-id="1.110">true</field>',
+        '<field name="language-typed-language" instance-of="xs:language" node-id="1.110">false</field>',
+        '<binary-field name="language" instance-of="xs:string" node-id="1.110">true</binary-field>',
+        '<binary-field name="language" instance-of="xs:string" node-id="1.110">true</binary-field>',
+        '<binary-field name="language-typed-language-binary" instance-of="xs:language" node-id="1.110">false</binary-field>',
 
-        '<field name="language" instance-of="xs:string" node-id="1.110">true</field>',
-        '<field name="language" instance-of="xs:string" node-id="1.110">true</field>',
-        '<field name="language-typed-language" instance-of="xs:language" node-id="1.110">true</field>',
-        '<binary-field name="language" instance-of="xs:string" node-id="1.110">true</binary-field>',
-        '<binary-field name="language" instance-of="xs:string" node-id="1.110">true</binary-field>',
-        '<binary-field name="language-typed-language-binary" instance-of="xs:language" node-id="1.110">true</binary-field>'
+        '<field name="language" instance-of="xs:string" node-id="1.111">true</field>',
+        '<field name="language" instance-of="xs:string" node-id="1.111">true</field>',
+        '<field name="language-typed-language" instance-of="xs:language" node-id="1.111">true</field>',
+        '<binary-field name="language" instance-of="xs:string" node-id="1.111">true</binary-field>',
+        '<binary-field name="language" instance-of="xs:string" node-id="1.111">true</binary-field>',
+        '<binary-field name="language-typed-language-binary" instance-of="xs:language" node-id="1.111">true</binary-field>'
     )
 function fields:language-type-fields() {
     fields:assert-field-types("en*", "language", function($field-value) { $field-value instance of xs:language })
@@ -1467,19 +1475,19 @@ function fields:language-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.111">true</field>',
-        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.111">true</field>',
-        '<field name="NMTOKEN-typed-NMTOKEN" instance-of="xs:NMTOKEN" node-id="1.111">false</field>',
-        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.111">true</binary-field>',
-        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.111">true</binary-field>',
-        '<binary-field name="NMTOKEN-typed-NMTOKEN-binary" instance-of="xs:NMTOKEN" node-id="1.111">false</binary-field>',
+        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</field>',
+        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</field>',
+        '<field name="NMTOKEN-typed-NMTOKEN" instance-of="xs:NMTOKEN" node-id="1.112">false</field>',
+        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</binary-field>',
+        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</binary-field>',
+        '<binary-field name="NMTOKEN-typed-NMTOKEN-binary" instance-of="xs:NMTOKEN" node-id="1.112">false</binary-field>',
 
-        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</field>',
-        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</field>',
-        '<field name="NMTOKEN-typed-NMTOKEN" instance-of="xs:NMTOKEN" node-id="1.112">true</field>',
-        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</binary-field>',
-        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.112">true</binary-field>',
-        '<binary-field name="NMTOKEN-typed-NMTOKEN-binary" instance-of="xs:NMTOKEN" node-id="1.112">true</binary-field>'
+        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.113">true</field>',
+        '<field name="NMTOKEN" instance-of="xs:string" node-id="1.113">true</field>',
+        '<field name="NMTOKEN-typed-NMTOKEN" instance-of="xs:NMTOKEN" node-id="1.113">true</field>',
+        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.113">true</binary-field>',
+        '<binary-field name="NMTOKEN" instance-of="xs:string" node-id="1.113">true</binary-field>',
+        '<binary-field name="NMTOKEN-typed-NMTOKEN-binary" instance-of="xs:NMTOKEN" node-id="1.113">true</binary-field>'
     )
 function fields:NMTOKEN-type-fields() {
     fields:assert-field-types("A*", "NMTOKEN", function($field-value) { $field-value instance of xs:NMTOKEN })
@@ -1487,19 +1495,19 @@ function fields:NMTOKEN-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="Name" instance-of="xs:string" node-id="1.113">true</field>',
-        '<field name="Name" instance-of="xs:string" node-id="1.113">true</field>',
-        '<field name="Name-typed-Name" instance-of="xs:Name" node-id="1.113">false</field>',
-        '<binary-field name="Name" instance-of="xs:string" node-id="1.113">true</binary-field>',
-        '<binary-field name="Name" instance-of="xs:string" node-id="1.113">true</binary-field>',
-        '<binary-field name="Name-typed-Name-binary" instance-of="xs:Name" node-id="1.113">false</binary-field>',
+        '<field name="Name" instance-of="xs:string" node-id="1.114">true</field>',
+        '<field name="Name" instance-of="xs:string" node-id="1.114">true</field>',
+        '<field name="Name-typed-Name" instance-of="xs:Name" node-id="1.114">false</field>',
+        '<binary-field name="Name" instance-of="xs:string" node-id="1.114">true</binary-field>',
+        '<binary-field name="Name" instance-of="xs:string" node-id="1.114">true</binary-field>',
+        '<binary-field name="Name-typed-Name-binary" instance-of="xs:Name" node-id="1.114">false</binary-field>',
 
-        '<field name="Name" instance-of="xs:string" node-id="1.114">true</field>',
-        '<field name="Name" instance-of="xs:string" node-id="1.114">true</field>',
-        '<field name="Name-typed-Name" instance-of="xs:Name" node-id="1.114">true</field>',
-        '<binary-field name="Name" instance-of="xs:string" node-id="1.114">true</binary-field>',
-        '<binary-field name="Name" instance-of="xs:string" node-id="1.114">true</binary-field>',
-        '<binary-field name="Name-typed-Name-binary" instance-of="xs:Name" node-id="1.114">true</binary-field>'
+        '<field name="Name" instance-of="xs:string" node-id="1.115">true</field>',
+        '<field name="Name" instance-of="xs:string" node-id="1.115">true</field>',
+        '<field name="Name-typed-Name" instance-of="xs:Name" node-id="1.115">true</field>',
+        '<binary-field name="Name" instance-of="xs:string" node-id="1.115">true</binary-field>',
+        '<binary-field name="Name" instance-of="xs:string" node-id="1.115">true</binary-field>',
+        '<binary-field name="Name-typed-Name-binary" instance-of="xs:Name" node-id="1.115">true</binary-field>'
     )
 function fields:Name-type-fields() {
     fields:assert-field-types("A*", "Name", function($field-value) { $field-value instance of xs:Name })
@@ -1507,19 +1515,19 @@ function fields:Name-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="NCName" instance-of="xs:string" node-id="1.115">true</field>',
-        '<field name="NCName" instance-of="xs:string" node-id="1.115">true</field>',
-        '<field name="NCName-typed-NCName" instance-of="xs:NCName" node-id="1.115">false</field>',
-        '<binary-field name="NCName" instance-of="xs:string" node-id="1.115">true</binary-field>',
-        '<binary-field name="NCName" instance-of="xs:string" node-id="1.115">true</binary-field>',
-        '<binary-field name="NCName-typed-NCName-binary" instance-of="xs:NCName" node-id="1.115">false</binary-field>',
+        '<field name="NCName" instance-of="xs:string" node-id="1.116">true</field>',
+        '<field name="NCName" instance-of="xs:string" node-id="1.116">true</field>',
+        '<field name="NCName-typed-NCName" instance-of="xs:NCName" node-id="1.116">false</field>',
+        '<binary-field name="NCName" instance-of="xs:string" node-id="1.116">true</binary-field>',
+        '<binary-field name="NCName" instance-of="xs:string" node-id="1.116">true</binary-field>',
+        '<binary-field name="NCName-typed-NCName-binary" instance-of="xs:NCName" node-id="1.116">false</binary-field>',
 
-        '<field name="NCName" instance-of="xs:string" node-id="1.116">true</field>',
-        '<field name="NCName" instance-of="xs:string" node-id="1.116">true</field>',
-        '<field name="NCName-typed-NCName" instance-of="xs:NCName" node-id="1.116">true</field>',
-        '<binary-field name="NCName" instance-of="xs:string" node-id="1.116">true</binary-field>',
-        '<binary-field name="NCName" instance-of="xs:string" node-id="1.116">true</binary-field>',
-        '<binary-field name="NCName-typed-NCName-binary" instance-of="xs:NCName" node-id="1.116">true</binary-field>'
+        '<field name="NCName" instance-of="xs:string" node-id="1.117">true</field>',
+        '<field name="NCName" instance-of="xs:string" node-id="1.117">true</field>',
+        '<field name="NCName-typed-NCName" instance-of="xs:NCName" node-id="1.117">true</field>',
+        '<binary-field name="NCName" instance-of="xs:string" node-id="1.117">true</binary-field>',
+        '<binary-field name="NCName" instance-of="xs:string" node-id="1.117">true</binary-field>',
+        '<binary-field name="NCName-typed-NCName-binary" instance-of="xs:NCName" node-id="1.117">true</binary-field>'
     )
 function fields:NCName-type-fields() {
     fields:assert-field-types("A*", "NCName", function($field-value) { $field-value instance of xs:NCName })
@@ -1527,19 +1535,19 @@ function fields:NCName-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="ID" instance-of="xs:string" node-id="1.117">true</field>',
-        '<field name="ID" instance-of="xs:string" node-id="1.117">true</field>',
-        '<field name="ID-typed-ID" instance-of="xs:ID" node-id="1.117">false</field>',
-        '<binary-field name="ID" instance-of="xs:string" node-id="1.117">true</binary-field>',
-        '<binary-field name="ID" instance-of="xs:string" node-id="1.117">true</binary-field>',
-        '<binary-field name="ID-typed-ID-binary" instance-of="xs:ID" node-id="1.117">false</binary-field>',
+        '<field name="ID" instance-of="xs:string" node-id="1.118">true</field>',
+        '<field name="ID" instance-of="xs:string" node-id="1.118">true</field>',
+        '<field name="ID-typed-ID" instance-of="xs:ID" node-id="1.118">false</field>',
+        '<binary-field name="ID" instance-of="xs:string" node-id="1.118">true</binary-field>',
+        '<binary-field name="ID" instance-of="xs:string" node-id="1.118">true</binary-field>',
+        '<binary-field name="ID-typed-ID-binary" instance-of="xs:ID" node-id="1.118">false</binary-field>',
 
-        '<field name="ID" instance-of="xs:string" node-id="1.118">true</field>',
-        '<field name="ID" instance-of="xs:string" node-id="1.118">true</field>',
-        '<field name="ID-typed-ID" instance-of="xs:ID" node-id="1.118">true</field>',
-        '<binary-field name="ID" instance-of="xs:string" node-id="1.118">true</binary-field>',
-        '<binary-field name="ID" instance-of="xs:string" node-id="1.118">true</binary-field>',
-        '<binary-field name="ID-typed-ID-binary" instance-of="xs:ID" node-id="1.118">true</binary-field>'
+        '<field name="ID" instance-of="xs:string" node-id="1.119">true</field>',
+        '<field name="ID" instance-of="xs:string" node-id="1.119">true</field>',
+        '<field name="ID-typed-ID" instance-of="xs:ID" node-id="1.119">true</field>',
+        '<binary-field name="ID" instance-of="xs:string" node-id="1.119">true</binary-field>',
+        '<binary-field name="ID" instance-of="xs:string" node-id="1.119">true</binary-field>',
+        '<binary-field name="ID-typed-ID-binary" instance-of="xs:ID" node-id="1.119">true</binary-field>'
     )
 function fields:ID-type-fields() {
     fields:assert-field-types("A*", "ID", function($field-value) { $field-value instance of xs:ID })
@@ -1547,19 +1555,19 @@ function fields:ID-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="IDREF" instance-of="xs:string" node-id="1.119">true</field>',
-        '<field name="IDREF" instance-of="xs:string" node-id="1.119">true</field>',
-        '<field name="IDREF-typed-IDREF" instance-of="xs:IDREF" node-id="1.119">false</field>',
-        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.119">true</binary-field>',
-        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.119">true</binary-field>',
-        '<binary-field name="IDREF-typed-IDREF-binary" instance-of="xs:IDREF" node-id="1.119">false</binary-field>',
+        '<field name="IDREF" instance-of="xs:string" node-id="1.120">true</field>',
+        '<field name="IDREF" instance-of="xs:string" node-id="1.120">true</field>',
+        '<field name="IDREF-typed-IDREF" instance-of="xs:IDREF" node-id="1.120">false</field>',
+        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.120">true</binary-field>',
+        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.120">true</binary-field>',
+        '<binary-field name="IDREF-typed-IDREF-binary" instance-of="xs:IDREF" node-id="1.120">false</binary-field>',
 
-        '<field name="IDREF" instance-of="xs:string" node-id="1.120">true</field>',
-        '<field name="IDREF" instance-of="xs:string" node-id="1.120">true</field>',
-        '<field name="IDREF-typed-IDREF" instance-of="xs:IDREF" node-id="1.120">true</field>',
-        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.120">true</binary-field>',
-        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.120">true</binary-field>',
-        '<binary-field name="IDREF-typed-IDREF-binary" instance-of="xs:IDREF" node-id="1.120">true</binary-field>'
+        '<field name="IDREF" instance-of="xs:string" node-id="1.121">true</field>',
+        '<field name="IDREF" instance-of="xs:string" node-id="1.121">true</field>',
+        '<field name="IDREF-typed-IDREF" instance-of="xs:IDREF" node-id="1.121">true</field>',
+        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.121">true</binary-field>',
+        '<binary-field name="IDREF" instance-of="xs:string" node-id="1.121">true</binary-field>',
+        '<binary-field name="IDREF-typed-IDREF-binary" instance-of="xs:IDREF" node-id="1.121">true</binary-field>'
     )
 function fields:IDREF-type-fields() {
     fields:assert-field-types("A*", "IDREF", function($field-value) { $field-value instance of xs:IDREF })
@@ -1567,19 +1575,19 @@ function fields:IDREF-type-fields() {
 
 declare
     %test:assertEquals(
-        '<field name="ENTITY" instance-of="xs:string" node-id="1.121">true</field>',
-        '<field name="ENTITY" instance-of="xs:string" node-id="1.121">true</field>',
-        '<field name="ENTITY-typed-ENTITY" instance-of="xs:ENTITY" node-id="1.121">false</field>',
-        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.121">true</binary-field>',
-        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.121">true</binary-field>',
-        '<binary-field name="ENTITY-typed-ENTITY-binary" instance-of="xs:ENTITY" node-id="1.121">false</binary-field>',
+        '<field name="ENTITY" instance-of="xs:string" node-id="1.122">true</field>',
+        '<field name="ENTITY" instance-of="xs:string" node-id="1.122">true</field>',
+        '<field name="ENTITY-typed-ENTITY" instance-of="xs:ENTITY" node-id="1.122">false</field>',
+        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.122">true</binary-field>',
+        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.122">true</binary-field>',
+        '<binary-field name="ENTITY-typed-ENTITY-binary" instance-of="xs:ENTITY" node-id="1.122">false</binary-field>',
 
-        '<field name="ENTITY" instance-of="xs:string" node-id="1.122">true</field>',
-        '<field name="ENTITY" instance-of="xs:string" node-id="1.122">true</field>',
-        '<field name="ENTITY-typed-ENTITY" instance-of="xs:ENTITY" node-id="1.122">true</field>',
-        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.122">true</binary-field>',
-        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.122">true</binary-field>',
-        '<binary-field name="ENTITY-typed-ENTITY-binary" instance-of="xs:ENTITY" node-id="1.122">true</binary-field>'
+        '<field name="ENTITY" instance-of="xs:string" node-id="1.123">true</field>',
+        '<field name="ENTITY" instance-of="xs:string" node-id="1.123">true</field>',
+        '<field name="ENTITY-typed-ENTITY" instance-of="xs:ENTITY" node-id="1.123">true</field>',
+        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.123">true</binary-field>',
+        '<binary-field name="ENTITY" instance-of="xs:string" node-id="1.123">true</binary-field>',
+        '<binary-field name="ENTITY-typed-ENTITY-binary" instance-of="xs:ENTITY" node-id="1.123">true</binary-field>'
     )
 function fields:ENTITY-type-fields() {
     fields:assert-field-types("A*", "ENTITY", function($field-value) { $field-value instance of xs:ENTITY })
