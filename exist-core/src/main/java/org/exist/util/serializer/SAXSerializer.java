@@ -327,7 +327,7 @@ public class SAXSerializer extends AbstractSerializer implements ContentHandler,
             for (final Map.Entry<String, String> nsEntry : optionalNamespaceDecls.entrySet()) {
                 final String prefix = nsEntry.getKey();
                 final String uri = nsEntry.getValue();
-                if (!(elemPrefixedNsIsDefaultNs && uri.equals(namespaceURI) && elemPrefix.equals(prefix))) {
+                if (!(elemPrefixedNsIsDefaultNs && uri.equals(namespaceURI) && StringUtil.equals(qname.getPrefix(), prefix))) {
                     receiver.namespace(prefix, uri);
                 }
             }
@@ -338,7 +338,7 @@ public class SAXSerializer extends AbstractSerializer implements ContentHandler,
                 }
                 final String uri = nsEntry.getValue();
                 if(!optionalNamespaceDecls.containsKey(prefix)) {
-                    if (!(elemPrefixedNsIsDefaultNs && uri.equals(namespaceURI) && elemPrefix.equals(prefix))) {
+                    if (!(elemPrefixedNsIsDefaultNs && uri.equals(namespaceURI) && StringUtil.equals(qname.getPrefix(), prefix))) {
                         receiver.namespace(prefix, uri);
                     }
                 }
