@@ -96,7 +96,7 @@ public class SAXSerializerTest {
             saxSerializer.endElement(new QName("change", "http://exist-db.org/xquery/repo", "repo"));
 
             saxSerializer.startElement(new QName("change", "http://exist-db.org/xquery/repo", "repo"), null);
-            saxSerializer.characters("change-text-1");
+            saxSerializer.characters("change-text-2");
             saxSerializer.endElement(new QName("change", "http://exist-db.org/xquery/repo", "repo"));
 
             saxSerializer.endElement(new QName("changelog", "http://exist-db.org/xquery/repo", null));
