@@ -701,6 +701,7 @@
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
+                                <include>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/main/java/org/exist/xquery/JavaBinding.java</include>
@@ -1322,6 +1323,7 @@
                                 <exclude>src/main/java/org/exist/util/serializer/EXISerializer.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/SAXSerializer.java</exclude>
+                                <exclude>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/SerializerObjectFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/json/JSONObject.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/json/JSONObjectTest.java</exclude>
