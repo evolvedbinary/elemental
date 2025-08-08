@@ -400,7 +400,7 @@ public class SAXSerializer extends AbstractSerializer implements ContentHandler,
             if (enforceXHTML && elemPrefix.isEmpty() && namespaceURI.isEmpty()) {
                 namespaceURI = Namespaces.XHTML_NS;
             }
-            receiver.endElement(new QName(qname.getLocalPart(), namespaceURI, qname.getPrefix()));
+            receiver.endElement(new QName(qname.getLocalPart(), namespaceURI, elemPrefix));
 
             receiver.setDefaultNamespace(nsSupport.getURI(XMLConstants.DEFAULT_NS_PREFIX));
         } catch (final TransformerException e) {
