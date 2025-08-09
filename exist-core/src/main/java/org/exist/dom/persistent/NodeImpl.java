@@ -61,18 +61,22 @@ public abstract class NodeImpl<T extends NodeImpl> implements INode<DocumentImpl
 
     protected static final Logger LOG = LogManager.getLogger(NodeImpl.class);
 
-    private final Expression expression;
+    @Nullable private Expression expression;
 
     protected NodeImpl() {
         this(null);
     }
 
-    protected NodeImpl(final Expression expression) {
+    protected NodeImpl(@Nullable final Expression expression) {
         this.expression = expression;
     }
 
-    public Expression getExpression() {
+    public @Nullable Expression getExpression() {
         return expression;
+    }
+
+    public void setExpression(@Nullable final Expression expression) {
+        this.expression = expression;
     }
 
     @Override

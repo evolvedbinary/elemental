@@ -598,71 +598,50 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
             }
         }
 
-        ElementImpl node;
         int p = qname.indexOf(':');
         final String prefix = p != Constants.STRING_NOT_FOUND ? qname.substring(0, p) : "";
         final QName qn = broker.getBrokerPool().getSymbols().getQName(Node.ELEMENT_NODE, namespace, name, prefix);
 
-        if (!stack.isEmpty()) {
+        final ElementImpl node;
+        final boolean isRootNode = stack.isEmpty();
+        if (!isRootNode) {
             final ElementImpl last = stack.peek();
             processText(last, ProcessTextParent.ELEMENT_START);
-            try {
-                if (!usedElements.isEmpty()) {
-                    node = usedElements.pop();
-                    node.setNodeName(qn, broker.getBrokerPool().getSymbols());
-                } else {
-                    node = new ElementImpl(last != null ? last.getExpression() : null, qn, broker.getBrokerPool().getSymbols());
-                }
-            } catch (final DOMException e) {
-                throw new SAXException(e.getMessage(), e);
-            }
+
+            node = newElement(last != null ? last.getExpression() : null, qn);
             // copy xml:space setting
             node.setPreserveSpace(last.preserveSpace());
             // append the node to its parent
             // (computes the node id and updates the parent's child count)
             last.appendChildInternal(prevNode, node);
-            setPrevious(null);
-            node.setOwnerDocument(document);
-            node.setAttributes((short) attrLength);
-            if (!nsMappings.isEmpty()) {
-                node.setNamespaceMappings(nsMappings);
-                nsMappings.clear();
-            }
-            stack.push(node);
-            currentPath.addNode(node, attributes);
-            node.setPosition(elementCnt++);
-            if (!validate) {
-                if (childCnt != null) {
-                    node.setChildCount(childCnt[node.getPosition()]);
-                }
-                storeElement(node);
-            }
+
         } else {
-            try {
-                node = new ElementImpl(null, qn, broker.getBrokerPool().getSymbols());
-            } catch (final DOMException e) {
-                throw new SAXException(e.getMessage(), e);
-            }
+            node = newElement(null, qn);
             rootNode = node;
-            setPrevious(null);
-            node.setOwnerDocument(document);
             node.setNodeId(broker.getBrokerPool().getNodeFactory().createInstance(nodeFactoryInstanceCnt++));
-            node.setAttributes((short) attrLength);
-            if (!nsMappings.isEmpty()) {
-                node.setNamespaceMappings(nsMappings);
-                nsMappings.clear();
-            }
-            stack.push(node);
-            currentPath.addNode(node, attributes);
-            node.setPosition(elementCnt++);
-            if (!validate) {
-                if (childCnt != null) {
-                    node.setChildCount(childCnt[node.getPosition()]);
-                }
-                storeElement(node);
-            }
-            document.appendChild((NodeHandle)node);
         }
+
+        setPrevious(null);
+        node.setOwnerDocument(document);
+        node.setAttributes((short) attrLength);
+        if (!nsMappings.isEmpty()) {
+            node.setNamespaceMappings(nsMappings);
+            nsMappings.clear();
+        }
+        stack.push(node);
+        currentPath.addNode(node, attributes);
+        node.setPosition(elementCnt++);
+        if (!validate) {
+            if (childCnt != null) {
+                node.setChildCount(childCnt[node.getPosition()]);
+            }
+            storeElement(node);
+        }
+
+        if (isRootNode) {
+            document.appendChild((NodeHandle) node);
+        }
+
         level++;
 
         for (int i = 0; i < attributes.getLength(); i++) {
@@ -720,6 +699,22 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
             }
         }
         docSize++;
+    }
+
+    private ElementImpl newElement(@Nullable final Expression expression, final QName name) throws SAXException {
+        final ElementImpl element;
+        try {
+            if (!usedElements.isEmpty()) {
+                element = usedElements.pop();
+                element.setNodeName(name, broker.getBrokerPool().getSymbols());
+                element.setExpression(expression);
+            } else {
+                element = new ElementImpl(expression, name, broker.getBrokerPool().getSymbols());
+            }
+        } catch (final DOMException e) {
+            throw new SAXException(e.getMessage(), e);
+        }
+        return element;
     }
 
     private void storeText() {
