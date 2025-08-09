@@ -88,12 +88,14 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.ext.LexicalHandler;
 
 import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 
 /**
  * Parses a given input document via SAX, stores it to the database and handles
  * index-creation.
  * 
  * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
 
@@ -586,21 +588,19 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
 
     @Override
     public void startElement(final String namespace, final String name, final String qname, final Attributes attributes) throws SAXException {
-        // calculate number of real attributes:
-        // don't store namespace declarations
+        // calculate number of real attributes, i.e. don't include namespace declarations
         int attrLength = attributes.getLength();
         for (int i = 0; i < attributes.getLength(); i++) {
             final String attrNS = attributes.getURI(i);
             final String attrQName = attributes.getQName(i);
-            if (attrQName.startsWith("xmlns")
-                    || attrNS.equals(Namespaces.EXIST_NS)) {
+            if (attrQName.startsWith(XMLConstants.XMLNS_ATTRIBUTE) || attrNS.equals(Namespaces.EXIST_NS)) {
                 --attrLength;
             }
         }
 
         ElementImpl node;
         int p = qname.indexOf(':');
-        final String prefix = (p != Constants.STRING_NOT_FOUND) ? qname.substring(0, p) : "";
+        final String prefix = p != Constants.STRING_NOT_FOUND ? qname.substring(0, p) : "";
         final QName qn = broker.getBrokerPool().getSymbols().getQName(Node.ELEMENT_NODE, namespace, name, prefix);
 
         if (!stack.isEmpty()) {
@@ -611,7 +611,7 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
                     node = usedElements.pop();
                     node.setNodeName(qn, broker.getBrokerPool().getSymbols());
                 } else {
-                    node = new ElementImpl((last != null) ? last.getExpression() : null, qn, broker.getBrokerPool().getSymbols());
+                    node = new ElementImpl(last != null ? last.getExpression() : null, qn, broker.getBrokerPool().getSymbols());
                 }
             } catch (final DOMException e) {
                 throw new SAXException(e.getMessage(), e);
@@ -669,49 +669,47 @@ public class Indexer implements ContentHandler, LexicalHandler, ErrorHandler {
             final String attrNS = attributes.getURI(i);
             final String attrLocalName = attributes.getLocalName(i);
             final String attrQName = attributes.getQName(i);
-            // skip xmlns-attributes and attributes in eXist's namespace
-            if (attrQName.startsWith("xmlns") || attrNS.equals(Namespaces.EXIST_NS)) {
-                --attrLength;
-            } else {
-                p = attrQName.indexOf(':');
-                final String attrPrefix = (p != Constants.STRING_NOT_FOUND) ? attrQName.substring(0, p) : null;
-                final AttrImpl attr = (AttrImpl) NodePool.getInstance().borrowNode(Node.ATTRIBUTE_NODE);
-                final QName attrQN = broker.getBrokerPool().getSymbols().getQName(Node.ATTRIBUTE_NODE, attrNS, attrLocalName, attrPrefix);
-                try {
-                    attr.setNodeName(attrQN, broker.getBrokerPool().getSymbols());
-                } catch (final DOMException e) {
-                    throw new SAXException(e.getMessage(), e);
-                }
-                attr.setValue(attributes.getValue(i));
-                attr.setOwnerDocument(document);
-                if (attributes.getType(i).equals(ATTR_ID_TYPE)) {
-                    attr.setType(AttrImpl.ID);
-                } else if (attributes.getType(i).equals(ATTR_IDREF_TYPE)) {
-                    attr.setType(AttrImpl.IDREF);
-                } else if (attributes.getType(i).equals(ATTR_IDREFS_TYPE)) {
-                    attr.setType(AttrImpl.IDREFS);
-                } else if (attr.getQName().equals(Namespaces.XML_ID_QNAME)) {
-                    // an xml:id attribute. Normalize the attribute and set its
-                    // type to ID
-                    attr.setValue(StringValue.trimWhitespace(StringValue.collapseWhitespace(attr.getValue())));
 
-                    attr.setType(AttrImpl.ID);
-                } else if (attr.getQName().equals(Namespaces.XML_SPACE_QNAME)) {
-                    node.setPreserveSpace("preserve".equals(attr.getValue()));
-                }
-                node.appendChildInternal(prevNode, attr);
-                setPrevious(attr);
-                if (!validate) {
-                    broker.storeNode(transaction, attr, currentPath, indexSpec);
+            if (attrQName.startsWith(XMLConstants.XMLNS_ATTRIBUTE) || attrNS.equals(Namespaces.EXIST_NS)) {
+                // skip xmlns-attributes and attributes in eXist-db's namespace
+                continue;
+            }
 
-                    if (indexListener != null) {
-                        indexListener.attribute(transaction, attr, currentPath);
-                    }
+            p = attrQName.indexOf(':');
+            final String attrPrefix = p != Constants.STRING_NOT_FOUND ? attrQName.substring(0, p) : null;
+            final AttrImpl attr = (AttrImpl) NodePool.getInstance().borrowNode(Node.ATTRIBUTE_NODE);
+            final QName attrQN = broker.getBrokerPool().getSymbols().getQName(Node.ATTRIBUTE_NODE, attrNS, attrLocalName, attrPrefix);
+            try {
+                attr.setNodeName(attrQN, broker.getBrokerPool().getSymbols());
+            } catch (final DOMException e) {
+                throw new SAXException(e.getMessage(), e);
+            }
+            attr.setValue(attributes.getValue(i));
+            attr.setOwnerDocument(document);
+            if (attributes.getType(i).equals(ATTR_ID_TYPE)) {
+                attr.setType(AttrImpl.ID);
+            } else if (attributes.getType(i).equals(ATTR_IDREF_TYPE)) {
+                attr.setType(AttrImpl.IDREF);
+            } else if (attributes.getType(i).equals(ATTR_IDREFS_TYPE)) {
+                attr.setType(AttrImpl.IDREFS);
+            } else if (attr.getQName().equals(Namespaces.XML_ID_QNAME)) {
+                // an xml:id attribute. Normalize the attribute and set its
+                // type to ID
+                attr.setValue(StringValue.trimWhitespace(StringValue.collapseWhitespace(attr.getValue())));
+
+                attr.setType(AttrImpl.ID);
+            } else if (attr.getQName().equals(Namespaces.XML_SPACE_QNAME)) {
+                node.setPreserveSpace("preserve".equals(attr.getValue()));
+            }
+            node.appendChildInternal(prevNode, attr);
+            setPrevious(attr);
+            if (!validate) {
+                broker.storeNode(transaction, attr, currentPath, indexSpec);
+
+                if (indexListener != null) {
+                    indexListener.attribute(transaction, attr, currentPath);
                 }
             }
-        }
-        if (attrLength > 0) {
-            node.setAttributes((short) attrLength);
         }
 
         // notify observers about progress every 100 lines
