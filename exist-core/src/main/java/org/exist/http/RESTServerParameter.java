@@ -66,7 +66,8 @@ enum RESTServerParameter {
      * The value of this parameter used in the body of POST requests
      * has the following format:
      * 
-     * <exist:query start? = number
+     * <exist:query xmlns:exist="http://exist.sourceforge.net/NS/exist"
+     *  start? = number
      *  max? = number
      *  cache? = ("yes" | "no")
      *  session? = string
@@ -117,7 +118,7 @@ enum RESTServerParameter {
      *       exist:namespace?)
      *  </exist:qname>
      * 
-     *  <sx:sequence>
+     *  <sx:sequence xmlns:sx="http://exist-db.org/xquery/types/serialized">
      *      (sx:value+)
      *  </sx:sequence>
      * 
