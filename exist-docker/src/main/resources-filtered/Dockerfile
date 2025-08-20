@@ -97,12 +97,13 @@ COPY --from=builder /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-21-openjdk
 USER nonroot
 
 # Copy Elemental
-COPY LICENSE /elemental/LICENSE
-COPY autodeploy /elemental/autodeploy
-COPY etc /elemental/etc
-COPY lib /elemental/lib
-COPY --chown=nonroot logs /elemental/logs
-COPY --chown=nonroot logs /elemental/data
+COPY --chmod=0555 logs /elemental
+COPY --chmod=0444 LICENSE /elemental/LICENSE
+COPY --chmod=0570 autodeploy /elemental/autodeploy
+COPY --chmod=0570 etc /elemental/etc
+COPY --chmod=0550 lib /elemental/lib
+COPY --chown=nonroot --chmod=0750 logs /elemental/logs
+COPY --chown=nonroot --chmod=0750 logs /elemental/data
 
 # Build-time metadata as defined at http://label-schema.org
 # and used by autobuilder @hooks/build
