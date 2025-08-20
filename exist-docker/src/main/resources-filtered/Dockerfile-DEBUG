@@ -19,8 +19,37 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+### START: Container build time args for Elemental Server
+##
+# Elemental data cache size
+ARG ELEMENTAL_SERVER_CACHE_MEM="256"
+# Elemental maximum number of database brokers
+ARG ELEMENTAL_SERVER_MAX_BROKER="20"
+##
+### END: Container build time args for Elemental Server
+
+### START: Container build time args for JVM (Java Virtual Machine)
+##
+# JVM maximum RAM use (as a percentage of RAM available to the Docker Container)
+ARG JVM_MAX_RAM_PERCENTAGE="75.0"
+
+# JVM debugging protocol, suspend process on startup (y = Yes, n = No)
+ARG JVM_JDWP_SUSPEND="n"
+# JVM debugging protocol address and/or port
+ARG JVM_JDWP_ADDRESS="5005"
+##
+### END: Container build time args for JVM (Java Virtual Machine)
+
+
 # Use Chainguard Wolfi
 FROM cgr.dev/chainguard/wolfi-base
+
+# Inherit global args to this build stage
+ARG ELEMENTAL_SERVER_CACHE_MEM
+ARG ELEMENTAL_SERVER_MAX_BROKER
+ARG JVM_MAX_RAM_PERCENTAGE
+ARG JVM_JDWP_SUSPEND
+ARG JVM_JDWP_ADDRESS
 
 RUN apk update && apk upgrade
 # Install dependencies needed for JDK
@@ -54,19 +83,13 @@ LABEL org.label-schema.build-date=${maven.build.timestamp} \
 
 EXPOSE 8080 8443 5005
 
-# make CACHE_MEM, MAX_BROKER, JVM_MAX_RAM_PERCENTAGE, and JVM_JDWP_SUSPEND available to users at build time
-ARG CACHE_MEM
-ARG MAX_BROKER
-ARG JVM_MAX_RAM_PERCENTAGE
-ARG JVM_JDWP_SUSPEND
-
 ENV ELEMENTAL_HOME="/elemental"
 ENV EXIST_HOME="/elemental"
 ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
 ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
 
-ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE:-75.0} -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=${JVM_JDWP_SUSPEND:-n},address=5005"
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${ELEMENTAL_SERVER_CACHE_MEM}M -Dorg.exist.db-connection.pool.max=${ELEMENTAL_SERVER_MAX_BROKER} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE} -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=${JVM_JDWP_SUSPEND},address=${JVM_JDWP_ADDRESS}"
 
 ENV PATH="/usr/lib/jvm/java-21-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 

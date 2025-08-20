@@ -19,6 +19,22 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+### START: Container build time args for Elemental Server
+##
+# Elemental data cache size
+ARG ELEMENTAL_SERVER_CACHE_MEM="256"
+# Elemental maximum number of database brokers
+ARG ELEMENTAL_SERVER_MAX_BROKER="20"
+##
+### END: Container build time args for Elemental Server
+
+### START: Container build time args for JVM (Java Virtual Machine)
+##
+# JVM maximum RAM use (as a percentage of RAM available to the Docker Container)
+ARG JVM_MAX_RAM_PERCENTAGE="75.0"
+##
+### END: Container build time args for JVM (Java Virtual Machine)
+
 # Install latest JRE 21 in Chainguard Wolfi temporary builder image
 FROM cgr.dev/chainguard/wolfi-base AS builder
 
@@ -30,8 +46,14 @@ RUN apk add ca-certificates java-cacerts
 # Install latest JRE
 RUN apk add openjdk-21-jre
 
+
 # Use Chainguard distroless glibc base for dynamically linked libraries
 FROM cgr.dev/chainguard/glibc-dynamic:latest
+
+# Inherit global args to this build stage
+ARG ELEMENTAL_SERVER_CACHE_MEM
+ARG ELEMENTAL_SERVER_MAX_BROKER
+ARG JVM_MAX_RAM_PERCENTAGE
 
 # Copy over dependencies for updated JRE from Wolfi
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
@@ -88,18 +110,13 @@ LABEL org.label-schema.build-date=${maven.build.timestamp} \
 
 EXPOSE 8080 8443
 
-# make CACHE_MEM, MAX_BROKER, and JVM_MAX_RAM_PERCENTAGE available to users
-ARG CACHE_MEM
-ARG MAX_BROKER
-ARG JVM_MAX_RAM_PERCENTAGE
-
 ENV ELEMENTAL_HOME="/elemental"
 ENV EXIST_HOME="/elemental"
 ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
 ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
 
-ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE:-75.0} -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${ELEMENTAL_SERVER_CACHE_MEM}M -Dorg.exist.db-connection.pool.max=${ELEMENTAL_SERVER_MAX_BROKER} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE} -XX:+ExitOnOutOfMemoryError"
 
 ENV PATH="/usr/lib/jvm/java-21-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
