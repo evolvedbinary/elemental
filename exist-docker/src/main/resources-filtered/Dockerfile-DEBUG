@@ -24,7 +24,7 @@ FROM cgr.dev/chainguard/wolfi-base
 
 RUN apk update && apk upgrade
 # Install dependencies needed for JDK
-RUN apk add zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
+RUN apk add tzdata zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
 # Install latest CA certificates
 RUN apk add ca-certificates java-cacerts
 # Install latest JDK

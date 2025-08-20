@@ -24,7 +24,7 @@ FROM cgr.dev/chainguard/wolfi-base AS builder
 
 RUN apk update && apk upgrade
 # Install dependencies needed for JRE
-RUN apk add zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
+RUN apk add tzdata zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
 # Install latest CA certificates
 RUN apk add ca-certificates java-cacerts
 # Install latest JRE
@@ -34,6 +34,7 @@ RUN apk add openjdk-8-jre
 FROM cgr.dev/chainguard/glibc-dynamic:latest
 
 # Copy over dependencies for updated JRE from Wolfi
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /lib/libz.so.1 /lib/libz.so.1
 COPY --from=builder /usr/lib/libjpeg.so.8 /usr/lib/libjpeg.so.8
 COPY --from=builder /usr/lib/libturbojpeg.so.0 /usr/lib/libturbojpeg.so.0
