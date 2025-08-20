@@ -25,6 +25,9 @@
 ARG ELEMENTAL_SERVER_SERVICE_ACCOUNT="edb01"
 ARG ELEMENTAL_SERVER_SERVICE_GROUP="edb01"
 
+# Name of the Linux user account to use for the interactive container user when needing to debug
+ARG ELEMENTAL_CONTAINER_DEBUG_USER_ACCOUNT="debug"
+
 # Elemental data cache size
 ARG ELEMENTAL_SERVER_CACHE_MEM="256"
 # Elemental maximum number of database brokers
@@ -56,6 +59,7 @@ FROM cgr.dev/chainguard/wolfi-base
 # Inherit global args to this build stage
 ARG ELEMENTAL_SERVER_SERVICE_ACCOUNT
 ARG ELEMENTAL_SERVER_SERVICE_GROUP
+ARG ELEMENTAL_CONTAINER_DEBUG_USER_ACCOUNT
 ARG ELEMENTAL_SERVER_CACHE_MEM
 ARG ELEMENTAL_SERVER_MAX_BROKER
 ARG JVM_MAX_RAM_PERCENTAGE
@@ -75,6 +79,16 @@ RUN apk add openjdk-8
 # Add Elemental Server service group and account
 RUN addgroup -S ${ELEMENTAL_SERVER_SERVICE_GROUP} \
     && adduser -S -G ${ELEMENTAL_SERVER_SERVICE_GROUP} -H -h /nonexistent -s /sbin/nologin -g "Elemental Database Server - Instance 01" ${ELEMENTAL_SERVER_SERVICE_ACCOUNT}
+
+# Add 'debug' user for interactive use, and add then to the Elemental Server service group
+RUN adduser -D -g "Elemental Docker Container - debug user" ${ELEMENTAL_CONTAINER_DEBUG_USER_ACCOUNT} \
+    && addgroup ${ELEMENTAL_CONTAINER_DEBUG_USER_ACCOUNT} ${ELEMENTAL_SERVER_SERVICE_GROUP}
+
+# Install sudo
+RUN apk add sudo-rs
+COPY --chmod=0440 <<EOF /etc/sudoers.d/${ELEMENTAL_CONTAINER_DEBUG_USER_ACCOUNT}
+${ELEMENTAL_CONTAINER_DEBUG_USER_ACCOUNT} ALL = (ALL:ALL) NOPASSWD:ALL
+EOF
 
 # Switch to Elemental Server service account
 USER ${ELEMENTAL_SERVER_SERVICE_ACCOUNT}
