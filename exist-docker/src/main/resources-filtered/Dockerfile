@@ -21,6 +21,10 @@
 
 ### START: Container build time args for Elemental Server
 ##
+# Names of the Linux user account and group to run the Elemental Server service under
+ARG ELEMENTAL_SERVER_SERVICE_ACCOUNT="edb01"
+ARG ELEMENTAL_SERVER_SERVICE_GROUP="edb01"
+
 # Elemental data cache size
 ARG ELEMENTAL_SERVER_CACHE_MEM="256"
 # Elemental maximum number of database brokers
@@ -44,6 +48,10 @@ ARG ADDITIONAL_JAVA_TOOL_OPTIONS
 # Install latest JRE 8 in Chainguard Wolfi temporary builder image
 FROM cgr.dev/chainguard/wolfi-base AS builder
 
+# Inherit global args to this build stage
+ARG ELEMENTAL_SERVER_SERVICE_ACCOUNT
+ARG ELEMENTAL_SERVER_SERVICE_GROUP
+
 RUN apk update && apk upgrade
 # Install dependencies needed for JRE
 RUN apk add tzdata zlib libjpeg-turbo libpng lcms2 freetype ttf-dejavu fontconfig-config libfontconfig1 expat libuuid libbrotlicommon1 libbrotlidec1 libbrotlienc1 libcrypt1
@@ -52,11 +60,17 @@ RUN apk add ca-certificates java-cacerts
 # Install latest JRE
 RUN apk add openjdk-8-jre
 
+# Add Elemental Server service group and account
+RUN addgroup -S ${ELEMENTAL_SERVER_SERVICE_GROUP} \
+    && adduser -S -G ${ELEMENTAL_SERVER_SERVICE_GROUP} -H -h /nonexistent -s /sbin/nologin -g "Elemental Database Server - Instance 01" ${ELEMENTAL_SERVER_SERVICE_ACCOUNT}
+
 
 # Use Chainguard distroless glibc base for dynamically linked libraries
 FROM cgr.dev/chainguard/glibc-dynamic:latest
 
 # Inherit global args to this build stage
+ARG ELEMENTAL_SERVER_SERVICE_ACCOUNT
+ARG ELEMENTAL_SERVER_SERVICE_GROUP
 ARG ELEMENTAL_SERVER_CACHE_MEM
 ARG ELEMENTAL_SERVER_MAX_BROKER
 ARG JVM_MAX_RAM_PERCENTAGE
@@ -94,17 +108,22 @@ COPY --from=builder /usr/share/ca-certificates /usr/share/ca-certificates
 # Copy over updated JRE from Wolfi
 COPY --from=builder /usr/lib/jvm/java-1.8-openjdk /usr/lib/jvm/java-1.8-openjdk
 
-# Switch to nonroot user
-USER nonroot
+# Copy Elemental Server service group and account
+COPY --from=builder --chown=root:root --chmod=0644 /etc/passwd /etc/passwd
+COPY --from=builder --chown=root:root --chmod=0644 /etc/group /etc/group
+COPY --from=builder --chown=root:root --chmod=0600 /etc/shadow /etc/shadow
+
+# Switch to Elemental Server service account
+USER ${ELEMENTAL_SERVER_SERVICE_ACCOUNT}
 
 # Copy Elemental
-COPY --chmod=0555 logs /elemental
-COPY --chmod=0444 LICENSE /elemental/LICENSE
-COPY --chmod=0570 autodeploy /elemental/autodeploy
-COPY --chmod=0570 etc /elemental/etc
-COPY --chmod=0550 lib /elemental/lib
-COPY --chown=nonroot --chmod=0750 logs /elemental/logs
-COPY --chown=nonroot --chmod=0750 logs /elemental/data
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0555 logs /elemental
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0444 LICENSE /elemental/LICENSE
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0570 autodeploy /elemental/autodeploy
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0570 etc /elemental/etc
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0550 lib /elemental/lib
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0750 logs /elemental/logs
+COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROUP} --chmod=0750 logs /elemental/data
 
 # Build-time metadata as defined at http://label-schema.org
 # and used by autobuilder @hooks/build
