@@ -32,6 +32,8 @@ ARG ELEMENTAL_SERVER_MAX_BROKER="20"
 ##
 # JVM maximum RAM use (as a percentage of RAM available to the Docker Container)
 ARG JVM_MAX_RAM_PERCENTAGE="75.0"
+# JVM Garbage Collector
+ARG JVM_GC="Z"
 
 # Any additional options to be added to the JAVA_TOOL_OPTIONS Environment Variable for the JVM
 ARG ADDITIONAL_JAVA_TOOL_OPTIONS
@@ -57,6 +59,7 @@ FROM cgr.dev/chainguard/glibc-dynamic:latest
 ARG ELEMENTAL_SERVER_CACHE_MEM
 ARG ELEMENTAL_SERVER_MAX_BROKER
 ARG JVM_MAX_RAM_PERCENTAGE
+ARG JVM_GC
 ARG ADDITIONAL_JAVA_TOOL_OPTIONS
 
 # Copy over dependencies for updated JRE from Wolfi
@@ -120,7 +123,7 @@ ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
 ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
 
-ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${ELEMENTAL_SERVER_CACHE_MEM}M -Dorg.exist.db-connection.pool.max=${ELEMENTAL_SERVER_MAX_BROKER} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+UseZGC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE} -XX:+ExitOnOutOfMemoryError ${ADDITIONAL_JAVA_TOOL_OPTIONS}"
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${ELEMENTAL_SERVER_CACHE_MEM}M -Dorg.exist.db-connection.pool.max=${ELEMENTAL_SERVER_MAX_BROKER} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+UseNUMA -XX:+Use${JVM_GC}GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE} -XX:+ExitOnOutOfMemoryError ${ADDITIONAL_JAVA_TOOL_OPTIONS}"
 
 ENV PATH="/usr/lib/jvm/java-21-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
