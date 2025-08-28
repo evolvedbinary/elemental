@@ -37,7 +37,7 @@ do
 key="$1"
 
 case $key in
-    quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check)
+    clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check)
     TARGET="$1"
     shift
     ;;
@@ -70,6 +70,7 @@ function print-useage() {
   echo -e "\tlicence-format - Adds the correct license header to any source files that are missing it"
   echo -e "\tdependency-check - Checks that all modules have correctly declared their dependencies"
   echo -e "\tdependency-security-check - Checks that all dependencies have no unexpected CVE security issues"
+  echo -e "\tclean - Remove all built artifacts"
   echo -e "\n--offline - attempts to run the Maven build in offline mode"
 }
 
@@ -86,6 +87,12 @@ BASE_CMD="${SCRIPT_DIR}/mvnw -V"
 
 if [ "${OFFLINE}" == "true" ]; then
   BASE_CMD="${BASE_CMD} --offline"
+fi
+
+if [ "${TARGET}" == "clean" ]; then
+  CMD="${BASE_CMD} ${CONCURRENCY} clean"
+  $CMD
+  exit 0;
 fi
 
 if [ "${TARGET}" == "quick" ]; then
