@@ -416,12 +416,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>${aspectj.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jaas</artifactId>
             <version>${jetty.version}</version>
@@ -1738,60 +1732,6 @@ The BaseX Team. The original license statement is also included below.]]></pream
                                 <!-- compiled by the Aspectj plugin below -->
                                 <exclude>org/exist/storage/lock/EnsureLockingAspect.java</exclude>
                                 <exclude>org/exist/security/PermissionRequiredAspect.java</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.nickwongdev</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.12.6</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.aspectj</groupId>
-                        <artifactId>aspectjtools</artifactId>
-                        <version>${aspectj.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-
-                        <!-- Compile and weave aspects after all classes compiled by javac -->
-                        <!-- phase>process-classes</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals -->
-
-                        <configuration>
-                            <forceAjcCompile>true</forceAjcCompile>  <!-- Required, otherwise the Aspects are not re-compiled when the src/main/java is recompiled for the test phase -->
-                            <showWeaveInfo>true</showWeaveInfo>
-                            <complianceLevel>${project.build.source}</complianceLevel>
-                            <source>${project.build.source}</source>
-                            <target>${project.build.target}</target>
-                            <!-- sources>
-                                <source>
-                                    <basedir>${project.build.sourceDirectory}</basedir>
-                                    <includes>
-                                        <include>**/PermissionRequiredAspect.java</include>
-                                    </includes>
-                                    <excludes>
-                                        <exclude>**/EnsureLockingAspect.java</exclude>
-                                    </excludes>
-                                </source>
-                            </sources -->
-
-                            <!-- weaveDirectories>
-                                <weaveDirectory>${project.build.directory}/classes</weaveDirectory>
-                            </weaveDirectories -->
-
-                            <excludes>
-                                <!-- excluded by default, as only really needed for debugging lock ownership issues -->
-                                <exclude>**/EnsureLockingAspect.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>
