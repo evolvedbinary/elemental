@@ -153,12 +153,7 @@
             <AppenderRef ref="elemental.core"/>
         </Logger>
 
-        <Logger name="org.exist.jetty.JettyStart" additivity="false" level="trace">
-            <AppenderRef ref="STDOUT"/>
-            <AppenderRef ref="elemental.core"/>
-        </Logger>
-        
-        <Logger name="org.exist.jetty.StandaloneServer" additivity="false" level="trace">
+        <Logger name="org.exist.jetty.JettyStart" additivity="false" level="info">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="elemental.core"/>
         </Logger>
@@ -167,12 +162,12 @@
             <AppenderRef ref="elemental.profiling"/>
         </Logger>
         
-        <Logger name="org.exist.statistics" additivity="false" level="debug">
+        <Logger name="org.exist.statistics" additivity="false" level="info">
             <AppenderRef ref="elemental.core"/>
             <AppenderRef ref="elemental.statistics"/>
         </Logger>
         
-        <Logger name="org.exist.backup.SystemExport" additivity="false" level="trace">
+        <Logger name="org.exist.backup.SystemExport" additivity="false" level="info">
             <AppenderRef ref="elemental.backup"/>
         </Logger>
         
