@@ -734,6 +734,7 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
                                 <include>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</include>
+                                <include>src/main/java/org/exist/security/PermissionRequiredCheck.java</include>
                                 <include>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteArrayOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteBufferInput.java</include>
@@ -915,6 +916,7 @@
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/test/java/org/exist/security/FnDocSecurityTest.java</include>
                                 <include>src/main/java/org/exist/security/Permission.java</include>
+                                <include>src/main/java/org/exist/security/PermissionRequired.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
                                 <include>src/main/java/org/exist/security/SimpleACLPermission.java</include>
                                 <include>src/test/java/org/exist/security/SimpleACLPermissionTest.java</include>
@@ -1264,6 +1266,8 @@
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/test/java/org/exist/security/FnDocSecurityTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/Permission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/PermissionRequired.java</exclude>
+                                <exclude>src/main/java/org/exist/security/PermissionRequiredCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SimpleACLPermission.java</exclude>
                                 <exclude>src/test/java/org/exist/security/SimpleACLPermissionTest.java</exclude>
@@ -1808,7 +1812,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                 <executions>
                     <execution>
                         <id>replace-underscore-with-hyphen</id>
-                        <phase>process-sources</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>file-contents</goal>
                         </goals>
@@ -1823,15 +1827,48 @@ The BaseX Team. The original license statement is also included below.]]></pream
             </plugin>
 
             <plugin>
+                <groupId>fr.inria.gforge.spoon</groupId>
+                <artifactId>spoon-maven-plugin</artifactId>
+                <version>3.8.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-from-annotations</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <compliance>${project.build.source}</compliance>
+                            <noCopyResources>true</noCopyResources><debug>true</debug>
+                            <processors>
+                                <processor>xyz.elemental.build.tools.spoon.processors.PermissionRequiredProcessor</processor>
+                            </processors>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>fr.inria.gforge.spoon</groupId>
+                        <artifactId>spoon-core</artifactId>
+                        <version>${spoon.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>xyz.elemental</groupId>
+                        <artifactId>exist-core-build-tools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>default-compile</id>
                         <configuration>
                             <excludes>
-                                <!-- compiled by the Aspectj plugin below -->
+                                <!-- TODO(AR) used to be compiler by Aspectj plugin - temporarily disabled -->
                                 <exclude>org/exist/storage/lock/EnsureLockingAspect.java</exclude>
-                                <exclude>org/exist/security/PermissionRequiredAspect.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>

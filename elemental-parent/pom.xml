@@ -101,6 +101,7 @@
         <objenesis.version>3.4</objenesis.version>
         <jaxb.api.version>4.0.2</jaxb.api.version>
         <jaxb.impl.version>4.0.5</jaxb.impl.version>
+        <spoon.version>11.2.1</spoon.version>
 
         <!-- Surefire parallel configuration -->
         <surefire.forkCount>1C</surefire.forkCount>
@@ -111,6 +112,16 @@
          -->
         <surefire.reuseForks>true</surefire.reuseForks>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>3.0.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>

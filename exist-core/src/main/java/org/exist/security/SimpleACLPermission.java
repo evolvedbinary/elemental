@@ -312,7 +312,7 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
      */
     @PermissionRequired(user = IS_DBA | IS_OWNER, mode = ACL_WRITE)
     @Override
-    public void clear() {
+    public void clear() throws PermissionDeniedException {
         acl = new int[0];
     }
 
@@ -513,7 +513,7 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
     }
 
     @PermissionRequired(user = IS_DBA | IS_OWNER, mode = ACL_WRITE)
-    public void copyAclOf(final SimpleACLPermission simpleACLPermission) {
+    public void copyAclOf(final SimpleACLPermission simpleACLPermission) throws PermissionDeniedException {
         this.acl = Arrays.copyOf(simpleACLPermission.acl, simpleACLPermission.acl.length);
     }
 
