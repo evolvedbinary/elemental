@@ -659,7 +659,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         if (srcPermissions instanceof SimpleACLPermission && destPermissions instanceof SimpleACLPermission) {
             final SimpleACLPermission srcAclPermissions = (SimpleACLPermission)srcPermissions;
             final SimpleACLPermission destAclPermissions = (SimpleACLPermission)destPermissions;
-            if (!destAclPermissions.equalsAcl(srcAclPermissions)) {
+            if (!destAclPermissions.aclEquals(srcAclPermissions)) {
                 PermissionFactory.chacl(destAclPermissions, newAcl ->
                     ((SimpleACLPermission)newAcl).copyAclOf(srcAclPermissions)
                 );

@@ -67,7 +67,7 @@ import static org.exist.security.PermissionRequired.ACL_WRITE;
  *
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-public class SimpleACLPermission extends UnixStylePermission implements ACLPermission {
+public abstract class SimpleACLPermissionInternal extends UnixStylePermissionInternal implements ACLPermission {
 
     public static final short VERSION = 1;
 
@@ -75,15 +75,15 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
 
     private int[] acl = new int[0];
 
-    public SimpleACLPermission(final SecurityManager sm) {
+    public SimpleACLPermissionInternal(final SecurityManager sm) {
         super(sm);
     }
 
-    public SimpleACLPermission(final SecurityManager sm, final long vector) {
+    public SimpleACLPermissionInternal(final SecurityManager sm, final long vector) {
         super(sm, vector);
     }
 
-    public SimpleACLPermission(final SecurityManager sm, final int ownerId, final int groupId, final int mode) {
+    public SimpleACLPermissionInternal(final SecurityManager sm, final int ownerId, final int groupId, final int mode) {
         super(sm, ownerId, groupId, mode);
     }
 
@@ -106,7 +106,7 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
     }
 
     @PermissionRequired(user = IS_DBA | IS_OWNER, mode = ACL_WRITE)
-    private void addACE(final ACE_ACCESS_TYPE access_type, final ACE_TARGET target, final int id, final int mode) throws PermissionDeniedException {
+    protected void addACE(final ACE_ACCESS_TYPE access_type, final ACE_TARGET target, final int id, final int mode) throws PermissionDeniedException {
         if (acl.length >= MAX_ACL_LENGTH) {
             throw new PermissionDeniedException("Maximum of " + MAX_ACL_LENGTH + " ACEs has been reached.");
         }
@@ -189,7 +189,7 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
     }
 
     @PermissionRequired(user = IS_DBA | IS_OWNER, mode = ACL_WRITE)
-    private void insertACE(final int index, final ACE_ACCESS_TYPE access_type, final ACE_TARGET target, final int id, final int mode) throws PermissionDeniedException {
+    protected void insertACE(final int index, final ACE_ACCESS_TYPE access_type, final ACE_TARGET target, final int id, final int mode) throws PermissionDeniedException {
         if (acl.length >= MAX_ACL_LENGTH) {
             throw new PermissionDeniedException("Maximum of " + MAX_ACL_LENGTH + " ACEs has been reached.");
         }
@@ -312,7 +312,7 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
      */
     @PermissionRequired(user = IS_DBA | IS_OWNER, mode = ACL_WRITE)
     @Override
-    public void clear() {
+    public void clear() throws PermissionDeniedException {
         acl = new int[0];
     }
 
@@ -480,8 +480,8 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
     }
 
     @Override
-    public SimpleACLPermission copy() {
-        final SimpleACLPermission prm = new SimpleACLPermission(sm, vector);
+    public SimpleACLPermissionInternal copy() {
+        final SimpleACLPermissionInternal prm = newInstance(sm, vector);
 
         prm.acl = new int[acl.length];
         System.arraycopy(acl, 0, prm.acl, 0, acl.length);
@@ -489,34 +489,11 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
         return prm;
     }
 
-    /**
-     * Determines if this permisisons ACL is equal to that
-     * of another permissions ACL.
-     *
-     * @param other the other ACL to check equality against.
-     *
-     * @return true if the ACLs are equal
-     */
-    public boolean equalsAcl(final SimpleACLPermission other) {
-        if (other == null || other.getACECount() != getACECount()) {
-            return false;
-        }
-
-        for (int i = 0; i < getACECount(); i++) {
-
-            if(getACEAccessType(i) != other.getACEAccessType(i)
-                    || getACETarget(i) != other.getACETarget(i)
-                    || (!getACEWho(i).equals(other.getACEWho(i)))
-                    || getACEMode(i) != other.getACEMode(i)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    @Override
+    protected abstract SimpleACLPermissionInternal newInstance(final SecurityManager sm, final long vector);
 
     @PermissionRequired(user = IS_DBA | IS_OWNER, mode = ACL_WRITE)
-    public void copyAclOf(final SimpleACLPermission simpleACLPermission) {
+    public void copyAclOf(final SimpleACLPermissionInternal simpleACLPermission) throws PermissionDeniedException {
         this.acl = Arrays.copyOf(simpleACLPermission.acl, simpleACLPermission.acl.length);
     }
 
@@ -526,9 +503,9 @@ public class SimpleACLPermission extends UnixStylePermission implements ACLPermi
             return false;
         }
 
-        if (other instanceof SimpleACLPermission) {
+        if (other instanceof SimpleACLPermissionInternal) {
             // optimisation for when both are the same type
-            return Arrays.equals(acl, ((SimpleACLPermission) other).acl);
+            return Arrays.equals(acl, ((SimpleACLPermissionInternal) other).acl);
         } else {
             if (getACECount() != other.getACECount()) {
                 return false;

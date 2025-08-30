@@ -48,6 +48,7 @@
         <module>elemental-parent</module>
         <module>exist-parent</module>
         <module>exist-ant</module>
+        <module>exist-core-build-tools</module>
         <module>exist-core</module>
         <module>exist-distribution</module>
         <module>exist-jetty-config</module>

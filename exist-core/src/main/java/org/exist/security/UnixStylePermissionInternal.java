@@ -64,11 +64,11 @@ import static org.exist.security.PermissionRequired.*;
  * Permissions are encoded into a 52 bit vector with the following convention -
  *
  * [userId(20),setUid(1),userMode(rwx)(3),groupId(20),setGid(1),groupMode(rwx)(3),sticky(1),otherMode(rwx)(3)]
- * @see UnixStylePermission#encodeAsBitVector(int, int, int) for more details
+ * @see UnixStylePermissionInternal#encodeAsBitVector(int, int, int) for more details
  *
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-public class UnixStylePermission extends AbstractUnixStylePermission implements Permission {
+public abstract class UnixStylePermissionInternal extends AbstractUnixStylePermission implements Permission {
 
     public final static Logger LOG = LogManager.getLogger(SecurityManager.class);
 
@@ -76,21 +76,21 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
 
     protected long vector = encodeAsBitVector(RealmImpl.SYSTEM_ACCOUNT_ID, RealmImpl.DBA_GROUP_ID, 0);
 
-    public UnixStylePermission(final SecurityManager sm) {
+    public UnixStylePermissionInternal(final SecurityManager sm) {
     	if(sm == null) {
             throw new IllegalArgumentException("Security manager can't be null");
         }
     	this.sm = sm;
     }
-    
-    protected UnixStylePermission(final SecurityManager sm, final long vector) {
+
+    protected UnixStylePermissionInternal(final SecurityManager sm, final long vector) {
         if(sm == null) {
             throw new IllegalArgumentException("Security manager can't be null");
         }
         this.sm = sm;
         this.vector = vector;
     }
-    
+
     /**
      * Construct a permission with given user, group and permissions
      * @param sm the security manager
@@ -99,13 +99,13 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      * @param mode mode for the resource.
 
      */
-    public UnixStylePermission(final SecurityManager sm, final int ownerId, final int groupId, final int mode) {
+    public UnixStylePermissionInternal(final SecurityManager sm, final int ownerId, final int groupId, final int mode) {
         this(sm);
         this.vector = encodeAsBitVector(ownerId, groupId, mode);
     }
 
     /**
-     *  Gets the user who owns this resource
+     * Gets the user who owns this resource
      *
      * @return The owner value
      */
@@ -133,14 +133,14 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      * @param account The new owner value
      */
     @Override
-    public void setOwner(Account account) {
+    public void setOwner(Account account) throws PermissionDeniedException {
     	
         //assume SYSTEM identity if user gets lost due to a database corruption - WTF???
         //TODO this should eventually be replaced with a PermissionDeniedException
     	if(account == null) {
             account = sm.getSystemSubject();
     	}
-        
+
         final int accountId = account.getId();
         if(accountId != getOwnerId()) {
             setOwnerId(accountId);
@@ -148,16 +148,16 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
     }
 
     @Override
-    public void setOwner(final int id) {
+    public void setOwner(final int id) throws PermissionDeniedException {
         Account account = sm.getAccount(id);
-        
+
         //assume SYSTEM identity if user gets lost due to a database corruption - WTF???
         //TODO this should eventually be replaced with a PermissionDeniedException
         if(account == null) {
             account = sm.getSystemSubject();
         }
         final int accountId = account.getId();
-     
+
         if(accountId != getOwnerId()) {
             setOwnerId(accountId);
         }
@@ -169,7 +169,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      * @param name The new owner value
      */
     @Override
-    public void setOwner(final String name) {
+    public void setOwner(final String name) throws PermissionDeniedException {
     	final Account account = sm.getAccount(name);
     	if(account != null){
             final int accountId = account.getId();
@@ -180,14 +180,14 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
     }
 
     @PermissionRequired(user = IS_DBA | IS_OWNER)
-    private void setOwnerId(@PermissionRequired(user = IS_DBA | NOT_POSIX_CHOWN_RESTRICTED) final int ownerId) {
+    protected void setOwnerId(@PermissionRequired(user = IS_DBA | NOT_POSIX_CHOWN_RESTRICTED) final int ownerId) throws PermissionDeniedException {
         this.vector =
             ((long)ownerId << 32) | //left shift new ownerId into position
             (vector & 4294967295L); //extract everything from current permission except ownerId
     }
 
     /**
-     * Gets the group 
+     * Gets the group
      *
      * @return The group value
      */
@@ -208,14 +208,14 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
     private int getGroupId() {
         return (int)((vector >>> 8) & 1048575);
     }
-    
+
     /**
      * Set the owner group
      *
      * @param groupName The new group value
      */
     @Override
-    public void setGroup(final String groupName) {
+    public void setGroup(final String groupName) throws PermissionDeniedException {
         final Group group = sm.getGroup(groupName);
         if(group != null) {
             setGroupId(group.getId());
@@ -223,23 +223,23 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
     }
 
     @Override
-    public void setGroup(final Group group) {
+    public void setGroup(final Group group) throws PermissionDeniedException {
     	if(group != null){
             setGroupId(group.getId());
         }
     }
-    
+
     @Override
-    public void setGroup(final int id) {
+    public void setGroup(final int id) throws PermissionDeniedException {
         Group group = sm.getGroup(id);
         if(group == null){
             group = sm.getDBAGroup(); //TODO is this needed?
         }
         setGroupId(group.getId());
     }
-    
+
     @PermissionRequired(user = IS_DBA | IS_OWNER)
-    private void setGroupId(@PermissionRequired(user = IS_DBA | IS_MEMBER | NOT_POSIX_CHOWN_RESTRICTED) final int groupId) {
+    protected void setGroupId(@PermissionRequired(user = IS_DBA | IS_MEMBER | NOT_POSIX_CHOWN_RESTRICTED) final int groupId) throws PermissionDeniedException {
         /*
         This function wrapper is really just used as a place
         to focus PermissionRequired checks for several public
@@ -247,20 +247,20 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
         */
         _setGroupId(groupId);
     }
-    
+
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setGroupFrom(@PermissionRequired(mode = IS_SET_GID) final Permission other) {
+    public void setGroupFrom(@PermissionRequired(mode = IS_SET_GID) final Permission other) throws PermissionDeniedException {
         _setGroupId(other.getGroup().getId());
     }
-    
+
     private void _setGroupId(final int groupId) {
         this.vector =
             ((vector >>> 28) << 28) | //current ownerId and ownerMode, mask rest
             (groupId << 8) |          //left shift new groupId into positon
             (vector & 255);            //current groupMode and otherMode
     }
-    
+
     /**
      * Get the mode
      *
@@ -284,7 +284,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      */
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    final public void setMode(final int mode) { 
+    public void setMode(final int mode) throws PermissionDeniedException {
         this.vector =
             ((vector >>> 32) << 32) |               //left shift current ownerId into position
             ((long)((mode >>> 11) & 1) << 31) |     //left shift setuid into position
@@ -295,7 +295,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
             (((mode >>> 9) & 1) << 3) |             //left shift sticky into position
             (mode & 7);                             //new otherMode
     }
-    
+
     @Override
     public boolean isSetUid() {
         return ((vector >>> 31) & 1) == 1;
@@ -303,7 +303,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
 
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setSetUid(final boolean setUid) {
+    public void setSetUid(final boolean setUid) throws PermissionDeniedException {
         this.vector = (((vector >>> 32) << 1 | (setUid ? 1 : 0)) << 31) | (vector & 2147483647);
     }
 
@@ -314,7 +314,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
 
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setSetGid(final boolean setGid) {
+    public void setSetGid(final boolean setGid) throws PermissionDeniedException {
         this.vector = (((vector >>> 8) << 1 | (setGid ? 1 : 0)) << 7) | (vector & 127);
     }
 
@@ -325,10 +325,10 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
 
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setSticky(final boolean sticky) {
+    public void setSticky(final boolean sticky) throws PermissionDeniedException {
         this.vector = (((vector >>> 4) << 1 | (sticky ? 1 : 0)) << 3) | (vector & 7);
     }
-    
+
     /**
      * Get the active mode for the owner
      *
@@ -346,7 +346,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      */
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setOwnerMode(int mode) {
+    public void setOwnerMode(int mode) throws PermissionDeniedException {
         mode = mode & 7; //ensure its only 3 bits
 
         this.vector =
@@ -372,7 +372,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      */
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setGroupMode(int mode) {
+    public void setGroupMode(int mode) throws PermissionDeniedException {
         mode = mode & 7; //ensure its only 3 bits
 
         this.vector =
@@ -398,7 +398,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
      */
     @PermissionRequired(user = IS_DBA | IS_OWNER)
     @Override
-    public void setOtherMode(int mode) {
+    public void setOtherMode(int mode) throws PermissionDeniedException {
         mode = mode & 7; //ensure its only 3 bits
 
         this.vector =
@@ -528,7 +528,7 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
     public boolean isCurrentSubjectInGroup() {
         return isCurrentSubjectInGroup(getGroupId());
     }
-    
+
     @Override
     public boolean isCurrentSubjectInGroup(final int groupId) {
         for(final int currentSubjectGroupId : getCurrentSubject().getGroupIds()) {
@@ -540,9 +540,11 @@ public class UnixStylePermission extends AbstractUnixStylePermission implements 
     }
 
     @Override
-    public UnixStylePermission copy() {
-        return new UnixStylePermission(sm, vector);
+    public UnixStylePermissionInternal copy() {
+        return newInstance(sm, vector);
     }
+
+    protected abstract UnixStylePermissionInternal newInstance(final SecurityManager sm, final long vector);
 
     @Override
     public boolean isPosixChownRestricted() {

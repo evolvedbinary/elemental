@@ -70,6 +70,15 @@
   </scm>
 
     <dependencies>
+
+        <dependency>
+            <!-- NOTE(AR) adds our Annotation Processors for the maven-compiler-plugin -->
+            <groupId>xyz.elemental</groupId>
+            <artifactId>exist-core-build-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>net.jcip</groupId>
             <artifactId>jcip-annotations</artifactId>
@@ -684,6 +693,7 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ElementReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
+                                <include>src/main/java/org/exist/security/PermissionRequiredCheck.java</include>
                                 <include>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteArrayOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteBufferInput.java</include>
@@ -861,10 +871,11 @@
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/test/java/org/exist/security/FnDocSecurityTest.java</include>
                                 <include>src/main/java/org/exist/security/Permission.java</include>
+                                <include>src/main/java/org/exist/security/PermissionRequired.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
-                                <include>src/main/java/org/exist/security/SimpleACLPermission.java</include>
+                                <include>src/main/java/org/exist/security/SimpleACLPermissionInternal.java</include>
                                 <include>src/test/java/org/exist/security/SimpleACLPermissionTest.java</include>
-                                <include>src/main/java/org/exist/security/UnixStylePermission.java</include>
+                                <include>src/main/java/org/exist/security/UnixStylePermissionInternal.java</include>
                                 <include>src/test/java/org/exist/security/UnixStylePermissionTest.java</include>
                                 <include>src/test/java/org/exist/security/XqueryApiTest.java</include>
                                 <include>src/main/java/org/exist/security/internal/AccountImpl.java</include>
@@ -1200,10 +1211,12 @@
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/test/java/org/exist/security/FnDocSecurityTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/Permission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/PermissionRequired.java</exclude>
+                                <exclude>src/main/java/org/exist/security/PermissionRequiredCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
-                                <exclude>src/main/java/org/exist/security/SimpleACLPermission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/SimpleACLPermissionInternal.java</exclude>
                                 <exclude>src/test/java/org/exist/security/SimpleACLPermissionTest.java</exclude>
-                                <exclude>src/main/java/org/exist/security/UnixStylePermission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/UnixStylePermissionInternal.java</exclude>
                                 <exclude>src/test/java/org/exist/security/UnixStylePermissionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/security/XqueryApiTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/AccountImpl.java</exclude>
@@ -1723,15 +1736,15 @@ The BaseX Team. The original license statement is also included below.]]></pream
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>default-compile</id>
                         <configuration>
                             <excludes>
-                                <!-- compiled by the Aspectj plugin below -->
+                                <!-- TODO(AR) used to be compiler by Aspectj plugin - temporarily disabled -->
                                 <exclude>org/exist/storage/lock/EnsureLockingAspect.java</exclude>
-                                <exclude>org/exist/security/PermissionRequiredAspect.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>
