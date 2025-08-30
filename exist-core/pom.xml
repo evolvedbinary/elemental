@@ -825,6 +825,8 @@
                                 <include>src/main/java/org/exist/http/Descriptor.java</include>
                                 <include>src/main/java/org/exist/http/RESTServer.java</include>
                                 <include>src/test/java/org/exist/http/RESTServiceTest.java</include>
+                                <include>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</include>
+                                <include>src/main/java/org/exist/http/servlets/XQueryServlet.java</include>
                                 <include>src/main/java/org/exist/http/servlets/XSLTServlet.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/PathForward.java</include>
@@ -1161,6 +1163,8 @@
                                 <exclude>src/main/java/org/exist/http/Descriptor.java</exclude>
                                 <exclude>src/main/java/org/exist/http/RESTServer.java</exclude>
                                 <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
+                                <exclude>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</exclude>
+                                <exclude>src/main/java/org/exist/http/servlets/XQueryServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/XSLTServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/PathForward.java</exclude>
