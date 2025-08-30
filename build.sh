@@ -28,6 +28,7 @@
 set -e
 
 TARGET="useage"
+DEBUG=false
 OFFLINE=false
 CONCURRENCY="-T2C"
 
@@ -39,6 +40,10 @@ key="$1"
 case $key in
     clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check)
     TARGET="$1"
+    shift
+    ;;
+    --debug)
+    DEBUG=true
     shift
     ;;
     --offline)
@@ -57,7 +62,7 @@ esac
 done
 
 function print-useage() {
-  echo -e "\n./build.sh [--offline] <target> | --help"
+  echo -e "\n./build.sh [--debug] [--offline] <target> | --help"
   echo -e "\nAvailable build targets are:"
   echo -e "\tquick - A distribution directory that can be found in exist-distribution/target/elemental-x.y.x-dir"
   echo -e "\tquick-archives - A distribution directory, and distribution archives that can be found in exist-distribution/target/"
@@ -84,6 +89,10 @@ fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_CMD="${SCRIPT_DIR}/mvnw -V"
+
+if [ "${DEBUG}" == "true" ]; then
+  BASE_CMD="${BASE_CMD} --debug"
+fi
 
 if [ "${OFFLINE}" == "true" ]; then
   BASE_CMD="${BASE_CMD} --offline"
