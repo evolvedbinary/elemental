@@ -28,6 +28,7 @@
 set -e
 
 TARGET="useage"
+DEBUG=false
 OFFLINE=false
 CONCURRENCY="-T2C"
 
@@ -37,8 +38,12 @@ do
 key="$1"
 
 case $key in
-    quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check)
+    clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check)
     TARGET="$1"
+    shift
+    ;;
+    --debug)
+    DEBUG=true
     shift
     ;;
     --offline)
@@ -57,7 +62,7 @@ esac
 done
 
 function print-useage() {
-  echo -e "\n./build.sh [--offline] <target> | --help"
+  echo -e "\n./build.sh [--debug] [--offline] <target> | --help"
   echo -e "\nAvailable build targets are:"
   echo -e "\tquick - A distribution directory that can be found in exist-distribution/target/elemental-x.y.x-dir"
   echo -e "\tquick-archives - A distribution directory, and distribution archives that can be found in exist-distribution/target/"
@@ -70,6 +75,7 @@ function print-useage() {
   echo -e "\tlicence-format - Adds the correct license header to any source files that are missing it"
   echo -e "\tdependency-check - Checks that all modules have correctly declared their dependencies"
   echo -e "\tdependency-security-check - Checks that all dependencies have no unexpected CVE security issues"
+  echo -e "\tclean - Remove all built artifacts"
   echo -e "\n--offline - attempts to run the Maven build in offline mode"
 }
 
@@ -84,8 +90,18 @@ fi
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_CMD="${SCRIPT_DIR}/mvnw -V"
 
+if [ "${DEBUG}" == "true" ]; then
+  BASE_CMD="${BASE_CMD} --debug"
+fi
+
 if [ "${OFFLINE}" == "true" ]; then
   BASE_CMD="${BASE_CMD} --offline"
+fi
+
+if [ "${TARGET}" == "clean" ]; then
+  CMD="${BASE_CMD} ${CONCURRENCY} clean"
+  $CMD
+  exit 0;
 fi
 
 if [ "${TARGET}" == "quick" ]; then
