@@ -721,7 +721,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         PermissionFactory.chmod(broker, destPermissions, Optional.of(srcPermissions.getMode()), Optional.empty());
 
         if (srcPermissions instanceof SimpleACLPermission srcAclPermissions && destPermissions instanceof SimpleACLPermission destAclPermissions) {
-            if (!destAclPermissions.equalsAcl(srcAclPermissions)) {
+            if (!destAclPermissions.aclEquals(srcAclPermissions)) {
                 PermissionFactory.chacl(destAclPermissions, newAcl ->
                     ((SimpleACLPermission)newAcl).copyAclOf(srcAclPermissions)
                 );
