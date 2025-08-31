@@ -176,20 +176,16 @@
             <AppenderRef ref="elemental.core"/>
         </Logger>
         
-        <Logger name="org.exist.jetty.StandaloneServer" additivity="false" level="warn">
-            <AppenderRef ref="elemental.core"/>
-        </Logger>
-        
         <Logger name="xquery.profiling" additivity="false" level="trace">
             <AppenderRef ref="elemental.profiling"/>
         </Logger>
         
-        <Logger name="org.exist.statistics" additivity="false" level="debug">
+        <Logger name="org.exist.statistics" additivity="false" level="info">
             <AppenderRef ref="elemental.core"/>
             <AppenderRef ref="elemental.statistics"/>
         </Logger>
         
-        <Logger name="org.exist.backup.SystemExport" additivity="false" level="trace">
+        <Logger name="org.exist.backup.SystemExport" additivity="false" level="info">
             <AppenderRef ref="elemental.backup"/>
         </Logger>
         

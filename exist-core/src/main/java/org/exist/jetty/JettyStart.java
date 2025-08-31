@@ -229,7 +229,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
                 addObserver(observer);
             }
 
-            logger.info("Running with Java {} [{} ({}) in {}]",
+            logger.info("Operating System: {} {} {}]", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
+            logger.info("Running as user: {}", System.getProperty("user.name", "(unknown user.name)"));
+            logger.info("Using Java: {} [{} ({}) in {}]",
                 System.getProperty("java.version", "(unknown java.version)"),
                 System.getProperty("java.vendor", "(unknown java.vendor)"),
                 System.getProperty("java.vm.name", "(unknown java.vm.name)"),
@@ -239,19 +241,11 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             logger.info("Approximate maximum amount of memory for JVM: {}", FileUtils.humanSize(Runtime.getRuntime().maxMemory()));
             logger.info("Number of processors available to JVM: {}", Runtime.getRuntime().availableProcessors());
 
-            logger.info("Running as user '{}'", System.getProperty("user.name", "(unknown user.name)"));
-            logger.info("[Elemental Home : {}]", System.getProperty("exist.home", "unknown"));
-            logger.info("[Elemental Version : {}]", SystemProperties.getInstance().getSystemProperty("product-version", "unknown"));
-            logger.info("[Elemental Build : {}]", SystemProperties.getInstance().getSystemProperty("product-build", "unknown"));
-            logger.info("[Git commit : {}]", SystemProperties.getInstance().getSystemProperty("git-commit", "unknown"));
-            logger.info("[Git commit timestamp : {}]", SystemProperties.getInstance().getSystemProperty("git-commit-timestamp", "unknown"));
-
-            logger.info("[Operating System : {} {} {}]", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
-            logger.info("[log4j.configurationFile : {}]", System.getProperty("log4j.configurationFile"));
-            logger.info("[jetty Version: {}]", Jetty.VERSION);
-            logger.info("[{} : {}]", JETTY_HOME_PROP, configProperties.get(JETTY_HOME_PROP));
-            logger.info("[{} : {}]", JETTY_BASE_PROP, configProperties.get(JETTY_BASE_PROP));
-            logger.info("[jetty configuration : {}]", jettyConfig.toAbsolutePath().toString());
+            logger.info("[Elemental Version: {}]", SystemProperties.getInstance().getSystemProperty("product-version", "unknown"));
+            logger.info("[Elemental Build: {}]", SystemProperties.getInstance().getSystemProperty("product-build", "unknown"));
+            logger.info("[Elemental Git commit: {}]", SystemProperties.getInstance().getSystemProperty("git-commit", "unknown"));
+            logger.info("[Elemental Git commit timestamp: {}]", SystemProperties.getInstance().getSystemProperty("git-commit-timestamp", "unknown"));
+            logger.info("[Elemental Home: {}]", System.getProperty("exist.home", "unknown"));
 
             // configure the database instance
             SingleInstanceConfiguration config;
@@ -260,10 +254,16 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             } else {
                 config = new SingleInstanceConfiguration();
             }
-            logger.info("Configuring Elemental from {}",
-                    config.getConfigFilePath()
-                        .map(Path::normalize).map(Path::toAbsolutePath).map(Path::toString)
-                        .orElse("<UNKNOWN>"));
+            final String elementalConfigPath = config.getConfigFilePath()
+                .map(Path::normalize).map(Path::toAbsolutePath).map(Path::toString)
+                .orElse("<UNKNOWN>");
+            logger.info("[Elemental Configuration: {}]", elementalConfigPath);
+
+            logger.info("[Log4j Configuration: {}]", System.getProperty("log4j.configurationFile"));
+            logger.info("[Jetty Version: {}]", Jetty.VERSION);
+            logger.info("[Jetty Home: {}]", configProperties.get(JETTY_HOME_PROP));
+            logger.info("[Jetty Base: {}]", configProperties.get(JETTY_BASE_PROP));
+            logger.info("[Jetty Configuration: {}]", jettyConfig.toAbsolutePath().toString());
 
             BrokerPool.configure(1, 5, config, Optional.ofNullable(observer));
 
@@ -284,7 +284,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             final List<Object> configuredObjects = new ArrayList<>();
             XmlConfiguration last = null;
             for(final Path confFile : configFiles) {
-                logger.info("[loading jetty configuration : {}]", confFile.toString());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("[Loading Jetty Configuration: {}]", confFile.toString());
+                }
                 final Resource resource = new PathResource(confFile);
                 final XmlConfiguration configuration = new XmlConfiguration(resource);
                 if (last != null) {
@@ -508,7 +510,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHookThread);
-                    logger.debug("BrokerPoolsAndJetty.ShutdownHook hook registered");
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("BrokerPoolsAndJetty.ShutdownHook hook registered");
+                    }
                 } catch (final IllegalArgumentException | IllegalStateException e) {
                     // Hook already registered, or Shutdown in progress
                     logger.error("Unable to add BrokerPoolsAndJetty.ShutdownHook hook: {}", e.getMessage(), e);
@@ -520,7 +524,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
             if (configuredObject instanceof LifeCycle lc) {
                 if (!lc.isRunning()) {
-                    logger.info("[Starting jetty component : {}]", lc.getClass().getName());
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("[Starting Jetty Component : {}]", lc.getClass().getName());
+                    }
                     lc.start();
                 }
             }
@@ -582,7 +588,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
         shutdownHookThread.ifPresent(thread -> {
             try {
                 Runtime.getRuntime().removeShutdownHook(thread);
-                logger.debug("BrokerPoolsAndJetty.ShutdownHook hook unregistered");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("BrokerPoolsAndJetty.ShutdownHook hook unregistered");
+                }
             } catch (final IllegalStateException e) {
                 // Shutdown in progress
                 logger.warn("Unable to remove BrokerPoolsAndJetty.ShutdownHook hook: {}", e.getMessage());
@@ -677,7 +685,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
     @Override
     public synchronized void lifeCycleStarting(final LifeCycle lifeCycle) {
-        logger.info("Jetty server starting...");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Jetty server starting...");
+        }
         setChanged();
         notifyObservers(SIGNAL_STARTING);
         status = STATUS_STARTING;
@@ -686,7 +696,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
     @Override
     public synchronized void lifeCycleStarted(final LifeCycle lifeCycle) {
-        logger.info("Jetty server started.");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Jetty server started.");
+        }
         setChanged();
         notifyObservers(SIGNAL_STARTED);
         status = STATUS_STARTED;
@@ -699,14 +711,18 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
     @Override
     public synchronized void lifeCycleStopping(final LifeCycle lifeCycle) {
-        logger.info("Jetty server stopping...");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Jetty server stopping...");
+        }
         status = STATUS_STOPPING;
         notifyAll();
     }
 
     @Override
     public synchronized void lifeCycleStopped(final LifeCycle lifeCycle) {
-        logger.info("Jetty server stopped");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Jetty server stopped");
+        }
         status = STATUS_STOPPED;
         notifyAll();
     }
