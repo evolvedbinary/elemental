@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  *
  * Plugs into the Java Compiler.
  *
- * @author <a href="mailto:adam@evolvedbinary.com>Adam Retter </a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @SupportedAnnotationTypes("org.exist.security.PermissionRequired")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
