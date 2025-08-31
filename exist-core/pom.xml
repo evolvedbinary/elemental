@@ -70,6 +70,15 @@
   </scm>
 
     <dependencies>
+
+        <dependency>
+            <!-- NOTE(AR) adds our Annotation Processors for the maven-compiler-plugin -->
+            <groupId>xyz.elemental</groupId>
+            <artifactId>exist-core-build-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>net.jcip</groupId>
             <artifactId>jcip-annotations</artifactId>
@@ -416,12 +425,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>${aspectj.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jaas</artifactId>
             <version>${jetty.version}</version>
@@ -690,6 +693,7 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ElementReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
+                                <include>src/main/java/org/exist/security/PermissionRequiredCheck.java</include>
                                 <include>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteArrayOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteBufferInput.java</include>
@@ -870,10 +874,11 @@
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/test/java/org/exist/security/FnDocSecurityTest.java</include>
                                 <include>src/main/java/org/exist/security/Permission.java</include>
+                                <include>src/main/java/org/exist/security/PermissionRequired.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
-                                <include>src/main/java/org/exist/security/SimpleACLPermission.java</include>
+                                <include>src/main/java/org/exist/security/SimpleACLPermissionInternal.java</include>
                                 <include>src/test/java/org/exist/security/SimpleACLPermissionTest.java</include>
-                                <include>src/main/java/org/exist/security/UnixStylePermission.java</include>
+                                <include>src/main/java/org/exist/security/UnixStylePermissionInternal.java</include>
                                 <include>src/test/java/org/exist/security/UnixStylePermissionTest.java</include>
                                 <include>src/test/java/org/exist/security/XqueryApiTest.java</include>
                                 <include>src/main/java/org/exist/security/internal/AccountImpl.java</include>
@@ -1211,10 +1216,12 @@
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/test/java/org/exist/security/FnDocSecurityTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/Permission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/PermissionRequired.java</exclude>
+                                <exclude>src/main/java/org/exist/security/PermissionRequiredCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
-                                <exclude>src/main/java/org/exist/security/SimpleACLPermission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/SimpleACLPermissionInternal.java</exclude>
                                 <exclude>src/test/java/org/exist/security/SimpleACLPermissionTest.java</exclude>
-                                <exclude>src/main/java/org/exist/security/UnixStylePermission.java</exclude>
+                                <exclude>src/main/java/org/exist/security/UnixStylePermissionInternal.java</exclude>
                                 <exclude>src/test/java/org/exist/security/UnixStylePermissionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/security/XqueryApiTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/AccountImpl.java</exclude>
@@ -1735,69 +1742,15 @@ The BaseX Team. The original license statement is also included below.]]></pream
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>default-compile</id>
                         <configuration>
                             <excludes>
-                                <!-- compiled by the Aspectj plugin below -->
+                                <!-- TODO(AR) used to be compiler by Aspectj plugin - temporarily disabled -->
                                 <exclude>org/exist/storage/lock/EnsureLockingAspect.java</exclude>
-                                <exclude>org/exist/security/PermissionRequiredAspect.java</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.nickwongdev</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.12.6</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.aspectj</groupId>
-                        <artifactId>aspectjtools</artifactId>
-                        <version>${aspectj.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-
-                        <!-- Compile and weave aspects after all classes compiled by javac -->
-                        <!-- phase>process-classes</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals -->
-
-                        <configuration>
-                            <forceAjcCompile>true</forceAjcCompile>  <!-- Required, otherwise the Aspects are not re-compiled when the src/main/java is recompiled for the test phase -->
-                            <showWeaveInfo>true</showWeaveInfo>
-                            <complianceLevel>${project.build.source}</complianceLevel>
-                            <source>${project.build.source}</source>
-                            <target>${project.build.target}</target>
-                            <!-- sources>
-                                <source>
-                                    <basedir>${project.build.sourceDirectory}</basedir>
-                                    <includes>
-                                        <include>**/PermissionRequiredAspect.java</include>
-                                    </includes>
-                                    <excludes>
-                                        <exclude>**/EnsureLockingAspect.java</exclude>
-                                    </excludes>
-                                </source>
-                            </sources -->
-
-                            <!-- weaveDirectories>
-                                <weaveDirectory>${project.build.directory}/classes</weaveDirectory>
-                            </weaveDirectories -->
-
-                            <excludes>
-                                <!-- excluded by default, as only really needed for debugging lock ownership issues -->
-                                <exclude>**/EnsureLockingAspect.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>
