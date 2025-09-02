@@ -153,7 +153,12 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
             processMonitor.queryStarted(xqueryContext.getWatchDog());
             
             //create a function call
-            try (final FunctionReference fnRef = new FunctionReference(new FunctionCall(xqueryContext, fn))) {
+            final FunctionCall fnCall = new FunctionCall(xqueryContext, fn);
+
+            // As we are calling the function directly from RESTXQ, set the function call location to the same as the function definition location
+            fnCall.setLocation(fn.getLine(), fn.getColumn());
+
+            try (final FunctionReference fnRef = new FunctionReference(fnCall)) {
 
                 //convert the arguments
                 final org.exist.xquery.value.Sequence[] fnArgs = convertToExistFunctionArguments(xqueryContext, fn, arguments);
