@@ -33,17 +33,17 @@
 package org.exist.storage;
 
 import net.jcip.annotations.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
 import com.evolvedbinary.j8fu.fsm.AtomicFSM;
 import com.evolvedbinary.j8fu.fsm.FSM;
 
-import static com.evolvedbinary.j8fu.fsm.TransitionTable.transitionTable;
-import static org.exist.security.UnixStylePermission.LOG;
-
-
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.evolvedbinary.j8fu.fsm.TransitionTable.transitionTable;
 
 /**
  * This class simply maintains a list of {@link BrokerPoolService}
@@ -66,6 +66,8 @@ import java.util.List;
  */
 @NotThreadSafe
 class BrokerPoolServicesManager {
+
+    private static final Logger LOG = LogManager.getLogger(BrokerPoolServicesManager.class);
 
     private enum ManagerState {
         REGISTRATION,
