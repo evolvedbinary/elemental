@@ -210,7 +210,7 @@ public class FnModule extends AbstractInternalModule {
         new FunctionDef(FunRemove.signature, FunRemove.class),
         new FunctionDef(FunReplace.FS_REPLACE[0], FunReplace.class),
         new FunctionDef(FunReplace.FS_REPLACE[1], FunReplace.class),
-        new FunctionDef(FunReverse.signature, FunReverse.class),
+        new FunctionDef(FunReverse.FS_REVERSE, FunReverse.class),
         new FunctionDef(FunResolveURI.signatures[0], FunResolveURI.class),
         new FunctionDef(FunResolveURI.signatures[1], FunResolveURI.class),
         new FunctionDef(FunRoot.signatures[0], FunRoot.class),
