@@ -201,7 +201,7 @@ commands:
                 environment:
                   PARAM_DEP_PLUGIN_VER: << parameters.dependency_plugin_version >>
                 working_directory: << parameters.app_src_directory >>
-                command: "$MAVEN_BIN -V -T2C org.apache.maven.plugins:maven-dependency-plugin:$PARAM_DEP_PLUGIN_VER:go-offline"
+                command: "$MAVEN_BIN -V -T2C org.apache.maven.plugins:maven-dependency-plugin:$PARAM_DEP_PLUGIN_VER:go-offline -DexcludeArtifactIds=javapoet-root"
       - steps: << parameters.steps >>
 
       - when:
