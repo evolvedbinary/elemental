@@ -54,7 +54,8 @@ import org.exist.numbering.NodeIdFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.io.VariableByteArrayInput;
 import org.exist.storage.io.VariableByteInput;
-import org.exist.storage.io.VariableByteOutputStream;
+import org.exist.storage.io.VariableByteArrayOutputStream;
+import org.exist.storage.io.VariableByteOutput;
 import org.exist.util.ByteConversion;
 
 import javax.annotation.Nullable;
@@ -98,7 +99,7 @@ public class LuceneUtil {
      * @throws IOException if an error occurs during encoding.
      */
     public static byte[] encodeNodeIds(final NodeId[] nodeIds) throws IOException {
-        try (final VariableByteOutputStream vbos = new VariableByteOutputStream(32)) {
+        try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(32)) {
             @Nullable NodeId prevNodeId = null;
             for (final NodeId nodeId : nodeIds) {
                 nodeId.write(prevNodeId, vbos);
