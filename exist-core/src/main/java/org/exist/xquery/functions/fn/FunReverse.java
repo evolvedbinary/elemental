@@ -45,95 +45,49 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.exist.dom.QName;
-import org.exist.xquery.*;
-import org.exist.xquery.value.FunctionParameterSequenceType;
-import org.exist.xquery.value.FunctionReturnSequenceType;
-import org.exist.xquery.value.Item;
+import org.exist.xquery.BasicFunction;
+import org.exist.xquery.FunctionSignature;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.SequenceIterator;
-import org.exist.xquery.value.SequenceType;
-import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
+import org.exist.xquery.value.Type;
+
+import static org.exist.xquery.FunctionDSL.optManyParam;
+import static org.exist.xquery.FunctionDSL.returnsOptMany;
+import static org.exist.xquery.functions.fn.FnModule.functionSignature;
 
 /**
  * Implements the fn:reverse function.
  *
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class FunReverse extends Function {
+public class FunReverse extends BasicFunction {
 
-	public final static FunctionSignature signature =
-		new FunctionSignature(
-			new QName("reverse", FnModule.NAMESPACE_URI),
-			"Reverses the order of items in a sequence.  If the argument is an empty" +
-			"sequence, the empty sequence is returned.",
-			new SequenceType[] {new FunctionParameterSequenceType("arg", Type.ITEM, Cardinality.ZERO_OR_MORE, "The sequence to reverse")},
-			new FunctionReturnSequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE, "the reverse order sequence"));
+    public static final FunctionSignature FS_REVERSE = functionSignature(
+			"reverse",
+			"Reverses the order of items in a sequence. If the argument is an empty sequence, the empty sequence is returned.",
+            returnsOptMany(Type.ITEM, "The reverse order sequence"),
+            optManyParam("arg", Type.ITEM, "The sequence to reverse")
+    );
 			
-	public FunReverse(XQueryContext context) {
-		super(context, signature);
-	}
-
-    public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
-        inPredicate = (contextInfo.getFlags() & IN_PREDICATE) > 0;
-        contextId = contextInfo.getContextId();
-        contextInfo.setParent(this);
-
-        final SequenceType[] argumentTypes = getSignature().getArgumentTypes();
-        for (int i = 0; i < getArgumentCount(); i++) {
-            final Expression arg = getArgument(i);
-
-            // call analyze for each argument
-            final AnalyzeContextInfo argContextInfo = new AnalyzeContextInfo(contextInfo);
-            arg.analyze(argContextInfo);
-            if (i == 0) {
-                contextInfo.setStaticReturnType(argContextInfo.getStaticReturnType());
-            }
-
-            if (!argumentsChecked) {
-                // statically check the argument
-                SequenceType argType = null;
-                if (argumentTypes != null && i < argumentTypes.length) {
-                    argType = argumentTypes[i];
-                }
-                checkArgument(arg, argType, argContextInfo, i + 1);
-            }
-        }
-        argumentsChecked = true;
+	public FunReverse(final XQueryContext context, final FunctionSignature signature) {
+        super(context, signature);
     }
 
-    public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
-        if (context.getProfiler().isEnabled()) {
-            context.getProfiler().start(this);       
-            context.getProfiler().message(this, Profiler.DEPENDENCIES, "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
-            if (contextSequence != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT SEQUENCE", contextSequence);}
-            if (contextItem != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());}
-        }           
-        
-        Sequence result;
-        final Sequence seq = getArguments(contextSequence, contextItem)[0];
-		if (seq.isEmpty()) 
-            {result = Sequence.EMPTY_SEQUENCE;}
-        else {
-                final Sequence tmp = new ValueSequence();
-                Item item;
-                for(final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                    item = i.nextItem();
-                    tmp.add(item);
-                }
-                result = new ValueSequence();
-                for (int i = seq.getItemCount() - 1; i >= 0; i--) {
-                    result.add(tmp.itemAt(i));
-                }
+    @Override
+    public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
+        final Sequence seq = args[0];
+        final Sequence result;
+        if (seq.isEmpty()) {
+            result = Sequence.EMPTY_SEQUENCE;
+        } else {
+            result = new ValueSequence();
+            for (int i = seq.getItemCount() - 1; i >= 0; i--) {
+                result.add(seq.itemAt(i));
+            }
         }
-
-        if (context.getProfiler().isEnabled()) 
-            {context.getProfiler().end(this, "", result);} 
-        
         return result;
-	}
-
+    }
 }
