@@ -90,7 +90,7 @@ public class FunDeepEqual extends CollatingFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-            new QName("deep-equal", Function.BUILTIN_FUNCTION_NS),
+            new QName("deep-equal", FnModule.NAMESPACE_URI),
             "Returns true() iff every item in $items-1 is deep-equal to the item " +
             "at the same position in $items-2, false() otherwise. " +
             "If both $items-1 and $items-2 are the empty sequence, returns true(). ",
@@ -104,7 +104,7 @@ public class FunDeepEqual extends CollatingFunction {
                 "true() if the sequences are deep-equal, false() otherwise")
             ),
         new FunctionSignature(
-            new QName("deep-equal", Function.BUILTIN_FUNCTION_NS),
+            new QName("deep-equal", FnModule.NAMESPACE_URI),
             "Returns true() iff every item in $items-1 is deep-equal to the item " +
             "at the same position in $items-2, false() otherwise. " +
             "If both $items-1 and $items-2 are the empty sequence, returns true(). " +

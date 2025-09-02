@@ -79,7 +79,7 @@ public class FunParseIetfDate extends BasicFunction {
 
 
     public final static FunctionSignature FNS_PARSE_IETF_DATE = new FunctionSignature(
-            new QName("parse-ietf-date", Function.BUILTIN_FUNCTION_NS),
+            new QName("parse-ietf-date", FnModule.NAMESPACE_URI),
             "Parses a string containing the date and time in IETF format,\n" +
                     "returning the corresponding xs:dateTime value.",
             new SequenceType[]{IETF_DATE},

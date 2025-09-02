@@ -83,12 +83,12 @@ public class ParsingFunctions extends BasicFunction {
 
 	public final static FunctionSignature[] signatures = {
 			new FunctionSignature(
-					new QName("parse-xml", Function.BUILTIN_FUNCTION_NS),
+					new QName("parse-xml", FnModule.NAMESPACE_URI),
 					"This function takes as input an XML document represented as a string,"
 							+ " and returns the document node at the root of an XDM tree representing the parsed document.",
 					new SequenceType[] { TO_BE_PARSED_PARAMETER }, RESULT_TYPE_FOR_PARSE_XML),
 			new FunctionSignature(
-					new QName("parse-xml-fragment", Function.BUILTIN_FUNCTION_NS),
+					new QName("parse-xml-fragment", FnModule.NAMESPACE_URI),
 					"This function takes as input an XML external entity represented as a string," +
 					"and returns the document node at the root of an XDM tree representing the parsed document fragment.",
 					new SequenceType[] { TO_BE_PARSED_PARAMETER }, RESULT_TYPE_FOR_PARSE_XML_FRAGMENT) };

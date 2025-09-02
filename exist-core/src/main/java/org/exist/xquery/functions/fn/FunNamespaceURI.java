@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -68,13 +92,13 @@ public class FunNamespaceURI extends Function {
 
     public final static FunctionSignature[] signatures = {
             new FunctionSignature(
-                    new QName("namespace-uri", Function.BUILTIN_FUNCTION_NS),
+                    new QName("namespace-uri", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_0_PARAM + FUNCTION_DESCRIPTION_COMMON,
                     new SequenceType[0],
                     new FunctionReturnSequenceType(Type.ANY_URI, Cardinality.EXACTLY_ONE, "the namespace URI"),
                     false),
             new FunctionSignature(
-                    new QName("namespace-uri", Function.BUILTIN_FUNCTION_NS),
+                    new QName("namespace-uri", FnModule.NAMESPACE_URI),
                     FUNCTION_DESCRIPTION_1_PARAM + FUNCTION_DESCRIPTION_COMMON,
                     new SequenceType[] {
                             new FunctionParameterSequenceType("arg", Type.NODE, Cardinality.ZERO_OR_ONE, "The input node")

@@ -58,6 +58,9 @@ import java.util.Arrays;
 import java.io.PrintWriter;
 import java.util.HashSet;
 
+import static org.exist.Namespaces.XPATH_FUNCTIONS_NS;
+import static org.exist.Namespaces.XPATH_FUNCTIONS_PREFIX;
+
 public class PerformanceStats implements BrokerPoolService {
 
     public final static String RANGE_IDX_TYPE = "range";
@@ -250,7 +253,12 @@ public class PerformanceStats implements BrokerPoolService {
         }
     }
 
-    public void recordFunctionCall(QName qname, String source, long elapsed) {
+    public void recordFunctionCall(QName qname, final String source, final long elapsed) {
+        if (XPATH_FUNCTIONS_NS.equals(qname.getNamespaceURI()) && qname.getPrefix() == null) {
+            // make sure that functions from the XPath/XQuery standard library are shown correctly in the output
+            qname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), XPATH_FUNCTIONS_PREFIX, qname.getNameType());
+        }
+
         final FunctionStats newStats = new FunctionStats(source, qname);
         final FunctionStats stats = functions.get(newStats);
         if (stats == null) {

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -48,12 +72,12 @@ import javax.xml.XMLConstants;
  */
 public class FunAnalyzeString extends BasicFunction {
 
-    private final static QName fnAnalyzeString = new QName("analyze-string", Function.BUILTIN_FUNCTION_NS);
+    private final static QName fnAnalyzeString = new QName("analyze-string", FnModule.NAMESPACE_URI);
 
-    private final static QName QN_MATCH = new QName("match", Function.BUILTIN_FUNCTION_NS);
-    private final static QName QN_GROUP = new QName("group", Function.BUILTIN_FUNCTION_NS);
+    private final static QName QN_MATCH = new QName("match", FnModule.NAMESPACE_URI);
+    private final static QName QN_GROUP = new QName("group", FnModule.NAMESPACE_URI);
     private final static QName QN_NR = new QName("nr", XMLConstants.NULL_NS_URI);
-    private final static QName QN_NON_MATCH = new QName("non-match", Function.BUILTIN_FUNCTION_NS);
+    private final static QName QN_NON_MATCH = new QName("non-match", FnModule.NAMESPACE_URI);
     
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
@@ -102,7 +126,7 @@ public class FunAnalyzeString extends BasicFunction {
         try {
             final MemTreeBuilder builder = context.getDocumentBuilder();
             builder.startDocument();
-            builder.startElement(new QName("analyze-string-result", Function.BUILTIN_FUNCTION_NS), null);
+            builder.startElement(new QName("analyze-string-result", FnModule.NAMESPACE_URI), null);
             String input = "";
             if (!args[0].isEmpty()) {
                 input = args[0].itemAt(0).getStringValue();

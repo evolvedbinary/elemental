@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -57,7 +81,7 @@ public class FunGetDateComponent extends BasicFunction {
 	// ----- fromDate
 	public final static FunctionSignature fnDayFromDate =
 		new FunctionSignature(
-			new QName("day-from-date", Function.BUILTIN_FUNCTION_NS),
+			new QName("day-from-date", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer between 1 and 31, both inclusive, representing " +
 			"the day component in the localized value of $date.",
 			new SequenceType[] {
@@ -67,7 +91,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnMonthFromDate =
 		new FunctionSignature(
-			new QName("month-from-date", Function.BUILTIN_FUNCTION_NS),
+			new QName("month-from-date", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer between 1 and 12, both inclusive, representing the month " +
 			"component in the localized value of $date.",
 			new SequenceType[] {
@@ -77,7 +101,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnYearFromDate =
 		new FunctionSignature(
-			new QName("year-from-date", Function.BUILTIN_FUNCTION_NS),
+			new QName("year-from-date", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the year in the localized value of $date. The value may be negative.",
 			new SequenceType[] {
                 DATE_01_PARAM
@@ -86,7 +110,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnTimezoneFromDate =
 		new FunctionSignature(
-			new QName("timezone-from-date", Function.BUILTIN_FUNCTION_NS),
+			new QName("timezone-from-date", FnModule.NAMESPACE_URI),
             "Returns the timezone component of $date if any. If $date has a timezone component, then the result is an xs:dayTimeDuration that indicates deviation from UTC; its value may range from +14:00 to -14:00 hours, both inclusive. Otherwise, the result is the empty sequence." +
             "If $date is the empty sequence, returns the empty sequence.",
 			new SequenceType[] {
@@ -97,7 +121,7 @@ public class FunGetDateComponent extends BasicFunction {
 	// ----- fromTime
 	public final static FunctionSignature fnHoursFromTime =
 		new FunctionSignature(
-			new QName("hours-from-time", Function.BUILTIN_FUNCTION_NS),
+			new QName("hours-from-time", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer between 0 and 23, both inclusive, representing the " +
 			"value of the hours component in the localized value of $time.",
 			new SequenceType[] {
@@ -107,7 +131,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnMinutesFromTime =
 		new FunctionSignature(
-			new QName("minutes-from-time", Function.BUILTIN_FUNCTION_NS),
+			new QName("minutes-from-time", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer value between 0 to 59, both inclusive, representing the value of " +
 			"the minutes component in the localized value of $time.",
 			new SequenceType[] {
@@ -117,7 +141,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnSecondsFromTime =
 		new FunctionSignature(
-			new QName("seconds-from-time", Function.BUILTIN_FUNCTION_NS),
+			new QName("seconds-from-time", FnModule.NAMESPACE_URI),
 			"Returns an xs:decimal value between 0 and 60.999..., both inclusive, representing the " +
 			"seconds and fractional seconds in the localized value of $date. Note that the value can be " +
 			"greater than 60 seconds to accommodate occasional leap seconds used to keep human time " +
@@ -129,7 +153,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnTimezoneFromTime =
 		new FunctionSignature(
-			new QName("timezone-from-time", Function.BUILTIN_FUNCTION_NS),
+			new QName("timezone-from-time", FnModule.NAMESPACE_URI),
 			"Returns the timezone component of $time if any. If $time has a timezone component, " +
 			"then the result is an xdt:dayTimeDuration that indicates deviation from UTC; its value may " +
 			"range from +14:00 to -14:00 hours, both inclusive. Otherwise, the result is the empty sequence.",
@@ -142,7 +166,7 @@ public class FunGetDateComponent extends BasicFunction {
 	// ----- fromDateTime
 	public final static FunctionSignature fnDayFromDateTime =
 		new FunctionSignature(
-			new QName("day-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("day-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer between 1 and 31, both inclusive, representing " +
 			"the day component in the localized value of $date-time.",
 			new SequenceType[] {
@@ -152,7 +176,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnMonthFromDateTime =
 		new FunctionSignature(
-			new QName("month-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("month-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer between 1 and 12, both inclusive, representing the month " +
 			"component in the localized value of $date-time.",
 			new SequenceType[] {
@@ -162,7 +186,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnYearFromDateTime =
 		new FunctionSignature(
-			new QName("year-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("year-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer representing the year in the localized value of $date-time. The value may be negative.",
 			new SequenceType[] {
                 DATE_TIME_01_PARAM
@@ -171,7 +195,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnHoursFromDateTime =
 		new FunctionSignature(
-			new QName("hours-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("hours-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer between 0 and 23, both inclusive, representing the " +
 			"value of the hours component in the localized value of $date-time.",
 			new SequenceType[] {
@@ -181,7 +205,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnMinutesFromDateTime =
 		new FunctionSignature(
-			new QName("minutes-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("minutes-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns an xs:integer value between 0 to 59, both inclusive, representing the value of " +
 			"the minutes component in the localized value of $date-time.",
 			new SequenceType[] {
@@ -191,7 +215,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnSecondsFromDateTime =
 		new FunctionSignature(
-			new QName("seconds-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("seconds-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns an xs:decimal value between 0 and 60.999..., both inclusive, representing the " +
 			"seconds and fractional seconds in the localized value of $date-time. Note that the value can be " +
 			"greater than 60 seconds to accommodate occasional leap seconds used to keep human time " +
@@ -203,7 +227,7 @@ public class FunGetDateComponent extends BasicFunction {
 	
 	public final static FunctionSignature fnTimezoneFromDateTime =
 		new FunctionSignature(
-			new QName("timezone-from-dateTime", Function.BUILTIN_FUNCTION_NS),
+			new QName("timezone-from-dateTime", FnModule.NAMESPACE_URI),
 			"Returns the timezone component of $date-time if any. If $date-time has a timezone component, " +
 			"then the result is an xdt:dayTimeDuration that indicates deviation from UTC; its value may " +
 			"range from +14:00 to -14:00 hours, both inclusive. Otherwise, the result is the empty sequence.",
