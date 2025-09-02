@@ -802,6 +802,7 @@
                                 <include>src/test/java/org/exist/IndexerTest.java</include>
                                 <include>src/test/java/org/exist/IndexerTest2.java</include>
                                 <include>src/test/java/org/exist/IndexerTest3.java</include>
+                                <include>src/main/java/org/exist/Namespaces.java</include>
                                 <include>src/main/resources-filtered/org/exist/system.properties</include>
                                 <include>src/main/java/org/exist/backup/ExportGUI.java</include>
                                 <include>src/main/java/org/exist/backup/ExportMain.java</include>
@@ -1016,29 +1017,122 @@
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
+                                <include>src/main/java/org/exist/xquery/Function.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
                                 <include>src/main/java/org/exist/xquery/LocationStep.java</include>
+                                <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
                                 <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
+                                <include>src/test/java/org/exist/xquery/WindowClauseTest.java</include>
                                 <include>src/main/java/org/exist/xquery/XPathUtil.java</include>
                                 <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/array/ArrayType.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/DocTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/ExtCollection.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnDefaultLanguage.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnDefaultLanguage.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnFormatDates.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnHasChildren.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnModule.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnOuterMost.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunAbs.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunAdjustTimezone.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunAnalyzeString.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunAvg.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunBaseURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunBoolean.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunCeiling.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunCodepointEqual.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunCodepointsToString.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunCompare.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunConcat.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunContains.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunContainsToken.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunCount.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunCurrentDateTime.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunData.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunDateTime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDeepEqual.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunDefaultCollation.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunDistinctValues.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunDoc.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEmpty.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEncodeForURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEndsWith.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEnvironment.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEquals.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunError.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEscapeHTMLURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunEscapeURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunExactlyOne.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunExists.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunFloor.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunGetDateComponent.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunGetDurationComponent.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunHeadTail.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunHigherOrderFun.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunIRIToURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunId.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunIdRef.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunImplicitTimezone.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunInScopePrefixes.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunIndexOf.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunInsertBefore.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunLang.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunLast.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunMax.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunMin.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNamespaceURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNamespaceURIForPrefix.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNodeName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNormalizeSpace.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNormalizeUnicode.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNot.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunNumber.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunOnFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunOneOrMore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunParseIetfDate.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunPath.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunPosition.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunQName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunRemove.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunReplace.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunResolveQName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunResolveURI.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunReverse.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunRoot.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunSerialize.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunSort.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunStartsWith.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunStrLength.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunString.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunStringJoin.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunStringToCodepoints.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunSubSequence.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunSubstring.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunSubstringAfter.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunSubstringBefore.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunSum.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunTokenize.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunTrace.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunTranslate.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunTrueOrFalse.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunUnordered.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUnparsedText.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunUpperOrLowerCase.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunXmlToJson.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunZeroOrOne.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/LoadXQueryModule.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/ParsingFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/QNameFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Convert.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Delivery.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Options.java</include>
@@ -1143,6 +1237,7 @@
                                 <exclude>src/test/java/org/exist/IndexerTest.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest2.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest3.java</exclude>
+                                <exclude>src/main/java/org/exist/Namespaces.java</exclude>
                                 <exclude>src/main/resources-filtered/org/exist/system.properties</exclude>
                                 <exclude>src/main/java/org/exist/backup/ExportGUI.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/ExportMain.java</exclude>
@@ -1241,7 +1336,7 @@
                                 <exclude>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/RewriteConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/Index.java</exclude>
-                                <include>src/main/java/org/exist/indexing/IndexController.java</include>
+                                <exclude>src/main/java/org/exist/indexing/IndexController.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/IndexManager.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</exclude>
                                 <exclude>src/main/java/org/exist/jetty/JettyStart.java</exclude>
@@ -1439,6 +1534,7 @@
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Function.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/FunctionFactory.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
@@ -1448,33 +1544,125 @@
                                 <exclude>src/test/java/org/exist/xquery/JavaBindingTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/LocationStep.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Materializable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/NamedFunctionReference.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/TryCatchExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/WindowClauseTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XPathUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryContextAttributesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/array/ArrayType.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/ExtCollection.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/DocTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnDefaultLanguage.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnDefaultLanguage.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnFormatDates.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnHasChildren.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnModule.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnOuterMost.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunAbs.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunAdjustTimezone.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunAnalyzeString.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunAvg.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunBaseURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunBoolean.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunCeiling.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunCodepointEqual.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunCodepointsToString.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunCompare.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunConcat.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunContains.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunContainsToken.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunCount.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunCurrentDateTime.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunData.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunDateTime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDeepEqual.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunDefaultCollation.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunDistinctValues.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunDoc.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEmpty.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEncodeForURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEndsWith.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEnvironment.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEquals.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunError.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEscapeHTMLURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunEscapeURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunExactlyOne.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunExists.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunFloor.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunGetDateComponent.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunGetDurationComponent.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunHeadTail.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunHigherOrderFun.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunIRIToURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunId.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunIdRef.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunImplicitTimezone.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunInScopePrefixes.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunIndexOf.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunInsertBefore.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunLang.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunLast.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunMax.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunMin.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNamespaceURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNamespaceURIForPrefix.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNodeName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNormalizeSpace.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNormalizeUnicode.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNot.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunNumber.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunOnFunctions.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunOneOrMore.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunParseIetfDate.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunPath.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunPosition.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunQName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunRemove.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunReplace.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunResolveQName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunResolveURI.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunReverse.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunRoot.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunSerialize.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunSort.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunStartsWith.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunStrLength.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunString.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunStringJoin.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunStringToCodepoints.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunSubSequence.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunSubstring.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunSubstringAfter.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunSubstringBefore.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunSum.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunTokenize.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunTrace.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunTranslate.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunTrueOrFalse.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunUnordered.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUnparsedText.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunUpperOrLowerCase.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunUriCollection.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunXmlToJson.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunZeroOrOne.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/LoadXQueryModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/ParsingFunctions.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/QNameFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Convert.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/transform/ConvertTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Delivery.java</exclude>

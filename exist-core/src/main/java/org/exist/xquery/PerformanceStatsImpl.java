@@ -62,6 +62,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static org.exist.Namespaces.XPATH_FUNCTIONS_NS;
+import static org.exist.Namespaces.XPATH_FUNCTIONS_PREFIX;
+
 /**
  * Implementation of a PerformanceStats that is designed
  * to be used from a single XQuery via its {@link XQueryContext}
@@ -271,9 +274,14 @@ public class PerformanceStatsImpl implements PerformanceStats {
     }
 
     @Override
-    public void recordFunctionCall(final QName qname, final String source, final long elapsed) {
+    public void recordFunctionCall(QName qname, final String source, final long elapsed) {
         if (!isEnabled()) {
             return;
+        }
+
+        if (XPATH_FUNCTIONS_NS.equals(qname.getNamespaceURI()) && qname.getPrefix() == null) {
+            // make sure that functions from the XPath/XQuery standard library are shown correctly in the output
+            qname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), XPATH_FUNCTIONS_PREFIX, qname.getNameType());
         }
 
         final FunctionStats newStats = new FunctionStats(source, qname);

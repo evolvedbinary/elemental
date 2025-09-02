@@ -70,7 +70,7 @@ public class FunSerialize extends BasicFunction {
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(
-                new QName("serialize", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+                new QName("serialize", FnModule.NAMESPACE_URI, FnModule.PREFIX),
                 "This function serializes the supplied input sequence $arg as described in XSLT and XQuery Serialization 3.0, returning the " +
                         "serialized representation of the sequence as a string.",
                 new SequenceType[] {
@@ -79,7 +79,7 @@ public class FunSerialize extends BasicFunction {
                 new FunctionParameterSequenceType("result", Type.STRING, Cardinality.EXACTLY_ONE, "the string containing the serialized node set.")
         ),
         new FunctionSignature(
-                new QName("serialize", Function.BUILTIN_FUNCTION_NS, FnModule.PREFIX),
+                new QName("serialize", FnModule.NAMESPACE_URI, FnModule.PREFIX),
                 "This function serializes the supplied input sequence $arg as described in XSLT and XQuery Serialization 3.0, returning the " +
                         "serialized representation of the sequence as a string.",
                 new SequenceType[] {

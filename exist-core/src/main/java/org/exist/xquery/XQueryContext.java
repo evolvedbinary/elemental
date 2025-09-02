@@ -320,7 +320,7 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     protected String moduleLoadPath = ".";
 
-    private String defaultFunctionNamespace = Function.BUILTIN_FUNCTION_NS;
+    private String defaultFunctionNamespace = Namespaces.XPATH_FUNCTIONS_NS;
     private AnyURIValue defaultElementNamespace = AnyURIValue.EMPTY_URI;
     private AnyURIValue defaultElementNamespaceSchema = AnyURIValue.EMPTY_URI;
 
@@ -441,8 +441,9 @@ public class XQueryContext implements BinaryValueManager, Context {
      * is executing, or null if there is no
      * HTTP context.
      */
-    private @Nullable HttpContext httpContext = null;
-    private static final QName UNNAMED_DECIMAL_FORMAT = new QName("__UNNAMED__", Function.BUILTIN_FUNCTION_NS);
+    @Nullable
+    private HttpContext httpContext = null;
+    private static final QName UNNAMED_DECIMAL_FORMAT = new QName("__UNNAMED__", Namespaces.XPATH_FUNCTIONS_NS);
 
     private final Map<QName, DecimalFormat> staticDecimalFormats = hashMap(Tuple(UNNAMED_DECIMAL_FORMAT, DecimalFormat.UNNAMED));
 
@@ -1046,11 +1047,8 @@ public class XQueryContext implements BinaryValueManager, Context {
     @Override
     public void setDefaultFunctionNamespace(final String uri) throws XPathException {
         //Not sure for the 2nd clause : eXist-db forces the function NS as default.
-        if (defaultFunctionNamespace != null
-                && !defaultFunctionNamespace.equals(Function.BUILTIN_FUNCTION_NS)
-                && !defaultFunctionNamespace.equals(uri)) {
-            throw new XPathException(rootExpression, ErrorCodes.XQST0066,
-                    "Default function namespace is already set to: '" + defaultFunctionNamespace + "'");
+        if ((defaultFunctionNamespace != null) && !defaultFunctionNamespace.equals(Namespaces.XPATH_FUNCTIONS_NS) && !defaultFunctionNamespace.equals(uri)) {
+            throw new XPathException(rootExpression, ErrorCodes.XQST0066, "Default function namespace is already set to: '" + defaultFunctionNamespace + "'");
         }
         defaultFunctionNamespace = uri;
     }

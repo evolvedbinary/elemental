@@ -74,7 +74,7 @@ public class FunXmlToJson extends BasicFunction {
     private static final FunctionParameterSequenceType FS_XML_TO_JSON_OPT_PARAM_NODE = optParam("node", Type.NODE, "The input node");
     private static final FunctionParameterSequenceType FS_XML_TO_JSON_OPT_PARAM_OPTIONS = param("options", Type.MAP_ITEM, "The options map");
     static final FunctionSignature[] FS_XML_TO_JSON = functionSignatures(
-            new QName(FS_XML_TO_JSON_NAME, Function.BUILTIN_FUNCTION_NS),
+            new QName(FS_XML_TO_JSON_NAME, FnModule.NAMESPACE_URI),
             "Converts an XML tree (in w3c 'XML Representation of JSON' format) into a string conforming to the JSON grammar. Basic string (un)escaping.",
             returnsOpt(Type.STRING, "The JSON representation of the input node"),
             arities(
@@ -273,8 +273,8 @@ public class FunXmlToJson extends BasicFunction {
     }
 
     private void checkNamespace(final String namespaceUri) throws XPathException {
-        if (!Function.BUILTIN_FUNCTION_NS.equals(namespaceUri)) {
-            throw new XPathException(this, ErrorCodes.FOJS0006, "Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + Function.BUILTIN_FUNCTION_NS);
+        if (!FnModule.NAMESPACE_URI.equals(namespaceUri)) {
+            throw new XPathException(this, ErrorCodes.FOJS0006, "Element was in namespace: " + namespaceUri + ", but should have been in namespace: " + FnModule.NAMESPACE_URI);
         }
     }
 }
