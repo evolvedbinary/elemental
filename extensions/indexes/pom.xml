@@ -110,6 +110,7 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
+                                <include>src/test/xquery/range/multi-collection-search.xqm</include>
                             </includes>
                         </licenseSet>
 

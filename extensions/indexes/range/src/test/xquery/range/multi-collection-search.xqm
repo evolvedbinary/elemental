@@ -21,7 +21,7 @@
  :)
 xquery version "3.1";
 
-module namespace t = "http://exist-db.org/xquery/test";
+module namespace t = "http://exist-db.org/xquery/range/test/multi-collection-search";
 
 declare namespace test = "http://exist-db.org/xquery/xqsuite";
 
