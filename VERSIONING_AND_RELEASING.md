@@ -222,11 +222,15 @@ You will require a system with:
 
 8. Post it to the [LinkedIn Elemental group](https://www.linkedin.com/groups/10070373/)
 
-9. Submit a news item to XML.com - [https://www.xml.com/news/submit-news-item/](https://www.xml.com/news/submit-news-item/).
+9. Post a message about the release to the Elemental #community Slack channel.
 
-10. Update the Wikipedia page with the new version details - [https://en.wikipedia.org/wiki/Elemental](https://en.wikipedia.org/wiki/Elemental).
+10. Post a message about the release to the XML.com #general Slack channel.
 
-11. Go to GitHub and move all issues and PRs which are still open for the release milestone to the next release milestone. Close the release milestone.
+11. Submit a news item to XML.com - [https://www.xml.com/news/submit-news-item/](https://www.xml.com/news/submit-news-item/).
+
+12. Update the Wikipedia page with the new version details - [https://en.wikipedia.org/wiki/Elemental](https://en.wikipedia.org/wiki/Elemental).
+
+13. Go to GitHub and move all issues and PRs which are still open for the release milestone to the next release milestone. Close the release milestone.
 
 
 ### Releasing to Homebrew
