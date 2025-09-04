@@ -46,6 +46,7 @@
 package org.exist.test.runner;
 
 import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.StringUtil;
 import org.exist.util.XMLFilenameFilter;
 import org.exist.util.XQueryFilenameFilter;
 import org.junit.AfterClass;
@@ -65,6 +66,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -82,6 +84,9 @@ import java.util.stream.Stream;
  * @author Adam Retter
  */
 public class XSuite extends ParentRunner<Runner> {
+
+    private static boolean DEFAULT_DISABLE_EXPATH_AUTO_DEPLOY = true;
+    private static boolean DEFAULT_DATABASE_USE_TEMPORARY_STORAGE = true;
 
     /**
      * Returns an empty suite.
@@ -120,6 +125,18 @@ public class XSuite extends ParentRunner<Runner> {
     public @interface XSuiteParallel {
     }
 
+    /**
+     * The <code>XSuiteConfig</code> annotation specifies any config for XSuite.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Inherited
+    public @interface XSuiteConfig {
+        boolean disableExpathAutoDeploy() default true;
+        boolean databaseUseTemporaryStorage() default true;
+        String databaseDataDirPath() default "";
+    }
+
     private static String[] getAnnotatedDirectories(final Class<?> klass) throws InitializationError {
         final XSuite.XSuiteFiles annotation = klass.getAnnotation(XSuite.XSuiteFiles.class);
         if (annotation == null) {
@@ -136,6 +153,24 @@ public class XSuite extends ParentRunner<Runner> {
         return annotation != null;
     }
 
+    private static Config getConfig(final Class<?> klass) throws InitializationError {
+        final XSuite.XSuiteConfig annotation = klass.getAnnotation(XSuite.XSuiteConfig.class);
+        final boolean disableExpathAutoDeploy;
+        final boolean databaseUseTemporaryStorage;
+        final String databaseDataDirPath;
+        if (annotation != null) {
+            disableExpathAutoDeploy = annotation.disableExpathAutoDeploy();
+            databaseUseTemporaryStorage = annotation.databaseUseTemporaryStorage();
+            databaseDataDirPath = annotation.databaseDataDirPath();
+        } else {
+            disableExpathAutoDeploy = DEFAULT_DISABLE_EXPATH_AUTO_DEPLOY;
+            databaseUseTemporaryStorage = DEFAULT_DATABASE_USE_TEMPORARY_STORAGE;
+            databaseDataDirPath = null;
+        }
+        return new Config(disableExpathAutoDeploy, databaseUseTemporaryStorage, databaseDataDirPath);
+    }
+
+    private final Config config;
     private final List<Runner> runners;
 
     /**
@@ -198,6 +233,7 @@ public class XSuite extends ParentRunner<Runner> {
      */
     protected XSuite(final Class<?> klass, final List<Runner> runners) throws InitializationError {
         super(klass);
+        this.config = getConfig(klass);
         this.runners = Collections.unmodifiableList(runners);
     }
 
@@ -280,7 +316,7 @@ public class XSuite extends ParentRunner<Runner> {
         final List<FrameworkMethod> befores = getTestClass().getAnnotatedMethods(BeforeClass.class);
 
         // inject a Server startup as though it were an @BeforeClass
-        final Statement startExistDb = new StartExistDbStatement();
+        final Statement startExistDb = new StartExistDbStatement(config);
 
         return new RunXSuiteBefores(statement, startExistDb, befores, null);
     }
@@ -294,6 +330,26 @@ public class XSuite extends ParentRunner<Runner> {
         final Statement stopExist = new StopExistDbStatement();
 
         return new RunXSuiteAfters(statement, stopExist, afters, null);
+    }
+
+    private static class Config {
+        final boolean disableExpathAutoDeploy;
+        final boolean databaseUseTemporaryStorage;
+        final String databaseDataDirPath;
+
+
+        private Config(final boolean disableExpathAutoDeploy, final boolean databaseUseTemporaryStorage, final String databaseDataDirPath) {
+            if (databaseUseTemporaryStorage && databaseDataDirPath != null) {
+                throw new IllegalArgumentException("You cannot specify databaseUseTemporaryStorage=true and a databaseDataDirPath");
+            }
+            this.disableExpathAutoDeploy = disableExpathAutoDeploy;
+            this.databaseUseTemporaryStorage = databaseUseTemporaryStorage;
+            if (StringUtil.notNullOrEmpty(databaseDataDirPath)) {
+                this.databaseDataDirPath = databaseDataDirPath;
+            } else {
+                this.databaseDataDirPath = null;
+            }
+        }
     }
 
     private static class RunXSuiteBefores extends Statement {
@@ -358,12 +414,18 @@ public class XSuite extends ParentRunner<Runner> {
     }
 
     private static class StartExistDbStatement extends Statement {
+        final Config config;
+
+        public StartExistDbStatement(final Config config) {
+            this.config = config;
+        }
+
         @Override
         public void evaluate() throws Throwable {
             if (EXIST_EMBEDDED_SERVER_CLASS_INSTANCE != null) {
                 throw new IllegalStateException("EXIST_EMBEDDED_SERVER_CLASS_INSTANCE already instantiated");
             }
-            EXIST_EMBEDDED_SERVER_CLASS_INSTANCE = newExistDbServer();
+            EXIST_EMBEDDED_SERVER_CLASS_INSTANCE = newExistDbServer(config);
             EXIST_EMBEDDED_SERVER_CLASS_INSTANCE.startDb();
         }
     }
@@ -381,7 +443,15 @@ public class XSuite extends ParentRunner<Runner> {
 
     static ExistEmbeddedServer EXIST_EMBEDDED_SERVER_CLASS_INSTANCE = null;
 
-    static ExistEmbeddedServer newExistDbServer() {
-        return new ExistEmbeddedServer(true, true);
+    static ExistEmbeddedServer newExistDbServer(final Config config) {
+        if (config.databaseDataDirPath == null) {
+            return new ExistEmbeddedServer(config.disableExpathAutoDeploy, config.databaseUseTemporaryStorage);
+
+        } else {
+            final Properties properties = new Properties();
+            properties.setProperty("org.exist.db-connection.files", config.databaseDataDirPath);
+            properties.setProperty("org.exist.db-connection.recovery.journal-dir", config.databaseDataDirPath);
+            return new ExistEmbeddedServer(properties, config.disableExpathAutoDeploy, false);
+        }
     }
 }
