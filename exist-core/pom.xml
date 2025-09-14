@@ -777,6 +777,8 @@
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
+                                <include>src/test/xquery/emptySeq.xq</include>
+                                <include>src/test/xquery/startWithComp.xq</include>
                             </includes>
                         </licenseSet>
 
@@ -1195,6 +1197,8 @@
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
                                 <include>src/test/java/org/exist/xupdate/RemoveAppendTest.java</include>
+                                <include>src/main/java/org/exist/xquery/GeneralComparison.java</include>
+                                <include>src/main/java/org/exist/xquery/Predicate.java</include>
                             </includes>
                         </licenseSet>
 
@@ -1749,7 +1753,10 @@
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/RemoveAppendTest.java</exclude>
-
+                                <exclude>src/main/java/org/exist/xquery/GeneralComparison.java</exclude>
+                                <exclude>src/test/xquery/emptySeq.xq</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Predicate.java</exclude>
+                                <exclude>src/test/xquery/startWithComp.xq</exclude>
                                 <!--
                                     Derivative work licensed under dbXML 1.0 and LGPL 2.1
                                 -->

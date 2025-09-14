@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,6 +60,7 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
+import org.exist.xquery.value.BooleanValue;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -377,7 +402,14 @@ public class Predicate extends PathExpr {
         final NodeSet contextSet = contextSequence.toNodeSet();
         final boolean contextIsVirtual = contextSet instanceof VirtualNodeSet;
         contextSet.setTrackMatches(false);
-        final NodeSet nodes = super.eval(contextSet, null).toNodeSet();
+        final Sequence res = super.eval(contextSet, null);
+        if(!(res instanceof NodeSet)) {
+            if(res == BooleanValue.FALSE)
+                return NodeSet.EMPTY_SET;
+            return res;
+        }
+        final NodeSet nodes = res.toNodeSet();
+
         /*
          * if the predicate expression returns results from the cache we can
          * also return the cached result.
