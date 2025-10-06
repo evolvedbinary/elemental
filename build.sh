@@ -111,7 +111,7 @@ if [ "${TARGET}" == "quick" ]; then
 fi
 
 if [ "${TARGET}" == "quick-archives" ]; then
-  CMD="${BASE_CMD} ${CONCURRENCY} clean package -DskipTests -Ddependency-check.skip=true -Ddocker=true -P installer,!concurrency-stress-tests,!micro-benchmarks"
+  CMD="${BASE_CMD} ${CONCURRENCY} clean package -DskipTests -Ddependency-check.skip=true -Ddocker=false -P installer,!concurrency-stress-tests,!micro-benchmarks"
   $CMD
   exit 0;
 fi

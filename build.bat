@@ -85,7 +85,7 @@ set "BASE_CMD=%SCRIPT_DIR%\mvnw.cmd -V"
 if "%TARGET%"=="quick" (
     set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives"
 ) else if "%TARGET%"=="quick-archives" (
-    set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Ddocker=true -P installer,!concurrency-stress-tests,!micro-benchmarks"
+    set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Ddocker=false -P installer,!concurrency-stress-tests,!micro-benchmarks"
 ) else if "%TARGET%"=="quick-docker" (
     set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Dappbundler.skip=true -Ddocker=true -P docker,!mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives"
 ) else if "%TARGET%"=="quick-archives-docker" (
