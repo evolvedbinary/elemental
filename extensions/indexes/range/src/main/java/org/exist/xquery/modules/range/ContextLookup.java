@@ -5,6 +5,7 @@ package org.exist.xquery.modules.range;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.StoredNode;
 import org.exist.indexing.range.RangeIndex;
 import org.exist.indexing.range.RangeIndexWorker;
 import org.exist.xquery.BasicFunction;
@@ -136,7 +137,7 @@ public class ContextLookup extends BasicFunction {
         try {
             @Nullable final Tuple2<Sequence, Sequence> prePostContext = rangeIndexWorker.contextLookup(this, nodeProxy, contextName, maxPreContextSize, maxPostContextSize);
             if (prePostContext == null) {
-                throw new XPathException(this, EXXQDYFT0003, "There is no context defined in the index definition for the node: " + nodeProxy.asStoredNode().getPath().toString() + ", in document: " + nodeProxy.getOwnerDocument().getDocumentURI());
+                throw new XPathException(this, EXXQDYFT0003, "There is no context defined in the index definition for the node: " + ((StoredNode) nodeProxy.getNode()).getPath().toString() + ", in document: " + nodeProxy.getOwnerDocument().getDocumentURI());
             }
 
             if (isCalledAs(FS_PRE_CONTEXT_NAME)) {
