@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,22 +45,16 @@
  */
 package org.exist.collections.triggers;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.EXistException;
-import org.exist.TestUtils;
-import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistXmldbEmbeddedServer;
-import org.exist.util.LockException;
 import org.exist.xmldb.IndexQueryService;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -74,7 +92,7 @@ public class TriggerConfigTest {
     private static final String COLLECTION_CONFIG =
     	"<exist:collection xmlns:exist='http://exist-db.org/collection-config/1.0'>" +
 	    "  <exist:triggers>" +
-		"     <exist:trigger class='org.exist.collections.triggers.TestTrigger'/>" +
+		"     <exist:trigger class='org.exist.collections.triggers.MessagesTrigger'/>" +
         "  </exist:triggers>" +
         "</exist:collection>";
 
@@ -95,117 +113,6 @@ public class TriggerConfigTest {
     @Parameter
     public String testCollection;
 
-    @Test
-    public void storeDocument() {
-        try {
-            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
-            IndexQueryService iqs = root.getService(IndexQueryService.class);
-            iqs.configureCollection(COLLECTION_CONFIG);
-            
-            Resource resource = root.createResource("data.xml", XMLResource.class);
-            resource.setContent(DOCUMENT_CONTENT);
-            root.storeResource(resource);
-            XQueryService qs = root.getService(XQueryService.class);
-            ResourceSet result = qs.queryResource("messages.xml", "string(//event[last()]/@collection)");
-            assertEquals(1, result.getSize());
-            assertEquals(testCollection, result.getResource(0).getContent());
-        } catch (XMLDBException e) {
-            LOG.error(e.getMessage(), e);
-            fail(e.getMessage());
-        }
-    }
-
-    @Test
-    public void removeDocument() {
-        try {
-            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
-            IndexQueryService iqs = root.getService(IndexQueryService.class);
-            iqs.configureCollection(COLLECTION_CONFIG);
-
-            Resource resource = root.createResource("data.xml", XMLResource.class);
-            resource.setContent(DOCUMENT_CONTENT);
-            root.storeResource(resource);
-
-            root.removeResource(resource);
-
-            XQueryService qs = root.getService(XQueryService.class);
-            ResourceSet result = qs.queryResource("messages.xml", "string(//event[last()]/@collection)");
-            assertEquals(1, result.getSize());
-            assertEquals(testCollection, result.getResource(0).getContent());
-        } catch (XMLDBException e) {
-            LOG.error(e.getMessage(), e);
-            fail(e.getMessage());
-        }
-    }
-
-    @Test
-    public void removeTriggers() {
-        try {
-            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
-            IndexQueryService iqs = root.getService(IndexQueryService.class);
-            iqs.configureCollection(EMPTY_COLLECTION_CONFIG);
-
-            Resource resource = root.createResource("data.xml", XMLResource.class);
-            resource.setContent(DOCUMENT_CONTENT);
-            root.storeResource(resource);
-
-            XQueryService qs = root.getService(XQueryService.class);
-            ResourceSet result = qs.query("if (doc-available('" + testCollection + "/messages.xml')) then doc('" + testCollection + "/messages.xml')/events/event[@id = 'STORE-DOCUMENT'] else ()");
-            assertEquals("No trigger should have fired. Configuration was removed", 0, result.getSize());
-        } catch (XMLDBException e) {
-            LOG.error(e.getMessage(), e);
-            fail(e.getMessage());
-        }
-    }
-
-    @Test
-    public void updateTriggers() {
-        try {
-            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
-            IndexQueryService iqs = root.getService(IndexQueryService.class);
-            iqs.configureCollection(EMPTY_COLLECTION_CONFIG);
-
-            Collection configCol =  DatabaseManager.getCollection(BASE_URI + "/db/system/config" + testCollection, "admin", "");
-            Resource resource = configCol.createResource(DEFAULT_COLLECTION_CONFIG_FILE, XMLResource.class);
-            resource.setContent(COLLECTION_CONFIG);
-            configCol.storeResource(resource);
-
-            resource = root.createResource("data.xml", XMLResource.class);
-            resource.setContent(DOCUMENT_CONTENT);
-            root.storeResource(resource);
-
-            XQueryService qs = root.getService(XQueryService.class);
-            ResourceSet result = qs.query("if (doc-available('" + testCollection + "/messages.xml')) then doc('" + testCollection + "/messages.xml')/events/event[@id = 'STORE-DOCUMENT']/string(@collection) else ()");
-            assertEquals(1, result.getSize());
-            assertEquals(testCollection, result.getResource(0).getContent());
-        } catch (XMLDBException e) {
-            LOG.error(e.getMessage(), e);
-            fail(e.getMessage());
-        }
-    }
-
-    @After
-    public void cleanDB() {
-        try {
-            Collection config = DatabaseManager.getCollection(BASE_URI + "/db/system/config" + testCollection, "admin", "");
-            if (config != null) {
-                CollectionManagementService mgmt = config.getService(CollectionManagementService.class);
-                mgmt.removeCollection(".");
-            }
-            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
-            Resource resource = root.getResource("messages.xml");
-            if (resource != null) {
-                root.removeResource(resource);
-            }
-            resource = root.getResource("data.xml");
-            if (resource != null) {
-                root.removeResource(resource);
-            }
-        } catch (XMLDBException e) {
-            LOG.error(e.getMessage(), e);
-            fail(e.getMessage());
-        }
-    }
 
     @BeforeClass
     public static void initDB() throws XMLDBException {
@@ -218,8 +125,90 @@ public class TriggerConfigTest {
         }
     }
 
-    @AfterClass
-    public static void closeDB() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
-        TestUtils.cleanupDB();
+    @After
+    public void cleanDB() throws XMLDBException {
+        Collection config = DatabaseManager.getCollection(BASE_URI + "/db/system/config" + testCollection, "admin", "");
+        if (config != null) {
+            CollectionManagementService mgmt = config.getService(CollectionManagementService.class);
+            mgmt.removeCollection(".");
+        }
+        Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        Resource resource = root.getResource("messages.xml");
+        if (resource != null) {
+            root.removeResource(resource);
+        }
+        resource = root.getResource("data.xml");
+        if (resource != null) {
+            root.removeResource(resource);
+        }
+    }
+
+    @Test
+    public void storeDocument() throws XMLDBException {
+        Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        IndexQueryService iqs = root.getService(IndexQueryService.class);
+        iqs.configureCollection(COLLECTION_CONFIG);
+
+        Resource resource = root.createResource("data.xml", XMLResource.class);
+        resource.setContent(DOCUMENT_CONTENT);
+        root.storeResource(resource);
+        XQueryService qs = root.getService(XQueryService.class);
+        ResourceSet result = qs.queryResource("messages.xml", "string(//event[last()]/@collection)");
+        assertEquals(1, result.getSize());
+        assertEquals(testCollection, result.getResource(0).getContent());
+    }
+
+    @Test
+    public void removeDocument() throws XMLDBException {
+        Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        IndexQueryService iqs = root.getService(IndexQueryService.class);
+        iqs.configureCollection(COLLECTION_CONFIG);
+
+        Resource resource = root.createResource("data.xml", XMLResource.class);
+        resource.setContent(DOCUMENT_CONTENT);
+        root.storeResource(resource);
+
+        root.removeResource(resource);
+
+        XQueryService qs = root.getService(XQueryService.class);
+        ResourceSet result = qs.queryResource("messages.xml", "string(//event[last()]/@collection)");
+        assertEquals(1, result.getSize());
+        assertEquals(testCollection, result.getResource(0).getContent());
+    }
+
+    @Test
+    public void removeTriggers() throws XMLDBException {
+        Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        IndexQueryService iqs = root.getService(IndexQueryService.class);
+        iqs.configureCollection(EMPTY_COLLECTION_CONFIG);
+
+        Resource resource = root.createResource("data.xml", XMLResource.class);
+        resource.setContent(DOCUMENT_CONTENT);
+        root.storeResource(resource);
+
+        XQueryService qs = root.getService(XQueryService.class);
+        ResourceSet result = qs.query("if (doc-available('" + testCollection + "/messages.xml')) then doc('" + testCollection + "/messages.xml')/events/event[@id = 'STORE-DOCUMENT'] else ()");
+        assertEquals("No trigger should have fired. Configuration was removed", 0, result.getSize());
+    }
+
+    @Test
+    public void updateTriggers() throws XMLDBException {
+        Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        IndexQueryService iqs = root.getService(IndexQueryService.class);
+        iqs.configureCollection(EMPTY_COLLECTION_CONFIG);
+
+        Collection configCol =  DatabaseManager.getCollection(BASE_URI + "/db/system/config" + testCollection, "admin", "");
+        Resource resource = configCol.createResource(DEFAULT_COLLECTION_CONFIG_FILE, XMLResource.class);
+        resource.setContent(COLLECTION_CONFIG);
+        configCol.storeResource(resource);
+
+        resource = root.createResource("data.xml", XMLResource.class);
+        resource.setContent(DOCUMENT_CONTENT);
+        root.storeResource(resource);
+
+        XQueryService qs = root.getService(XQueryService.class);
+        ResourceSet result = qs.query("if (doc-available('" + testCollection + "/messages.xml')) then doc('" + testCollection + "/messages.xml')/events/event[@id = 'STORE-DOCUMENT']/string(@collection) else ()");
+        assertEquals(1, result.getSize());
+        assertEquals(testCollection, result.getResource(0).getContent());
     }
 }

@@ -141,7 +141,7 @@ if [ "${TARGET}" == "test" ]; then
 fi
 
 if [ "${TARGET}" == "site" ]; then
-  CMD="${BASE_CMD} clean site -Ddependency-check.skip=true"
+  CMD="${BASE_CMD} clean verify site -Ddependency-check.skip=true"
   $CMD
   exit 0;
 fi
