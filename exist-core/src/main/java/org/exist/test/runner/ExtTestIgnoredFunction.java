@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.test.runner;
 
 import org.exist.xquery.XPathException;
@@ -41,8 +64,16 @@ public class ExtTestIgnoredFunction extends JUnitIntegrationFunction {
 
     @Override
     public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
-        final Sequence arg1 = getCurrentArguments()[0];
-        final String name = arg1.itemAt(0).getStringValue();
+        final Sequence[] args = getCurrentArguments();
+        if (args.length != 1) {
+            throw new XPathException(this, "ext-test-ignored-function requires 1 parameter");
+        }
+
+        final Sequence argName = args[0];
+        if (argName.isEmpty()) {
+            throw new XPathException(this, "ext-test-ignored-function requires a 'name' parameter");
+        }
+        final String name = safeGetStringValue(argName.itemAt(0));
 
         // notify JUnit
         final Description description = createTestDescription(name);

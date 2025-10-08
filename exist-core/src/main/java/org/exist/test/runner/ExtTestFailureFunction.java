@@ -45,8 +45,6 @@
  */
 package org.exist.test.runner;
 
-import org.apache.commons.io.output.StringBuilderWriter;
-import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.functions.map.MapType;
@@ -58,16 +56,15 @@ import org.junit.ComparisonFailure;
 import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
-import org.xml.sax.SAXException;
-
-import javax.xml.transform.OutputKeys;
-import java.io.IOException;
-import java.util.Properties;
 
 import static org.exist.xquery.FunctionDSL.param;
 import static org.exist.xquery.FunctionDSL.params;
 
 public class ExtTestFailureFunction extends JUnitIntegrationFunction {
+
+    private static final StringValue XPATH_MAP_KEY = new StringValue("xpath");
+    private static final StringValue ERROR_MAP_KEY = new StringValue("error");
+    private static final StringValue RESULT_MAP_KEY = new StringValue("result");
 
     public ExtTestFailureFunction(final XQueryContext context, final String parentName, final RunNotifier notifier) {
         super("ext-test-failure-function",
@@ -80,14 +77,28 @@ public class ExtTestFailureFunction extends JUnitIntegrationFunction {
 
     @Override
     public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
-        final Sequence arg1 = getCurrentArguments()[0];
-        final String name = arg1.itemAt(0).getStringValue();
+        final Sequence[] args = getCurrentArguments();
+        if (args.length != 3) {
+            throw new XPathException(this, "ext-test-failure-function requires 3 parameters");
+        }
 
-        final Sequence arg2 = getCurrentArguments()[1];
-        final MapType expected = (MapType)arg2.itemAt(0);
+        final Sequence argName = args[0];
+        if (argName.isEmpty()) {
+            throw new XPathException(this, "ext-test-failure-function requires a 'name' parameter");
+        }
+        final String name = safeGetStringValue(argName.itemAt(0));
 
-        final Sequence arg3 = getCurrentArguments()[2];
-        final MapType actual = (MapType)arg3.itemAt(0);
+        final Sequence argExpected = args[1];
+        if (argExpected.isEmpty()) {
+            throw new XPathException(this, "ext-test-failure-function requires an 'expected' parameter");
+        }
+        final MapType expected = (MapType) argExpected.itemAt(0);
+
+        final Sequence argActual = args[2];
+        if (argActual.isEmpty()) {
+            throw new XPathException(this, "ext-test-failure-function requires an 'actual' parameter");
+        }
+        final MapType actual = (MapType) argActual.itemAt(0);
 
         final Description description = createTestDescription(name);
 
@@ -99,63 +110,44 @@ public class ExtTestFailureFunction extends JUnitIntegrationFunction {
             failureReason.setStackTrace(new StackTraceElement[0]);
 
             notifier.fireTestFailure(new Failure(description, failureReason));
-        } catch (final XPathException | SAXException | IOException | IllegalStateException e) {
+        } catch (final Throwable t) {
             //signal internal failure
-            notifier.fireTestFailure(new Failure(description, e));
+            notifier.fireTestFailure(new Failure(description, t));
         }
 
         return Sequence.EMPTY_SEQUENCE;
     }
 
-    private String expectedToString(final MapType expected) throws XPathException, SAXException, IOException {
-        final Sequence seqExpectedValue = expected.get(new StringValue(this, "value"));
-        if(!seqExpectedValue.isEmpty()) {
-            return seqToString(seqExpectedValue);
+    private String expectedToString(final MapType expected) {
+        final Sequence seqExpectedValue = expected.get(VALUE_MAP_KEY);
+        if (!seqExpectedValue.isEmpty()) {
+            return safeSequenceToXmlString(context, seqExpectedValue);
         }
 
-        final Sequence seqExpectedXPath = expected.get(new StringValue(this, "xpath"));
-        if(!seqExpectedXPath.isEmpty()) {
-            return "XPath: " + seqToString(seqExpectedXPath);
+        final Sequence seqExpectedXPath = expected.get(XPATH_MAP_KEY);
+        if (!seqExpectedXPath.isEmpty()) {
+            return "XPath: " + safeSequenceToXmlString(context, seqExpectedXPath);
         }
 
-        final Sequence seqExpectedError = expected.get(new StringValue(this, "error"));
-        if(!seqExpectedError.isEmpty()) {
-            return "Error: " + seqToString(seqExpectedError);
+        final Sequence seqExpectedError = expected.get(ERROR_MAP_KEY);
+        if (!seqExpectedError.isEmpty()) {
+            return "Error: " + safeSequenceToXmlString(context, seqExpectedError);
         }
 
         throw new IllegalStateException("Could not extract expected value");
     }
 
-    private String actualToString(final MapType actual) throws XPathException, SAXException, IOException {
-        final Sequence seqActualError = actual.get(new StringValue(this, "error"));
+    private String actualToString(final MapType actual) {
+        final Sequence seqActualError = actual.get(ERROR_MAP_KEY);
         if (!seqActualError.isEmpty()) {
-            return errorMapToString(seqActualError);
+            return safeSequenceToAdaptiveString(context, seqActualError);
         }
 
-        final Sequence seqActualResult = actual.get(new StringValue(this, "result"));
+        final Sequence seqActualResult = actual.get(RESULT_MAP_KEY);
         if (!seqActualResult.isEmpty()) {
-            return seqToString(seqActualResult);
+            return safeSequenceToXmlString(context, seqActualResult);
         } else {
             return "";  // empty-sequence()
-        }
-    }
-
-    private String seqToString(final Sequence seq) throws XPathException, SAXException {
-        try(final StringBuilderWriter writer = new StringBuilderWriter()) {
-            final XQuerySerializer xquerySerializer = new XQuerySerializer(context.getBroker(), new Properties(), writer);
-            xquerySerializer.serialize(seq);
-            return writer.toString();
-        }
-    }
-
-    private String errorMapToString(final Sequence seqErrorMap) throws XPathException, SAXException {
-        try(final StringBuilderWriter writer = new StringBuilderWriter()) {
-            final Properties properties = new Properties();
-            properties.setProperty(OutputKeys.METHOD, "adaptive");
-
-            final XQuerySerializer xquerySerializer = new XQuerySerializer(context.getBroker(), properties, writer);
-            xquerySerializer.serialize(seqErrorMap);
-            return writer.toString();
         }
     }
 }
