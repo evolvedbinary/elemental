@@ -28,6 +28,7 @@
 setlocal enabledelayedexpansion
 
 set "TARGET=useage"
+set "DEBUG=false"
 set "OFFLINE=false"
 set "CONCURRENCY=-T2C"
 
@@ -35,7 +36,9 @@ set "CONCURRENCY=-T2C"
 :parse_args
 if "%~1"=="" goto done_parsing
 
-if /I "%~1"=="--offline" (
+if /I "%~1"=="--debug" (
+    set "DEBUG=true"
+) else if /I "%~1"=="--offline" (
     set "OFFLINE=true"
 ) else if /I "%~1"=="--help" (
     set "TARGET=useage"
@@ -70,6 +73,10 @@ shift
 goto parse_args
 
 :done_parsing
+
+if "%DEBUG%"=="true" (
+    set "BASE_CMD=%BASE_CMD% --debug"
+)
 
 if "%OFFLINE%"=="true" (
     set "BASE_CMD=%BASE_CMD% --offline"
@@ -119,7 +126,7 @@ goto end
 
 :show_useage
 echo.
-echo Usage: build.bat [--offline] ^<target^> ^| --help
+echo Usage: build.bat [--debug] [--offline] ^<target^> ^| --help
 echo.
 echo Available build targets:
 echo    clean                       - Remove all built artifacts
