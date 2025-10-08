@@ -85,7 +85,7 @@ set "BASE_CMD=%SCRIPT_DIR%\mvnw.cmd -V"
 
 :: Set CMD based on TARGET
 if "%TARGET%"=="clean" (
-    set "CMD=%BASE_CMD% %CONCURRENCY% clean"
+    set "CMD=%BASE_CMD% %CONCURRENCY% clean -Pinstaller,docker,concurrency-stress-tests,micro-benchmarks"
 ) else if "%TARGET%"=="quick" (
     set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives"
 ) else if "%TARGET%"=="quick-archives" (
