@@ -99,7 +99,7 @@ if [ "${OFFLINE}" == "true" ]; then
 fi
 
 if [ "${TARGET}" == "clean" ]; then
-  CMD="${BASE_CMD} ${CONCURRENCY} clean"
+  CMD="${BASE_CMD} ${CONCURRENCY} clean -Pinstaller,docker,concurrency-stress-tests,micro-benchmarks"
   $CMD
   exit 0;
 fi
