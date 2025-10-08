@@ -45,7 +45,6 @@
  */
 package org.exist.indexing.range;
 
-import nl.altindag.log.LogCaptor;
 import org.apache.logging.log4j.Logger;
 import org.easymock.Capture;
 import org.junit.Test;
@@ -104,7 +103,6 @@ public class RangeIndexConfigTest {
         expect(mockCreateDocument.getDocumentURI()).andReturn(mockCollectionXConfUri);
 
         final Capture<String> errorMsgCapture = newCapture();
-
         mockLogger.error(capture(errorMsgCapture));
 
         replay(mockConfigNodes, mockConfigNode, mockCreates, mockCreateDocument, mockCreate, mockEmptyNodeList, mockLogger);
@@ -113,15 +111,15 @@ public class RangeIndexConfigTest {
         final Map<String, String> namespaces = new HashMap<>();
         namespaces.put("tei", "http://www.tei-c.org/ns/1.0");
 
-        LogCaptor logCaptor = LogCaptor.forClass(RangeIndexConfig.class);
+        final RangeIndexConfig config = new RangeIndexConfig(mockConfigNodes, namespaces) {
+            @Override
+            Logger getLogger() {
+                return mockLogger;
+            }
+        };
 
-        final RangeIndexConfig config = new RangeIndexConfig(mockConfigNodes, namespaces);
-
-        assertTrue(logCaptor.getLogs().get(0)
-                .contains("Illegal QName: '" + badCreateQName + "'.. QName is invalid: INVALID_LOCAL_PART"));
-
-        assertTrue(logCaptor.getLogs().get(0)
-                .contains("(" + mockCollectionXConfUri + ")"));
+        assertTrue(errorMsgCapture.getValue().contains("Illegal QName: '" + badCreateQName + "'.. QName is invalid: INVALID_LOCAL_PART"));
+        assertTrue(errorMsgCapture.getValue().contains("(" + mockCollectionXConfUri + ")"));
 
         verify(mockConfigNodes, mockConfigNode, mockCreates, mockCreateDocument, mockCreate, mockEmptyNodeList);
     }
