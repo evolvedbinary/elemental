@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.test.runner;
 
 import org.exist.xquery.ErrorCodes;
@@ -40,6 +63,12 @@ import static org.exist.xquery.FunctionDSL.*;
 
 public class ExtTestErrorFunction extends JUnitIntegrationFunction {
 
+    private static final StringValue DESCRIPTION_MAP_KEY = new StringValue("description");
+    private static final StringValue CODE_MAP_KEY = new StringValue("code");
+    private static final StringValue LINE_NUMBER_MAP_KEY = new StringValue("line-number");
+    private static final StringValue COLUMN_NUMBER_MAP_KEY = new StringValue("column-number");
+    private static final StringValue JAVA_STACK_TRACE_MAP_KEY = new StringValue("java-stack-trace");
+
     public ExtTestErrorFunction(final XQueryContext context, final String parentName, final RunNotifier notifier) {
         super("ext-test-error-function",
                 params(
@@ -50,36 +79,45 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
 
     @Override
     public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
-        final Sequence arg1 = getCurrentArguments()[0];
-        final String name = arg1.itemAt(0).getStringValue();
+        final Sequence[] args = getCurrentArguments();
+        if (args.length != 2) {
+            throw new XPathException(this, "ext-test-error-function requires 2 parameters");
+        }
 
-        final Sequence arg2 = getCurrentArguments().length == 2 ? getCurrentArguments()[1] : null;
-        final MapType error = arg2 != null ? (MapType)arg2.itemAt(0) : null;
+        final Sequence argName = args[0];
+        if (argName.isEmpty()) {
+            throw new XPathException(this, "ext-test-error-function requires a 'name' parameter");
+        }
+        final String name = safeGetStringValue(argName.itemAt(0));
+
+        final Sequence argError = args[1];
+        @Nullable final MapType error = argError.isEmpty() ? null : (MapType) argError.itemAt(0);
 
         final Description description = createTestDescription(name);
 
         // notify JUnit
         try {
-            final XPathException errorReason = errorMapAsXPathException(error);
-            notifier.fireTestFailure(new Failure(description, errorReason));
-        } catch (final XPathException e) {
+            final Failure failure;
+            if (error != null) {
+                final XPathException errorReason = errorMapAsXPathException(error);
+                failure = new Failure(description, errorReason);
+            } else {
+                failure = new Failure(description, new XPathException(this, "No error map provided to ext-test-error-function"));
+            }
+            notifier.fireTestFailure(failure);
+        } catch (final Throwable t) {
             //signal internal failure
-            notifier.fireTestFailure(new Failure(description, e));
+            notifier.fireTestFailure(new Failure(description, t));
         }
 
         return Sequence.EMPTY_SEQUENCE;
     }
 
-    private XPathException errorMapAsXPathException(final MapType errorMap) throws XPathException {
-        final Sequence seqDescription = errorMap.get(new StringValue(this, "description"));
-        final String description;
-        if(seqDescription != null && !seqDescription.isEmpty()) {
-            description = seqDescription.itemAt(0).getStringValue();
-        } else {
-            description = "";
-        }
+    private XPathException errorMapAsXPathException(final MapType errorMap) {
+        final Sequence seqDescription = errorMap.get(DESCRIPTION_MAP_KEY);
+        final String description = safeGetMapStringValue(DESCRIPTION_MAP_KEY, errorMap, "");
 
-        final Sequence seqErrorCode = errorMap.get(new StringValue(this, "code"));
+        final Sequence seqErrorCode = errorMap.get(CODE_MAP_KEY);
         final ErrorCodes.ErrorCode errorCode;
         if(seqErrorCode != null && !seqErrorCode.isEmpty()) {
             errorCode = new ErrorCodes.ErrorCode(((QNameValue)seqErrorCode.itemAt(0)).getQName(), description);
@@ -87,30 +125,21 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
             errorCode = ErrorCodes.ERROR;
         }
 
-        final Sequence seqLineNumber = errorMap.get(new StringValue(this, "line-number"));
-        final int lineNumber;
-        if(seqLineNumber != null && !seqLineNumber.isEmpty()) {
-            lineNumber = seqLineNumber.itemAt(0).toJavaObject(int.class);
-        } else {
-            lineNumber = -1;
-        }
+        final Sequence seqLineNumber = errorMap.get(LINE_NUMBER_MAP_KEY);
+        final int lineNumber = safeGetIntValue(seqLineNumber, 0);
 
-        final Sequence seqColumnNumber = errorMap.get(new StringValue(this, "column-number"));
-        final int columnNumber;
-        if(seqColumnNumber != null && !seqColumnNumber.isEmpty()) {
-            columnNumber = seqColumnNumber.itemAt(0).toJavaObject(int.class);
-        } else {
-            columnNumber = -1;
+        final Sequence seqColumnNumber = errorMap.get(COLUMN_NUMBER_MAP_KEY);
+        final int columnNumber = safeGetIntValue(seqColumnNumber, 0);
+
+        @Nullable StackTraceElement[] stackTraceElements = null;
+        @Nullable final Sequence seqJavaStackTrace = errorMap.get(JAVA_STACK_TRACE_MAP_KEY);
+        if (seqJavaStackTrace != null && !seqJavaStackTrace.isEmpty()) {
+            stackTraceElements = convertStackTraceElements(seqJavaStackTrace);
         }
 
         final XPathException xpe = new XPathException(lineNumber, columnNumber, errorCode, description);
-
-        @Nullable final Sequence seqJavaStackTrace = errorMap.get(new StringValue(this, "java-stack-trace"));
-        if (seqJavaStackTrace != null && !seqJavaStackTrace.isEmpty()) {
-            @Nullable final StackTraceElement[] stackTraceElements = convertStackTraceElements(seqJavaStackTrace);
-            if (stackTraceElements != null) {
-                xpe.setStackTrace(stackTraceElements);
-            }
+        if (stackTraceElements != null) {
+            xpe.setStackTrace(stackTraceElements);
         }
 
         return xpe;
@@ -119,7 +148,7 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
     private static final Pattern PTN_CAUSED_BY = Pattern.compile("Caused by:\\s([a-zA-Z0-9_$\\.]+)(?::\\s(.+))?");
     private static final Pattern PTN_AT = Pattern.compile("at\\s((?:[a-zA-Z0-9_$]+)(?:\\.[a-zA-Z0-9_$]+)*)\\.((?:[a-zA-Z0-9_$-]+)|(?:<init>))\\(([a-zA-Z0-9_]+\\.java):([0-9]+)\\)");
 
-    protected @Nullable StackTraceElement[] convertStackTraceElements(final Sequence seqJavaStackTrace) throws XPathException {
+    protected @Nullable StackTraceElement[] convertStackTraceElements(final Sequence seqJavaStackTrace) {
         StackTraceElement[] traceElements = null;
 
         final Matcher matcherAt = PTN_AT.matcher("");
@@ -127,8 +156,8 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
         // index 0 is the first `Caused by: ...`
         int i = 1;
         for ( ; i < seqJavaStackTrace.getItemCount(); i++) {
-            final String item = seqJavaStackTrace.itemAt(i).getStringValue();
-            final StackTraceElement stackTraceElement = convertStackTraceElement(matcherAt, item);
+            final String item = safeGetStringValue(seqJavaStackTrace.itemAt(i));
+            @Nullable final StackTraceElement stackTraceElement = convertStackTraceElement(matcherAt, item);
             if (stackTraceElement == null) {
                 break;
             }
@@ -153,7 +182,7 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
             final String methodName = matcherAt.group(2);
             final String fileName = matcherAt.group(3);
             final String lineNumber = matcherAt.group(4);
-            return new StackTraceElement(declaringClass, methodName, fileName, Integer.valueOf(lineNumber));
+            return new StackTraceElement(declaringClass, methodName, fileName, Integer.parseInt(lineNumber));
         } else {
             return null;
         }

@@ -990,7 +990,13 @@
                                 <include>src/main/java/org/exist/storage/sync/SyncTask.java</include>
                                 <include>src/test/java/org/exist/storage/util/PauseFunction.java</include>
                                 <include>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</include>
+                                <include>src/main/java/org/exist/test/runner/ExtTestAssumptionFailedFunction.java</include>
+                                <include>src/main/java/org/exist/test/runner/ExtTestErrorFunction.java</include>
                                 <include>src/main/java/org/exist/test/runner/ExtTestFailureFunction.java</include>
+                                <include>src/main/java/org/exist/test/runner/ExtTestFinishedFunction.java</include>
+                                <include>src/main/java/org/exist/test/runner/ExtTestIgnoredFunction.java</include>
+                                <include>src/main/java/org/exist/test/runner/ExtTestStartedFunction.java</include>
+                                <include>src/main/java/org/exist/test/runner/JUnitIntegrationFunction.java</include>
                                 <include>src/main/java/org/exist/test/runner/XMLTestRunner.java</include>
                                 <include>src/main/java/org/exist/test/runner/XQueryTestRunner.java</include>
                                 <include>src/main/java/org/exist/test/runner/XSuite.java</include>
@@ -1551,7 +1557,13 @@
                                 <exclude>src/main/java/org/exist/test/DiffMatcher.java</exclude>
                                 <exclude>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</exclude>
                                 <exclude>src/test/java/org/exist/test/Util.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/ExtTestAssumptionFailedFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/ExtTestErrorFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/ExtTestFailureFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/ExtTestFinishedFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/ExtTestIgnoredFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/ExtTestStartedFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/JUnitIntegrationFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/XMLTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/XQueryTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/XSuite.java</exclude>
