@@ -701,6 +701,86 @@ try {
         }
     }
 
+    /**
+     * See: <a href="https://github.com/eXist-db/exist/issues/5845">[BUG] Spurious namespace declarations in REST API results</a>
+     */
+    @Test
+    public void queryPostWithEnclosedExpressionResponseNamespaces() throws IOException {
+        String query =
+                "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" wrap=\"no\" typed=\"no\">\n" +
+                "   <text>&lt;doc&gt;{3+4}&lt;/doc&gt;</text>\n" +
+                "</query>";
+
+        HttpURLConnection connect = preparePost(query, getResourceUri());
+        try {
+            connect.connect();
+            final int r = connect.getResponseCode();
+            assertEquals("Server returned response code " + r, HttpStatus.OK_200, r);
+
+            final String data = readResponse(connect.getInputStream());
+            assertEquals("<doc>7</doc>", data.trim());
+        } finally {
+            connect.disconnect();
+        }
+
+        query =
+                "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" wrap=\"no\" typed=\"yes\">\n" +
+                "   <text>&lt;doc&gt;{3+4}&lt;/doc&gt;</text>\n" +
+                "</query>";
+
+        connect = preparePost(query, getResourceUri());
+        try {
+            connect.connect();
+            final int r = connect.getResponseCode();
+            assertEquals("Server returned response code " + r, HttpStatus.OK_200, r);
+
+            final String data = readResponse(connect.getInputStream());
+            assertEquals("<doc>7</doc>", data.trim());
+        } finally {
+            connect.disconnect();
+        }
+    }
+
+    /**
+     * See: <a href="https://github.com/eXist-db/exist/issues/5845">[BUG] Spurious namespace declarations in REST API results</a>
+     */
+    @Test
+    public void queryPostWithoutEnclosedExpressionResponseNamespaces() throws IOException {
+        String query =
+                "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" wrap=\"no\" typed=\"no\">\n" +
+                "   <text>&lt;doc&gt;7&lt;/doc&gt;</text>\n" +
+                "</query>";
+
+        HttpURLConnection connect = preparePost(query, getResourceUri());
+        try {
+            connect.connect();
+            final int r = connect.getResponseCode();
+            assertEquals("Server returned response code " + r, HttpStatus.OK_200, r);
+
+            final String data = readResponse(connect.getInputStream());
+            assertEquals("<doc>7</doc>", data.trim());
+        } finally {
+            connect.disconnect();
+        }
+
+        query =
+                "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" wrap=\"no\" typed=\"yes\">\n" +
+                "   <text>&lt;doc&gt;7&lt;/doc&gt;</text>\n" +
+                "</query>";
+
+        connect = preparePost(query, getResourceUri());
+        try {
+            connect.connect();
+            final int r = connect.getResponseCode();
+            assertEquals("Server returned response code " + r, HttpStatus.OK_200, r);
+
+            final String data = readResponse(connect.getInputStream());
+            assertEquals("<doc>7</doc>", data.trim());
+        } finally {
+            connect.disconnect();
+        }
+    }
+
     @Test
     public void queryGet() throws IOException {
         final String uri = getCollectionUri()
