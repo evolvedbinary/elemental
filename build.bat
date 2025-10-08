@@ -41,6 +41,8 @@ if /I "%~1"=="--offline" (
     set "TARGET=useage"
 ) else if /I "%~1"=="-h" (
     set "TARGET=useage"
+) else if /I "%~1"=="clean" (
+    set "TARGET=clean"
 ) else if /I "%~1"=="quick" (
     set "TARGET=quick"
 ) else if /I "%~1"=="quick-archives" (
@@ -82,7 +84,9 @@ set "SCRIPT_DIR=%~dp0"
 set "BASE_CMD=%SCRIPT_DIR%\mvnw.cmd -V"
 
 :: Set CMD based on TARGET
-if "%TARGET%"=="quick" (
+if "%TARGET%"=="clean" (
+    set "CMD=%BASE_CMD% %CONCURRENCY% clean"
+) else if "%TARGET%"=="quick" (
     set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives"
 ) else if "%TARGET%"=="quick-archives" (
     set "CMD=%BASE_CMD% %CONCURRENCY% clean package -DskipTests -Ddependency-check.skip=true -Ddocker=false -P installer,!concurrency-stress-tests,!micro-benchmarks"
@@ -118,6 +122,7 @@ echo.
 echo Usage: build.bat [--offline] ^<target^> ^| --help
 echo.
 echo Available build targets:
+echo    clean                       - Remove all built artifacts
 echo    quick                       - Build distribution directory
 echo    quick-archives              - Build and archive distribution
 echo    quick-docker                - Build distribution + Docker image
