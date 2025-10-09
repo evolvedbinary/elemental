@@ -71,13 +71,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -117,6 +112,7 @@
                             <includes>
                                 <include>pom.xml</include>
                                 <include>src/main/java/org/exist/start/CompatibleJavaVersionCheck.java</include>
+                                <include>src/test/java/org/exist/start/CompatibleJavaVersionCheckTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -130,6 +126,7 @@
                                 <exclude>Mortbay-APACHE-2-license.template.txt</exclude>
                                 <exclude>src/main/java/org/exist/start/Classpath.java</exclude>
                                 <exclude>src/main/java/org/exist/start/CompatibleJavaVersionCheck.java</exclude>
+                                <exclude>src/test/java/org/exist/start/CompatibleJavaVersionCheckTest.java</exclude>
                                 <exclude>src/main/java/org/exist/start/Main.java</exclude>
                                 <exclude>src/main/java/org/exist/start/Version.java</exclude>
                             </excludes>
@@ -178,24 +175,6 @@ The original license statement is also included below.]]></preamble>
                     </licenseSets>
 
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>analyze</id>
-                        <goals>
-                            <goal>analyze-only</goal>
-                        </goals>
-                        <configuration>
-                            <failOnWarning>true</failOnWarning>
-                            <ignoredUnusedDeclaredDependencies>
-                                <ignoredUnusedDeclaredDependency>org.hamcrest:hamcrest:jar</ignoredUnusedDeclaredDependency>
-                            </ignoredUnusedDeclaredDependencies>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
