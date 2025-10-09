@@ -99,8 +99,14 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.xmlunit</groupId>
-            <artifactId>xmlunit-legacy</artifactId>
+            <artifactId>xmlunit-matchers</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -156,6 +162,7 @@
                                 <include>src/test/java/org/exist/indexing/ngram/CustomIndexTest.java</include>
                                 <include>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</include>
                                 <include>src/main/java/org/exist/indexing/ngram/NGramMatch.java</include>
+                                <include>src/test/java/org/exist/indexing/ngram/MatchListenerTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -171,6 +178,7 @@
                                 <exclude>src/test/java/org/exist/indexing/ngram/CustomIndexTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/ngram/NGramMatch.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/ngram/MatchListenerTest.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,18 +45,16 @@
  */
 package org.exist.xquery.functions.system;
 
-import org.custommonkey.xmlunit.exceptions.XpathException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
-import java.io.IOException;
-
-import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
+import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 public class GetRunningXQueriesTest {
 
@@ -40,11 +62,10 @@ public class GetRunningXQueriesTest {
     public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
 
     @Test
-    public void caller() throws XMLDBException, XpathException, IOException, SAXException {
+    public void caller() throws XMLDBException {
         final ResourceSet result = existXmldbEmbeddedServer.executeQuery("system:get-running-xqueries()");
         assertNotNull(result);
         final String resultDoc = (String) result.getResource(0).getContent();
-
-        assertXpathEvaluatesTo("1", "count(//@caller)", resultDoc);
+        assertThat(resultDoc, hasXPath("count(//@caller)", equalTo("1")));
     }
 }

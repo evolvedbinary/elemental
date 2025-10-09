@@ -155,8 +155,14 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.xmlunit</groupId>
-            <artifactId>xmlunit-legacy</artifactId>
+            <artifactId>xmlunit-matchers</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -241,6 +247,7 @@
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</include>
+                                <include>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/TextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/lucene/Field.java</include>
@@ -273,6 +280,7 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/lucene/Field.java</exclude>
