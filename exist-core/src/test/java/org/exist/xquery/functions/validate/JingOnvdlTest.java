@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,17 +47,14 @@ package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.*;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
-
-import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
-import org.custommonkey.xmlunit.exceptions.XpathException;
-
-import org.exist.xquery.XPathException;
+import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 import org.xmldb.api.base.ResourceSet;
 
-import java.io.IOException;
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -77,7 +98,7 @@ public class JingOnvdlTest {
             "</Book>";
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws XMLDBException {
         final String query = "xmldb:create-collection('xmldb:exist:///db','validate-test')";
 		existEmbeddedServer.executeQuery(query);
 
@@ -95,7 +116,7 @@ public class JingOnvdlTest {
     }
 
     @Test
-    public void onvdl_valid() throws XPathException, IOException, XpathException, SAXException, XMLDBException {
+    public void onvdl_valid() throws XMLDBException {
         final String query = "let $a := " + XML_DATA1 +
                 "let $b := xs:anyURI('/db/validate-test/test.nvdl')" +
                 "return " +
@@ -104,7 +125,7 @@ public class JingOnvdlTest {
     }
 
     @Test
-    public void onvdl_invalid() throws XPathException, IOException, XpathException, SAXException, XMLDBException {
+    public void onvdl_invalid() throws XMLDBException {
         final String query = "let $a := <test/>" +
                     "let $b := xs:anyURI('/db/validate-test/test.nvdl')" +
                     "return " +
@@ -114,7 +135,7 @@ public class JingOnvdlTest {
 
 
     @Test
-    public void onvdl_stored_valid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void onvdl_stored_valid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "doc('/db/validate-test/valid.xml'), " +
                 "doc('/db/validate-test/test.nvdl') )";
@@ -122,7 +143,7 @@ public class JingOnvdlTest {
     }
 
     @Test
-    public void onvdl_stored_invalid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void onvdl_stored_invalid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "doc('/db/validate-test/invalid.xml'), " +
                 "doc('/db/validate-test/test.nvdl') )";
@@ -130,7 +151,7 @@ public class JingOnvdlTest {
     }
 
     @Test
-    public void onvdl_anyuri_valid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void onvdl_anyuri_valid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "xs:anyURI('xmldb:exist:///db/validate-test/valid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/validate-test/test.nvdl') )";
@@ -138,7 +159,7 @@ public class JingOnvdlTest {
     }
 
     @Test
-    public void onvdl_anyuri_invalid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void onvdl_anyuri_invalid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "xs:anyURI('xmldb:exist:///db/validate-test/invalid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/validate-test/test.nvdl') )";
@@ -157,11 +178,11 @@ public class JingOnvdlTest {
                 results.getResource(0).getContent().toString());
     }
 
-    private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException, SAXException, IOException, XpathException {
+    private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
         final ResourceSet results = existEmbeddedServer.executeQuery(query);
         assertEquals(1, results.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertXpathEvaluatesTo(expectedValue, "//status/text()", r);
+        final String result = (String) results.getResource(0).getContent();
+        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
     }
 }
