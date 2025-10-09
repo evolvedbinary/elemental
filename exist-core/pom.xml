@@ -724,6 +724,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/transform/ConvertTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformITTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/AccountMetadataFunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/SecurityManagerTestUtil.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
@@ -1621,6 +1622,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/map/MapType.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/AccountMetadataFunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GetPermissionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</exclude>
