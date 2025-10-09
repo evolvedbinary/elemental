@@ -146,20 +146,20 @@ public class ConfigurationImpl implements Configuration {
         Node child = element.getFirstChild();
         while (child != null) {
             
-            if (child.getNodeType() == Node.ELEMENT_NODE) {
+            if (child instanceof Element) {
+                final Element childElement = (Element) child;
 
-                final String ns = child.getNamespaceURI();
-                if (ns != null && NS.equals(ns)) {
+                final String ns = childElement.getNamespaceURI();
+                if (NS.equals(ns)) {
                     
-                    String name = child.getLocalName();
-                    
+                    final String name = childElement.getLocalName();
+
                     if (names.contains(name)) {
-                        
-                        if (props.containsKey(name)) {
-                            props.remove(name);
-                        }
+                        props.remove(name);
                     } else {
-                        props.put(name, child.getTextContent());
+                        if (!childElement.hasAttribute("key")) {  // NOTE(AR) Skip Map entries
+                            props.put(name, childElement.getTextContent());
+                        }
                         names.add(name);
                     }
                 }
