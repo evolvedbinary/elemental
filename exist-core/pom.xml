@@ -773,6 +773,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/transform/ConvertTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformITTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/SecurityManagerTestUtil.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
@@ -1147,6 +1148,11 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/GetPermissionsTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChmodTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChownTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/SystemModule.java</include>
@@ -1682,6 +1688,12 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/map/MapType.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GetPermissionsTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChmodTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChownTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/SecurityManagerTestUtil.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AbstractSessionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AttributeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</exclude>

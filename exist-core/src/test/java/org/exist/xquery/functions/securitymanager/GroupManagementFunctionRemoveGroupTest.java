@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,23 +45,19 @@
  */
 package org.exist.xquery.functions.securitymanager;
 
-import com.evolvedbinary.j8fu.function.Runnable3E;
 import org.exist.EXistException;
 import org.exist.security.*;
 import org.exist.security.SecurityManager;
-import org.exist.security.internal.aider.GroupAider;
-import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.value.Sequence;
 import org.junit.*;
 
 import java.util.Optional;
 
+import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
 import static org.junit.Assert.*;
 
 public class GroupManagementFunctionRemoveGroupTest {
@@ -55,17 +75,23 @@ public class GroupManagementFunctionRemoveGroupTest {
 
     @Test(expected = PermissionDeniedException.class)
     public void cannotDeleteDbaGroup() throws XPathException, PermissionDeniedException, EXistException {
-        extractPermissionDenied(() -> xqueryRemoveGroup(SecurityManager.DBA_GROUP));
+        extractPermissionDenied(() -> {
+            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.DBA_GROUP);
+        });
     }
 
     @Test(expected = PermissionDeniedException.class)
     public void cannotDeleteGuestGroup() throws XPathException, PermissionDeniedException, EXistException {
-        extractPermissionDenied(() -> xqueryRemoveGroup(SecurityManager.GUEST_GROUP));
+        extractPermissionDenied(() -> {
+            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.GUEST_GROUP);
+        });
     }
 
     @Test(expected = PermissionDeniedException.class)
     public void cannotDeleteUnknownGroup() throws XPathException, PermissionDeniedException, EXistException {
-        extractPermissionDenied(() -> xqueryRemoveGroup(SecurityManager.UNKNOWN_GROUP));
+        extractPermissionDenied(() -> {
+            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.UNKNOWN_GROUP);
+        });
     }
 
     @Test
@@ -256,71 +282,6 @@ public class GroupManagementFunctionRemoveGroupTest {
             sm.deleteGroup(primaryGroup);
 
             transaction.commit();
-        }
-    }
-
-    private static Account createUser(final DBBroker broker, final SecurityManager sm, final String username, final String password) throws PermissionDeniedException, EXistException {
-        Group userGroup = new GroupAider(username);
-        sm.addGroup(broker, userGroup);
-        final Account user = new UserAider(username);
-        user.setPassword(password);
-        user.setPrimaryGroup(userGroup);
-        sm.addAccount(user);
-
-        userGroup = sm.getGroup(username);
-        userGroup.addManager(sm.getAccount(username));
-        sm.updateGroup(userGroup);
-
-        return user;
-    }
-
-    private static Group createGroup(final DBBroker broker, final SecurityManager sm, final String groupName) throws PermissionDeniedException, EXistException {
-        final Group otherGroup = new GroupAider(groupName);
-        return sm.addGroup(broker, otherGroup);
-    }
-
-    private static void addUserToGroup(final SecurityManager sm, final Account user, final Group group) throws PermissionDeniedException, EXistException {
-        user.addGroup(group.getName());
-        sm.updateAccount(user);
-    }
-
-    private static void setPrimaryGroup(final SecurityManager sm, final Account user, final Group group) throws PermissionDeniedException, EXistException {
-        user.setPrimaryGroup(group);
-        sm.updateAccount(user);
-    }
-
-    private static void removeUser(final SecurityManager sm, final String username) throws PermissionDeniedException, EXistException {
-        sm.deleteAccount(username);
-        removeGroup(sm, username);
-    }
-
-    private static void removeGroup(final SecurityManager sm, final String groupname) throws PermissionDeniedException, EXistException {
-        sm.deleteGroup(groupname);
-    }
-
-    private Sequence xqueryRemoveGroup(final String groupname) throws EXistException, PermissionDeniedException, XPathException {
-            final BrokerPool pool = existWebServer.getBrokerPool();
-
-        final String query =
-                "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
-                        "sm:remove-group('" + groupname + "')";
-
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = existWebServer.getBrokerPool().getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
-            return result;
-        }
-    }
-
-    private static void extractPermissionDenied(final Runnable3E<XPathException, PermissionDeniedException, EXistException> runnable) throws XPathException, PermissionDeniedException, EXistException {
-        try {
-            runnable.run();
-        } catch (final XPathException e) {
-            if (e.getCause() != null && e.getCause() instanceof PermissionDeniedException) {
-                throw (PermissionDeniedException)e.getCause();
-            } else {
-                throw e;
-            }
         }
     }
 }
