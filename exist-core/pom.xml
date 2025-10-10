@@ -1013,6 +1013,7 @@
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
+                                <include>src/main/java/org/exist/xquery/AbstractInternalModule.java</include>
                                 <include>src/test/java/org/exist/xquery/CardinalityTest.java</include>
                                 <include>src/test/java/org/exist/xquery/CleanupTest.java</include>
                                 <include>src/main/java/org/exist/xquery/CombiningExpression.java</include>
@@ -1021,17 +1022,21 @@
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
+                                <include>src/main/java/org/exist/xquery/ExternalModuleImpl.java</include>
                                 <include>src/main/java/org/exist/xquery/FilteredExpression.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Function.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
                                 <include>src/main/java/org/exist/xquery/LocationStep.java</include>
+                                <include>src/main/java/org/exist/xquery/Module.java</include>
                                 <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
                                 <include>src/test/java/org/exist/xquery/RestBinariesTest.java</include>
+                                <include>src/test/java/org/exist/xquery/StoredModuleTest.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
                                 <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/VariableDeclaration.java</include>
                                 <include>src/test/java/org/exist/xquery/XmldbBinariesTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XPathOpOrSpecialCaseTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XPathQueryTest.java</include>
@@ -1598,6 +1603,7 @@
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/AbstractInternalModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CardinalityTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CastExpressionTest.java</exclude>
@@ -1608,6 +1614,7 @@
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/ExternalModuleImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/FilteredExpression.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Function.java</exclude>
@@ -1621,13 +1628,16 @@
                                 <exclude>src/test/java/org/exist/xquery/JavaBindingTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/LocationStep.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Materializable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Module.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NamedFunctionReference.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStats.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/StoredModuleTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/TryCatchExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/VariableDeclaration.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WindowClauseTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XmldbBinariesTest.java</exclude>

@@ -518,9 +518,8 @@ throws PermissionDeniedException, EXistException, XPathException
                 }
                 declaredGlobalVars.add(qn);
             }
-                        { List annots = new ArrayList(); }
-                        (annotations [annots]
-                        )?
+            { List annots = new ArrayList(); }
+            (annotations [annots])?
             (
                 #(
                     "as"
@@ -550,22 +549,11 @@ throws PermissionDeniedException, EXistException, XPathException
                     step=ext:expr [defaultValue]
                 )?
                 {
-                    // variable may be declared in static context: retrieve and set its sequence type
-                    Variable external = null;
-                    try {
-                        external = context.resolveVariable(qname.getText());
-                        if (external != null) {
-                            external.setSequenceType(type);
-                        }
-                    } catch (XPathException ignoredException) {
-                    }
-
                     final VariableDeclaration decl = new VariableDeclaration(context, qn, defaultValue);
                     decl.setSequenceType(type);
+                    decl.setExternal(true);
                     decl.setASTNode(ext);
-                    if (external == null) {
-                        path.add(decl);
-                    }
+                    path.add(decl);
                     if(myModule != null) {
                         myModule.declareVariable(qn, decl);
                     }
