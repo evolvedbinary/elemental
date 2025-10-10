@@ -804,7 +804,7 @@ try {
      * See: <a href="https://github.com/eXist-db/exist/issues/5844">[BUG] The JavaDoc comments for variable in the REST API are inconsistent with the implementation</a>
      */
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntyped() throws IOException {
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedStringValue() throws IOException {
         final Tuple2<String, String> externalVariable = Tuple(null, "hello");
         final Tuple2<String, String>[] expectedResult = new Tuple2[] { Tuple("xs:string", "hello") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, null, externalVariable);
