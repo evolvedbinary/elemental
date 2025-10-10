@@ -64,9 +64,9 @@
       <xs:sequence>
         <xs:any processContents="lax" minOccurs="0" notNamespace="##targetNamespace"/>
       </xs:sequence>
-      <xs:attribute name="type" type="sx:xdmItemType">
+      <xs:attribute name="type" type="sx:xdmItemType" default="item()">
         <xs:annotation>
-          <xs:documentation>The XDM type of the value</xs:documentation>
+          <xs:documentation>The XDM type of the value.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -76,7 +76,16 @@
     <xs:annotation>
       <xs:documentation>The type of an XDM Item. Any valid QName, or node type.</xs:documentation>
     </xs:annotation>
-    <xs:union memberTypes="xs:QName sx:xdmNodeType"/>
+    <xs:union memberTypes="xs:QName sx:xdmItem sx:xdmNodeType"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="xdmItem">
+    <xs:annotation>
+      <xs:documentation>XDM Item Type.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="item()"/>
+    </xs:restriction>
   </xs:simpleType>
 
   <xs:simpleType name="xdmNodeType">
