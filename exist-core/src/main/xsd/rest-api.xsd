@@ -91,21 +91,52 @@
 
     <xs:element name="result">
         <xs:complexType>
-            <xs:choice>
-                <xs:element ref="exist:collection"/>
-                <xs:element name="value" minOccurs="0" maxOccurs="unbounded">
-                    <xs:complexType mixed="true">
-                        <xs:sequence>
-                            <xs:any processContents="skip"/>
-                        </xs:sequence>
-                        <xs:attribute name="type" type="xs:string" form="qualified"/>
-                    </xs:complexType>
-                </xs:element>
-            </xs:choice>
+            <xs:sequence>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="exist:collection"/>
+                    <xs:element ref="exist:value"/>
+                    <xs:element ref="exist:attribute"/>
+                    <xs:element ref="exist:document"/>
+                    <xs:element ref="exist:text"/>
+                </xs:choice>
+            </xs:sequence>
             <xs:attributeGroup ref="exist:queryAttrs"></xs:attributeGroup>
         </xs:complexType>
     </xs:element>
-    
+
+    <xs:element name="value">
+        <xs:complexType mixed="true">
+            <xs:sequence>
+                <xs:any processContents="skip"/>
+            </xs:sequence>
+            <xs:attribute name="type" type="xs:string" form="qualified"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="attribute">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:string">
+                    <xs:attribute name="local" form="qualified" type="xs:NCName" use="required"/>
+                    <xs:attribute name="prefix" form="qualified" type="xs:NCName" use="optional"/>
+                    <xs:attribute name="target-namespace" form="qualified" type="xs:NCName" use="optional"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="document">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:any maxOccurs="unbounded" processContents="lax"/>
+            </xs:sequence>
+            <xs:attribute name="uri" type="xs:string" use="optional"/>
+            <xs:attribute name="has-element" type="xs:boolean" default="true"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="text" type="xs:string"/>
+
     <xs:element name="collection">
         <xs:complexType>
             <xs:sequence>
