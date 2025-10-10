@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" vc:minVersion="1.1"
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:sx="http://exist-db.org/xquery/types/serialized"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified"
+  targetNamespace="http://exist-db.org/xquery/types/serialized"
+  version="1.0.0">
+
+
+  <!-- 
+    Schema for XDM Serialized Types in Elemental's eXist-db REST API
+  -->
+  <xs:annotation>
+    <xs:documentation>Schema for XDM Serialized Types in Elemental's eXist-db REST API</xs:documentation>
+    <xs:appinfo>
+      <dcterms:title>Schema for XDM Serialized Types in Elemental's eXist-db REST API</dcterms:title>
+      <dcterms:created xsi:type="dcterms:W3CDTF">2025-10-09T11:27:21.419+02:00</dcterms:created>
+      <dcterms:creator>Adam Retter</dcterms:creator>
+    </xs:appinfo>
+  </xs:annotation>
+
+  <xs:element name="sequence">
+    <xs:annotation>
+      <xs:documentation>An XDM Sequence.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="sx:value" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="value">
+    <xs:annotation>
+      <xs:documentation>The type and value of an XDM Item.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any processContents="lax" minOccurs="0" notNamespace="##targetNamespace"/>
+      </xs:sequence>
+      <xs:attribute name="type" type="sx:xdmItemType">
+        <xs:annotation>
+          <xs:documentation>The XDM type of the value</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="xdmItemType">
+    <xs:annotation>
+      <xs:documentation>The type of an XDM Item. Any valid QName, or node type.</xs:documentation>
+    </xs:annotation>
+    <xs:union memberTypes="xs:QName sx:xdmNodeType"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="xdmNodeType">
+    <xs:annotation>
+      <xs:documentation>XDM Node types.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="node()"/>
+      <xs:enumeration value="document-node()"/>
+      <xs:enumeration value="element()"/>
+      <xs:enumeration value="namespace()"/>
+      <xs:enumeration value="attribute()"/>
+      <xs:enumeration value="comment()"/>
+      <xs:enumeration value="processing-instruction()"/>
+      <xs:enumeration value="text()"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>
