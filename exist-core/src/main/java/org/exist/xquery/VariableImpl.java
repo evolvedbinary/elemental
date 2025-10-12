@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -58,14 +82,16 @@ public class VariableImpl implements Variable {
 
     private int staticType = Type.ITEM;
 
+    private boolean external = false;
     private boolean initialized = true;
 
-	public VariableImpl(QName qname) {
+	public VariableImpl(final QName qname) {
 		this.qname = qname;
 	}
 	
-	public VariableImpl(VariableImpl var) {
+	public VariableImpl(final VariableImpl var) {
 		this(var.qname);
+		this.external = var.external;
 		this.value = var.value;
 		this.contextDocs = var.contextDocs;
 		this.type = var.type;
@@ -92,7 +118,17 @@ public class VariableImpl implements Variable {
 		return qname;
 	}
 
-	@Override
+    @Override
+    public boolean isExternal() {
+        return external;
+    }
+
+    @Override
+    public void setExternal(final boolean external) {
+        this.external = external;
+    }
+
+    @Override
     public int getType() {
         if (type != null) {
         	return type.getPrimaryType();
@@ -221,8 +257,14 @@ public class VariableImpl implements Variable {
 	}
     
     public void checkType() throws XPathException {
-        if (type == null)
-            {return;}
+        if (type == null) {
+            return;
+        }
+
+        if (external && value == null) {
+            throw new XPathException((Expression) null, ErrorCodes.XPDY0002, "The value of external variable: " + qname + " has not been set");
+        }
+
         type.checkCardinality(value);
         
         if (value.isEmpty())

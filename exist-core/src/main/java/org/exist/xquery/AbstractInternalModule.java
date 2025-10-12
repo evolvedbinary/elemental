@@ -202,10 +202,32 @@ public abstract class AbstractInternalModule implements InternalModule {
      */
     @Override
     public Variable declareVariable(final QName qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    /**
+     * Declares a variable defined by the module.
+     * <p>
+     * NOTE: this should not be called from the constructor of a module
+     * otherwise when {@link #reset(XQueryContext, boolean)} is called
+     * with {@code keepGlobals = false}, the variables will be removed
+     * from the module. Which means they will not be available
+     * for subsequent re-executions of a cached XQuery.
+     * Instead, module level variables should be initialised
+     * in {@link #prepare(XQueryContext)}.
+     *
+     * @param qname The name of the variable
+     * @param external true if the variable is external, false otherwise.
+     * @param value The Java value of the variable, will be converted to an XDM type.
+     * @return the variable
+     */
+    @Override
+    public Variable declareVariable(final QName qname, final boolean external, final Object value) throws XPathException {
         final Sequence val = XPathUtil.javaObjectToXPath(value, null, null);
         Variable var = mGlobalVariables.get(qname);
         if (var == null){
             var = new VariableImpl(qname);
+            var.setExternal(external);
             mGlobalVariables.put(qname, var);
         }
         var.setValue(val);

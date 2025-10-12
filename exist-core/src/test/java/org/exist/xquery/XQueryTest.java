@@ -1154,7 +1154,7 @@ public class XQueryTest {
                     context.prepareForReuse();
                 }
 
-                context.declareVariable(new QName("s"), new IntegerValue(timestamp));
+                context.declareVariable(new QName("s"), true, new IntegerValue(timestamp));
 
                 if(compiled == null) {
                     compiled = xquery.compile(context, source);

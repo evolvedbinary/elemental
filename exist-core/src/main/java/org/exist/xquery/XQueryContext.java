@@ -1933,16 +1933,26 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     @Override
     public Variable declareVariable(final String qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    @Override
+    public Variable declareVariable(final String qname, final boolean external, final Object value) throws XPathException {
         try {
-            return declareVariable(QName.parse(this, qname, null), value);
+            return declareVariable(QName.parse(this, qname, null), external, value);
         } catch (final QName.IllegalQNameException e) {
             throw new XPathException(rootExpression, ErrorCodes.XPST0081, "No namespace defined for prefix: " + qname);
         }
     }
 
     @Override
-    public Variable declareVariable(final QName qn, final Object value) throws XPathException {
-        @Nullable final Module[] modules = getModules(qn.getNamespaceURI());
+    public Variable declareVariable(final QName qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    @Override
+    public Variable declareVariable(final QName qname, final boolean external, final Object value) throws XPathException {
+        @Nullable final Module[] modules = getModules(qname.getNamespaceURI());
 
         if (modules != null && modules.length > 0) {
             if (modules.length > 1) {
@@ -1950,17 +1960,18 @@ public class XQueryContext implements BinaryValueManager, Context {
                 throw new IllegalStateException("There is more than one module, but the variable can only be declared in one!");
             }
 
-            return modules[0].declareVariable(qn, value);
+            return modules[0].declareVariable(qname, external, value);
         }
 
         final Sequence val = XPathUtil.javaObjectToXPath(value, this, rootExpression);
 
         final Variable var;
-        if (globalVariables.containsKey(qn)) {
-            var = globalVariables.get(qn);
+        if (globalVariables.containsKey(qname)) {
+            var = globalVariables.get(qname);
         } else {
-            var = new VariableImpl(qn);
-            globalVariables.put(qn, var);
+            var = new VariableImpl(qname);
+            var.setExternal(external);
+            globalVariables.put(qname, var);
         }
 
         // deliberate duplication of code to return early

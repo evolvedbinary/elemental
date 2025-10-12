@@ -146,6 +146,7 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
 
         if (var == null) {
             var = new VariableImpl(qname);
+            var.setExternal(external);
             var.setIsInitialized(false);
 
             if (analyzeState != AnalyzeState.ANALIZED) {
@@ -217,11 +218,12 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
                     final Sequence seq = expression.get().eval(contextSequence, null);
                     final Variable var;
                     if (myModule != null) {
-                        var = myModule.declareVariable(qname, seq);
+                        var = myModule.declareVariable(qname, external, seq);
                         var.setSequenceType(sequenceType);
                         var.checkType();
                     } else {
                         var = new VariableImpl(qname);
+                        var.setExternal(external);
                         var.setValue(seq);
                         var.setSequenceType(sequenceType);
                         var.checkType();

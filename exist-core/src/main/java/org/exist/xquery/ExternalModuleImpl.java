@@ -207,14 +207,18 @@ public class ExternalModuleImpl implements ExternalModule {
         return mGlobalVariables.values();
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Module#declareVariable(org.exist.dom.QName, java.lang.Object)
-     */
-    public Variable declareVariable(QName qname, Object value) throws XPathException {
+    @Override
+    public Variable declareVariable(final QName qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    @Override
+    public Variable declareVariable(final QName qname, final boolean external, final Object value) throws XPathException {
         final Sequence val = XPathUtil.javaObjectToXPath(value, mContext, null);
         Variable var = mStaticVariables.get(qname);
         if (var == null) {
             var = new VariableImpl(qname);
+            var.setExternal(external);
             mStaticVariables.put(qname, var);
         }
         var.setValue(val);

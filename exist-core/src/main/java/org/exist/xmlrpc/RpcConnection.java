@@ -353,7 +353,7 @@ public class RpcConnection implements RpcAPI {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
                 }
-                context.declareVariable(entry.getKey(), entry.getValue());
+                context.declareVariable(entry.getKey(), true, entry.getValue());
             }
         }
         final Object[] staticDocuments = (Object[]) parameters.get(RpcAPI.STATIC_DOCUMENTS);

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -933,14 +957,14 @@ public class XQueryURLRewrite extends HttpServlet {
         // RequestModule.NAMESPACE_URI);
         context.setHttpContext(new XQueryContext.HttpContext(reqw, respw));
 
-        context.declareVariable("exist:controller", sourceInfo.controllerPath);
+        context.declareVariable("exist:controller", true, sourceInfo.controllerPath);
         request.setAttribute("$exist:controller", sourceInfo.controllerPath);
-        context.declareVariable("exist:root", basePath);
+        context.declareVariable("exist:root", true, basePath);
         request.setAttribute("$exist:root", basePath);
-        context.declareVariable("exist:context", request.getContextPath());
+        context.declareVariable("exist:context", true, request.getContextPath());
         request.setAttribute("$exist:context", request.getContextPath());
         final String prefix = staticRewrite == null ? null : staticRewrite.getPrefix();
-        context.declareVariable("exist:prefix", prefix == null ? "" : prefix);
+        context.declareVariable("exist:prefix", true, prefix == null ? "" : prefix);
         request.setAttribute("$exist:prefix", prefix == null ? "" : prefix);
         String path;
         if (sourceInfo.controllerPath.length() > 0 && !"/".equals(sourceInfo.controllerPath)) {
@@ -952,7 +976,7 @@ public class XQueryURLRewrite extends HttpServlet {
         if (p != Constants.STRING_NOT_FOUND) {
             path = path.substring(0, p);
         }
-        context.declareVariable("exist:path", path);
+        context.declareVariable("exist:path", true, path);
         request.setAttribute("$exist:path", path);
 
         String resource = "";
@@ -960,7 +984,7 @@ public class XQueryURLRewrite extends HttpServlet {
         if (nameMatcher.matches()) {
             resource = nameMatcher.group(1);
         }
-        context.declareVariable("exist:resource", resource);
+        context.declareVariable("exist:resource", true, resource);
         request.setAttribute("$exist:resource", resource);
 
         if (LOG.isDebugEnabled()) {
