@@ -715,17 +715,17 @@ public class Deployment {
         }
         final XQuery xqs = broker.getBrokerPool().getXQueryService();
         final XQueryContext ctx = new XQueryContext(broker.getBrokerPool());
-        ctx.declareVariable("dir", tempDir.toAbsolutePath().toString());
+        ctx.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
         final Optional<Path> home = broker.getConfiguration().getExistHome();
         if(home.isPresent()) {
-            ctx.declareVariable("home", home.get().toAbsolutePath().toString());
+            ctx.declareVariable("home", true, home.get().toAbsolutePath().toString());
         }
 
         if (targetCollection != null) {
-            ctx.declareVariable("target", targetCollection.toString());
+            ctx.declareVariable("target", true, targetCollection.toString());
             ctx.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
         } else
-            {ctx.declareVariable("target", Sequence.EMPTY_SEQUENCE);}
+            {ctx.declareVariable("target", true, Sequence.EMPTY_SEQUENCE);}
         if (QueryPurpose.PREINSTALL == purpose) {
             // when running pre-setup scripts, base path should point to directory
             // because the target collection does not yet exist

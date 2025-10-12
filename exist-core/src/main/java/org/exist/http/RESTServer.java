@@ -1520,9 +1520,9 @@ public class RESTServer {
 
             // now declare variable
             if (prefix != null) {
-                context.declareVariable(q.getPrefix() + ":" + q.getLocalPart(), sequence);
+                context.declareVariable(q.getPrefix() + ":" + q.getLocalPart(), true, sequence);
             } else {
-                context.declareVariable(q.getLocalPart(), sequence);
+                context.declareVariable(q.getLocalPart(), true, sequence);
             }
         }
     }
@@ -1627,22 +1627,22 @@ public class RESTServer {
                 context.prepareForReuse();
             }
 
-            context.declareVariable("pipeline", resource.getURI().toString());
+            context.declareVariable("pipeline", true, resource.getURI().toString());
 
             final String stdin = request.getParameter("stdin");
-            context.declareVariable("stdin", stdin == null ? "" : stdin);
+            context.declareVariable("stdin", true, stdin == null ? "" : stdin);
 
             final String debug = request.getParameter("debug");
-            context.declareVariable("debug", debug == null ? "0" : "1");
+            context.declareVariable("debug", true, debug == null ? "0" : "1");
 
             final String bindings = request.getParameter("bindings");
-            context.declareVariable("bindings", bindings == null ? "<bindings/>" : bindings);
+            context.declareVariable("bindings", true, bindings == null ? "<bindings/>" : bindings);
 
             final String autobind = request.getParameter("autobind");
-            context.declareVariable("autobind", autobind == null ? "0" : "1");
+            context.declareVariable("autobind", true, autobind == null ? "0" : "1");
 
             final String options = request.getParameter("options");
-            context.declareVariable("options", options == null ? "<options/>" : options);
+            context.declareVariable("options", true, options == null ? "<options/>" : options);
 
             // TODO: don't hardcode this?
             context.setModuleLoadPath(

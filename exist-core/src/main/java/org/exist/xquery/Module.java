@@ -124,10 +124,39 @@ public interface Module {
 	
 	@Nullable Variable resolveVariable(@Nullable AnalyzeContextInfo contextInfo, QName qname) throws XPathException;
 	@Nullable Variable resolveVariable(QName qname) throws XPathException;
+
+    /**
+     * Declare a user-defined variable.
+     *
+     * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
+     *
+     * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
+     * @param value a Java object, representing the fixed value of the variable.
+     *
+     * @return the created Variable object.
+     *
+     * @throws XPathException if the value cannot be converted into a known XPath value or the variable QName
+     *     references an unknown namespace-prefix.
+     */
+	Variable declareVariable(QName qname, Object value) throws XPathException;
+
+    /**
+     * Declare a user-defined variable.
+     *
+     * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
+     *
+     * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
+     * @param external true if the variable is external, false otherwise.
+     * @param value a Java object, representing the fixed value of the variable.
+     *
+     * @return the created Variable object.
+     *
+     * @throws XPathException if the value cannot be converted into a known XPath value or the variable QName
+     *     references an unknown namespace-prefix.
+     */
+    Variable declareVariable(QName qname, boolean external, Object value) throws XPathException;
 	
-	public Variable declareVariable(QName qname, Object value) throws XPathException;
-	
-    public Variable declareVariable(Variable var);
+    Variable declareVariable(Variable var);
 
     /**
      * Is a variable declared?

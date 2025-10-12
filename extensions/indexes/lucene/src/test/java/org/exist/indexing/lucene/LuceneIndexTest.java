@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -591,12 +615,12 @@ public class LuceneIndexTest {
             final CompiledXQuery compiled = xquery.compile(context, "declare variable $q external; " +
                     "ft:query(//p, parse-xml($q)/query)");
 
-            context.declareVariable("q", "<query><term>heiterkeit</term></query>");
+            context.declareVariable("q", true, "<query><term>heiterkeit</term></query>");
             Sequence seq = xquery.execute(broker, compiled, null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                     "<query>" +
                             "   <bool>" +
                             "       <term>heiterkeit</term><term>blablabla</term>" +
@@ -606,7 +630,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                     "<query>" +
                             "   <bool>" +
                             "       <term occur='should'>heiterkeit</term><term occur='should'>blablabla</term>" +
@@ -616,7 +640,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <bool>" +
                 "       <term occur='must'>heiterkeit</term><term occur='must'>blablabla</term>" +
@@ -626,7 +650,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(0, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <bool>" +
                 "       <term occur='must'>heiterkeit</term><term occur='not'>herzen</term>" +
@@ -636,7 +660,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(0, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <bool>" +
                 "       <phrase occur='must'>wunderbare heiterkeit</phrase><term occur='must'>herzen</term>" +
@@ -646,7 +670,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                     "<query>" +
                     "   <phrase slop='5'>heiterkeit seele eingenommen</phrase>" +
                     "</query>");
@@ -655,7 +679,7 @@ public class LuceneIndexTest {
             assertEquals(1, seq.getItemCount());
 
             // phrase with wildcards
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <phrase slop='5'><term>heiter*</term><term>se?nnnle*</term></phrase>" +
                 "</query>");
@@ -663,7 +687,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <wildcard>?eiter*</wildcard>" +
                 "</query>");
@@ -671,7 +695,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <fuzzy max-edits='2'>selee</fuzzy>" +
                 "</query>");
@@ -679,7 +703,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <bool>" +
                 "       <fuzzy occur='must' max-edits='2'>selee</fuzzy>" +
@@ -690,7 +714,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <regex>heit.*keit</regex>" +
                 "</query>");
@@ -698,7 +722,7 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            context.declareVariable("q",
+            context.declareVariable("q", true,
                 "<query>" +
                 "   <phrase><term>wunderbare</term><regex>heit.*keit</regex></phrase>" +
                 "</query>");

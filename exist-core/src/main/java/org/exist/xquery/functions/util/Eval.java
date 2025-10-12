@@ -322,7 +322,7 @@ public class Eval extends BasicFunction {
                 final Item varName = externalVars.itemAt(i);
                 if (varName.getType() == Type.QNAME) {
                     final Item varValue = externalVars.itemAt(++i);
-                    innerContext.declareVariable(((QNameValue) varName).getQName(), varValue);
+                    innerContext.declareVariable(((QNameValue) varName).getQName(), true, varValue);
                 }
             }
         }
@@ -589,9 +589,9 @@ public class Eval extends BasicFunction {
                 }
                 final String type = elem.getAttribute("type");
                 if ((!type.isEmpty()) && Type.subTypeOf(Type.getType(type), Type.ATOMIC)) {
-                    innerContext.declareVariable(qname, value.atomize().convertTo(Type.getType(type)));
+                    innerContext.declareVariable(qname, true, value.atomize().convertTo(Type.getType(type)));
                 } else {
-                    innerContext.declareVariable(qname, value);
+                    innerContext.declareVariable(qname, true, value);
                 }
             } else if (child.getNodeType() == Node.ELEMENT_NODE && "output-size-limit".equals(child.getLocalName())) {
                 final Element elem = (Element) child;
