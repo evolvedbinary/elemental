@@ -52,8 +52,13 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.NameTest;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.*;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Comment;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.ProcessingInstruction;
+import org.w3c.dom.Text;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
@@ -242,7 +247,7 @@ public class Marshaller {
         return result;
     }
 
-    public static Sequence demarshall(NodeImpl node) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final NodeImpl node) throws XMLStreamException, XPathException {
         final String ns = node.getNamespaceURI();
         if (ns == null || !NAMESPACE.equals(ns)) {
             throw new XMLStreamException("Root element is not in the correct namespace. Expected: " + NAMESPACE);
@@ -262,41 +267,84 @@ public class Marshaller {
                 type = Type.getType(typeName);
             }
 
-            Item item;
+            Node item = sxValue.getFirstChild();
             if (Type.subTypeOf(type, Type.NODE)) {
-                item = (Item) sxValue.getFirstChild();
-                if (type == Type.DOCUMENT) {
-                    final DocumentImpl n = (DocumentImpl) item;
-                    final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(n.getExpression());
-                    try {
-                        receiver.startDocument();
-                        n.copyTo(n, receiver);
-                        receiver.endDocument();
-                    } catch (final SAXException e) {
-                        throw new XPathException(item != null ? item.getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
-                    }
-                    item = (Item) receiver.getDocument();
-                }
-            } else {
-                final StringBuilder data = new StringBuilder();
-                Node value = sxValue.getFirstChild();
 
-                if (value instanceof Element && type == Type.ITEM) {
-                    item = (NodeImpl) value;
-
-                } else {
-                    while (value != null) {
-                        if (!(value.getNodeType() == Node.TEXT_NODE || value.getNodeType() == Node.CDATA_SECTION_NODE)) {
-                            throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+                switch (type) {
+                    case Type.ELEMENT:
+                        if (item instanceof Document) {
+                            result.add((ElementImpl) ((DocumentImpl) item).getDocumentElement());
+                        } else if (!(item instanceof Element)) {
+                            throw new XMLStreamException("sx:value should only contain an Element if type is " + typeName);
+                        } else {
+                            result.add((ElementImpl) item);
                         }
-                        data.append(value.getNodeValue());
-                        value = value.getNextSibling();
-                    }
-                    item = new StringValue(data.toString()).convertTo(type);
+                        break;
+
+                    case Type.ATTRIBUTE:
+                        if (!(item instanceof Attr)) {
+                            throw new XMLStreamException("sx:value should only contain an Attribute if type is " + typeName);
+                        }
+                        result.add((AttrImpl) item);
+                        break;
+
+                    case Type.COMMENT:
+                        if (!(item instanceof Comment)) {
+                            throw new XMLStreamException("sx:value should only contain a Comment node if type is " + typeName);
+                        }
+                        result.add((CommentImpl) item);
+                        break;
+
+                    case Type.PROCESSING_INSTRUCTION:
+                        if (!(item instanceof ProcessingInstruction)) {
+                            throw new XMLStreamException("sx:value should only contain a Processing Instruction node if type is " + typeName);
+                        }
+                        result.add((ProcessingInstructionImpl) item);
+                        break;
+
+                    case Type.TEXT:
+                        if (!(item instanceof Text)) {
+                            throw new XMLStreamException("sx:value should only contain a Text node if type is " + typeName);
+                        }
+                        result.add((TextImpl) item);
+                        break;
+
+                    case Type.DOCUMENT:
+                    default:
+                        if (item instanceof Document || item instanceof Element) {
+                            final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(((NodeImpl) item).getExpression());
+                            try {
+                                receiver.startDocument();
+                                ((NodeImpl) item).copyTo(null, receiver);
+                                receiver.endDocument();
+                            } catch (final SAXException e) {
+                                throw new XPathException(item != null ? ((NodeImpl) item).getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
+                            }
+                            result.add((NodeImpl) receiver.getDocument());
+                        } else {
+                            throw new XMLStreamException("sx:value should only contain a Node if type is " + typeName);
+                        }
+                        break;
                 }
+
+            } else if (type == Type.ITEM && !(item instanceof Text)) {
+                // item() type requested and we have been given a node which is not a text() node
+                result.add((NodeImpl) item);
+
+            } else {
+                // specific non-node type or text()
+                final StringBuilder data = new StringBuilder();
+                while (item != null) {
+                    if (!(item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)) {
+                        throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+                    }
+                    data.append(item.getNodeValue());
+                    item = item.getNextSibling();
+                }
+                result.add(new StringValue(data.toString()).convertTo(type));
             }
-            result.add(item);
         }
+
         return result;
     }
 
