@@ -69,6 +69,11 @@
           <xs:documentation>The XDM type of the value.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="name" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>A name for the value, only used for attribute() values.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

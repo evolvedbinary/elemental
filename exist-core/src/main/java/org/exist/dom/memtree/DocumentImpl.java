@@ -1735,4 +1735,20 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
 
         throw unsupported();
     }
+
+    @Override
+    public String lookupNamespaceURI(final String prefix) {
+        if (prefix == null || prefix == XMLConstants.DEFAULT_NS_PREFIX) {
+            return XMLConstants.NULL_NS_URI;
+        }
+
+        for (int i = nextNamespace - 1; i >= 0; i--) {
+            final QName namespaceMapping = namespaceCode[i];
+            if (prefix.equals(namespaceMapping.getLocalPart())) {
+                return namespaceMapping.getNamespaceURI();
+            }
+        }
+
+        return null;
+    }
 }

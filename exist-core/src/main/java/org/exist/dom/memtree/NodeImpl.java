@@ -977,7 +977,7 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
     @Override
     public String lookupNamespaceURI(final String prefix) {
-        throw unsupported();
+        return document.lookupNamespaceURI(prefix);
     }
 
     @Override
