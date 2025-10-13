@@ -748,6 +748,7 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ElementReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
+                                <include>src/test/java/org/exist/http/RESTExternalVariableTest.java</include>
                                 <include>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</include>
                                 <include>src/main/java/org/exist/security/PermissionRequiredCheck.java</include>
                                 <include>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</include>
@@ -1450,6 +1451,7 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/XMLUtil.java</exclude>
                                 <exclude>src/test/java/org/exist/http/AbstractHttpTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/Descriptor.java</exclude>
+                                <exclude>src/test/java/org/exist/http/RESTExternalVariableTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/RESTServer.java</exclude>
                                 <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</exclude>
