@@ -52,6 +52,7 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.NameTest;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.*;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -251,17 +252,17 @@ public class Marshaller {
         final InMemoryNodeSet values = new InMemoryNodeSet();
         node.selectChildren(new NameTest(Type.ELEMENT, VALUE_QNAME), values);
         for (final SequenceIterator i = values.iterate(); i.hasNext();) {
-            final ElementImpl child = (ElementImpl) i.nextItem();
+            final ElementImpl sxValue = (ElementImpl) i.nextItem();
 
             int type = Type.ITEM;
-            final String typeName = child.getAttribute(ATTR_TYPE);
+            final String typeName = sxValue.getAttribute(ATTR_TYPE);
             if (!typeName.isEmpty()) {
                 type = Type.getType(typeName);
             }
 
             Item item;
             if (Type.subTypeOf(type, Type.NODE)) {
-                item = (Item) child.getFirstChild();
+                item = (Item) sxValue.getFirstChild();
                 if (type == Type.DOCUMENT) {
                     final DocumentImpl n = (DocumentImpl) item;
                     final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(n.getExpression());
@@ -276,15 +277,21 @@ public class Marshaller {
                 }
             } else {
                 final StringBuilder data = new StringBuilder();
-                Node txt = child.getFirstChild();
-                while (txt != null) {
-                    if (!(txt.getNodeType() == Node.TEXT_NODE || txt.getNodeType() == Node.CDATA_SECTION_NODE)) {
-                        throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+                Node value = sxValue.getFirstChild();
+
+                if (value instanceof Element && type == Type.ITEM) {
+                    item = (NodeImpl) value;
+
+                } else {
+                    while (value != null) {
+                        if (!(value.getNodeType() == Node.TEXT_NODE || value.getNodeType() == Node.CDATA_SECTION_NODE)) {
+                            throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+                        }
+                        data.append(value.getNodeValue());
+                        value = value.getNextSibling();
                     }
-                    data.append(txt.getNodeValue());
-                    txt = txt.getNextSibling();
+                    item = new StringValue(data.toString()).convertTo(type);
                 }
-                item = new StringValue(data.toString()).convertTo(type);
             }
             result.add(item);
         }
