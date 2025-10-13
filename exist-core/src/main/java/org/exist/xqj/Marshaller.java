@@ -48,11 +48,11 @@ package org.exist.xqj;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.*;
 import org.exist.storage.DBBroker;
+import org.exist.storage.ElementValue;
 import org.exist.xquery.Expression;
 import org.exist.xquery.NameTest;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.*;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -63,6 +63,8 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -73,6 +75,8 @@ import javax.xml.xquery.XQItemType;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Properties;
+
+import static org.exist.util.StringUtil.nullIfEmpty;
 
 
 /**
@@ -99,6 +103,8 @@ public class Marshaller {
     
     private final static String ATTR_TYPE = "type";
     private final static String ATTR_ITEM_TYPE = "item-type";
+
+    private final static String ATTR_NAME = "name";
 
     public final static QName ROOT_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
     
@@ -267,8 +273,45 @@ public class Marshaller {
                 type = Type.getType(typeName);
             }
 
+            // TODO(AR) coerce the item type to the type desired for the variable binding
+
+            @Nullable String attrNameString = null;
+            if (sxValue instanceof Element) {
+                attrNameString = nullIfEmpty(sxValue.getAttribute(ATTR_NAME));
+            }
             Node item = sxValue.getFirstChild();
-            if (Type.subTypeOf(type, Type.NODE)) {
+
+            if (type == Type.ATTRIBUTE || (type == Type.ITEM && attrNameString != null)) {
+                if (attrNameString.isEmpty()) {
+                    throw new XMLStreamException("sx:value must contain a name attribute if type is " + typeName);
+                }
+
+                final String attrPrefix;
+                final String attrNamespace;
+                final String attrLocalName;
+                final int colonSep = attrNameString.indexOf(':');
+                if (colonSep > -1) {
+                    attrPrefix = attrNameString.substring(0, colonSep);
+                    attrNamespace = item.lookupNamespaceURI(attrPrefix);
+                    if (attrNamespace == null) {
+                        throw new XMLStreamException("sx:value's name attribute contains the QName prefix '" +  attrPrefix + "' for which the namespace has not been declared if type is " + typeName);
+                    }
+                    attrLocalName = attrNameString.substring(colonSep + 1);
+                } else {
+                    attrPrefix = XMLConstants.DEFAULT_NS_PREFIX;
+                    attrNamespace = XMLConstants.NULL_NS_URI;
+                    attrLocalName = attrNameString;
+                }
+
+                final QName attrName = new QName(attrLocalName, attrNamespace, attrPrefix, ElementValue.ATTRIBUTE);
+                final MemTreeBuilder builder = new MemTreeBuilder();
+                builder.startDocument();
+                final int attrNodeNumber = builder.addAttribute(attrName, sxValue.getTextContent());
+                builder.endDocument();
+                final AttrImpl attr = (AttrImpl) builder.getDocument().getAttribute(attrNodeNumber);
+                result.add(attr);
+
+            } else if (Type.subTypeOf(type, Type.NODE)) {
 
                 switch (type) {
                     case Type.ELEMENT:
@@ -279,13 +322,6 @@ public class Marshaller {
                         } else {
                             result.add((ElementImpl) item);
                         }
-                        break;
-
-                    case Type.ATTRIBUTE:
-                        if (!(item instanceof Attr)) {
-                            throw new XMLStreamException("sx:value should only contain an Attribute if type is " + typeName);
-                        }
-                        result.add((AttrImpl) item);
                         break;
 
                     case Type.COMMENT:

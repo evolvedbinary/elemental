@@ -66,10 +66,14 @@ public class RESTExternalVariableTest {
 
     private static final String ADMIN_CREDENTIALS = Base64.encodeBase64String((TestUtils.ADMIN_DB_USER + ":" + TestUtils.ADMIN_DB_PWD).getBytes(UTF_8));
 
+    private static final String TEST_NAMESPACE = "http://RESTExternalVariableTest";
+    private static final String TEST_PREFIX = "revt";
+
     private static final Map<String, String> NS_CONTEXT = MapUtil.hashMap(
         Tuple("xs", "http://www.w3.org/2001/XMLSchema"),
         Tuple("exist", "http://exist.sourceforge.net/NS/exist"),
-        Tuple("sx", "http://exist-db.org/xquery/types/serialized")
+        Tuple("sx", "http://exist-db.org/xquery/types/serialized"),
+        Tuple(TEST_PREFIX, TEST_NAMESPACE)
     );
 
     private static final Predicate<Attr> IGNORE_EXIST_TIMING_ATTRIBUTES = attr -> !("http://exist.sourceforge.net/NS/exist".equals(attr.getNamespaceURI()) && ("compilation-time".equals(attr.getLocalName()) || "execution-time".equals(attr.getLocalName())));
@@ -1015,19 +1019,172 @@ public class RESTExternalVariableTest {
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()*", externalVariable);
     }
 
-    private void queryPostWithExternalVariable(final int expectedResponseCode, @Nullable final String xqExternalVariableType, final Tuple2<String, String>... externalVariableSequence) throws IOException {
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedAttribute() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple(null, Tuple("hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedAttribute() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple("attribute()", Tuple("hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributeNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributeSuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributeSuppliedAttribute() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple("attribute()", Tuple("revt:hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()", externalVariable);
+    }
+
+
+    @Test
+    public void queryPostWithExternalVariableAttributeSuppliedAttributes() throws IOException {
+        final Tuple2<String, String>[] externalVariable = new Tuple2[]{ Tuple(null, Tuple("revt:hello", "world")), Tuple(null, Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributeSuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple(null, Tuple("revt:hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedAttributes() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple(null, Tuple("revt:hello", "world")), Tuple(null, Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedAttributes() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple("attribute()", Tuple("revt:hello", "world")), Tuple("attribute()", Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptAttributeNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()?", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptAttributeSuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptAttributeSuppliedAttribute() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple("attribute()", Tuple("revt:hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptAttributeSuppliedAttributes() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple("attribute()", Tuple("revt:hello", "world")), Tuple("attribute()", Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptAttributeSuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple(null, Tuple("revt:hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributesNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()+", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributesSuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributesSuppliedAttribute() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple("attribute()", Tuple("revt:hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributesSuppliedAttributes() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple("attribute()", Tuple("revt:hello", "world")), Tuple("attribute()", Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributesSuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple(null, Tuple("revt:hello", "world")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributesSuppliedUntypeds() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple(null, Tuple("revt:hello", "world")), Tuple(null, Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributezNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()*", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributezSuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributezSuppliedAttribute() throws IOException {
+        final Tuple2<String, Tuple2<String, String>> externalVariable = Tuple("attribute()", Tuple("revt:hello", "world"));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributezSuppliedAttributes() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple("attribute()", Tuple("revt:hello", "world")), Tuple("attribute()", Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributeszSuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple(null, Tuple("revt:hello", "world")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableAttributezSuppliedUntypeds() throws IOException {
+        final Tuple2<String, Tuple2<String, String>>[] externalVariable = new Tuple2[]{ Tuple(null, Tuple("revt:hello", "world")), Tuple(null, Tuple("goodbye", "see you soon")) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+    }
+
+    private void queryPostWithExternalVariable(final int expectedResponseCode, @Nullable final String xqExternalVariableType, final Tuple2<String, ?>... externalVariableSequence) throws IOException {
         queryPostWithExternalVariable(Tuple(expectedResponseCode, null), externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
 
-    private void queryPostWithExternalVariable(final Tuple2<Integer, String> expectedResponse, @Nullable final String xqExternalVariableType, final Tuple2<String, String>... externalVariableSequence) throws IOException {
+    private void queryPostWithExternalVariable(final Tuple2<Integer, String> expectedResponse, @Nullable final String xqExternalVariableType, final Tuple2<String, ?>... externalVariableSequence) throws IOException {
         queryPostWithExternalVariable(expectedResponse, externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
 
-    private void queryPostWithExternalVariable(final int expectedResponseCode, final Tuple2<String, String>[] expectedResult, @Nullable final String xqExternalVariableType, final Tuple2<String, String>... externalVariableSequence) throws IOException {
+    private void queryPostWithExternalVariable(final int expectedResponseCode, final Tuple2<String, ?>[] expectedResult, @Nullable final String xqExternalVariableType, final Tuple2<String, ?>... externalVariableSequence) throws IOException {
         queryPostWithExternalVariable(Tuple(expectedResponseCode, null), expectedResult, xqExternalVariableType, externalVariableSequence);
     }
 
-    private void queryPostWithExternalVariable(final Tuple2<Integer, String> expectedResponse, final Tuple2<String, String>[] expectedResult, @Nullable final String xqExternalVariableType, final Tuple2<String, String>... externalVariableSequence) throws IOException {
+    private void queryPostWithExternalVariable(final Tuple2<Integer, String> expectedResponse, final Tuple2<String, ?>[] expectedResult, @Nullable final String xqExternalVariableType, final Tuple2<String, ?>... externalVariableSequence) throws IOException {
         final String query = buildQueryExternalVariable(xqExternalVariableType, externalVariableSequence);
 
         final HttpResponse response = doPostWithAuth(getResourceUri(), query);
@@ -1047,15 +1204,19 @@ public class RESTExternalVariableTest {
         }
     }
 
-    private static String buildExistVariableResultSequence(final Tuple2<String, String>... resultSequence) {
+    private static String buildExistVariableResultSequence(final Tuple2<String, ?>... resultSequence) {
         final StringBuilder builder = new StringBuilder();
         builder.append("<exist:result xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" exist:count=\"").append(resultSequence.length).append("\" exist:hits=\"").append(resultSequence.length).append("\" exist:start=\"1\">\n");
-        for (final Tuple2<String, String> resultSequenceItem : resultSequence) {
+        for (final Tuple2<String, ?> resultSequenceItem : resultSequence) {
 
             // TODO(AR) When wrap="yes" is set for the eXist-db REST API it does not wrap Node Types in <exist:value> - that is probably a bug in eXist-db that should be fixed - https://github.com/eXist-db/exist/issues/5909
             final int xdmType;
             if (resultSequenceItem._1 == null) {
-                xdmType = resultSequenceItem._2.startsWith("<") ? Type.ELEMENT : Type.ITEM;
+                if (resultSequenceItem._2 instanceof Tuple2) {
+                    xdmType = Type.ATTRIBUTE;
+                } else {
+                    xdmType = resultSequenceItem._2.toString().startsWith("<") ? Type.ELEMENT : Type.ITEM;
+                }
             } else {
                 try {
                     xdmType = Type.getType(resultSequenceItem._1);
@@ -1079,10 +1240,41 @@ public class RESTExternalVariableTest {
                 builder.append("<exist:text>");
 
             } else if (xdmType == Type.ATTRIBUTE) {
-                builder.append("<exist:attribute>");
+                builder.append("<exist:attribute");
+                if (resultSequenceItem._2 instanceof Tuple2) {
+                    final String attrNameString = ((Tuple2<String, String>) resultSequenceItem._2)._1;
+
+                    @Nullable final String attrPrefix;
+                    @Nullable final String attrNamespace;
+                    final String attrLocalName;
+                    final int colonSep = attrNameString.indexOf(':');
+                    if (colonSep > -1) {
+                        attrPrefix = attrNameString.substring(0, colonSep);
+                        attrNamespace = NS_CONTEXT.get(attrPrefix);
+                        attrLocalName = attrNameString.substring(colonSep + 1);
+                    } else {
+                        attrPrefix = null;
+                        attrNamespace = null;
+                        attrLocalName = attrNameString;
+                    }
+
+                    builder.append(" exist:local=\"").append(attrLocalName).append('"');
+                    if (attrPrefix != null) {
+                        builder.append(" exist:prefix=\"").append(attrPrefix).append('"');
+                    }
+                    if (attrPrefix != null) {
+                        builder.append(" exist:target-namespace=\"").append(attrNamespace).append('"');
+                    }
+                }
+                builder.append('>');
             }
 
-            builder.append(resultSequenceItem._2);
+            if (resultSequenceItem._2 instanceof Tuple2) {
+                final String value = ((Tuple2<String, String>) resultSequenceItem._2)._2;
+                builder.append(value);
+            } else {
+                builder.append(resultSequenceItem._2.toString());
+            }
 
             if (!Type.subTypeOf(xdmType, Type.NODE)) {
                 builder.append("</exist:value>\n");
@@ -1101,22 +1293,31 @@ public class RESTExternalVariableTest {
         return builder.toString();
     }
 
-    private static String buildQueryExternalVariable(@Nullable final String xqExternalVariableType, @Nullable final Tuple2<String, String>... externalVariableSequence) {
+    private static String buildQueryExternalVariable(@Nullable final String xqExternalVariableType, @Nullable final Tuple2<String, ?>... externalVariableSequence) {
         final StringBuilder builder = new StringBuilder();
-        builder.append("<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" wrap=\"yes\" typed=\"yes\">\n");
+        builder.append("<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" wrap=\"yes\" typed=\"yes\">\n");
 
         if (externalVariableSequence!= null) {
             builder.append("\t<exist:variables>\n");
             builder.append("\t\t<exist:variable>\n");
             builder.append("\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>my-variable</exist:localname></exist:qname>");
             builder.append("\t\t\t<sx:sequence>\n");
-            for (final Tuple2<String, String> externalVariableSequenceItem : externalVariableSequence) {
+            for (final Tuple2<String, ?> externalVariableSequenceItem : externalVariableSequence) {
                 builder.append("\t\t\t\t<sx:value");
                 if (externalVariableSequenceItem._1 != null) {
                     builder.append(" type=\"").append(externalVariableSequenceItem._1).append("\"");
                 }
+                if (externalVariableSequenceItem._2 instanceof Tuple2) {
+                    final String name = ((Tuple2<String, String>) externalVariableSequenceItem._2)._1;
+                    builder.append(" name=\"").append(name).append("\"");
+                }
                 builder.append('>');
-                builder.append(externalVariableSequenceItem._2);
+                if (externalVariableSequenceItem._2 instanceof Tuple2) {
+                    final String value = ((Tuple2<String, String>) externalVariableSequenceItem._2)._2;
+                    builder.append(value);
+                } else {
+                    builder.append(externalVariableSequenceItem._2);
+                }
                 builder.append("</sx:value>\n");
             }
             builder.append("\t\t\t</sx:sequence>\n");
