@@ -1172,6 +1172,158 @@ public class RESTExternalVariableTest {
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
     }
 
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedArray() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedArray() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedArray() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedArrays() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello")}), Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedArrays() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello")}), Tuple(null, new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedArrays() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello"), Tuple("xs:integer", "42") }), Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArrayNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)?", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedArray() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedArrays() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello"), Tuple("xs:integer", "42") }), Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)+", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedArray() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedArrays() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello"), Tuple("xs:integer", "42") }), Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedUntypeds() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello")}), Tuple(null, new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)*", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedEmpty() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[0];
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedArray() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedArrays() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "hello"), Tuple("xs:integer", "42") }), Tuple("array(*)", new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayszSuppliedUntyped() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedUntypeds() throws IOException {
+        final Tuple2<String, Tuple2<String, String>[]>[] externalVariable = new Tuple2[]{ Tuple(null, new Tuple2[]{ Tuple("xs:string", "hello")}), Tuple(null, new Tuple2[]{ Tuple("xs:string", "goodbye") }) };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
+    }
+
     private void queryPostWithExternalVariable(final int expectedResponseCode, @Nullable final String xqExternalVariableType, final Tuple2<String, ?>... externalVariableSequence) throws IOException {
         queryPostWithExternalVariable(Tuple(expectedResponseCode, null), externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
@@ -1208,89 +1360,106 @@ public class RESTExternalVariableTest {
         final StringBuilder builder = new StringBuilder();
         builder.append("<exist:result xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" exist:count=\"").append(resultSequence.length).append("\" exist:hits=\"").append(resultSequence.length).append("\" exist:start=\"1\">\n");
         for (final Tuple2<String, ?> resultSequenceItem : resultSequence) {
-
-            // TODO(AR) When wrap="yes" is set for the eXist-db REST API it does not wrap Node Types in <exist:value> - that is probably a bug in eXist-db that should be fixed - https://github.com/eXist-db/exist/issues/5909
-            final int xdmType;
-            if (resultSequenceItem._1 == null) {
-                if (resultSequenceItem._2 instanceof Tuple2) {
-                    xdmType = Type.ATTRIBUTE;
-                } else {
-                    xdmType = resultSequenceItem._2.toString().startsWith("<") ? Type.ELEMENT : Type.ITEM;
-                }
-            } else {
-                try {
-                    xdmType = Type.getType(resultSequenceItem._1);
-                } catch (final XPathException e) {
-                    fail("Unable to find XDM type value for: " + resultSequenceItem._1);
-                    return null;
-                }
-            }
-
-            if (!Type.subTypeOf(xdmType, Type.NODE)) {
-                builder.append("\t<exist:value");
-                if (resultSequenceItem._1 != null) {
-                    builder.append(" exist:type=\"").append(resultSequenceItem._1).append("\"");
-                }
-                builder.append('>');
-
-            } else if (xdmType == Type.DOCUMENT) {
-                builder.append("<exist:document>");
-
-            } else if (xdmType == Type.TEXT) {
-                builder.append("<exist:text>");
-
-            } else if (xdmType == Type.ATTRIBUTE) {
-                builder.append("<exist:attribute");
-                if (resultSequenceItem._2 instanceof Tuple2) {
-                    final String attrNameString = ((Tuple2<String, String>) resultSequenceItem._2)._1;
-
-                    @Nullable final String attrPrefix;
-                    @Nullable final String attrNamespace;
-                    final String attrLocalName;
-                    final int colonSep = attrNameString.indexOf(':');
-                    if (colonSep > -1) {
-                        attrPrefix = attrNameString.substring(0, colonSep);
-                        attrNamespace = NS_CONTEXT.get(attrPrefix);
-                        attrLocalName = attrNameString.substring(colonSep + 1);
-                    } else {
-                        attrPrefix = null;
-                        attrNamespace = null;
-                        attrLocalName = attrNameString;
-                    }
-
-                    builder.append(" exist:local=\"").append(attrLocalName).append('"');
-                    if (attrPrefix != null) {
-                        builder.append(" exist:prefix=\"").append(attrPrefix).append('"');
-                    }
-                    if (attrPrefix != null) {
-                        builder.append(" exist:target-namespace=\"").append(attrNamespace).append('"');
-                    }
-                }
-                builder.append('>');
-            }
-
-            if (resultSequenceItem._2 instanceof Tuple2) {
-                final String value = ((Tuple2<String, String>) resultSequenceItem._2)._2;
-                builder.append(value);
-            } else {
-                builder.append(resultSequenceItem._2.toString());
-            }
-
-            if (!Type.subTypeOf(xdmType, Type.NODE)) {
-                builder.append("</exist:value>\n");
-
-            } else if (xdmType == Type.DOCUMENT) {
-                builder.append("</exist:document>");
-
-            } else if (xdmType == Type.TEXT) {
-                builder.append("</exist:text>");
-
-            } else if (xdmType == Type.ATTRIBUTE) {
-                builder.append("</exist:attribute>");
-            }
+            buildExistVariableResultSequenceItem(builder, resultSequenceItem);
         }
         builder.append("</exist:result>");
         return builder.toString();
+    }
+
+    private static void buildExistVariableResultSequenceItem(final StringBuilder builder, final Tuple2<String, ?> resultSequenceItem) {
+        // TODO(AR) When wrap="yes" is set for the eXist-db REST API it does not wrap Node Types in <exist:value> - that is probably a bug in eXist-db that should be fixed - https://github.com/eXist-db/exist/issues/5909
+        final int xdmType;
+        if (resultSequenceItem._1 == null) {
+            if (resultSequenceItem._2 instanceof Tuple2) {
+                xdmType = Type.ATTRIBUTE;
+            } else {
+                xdmType = resultSequenceItem._2.toString().startsWith("<") ? Type.ELEMENT : Type.ITEM;
+            }
+        } else {
+            try {
+                xdmType = Type.getType(resultSequenceItem._1);
+            } catch (final XPathException e) {
+                fail("Unable to find XDM type value for: " + resultSequenceItem._1);
+                return;
+            }
+        }
+
+        if (!Type.subTypeOf(xdmType, Type.NODE) && !Type.subTypeOf(xdmType, Type.FUNCTION_REFERENCE) && !(xdmType == Type.ITEM && resultSequenceItem._2 instanceof Tuple2[])) {
+            builder.append("\t<exist:value");
+            if (resultSequenceItem._1 != null) {
+                builder.append(" exist:type=\"").append(resultSequenceItem._1).append("\"");
+            }
+            builder.append('>');
+
+        } else if (xdmType == Type.DOCUMENT) {
+            builder.append("<exist:document>");
+
+        } else if (xdmType == Type.TEXT) {
+            builder.append("<exist:text>");
+
+        } else if (xdmType == Type.ATTRIBUTE) {
+            builder.append("<exist:attribute");
+            if (resultSequenceItem._2 instanceof Tuple2) {
+                final String attrNameString = ((Tuple2<String, String>) resultSequenceItem._2)._1;
+
+                @Nullable final String attrPrefix;
+                @Nullable final String attrNamespace;
+                final String attrLocalName;
+                final int colonSep = attrNameString.indexOf(':');
+                if (colonSep > -1) {
+                    attrPrefix = attrNameString.substring(0, colonSep);
+                    attrNamespace = NS_CONTEXT.get(attrPrefix);
+                    attrLocalName = attrNameString.substring(colonSep + 1);
+                } else {
+                    attrPrefix = null;
+                    attrNamespace = null;
+                    attrLocalName = attrNameString;
+                }
+
+                builder.append(" exist:local=\"").append(attrLocalName).append('"');
+                if (attrPrefix != null) {
+                    builder.append(" exist:prefix=\"").append(attrPrefix).append('"');
+                }
+                if (attrPrefix != null) {
+                    builder.append(" exist:target-namespace=\"").append(attrNamespace).append('"');
+                }
+            }
+            builder.append('>');
+
+        } else if (xdmType == Type.ARRAY || (xdmType == Type.ITEM && resultSequenceItem._2 instanceof Tuple2[])) {
+            builder.append("<exist:array>");
+        }
+
+        if (resultSequenceItem._2 instanceof Tuple2[]) {
+            // Array type
+            builder.append("<exist:sequence>\n");
+            for (final Tuple2<String, ?> arrayItem : (Tuple2<String, ?>[]) resultSequenceItem._2) {
+                buildExistVariableResultSequenceItem(builder, arrayItem);
+            }
+            builder.append("</exist:sequence>\n");
+
+        } else if (resultSequenceItem._2 instanceof Tuple2) {
+            final String value = ((Tuple2<String, String>) resultSequenceItem._2)._2;
+            builder.append(value);
+        } else {
+            builder.append(resultSequenceItem._2.toString());
+        }
+
+        if (!Type.subTypeOf(xdmType, Type.NODE) && !Type.subTypeOf(xdmType, Type.FUNCTION_REFERENCE) && !(xdmType == Type.ITEM && resultSequenceItem._2 instanceof Tuple2[])) {
+            builder.append("</exist:value>\n");
+
+        } else if (xdmType == Type.DOCUMENT) {
+            builder.append("</exist:document>");
+
+        } else if (xdmType == Type.TEXT) {
+            builder.append("</exist:text>");
+
+        } else if (xdmType == Type.ATTRIBUTE) {
+            builder.append("</exist:attribute>");
+
+        } else if (xdmType == Type.ARRAY || (xdmType == Type.ITEM && resultSequenceItem._2 instanceof Tuple2[])) {
+            builder.append("</exist:array>");
+        }
     }
 
     private static String buildQueryExternalVariable(@Nullable final String xqExternalVariableType, @Nullable final Tuple2<String, ?>... externalVariableSequence) {
@@ -1300,27 +1469,8 @@ public class RESTExternalVariableTest {
         if (externalVariableSequence!= null) {
             builder.append("\t<exist:variables>\n");
             builder.append("\t\t<exist:variable>\n");
-            builder.append("\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>my-variable</exist:localname></exist:qname>");
-            builder.append("\t\t\t<sx:sequence>\n");
-            for (final Tuple2<String, ?> externalVariableSequenceItem : externalVariableSequence) {
-                builder.append("\t\t\t\t<sx:value");
-                if (externalVariableSequenceItem._1 != null) {
-                    builder.append(" type=\"").append(externalVariableSequenceItem._1).append("\"");
-                }
-                if (externalVariableSequenceItem._2 instanceof Tuple2) {
-                    final String name = ((Tuple2<String, String>) externalVariableSequenceItem._2)._1;
-                    builder.append(" name=\"").append(name).append("\"");
-                }
-                builder.append('>');
-                if (externalVariableSequenceItem._2 instanceof Tuple2) {
-                    final String value = ((Tuple2<String, String>) externalVariableSequenceItem._2)._2;
-                    builder.append(value);
-                } else {
-                    builder.append(externalVariableSequenceItem._2);
-                }
-                builder.append("</sx:value>\n");
-            }
-            builder.append("\t\t\t</sx:sequence>\n");
+            builder.append("\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>my-variable</exist:localname></exist:qname>\n");
+            buildQueryExternalVariableSequence(builder, 3, externalVariableSequence);
             builder.append("\t\t</exist:variable>\n");
             builder.append("\t</exist:variables>\n");
         }
@@ -1336,6 +1486,41 @@ public class RESTExternalVariableTest {
         builder.append("</exist:query>\n");
 
         return builder.toString();
+    }
+
+    private static final char[] INDENTS = { '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t' };
+
+    private static void buildQueryExternalVariableSequence(final StringBuilder builder, final int indentCount, final Tuple2<String, ?>... externalVariableSequence) {
+        builder.append(INDENTS, 0, indentCount).append("<sx:sequence>\n");
+        for (final Tuple2<String, ?> externalVariableSequenceItem : externalVariableSequence) {
+            builder.append(INDENTS, 0, indentCount + 1).append("<sx:value");
+            if (externalVariableSequenceItem._1 != null) {
+                builder.append(" type=\"").append(externalVariableSequenceItem._1).append("\"");
+            }
+
+            if (externalVariableSequenceItem._2 instanceof Tuple2) {
+                // Attribute Node type
+                final String name = ((Tuple2<String, String>) externalVariableSequenceItem._2)._1;
+                builder.append(" name=\"").append(name).append("\"");
+            }
+            builder.append('>');
+
+            if (externalVariableSequenceItem._2 instanceof Tuple2[]) {
+                // Array type
+                builder.append('\n');
+                buildQueryExternalVariableSequence(builder, indentCount + 2, (Tuple2<String, String>[]) externalVariableSequenceItem._2);
+                builder.append(INDENTS, 0, indentCount + 1).append("</sx:value>\n");
+
+            } else if (externalVariableSequenceItem._2 instanceof Tuple2) {
+                final String value = ((Tuple2<String, String>) externalVariableSequenceItem._2)._2;
+                builder.append(value);
+                builder.append("</sx:value>\n");
+            } else {
+                builder.append(externalVariableSequenceItem._2);
+                builder.append("</sx:value>\n");
+            }
+        }
+        builder.append(INDENTS, 0, indentCount).append("</sx:sequence>\n");
     }
 
     private static String getServerUri() {

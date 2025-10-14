@@ -52,6 +52,8 @@ import org.exist.storage.ElementValue;
 import org.exist.xquery.Expression;
 import org.exist.xquery.NameTest;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryContext;
+import org.exist.xquery.functions.array.ArrayType;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
@@ -74,6 +76,8 @@ import javax.xml.xquery.XQException;
 import javax.xml.xquery.XQItemType;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.exist.util.StringUtil.nullIfEmpty;
@@ -106,7 +110,7 @@ public class Marshaller {
 
     private final static String ATTR_NAME = "name";
 
-    public final static QName ROOT_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
+    public final static QName SEQUENCE_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
     
     /**
      * Marshall a sequence in an xml based string representation.
@@ -251,135 +255,154 @@ public class Marshaller {
         return result;
     }
 
-    public static Sequence demarshall(final NodeImpl node) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
+        return demarshallSequence(context, node);
+    }
+
+    private static Sequence demarshallSequence(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
         final String ns = node.getNamespaceURI();
         if (ns == null || !NAMESPACE.equals(ns)) {
-            throw new XMLStreamException("Root element is not in the correct namespace. Expected: " + NAMESPACE);
+            throw new XMLStreamException("Sequence element is not in the correct namespace. Expected: " + NAMESPACE);
         }
         if (!SEQ_ELEMENT.equals(node.getLocalName())) {
-            throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_QNAME);
+            throw new XMLStreamException("Element should be a " + SEQ_ELEMENT_QNAME);
         }
+
+        return demarshallValues(context, node);
+    }
+
+    private static Sequence demarshallValues(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
         final ValueSequence result = new ValueSequence();
-        final InMemoryNodeSet values = new InMemoryNodeSet();
-        node.selectChildren(new NameTest(Type.ELEMENT, VALUE_QNAME), values);
-        for (final SequenceIterator i = values.iterate(); i.hasNext();) {
-            final ElementImpl sxValue = (ElementImpl) i.nextItem();
+        final InMemoryNodeSet sxValues = new InMemoryNodeSet();
+        node.selectChildren(new NameTest(Type.ELEMENT, VALUE_QNAME), sxValues);
+        for (final SequenceIterator itSxValue = sxValues.iterate(); itSxValue.hasNext();) {
+            final ElementImpl sxValue = (ElementImpl) itSxValue.nextItem();
+            final Item item = demarshallValue(context, sxValue);
+            result.add(item);
+        }
+        return result;
+    }
 
-            int type = Type.ITEM;
-            final String typeName = sxValue.getAttribute(ATTR_TYPE);
-            if (!typeName.isEmpty()) {
-                type = Type.getType(typeName);
-            }
-
-            // TODO(AR) coerce the item type to the type desired for the variable binding
-
-            @Nullable String attrNameString = null;
-            if (sxValue instanceof Element) {
-                attrNameString = nullIfEmpty(sxValue.getAttribute(ATTR_NAME));
-            }
-            Node item = sxValue.getFirstChild();
-
-            if (type == Type.ATTRIBUTE || (type == Type.ITEM && attrNameString != null)) {
-                if (attrNameString.isEmpty()) {
-                    throw new XMLStreamException("sx:value must contain a name attribute if type is " + typeName);
-                }
-
-                final String attrPrefix;
-                final String attrNamespace;
-                final String attrLocalName;
-                final int colonSep = attrNameString.indexOf(':');
-                if (colonSep > -1) {
-                    attrPrefix = attrNameString.substring(0, colonSep);
-                    attrNamespace = item.lookupNamespaceURI(attrPrefix);
-                    if (attrNamespace == null) {
-                        throw new XMLStreamException("sx:value's name attribute contains the QName prefix '" +  attrPrefix + "' for which the namespace has not been declared if type is " + typeName);
-                    }
-                    attrLocalName = attrNameString.substring(colonSep + 1);
-                } else {
-                    attrPrefix = XMLConstants.DEFAULT_NS_PREFIX;
-                    attrNamespace = XMLConstants.NULL_NS_URI;
-                    attrLocalName = attrNameString;
-                }
-
-                final QName attrName = new QName(attrLocalName, attrNamespace, attrPrefix, ElementValue.ATTRIBUTE);
-                final MemTreeBuilder builder = new MemTreeBuilder();
-                builder.startDocument();
-                final int attrNodeNumber = builder.addAttribute(attrName, sxValue.getTextContent());
-                builder.endDocument();
-                final AttrImpl attr = (AttrImpl) builder.getDocument().getAttribute(attrNodeNumber);
-                result.add(attr);
-
-            } else if (Type.subTypeOf(type, Type.NODE)) {
-
-                switch (type) {
-                    case Type.ELEMENT:
-                        if (item instanceof Document) {
-                            result.add((ElementImpl) ((DocumentImpl) item).getDocumentElement());
-                        } else if (!(item instanceof Element)) {
-                            throw new XMLStreamException("sx:value should only contain an Element if type is " + typeName);
-                        } else {
-                            result.add((ElementImpl) item);
-                        }
-                        break;
-
-                    case Type.COMMENT:
-                        if (!(item instanceof Comment)) {
-                            throw new XMLStreamException("sx:value should only contain a Comment node if type is " + typeName);
-                        }
-                        result.add((CommentImpl) item);
-                        break;
-
-                    case Type.PROCESSING_INSTRUCTION:
-                        if (!(item instanceof ProcessingInstruction)) {
-                            throw new XMLStreamException("sx:value should only contain a Processing Instruction node if type is " + typeName);
-                        }
-                        result.add((ProcessingInstructionImpl) item);
-                        break;
-
-                    case Type.TEXT:
-                        if (!(item instanceof Text)) {
-                            throw new XMLStreamException("sx:value should only contain a Text node if type is " + typeName);
-                        }
-                        result.add((TextImpl) item);
-                        break;
-
-                    case Type.DOCUMENT:
-                    default:
-                        if (item instanceof Document || item instanceof Element) {
-                            final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(((NodeImpl) item).getExpression());
-                            try {
-                                receiver.startDocument();
-                                ((NodeImpl) item).copyTo(null, receiver);
-                                receiver.endDocument();
-                            } catch (final SAXException e) {
-                                throw new XPathException(item != null ? ((NodeImpl) item).getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
-                            }
-                            result.add((NodeImpl) receiver.getDocument());
-                        } else {
-                            throw new XMLStreamException("sx:value should only contain a Node if type is " + typeName);
-                        }
-                        break;
-                }
-
-            } else if (type == Type.ITEM && !(item instanceof Text)) {
-                // item() type requested and we have been given a node which is not a text() node
-                result.add((NodeImpl) item);
-
-            } else {
-                // specific non-node type or text()
-                final StringBuilder data = new StringBuilder();
-                while (item != null) {
-                    if (!(item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)) {
-                        throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
-                    }
-                    data.append(item.getNodeValue());
-                    item = item.getNextSibling();
-                }
-                result.add(new StringValue(data.toString()).convertTo(type));
-            }
+    private static Item demarshallValue(final XQueryContext context, final ElementImpl sxValue) throws XMLStreamException, XPathException {
+        int type = Type.ITEM;
+        final String typeName = sxValue.getAttribute(ATTR_TYPE);
+        if (!typeName.isEmpty()) {
+            type = Type.getType(typeName);
         }
 
-        return result;
+        @Nullable String attrNameString = null;
+        if (sxValue instanceof Element) {
+            attrNameString = nullIfEmpty(sxValue.getAttribute(ATTR_NAME));
+        }
+
+        final InMemoryNodeSet sxSequences = new InMemoryNodeSet();
+        sxValue.selectChildren(new NameTest(Type.ELEMENT, SEQUENCE_ELEMENT_QNAME), sxSequences);
+
+        Node item = sxValue.getFirstChild();
+
+        if (type == Type.ATTRIBUTE || (type == Type.ITEM && attrNameString != null)) {
+            if (attrNameString.isEmpty()) {
+                throw new XMLStreamException("sx:value must contain a name attribute if type is " + typeName);
+            }
+
+            final String attrPrefix;
+            final String attrNamespace;
+            final String attrLocalName;
+            final int colonSep = attrNameString.indexOf(':');
+            if (colonSep > -1) {
+                attrPrefix = attrNameString.substring(0, colonSep);
+                attrNamespace = item.lookupNamespaceURI(attrPrefix);
+                if (attrNamespace == null) {
+                    throw new XMLStreamException("sx:value's name attribute contains the QName prefix '" +  attrPrefix + "' for which the namespace has not been declared if type is " + typeName);
+                }
+                attrLocalName = attrNameString.substring(colonSep + 1);
+            } else {
+                attrPrefix = XMLConstants.DEFAULT_NS_PREFIX;
+                attrNamespace = XMLConstants.NULL_NS_URI;
+                attrLocalName = attrNameString;
+            }
+
+            final QName attrName = new QName(attrLocalName, attrNamespace, attrPrefix, ElementValue.ATTRIBUTE);
+            final MemTreeBuilder builder = new MemTreeBuilder(context);
+            builder.startDocument();
+            final int attrNodeNumber = builder.addAttribute(attrName, sxValue.getTextContent());
+            builder.endDocument();
+            final AttrImpl attr = (AttrImpl) builder.getDocument().getAttribute(attrNodeNumber);
+            return attr;
+
+        } else if (Type.subTypeOf(type, Type.NODE)) {
+
+            switch (type) {
+                case Type.ELEMENT:
+                    if (item instanceof Document) {
+                        return (ElementImpl) ((DocumentImpl) item).getDocumentElement();
+                    } else if (!(item instanceof Element)) {
+                        throw new XMLStreamException("sx:value should only contain an Element if type is " + typeName);
+                    } else {
+                        return (ElementImpl) item;
+                    }
+
+                case Type.COMMENT:
+                    if (!(item instanceof Comment)) {
+                        throw new XMLStreamException("sx:value should only contain a Comment node if type is " + typeName);
+                    }
+                    return (CommentImpl) item;
+
+                case Type.PROCESSING_INSTRUCTION:
+                    if (!(item instanceof ProcessingInstruction)) {
+                        throw new XMLStreamException("sx:value should only contain a Processing Instruction node if type is " + typeName);
+                    }
+                    return (ProcessingInstructionImpl) item;
+
+                case Type.TEXT:
+                    if (!(item instanceof Text)) {
+                        throw new XMLStreamException("sx:value should only contain a Text node if type is " + typeName);
+                    }
+                    return (TextImpl) item;
+
+                case Type.DOCUMENT:
+                default:
+                    if (item instanceof Document || item instanceof Element) {
+                        final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(((NodeImpl) item).getExpression());
+                        try {
+                            receiver.startDocument();
+                            ((NodeImpl) item).copyTo(null, receiver);
+                            receiver.endDocument();
+                        } catch (final SAXException e) {
+                            throw new XPathException(item != null ? ((NodeImpl) item).getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
+                        }
+                        return (NodeImpl) receiver.getDocument();
+                    } else {
+                        throw new XMLStreamException("sx:value should only contain a Node if type is " + typeName);
+                    }
+            }
+
+        } else if (type == Type.ITEM && !(item instanceof Text)) {
+            // item() type requested and we have been given a node which is not a text() node
+            return (NodeImpl) item;
+
+        } else if (type == Type.ARRAY || (type == Type.ITEM && !sxSequences.isEmpty())) {
+            // array(*) type
+            final List<Sequence> arrayValues = new ArrayList<>();
+            for (final SequenceIterator itSxSequence = sxSequences.iterate(); itSxSequence.hasNext();) {
+                final ElementImpl sxSequence = (ElementImpl) itSxSequence.nextItem();
+                final Sequence arrayValue = demarshallSequence(context, sxSequence);
+                arrayValues.add(arrayValue);
+            }
+            return new ArrayType(context, arrayValues);
+
+        } else {
+            // specific non-node type or text()
+            final StringBuilder data = new StringBuilder();
+            while (item != null) {
+                if (!(item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)) {
+                    throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+                }
+                data.append(item.getNodeValue());
+                item = item.getNextSibling();
+            }
+            return new StringValue(data.toString()).convertTo(type);
+        }
     }
 
     public static Item streamToDOM(XMLStreamReader parser, XQItemType type) throws XMLStreamException, XQException {
