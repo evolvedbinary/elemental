@@ -1534,10 +1534,10 @@ public class RESTServer {
             }
 
             // get serialized sequence
-            final NodeImpl value = variable.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.ROOT_ELEMENT_QNAME));
+            final NodeImpl value = variable.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
             final Sequence sequence;
             try {
-                sequence = value == null ? Sequence.EMPTY_SEQUENCE : Marshaller.demarshall(value);
+                sequence = value == null ? Sequence.EMPTY_SEQUENCE : Marshaller.demarshall(context, value);
             } catch (final XMLStreamException xe) {
                 throw new XPathException((Expression) null, xe.toString());
             }

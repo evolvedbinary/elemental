@@ -62,7 +62,17 @@
     </xs:annotation>
     <xs:complexType mixed="true">
       <xs:sequence>
-        <xs:any processContents="lax" minOccurs="0" notNamespace="##targetNamespace"/>
+        <xs:choice minOccurs="0">
+          <xs:sequence>
+            <xs:annotation>
+              <xs:documentation>Can be used for XDM Array entries.</xs:documentation>
+            </xs:annotation>
+            <xs:element ref="sx:sequence" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:sequence>
+            <xs:any processContents="lax" notNamespace="##targetNamespace"/>
+          </xs:sequence>
+        </xs:choice>
       </xs:sequence>
       <xs:attribute name="type" type="sx:xdmItemType" default="item()">
         <xs:annotation>
@@ -79,9 +89,9 @@
 
   <xs:simpleType name="xdmItemType">
     <xs:annotation>
-      <xs:documentation>The type of an XDM Item. Any valid QName, or node type.</xs:documentation>
+      <xs:documentation>The type of an XDM Item. Any valid QName, node type, or function type.</xs:documentation>
     </xs:annotation>
-    <xs:union memberTypes="xs:QName sx:xdmItem sx:xdmNodeType"/>
+    <xs:union memberTypes="xs:QName sx:xdmItem sx:xdmNodeType sx:xdmFunctionType"/>
   </xs:simpleType>
 
   <xs:simpleType name="xdmItem">
@@ -106,6 +116,15 @@
       <xs:enumeration value="comment()"/>
       <xs:enumeration value="processing-instruction()"/>
       <xs:enumeration value="text()"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="xdmFunctionType">
+    <xs:annotation>
+      <xs:documentation>XDM Function types.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="array(*)"/>
     </xs:restriction>
   </xs:simpleType>
 
