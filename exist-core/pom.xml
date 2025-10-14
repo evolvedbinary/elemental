@@ -708,6 +708,7 @@
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterInputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteOutput.java</include>
+                                <include>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</include>
                                 <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
@@ -1028,6 +1029,7 @@
                                 <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
+                                <include>src/test/java/org/exist/xquery/RestBinariesTest.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
                                 <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
                                 <include>src/test/java/org/exist/xquery/XmldbBinariesTest.java</include>
@@ -1498,6 +1500,7 @@
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedDocumentLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/Serializer.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</exclude>
                                 <exclude>src/main/java/org/exist/storage/sync/SyncTask.java</exclude>
@@ -1622,6 +1625,7 @@
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStats.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/TryCatchExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
