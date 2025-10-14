@@ -837,7 +837,7 @@ public class XQueryContext implements BinaryValueManager, Context {
      *
      * @return The next unique expression id.
      */
-    int nextExpressionId() {
+    public int nextExpressionId() {
         return expressionCounter++;
     }
 

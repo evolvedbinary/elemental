@@ -98,6 +98,7 @@
                     <xs:element ref="exist:attribute"/>
                     <xs:element ref="exist:document"/>
                     <xs:element ref="exist:text"/>
+                    <xs:element ref="exist:array"/>
                 </xs:choice>
             </xs:sequence>
             <xs:attributeGroup ref="exist:queryAttrs"></xs:attributeGroup>
@@ -110,6 +111,20 @@
                 <xs:any processContents="skip"/>
             </xs:sequence>
             <xs:attribute name="type" type="xs:string" form="qualified"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="sequence">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element ref="exist:value"/>
+                    <xs:element ref="exist:attribute"/>
+                    <xs:element ref="exist:document"/>
+                    <xs:element ref="exist:text"/>
+                    <xs:element ref="exist:array"/>
+                </xs:choice>
+            </xs:sequence>
         </xs:complexType>
     </xs:element>
 
@@ -136,6 +151,14 @@
     </xs:element>
 
     <xs:element name="text" type="xs:string"/>
+
+    <xs:element name="array">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="exist:sequence" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="collection">
         <xs:complexType>

@@ -25,6 +25,8 @@ import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.util.Configuration;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryContext;
+import org.exist.xquery.functions.array.ArrayType;
 import org.exist.xquery.value.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -34,9 +36,11 @@ import org.xmlunit.matchers.CompareMatcher;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.evolvedbinary.j8fu.function.FunctionE.identity;
 import static org.easymock.EasyMock.*;
 import static org.exist.Namespaces.EXIST_NS;
 import static org.exist.Namespaces.EXIST_NS_PREFIX;
@@ -82,6 +86,25 @@ public class NativeSerializerTest {
         final Sequence sequence = new ValueSequence();
         sequence.add(builder.getDocument().getNode(text1Id));
         sequence.add(builder.getDocument().getNode(text2Id));
+
+        assertSerialize(sequence, wrapped == Wrapped.WRAPPED, typed == Typed.TYPED);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
+    public void serializeArray(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+        final XQueryContext mockContext = mock(XQueryContext.class);
+        expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
+
+        replay(mockContext);
+
+        final Sequence sequence = new ValueSequence();
+        final ArrayType array1 = new ArrayType(mockContext, Arrays.asList(ValueSequence.of(identity(), new StringValue("hello"), new IntegerValue(42)), ValueSequence.of(identity(), new StringValue("goodbye"))));
+        sequence.add(array1);
+        final ArrayType array2 = new ArrayType(mockContext, Arrays.asList(ValueSequence.of(identity(), new StringValue("in the beginning")), ValueSequence.of(identity(), new StringValue("but at the end"), new IntegerValue(42))));
+        sequence.add(array2);
+
+        verify(mockContext);
 
         assertSerialize(sequence, wrapped == Wrapped.WRAPPED, typed == Typed.TYPED);
     }
@@ -144,7 +167,15 @@ public class NativeSerializerTest {
         final List<String> strings = new ArrayList<>(sequence.getItemCount());
         for (final SequenceIterator it = sequence.iterate(); it.hasNext();) {
             final Item item = it.nextItem();
-            strings.add(item.getStringValue());
+            if (item.getType() == Type.ARRAY) {
+                final StringBuilder arrayStringBuilder = new StringBuilder();
+                for (final Sequence arrayItem : ((ArrayType) item).toArray()) {
+                    arrayStringBuilder.append(join(toStrings(arrayItem), ""));
+                }
+                strings.add(arrayStringBuilder.toString());
+            } else {
+                strings.add(item.getStringValue());
+            }
         }
         return strings;
     }
@@ -166,6 +197,16 @@ public class NativeSerializerTest {
             final Item item = it.nextItem();
             if (item.getType() == Type.TEXT) {
                 typed.add("<exist:text" + namespace + ">" + item.getStringValue() + "</exist:text>");
+            } else if (item.getType() == Type.ARRAY) {
+                final StringBuilder builder = new StringBuilder();
+                builder.append("<exist:array").append(namespace).append('>');
+                for (final Sequence arrayItem : ((ArrayType) item).toArray()) {
+                    builder.append("<exist:sequence>");
+                    builder.append(join(type(arrayItem, explicitNamespace), ""));
+                    builder.append("</exist:sequence>");
+                }
+                builder.append("</exist:array>");
+                typed.add(builder.toString());
             } else {
                 typed.add("<exist:value" + namespace + " exist:type=\"" + Type.getTypeName(item.getType()) + "\">" + item.getStringValue() + "</exist:value>");
             }

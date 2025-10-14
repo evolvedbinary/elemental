@@ -95,6 +95,7 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.functions.array.ArrayType;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
@@ -169,6 +170,8 @@ public abstract class Serializer implements XMLReader {
     private static final QName ATTR_EXECUTION_TIME_QNAME = new QName("execution-time", Namespaces.EXIST_NS, "exist");
     private static final QName ATTR_TYPE_QNAME = new QName("type", Namespaces.EXIST_NS, "exist");
     private static final QName ELEM_VALUE_QNAME = new QName("value", Namespaces.EXIST_NS, "exist");
+    private static final QName ELEM_ARRAY_QNAME = new QName("array", Namespaces.EXIST_NS, "exist");
+    private static final QName ELEM_SEQUENCE_QNAME = new QName("sequence", Namespaces.EXIST_NS, "exist");
 
     // required for XQJ/typed information implementation
     // -----------------------------------------
@@ -1201,19 +1204,56 @@ public abstract class Serializer implements XMLReader {
                 serializeToReceiver(node, false);
             }
         } else {
+            if (item.getType() == Type.ARRAY) {
+                serializeTypeArray((ArrayType) item, typed, wrap);
+            } else {
+                serializeTypeAtomicValue(item, typed, wrap);
+            }
+        }
+    }
+
+    private void serializeTypeAtomicValue(final Item item, final boolean typed, final boolean wrap) throws SAXException {
+        if (typed) {
+            final AttrList attrs = new AttrList();
+            attrs.addAttribute(ATTR_TYPE_QNAME, Type.getTypeName(item.getType()));
+            receiver.startElement(ELEM_VALUE_QNAME, attrs);
+        }
+
+        try {
+            receiver.characters(item.getStringValue());
+        } catch (final XPathException e) {
+            throw new SAXException(e.getMessage(), e);
+        }
+
+        if (typed) {
+            receiver.endElement(ELEM_VALUE_QNAME);
+        }
+    }
+
+    private void serializeTypeArray(final ArrayType arrayType, final boolean typed, final boolean wrap) throws SAXException {
+        try {
             if (typed) {
-                final AttrList attrs = new AttrList();
-                attrs.addAttribute(ATTR_TYPE_QNAME, Type.getTypeName(item.getType()));
-                receiver.startElement(ELEM_VALUE_QNAME, attrs);
+                receiver.startElement(ELEM_ARRAY_QNAME, null);
             }
-            try {
-                receiver.characters(item.getStringValue());
-            } catch (final XPathException e) {
-                throw new SAXException(e.getMessage(), e);
+
+            for (final Sequence arrayItem : arrayType.toArray()) {
+                if (typed) {
+                    receiver.startElement(ELEM_SEQUENCE_QNAME, null);
+                }
+                for (final SequenceIterator itItem = arrayItem.iterate(); itItem.hasNext(); ) {
+                    final Item item = itItem.nextItem();
+                    itemToSAX(item, typed, wrap);
+                }
+                if (typed) {
+                    receiver.endElement(ELEM_SEQUENCE_QNAME);
+                }
             }
+
             if (typed) {
-                receiver.endElement(ELEM_VALUE_QNAME);
+                receiver.endElement(ELEM_ARRAY_QNAME);
             }
+        } catch (final XPathException e) {
+            throw new SAXException(e.getMessage(), e);
         }
     }
 
