@@ -1205,7 +1205,7 @@ public abstract class Serializer implements XMLReader {
                 serializeToReceiver(node, false);
             }
         } else {
-            if (wrap) {
+            if (typed) {
                 final AttrList attrs = new AttrList();
                 attrs.addAttribute(ATTR_TYPE_QNAME, Type.getTypeName(item.getType()));
                 receiver.startElement(ELEM_VALUE_QNAME, attrs);
@@ -1215,7 +1215,7 @@ public abstract class Serializer implements XMLReader {
             } catch (final XPathException e) {
                 throw new SAXException(e.getMessage(), e);
             }
-            if (wrap) {
+            if (typed) {
                 receiver.endElement(ELEM_VALUE_QNAME);
             }
         }
