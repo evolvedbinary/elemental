@@ -183,73 +183,11 @@
         <xs:choice minOccurs="0">
           <xs:element ref="exist:collection"/>
           <xs:choice maxOccurs="unbounded">
-            <xs:element name="value">
-              <xs:annotation>
-                <xs:documentation>The type and value of an XDM Atomic Value.</xs:documentation>
-              </xs:annotation>
-              <xs:complexType>
-                <xs:simpleContent>
-                  <xs:extension base="xs:string">
-                    <xs:attribute name="type" form="qualified" type="xs:QName" use="required">
-                      <xs:annotation>
-                        <xs:documentation>The XDM type of the value</xs:documentation>
-                      </xs:annotation>
-                    </xs:attribute>
-                  </xs:extension>
-                </xs:simpleContent>
-              </xs:complexType>
-            </xs:element>
-            <xs:element name="attribute">
-              <xs:annotation>
-                <xs:documentation>Wrapper for an XDM Attribute Node.</xs:documentation>
-              </xs:annotation>
-              <xs:complexType>
-                <xs:simpleContent>
-                  <xs:extension base="xs:string">
-                    <xs:attribute name="local" form="qualified" type="xs:NCName" use="required">
-                      <xs:annotation>
-                        <xs:documentation>The local name part of the Attribute's Qualified Name.</xs:documentation>
-                      </xs:annotation>
-                    </xs:attribute>
-                    <xs:attribute name="prefix" form="qualified" type="xs:NCName" use="optional">
-                      <xs:annotation>
-                        <xs:documentation>The prefix part of the Attribute's Qualified Name.</xs:documentation>
-                      </xs:annotation>
-                    </xs:attribute>
-                    <xs:attribute name="target-namespace" form="qualified" type="xs:NCName" use="optional">
-                      <xs:annotation>
-                        <xs:documentation>The namespace part of the Attribute's Qualified Name.</xs:documentation>
-                      </xs:annotation>
-                    </xs:attribute>
-                  </xs:extension>
-                </xs:simpleContent>
-              </xs:complexType>
-            </xs:element>
-            <xs:element name="document">
-              <xs:annotation>
-                <xs:documentation>Wrapper for an XDM Document Node.</xs:documentation>
-              </xs:annotation>
-              <xs:complexType>
-                <xs:sequence>
-                  <xs:any maxOccurs="unbounded" processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
-                </xs:sequence>
-                <xs:attribute name="uri" type="xs:string" use="optional">
-                  <xs:annotation>
-                    <xs:documentation>The Base URI of the document.</xs:documentation>
-                  </xs:annotation>
-                </xs:attribute>
-                <xs:attribute name="has-element" type="xs:boolean" default="true">
-                  <xs:annotation>
-                    <xs:documentation>Indicates whether the Document Node has an Element child Node.</xs:documentation>
-                  </xs:annotation>
-                </xs:attribute>
-              </xs:complexType>
-            </xs:element>
-            <xs:element name="text" type="xs:string">
-              <xs:annotation>
-                <xs:documentation>Wrapper for an XDM Text Node.</xs:documentation>
-              </xs:annotation>
-            </xs:element>
+            <xs:element ref="exist:value"/>
+            <xs:element ref="exist:attribute"/>
+            <xs:element ref="exist:document"/>
+            <xs:element ref="exist:text"/>
+            <xs:element ref="exist:array"/>
             <xs:any processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
           </xs:choice>
         </xs:choice>
@@ -325,6 +263,109 @@
         </xs:annotation>
       </xs:attribute>
       <xs:attributeGroup ref="exist:commonCollectionAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="value">
+    <xs:annotation>
+      <xs:documentation>The type and value of an XDM Atomic Value.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="type" form="qualified" type="xs:QName" use="required">
+            <xs:annotation>
+              <xs:documentation>The XDM type of the value</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="sequence">
+    <xs:annotation>
+      <xs:documentation>An XDM Sequence.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element ref="exist:value"/>
+          <xs:element ref="exist:attribute"/>
+          <xs:element ref="exist:document"/>
+          <xs:element ref="exist:text"/>
+          <xs:element ref="exist:array"/>
+          <xs:any processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="attribute">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Attribute Node.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="local" form="qualified" type="xs:NCName" use="required">
+            <xs:annotation>
+              <xs:documentation>The local name part of the Attribute's Qualified Name.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="prefix" form="qualified" type="xs:NCName" use="optional">
+            <xs:annotation>
+              <xs:documentation>The prefix part of the Attribute's Qualified Name.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="target-namespace" form="qualified" type="xs:NCName" use="optional">
+            <xs:annotation>
+              <xs:documentation>The namespace part of the Attribute's Qualified Name.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="document">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Document Node.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:any maxOccurs="unbounded" processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
+      </xs:sequence>
+      <xs:attribute name="uri" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>The Base URI of the document.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="has-element" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:documentation>Indicates whether the Document Node has an Element child Node.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="text" type="xs:string">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Text Node.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="array">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Array.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:annotation>
+          <xs:documentation>Can be used for XDM Array entries.</xs:documentation>
+        </xs:annotation>
+        <xs:element ref="exist:sequence" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
 
