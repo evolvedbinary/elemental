@@ -20,6 +20,8 @@
  */
 package org.exist.storage.serializers;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
+import io.lacuna.bifurcan.IEntry;
 import org.easymock.Capture;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.util.Configuration;
@@ -27,6 +29,7 @@ import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.functions.array.ArrayType;
+import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -41,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.evolvedbinary.j8fu.function.FunctionE.identity;
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.easymock.EasyMock.*;
 import static org.exist.Namespaces.EXIST_NS;
 import static org.exist.Namespaces.EXIST_NS_PREFIX;
@@ -111,6 +115,25 @@ public class NativeSerializerTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
+    public void serializeMap(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+        final XQueryContext mockContext = mock(XQueryContext.class);
+        expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
+
+        replay(mockContext);
+
+        final Sequence sequence = new ValueSequence();
+        final MapType map1 = new MapType(mockContext, null, Arrays.asList(Tuple(new StringValue("key1"), ValueSequence.of(identity(), new StringValue("hello"), new IntegerValue(42))), Tuple(new StringValue("key2"), ValueSequence.of(identity(), new StringValue("goodbye")))));
+        sequence.add(map1);
+        final MapType map2 = new MapType(mockContext, null, Arrays.asList(Tuple(new StringValue("key3"), ValueSequence.of(identity(), new StringValue("in the beginning"), new StringValue("but at the end"), new IntegerValue(42)))));
+        sequence.add(map2);
+
+        verify(mockContext);
+
+        assertSerialize(sequence, wrapped == Wrapped.WRAPPED, typed == Typed.TYPED);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
     public void serializeMixed(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
@@ -173,7 +196,16 @@ public class NativeSerializerTest {
                     arrayStringBuilder.append(join(toStrings(arrayItem), ""));
                 }
                 strings.add(arrayStringBuilder.toString());
-            } else {
+
+            } else if (item.getType() == Type.MAP) {
+                final StringBuilder mapStringBuilder = new StringBuilder();
+                for (final IEntry<AtomicValue, Sequence> mapEntry : (MapType) item) {
+                    mapStringBuilder.append(mapEntry.key().getStringValue());
+                    mapStringBuilder.append(join(toStrings(mapEntry.value()), ""));
+                }
+                strings.add(mapStringBuilder.toString());
+
+        } else {
                 strings.add(item.getStringValue());
             }
         }
@@ -195,8 +227,10 @@ public class NativeSerializerTest {
         final List<String> typed = new ArrayList<>(sequence.getItemCount());
         for (final SequenceIterator it = sequence.iterate(); it.hasNext();) {
             final Item item = it.nextItem();
+
             if (item.getType() == Type.TEXT) {
                 typed.add("<exist:text" + namespace + ">" + item.getStringValue() + "</exist:text>");
+
             } else if (item.getType() == Type.ARRAY) {
                 final StringBuilder builder = new StringBuilder();
                 builder.append("<exist:array").append(namespace).append('>');
@@ -207,11 +241,32 @@ public class NativeSerializerTest {
                 }
                 builder.append("</exist:array>");
                 typed.add(builder.toString());
+
+            } else if (item.getType() == Type.MAP) {
+                final StringBuilder builder = new StringBuilder();
+                builder.append("<exist:map").append(namespace).append('>');
+                for (final IEntry<AtomicValue, Sequence> mapEntry : (MapType) item) {
+                    builder.append("<exist:entry>");
+                    builder.append("<exist:key>");
+                    builder.append(atomicValue(namespace, mapEntry.key()));
+                    builder.append("</exist:key>");
+                    builder.append("<exist:sequence>");
+                    builder.append(join(type(mapEntry.value(), explicitNamespace), ""));
+                    builder.append("</exist:sequence>");
+                    builder.append("</exist:entry>");
+                }
+                builder.append("</exist:map>");
+                typed.add(builder.toString());
+
             } else {
-                typed.add("<exist:value" + namespace + " exist:type=\"" + Type.getTypeName(item.getType()) + "\">" + item.getStringValue() + "</exist:value>");
+                typed.add(atomicValue(namespace, item));
             }
         }
         return typed;
+    }
+
+    private static String atomicValue(final String namespace, final Item item) throws XPathException {
+        return "<exist:value" + namespace + " exist:type=\"" + Type.getTypeName(item.getType()) + "\">" + item.getStringValue() + "</exist:value>";
     }
 
     private static String wrap(final List<String> items) {
