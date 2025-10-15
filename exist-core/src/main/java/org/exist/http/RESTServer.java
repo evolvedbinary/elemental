@@ -455,7 +455,7 @@ public class RESTServer {
                         }
                         // return a listing of the collection contents
                         try {
-                            writeCollection(response, encoding, broker, collection);
+                            writeCollection(response, encoding, broker, wrap, collection);
                             return;
                         } catch (final LockException le) {
                             if (MimeType.XML_TYPE.getName().equals(mimeType)) {
@@ -1999,6 +1999,7 @@ public class RESTServer {
      * @param response the http response to write the result to
      * @param encoding the character encoding
      * @param broker the database broker
+     * @param wrap true if the result should be wrapped in a exist:result element, false otherwise
      * @param collection the collection to write
      *
      * @throws IOException if an I/O error occurs
@@ -2006,7 +2007,7 @@ public class RESTServer {
      * @throws LockException if a lock error occurs
      */
     protected void writeCollection(final HttpServletResponse response,
-        final String encoding, final DBBroker broker, final Collection collection)
+        final String encoding, final DBBroker broker, final boolean wrap, final Collection collection)
             throws IOException, PermissionDeniedException, LockException {
 
         response.setContentType(MimeType.XML_TYPE.getName() + "; charset=" + encoding);
@@ -2022,13 +2023,15 @@ public class RESTServer {
             serializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
 
             serializer.setOutput(writer, defaultProperties);
-            final AttributesImpl attrs = new AttributesImpl();
 
             serializer.startDocument();
             serializer.startPrefixMapping("exist", Namespaces.EXIST_NS);
-            serializer.startElement(Namespaces.EXIST_NS, "result",
-                    "exist:result", attrs);
 
+            if (wrap) {
+                serializer.startElement(Namespaces.EXIST_NS, "result", "exist:result", null);
+            }
+
+            final AttributesImpl attrs = new AttributesImpl();
             attrs.addAttribute("", "name", "name", "CDATA", collection.getURI()
                     .toString());
             // add an attribute for the creation date as an xs:dateTime
@@ -2113,7 +2116,10 @@ public class RESTServer {
             }
 
             serializer.endElement(Namespaces.EXIST_NS, "collection", "exist:collection");
-            serializer.endElement(Namespaces.EXIST_NS, "result", "exist:result");
+
+            if (wrap) {
+                serializer.endElement(Namespaces.EXIST_NS, "result", "exist:result");
+            }
 
             serializer.endDocument();
 
