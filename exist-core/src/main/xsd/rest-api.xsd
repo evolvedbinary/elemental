@@ -99,6 +99,7 @@
                     <xs:element ref="exist:document"/>
                     <xs:element ref="exist:text"/>
                     <xs:element ref="exist:array"/>
+                    <xs:element ref="exist:map"/>
                 </xs:choice>
             </xs:sequence>
             <xs:attributeGroup ref="exist:queryAttrs"></xs:attributeGroup>
@@ -123,6 +124,7 @@
                     <xs:element ref="exist:document"/>
                     <xs:element ref="exist:text"/>
                     <xs:element ref="exist:array"/>
+                    <xs:element ref="exist:map"/>
                 </xs:choice>
             </xs:sequence>
         </xs:complexType>
@@ -156,6 +158,27 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="exist:sequence" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="map">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="entry" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="key">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element ref="exist:value"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element ref="exist:sequence"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

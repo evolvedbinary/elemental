@@ -188,6 +188,7 @@
             <xs:element ref="exist:document"/>
             <xs:element ref="exist:text"/>
             <xs:element ref="exist:array"/>
+            <xs:element ref="exist:map"/>
             <xs:any processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
           </xs:choice>
         </xs:choice>
@@ -295,6 +296,7 @@
           <xs:element ref="exist:document"/>
           <xs:element ref="exist:text"/>
           <xs:element ref="exist:array"/>
+          <xs:element ref="exist:map"/>
           <xs:any processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
         </xs:choice>
       </xs:sequence>
@@ -365,6 +367,36 @@
           <xs:documentation>Can be used for XDM Array entries.</xs:documentation>
         </xs:annotation>
         <xs:element ref="exist:sequence" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="map">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Map.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="entry" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>Can be used for XDM Map entries.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="key">
+                <xs:annotation>
+                  <xs:documentation>The key for the Map entry.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="exist:value"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element ref="exist:sequence"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
