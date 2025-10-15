@@ -28,31 +28,41 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import org.eclipse.jetty.http.HttpStatus;
+import org.exist.Namespaces;
 import org.exist.TestUtils;
 import org.exist.test.ExistWebServer;
 import org.exist.util.MapUtil;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
+import org.exist.xqj.Marshaller;
 import org.exist.xquery.value.Type;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Attr;
+import org.xmlunit.diff.DefaultNodeMatcher;
+import org.xmlunit.diff.ElementSelectors;
 import org.xmlunit.matchers.CompareMatcher;
 import org.xmlunit.util.Predicate;
 
 import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.http.RESTExternalVariableTest.EntryRep.entry;
+import static org.exist.http.RESTExternalVariableTest.KeyRep.key;
 import static org.exist.http.RESTExternalVariableTest.SequenceRep.sequence;
 import static org.exist.http.RESTExternalVariableTest.TypedArrayRep.array;
+import static org.exist.http.RESTExternalVariableTest.TypedMapRep.map;
 import static org.exist.http.RESTExternalVariableTest.TypedNamedValueRep.value;
 import static org.exist.http.RESTExternalVariableTest.TypedValueRep.value;
 import static org.exist.http.RESTExternalVariableTest.UntypedArrayRep.untypedArray;
+import static org.exist.http.RESTExternalVariableTest.UntypedMapRep.untypedMap;
 import static org.exist.http.RESTExternalVariableTest.UntypedNamedValueRep.value;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -74,13 +84,19 @@ public class RESTExternalVariableTest {
     private static final String TEST_PREFIX = "revt";
 
     private static final Map<String, String> NS_CONTEXT = MapUtil.HashMap(
-        Tuple("xs", "http://www.w3.org/2001/XMLSchema"),
-        Tuple("exist", "http://exist.sourceforge.net/NS/exist"),
-        Tuple("sx", "http://exist-db.org/xquery/types/serialized"),
+        Tuple("xs", XMLConstants.W3C_XML_SCHEMA_NS_URI),
+        Tuple(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS),
+        Tuple(Marshaller.PREFIX, Marshaller.PREFIX),
         Tuple(TEST_PREFIX, TEST_NAMESPACE)
     );
 
     private static final Predicate<Attr> IGNORE_EXIST_TIMING_ATTRIBUTES = attr -> !("http://exist.sourceforge.net/NS/exist".equals(attr.getNamespaceURI()) && ("compilation-time".equals(attr.getLocalName()) || "execution-time".equals(attr.getLocalName())));
+
+    private static final DefaultNodeMatcher IGNORE_MAP_ENTRY_ORDER_MATCHER = new DefaultNodeMatcher(ElementSelectors.conditionalBuilder()
+        .whenElementIsNamed(new QName(Namespaces.EXIST_NS, "entry", Namespaces.EXIST_NS_PREFIX))
+        .thenUse(ElementSelectors.byXPath("./exist:key/exist:value", NS_CONTEXT, ElementSelectors.byNameAndText))
+        .elseUse(ElementSelectors.byName)
+        .build());
 
     @Test
     public void queryPostWithExternalVariableUntypedNotSupplied() throws IOException {
@@ -1328,6 +1344,223 @@ public class RESTExternalVariableTest {
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
     }
 
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedMap() throws IOException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedMap() throws IOException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedEmpty() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedMap() throws IOException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedMaps() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedUntyped() throws IOException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedMaps() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            untypedMap(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            untypedMap(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedMaps() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)?", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedEmpty() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedMap() throws IOException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedMaps() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedUntyped() throws IOException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)+", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedEmpty() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedMap() throws IOException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedMaps() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedUntyped() throws IOException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedUntypeds() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            untypedMap(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            untypedMap(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzNotSupplied() throws IOException {
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)*", null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedEmpty() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedMap() throws IOException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedMaps() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapszSuppliedUntyped() throws IOException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedUntypeds() throws IOException {
+        final ExternalVariableValueRep[] externalVariable = {
+            untypedMap(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            untypedMap(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, "42")))
+            )
+        };
+        queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
+    }
+
     private void queryPostWithExternalVariable(final int expectedResponseCode, @Nullable final String xqExternalVariableType, final ExternalVariableValueRep... externalVariableSequence) throws IOException {
         queryPostWithExternalVariable(Tuple(expectedResponseCode, null), externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
@@ -1349,24 +1582,27 @@ public class RESTExternalVariableTest {
 
         assertEquals("Server returned response code: " + resultStatusCode, (int) expectedResponse._1, resultStatusCode);
 
-        if (expectedResponse._1 == HttpStatus.OK_200) {
-            final String expected = buildExistVariableResultSequence(expectedResult);
+        final String actual = readResponse(response.getEntity());
 
-            final String data = readResponse(response.getEntity());
-            assertThat(data, CompareMatcher.isIdenticalTo(expected).withNamespaceContext(NS_CONTEXT).withAttributeFilter(IGNORE_EXIST_TIMING_ATTRIBUTES).ignoreWhitespace());
-        } else if (expectedResponse._2 != null) {
-            final String data = readResponse(response.getEntity());
-            assertThat(data, CompareMatcher.isIdenticalTo(expectedResponse._2).withNamespaceContext(NS_CONTEXT).withAttributeFilter(IGNORE_EXIST_TIMING_ATTRIBUTES).ignoreWhitespace());
+        @Nullable final String expected;
+        if (expectedResponse._1 == HttpStatus.OK_200) {
+            expected = buildExistVariableResultSequence(expectedResult);
+        } else {
+            expected = expectedResponse._2;
+        }
+
+        if (expected != null) {
+            assertThat(actual, CompareMatcher.isSimilarTo(expected).withNamespaceContext(NS_CONTEXT).withAttributeFilter(IGNORE_EXIST_TIMING_ATTRIBUTES).withNodeMatcher(IGNORE_MAP_ENTRY_ORDER_MATCHER).ignoreWhitespace());
         }
     }
 
     private static String buildExistVariableResultSequence(final ExternalVariableValueRep... resultSequence) {
         final StringBuilder builder = new StringBuilder();
-        builder.append("<exist:result xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" exist:count=\"").append(resultSequence.length).append("\" exist:hits=\"").append(resultSequence.length).append("\" exist:start=\"1\">\n");
+        builder.append('<').append(Namespaces.EXIST_NS_PREFIX).append(":result xmlns:").append(Namespaces.EXIST_NS_PREFIX).append("=\"").append(Namespaces.EXIST_NS).append("\" xmlns:").append(Marshaller.PREFIX).append("=\"").append(Marshaller.NAMESPACE).append("\" ").append(Namespaces.EXIST_NS_PREFIX).append(":count=\"").append(resultSequence.length).append("\" ").append(Namespaces.EXIST_NS_PREFIX).append(":hits=\"").append(resultSequence.length).append("\" ").append(Namespaces.EXIST_NS_PREFIX).append(":start=\"1\">\n");
         for (final ExternalVariableValueRep resultSequenceItem : resultSequence) {
             buildExistVariableResultSequenceItem(builder, resultSequenceItem);
         }
-        builder.append("</exist:result>");
+        builder.append("</").append(Namespaces.EXIST_NS_PREFIX).append(":result>");
         return builder.toString();
     }
 
@@ -1385,7 +1621,7 @@ public class RESTExternalVariableTest {
             }
         }
 
-        if (!Type.subTypeOf(xdmType, Type.NODE) && !isAttribute(xdmType, resultSequenceItem) && !isArray(xdmType, resultSequenceItem)) {
+        if (!Type.subTypeOf(xdmType, Type.NODE) && !isAttribute(xdmType, resultSequenceItem) && !isArray(xdmType, resultSequenceItem) && !isMap(xdmType, resultSequenceItem)) {
             builder.append("\t<exist:value");
             if (resultSequenceItem instanceof ExternalVariableTypedValueRep) {
                 builder.append(" exist:type=\"").append(Type.getTypeName(((ExternalVariableTypedValueRep) resultSequenceItem).getXdmType())).append("\"");
@@ -1427,6 +1663,9 @@ public class RESTExternalVariableTest {
 
         } else if (isArray(xdmType, resultSequenceItem)) {
             builder.append("<exist:array>");
+
+        } else if (isMap(xdmType, resultSequenceItem)) {
+            builder.append("<exist:map>");
         }
 
         if (resultSequenceItem instanceof ArrayRep) {
@@ -1439,11 +1678,26 @@ public class RESTExternalVariableTest {
                 builder.append("</exist:sequence>\n");
             }
 
+        } else if (resultSequenceItem instanceof MapRep) {
+            // Map type
+            for (final EntryRep mapEntry : ((MapRep) resultSequenceItem).getEntries()) {
+                builder.append("<exist:entry>\n");
+                builder.append("<exist:key>");
+                buildExistVariableResultSequenceItem(builder, mapEntry.key.key);
+                builder.append("</exist:key>\n");
+                builder.append("<exist:sequence>\n");
+                for (final ValueRep arrayEntryValue : mapEntry.value.values) {
+                    buildExistVariableResultSequenceItem(builder, arrayEntryValue);
+                }
+                builder.append("</exist:sequence>\n");
+                builder.append("</exist:entry>\n");
+            }
+
         } else {
             builder.append(((ValueRep) resultSequenceItem).getContent());
         }
 
-        if (!Type.subTypeOf(xdmType, Type.NODE) && !isAttribute(xdmType, resultSequenceItem) && !isArray(xdmType, resultSequenceItem)) {
+        if (!Type.subTypeOf(xdmType, Type.NODE) && !isAttribute(xdmType, resultSequenceItem) && !isArray(xdmType, resultSequenceItem) && !isMap(xdmType, resultSequenceItem)) {
             builder.append("</exist:value>\n");
 
         } else if (xdmType == Type.DOCUMENT) {
@@ -1457,6 +1711,9 @@ public class RESTExternalVariableTest {
 
         } else if (isArray(xdmType, resultSequenceItem)) {
             builder.append("</exist:array>");
+
+        } else if (isMap(xdmType, resultSequenceItem)) {
+            builder.append("</exist:map>");
         }
     }
 
@@ -1466,6 +1723,10 @@ public class RESTExternalVariableTest {
 
     private static boolean isArray(final int xdmType, final ExternalVariableValueRep externalVariableValueRep) {
         return xdmType == Type.ARRAY || (xdmType == Type.ITEM && externalVariableValueRep instanceof ArrayRep);
+    }
+
+    private static boolean isMap(final int xdmType, final ExternalVariableValueRep externalVariableValueRep) {
+        return xdmType == Type.MAP || (xdmType == Type.ITEM && externalVariableValueRep instanceof MapRep);
     }
 
     private static String buildQueryExternalVariable(@Nullable final String xqExternalVariableType, @Nullable final ExternalVariableValueRep... externalVariableSequence) {
@@ -1517,12 +1778,29 @@ public class RESTExternalVariableTest {
                 for (final SequenceRep sequenceRep : ((ArrayRep) externalVariableSequenceItem).getValues()) {
                     buildQueryExternalVariableSequence(builder, indentCount + 2, sequenceRep.values);
                 }
-                builder.append(INDENTS, 0, indentCount + 1).append("</sx:value>\n");
+                builder.append(INDENTS, 0, indentCount + 1);
+
+            } else if (externalVariableSequenceItem instanceof MapRep) {
+                // Map type
+                builder.append('\n');
+                for (final EntryRep entryRep : ((MapRep) externalVariableSequenceItem).getEntries()) {
+                    builder.append(INDENTS, 0, indentCount + 2).append("<sx:entry>\n");
+                    builder.append(INDENTS, 0, indentCount + 3).append("<sx:key");
+                    final ValueRep key = entryRep.key.key;
+                    if (key instanceof ExternalVariableTypedValueRep) {
+                        builder.append(" type=\"").append(Type.getTypeName(((ExternalVariableTypedValueRep) key).getXdmType())).append("\"");
+                    }
+                    builder.append('>').append(key.getContent()).append("</sx:key>\n");
+                    buildQueryExternalVariableSequence(builder, indentCount + 3, entryRep.value.values);
+                    builder.append(INDENTS, 0, indentCount + 2).append("</sx:entry>\n");
+                }
+                builder.append(INDENTS, 0, indentCount + 1);
 
             } else {
                 builder.append(((ValueRep) externalVariableSequenceItem).getContent());
-                builder.append("</sx:value>\n");
             }
+
+            builder.append("</sx:value>\n");
         }
         builder.append(INDENTS, 0, indentCount).append("</sx:sequence>\n");
     }
@@ -1680,6 +1958,69 @@ public class RESTExternalVariableTest {
         @Override
         public int getXdmType() {
             return Type.ARRAY;
+        }
+    }
+
+    interface MapRep extends ExternalVariableValueRep {
+        EntryRep[] getEntries();
+    }
+
+    static class UntypedMapRep implements MapRep, ExternalVariableUntypedValueRep {
+        private final EntryRep[] entries;
+
+        public static UntypedMapRep untypedMap(final EntryRep... entries) {
+            return new UntypedMapRep(entries);
+        }
+
+        private UntypedMapRep(final EntryRep[] entries) {
+            this.entries = entries;
+        }
+
+        @Override
+        public EntryRep[] getEntries() {
+            return entries;
+        }
+    }
+
+    static class TypedMapRep extends UntypedMapRep implements MapRep, ExternalVariableTypedValueRep {
+
+        public static TypedMapRep map(final EntryRep... entries) {
+            return new TypedMapRep(entries);
+        }
+
+        private TypedMapRep(final EntryRep[] entries) {
+            super(entries);
+        }
+
+        @Override
+        public int getXdmType() {
+            return Type.MAP;
+        }
+    }
+
+    static class EntryRep {
+        private final KeyRep key;
+        private final SequenceRep value;
+
+        public static EntryRep entry(final KeyRep key, final SequenceRep value) {
+            return new EntryRep(key, value);
+        }
+
+        private EntryRep(final KeyRep key, final SequenceRep value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    static class KeyRep {
+        private final ValueRep key;
+
+        public static KeyRep key(final int xdmType, final String content) {
+            return new KeyRep(value(xdmType, content));
+        }
+
+        private KeyRep(final ValueRep key) {
+            this.key = key;
         }
     }
 }

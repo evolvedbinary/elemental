@@ -45,6 +45,7 @@
  */
 package org.exist.xqj;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.*;
 import org.exist.storage.DBBroker;
@@ -54,11 +55,13 @@ import org.exist.xquery.NameTest;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.functions.array.ArrayType;
+import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
 import org.xml.sax.ContentHandler;
@@ -80,6 +83,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.util.StringUtil.nullIfEmpty;
 
 
@@ -111,6 +115,8 @@ public class Marshaller {
     private final static String ATTR_NAME = "name";
 
     public final static QName SEQUENCE_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
+    public final static QName ENTRY_ELEMENT_QNAME = new QName("entry", NAMESPACE, PREFIX);
+    public final static QName KEY_ELEMENT_QNAME = new QName("key", NAMESPACE, PREFIX);
     
     /**
      * Marshall a sequence in an xml based string representation.
@@ -298,6 +304,9 @@ public class Marshaller {
         final InMemoryNodeSet sxSequences = new InMemoryNodeSet();
         sxValue.selectChildren(new NameTest(Type.ELEMENT, SEQUENCE_ELEMENT_QNAME), sxSequences);
 
+        final InMemoryNodeSet sxEntries = new InMemoryNodeSet();
+        sxValue.selectChildren(new NameTest(Type.ELEMENT, ENTRY_ELEMENT_QNAME), sxEntries);
+
         Node item = sxValue.getFirstChild();
 
         if (type == Type.ATTRIBUTE || (type == Type.ITEM && attrNameString != null)) {
@@ -390,6 +399,24 @@ public class Marshaller {
                 arrayValues.add(arrayValue);
             }
             return new ArrayType(context, arrayValues);
+
+        } else if (type == Type.MAP || (type == Type.ITEM && !sxEntries.isEmpty())) {
+            // map(*) type
+            final List<Tuple2<AtomicValue, Sequence>> mapEntries = new ArrayList<>();
+
+            for (final SequenceIterator itSxEntry = sxEntries.iterate(); itSxEntry.hasNext();) {
+                final ElementImpl sxEntry = (ElementImpl) itSxEntry.nextItem();
+                final NodeList entryKeys = sxEntry.getElementsByTagNameNS(KEY_ELEMENT_QNAME.getNamespaceURI(), KEY_ELEMENT_QNAME.getLocalPart());
+                final Element entryKey = (Element) entryKeys.item(0);
+                final int keyType = Type.getType(entryKey.getAttribute(ATTR_TYPE));
+                final String keyStr = entryKey.getTextContent();
+                final AtomicValue key = new StringValue(keyStr).convertTo(keyType);
+                final NodeList entrySequences = sxEntry.getElementsByTagNameNS(SEQUENCE_ELEMENT_QNAME.getNamespaceURI(), SEQUENCE_ELEMENT_QNAME.getLocalPart());
+                final ElementImpl entrySequence = (ElementImpl) entrySequences.item(0);
+                final Sequence value = demarshallSequence(context, entrySequence);
+                mapEntries.add(Tuple(key, value));
+            }
+            return new MapType(context, null, mapEntries);
 
         } else {
             // specific non-node type or text()
