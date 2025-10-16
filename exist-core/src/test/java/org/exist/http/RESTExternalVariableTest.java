@@ -453,7 +453,7 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()", externalVariable);
     }
 
@@ -495,7 +495,7 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptDocumentSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()?", externalVariable);
     }
 
@@ -525,14 +525,14 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()+", externalVariable);
     }
 
@@ -562,14 +562,14 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableDocumentszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()*", externalVariable);
     }
 
@@ -917,7 +917,7 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableTextSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("hello world");
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()", externalVariable);
     }
 
@@ -961,7 +961,7 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptTextSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("hello world");
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()?", externalVariable);
     }
 
@@ -991,14 +991,14 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableTextsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world"), UntypedValueRep.value("goodbye see you soon") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()+", externalVariable);
     }
 
@@ -1028,14 +1028,14 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableTextszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world"), UntypedValueRep.value("goodbye see you soon") };
-        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>exerr:ERROR XPTY0004: Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()*", externalVariable);
     }
 
