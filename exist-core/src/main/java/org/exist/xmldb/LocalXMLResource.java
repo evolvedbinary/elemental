@@ -703,4 +703,18 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
     public void setXMLReader(XMLReader xmlReader) {
         // no action
     }
+
+    @Override
+    public String getTypeName() {
+        int type = Type.ITEM;
+
+        if (value != null) {
+            type = value.getType();
+
+        } else if (root != null) {
+            type = Type.fromDomNodeType(root.getNodeType());
+        }
+
+        return Type.getTypeName(type);
+    }
 }

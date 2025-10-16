@@ -1047,17 +1047,24 @@
                                 <include>src/main/java/org/exist/validation/resolver/SearchResourceResolver.java</include>
                                 <include>src/test/java/org/exist/w3c/tests/TestCase.java</include>
                                 <include>src/main/java/org/exist/webstart/JnlpJarFiles.java</include>
+                                <include>src/main/java/org/exist/xmldb/AbstractRemoteResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/ContentAsDOMTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/EXistXMLSerializeTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/EXistResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/IndexingTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/LocalBinaryResource.java</include>
                                 <include>src/main/java/org/exist/xmldb/LocalResourceSet.java</include>
                                 <include>src/main/java/org/exist/xmldb/LocalXMLResource.java</include>
                                 <include>src/main/java/org/exist/xmldb/LocalXPathQueryService.java</include>
-                                <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteBinaryResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/RemoteDOMTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteResourceSet.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteXMLResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/ResourceTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/SerializationTest.java</include>
+                                <include>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</include>
                                 <include>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/AbstractConcurrentTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/ComplexUpdateTest.java</include>
@@ -1669,17 +1676,24 @@
                                 <exclude>src/main/java/org/exist/validation/resolver/SearchResourceResolver.java</exclude>
                                 <exclude>src/test/java/org/exist/w3c/tests/TestCase.java</exclude>
                                 <exclude>src/main/java/org/exist/webstart/JnlpJarFiles.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/AbstractRemoteResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ContentAsDOMTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/EXistXMLSerializeTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/EXistResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/IndexingTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/LocalBinaryResource.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalResourceSet.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalXMLResource.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalXPathQueryService.java</exclude>
-                                <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteBinaryResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/RemoteDOMTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteResourceSet.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteXMLResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ResourceTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/SerializationTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/AbstractConcurrentTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/ComplexUpdateTest.java</exclude>
