@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -120,15 +144,29 @@ public class CacheModule extends AbstractInternalModule {
         return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 
-    static class CacheModuleErrorCode extends ErrorCodes.ErrorCode {
-        private CacheModuleErrorCode(final String code, final String description) {
-            super(new QName(code, NAMESPACE_URI, PREFIX), description);
+    enum CacheModuleErrorCode implements ErrorCodes.ErrorCode {
+        INSUFFICIENT_PERMISSIONS ("The calling user does not have sufficient permissions to operate on the cache."),
+        KEY_SERIALIZATION ("Unable to serialize the provided key."),
+        LAZY_CREATION_DISABLED ("There is no such named cache, and lazy creation of the cache has been disabled.");
+
+        private final QName qname;
+        private final String description;
+
+        CacheModuleErrorCode(final String description) {
+            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
+            this.description = description;
+        }
+
+        @Override
+        public QName getErrorQName() {
+            return qname;
+        }
+
+        @Override
+        public String getDescription() {
+            return description;
         }
     }
-
-    static final ErrorCodes.ErrorCode INSUFFICIENT_PERMISSIONS = new CacheModuleErrorCode("insufficient-permissions", "The calling user does not have sufficient permissions to operate on the cache.");
-    static final ErrorCodes.ErrorCode KEY_SERIALIZATION = new CacheModuleErrorCode("key-serialization", "Unable to serialize the provided key.");
-    static final ErrorCodes.ErrorCode LAZY_CREATION_DISABLED = new CacheModuleErrorCode("lazy-creation-disabled", "There is no such named cache, and lazy creation of the cache has been disabled.");
 
     private static Optional<CacheConfig> parseParameters(final Map<String, List<?>> parameters) {
         if (parameters == null || parameters.isEmpty()) {

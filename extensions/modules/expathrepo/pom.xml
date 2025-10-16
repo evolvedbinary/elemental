@@ -159,6 +159,7 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>extensions/modules/expathrepo/src/test/resources/log4j2.xml</include>
+                                <include>src/main/java/org/exist/xquery/modules/expathrepo/EXPathErrorCode.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/expathrepo/InstallFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/expathrepo/RemoveFunction.java</include>
                                 <include>src/main/resources/org/exist/xquery/modules/expathrepo/repair.xql</include>
@@ -175,11 +176,13 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>extensions/modules/expathrepo/src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/expathrepo/EXPathErrorCode.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/expathrepo/InstallFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/expathrepo/RemoveFunction.java</exclude>
                                 <exclude>src/main/resources/org/exist/xquery/modules/expathrepo/repair.xql</exclude>
                                 <exclude>src/test/java/org/exist/repo/PackageTriggerTest.java</exclude>
                                 <exclude>src/test/resources/exist-expathrepo-trigger-test.xar</exclude>
+
                                 <exclude>expathrepo-trigger-test/**</exclude>
                             </excludes>
                         </licenseSet>

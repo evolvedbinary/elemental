@@ -210,6 +210,8 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/main/java/org/exist/xquery/modules/file/DirectoryList.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/file/FileModule.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/file/FileModuleHelper.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/file/FileReadUnicode.java</include>
                                 <include>src/test/java/org/exist/xquery/modules/file/RestBinariesTest.java</include>
@@ -227,6 +229,8 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/file/DirectoryList.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/file/FileModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/file/FileModuleHelper.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/file/FileReadUnicode.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/file/RestBinariesTest.java</exclude>

@@ -1171,6 +1171,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/map/MapExpr.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/request/GetHeaderTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GetPermissionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</include>
@@ -1798,6 +1799,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/map/MapExpr.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/map/MapType.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/request/GetHeaderTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/AccountMetadataFunctionsTest.java</exclude>

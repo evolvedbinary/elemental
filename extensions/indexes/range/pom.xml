@@ -193,6 +193,8 @@
                                 <include>src/main/java/org/exist/indexing/range/RangeIndexConfigElement.java</include>
                                 <include>src/main/java/org/exist/indexing/range/RangeIndexConfigField.java</include>
                                 <include>src/test/java/org/exist/indexing/range/RangeIndexConfigTest.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/range/Lookup.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/range/RangeIndexModule.java</include>
                             </includes>
                         </licenseSet>
 
@@ -212,6 +214,8 @@
                                 <exclude>src/main/java/org/exist/indexing/range/RangeIndexConfigElement.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/range/RangeIndexConfigField.java</exclude>
                                 <exclude>src/test/java/org/exist/indexing/range/RangeIndexConfigTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/range/Lookup.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/range/RangeIndexModule.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

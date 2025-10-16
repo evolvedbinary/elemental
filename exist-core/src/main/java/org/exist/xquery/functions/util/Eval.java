@@ -413,7 +413,7 @@ public class Eval extends BasicFunction {
                         return new StringValue(this, writer.toString());
 
                     } catch (final SAXException e) {
-                        throw new XPathException(this, FnModule.SENR0001, e.getMessage());
+                        throw new XPathException(this, ErrorCodes.W3CErrorCode.SENR0001, e.getMessage());
                     }
                 }
             } finally {
