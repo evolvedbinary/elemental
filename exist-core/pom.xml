@@ -1062,6 +1062,7 @@
                                 <include>src/main/java/org/exist/xmldb/RemoteResourceSet.java</include>
                                 <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
                                 <include>src/main/java/org/exist/xmldb/RemoteXMLResource.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteXPathQueryService.java</include>
                                 <include>src/test/java/org/exist/xmldb/ResourceTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/SerializationTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</include>
@@ -1081,6 +1082,7 @@
                                 <include>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/action/MultiResourcesAction.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/RpcAPI.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
@@ -1691,6 +1693,7 @@
                                 <exclude>src/main/java/org/exist/xmldb/RemoteResourceSet.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/RemoteXMLResource.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteXPathQueryService.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ResourceTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/SerializationTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</exclude>
@@ -1712,6 +1715,7 @@
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/RpcAPI.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>

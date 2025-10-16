@@ -110,6 +110,7 @@ import org.exist.xmlrpc.function.XmlRpcCompiledXQueryFunction;
 import org.exist.xmlrpc.function.XmlRpcDocumentFunction;
 import org.exist.xmlrpc.function.XmlRpcFunction;
 import org.exist.xquery.*;
+import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.util.HTTPUtils;
 import org.exist.xquery.value.*;
 import org.exist.xupdate.Modification;
@@ -137,6 +138,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.DeflaterOutputStream;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
@@ -1691,14 +1693,41 @@ public class RpcConnection implements RpcAPI {
             try {
                 compileQuery(broker, transaction, source, parameters).apply(compiledQuery -> null);
             } catch (final XPathException e) {
-                ret.put(RpcAPI.ERROR, e.getMessage());
-                if (e.getLine() != 0) {
-                    ret.put(RpcAPI.LINE, e.getLine());
-                    ret.put(RpcAPI.COLUMN, e.getColumn());
-                }
+                setErrorInformation(ret, e);
             }
             return ret;
         });
+    }
+
+    private static void setErrorInformation(Map<String, Object> rpcResult, final XPathException e) {
+        if (e.getDetailMessage() != null) {
+            rpcResult.put(RpcAPI.ERROR, e.getDetailMessage());
+        } else {
+            rpcResult.put(RpcAPI.ERROR, e.getMessage());
+        }
+        final Map<String, Object> errorCode = errorCodeToMap(new HashMap(), e.getErrorCode());
+        rpcResult.put(RpcAPI.CODE, errorCode);
+        if (e.getLine() != 0) {
+            rpcResult.put(RpcAPI.LINE, e.getLine());
+            rpcResult.put(RpcAPI.COLUMN, e.getColumn());
+        }
+    }
+
+    private static Map<String, Object> errorCodeToMap(Map<String, Object> map, final ErrorCodes.ErrorCode errorCode) {
+        map = qnameToMap(map, errorCode.getErrorQName());
+//        map.put(RpcAPI.DESCRIPTION, errorCode.getDescription());  // NOTE(AR) unneeded as it can be reconstructed via {@link ErrorCodes#fromQName(QName)}
+        return map;
+    }
+
+    private static Map<String, Object> qnameToMap(final Map<String, Object> map, final QName qname) {
+        if (qname.getNamespaceURI() != null && !qname.getNamespaceURI().equals(XMLConstants.NULL_NS_URI)) {
+            map.put(RpcAPI.QNAME_NAMESPACE_URI, qname.getNamespaceURI());
+        }
+        if (qname.getPrefix() != null && !qname.getPrefix().equals(XMLConstants.DEFAULT_NS_PREFIX)) {
+            map.put(RpcAPI.QNAME_PREFIX, qname.getPrefix());
+        }
+        map.put(RpcAPI.QNAME_LOCAL_PART, qname.getLocalPart());
+        return map;
     }
 
     public String query(final String xpath, final int howmany, final int start,
@@ -1809,11 +1838,7 @@ public class RpcConnection implements RpcAPI {
         if (queryResult.hasErrors()) {
             // return an error description
             final XPathException e = queryResult.getException();
-            ret.put(RpcAPI.ERROR, e.getMessage());
-            if (e.getLine() != 0) {
-                ret.put(RpcAPI.LINE, e.getLine());
-                ret.put(RpcAPI.COLUMN, e.getColumn());
-            }
+            setErrorInformation(ret, e);
             return ret;
         }
 
@@ -1930,11 +1955,7 @@ public class RpcConnection implements RpcAPI {
         if (queryResult.hasErrors()) {
             // return an error description
             final XPathException e = queryResult.getException();
-            ret.put(RpcAPI.ERROR, e.getMessage());
-            if (e.getLine() != 0) {
-                ret.put(RpcAPI.LINE, e.getLine());
-                ret.put(RpcAPI.COLUMN, e.getColumn());
-            }
+            setErrorInformation(ret, e);
             return ret;
         }
 
