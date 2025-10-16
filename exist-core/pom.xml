@@ -764,6 +764,7 @@
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
                                 <include>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</include>
+                                <include>src/test/java/org/exist/xmldb/XMLDBExternalVariableTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/main/java/org/exist/xquery/JavaBinding.java</include>
@@ -1698,6 +1699,7 @@
                                 <exclude>src/test/java/org/exist/xmldb/SerializationTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/XMLDBExternalVariableTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/AbstractConcurrentTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/ComplexUpdateTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/ConcurrentAttrUpdateTest.java</exclude>
