@@ -38,7 +38,6 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.FunctionReturnSequenceType;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
-import org.exquery.restxq.RestXqErrorCodes;
 
 /**
  *
@@ -79,7 +78,7 @@ public class UriFunctions extends BasicFunction {
         }
 
         if(var == null) {
-            throw new XPathException(new EXQueryErrorCode(RestXqErrorCodes.RQDY0101), getLine(), getColumn());
+            throw new XPathException(EXQueryErrorCode.RQDY0101, getLine(), getColumn());
         } else {
             return var.getValue();
         }

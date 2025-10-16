@@ -64,6 +64,7 @@ import java.util.Properties;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.modules.cache.CacheModule.*;
+import static org.exist.xquery.modules.cache.CacheModule.CacheModuleErrorCode.*;
 
 /**
  * Function implementations for the Cache Module

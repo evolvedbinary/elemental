@@ -300,7 +300,12 @@ public class Transform {
                 final StructuredQName from = xPathException.getErrorCodeQName();
                 if (from != null) {
                     final QName errorCodeQName = new QName(from.getLocalPart(), from.getURI(), from.getPrefix());
-                    final ErrorCodes.ErrorCode errorCode = new ErrorCodes.ErrorCode(errorCodeQName, cause.getMessage());
+                    ErrorCodes.ErrorCode errorCode = null;
+                    try {
+                        errorCode = ErrorCodes.fromQName(errorCodeQName);
+                    } catch (final IllegalArgumentException ee) {
+                        errorCode = new ErrorCodes.DynamicErrorCode(errorCodeQName, cause.getMessage());
+                    }
                     return new XPathException(fnTransform, errorCode, prefix + cause.getMessage());
                 } else {
                     return new XPathException(fnTransform, defaultErrorCode, prefix + cause.getMessage());

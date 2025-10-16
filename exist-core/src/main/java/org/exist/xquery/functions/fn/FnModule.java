@@ -306,10 +306,6 @@ public class FnModule extends AbstractInternalModule {
         Arrays.sort(functions, new FunctionComparator());
     }
 
-    public final static ErrorCodes.ErrorCode SENR0001 = new ErrorCodes.ErrorCode("SENR0001", "serialization error in fn:serialize");
-    public final static ErrorCodes.ErrorCode SEPM0019 = new ErrorCodes.ErrorCode("SEPM0019", "It is an error if an instance of the data model " +
-            "used to specify the settings of serialization parameters specifies the value of the same parameter more than once.");
-
     public FnModule(Map<String, List<?>> parameters) {
         super(functions, parameters, true);
     }

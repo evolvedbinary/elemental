@@ -45,6 +45,7 @@
  */
 package org.exist.test.runner;
 
+import org.exist.dom.QName;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -118,9 +119,14 @@ public class ExtTestErrorFunction extends JUnitIntegrationFunction {
         final String description = safeGetMapStringValue(DESCRIPTION_MAP_KEY, errorMap, "");
 
         final Sequence seqErrorCode = errorMap.get(CODE_MAP_KEY);
-        final ErrorCodes.ErrorCode errorCode;
-        if(seqErrorCode != null && !seqErrorCode.isEmpty()) {
-            errorCode = new ErrorCodes.ErrorCode(((QNameValue)seqErrorCode.itemAt(0)).getQName(), description);
+        ErrorCodes.ErrorCode errorCode;
+        if (seqErrorCode != null && !seqErrorCode.isEmpty()) {
+            final QName errorQName = ((QNameValue)seqErrorCode.itemAt(0)).getQName();
+            try {
+                errorCode = ErrorCodes.fromQName(errorQName);
+            } catch (final IllegalArgumentException e) {
+                errorCode = new ErrorCodes.DynamicErrorCode(errorQName, description);
+            }
         } else {
             errorCode = ErrorCodes.ERROR;
         }

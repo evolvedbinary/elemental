@@ -28,10 +28,27 @@ package org.exist.extensions.exquery.restxq.impl.adapters;
 
 import org.exist.dom.QName;
 import org.exist.xquery.ErrorCodes.ErrorCode;
+import org.exquery.restxq.RestXqErrorCodes;
 
-public class EXQueryErrorCode extends ErrorCode {
+public enum EXQueryErrorCode implements ErrorCode {
 
-    public EXQueryErrorCode(final org.exquery.ErrorCodes.ErrorCode errorCode) {
-        super(new QName(errorCode.getErrorQName().getLocalPart(), errorCode.getErrorQName().getNamespaceURI(), errorCode.getErrorQName().getPrefix()), errorCode.getDescription());
+    RQDY0101(RestXqErrorCodes.RQDY0101);
+
+    private final QName qname;
+    private final String description;
+
+    EXQueryErrorCode(final org.exquery.ErrorCodes.ErrorCode errorCode) {
+        this.qname = new QName(errorCode.getErrorQName().getLocalPart(), errorCode.getErrorQName().getNamespaceURI(), errorCode.getErrorQName().getPrefix());
+        this.description = errorCode.getDescription();
+    }
+
+    @Override
+    public QName getErrorQName() {
+        return qname;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
     }
 }

@@ -250,8 +250,13 @@
                                 <include>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/TextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/Facets.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/lucene/Field.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/GetField.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/InspectIndex.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/lucene/LuceneModule.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/Query.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/QueryOptions.java</include>
                             </includes>
                         </licenseSet>
 
@@ -281,8 +286,13 @@
                                 <exclude>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/Facets.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/lucene/Field.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/GetField.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/InspectIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/lucene/LuceneModule.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/Query.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/QueryOptions.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

@@ -54,7 +54,7 @@ import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.ErrorCodes.ErrorCode;
-import org.exist.xquery.Function;
+import org.exist.xquery.Expression;
 import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -148,12 +148,17 @@ public class FunError extends BasicFunction {
             if (!args[0].isEmpty()) {
                 QName errorQName = ((QNameValue) args[0].itemAt(0)).getQName();
                 String prefix = errorQName.getPrefix();
-                if (prefix==null){
+                if (prefix == null){
                     final String ns = errorQName.getNamespaceURI();
                     prefix = getContext().getPrefixForURI(ns);
                     errorQName = new QName(errorQName.getLocalPart(), errorQName.getNamespaceURI(), prefix);
                 }
-                errorCode = new ErrorCode(errorQName, errorDesc);
+
+                try {
+                    errorCode = ErrorCodes.fromQName(errorQName);
+                } catch (final IllegalArgumentException e) {
+                    errorCode = new ErrorCodes.DynamicErrorCode(errorQName, errorDesc);
+                }
             }
             // If there is a third argument, use it.
             if (args.length == 3) {
@@ -165,6 +170,16 @@ public class FunError extends BasicFunction {
             logger.trace("{}: {}", errorDesc, errorCode.toString());
         }
 
-        throw new XPathException(this, errorCode, errorDesc, errorVal);
+        throw new FnErrorXPathException(this, errorCode, errorDesc, errorVal);
+    }
+
+    /**
+     * Indicates that the XPathException was raised
+     * explicitly through fn:error.
+     */
+    public static class FnErrorXPathException extends XPathException {
+        FnErrorXPathException(final Expression expr, final ErrorCode errorCode, final String errorDesc, final Sequence errorVal) {
+            super(expr, errorCode, errorDesc, errorVal);
+        }
     }
 }
