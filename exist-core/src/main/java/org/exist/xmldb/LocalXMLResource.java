@@ -612,4 +612,19 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             content = getWriter().toString();
         }
     }
+
+    @Override
+    public String getTypeName() {
+        int type = Type.ITEM;
+
+        if (value != null) {
+            type = value.getType();
+
+        } else if (root != null) {
+            type = NodeProxy.nodeType2XQuery(root.getNodeType());
+        }
+
+        return Type.getTypeName(type);
+    }
 }
+

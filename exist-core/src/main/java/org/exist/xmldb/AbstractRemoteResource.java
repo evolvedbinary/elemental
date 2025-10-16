@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -55,6 +79,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
         implements EXistResource, ExtendedResource, Resource {
     protected final XmldbURI path;
     private String mimeType;
+    protected final Optional<String> type;
 
     protected Path file = null;
     private ContentFile contentFile = null;
@@ -67,7 +92,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
     Date dateCreated = null;
     Date dateModified = null;
 
-    protected AbstractRemoteResource(final RemoteCollection parent, final XmldbURI documentName, final String mimeType) {
+    protected AbstractRemoteResource(final RemoteCollection parent, final XmldbURI documentName, final String mimeType, final Optional<String> type) {
         super(parent);
         if (documentName.numSegments() > 1) {
             this.path = documentName;
@@ -75,6 +100,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
             this.path = parent.getPathURI().append(documentName);
         }
         this.mimeType = mimeType;
+        this.type = type;
     }
 
     @Override
@@ -539,6 +565,11 @@ public abstract class AbstractRemoteResource extends AbstractRemote
         } catch (final IOException e) {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         }
+    }
+
+    @Override
+    public String getTypeName() {
+        return type.orElse("item()");
     }
 
     @Override
