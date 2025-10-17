@@ -456,7 +456,7 @@ public class XPathQueryTest {
         if (node.getNodeType() == Node.DOCUMENT_NODE) {
             node = node.getFirstChild();
         }
-        assertEquals("XPath: " + query, "a", node.getLocalName());
+        assertEquals("XPath: " + query, "a", node.getNodeName());
 
         query = "let $c := (<a/>,<b/>,<c/>,<d/>,<e/>) return count($c/root())";
         result = service.queryResource("numbers.xml", query);

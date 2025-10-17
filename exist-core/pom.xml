@@ -315,16 +315,9 @@
             <artifactId>xml-apis</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.ws.commons.util</groupId>
+            <groupId>com.evolvedbinary.thirdparty.org.apache.ws.commons.util</groupId>
             <artifactId>ws-commons-util</artifactId>
-            <version>1.0.2</version>
-            <exclusions>
-                <exclusion>
-                    <!-- conflicts with Xerces dependency on xml-apis -->
-                    <groupId>xml-apis</groupId>
-                    <artifactId>xml-apis</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>1.1.0</version>
         </dependency>
 
         <!-- xml-resolver is needed at runtime because xercesImpl declares this as optional,
@@ -412,12 +405,6 @@
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.org.apache.xmlrpc</groupId>
             <artifactId>xmlrpc-common</artifactId>
-            <exclusions>
-                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
-                    <groupId>xml-apis</groupId>
-                    <artifactId>xml-apis</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.org.apache.xmlrpc</groupId>
@@ -814,6 +801,7 @@
                                 <include>src/main/java/org/exist/dom/QName.java</include>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
+                                <include>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DOMIndexer.java</include>
@@ -1355,6 +1343,7 @@
                                 <exclude>src/main/java/org/exist/dom/QName.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</exclude>

@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.lacuna.bifurcan.IMap;
+import org.exist.dom.memtree.AttrImpl;
 import org.exist.dom.persistent.AVLTreeNodeSet;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
@@ -701,9 +702,33 @@ public class XPathUtil {
                 builder.startDocument();
                 final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(expression, builder);
                 streamer.setContentHandler(receiver);
-                streamer.serialize((Node) obj, false);
-                if(obj instanceof Document) {
+                streamer.setLexicalHandler(receiver);
+                final boolean isWrappedAttr = obj instanceof Attr && ((Attr) obj).getOwnerElement() != null;
+                String wrappedAttrLocalName = null;
+                String wrappedAttrNamespaceUri = null;
+                if (isWrappedAttr) {
+                    final Attr wrappedAttr = (Attr) obj;
+                    final String wrappedAttrName = wrappedAttr.getNodeName();
+                    wrappedAttrLocalName = wrappedAttrName.substring(wrappedAttrName.indexOf(':') + 1);
+                    wrappedAttrNamespaceUri = wrappedAttr.getNamespaceURI();
+
+                    streamer.serialize(wrappedAttr.getOwnerElement());
+
+                } else {
+                    streamer.serialize((Node) obj, false);
+                }
+
+                if (obj instanceof Document) {
                     return builder.getDocument();
+
+                } else if (isWrappedAttr) {
+                    final Element attrOwnerElement = builder.getDocument().getDocumentElement();
+                    if (wrappedAttrNamespaceUri != null) {
+                        return (AttrImpl) attrOwnerElement.getAttributeNodeNS(wrappedAttrNamespaceUri, wrappedAttrLocalName);
+                    } else {
+                        return (AttrImpl) attrOwnerElement.getAttributeNode(wrappedAttrLocalName);
+                    }
+
                 } else {
                     return builder.getDocument().getNode(1);
                 }

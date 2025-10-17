@@ -52,14 +52,22 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.Namespaces;
 import org.exist.dom.persistent.DocumentTypeImpl;
+import org.exist.storage.serializers.EXistOutputKeys;
+import org.exist.storage.serializers.Serializer;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.Leasable;
 import org.exist.util.MimeType;
+import org.exist.util.io.ContentFile;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
 import org.exist.util.serializer.DOMSerializer;
+import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SAXSerializer;
+import org.exist.util.serializer.SerializerPool;
+import org.exist.xqj.Marshaller;
+import org.exist.xquery.value.Item;
 import org.exist.xquery.value.StringValue;
+import org.exist.xquery.value.Type;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
@@ -88,6 +96,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -112,6 +122,7 @@ public class RemoteXMLResource
     private final int handle;
     private int pos = -1;
     private String content = null;
+    private Node root = null;
 
     private Properties outputProperties = null;
     private LexicalHandler lexicalHandler = null;
@@ -213,14 +224,39 @@ public class RemoteXMLResource
 
     @Override
     public Object getContent() throws XMLDBException {
+        if (root != null && contentFile == null) {
+            // NOTE(AR) root will be serialized to contentFile once and then reused
+            serializeRootToContent();
+        }
+
         if (content != null) {
             return new StringValue(content).getStringValue(true);
         }
+
         final Object res = super.getContent();
         if (res != null) {
             if (res instanceof byte[]) {
                 return new String((byte[]) res, UTF_8);
 
+            } else if (res instanceof Item) {
+                final Item item = (Item) res;
+                if (Type.subTypeOf(item.getType(), Type.NODE)) {
+                    root = (Node) item;
+                    // Serialize the Node to a String
+                    try (final Writer writer = new StringWriter()) {
+                        final Properties properties = new Properties();
+                        properties.putAll(getProperties());
+                        // NOTE(AR) We don't want to do XDM Serialization here as it has been previously handled
+                        properties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "no");
+                        serializeNode(root, properties, writer);
+                        content = writer.toString();
+                    } catch (final TransformerException | IOException e) {
+                        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+                    }
+                    return content;
+                } else {
+                    return item.toString();
+                }
             } else {
                 return res;
             }
@@ -228,8 +264,34 @@ public class RemoteXMLResource
         return null;
     }
 
+    private void serializeRootToContent() throws XMLDBException {
+        try  {
+            final ContentFile.ContentFileType type;
+            if (Marshaller.NAMESPACE.equals(getNamespace(node))) {
+                type = ContentFile.ContentFileType.XQJ_SERIALIZATION;
+            } else {
+                type = ContentFile.ContentFileType.XDM_SERIALIZATION;
+            }
+
+            final Properties properties = new Properties(getProperties());
+            final VirtualTempPath tempFile = new VirtualTempPath(type, getInMemorySize(properties), TemporaryFileManager.getInstance());
+            try (final OutputStream out = tempFile.newOutputStream();
+                 final OutputStreamWriter osw = new OutputStreamWriter(out, UTF_8)) {
+                serializeNode(node, properties, osw);
+            }
+            return tempFile;
+        } catch (final TransformerException | IOException ioe) {
+            freeResources();
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, ioe.getMessage(), ioe);
+        }
+    }
+
     @Override
     public Node getContentAsDOM() throws XMLDBException {
+        if (root != null) {
+            return root;
+        }
+
         final InputSource is;
         InputStream cis = null;
 
@@ -268,6 +330,26 @@ public class RemoteXMLResource
 
     @Override
     public void getContentAsSAX(final ContentHandler handler) throws XMLDBException {
+        if (root != null) {
+            String option = collection.getProperty(Serializer.GENERATE_DOC_EVENTS);
+            if (option == null) {
+                option = "false";
+            }
+            final DOMStreamer streamer = (DOMStreamer) SerializerPool.getInstance().borrowObject(DOMStreamer.class);
+            try {
+                streamer.setContentHandler(handler);
+                streamer.setLexicalHandler(lexicalHandler);
+                streamer.serialize(root, option.equalsIgnoreCase("true"));
+
+                return;
+
+            } catch (final SAXException e) {
+                throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
+            } finally {
+                SerializerPool.getInstance().returnObject(streamer);
+            }
+        }
+
         final InputSource is;
         InputStream cis = null;
 
@@ -314,7 +396,12 @@ public class RemoteXMLResource
 
     @Override
     public void setContent(final Object value) throws XMLDBException {
-        content = null;
+        this.content = null;
+        this.root = null;
+        this.file = null;
+        this.contentFile = null;
+        this.inputSource = null;
+
         if (!super.setContentInternal(value)) {
             if (value instanceof String) {
                 content = (String) value;
@@ -329,29 +416,21 @@ public class RemoteXMLResource
 
     @Override
     public void setContentAsDOM(final Node root) throws XMLDBException {
-        Properties properties = getProperties();
-        try  {
-            VirtualTempPath tempFile = new VirtualTempPath(getInMemorySize(properties), TemporaryFileManager.getInstance());
-            try (OutputStream out = tempFile.newOutputStream(); OutputStreamWriter osw = new OutputStreamWriter(out, UTF_8)) {
-                final DOMSerializer xmlout = new DOMSerializer(osw, properties);
-                final short type = root.getNodeType();
-                if (type == Node.ELEMENT_NODE || type == Node.DOCUMENT_FRAGMENT_NODE || type == Node.DOCUMENT_NODE) {
-                    xmlout.serialize(root);
-                } else {
-                    throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "invalid node type");
-                }
-            }
-            setContent(tempFile);
-        } catch (final TransformerException | IOException ioe) {
-            freeResources();
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, ioe.getMessage(), ioe);
-        }
+        this.content = null;
+        this.root = root;
+        this.file = null;
+        this.contentFile = null;
+        this.inputSource = null;
     }
 
     @Override
     public ContentHandler setContentAsSAX() throws XMLDBException {
         freeResources();
-        content = null;
+        this.content = null;
+        this.root = null;
+        this.file = null;
+        this.contentFile = null;
+        this.inputSource = null;
         return new InternalXMLSerializer();
     }
 
@@ -470,5 +549,14 @@ public class RemoteXMLResource
     public long getStreamLength()
             throws XMLDBException {
         return getStreamLengthInternal(content);
+    }
+
+    @Override
+    public void close() {
+        if (!isClosed()) {
+            this.content = null;
+            this.root = null;
+        }
+        super.close();
     }
 }

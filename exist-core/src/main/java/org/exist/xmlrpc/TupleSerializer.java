@@ -24,9 +24,9 @@ package org.exist.xmlrpc;
 import com.evolvedbinary.j8fu.tuple.*;
 import org.apache.xmlrpc.common.TypeFactory;
 import org.apache.xmlrpc.common.XmlRpcStreamConfig;
+import org.apache.xmlrpc.serializer.SerializerHandler;
 import org.apache.xmlrpc.serializer.TypeSerializer;
 import org.apache.xmlrpc.serializer.TypeSerializerImpl;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 /**
@@ -47,7 +47,7 @@ class TupleSerializer extends TypeSerializerImpl {
         this.config = config;
     }
 
-    private void writeObject(final ContentHandler handler, final Object object) throws SAXException {
+    private void writeObject(final SerializerHandler handler, final Object object) throws SAXException {
         TypeSerializer ts = typeFactory.getSerializer(config, object);
         if (ts == null) {
             throw new SAXException("Unsupported Java type: " + object.getClass().getName());
@@ -55,7 +55,7 @@ class TupleSerializer extends TypeSerializerImpl {
         ts.write(handler, object);
     }
 
-    private void writeData(final ContentHandler handler, final Object object) throws SAXException {
+    private void writeData(final SerializerHandler handler, final Object object) throws SAXException {
         final Tuple tuple = (Tuple) object;
         if(tuple instanceof Tuple2) {
             writeObject(handler, ((Tuple2)tuple)._1);
@@ -88,7 +88,7 @@ class TupleSerializer extends TypeSerializerImpl {
     }
 
     @Override
-    public void write(final ContentHandler pHandler, Object pObject) throws SAXException {
+    public void write(final SerializerHandler pHandler, Object pObject) throws SAXException {
         pHandler.startElement("", VALUE_TAG, VALUE_TAG, ZERO_ATTRIBUTES);
         pHandler.startElement("", TUPLE_TAG, TUPLE_TAG, ZERO_ATTRIBUTES);
         pHandler.startElement("", DATA_TAG, DATA_TAG, ZERO_ATTRIBUTES);

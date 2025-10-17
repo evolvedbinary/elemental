@@ -1939,7 +1939,7 @@ public class RpcConnection implements RpcAPI {
 
             try {
                 final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
-                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, doQuery(broker, compiledQuery, nodes, parameters), sortBy));
+                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, getXdmSerializationOptions(compiledQuery.getContext()), doQuery(broker, compiledQuery, nodes, parameters), sortBy));
                 return rpcResponse;
             } catch (final XPathException e) {
                 throw new EXistException(e);
@@ -1947,7 +1947,13 @@ public class RpcConnection implements RpcAPI {
         });
     }
 
-    private Map<String, Object> queryResultToTypedRpcResponse(final long startTime, final QueryResult queryResult, final Optional<String> sortBy) throws XPathException {
+    private Properties getXdmSerializationOptions(final XQueryContext context) throws XPathException {
+        final Properties properties = new Properties();
+        context.checkOptions(properties);
+        return properties;
+    }
+
+    private Map<String, Object> queryResultToTypedRpcResponse(final long startTime, final Properties xdmSerializationOptions, final QueryResult queryResult, final Optional<String> sortBy) throws XPathException {
         final Map<String, Object> ret = new HashMap<>();
         if (queryResult == null) {
             return ret;
@@ -1971,15 +1977,15 @@ public class RpcConnection implements RpcAPI {
             resultSeq = sorted;
         }
 
-        final List<Map<String, String>> result = new ArrayList<>();
+        final List<Map<String, Object>> result = new ArrayList<>();
         if (resultSeq != null) {
             final SequenceIterator i = resultSeq.iterate();
             if (i != null) {
                 while (i.hasNext()) {
                     final Item next = i.nextItem();
-                    final Map<String, String> entry;
+                    final Map<String, Object> entry;
                     if (Type.subTypeOf(next.getType(), Type.NODE)) {
-                        entry = nodeMap(next);
+                        entry = nodeMap(xdmSerializationOptions, next);
                     } else {
                         entry = atomicMap(next);
                     }
@@ -2004,8 +2010,8 @@ public class RpcConnection implements RpcAPI {
         return ret;
     }
 
-    private @Nullable Map<String, String> nodeMap(final Item item) {
-        final Map<String, String> result;
+    private @Nullable Map<String, Object> nodeMap(final Properties xdmSerializationOptions, final Item item) {
+        final Map<String, Object> result;
 
         if (item instanceof NodeValue &&
                 ((NodeValue)item).getImplementationType() == NodeValue.PERSISTENT_NODE) {
@@ -2013,7 +2019,7 @@ public class RpcConnection implements RpcAPI {
 
             result = new HashMap<>();
             result.put("type", Type.getTypeName(p.getType()));
-            result.put("docUri", p.getOwnerDocument().getURI().toString());
+            result.put("docUri", p.getOwnerDocument().getURI().toString());  // NOTE(AR) Persistent Nodes do not need to be sent in the result, as they can be retrieved later
             result.put("nodeId", p.getNodeId().toString());
 
         } else if(item instanceof org.exist.dom.memtree.NodeImpl) {
@@ -2023,6 +2029,9 @@ public class RpcConnection implements RpcAPI {
             result.put("type", Type.getTypeName(ni.getType()));
             result.put("docUri", "temp_xquery/" + item.hashCode());
             result.put("nodeId", String.valueOf(ni.getNodeNumber()));
+            result.put("xdmSerializationOptions", xdmSerializationOptions);
+            result.put("value", item);  // NOTE(AR) In-memory Nodes are transient and so need to be sent directly in the result
+
         } else {
             LOG.error("Omitting from results, unsure how to process: {}", item.getClass());
             result = null;
@@ -2031,8 +2040,8 @@ public class RpcConnection implements RpcAPI {
         return result;
     }
 
-    private Map<String, String> atomicMap(final Item item) throws XPathException {
-        final Map<String, String> result = new HashMap<>();
+    private Map<String, Object> atomicMap(final Item item) throws XPathException {
+        final Map<String, Object> result = new HashMap<>();
 
         final int type = item.getType();
         result.put("type", Type.getTypeName(type));
@@ -2097,7 +2106,7 @@ public class RpcConnection implements RpcAPI {
 
             try {
                 final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
-                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, doQuery(broker, compiledQuery, null, parameters), sortBy));
+                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, getXdmSerializationOptions(compiledQuery.getContext()), doQuery(broker, compiledQuery, null, parameters), sortBy));
                 return rpcResponse;
             } catch (final XPathException e) {
                 throw new EXistException(e);

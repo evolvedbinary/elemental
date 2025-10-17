@@ -63,6 +63,8 @@ import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import java.util.Arrays;
 
+import static org.exist.util.StringUtil.nullIfEmpty;
+
 
 /**
  * Use this class to build a new in-memory DOM document.
@@ -515,14 +517,16 @@ public class MemTreeBuilder {
     }
 
     public int namespaceNode(final QName qname, final boolean checkNS) {
+        final String qnPrefix = qname.getPrefix() == null ? XMLConstants.DEFAULT_NS_PREFIX : qname.getPrefix();
+        final String qnNs = qname.getNamespaceURI() == null ? XMLConstants.NULL_NS_URI : qname.getNamespaceURI();
+        @Nullable final String qnLocalPart = nullIfEmpty(qname.getLocalPart());
+
         final int lastNode = doc.getLastNode();
-        boolean addNode = true;
         if(doc.nodeName != null) {
             final QName elemQN = doc.nodeName[lastNode];
             if(elemQN != null) {
-                final String elemPrefix = (elemQN.getPrefix() == null) ? XMLConstants.DEFAULT_NS_PREFIX : elemQN.getPrefix();
-                final String elemNs = (elemQN.getNamespaceURI() == null) ? XMLConstants.NULL_NS_URI : elemQN.getNamespaceURI();
-                final String qnPrefix = (qname.getPrefix() == null) ? XMLConstants.DEFAULT_NS_PREFIX : qname.getPrefix();
+                final String elemPrefix = elemQN.getPrefix() == null ? XMLConstants.DEFAULT_NS_PREFIX : elemQN.getPrefix();
+                final String elemNs = elemQN.getNamespaceURI() == null ? XMLConstants.NULL_NS_URI : elemQN.getNamespaceURI();
                 if (checkNS
                     && XMLConstants.DEFAULT_NS_PREFIX.equals(elemPrefix)
                     && XMLConstants.NULL_NS_URI.equals(elemNs)
@@ -534,12 +538,23 @@ public class MemTreeBuilder {
                         "Cannot output a namespace node for the default namespace when the element is in no namespace."
                     );
                 }
-                if(elemPrefix.equals(qname.getLocalPart()) && (elemQN.getNamespaceURI() != null)) {
-                    addNode = false;
-                }
             }
         }
-        return (addNode ? doc.addNamespace(lastNode, qname) : -1);
+
+        final String prefix;
+        if (XMLConstants.XMLNS_ATTRIBUTE.equals(qnPrefix) && qnLocalPart != null) {
+            prefix = qnLocalPart;
+        } else {
+            prefix = XMLConstants.DEFAULT_NS_PREFIX;
+        }
+
+        @Nullable final String existingNs = doc.getInScopePrefix(prefix, lastNode);
+        if (!qnNs.equals(existingNs)) {
+            return doc.addNamespace(lastNode, qname);
+
+        } else {
+            return -1;
+        }
     }
 
 
