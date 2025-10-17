@@ -1042,7 +1042,9 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedUntypedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello", "world");
-        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+        // NOTE(AR) we expect this to return xs:string because neither the input nor the variable is actually typed as attribute()
+        final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "world") };
+        queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, null, externalVariable);
     }
 
     @Test
@@ -1078,13 +1080,16 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableAttributeSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("revt:hello", "world");
-        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()", externalVariable);
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
+        queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedUntypedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
-        queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
+        // NOTE(AR) we expect this to return xs:string because neither the input nor the variable is actually typed as attribute()
+        final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "world"), value(Type.STRING, "see you soon") };
+        queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, null, externalVariable);
     }
 
     @Test
@@ -1119,7 +1124,8 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptAttributeSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("revt:hello", "world");
-        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()?", externalVariable);
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
+        queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()?", externalVariable);
     }
 
     @Test
@@ -1148,13 +1154,15 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableAttributesSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world") };
-        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
+        queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributesSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
-        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
+        queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()+", externalVariable);
     }
 
     @Test
@@ -1183,13 +1191,15 @@ public class RESTExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableAttributeszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world") };
-        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
+        queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributezSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
-        queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
+        final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
+        queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()*", externalVariable);
     }
 
     @Test
@@ -1765,7 +1775,7 @@ public class RESTExternalVariableTest {
                 builder.append(" type=\"").append(Type.getTypeName(((ExternalVariableTypedValueRep) externalVariableSequenceItem).getXdmType())).append("\"");
             }
 
-            if (externalVariableSequenceItem instanceof NamedValueRep) {
+            if (externalVariableSequenceItem instanceof TypedNamedValueRep) {
                 // Attribute Node type
                 final String name = ((NamedValueRep) externalVariableSequenceItem).getName();
                 builder.append(" name=\"").append(name).append("\"");
