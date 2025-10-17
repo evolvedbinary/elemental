@@ -97,19 +97,21 @@ import static org.exist.dom.QName.Validity.ILLEGAL_FORMAT;
  * for example {@code int nextNodeNum = next[nodeNum]}.
  *
  * The following arrays hold the data of the nodes themselves:
- *  * {@link #namespaceParent}
- *  * {@link #namespaceCode}
- *  * {@link #nodeName}
- *  * {@link #alpha}
- *  * {@link #alphaLen}
- *  * {@link #characters}
- *  * {@link #nodeId}
- *  * {@link #attrName}
- *  * {@link #attrType}
- *  * {@link #attrNodeId}
- *  * {@link #attrParent}
- *  * {@link #attrValue}
- *  * {@link #references}
+ * <ul>
+ *   <li>{@link #namespaceParent}</li>
+ *   <li>{@link #namespaceCode}</li>
+ *   <li>{@link #nodeName}</li>
+ *   <li>{@link #alpha}</li>
+ *   <li>{@link #alphaLen} For Element nodes, this is the ID of the first namespace for that Element. For Text, CData Section, Comment, and Processing Instruction nodes this is the lengh of their character data.</li>
+ *   <li>{@link #characters}</li>
+ *   <li>{@link #nodeId}</li>
+ *   <li>{@link #attrName}</li>
+ *   <li>{@link #attrType}</li>
+ *   <li>{@link #attrNodeId}</li>
+ *   <li>{@link #attrParent}</li>
+ *   <li>{@link #attrValue}</li>
+ *   <li>{@link #references}</li>
+ * </ul>
  *
  * This implementation stores all node data in the document object. Nodes from another document, i.e. a persistent document in the database, can be
  * stored as reference nodes, i.e. the nodes are not copied into this document object. Instead a reference is inserted which will only be expanded
@@ -1746,6 +1748,47 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
             final QName namespaceMapping = namespaceCode[i];
             if (prefix.equals(namespaceMapping.getLocalPart())) {
                 return namespaceMapping.getNamespaceURI();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the in-scope namespace URI for the namespace prefix.
+     *
+     * @param prefix the namespace prefix to lookup.
+     * @param nodeNumber the node to retrieve the in-scope namespace URI for.
+     *
+     * @return the namespace URI bound to the namespace prefix, or null if there is no such binding.
+     */
+    public @Nullable String getInScopePrefix(String prefix, final int nodeNumber) {
+        if (prefix == null) {
+            prefix = XMLConstants.DEFAULT_NS_PREFIX;
+        }
+
+        // First, look at the Namespaces on the current node
+        if (alphaLen != null) {
+            int ns = alphaLen[nodeNumber];
+            if (ns != -1) {
+                while (ns < nextNamespace && namespaceParent[ns] == nodeNumber) {
+                    final QName nsQName = namespaceCode[ns];
+                    if (prefix.equals(nsQName.getPrefix())) {
+                        return nsQName.getNamespaceURI();
+                    }
+                    ++ns;
+                }
+            }
+        }
+
+        // Second, look at the parent, and so on...
+        if (next != null) {
+            int parent = next[nodeNumber];
+            while (parent > nodeNumber) {
+                parent = next[parent];
+            }
+            if (parent != -1) {
+                return getInScopePrefix(prefix, parent);
             }
         }
 

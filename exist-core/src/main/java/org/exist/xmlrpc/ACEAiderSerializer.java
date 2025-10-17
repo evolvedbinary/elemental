@@ -34,10 +34,10 @@ package org.exist.xmlrpc;
 
 import org.apache.xmlrpc.common.TypeFactory;
 import org.apache.xmlrpc.common.XmlRpcStreamConfig;
+import org.apache.xmlrpc.serializer.SerializerHandler;
 import org.apache.xmlrpc.serializer.TypeSerializer;
 import org.apache.xmlrpc.serializer.TypeSerializerImpl;
 import org.exist.security.internal.aider.ACEAider;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 /**
@@ -58,7 +58,7 @@ class ACEAiderSerializer extends TypeSerializerImpl {
         this.config = config;
     }
 
-    private void writeObject(final ContentHandler handler, final Object object) throws SAXException {
+    private void writeObject(final SerializerHandler handler, final Object object) throws SAXException {
         final TypeSerializer ts = typeFactory.getSerializer(config, object);
         if (ts == null) {
             throw new SAXException("Unsupported Java type: " + object.getClass().getName());
@@ -66,7 +66,7 @@ class ACEAiderSerializer extends TypeSerializerImpl {
         ts.write(handler, object);
     }
 
-    private void writeData(final ContentHandler handler, final Object object) throws SAXException {
+    private void writeData(final SerializerHandler handler, final Object object) throws SAXException {
         final ACEAider aceAider = (ACEAider) object;
         writeObject(handler, aceAider.getAccessType().name());
         writeObject(handler, aceAider.getTarget().name());
@@ -75,7 +75,7 @@ class ACEAiderSerializer extends TypeSerializerImpl {
     }
 
     @Override
-    public void write(final ContentHandler pHandler, final Object pObject) throws SAXException {
+    public void write(final SerializerHandler pHandler, final Object pObject) throws SAXException {
         pHandler.startElement("", VALUE_TAG, VALUE_TAG, ZERO_ATTRIBUTES);
         pHandler.startElement("", ACEAIDER_TAG, ACEAIDER_TAG, ZERO_ATTRIBUTES);
         pHandler.startElement("", DATA_TAG, DATA_TAG, ZERO_ATTRIBUTES);

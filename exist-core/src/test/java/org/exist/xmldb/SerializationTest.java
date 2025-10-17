@@ -159,8 +159,7 @@ public class SerializationTest {
 	@Test
 	public void wrappedNsTest2() throws XMLDBException {
 		final XQueryService service = testCollection.getService(XQueryService.class);
-		final ResourceSet result = service.query("declare namespace config='urn:config'; " +
-				"declare namespace c='urn:content'; "  +
+		final ResourceSet result = service.query(
 				"declare variable $config := <config xmlns='urn:config'>123</config>; " +
 				"declare variable $serverConfig := <serverconfig xmlns='urn:config'>123</serverconfig>; " +
 				"<c:Site xmlns='urn:content' xmlns:c='urn:content'> " +

@@ -57,6 +57,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
 
 import com.evolvedbinary.j8fu.function.FunctionE;
@@ -70,6 +71,7 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.Leasable;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
+import org.w3c.dom.Node;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceIterator;
@@ -226,8 +228,8 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
         if(resources.get((int) pos) instanceof Resource) {
             return (Resource) resources.get((int) pos);
         } else {
-            final Map<String, String> item = (Map<String, String>)resources.get((int)pos);
-            final String type = item.get("type");
+            final Map<String, Object> item = (Map<String, Object>) resources.get((int)pos);
+            final String type = (String) item.get("type");
             return switch (type) {
                 case "node()", "document-node()", "element()", "attribute()", "text()", "processing-instruction()", "comment()", "namespace()", "cdata-section()" ->
                         getResourceNode((int) pos, item);
@@ -239,10 +241,10 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
         }
     }
 
-    private RemoteXMLResource getResourceNode(final int pos, final Map<String, String> nodeDetail) throws XMLDBException {
-        final String doc = nodeDetail.get("docUri");
-        final Optional<String> s_id =  Optional.ofNullable(nodeDetail.get("nodeId"));
-        final Optional<String> s_type = Optional.ofNullable(nodeDetail.get("type"));
+    private RemoteXMLResource getResourceNode(final int pos, final Map<String, Object> nodeDetail) throws XMLDBException {
+        final String doc = (String) nodeDetail.get("docUri");
+        final Optional<String> s_id = Optional.ofNullable((String) nodeDetail.get("nodeId"));
+        final Optional<String> s_type = Optional.ofNullable((String) nodeDetail.get("type"));
         final XmldbURI docUri;
         try {
             docUri = XmldbURI.xmldbUriFor(doc);
@@ -257,28 +259,39 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
             //fake to provide a RemoteCollection for local files that have been transferred by xml-rpc
             parent = collection;
         }
+        final Properties parentProperties = new Properties();
+        parentProperties.putAll(outputProperties);
+        parent.setProperties(parentProperties);
 
-
-        parent.setProperties(outputProperties);
-        final RemoteXMLResource res = new RemoteXMLResource(parent, handle, pos, docUri,
-                s_id, s_type);
-        res.setProperties(outputProperties);
+        final RemoteXMLResource res = new RemoteXMLResource(parent, handle, pos, docUri, s_id, s_type);
+        final Properties resourceProperties = new Properties();
+        resourceProperties.putAll(outputProperties);
+        @Nullable final Node node = (Node) nodeDetail.get("value");
+        if (node != null) {
+            // NOTE(AR) only used at present for in-memory nodes returned from XQuery execution
+            res.setContentAsDOM(node);
+        }
+        @Nullable final Map xdmSerializationProperties = (Map) nodeDetail.get("xdmSerializationOptions");
+        if (xdmSerializationProperties != null) {
+            resourceProperties.putAll(xdmSerializationProperties);
+        }
+        res.setProperties(resourceProperties);
         return res;
     }
 
-    private RemoteXMLResource getResourceValue(final int pos, final Map<String, String> valueDetail) throws XMLDBException {
-        final RemoteXMLResource res = new RemoteXMLResource(collection, handle, pos, XmldbURI.create(Long.toString(pos)), Optional.empty(), Optional.ofNullable(valueDetail.get("type")));
+    private RemoteXMLResource getResourceValue(final int pos, final Map<String, Object> valueDetail) throws XMLDBException {
+        final RemoteXMLResource res = new RemoteXMLResource(collection, handle, pos, XmldbURI.create(Long.toString(pos)), Optional.empty(), Optional.ofNullable((String) valueDetail.get("type")));
         res.setContent(valueDetail.get("value"));
         res.setProperties(outputProperties);
         return res;
     }
 
-    private <E extends Exception> RemoteBinaryResource getResourceBinaryValue(final int pos, final Map<String, String> valueDetail, final FunctionE<String, byte[], E> binaryDecoder) throws XMLDBException {
-        final String type = valueDetail.get("type");
+    private <E extends Exception> RemoteBinaryResource getResourceBinaryValue(final int pos, final Map<String, Object> valueDetail, final FunctionE<String, byte[], E> binaryDecoder) throws XMLDBException {
+        final String type = (String) valueDetail.get("type");
 
         final byte[] content;
         try {
-            content = binaryDecoder.apply(valueDetail.get("value"));
+            content = binaryDecoder.apply((String) valueDetail.get("value"));
         } catch(final Exception e) {
             throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e);
         }

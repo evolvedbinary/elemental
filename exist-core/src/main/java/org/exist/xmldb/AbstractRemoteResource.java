@@ -80,9 +80,11 @@ public abstract class AbstractRemoteResource extends AbstractRemote
     private String mimeType;
     protected final Optional<String> type;
 
+    // those are the different types of content this resource may have to deal with
     protected Path file = null;
-    private ContentFile contentFile = null;
+    protected ContentFile contentFile = null;
     protected InputSource inputSource = null;
+
     private long contentLen = -1L;
     private Permission permissions = null;
     private boolean closed;
@@ -577,7 +579,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
     }
 
     @Override
-    public final void close() {
+    public void close() {
         if (!isClosed()) {
             try {
                 file = null;
