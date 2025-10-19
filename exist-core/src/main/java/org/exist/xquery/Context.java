@@ -530,7 +530,8 @@ public interface Context {
      * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
      *
      * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
-     * @param value a Java object, representing the fixed value of the variable.
+     * @param value a Java object, representing the fixed value of the variable. A Java Array or List will
+     *              be interpreted as an XDM Sequence.
      *
      * @return the created Variable object.
      *

@@ -49,6 +49,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -605,7 +606,7 @@ public class XPathUtil {
      * directly returned, other objects are converted into the corresponding
      * internal types.
      *
-     * @param obj The java object.
+     * @param obj The java object. A Java Array or List will be interpreted as an XDM Sequence.
      * @param context XQuery context.
      * @param expression the expression from which the object derives.
      *
@@ -641,7 +642,7 @@ public class XPathUtil {
      * directly returned, other objects are converted into the corresponding
      * internal types.
      *
-     * @param obj The java object
+     * @param obj The java object. A Java Array or List will be interpreted as an XDM Sequence.
      * @param context XQuery context
      * @param expandChars true if characters should be expanded, false otherwise.
      * @param expression the expression from which the object derives.
@@ -662,8 +663,8 @@ public class XPathUtil {
      * @param obj The java object.
      * @param context XQuery context.
      * @param expandChars true if characters should be expanded, false otherwise.
-     * @param listToSequence true if lists should be converted to sequences, false otherwise.
-     * @param arrayToSequence true if arrays should be converted to sequences, false otherwise.
+     * @param listToSequence true if Java Lists should be converted to sequences, false otherwise.
+     * @param arrayToSequence true if Java Arrays should be converted to sequences, false otherwise.
      * @param expression the expression from which the object derives.
      *
      * @return the XDM sequence.
@@ -742,20 +743,8 @@ public class XPathUtil {
             }
 
         } else if (listToSequence && obj instanceof List<?>) {
-            boolean createNodeSequence = true;
-
-            final List<?> lst = (List<?>) obj;
-            for (final Object next : lst) {
-                if (!(next instanceof NodeProxy)) {
-                    createNodeSequence = false;
-                    break;
-                }
-            }
-            final Sequence seq = createNodeSequence ? new AVLTreeNodeSet() : new ValueSequence(lst.size());
-            for (final Object o : lst) {
-                seq.add((Item) javaObjectToXPath(o, context, expandChars, listToSequence, arrayToSequence, expression));
-            }
-            return seq;
+            final List<?> list = (List<?>) obj;
+            return javaArrayToXPath((List<Object>) list, context, expandChars, listToSequence, arrayToSequence, expression);
 
         } else if (obj instanceof NodeList) {
             context.pushDocumentContext();
@@ -786,21 +775,8 @@ public class XPathUtil {
             }
 
         } else if (arrayToSequence && obj instanceof Object[]) {
-            boolean createNodeSequence = true;
             final Object[] array = (Object[]) obj;
-            for (Object arrayItem : array) {
-                if (!(arrayItem instanceof NodeProxy)) {
-                    createNodeSequence = false;
-                    break;
-                }
-            }
-
-            final Sequence seq = createNodeSequence ? new AVLTreeNodeSet() : new ValueSequence();
-            for (final Object arrayItem : array) {
-                seq.add((Item) javaObjectToXPath(arrayItem, context, expandChars, listToSequence, arrayToSequence, expression));
-            }
-            return seq;
-
+            return javaArrayToXPath(Arrays.asList(array), context, expandChars, listToSequence, arrayToSequence, expression);
         }
 
         final int xdmType = javaClassToXdmType(obj.getClass());
@@ -905,6 +881,23 @@ public class XPathUtil {
             default:
                 return new JavaObjectValue(obj);
         }
+    }
+
+    private static Sequence javaArrayToXPath(final Iterable<Object> objects, final XQueryContext context, final boolean expandChars, final boolean listToSequence, final boolean arrayToSequence, final Expression expression) throws XPathException {
+        boolean createNodeSequence = true;
+        for (final Object object : objects) {
+            if (!(object instanceof NodeProxy)) {
+                createNodeSequence = false;
+                break;
+            }
+        }
+
+        final Sequence result = createNodeSequence ? new AVLTreeNodeSet() : new ValueSequence();
+        for (final Object object : objects) {
+            final Sequence seq = javaObjectToXPath(object, context, expandChars, listToSequence, arrayToSequence, expression);
+            result.addAll(seq);
+        }
+        return result;
     }
 
     /**
