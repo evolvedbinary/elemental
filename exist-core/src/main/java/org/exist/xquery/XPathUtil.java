@@ -777,6 +777,14 @@ public class XPathUtil {
         } else if (arrayToSequence && obj instanceof Object[]) {
             final Object[] array = (Object[]) obj;
             return javaArrayToXPath(Arrays.asList(array), context, expandChars, listToSequence, arrayToSequence, expression);
+
+        } else if (obj instanceof ArrayWrapper) {
+            final ArrayWrapper arrayWrapper = (ArrayWrapper) obj;
+            final List<Sequence> xdmArrayItems = new ArrayList<>(arrayWrapper.array.length);
+            for (final Object javaArrayItem : arrayWrapper.array) {
+                xdmArrayItems.add(javaObjectToXPath(javaArrayItem, context, expandChars, listToSequence, arrayToSequence, expression));
+            }
+            return new ArrayType(expression, context, xdmArrayItems);
         }
 
         final int xdmType = javaClassToXdmType(obj.getClass());

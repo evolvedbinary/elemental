@@ -720,6 +720,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
+                                <include>src/main/java/org/exist/xquery/value/ArrayWrapper.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
                             </includes>
                         </licenseSet>
@@ -1870,6 +1871,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/AbstractTimeRelatedTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AnyURIValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ArrayListValueSequence.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/ArrayWrapper.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AtomicValueComparator.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/BifurcanMapTest.java</exclude>
