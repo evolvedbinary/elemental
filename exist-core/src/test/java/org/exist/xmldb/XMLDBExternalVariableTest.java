@@ -60,16 +60,22 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.exist.xmldb.XMLDBExternalVariableTest.EntryRep.entry;
+import static org.exist.xmldb.XMLDBExternalVariableTest.KeyRep.key;
 import static org.exist.xmldb.XMLDBExternalVariableTest.TypedArrayRep.array;
+import static org.exist.xmldb.XMLDBExternalVariableTest.TypedMapRep.map;
 import static org.exist.xmldb.XMLDBExternalVariableTest.UntypedArrayRep.untypedArray;
 import static org.exist.xmldb.XMLDBExternalVariableTest.SequenceRep.sequence;
 import static org.exist.xmldb.XMLDBExternalVariableTest.TypedValueRep.value;
 import static org.exist.xmldb.XMLDBExternalVariableTest.TypedNamedValueRep.value;
+import static org.exist.xmldb.XMLDBExternalVariableTest.UntypedMapRep.untypedMap;
 import static org.exist.xmldb.XMLDBExternalVariableTest.UntypedNamedValueRep.value;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -1396,6 +1402,223 @@ public class XMLDBExternalVariableTest {
         queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)*", externalVariable);
     }
 
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedMap() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedMap() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedMap() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedMaps() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapSuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedMaps() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            untypedMap(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            untypedMap(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedMaps() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)?", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable("map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedMap() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedMaps() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptMapSuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)+", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedMap() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedMaps() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+
+        queryPostWithExternalVariable("map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapsSuppliedUntypeds() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            untypedMap(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            untypedMap(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable("map(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)*", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new MapRep[0];
+        queryPostWithExternalVariable("map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedMap() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedMaps() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            map(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            map(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable("map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapszSuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
+        queryPostWithExternalVariable("map(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableMapzSuppliedUntypeds() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = {
+            untypedMap(
+                entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))),
+                entry(key(Type.STRING, "key2"), sequence(value(Type.STRING, "goodbye")))
+            ),
+            untypedMap(
+                entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
+            )
+        };
+        queryPostWithExternalVariable("map(*)*", externalVariable);
+    }
+
     private void queryPostWithExternalVariable(@Nullable final String xqExternalVariableType, final ExternalVariableValueRep... externalVariableSequence) throws XMLDBException {
         queryPostWithExternalVariable(Tuple(null, null), externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
@@ -1439,7 +1662,19 @@ public class XMLDBExternalVariableTest {
                 final Object actualValue = actual.getContent();
                 assertTrue(actualValue instanceof String);
                 final String actualString = actualValue.toString();
-                assertEquals(expected._2, actualString);
+
+                try {
+                    if (expected._1 != null && Type.getType(expected._1) == Type.MAP || expectedResult[i] instanceof MapRep) {
+                        // NOTE(AR) XDM Map type does not have order, so we cannot compare as strings
+                        final Map<Object, Object> expectedMap = MapUtil.parseXdmMapStringToJavaMap(expected._2.toString());
+                        final Map<Object, Object> actualMap = MapUtil.parseXdmMapStringToJavaMap(actualString);
+                        assertThat(actualMap).containsExactlyInAnyOrderEntriesOf(expectedMap);
+                    } else {
+                        assertEquals(expected._2, actualString);
+                    }
+                } catch (final XPathException e) {
+                    fail(e.getMessage());
+                }
             }
 
         } else {
@@ -1464,8 +1699,8 @@ public class XMLDBExternalVariableTest {
             @Nullable String type = null;
             Object value = null;
 
-            if (resultItem instanceof TypedValueRep) {
-                type = Type.getTypeName(((TypedValueRep) resultItem).getXdmType());
+            if (resultItem instanceof ExternalVariableTypedValueRep) {
+                type = Type.getTypeName(((ExternalVariableTypedValueRep) resultItem).getXdmType());
             }
 
             if (resultItem instanceof ValueRep) {
@@ -1517,6 +1752,62 @@ public class XMLDBExternalVariableTest {
                         builder.append(arrayItemValue.getContent());
                     }
                 }
+                value = builder.toString();
+
+            } else if (resultItem instanceof MapRep) {
+                final StringBuilder builder = new StringBuilder();
+                builder.append("map {");
+                final EntryRep[] mapEntries = ((MapRep) resultItem).getEntries();
+                for (int i = 0; i < mapEntries.length; i++) {
+
+                    if (i > 0) {
+                        builder.append(", ");
+                    }
+
+                    final EntryRep mapEntry = mapEntries[i];
+                    final ValueRep key = mapEntry.key.key;
+                    final int keyType;
+                    if (key instanceof TypedValueRep) {
+                        keyType = ((TypedValueRep) key).getXdmType();
+                    } else {
+                        keyType = Type.STRING;
+                    }
+
+                    if (Type.subTypeOf(keyType, Type.STRING)) {
+                        builder.append('"');
+                    }
+                    builder.append(key.getContent());
+                    if (Type.subTypeOf(keyType, Type.STRING)) {
+                        builder.append('"');
+                    }
+                    builder.append(": ");
+                    if (mapEntry.value.values.length != 1) {
+                        builder.append('(');
+                    }
+                    for (int j = 0; j < mapEntry.value.values.length; j++) {
+                        final ValueRep valueRep = mapEntry.value.values[j];
+                        final int valueType;
+                        if (valueRep instanceof TypedValueRep) {
+                            valueType = ((TypedValueRep) valueRep).getXdmType();
+                        } else {
+                            valueType = Type.STRING;
+                        }
+                        if (j > 0) {
+                            builder.append(", ");
+                        }
+                        if (Type.subTypeOf(valueType, Type.STRING)) {
+                            builder.append('"');
+                        }
+                        builder.append(valueRep.getContent());
+                        if (Type.subTypeOf(valueType, Type.STRING)) {
+                            builder.append('"');
+                        }
+                    }
+                    if (mapEntry.value.values.length != 1) {
+                        builder.append(')');
+                    }
+                }
+                builder.append('}');
                 value = builder.toString();
             }
 
@@ -1623,13 +1914,20 @@ public class XMLDBExternalVariableTest {
                 }
 
                 if (externalVariableItem instanceof TypedArrayRep) {
-                    values[i] = new ArrayWrapper(result);
+                    values[i] = new ArrayWrapper<>(result);
                 } else {
                     values[i] = result;
                 }
 
             } else if (externalVariableItem instanceof ValueRep) {
                 values[i] = ((ValueRep) externalVariableItem).getContent();
+
+            } else if (externalVariableItem instanceof MapRep) {
+                final Map<Object, Object> map = new HashMap<>();
+                for (final EntryRep entryRep : ((MapRep) externalVariableItem).getEntries()) {
+                    map.put(entryRep.key.key.getContent(), buildExternalVariableValue(entryRep.value.values));
+                }
+                values[i] = map;
 
             } else {
                 throw new UnsupportedOperationException("TODO(AR) implement type conversion");
@@ -1799,6 +2097,69 @@ public class XMLDBExternalVariableTest {
         @Override
         public int getXdmType() {
             return Type.ARRAY;
+        }
+    }
+
+    interface MapRep extends ExternalVariableValueRep {
+        EntryRep[] getEntries();
+    }
+
+    static class UntypedMapRep implements MapRep, ExternalVariableUntypedValueRep {
+        private final EntryRep[] entries;
+
+        public static UntypedMapRep untypedMap(final EntryRep... entries) {
+            return new UntypedMapRep(entries);
+        }
+
+        private UntypedMapRep(final EntryRep[] entries) {
+            this.entries = entries;
+        }
+
+        @Override
+        public EntryRep[] getEntries() {
+            return entries;
+        }
+    }
+
+    static class TypedMapRep extends UntypedMapRep implements MapRep, ExternalVariableTypedValueRep {
+
+        public static TypedMapRep map(final EntryRep... entries) {
+            return new TypedMapRep(entries);
+        }
+
+        private TypedMapRep(final EntryRep[] entries) {
+            super(entries);
+        }
+
+        @Override
+        public int getXdmType() {
+            return Type.MAP;
+        }
+    }
+
+    static class EntryRep {
+        private final KeyRep key;
+        private final SequenceRep value;
+
+        public static EntryRep entry(final KeyRep key, final SequenceRep value) {
+            return new EntryRep(key, value);
+        }
+
+        private EntryRep(final KeyRep key, final SequenceRep value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    static class KeyRep {
+        private final ValueRep key;
+
+        public static KeyRep key(final int xdmType, final String content) {
+            return new KeyRep(value(xdmType, content));
+        }
+
+        private KeyRep(final ValueRep key) {
+            this.key = key;
         }
     }
 }
