@@ -53,6 +53,7 @@ import org.apache.xmlrpc.common.XmlRpcStreamConfig;
 import org.apache.xmlrpc.parser.TypeParser;
 import org.apache.xmlrpc.serializer.TypeSerializer;
 import org.exist.security.internal.aider.ACEAider;
+import org.exist.xquery.value.ArrayWrapper;
 import org.xml.sax.SAXException;
 
 /**
@@ -74,6 +75,9 @@ public class ExistRpcTypeFactory extends TypeFactoryImpl {
         } else if (ACEAiderSerializer.ACEAIDER_TAG.equals(localName)) {
             return new ACEAiderParser(config, context, this);
 
+        } else if (ArrayWrapperParser.canParseElement(uri, localName)) {
+            return new ArrayWrapperParser(config, context, this);
+
         } else {
             return super.getParser(config, context, uri, localName);
         }
@@ -86,6 +90,9 @@ public class ExistRpcTypeFactory extends TypeFactoryImpl {
 
         } else if (object instanceof ACEAider) {
             return new ACEAiderSerializer(this, config);
+
+        } else if (object instanceof ArrayWrapper) {
+            return new ArrayWrapperSerializer(this, config);
 
         } else {
             return super.getSerializer(config, object);
