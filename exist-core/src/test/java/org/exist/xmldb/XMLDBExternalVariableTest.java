@@ -31,6 +31,7 @@ import org.exist.util.StringInputSource;
 import org.exist.xqj.Marshaller;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.value.ArrayWrapper;
 import org.exist.xquery.value.Type;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -63,6 +64,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.exist.xmldb.XMLDBExternalVariableTest.TypedArrayRep.array;
+import static org.exist.xmldb.XMLDBExternalVariableTest.UntypedArrayRep.untypedArray;
+import static org.exist.xmldb.XMLDBExternalVariableTest.SequenceRep.sequence;
 import static org.exist.xmldb.XMLDBExternalVariableTest.TypedValueRep.value;
 import static org.exist.xmldb.XMLDBExternalVariableTest.TypedNamedValueRep.value;
 import static org.exist.xmldb.XMLDBExternalVariableTest.UntypedNamedValueRep.value;
@@ -1234,6 +1238,164 @@ public class XMLDBExternalVariableTest {
         queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()*", externalVariable);
     }
 
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedArray() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedArray() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedArray() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
+        queryPostWithExternalVariable("array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedArrays() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"))), array(sequence(value(Type.STRING, "goodbye"))) };
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraySuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
+        final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedUntypedArrays() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUntypedSuppliedArrays() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))), array(sequence(value(Type.STRING, "goodbye"))) };
+        queryPostWithExternalVariable(null, externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArrayNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)?", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
+        queryPostWithExternalVariable("array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedArray() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
+        queryPostWithExternalVariable("array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedArrays() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))), array(sequence(value(Type.STRING, "goodbye"))) };
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableOptArraySuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
+        final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)?", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)+", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedArray() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
+        queryPostWithExternalVariable("array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedArrays() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))), array(sequence(value(Type.STRING, "goodbye"))) };
+        queryPostWithExternalVariable("array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
+        final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArraysSuppliedUntypeds() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
+        final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)+", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzNotSupplied() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)*", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedEmpty() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
+        queryPostWithExternalVariable("array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedArray() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
+        queryPostWithExternalVariable("array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedArrays() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))), array(sequence(value(Type.STRING, "goodbye"))) };
+        queryPostWithExternalVariable("array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayszSuppliedUntyped() throws XMLDBException {
+        final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
+        final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)*", externalVariable);
+    }
+
+    @Test
+    public void queryPostWithExternalVariableArrayzSuppliedUntypeds() throws XMLDBException {
+        final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
+        final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)*", externalVariable);
+    }
+
     private void queryPostWithExternalVariable(@Nullable final String xqExternalVariableType, final ExternalVariableValueRep... externalVariableSequence) throws XMLDBException {
         queryPostWithExternalVariable(Tuple(null, null), externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
@@ -1274,7 +1436,10 @@ public class XMLDBExternalVariableTest {
                 if (expected._1 != null) {
                     assertEquals(expected._1, actual.getTypeName());
                 }
-                assertEquals(expected._2, actual.getContent());
+                final Object actualValue = actual.getContent();
+                assertTrue(actualValue instanceof String);
+                final String actualString = actualValue.toString();
+                assertEquals(expected._2, actualString);
             }
 
         } else {
@@ -1305,6 +1470,54 @@ public class XMLDBExternalVariableTest {
 
             if (resultItem instanceof ValueRep) {
                 value = ((ValueRep) resultItem).getContent();
+
+            } else if (resultItem instanceof TypedArrayRep) {
+                final StringBuilder builder = new StringBuilder();
+                builder.append("[ ");
+                final SequenceRep[] arrayItems = ((ArrayRep) resultItem).getValues();
+                for (final SequenceRep arrayItem : arrayItems) {
+                    final ValueRep[] arrayItemValues = arrayItem.values;
+                    if (arrayItemValues.length == 0) {
+                        builder.append("()");
+                    } else if (arrayItemValues.length > 1) {
+                        builder.append("(");
+                    }
+                    final List<Tuple2<String, Object>> arrayItemValueSeq = buildExistVariableResultSequence(arrayItemValues);
+                    for (int i = 0; i < arrayItemValueSeq.size(); i++) {
+                        if (i > 0) {
+                            builder.append(", ");
+                        }
+                        final boolean isStringType;
+                        try {
+                            isStringType = arrayItemValueSeq.get(i)._1 != null && Type.subTypeOf(Type.getType(arrayItemValueSeq.get(i)._1), Type.STRING);
+                        } catch (final XPathException e) {
+                            fail(e.getMessage());
+                            return null;
+                        }
+                        if (isStringType) {
+                            builder.append('"');
+                        }
+                        builder.append(arrayItemValueSeq.get(i)._2);
+                        if (isStringType) {
+                            builder.append('"');
+                        }
+                    }
+                    if (arrayItemValues.length > 1) {
+                        builder.append(")");
+                    }
+                }
+                builder.append(" ]");
+                value = builder.toString();
+
+            } else if (resultItem instanceof UntypedArrayRep) {
+                final StringBuilder builder = new StringBuilder();
+                final SequenceRep[] arrayItems = ((ArrayRep) resultItem).getValues();
+                for (final SequenceRep arrayItem : arrayItems) {
+                    for (final ValueRep arrayItemValue : arrayItem.values) {
+                        builder.append(arrayItemValue.getContent());
+                    }
+                }
+                value = builder.toString();
             }
 
             results.add(Tuple(type, value));
@@ -1351,11 +1564,11 @@ public class XMLDBExternalVariableTest {
             if (Type.subTypeOf(type, Type.NODE)) {
 
                 if (type == Type.DOCUMENT) {
-                    final Document document = parse(((ValueRep) externalVariableItem).getContent());
+                    final Document document = parse(((ValueRep) externalVariableItem).getContent().toString());
                     values[i] = document;
 
                 } else if (type == Type.ELEMENT) {
-                    final Element element = parse(((ValueRep) externalVariableItem).getContent()).getDocumentElement();
+                    final Element element = parse(((ValueRep) externalVariableItem).getContent().toString()).getDocumentElement();
                     values[i] = element;
 
                 } else if (type == Type.COMMENT) {
@@ -1372,7 +1585,7 @@ public class XMLDBExternalVariableTest {
 
                 } else if (type == Type.ATTRIBUTE) {
                     final String attrNameString = ((NamedValueRep) externalVariableItem).getName();
-                    final String attrValue = ((ValueRep) externalVariableItem).getContent();
+                    final String attrValue = ((ValueRep) externalVariableItem).getContent().toString();
                     @Nullable final String attrPrefix;
                     @Nullable final String attrNamespace;
                     final String attrLocalName;
@@ -1399,6 +1612,20 @@ public class XMLDBExternalVariableTest {
 
                 } else {
                     throw new UnsupportedOperationException("TODO(AR) implement type conversion");
+                }
+
+            } else if (externalVariableItem instanceof ArrayRep) {
+                final SequenceRep[] arrayItems = ((ArrayRep) externalVariableItem).getValues();
+                final Object[] result = new Object[arrayItems.length];
+                for (int j = 0; j < arrayItems.length; j++) {
+                    final SequenceRep arrayItem = arrayItems[j];
+                    result[j] = buildExternalVariableValue(arrayItem.values);
+                }
+
+                if (externalVariableItem instanceof TypedArrayRep) {
+                    values[i] = new ArrayWrapper(result);
+                } else {
+                    values[i] = result;
                 }
 
             } else if (externalVariableItem instanceof ValueRep) {
@@ -1447,8 +1674,20 @@ public class XMLDBExternalVariableTest {
         int getXdmType();
     }
 
-    private interface ValueRep extends ExternalVariableValueRep {
-        String getContent();
+    static class SequenceRep {
+        private final ValueRep[] values;
+
+        public static SequenceRep sequence(final ValueRep... values) {
+            return new SequenceRep(values);
+        }
+
+        private SequenceRep(final ValueRep[] values) {
+            this.values = values;
+        }
+    }
+
+    interface ValueRep extends ExternalVariableValueRep {
+        Object getContent();
     }
 
     private interface NamedValueRep extends ValueRep {
@@ -1456,18 +1695,18 @@ public class XMLDBExternalVariableTest {
     }
 
     static class UntypedValueRep implements ValueRep, ExternalVariableUntypedValueRep {
-        private final String content;
+        private final Object content;
 
-        public static UntypedValueRep value(final String content) {
+        public static UntypedValueRep value(final Object content) {
             return new UntypedValueRep(content);
         }
 
-        private UntypedValueRep(final String content) {
+        private UntypedValueRep(final Object content) {
             this.content = content;
         }
 
         @Override
-        public String getContent() {
+        public Object getContent() {
             return content;
         }
     }
@@ -1475,11 +1714,11 @@ public class XMLDBExternalVariableTest {
     static class UntypedNamedValueRep extends UntypedValueRep implements NamedValueRep {
         private final String name;
 
-        public static UntypedNamedValueRep value(final String name, final String content) {
+        public static UntypedNamedValueRep value(final String name, final Object content) {
             return new UntypedNamedValueRep(name, content);
         }
 
-        private UntypedNamedValueRep(final String name, final String content) {
+        private UntypedNamedValueRep(final String name, final Object content) {
             super(content);
             this.name = name;
         }
@@ -1493,11 +1732,11 @@ public class XMLDBExternalVariableTest {
     static class TypedValueRep extends UntypedValueRep implements ExternalVariableTypedValueRep {
         final int xdmType;
 
-        public static TypedValueRep value(final int xdmType, final String content) {
+        public static TypedValueRep value(final int xdmType, final Object content) {
             return new TypedValueRep(xdmType, content);
         }
 
-        private TypedValueRep(final int xdmType, final String content) {
+        private TypedValueRep(final int xdmType, final Object content) {
             super(content);
             this.xdmType = xdmType;
         }
@@ -1511,11 +1750,11 @@ public class XMLDBExternalVariableTest {
     static class TypedNamedValueRep extends TypedValueRep implements NamedValueRep {
         final String name;
 
-        public static TypedNamedValueRep value(final int xdmType, final String name, final String content) {
+        public static TypedNamedValueRep value(final int xdmType, final String name, final Object content) {
             return new TypedNamedValueRep(xdmType, name, content);
         }
 
-        private TypedNamedValueRep(final int xdmType, final String name, final String content) {
+        private TypedNamedValueRep(final int xdmType, final String name, final Object content) {
             super(xdmType, content);
             this.name = name;
         }
@@ -1523,6 +1762,43 @@ public class XMLDBExternalVariableTest {
         @Override
         public String getName() {
             return name;
+        }
+    }
+
+    interface ArrayRep extends ExternalVariableValueRep {
+        SequenceRep[] getValues();
+    }
+
+    static class UntypedArrayRep implements ArrayRep, ExternalVariableUntypedValueRep {
+        private final SequenceRep[] values;
+
+        public static UntypedArrayRep untypedArray(final SequenceRep... values) {
+            return new UntypedArrayRep(values);
+        }
+
+        private UntypedArrayRep(final SequenceRep[] values) {
+            this.values = values;
+        }
+
+        @Override
+        public SequenceRep[] getValues() {
+            return values;
+        }
+    }
+
+    static class TypedArrayRep extends UntypedArrayRep implements ArrayRep, ExternalVariableTypedValueRep {
+
+        public static TypedArrayRep array(final SequenceRep... values) {
+            return new TypedArrayRep(values);
+        }
+
+        private TypedArrayRep(final SequenceRep[] values) {
+            super(values);
+        }
+
+        @Override
+        public int getXdmType() {
+            return Type.ARRAY;
         }
     }
 }

@@ -703,6 +703,9 @@
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
                                 <include>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/XMLDBExternalVariableTest.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/main/java/org/exist/xquery/JavaBinding.java</include>
@@ -1639,9 +1642,12 @@
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/action/MultiResourcesAction.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderSerializer.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcAPI.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/AbstractInternalModule.java</exclude>
