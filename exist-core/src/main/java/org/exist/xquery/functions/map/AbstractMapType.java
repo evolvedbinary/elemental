@@ -252,13 +252,18 @@ public abstract class AbstractMapType extends FunctionReference
                     buf.append(": ");
                     final Sequence value = get((AtomicValue) key);
 
-                    if(value != null && value.hasOne() && value instanceof StringValue) {
-                        buf.append('\"');
-                    }
-
-                    buf.append(value);
-                    if(value != null && value.hasOne() && value instanceof StringValue) {
-                        buf.append('\"');
+                    if (value.hasOne()) {
+                        final Item item = value.itemAt(0);
+                        final boolean isString = Type.subTypeOf(item.getType(), Type.STRING);
+                        if (isString) {
+                            buf.append('"');
+                        }
+                        buf.append(item.toString());
+                        if (isString) {
+                            buf.append('"');
+                        }
+                    } else {
+                        buf.append(value);
                     }
 
                     first = false;
