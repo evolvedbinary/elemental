@@ -20,6 +20,9 @@
  */
 package org.exist.xquery;
 
+import org.exist.xquery.functions.array.ArrayType;
+import org.exist.xquery.value.ArrayWrapper;
+import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.junit.jupiter.api.Test;
@@ -27,9 +30,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.mock;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class XPathUtilTest {
@@ -106,6 +111,97 @@ public class XPathUtilTest {
                 assertEquals(subArray[j], result.itemAt(i + j).getStringValue());
             }
         }
+        verify(mockContext);
+    }
+
+    @Test
+    public void arrayWrapperStringsToArrayStrings() throws XPathException {
+        final XQueryContext mockContext = mock(XQueryContext.class);
+        expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
+
+        final ArrayWrapper strings = new ArrayWrapper(new String[] { "hello", "goodbye" });
+
+        replay(mockContext);
+        final Sequence result = XPathUtil.javaObjectToXPath(strings, mockContext);
+        assertEquals(1, result.getItemCount());
+        final Item resultItem = result.itemAt(0);
+        assertEquals(Type.ARRAY_ITEM, resultItem.getType());
+        final ArrayType resultArray = (ArrayType) resultItem;
+        for (int i = 0; i < strings.array.length; i++) {
+            final Sequence arrayItem = resultArray.get(i);
+            assertTrue(arrayItem.hasOne());
+            assertEquals(Type.STRING, arrayItem.itemAt(0).getType());
+            assertEquals(strings.array[i], arrayItem.itemAt(0).getStringValue());
+        }
+        verify(mockContext);
+    }
+
+    @Test
+    public void arrayArrayWrapperStringsToArrayStrings() throws XPathException {
+        final XQueryContext mockContext = mock(XQueryContext.class);
+        expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
+
+        final ArrayWrapper[] strings = {
+            new ArrayWrapper(new String[] { "hello" }),
+            new ArrayWrapper(new String[] { "goodbye", "see you again soon" }),
+        };
+
+        replay(mockContext);
+        final Sequence result = XPathUtil.javaObjectToXPath(strings, mockContext);
+        assertEquals(strings.length, result.getItemCount());
+        for (int i = 0; i < strings.length; i++) {
+            final Item resultItem = result.itemAt(i);
+            assertEquals(Type.ARRAY_ITEM, resultItem.getType());
+
+            final ArrayType resultArray = (ArrayType) resultItem;
+            for (int j = 0; j < strings[i].array.length; j++) {
+                final Sequence arrayItem = resultArray.get(j);
+                assertTrue(arrayItem.hasOne());
+                assertEquals(Type.STRING, arrayItem.itemAt(0).getType());
+                assertEquals(strings[i].array[j], arrayItem.itemAt(0).getStringValue());
+            }
+        }
+        verify(mockContext);
+    }
+
+    @Test
+    public void arrayArrayWrapperStringSequenceToArrayStrings() throws XPathException {
+        final XQueryContext mockContext = mock(XQueryContext.class);
+        expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
+
+        final ArrayWrapper[] strings = {
+            new ArrayWrapper(new String[] { "hello" }),
+            new ArrayWrapper(new Object[] { "goodbye", new String[] { "see you again soon", "42" } }),
+        };
+
+        replay(mockContext);
+
+        final Sequence result = XPathUtil.javaObjectToXPath(strings, mockContext);
+        assertEquals(strings.length, result.getItemCount());
+        Item resultItem = result.itemAt(0);
+        assertEquals(Type.ARRAY_ITEM, resultItem.getType());
+        ArrayType resultArray = (ArrayType) resultItem;
+        assertEquals(1, resultArray.getSize());
+        Sequence arrayEntry = resultArray.get(0);
+        assertEquals(1, arrayEntry.getItemCount());
+        assertEquals(Type.STRING, arrayEntry.itemAt(0).getType());
+        assertEquals("hello", arrayEntry.itemAt(0).getStringValue());
+
+        resultItem = result.itemAt(1);
+        assertEquals(Type.ARRAY_ITEM, resultItem.getType());
+        resultArray = (ArrayType) resultItem;
+        assertEquals(2, resultArray.getSize());
+        arrayEntry = resultArray.get(0);
+        assertEquals(1, arrayEntry.getItemCount());
+        assertEquals(Type.STRING, arrayEntry.itemAt(0).getType());
+        assertEquals("goodbye", arrayEntry.itemAt(0).getStringValue());
+        arrayEntry = resultArray.get(1);
+        assertEquals(2, arrayEntry.getItemCount());
+        assertEquals(Type.STRING, arrayEntry.itemAt(0).getType());
+        assertEquals("see you again soon", arrayEntry.itemAt(0).getStringValue());
+        assertEquals(Type.STRING, arrayEntry.itemAt(1).getType());
+        assertEquals("42", arrayEntry.itemAt(1).getStringValue());
+
         verify(mockContext);
     }
 }
