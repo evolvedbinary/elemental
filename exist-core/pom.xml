@@ -759,6 +759,7 @@
                                 <include>src/test/resources-filtered/org/exist/xquery/JavaBindingTest.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/JavaBindingTest.java</include>
                                 <include>src/test/java/org/exist/xquery/WatchdogTest.java</include>
+                                <include>src/test/java/org/exist/xquery/XPathUtilTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</include>
@@ -1753,6 +1754,7 @@
                                 <exclude>src/test/java/org/exist/xquery/XPathOpOrSpecialCaseTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XPathQueryTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XPathUtil.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/XPathUtilTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryContextAttributesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
