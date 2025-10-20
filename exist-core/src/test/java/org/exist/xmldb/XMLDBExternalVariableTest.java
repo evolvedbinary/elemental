@@ -1642,52 +1642,66 @@ public class XMLDBExternalVariableTest {
     private void queryPostWithExternalVariable(final Tuple2<ErrorCodes.ErrorCode, String> expectedResponse, final ExternalVariableValueRep[] expectedResult, @Nullable final String xqExternalVariableType, final ExternalVariableValueRep... externalVariableSequence) throws XMLDBException {
         @Nullable final Object[] externalVariableValue = buildExternalVariableValue(externalVariableSequence);
         final String query = buildQueryExternalVariable(xqExternalVariableType);
-        final Either<XMLDBException, ResourceSet> response = doPostWithAuth(externalVariableValue, query);
+        final Either<XMLDBException, Tuple2<Collection, ResourceSet>> response = doPostWithAuth(externalVariableValue, query);
+        @Nullable final Collection dbCollection = response.map(r -> r._1).getOrElse((Collection) null);
+        @Nullable final ResourceSet actualResultSet = response.map(r -> r._2).getOrElse((ResourceSet) null);
 
-        if (expectedResponse._1 == null) {
-            // We expect success
-            assertTrue(response.isRight());
-            final ResourceSet actualResultSet = response.right().get();
+        try {
+            if (expectedResponse._1 == null) {
+                // We expect success
+                assertTrue(response.isRight());
+                final List<Tuple2<String, Object>> expectedResults = buildExistVariableResultSequence(expectedResult);
 
-            final List<Tuple2<String, Object>> expectedResults = buildExistVariableResultSequence(expectedResult);
+                assertEquals(expectedResults.size(), actualResultSet.getSize());
+                for (int i = 0; i < expectedResults.size(); i++) {
+                    final Tuple2<String, Object> expected = expectedResults.get(i);
+                    try (final EXistResource actual = (EXistResource) actualResultSet.getResource(i)) {
 
-            assertEquals(expectedResults.size(), actualResultSet.getSize());
-            for (int i = 0; i < expectedResults.size(); i++) {
-                final Tuple2<String, Object> expected = expectedResults.get(i);
-                final EXistResource actual = (EXistResource) actualResultSet.getResource(i);
+                        if (expected._1 != null) {
+                            assertEquals(expected._1, actual.getTypeName());
+                        }
+                        final Object actualValue = actual.getContent();
+                        assertTrue(actualValue instanceof String);
+                        final String actualString = actualValue.toString();
 
-                if (expected._1 != null) {
-                    assertEquals(expected._1, actual.getTypeName());
-                }
-                final Object actualValue = actual.getContent();
-                assertTrue(actualValue instanceof String);
-                final String actualString = actualValue.toString();
-
-                try {
-                    if (expected._1 != null && Type.getType(expected._1) == Type.MAP_ITEM || expectedResult[i] instanceof MapRep) {
-                        // NOTE(AR) XDM Map type does not have order, so we cannot compare as strings
-                        final Map<Object, Object> expectedMap = MapUtil.parseXdmMapStringToJavaMap(expected._2.toString());
-                        final Map<Object, Object> actualMap = MapUtil.parseXdmMapStringToJavaMap(actualString);
-                        assertThat(actualMap).containsExactlyInAnyOrderEntriesOf(expectedMap);
-                    } else {
-                        assertEquals(expected._2, actualString);
+                        try {
+                            if (expected._1 != null && Type.getType(expected._1) == Type.MAP_ITEM || expectedResult[i] instanceof MapRep) {
+                                // NOTE(AR) XDM Map type does not have order, so we cannot compare as strings
+                                final Map<Object, Object> expectedMap = MapUtil.parseXdmMapStringToJavaMap(expected._2.toString());
+                                final Map<Object, Object> actualMap = MapUtil.parseXdmMapStringToJavaMap(actualString);
+                                assertThat(actualMap).containsExactlyInAnyOrderEntriesOf(expectedMap);
+                            } else {
+                                assertEquals(expected._2, actualString);
+                            }
+                        } catch (final XPathException e) {
+                            fail(e.getMessage());
+                        }
                     }
-                } catch (final XPathException e) {
-                    fail(e.getMessage());
+                }
+
+            } else {
+                // We expect an error, so check the error is the expected one
+                assertTrue(response.isLeft());
+                final XMLDBException errorResponse = response.left().get();
+                assertTrue(errorResponse.getCause() instanceof XPathException);
+                final XPathException errorResponseXPathException = (XPathException) errorResponse.getCause();
+                assertEquals(expectedResponse._1, errorResponseXPathException.getErrorCode());
+
+                if (expectedResponse._2 != null) {
+                    String expectedResponseMessage = expectedResponse._2;
+                    assertEquals(expectedResponseMessage, errorResponseXPathException.getDetailMessage());
                 }
             }
-
-        } else {
-            // We expect an error, so check the error is the expected one
-            assertTrue(response.isLeft());
-            final XMLDBException errorResponse = response.left().get();
-            assertTrue(errorResponse.getCause() instanceof XPathException);
-            final XPathException errorResponseXPathException = (XPathException) errorResponse.getCause();
-            assertEquals(expectedResponse._1, errorResponseXPathException.getErrorCode());
-
-            if (expectedResponse._2 != null) {
-                String expectedResponseMessage = expectedResponse._2;
-                assertEquals(expectedResponseMessage, errorResponseXPathException.getDetailMessage());
+        } finally {
+            if (actualResultSet instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) actualResultSet).close();
+                } catch (final Exception e) {
+                    // no-op
+                }
+            }
+            if (dbCollection != null) {
+                dbCollection.close();
             }
         }
     }
@@ -1816,8 +1830,10 @@ public class XMLDBExternalVariableTest {
         return results;
     }
 
-    private Either<XMLDBException, ResourceSet> doPostWithAuth(@Nullable final Object[] externalVariableValue, final String query) throws XMLDBException {
-        try (final Collection dbCollection = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+    private Either<XMLDBException, Tuple2<Collection, ResourceSet>> doPostWithAuth(@Nullable final Object[] externalVariableValue, final String query) throws XMLDBException {
+        // NOTE(AR) dbCollection will be closed either when XMLDBException is captured, or the ResourceSet is closed
+        final Collection dbCollection = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+        try {
             final XQueryService xqueryService = dbCollection.getService(XQueryService.class);
 
             if (externalVariableValue != null) {
@@ -1831,10 +1847,14 @@ public class XMLDBExternalVariableTest {
 
             final CompiledExpression compiled = xqueryService.compile(query);
             try {
-                return Either.Right(xqueryService.execute(compiled));
+                return Either.Right(Tuple(dbCollection, xqueryService.execute(compiled)));
             } catch (final XMLDBException e) {
+                dbCollection.close();
                 return Either.Left(e);
             }
+        } catch (final XMLDBException e) {
+            dbCollection.close();
+            throw e;
         }
     }
 
