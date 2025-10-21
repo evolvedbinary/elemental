@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.transform.TransformerException;
 
@@ -124,7 +125,8 @@ public class DOMSerializer extends AbstractSerializer {
             if (prefix == null) {
                 prefix = XMLConstants.DEFAULT_NS_PREFIX;
             }
-            if (nsSupport.getURI(prefix) == null) {
+            @Nullable String prevNsForPrefix = nsSupport.getURI(prefix);
+            if (prevNsForPrefix == null || !prevNsForPrefix.equals(uri)) {
                 namespaceDecls.put(prefix, uri);
                 nsSupport.declarePrefix(prefix, uri);
             }
@@ -155,7 +157,8 @@ public class DOMSerializer extends AbstractSerializer {
                     if (prefix == null){
                         prefix = attrName.split(":")[0];
                     }
-                    if (nsSupport.getURI(prefix) == null) {
+                    prevNsForPrefix = nsSupport.getURI(prefix);
+                    if (prevNsForPrefix == null || !prevNsForPrefix.equals(uri)) {
                         namespaceDecls.put(prefix, uri);
                         nsSupport.declarePrefix(prefix, uri);
                     }
