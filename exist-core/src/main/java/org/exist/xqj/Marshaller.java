@@ -493,6 +493,18 @@ public class Marshaller {
                 case XMLStreamConstants.CHARACTERS :
                     builder.characters(parser.getText());
                     break;
+
+                case XMLStreamConstants.COMMENT:
+                    builder.comment(parser.getText());
+                    break;
+
+                case XMLStreamConstants.PROCESSING_INSTRUCTION:
+                    builder.processingInstruction(parser.getPITarget(), parser.getPIData());
+                    break;
+
+                case XMLStreamConstants.CDATA:
+                    builder.cdataSection(parser.getText());
+                    break;
             }
             if (finish) {break;}
         }
