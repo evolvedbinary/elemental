@@ -69,6 +69,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.Leasable;
+import org.exist.util.io.ContentFile;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
 import org.w3c.dom.Node;
@@ -151,10 +152,18 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
         params.add(handle);
         params.add(outputProperties);
 
-        VirtualTempPath tempFile = new VirtualTempPath(getInMemorySize(outputProperties), TemporaryFileManager.getInstance());
-        try (final OutputStream os = tempFile.newOutputStream()) {
+        Map<Object, Object> table = (Map<Object, Object>) collection.execute("retrieveAllFirstChunk", params);
 
-            Map<?, ?> table = (Map<?, ?>) collection.execute("retrieveAllFirstChunk", params);
+        final ContentFile.ContentFileType type;
+        if ("yes".equals(table.getOrDefault(EXistOutputKeys.XQJ_SERIALIZATION, "no"))) {
+            type = ContentFile.ContentFileType.XQJ_SERIALIZATION;
+        } else {
+            type = ContentFile.ContentFileType.XDM_SERIALIZATION;
+        }
+        final TemporaryFileManager tempFileManager = TemporaryFileManager.getInstance();
+        final VirtualTempPath tempFile = new VirtualTempPath(type, getInMemorySize(outputProperties), tempFileManager);
+
+        try (final OutputStream os = tempFile.newOutputStream()) {
 
             long offset = (Integer) table.get("offset");
             byte[] data = (byte[]) table.get("data");
@@ -178,7 +187,7 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
                 params.clear();
                 params.add(table.get("handle"));
                 params.add(Long.toString(offset));
-                table = (Map<?, ?>) collection.execute("getNextExtendedChunk", params);
+                table = (Map<Object, Object>) collection.execute("getNextExtendedChunk", params);
                 offset = Long.parseLong((String) table.get("offset"));
                 data = (byte[]) table.get("data");
                 // One for the local cached file

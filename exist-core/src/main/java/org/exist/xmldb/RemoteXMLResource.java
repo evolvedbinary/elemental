@@ -54,27 +54,38 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.dom.persistent.DocumentTypeImpl;
+import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.MimeType;
+import org.exist.util.io.ContentFile;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
 import org.exist.util.serializer.DOMSerializer;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
+import org.exist.xqj.Marshaller;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.value.Item;
+import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
+import org.exist.xquery.value.Type;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
@@ -204,7 +215,8 @@ public class RemoteXMLResource
     public Object getContent() throws XMLDBException {
         if (root != null && contentFile == null) {
             // NOTE(AR) root will be serialized to contentFile once and then reused
-            serializeRootToContent();
+            final ContentFile tempFile = serializeNodeToContentFile(root);
+            setContent(tempFile);
         }
 
         if (content != null) {
@@ -242,8 +254,30 @@ public class RemoteXMLResource
         return null;
     }
 
-    private void serializeRootToContent() throws XMLDBException {
-        final Properties properties = getProperties();
+    private String getNamespace(final Node node) {
+        @Nullable String namespace;
+        switch (node.getNodeType()) {
+            case Node.DOCUMENT_NODE:
+                namespace = getNamespace(node.getFirstChild());
+                break;
+
+            case Node.ELEMENT_NODE:
+            case Node.ATTRIBUTE_NODE:
+                namespace = node.getNamespaceURI();
+                break;
+
+            default:
+                namespace = XMLConstants.NULL_NS_URI;
+        }
+
+        if (namespace == null) {
+            namespace = XMLConstants.NULL_NS_URI;
+        }
+
+        return namespace;
+    }
+
+    private ContentFile serializeNodeToContentFile(final Node node) throws XMLDBException {
         try  {
             final ContentFile.ContentFileType type;
             if (Marshaller.NAMESPACE.equals(getNamespace(node))) {
@@ -265,37 +299,64 @@ public class RemoteXMLResource
         }
     }
 
+    private void serializeNode(final Node node, final Properties properties, final Writer writer) throws TransformerException {
+        final DOMSerializer xmlout = new DOMSerializer(writer, properties);
+        xmlout.serialize(node);
+    }
+
     @Override
     public Node getContentAsDOM() throws XMLDBException {
         if (root != null) {
             return root;
         }
 
-        final InputSource is;
+        final Node node;
         InputStream cis = null;
-
         try {
             if (content != null) {
-                is = new InputSource(new StringReader(content));
+                cis = new UnsynchronizedByteArrayInputStream(content.getBytes(UTF_8));
             } else {
                 cis = getStreamContent();
-                is = new InputSource(cis);
             }
 
-            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
-            factory.setValidating(false);
-            final DocumentBuilder builder = factory.newDocumentBuilder();
-            final Document doc = builder.parse(is);
+            if (contentFile != null && contentFile.getType() == ContentFile.ContentFileType.XQJ_SERIALIZATION) {
+                try {
+                    final Sequence result = Marshaller.demarshall(cis);
+                    // NOTE(AR) we are only expecting one value here!
+                    if (!result.hasOne()) {
+                        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "Expected a single Item from XQJ deserialization");
+                    }
+                    final Item item = result.itemAt(0);
+                    if (!Type.subTypeOf(item.getType(), Type.NODE)) {
+                        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "Expected a Node from XQJ deserialization");
+                    }
 
-            final boolean isDocumentNode = type.map(t -> t.equals("document-node()")).orElse(true);
-            if (isDocumentNode) {
-                return doc;
+                    node = (Node) item;
+
+                } catch (final XMLStreamException | XPathException e) {
+                    throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+                }
+
             } else {
-                return doc.getFirstChild();
+                try {
+                    final InputSource is = new InputSource(cis);
+
+                    final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    factory.setNamespaceAware(true);
+                    factory.setValidating(false);
+                    final DocumentBuilder builder = factory.newDocumentBuilder();
+                    final Document doc = builder.parse(is);
+
+                    final boolean isDocumentNode = type.map(t -> t.equals("document-node()")).orElse(true);
+                    if (isDocumentNode) {
+                        node = doc;
+                    } else {
+                        node = doc.getFirstChild();
+                    }
+                } catch (final SAXException | IOException | ParserConfigurationException e) {
+                    throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+                }
             }
-        } catch (final SAXException | IOException | ParserConfigurationException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         } finally {
             if (cis != null) {
                 try {
@@ -305,6 +366,10 @@ public class RemoteXMLResource
                 }
             }
         }
+
+        // NOTE(AR) cache the Node representation
+        this.root = node;
+        return root;
     }
 
     @Override
@@ -438,7 +503,7 @@ public class RemoteXMLResource
         @Override
         public void startDocument() throws SAXException {
             try {
-                tempFile = new VirtualTempPath(getInMemorySize(getProperties()), TemporaryFileManager.getInstance());
+                tempFile = new VirtualTempPath(ContentFile.ContentFileType.UNKNOWN, getInMemorySize(getProperties()), TemporaryFileManager.getInstance());
                 writer = new OutputStreamWriter(tempFile.newOutputStream(), UTF_8);
                 setOutput(writer, new Properties());
 

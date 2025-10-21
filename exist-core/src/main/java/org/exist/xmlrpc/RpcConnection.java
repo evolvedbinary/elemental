@@ -109,6 +109,7 @@ import org.exist.xmlrpc.function.XmlRpcCollectionFunction;
 import org.exist.xmlrpc.function.XmlRpcCompiledXQueryFunction;
 import org.exist.xmlrpc.function.XmlRpcDocumentFunction;
 import org.exist.xmlrpc.function.XmlRpcFunction;
+import org.exist.xqj.Marshaller;
 import org.exist.xquery.*;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.util.HTTPUtils;
@@ -673,13 +674,14 @@ public class RpcConnection implements RpcAPI {
     private String getDocumentAsString(final XmldbURI docUri, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
         return this.<String>readDocument(docUri).apply((document, broker, transaction) -> {
             try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
+                final Properties properties = toProperties(parameters);
+                saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.toSAX(document)), writer);
                 return writer.toString();
             }
         });
     }
 
-    private void serialize(final DBBroker broker, final Properties properties, final ConsumerE<Serializer, SAXException> toSaxFunction, final Writer writer) throws SAXException, IOException {
+    private void saxSerialize(final DBBroker broker, final Properties properties, final ConsumerE<SAXSerializer, SAXException> saxSerializerConsumer, final Writer writer) throws SAXException, IOException {
         if (!properties.containsKey(OutputKeys.OMIT_XML_DECLARATION)) {
             final String omitXmlDeclaration = broker.getConfiguration().getProperty(Serializer.OMIT_XML_DECLARATION_ATTRIBUTE, "yes");
             properties.setProperty(OutputKeys.OMIT_XML_DECLARATION, omitXmlDeclaration);
@@ -695,25 +697,38 @@ public class RpcConnection implements RpcAPI {
             properties.setProperty(EXistOutputKeys.OUTPUT_DOCTYPE, outputDocType);
         }
 
-        final Serializer serializer = broker.borrowSerializer();
-
         SAXSerializer saxSerializer = null;
         try {
-            serializer.setUser(user);
-            serializer.setProperties(properties);
             saxSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
-
             saxSerializer.setOutput(writer, properties);
-            serializer.setSAXHandlers(saxSerializer, saxSerializer);
 
-            toSaxFunction.accept(serializer);
+            saxSerializerConsumer.accept(saxSerializer);
 
             writer.flush();
         } finally {
             if (saxSerializer != null) {
                 SerializerPool.getInstance().returnObject(saxSerializer);
             }
+        }
+    }
+
+    private void serialize(final DBBroker broker, final Properties properties, final SAXSerializer saxSerializer, final ConsumerE<Serializer, SAXException> serializerConsumer) throws SAXException {
+        final Serializer serializer = broker.borrowSerializer();
+        try {
+            serializer.setUser(user);
+            serializer.setProperties(properties);
+            serializer.setSAXHandlers(saxSerializer, saxSerializer);
+            serializerConsumer.accept(serializer);
+        } finally {
             broker.returnSerializer(serializer);
+        }
+    }
+
+    private void serializeXqj(final DBBroker broker, final NodeValue nodeValue, final SAXSerializer saxSerializer) throws SAXException {
+        try {
+            Marshaller.marshall(broker, nodeValue, saxSerializer);
+        } catch (final XPathException e) {
+            throw new SAXException(e.getMessage(), e);
         }
     }
 
@@ -737,7 +752,8 @@ public class RpcConnection implements RpcAPI {
             if (document.getResourceType() == DocumentImpl.XML_FILE) {
                 try (final OutputStream out = tempFile.newOutputStream();
                      final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, encoding))) {
-                    serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
+                    final Properties properties = toProperties(parameters);
+                    saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.toSAX(document)), writer);
                 }
             } else {
                 try (final OutputStream os = new BufferedOutputStream(tempFile.newOutputStream())) {
@@ -1671,7 +1687,7 @@ public class RpcConnection implements RpcAPI {
                 }
                 if (item.getType() == Type.ELEMENT) {
                     final NodeValue node = (NodeValue) item;
-                    serialize(broker, serializationProps, saxSerializer -> saxSerializer.toSAX(node), writer);
+                    saxSerialize(broker, serializationProps, saxSerializer -> serialize(broker, serializationProps, saxSerializer, serializer -> serializer.toSAX(node)), writer);
                 } else {
                     writer.write("<exist:value type=\"");
                     writer.write(Type.getTypeName(item.getType()));
@@ -2226,7 +2242,8 @@ public class RpcConnection implements RpcAPI {
             final NodeProxy node = new NodeProxy(null, document, nodeId);
 
             try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.serialize(node), writer);
+                final Properties properties = toProperties(parameters);
+                saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.serialize(node)), writer);
                 return writer.toString();
             }
         });
@@ -2248,6 +2265,8 @@ public class RpcConnection implements RpcAPI {
             final NodeId nodeId = factory.getBrokerPool().getNodeFactory().createFromString(id);
             final NodeProxy node = new NodeProxy(null, document, nodeId);
 
+            final Properties serializationProperties = toProperties(parameters);
+
             final Map<String, Object> result = new HashMap<>();
             final ContentFile tempFile = filePool.borrowObject();
 
@@ -2259,7 +2278,11 @@ public class RpcConnection implements RpcAPI {
                     ? new DeflaterOutputStream(new BufferedOutputStream(tempFile.newOutputStream()))
                     : new BufferedOutputStream(tempFile.newOutputStream());
                     final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
-                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(node), writer);
+                if ("yes".equals(serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"))) {
+                    saxSerialize(broker, serializationProperties, saxSerializer -> serializeXqj(broker, node, saxSerializer), writer);
+                } else {
+                    saxSerialize(broker, serializationProperties, saxSerializer -> serialize(broker, serializationProperties, saxSerializer, serializer -> serializer.toSAX(node)), writer);
+                }
             }
 
             final byte[] firstChunk = getChunk(tempFile, 0);
@@ -2275,6 +2298,8 @@ public class RpcConnection implements RpcAPI {
                 filePool.returnObject(tempFile);
             }
             result.put("offset", offset);
+            result.put(EXistOutputKeys.XDM_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XDM_SERIALIZATION, "no"));
+            result.put(EXistOutputKeys.XQJ_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"));
             return result;
         });
     }
@@ -2321,8 +2346,9 @@ public class RpcConnection implements RpcAPI {
                     parameters.put(entry.getKey().toString(), entry.getValue().toString());
                 }
                 try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                  serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
-                  return writer.toString();
+                    final Properties properties = toProperties(parameters);
+                    saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.toSAX(nodeValue)), writer);
+                    return writer.toString();
                 }
             } else {
                 try {
@@ -2351,6 +2377,11 @@ public class RpcConnection implements RpcAPI {
                 throw new EXistException("index out of range");
             }
 
+            final Properties serializationProperties = toProperties(parameters);
+            for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
+                serializationProperties.put(entry.getKey().toString(), entry.getValue().toString());
+            }
+
             final Map<String, Object> result = new HashMap<>();
             final ContentFile tempFile = filePool.borrowObject();
 
@@ -2362,15 +2393,19 @@ public class RpcConnection implements RpcAPI {
                     ? new DeflaterOutputStream(new BufferedOutputStream(tempFile.newOutputStream()))
                     : new BufferedOutputStream(tempFile.newOutputStream());
                     final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
+
                 if (Type.subTypeOf(item.getType(), Type.NODE)) {
                     final NodeValue nodeValue = (NodeValue) item;
-                    for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
-                        parameters.put(entry.getKey().toString(), entry.getValue().toString());
+                    if ("yes".equals(serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"))) {
+                        saxSerialize(broker, serializationProperties, saxSerializer -> serializeXqj(broker, nodeValue, saxSerializer), writer);
+                    } else {
+                        saxSerialize(broker, serializationProperties, saxSerializer -> serialize(broker, serializationProperties, saxSerializer, serializer -> serializer.toSAX(nodeValue)), writer);
                     }
-                    serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
                 } else {
+                    // TODO(AR) in future we should transfer more information about the XDM Type to the consumer using the XQJ Marshaller - see above!
                     writer.write(item.getStringValue());
                 }
+
             } catch (final XPathException e) {
                 throw new EXistException(e);
             }
@@ -2388,6 +2423,8 @@ public class RpcConnection implements RpcAPI {
                 filePool.returnObject(tempFile);
             }
             result.put("offset", offset);
+            result.put(EXistOutputKeys.XDM_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XDM_SERIALIZATION, "no"));
+            result.put(EXistOutputKeys.XQJ_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"));
             return result;
         });
     }
@@ -3135,7 +3172,7 @@ public class RpcConnection implements RpcAPI {
     }
 
     private Properties toProperties(final Map<String, Object> parameters) {
-        final Properties properties = new Properties();
+        final Properties properties = new Properties(parameters.size());
         properties.putAll(parameters);
         return properties;
     }
