@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.util.io;
 
 import java.io.*;
@@ -37,7 +60,7 @@ import org.exist.util.FileUtils;
  * @author <a href="mailto:patrick@reini.net">Patrick Reinhart</a>
  */
 @ThreadSafe
-public final class VirtualTempPath implements ContentFile {
+public final class VirtualTempPath extends AbstractContentFile {
     public static final int DEFAULT_IN_MEMORY_SIZE = 4 * 1024 * 1024; // 4 MB
 
     private static final byte[] EMPTY_BUFFER = new byte[0];
@@ -52,11 +75,12 @@ public final class VirtualTempPath implements ContentFile {
     @GuardedBy("lock")
     private Path contentFile;
 
-    public VirtualTempPath(TemporaryFileManager tempFileManager) {
-        this(DEFAULT_IN_MEMORY_SIZE, tempFileManager);
+    public VirtualTempPath(final ContentFileType type, final TemporaryFileManager tempFileManager) {
+        this(type, DEFAULT_IN_MEMORY_SIZE, tempFileManager);
     }
 
-    public VirtualTempPath(int inMemorySize, TemporaryFileManager tempFileManager) {
+    public VirtualTempPath(final ContentFileType type, final int inMemorySize, final TemporaryFileManager tempFileManager) {
+        super(type);
         this.inMemorySize = inMemorySize;
         this.lock = new StampedLock();
         this.tempFileManager = tempFileManager;

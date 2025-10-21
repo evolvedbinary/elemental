@@ -145,6 +145,7 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
         }
         final Properties resourceSetProperties = new Properties(outputProperties);
         resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+        resourceSetProperties.setProperty(EXistOutputKeys.XQJ_SERIALIZATION, "yes");
         return new RemoteResourceSet(leasableXmlRpcClient, collection, resourceSetProperties, resources, handle, hash);
     }
 
@@ -246,6 +247,7 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
         }
         final Properties resourceSetProperties = new Properties(outputProperties);
         resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+        resourceSetProperties.setProperty(EXistOutputKeys.XQJ_SERIALIZATION, "yes");
         return new RemoteResourceSet(leasableXmlRpcClient, collection, outputProperties, resources, handle, hash);
     }
 
@@ -297,6 +299,7 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
         }
         final Properties resourceSetProperties = new Properties(outputProperties);
         resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+        resourceSetProperties.setProperty(EXistOutputKeys.XQJ_SERIALIZATION, "yes");
         return new RemoteResourceSet(leasableXmlRpcClient, collection, resourceSetProperties, resources, handle, hash);
     }
 

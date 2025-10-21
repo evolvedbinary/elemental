@@ -77,6 +77,7 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.xquery.XQException;
 import javax.xml.xquery.XQItemType;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -100,7 +101,7 @@ public class Marshaller {
     public final static String PREFIX = "sx";
 
     
-    private final static Properties OUTPUT_PROPERTIES = new Properties();
+    private final static Properties DEFAULT_OUTPUT_PROPERTIES = new Properties();
 
     private final static String VALUE_ELEMENT = "value";
     private final static String VALUE_ELEMENT_QNAME = PREFIX + ":value";
@@ -171,10 +172,27 @@ public class Marshaller {
      * @param item Sequence(or Item) to me marshalled
      * @param handler Content handler for building the resulting string
      *
+     *
      * @throws XPathException if an XPath error occurs
      * @throws SAXException if a SAX parsing exception occurs
      */
     public static void marshallItem(final DBBroker broker, final Item item, final ContentHandler handler)
+        throws SAXException, XPathException {
+        marshallItem(broker, item, handler, DEFAULT_OUTPUT_PROPERTIES);
+    }
+
+    /**
+     * Marshall an item in an xml based string representation.
+     *
+     * @param broker the database broker
+     * @param item Sequence(or Item) to me marshalled
+     * @param handler Content handler for building the resulting string
+     * @param outputProperties any output properties for the Serializer
+     *
+     * @throws XPathException if an XPath error occurs
+     * @throws SAXException if a SAX parsing exception occurs
+     */
+    public static void marshallItem(final DBBroker broker, final Item item, final ContentHandler handler, final Properties outputProperties)
             throws SAXException, XPathException {
         final AttributesImpl attrs = new AttributesImpl();
         int type = item.getType();
@@ -184,7 +202,7 @@ public class Marshaller {
         if (Type.subTypeOf(item.getType(), Type.NODE)) {
             handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME, attrs);
             final NodeValue nv = (NodeValue) item;
-            nv.toSAX(broker, handler, OUTPUT_PROPERTIES);
+            nv.toSAX(broker, handler, outputProperties);
             handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME);
         } else {
             handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME, attrs);
@@ -192,6 +210,14 @@ public class Marshaller {
             handler.characters(value.toCharArray(), 0, value.length());
             handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME);
         }
+    }
+
+    public static Sequence demarshall(final InputStream is) throws XMLStreamException, XPathException {
+        final XMLInputFactory factory = XMLInputFactory.newInstance();
+        factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
+        factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+        final XMLStreamReader parser = factory.createXMLStreamReader(is);
+        return demarshall(parser);
     }
 
     public static Sequence demarshall(final Reader reader) throws XMLStreamException, XPathException {

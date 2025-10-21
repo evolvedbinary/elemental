@@ -708,6 +708,7 @@
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
+                                <include>src/main/java/org/exist/util/io/AbstractContentFile.java</include>
                                 <include>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/XMLDBExternalVariableTest.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</include>
@@ -942,6 +943,7 @@
                                 <include>src/test/java/org/exist/storage/io/VariableByteStreamTest.java</include>
                                 <include>src/main/java/org/exist/storage/lock/FileLock.java</include>
                                 <include>src/main/java/org/exist/storage/recovery/RecoveryManager.java</include>
+                                <include>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</include>
                                 <include>src/main/java/org/exist/storage/serializers/Serializer.java</include>
                                 <include>src/main/java/org/exist/storage/serializers/XIncludeFilter.java</include>
                                 <include>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</include>
@@ -967,8 +969,14 @@
                                 <include>src/test/java/org/exist/util/LeasableTest.java</include>
                                 <include>src/main/java/org/exist/util/ParametersExtractor.java</include>
                                 <include>src/main/java/org/exist/util/crypto/digest/DigestType.java</include>
+                                <include>src/main/java/org/exist/util/io/ByteArrayContent.java</include>
+                                <include>src/test/java/org/exist/util/io/ByteArrayContentTest.java</include>
+                                <include>src/main/java/org/exist/util/io/ContentFile.java</include>
+                                <include>src/main/java/org/exist/util/io/ContentFilePoolObjectFactory.java</include>
                                 <include>src/test/java/org/exist/util/io/FilterInputStreamCacheMonitorTest.java</include>
                                 <include>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</include>
+                                <include>src/main/java/org/exist/util/io/VirtualTempPath.java</include>
+                                <include>src/test/java/org/exist/util/io/VirtualTempPathTest.java</include>
                                 <include>src/test/java/org/exist/util/pool/NodePoolTest.java</include>
                                 <include>src/main/java/org/exist/util/serializer/AttrList.java</include>
                                 <include>src/main/java/org/exist/util/serializer/DOMSerializer.java</include>
@@ -1542,6 +1550,7 @@
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedDocumentLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/Serializer.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/XIncludeFilter.java</exclude>
@@ -1585,8 +1594,15 @@
                                 <exclude>src/main/java/org/exist/util/StringUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/UTF8.java</exclude>
                                 <exclude>src/main/java/org/exist/util/crypto/digest/DigestType.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/AbstractContentFile.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/ByteArrayContent.java</exclude>
+                                <exclude>src/test/java/org/exist/util/io/ByteArrayContentTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/ContentFile.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/ContentFilePoolObjectFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/util/io/FilterInputStreamCacheMonitorTest.java</exclude>
                                 <exclude>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/VirtualTempPath.java</exclude>
+                                <exclude>src/test/java/org/exist/util/io/VirtualTempPathTest.java</exclude>
                                 <exclude>src/test/java/org/exist/util/pool/NodePoolTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/AttrList.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/DOMSerializer.java</exclude>
