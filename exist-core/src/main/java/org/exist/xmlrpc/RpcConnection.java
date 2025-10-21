@@ -2030,7 +2030,10 @@ public class RpcConnection implements RpcAPI {
             result.put("docUri", "temp_xquery/" + item.hashCode());
             result.put("nodeId", String.valueOf(ni.getNodeNumber()));
             result.put("xdmSerializationOptions", xdmSerializationOptions);
-            result.put("value", item);  // NOTE(AR) In-memory Nodes are transient and so need to be sent directly in the result
+
+            // TODO(AR) enable this later in Elemental for improved serialization over XML-RPC and performance (it also means that we could then cleanup the XML:DB Remote API by removing its uses of XQJ Marshaller and org.exist.xquery.value.*)
+            // NOTE(AR) In-memory Nodes can alternatively be returned directly as part of the result, however doing so changes the XML:RPC result format in a manner that would be incompatible with eXist-db 6.x.x
+            //            result.put("value", item);
 
         } else {
             LOG.error("Omitting from results, unsure how to process: {}", item.getClass());
