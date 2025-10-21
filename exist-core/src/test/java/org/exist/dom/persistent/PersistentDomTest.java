@@ -430,8 +430,8 @@ public class PersistentDomTest {
         final Source srcExpected = Input.fromString(expected).build();
         final Source srcActual = Input.fromNode(actual).build();
 
-        final Diff diff = DiffBuilder.compare(srcActual)
-                .withTest(srcExpected)
+        final Diff diff = DiffBuilder.compare(srcExpected)
+                .withTest(srcActual)
                 .checkForIdentical()
                 .build();
 
