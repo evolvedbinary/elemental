@@ -196,26 +196,26 @@ public class Marshaller {
         }
     }
 
-    public static Sequence demarshall(DBBroker broker, Reader reader) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final Reader reader) throws XMLStreamException, XPathException {
         final XMLInputFactory factory = XMLInputFactory.newInstance();
         factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
         factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
         final XMLStreamReader parser = factory.createXMLStreamReader(reader);
-        return demarshall(broker, parser);
+        return demarshall(parser);
     }
     
-    public static Sequence demarshall(DBBroker broker,Node n) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final Node n) throws XMLStreamException, XPathException {
     	final DOMSource source = new DOMSource(n, null);
     	final XMLInputFactory factory = XMLInputFactory.newInstance();
         factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
         factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
         
         final XMLStreamReader parser = factory.createXMLStreamReader(source);
-    	return demarshall(broker,parser);    	
+    	return demarshall(parser);
     	
     }
 
-    public static Sequence demarshall(DBBroker broker, XMLStreamReader parser) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final XMLStreamReader parser) throws XMLStreamException, XPathException {
         int event = parser.next();
         while (event != XMLStreamConstants.START_ELEMENT) {
             event = parser.next();
