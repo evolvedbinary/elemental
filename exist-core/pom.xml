@@ -1190,6 +1190,7 @@
                                 <include>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</include>
                                 <include>src/main/java/org/exist/xquery/functions/transform/Transform.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/transform/TransformTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/FunctionFunction.java</include>
@@ -1839,6 +1840,7 @@
                                 <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/transform/Transform.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/transform/TransformTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/Eval.java</exclude>
