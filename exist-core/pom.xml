@@ -1018,6 +1018,7 @@
                                 <include>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</include>
                                 <include>src/test/java/org/exist/util/pool/NodePoolTest.java</include>
                                 <include>src/main/java/org/exist/util/serializer/AttrList.java</include>
+                                <include>src/main/java/org/exist/util/serializer/DOMSerializer.java</include>
                                 <include>src/main/java/org/exist/util/serializer/DOMStreamer.java</include>
                                 <include>src/main/java/org/exist/util/serializer/EXISerializer.java</include>
                                 <include>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</include>
@@ -1650,6 +1651,7 @@
                                 <exclude>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</exclude>
                                 <exclude>src/test/java/org/exist/util/pool/NodePoolTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/AttrList.java</exclude>
+                                <exclude>src/main/java/org/exist/util/serializer/DOMSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/DOMStreamer.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/EXISerializer.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</exclude>
