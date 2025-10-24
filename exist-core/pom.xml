@@ -984,6 +984,7 @@
                                 <include>src/test/java/org/exist/storage/RecoverBinary2Test.java</include>
                                 <include>src/test/java/org/exist/storage/RecoveryTest.java</include>
                                 <include>src/test/java/org/exist/storage/Recovery2Test.java</include>
+                                <include>src/test/java/org/exist/storage/RemoveCollectionTest.java</include>
                                 <include>src/main/java/org/exist/storage/StorageAddress.java</include>
                                 <include>src/test/java/org/exist/storage/XIncludeSerializerTest.java</include>
                                 <include>src/test/java/org/exist/storage/btree/BTreeTest.java</include>
@@ -995,7 +996,9 @@
                                 <include>src/main/java/org/exist/storage/io/VariableByteInputToInputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteOutputToOutputStream.java</include>
                                 <include>src/test/java/org/exist/storage/io/VariableByteStreamTest.java</include>
+                                <include>src/test/java/org/exist/storage/lock/DeadlockTest.java</include>
                                 <include>src/main/java/org/exist/storage/lock/FileLock.java</include>
+                                <include>src/test/java/org/exist/storage/lock/ProtectedModeTest.java</include>
                                 <include>src/main/java/org/exist/storage/recovery/RecoveryManager.java</include>
                                 <include>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</include>
                                 <include>src/main/java/org/exist/storage/serializers/Serializer.java</include>
@@ -1093,6 +1096,7 @@
                                 <include>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/action/MultiResourcesAction.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
+                                <include>src/test/java/org/exist/xmlrpc/QuerySessionTest.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcAPI.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
@@ -1568,6 +1572,7 @@
                                 <exclude>src/test/java/org/exist/storage/RecoverXmlTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoveryTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/Recovery2Test.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/RemoveCollectionTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/StorageAddress.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/XIncludeSerializerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/XQueryPool.java</exclude>
@@ -1596,6 +1601,7 @@
                                 <exclude>src/test/java/org/exist/storage/journal/JournalXmlTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/journal/LsnTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/lock/CollectionLocksTest.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/lock/DeadlockTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/lock/DocumentLocksTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/EnsureContainerLocked.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/EnsureContainerUnlocked.java</exclude>
@@ -1618,6 +1624,7 @@
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedLockGroupDocumentLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedSingleLockDocumentLock.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/lock/ProtectedModeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</exclude>
@@ -1740,6 +1747,7 @@
                                 <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
+                                <exclude>src/test/java/org/exist/xmlrpc/QuerySessionTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcAPI.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</exclude>
