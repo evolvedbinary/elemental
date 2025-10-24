@@ -100,7 +100,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableUntypedNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, null, null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, null, (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -118,7 +118,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableStringNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -161,7 +161,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptStringNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -191,7 +191,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableStringsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -228,7 +228,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableStringzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -277,7 +277,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -318,7 +318,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptElementNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -347,7 +347,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -382,7 +382,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -429,7 +429,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -471,7 +471,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptDocumentNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -501,7 +501,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -538,7 +538,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -587,7 +587,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableCommentNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -628,7 +628,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptCommentNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -657,7 +657,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableCommentsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -692,7 +692,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableCommentzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -739,7 +739,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -780,7 +780,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptProcessingInstructionNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -809,7 +809,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -844,7 +844,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -893,7 +893,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableTextNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -937,7 +937,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptTextNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -967,7 +967,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableTextsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1004,7 +1004,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableTextzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1055,7 +1055,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableAttributeNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1100,7 +1100,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptAttributeNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1130,7 +1130,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableAttributesNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1167,7 +1167,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableAttributezNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1216,7 +1216,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableArrayNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1257,7 +1257,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptArrayNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1286,7 +1286,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableArraysNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1321,7 +1321,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableArrayzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1368,7 +1368,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableMapNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)",  (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1433,7 +1433,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptMapNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)?", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1470,7 +1470,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableMapsNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)+", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1522,7 +1522,7 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableMapzNotSupplied() throws IOException {
-        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)*", null);
+        queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
