@@ -1724,7 +1724,6 @@
                                 <exclude>src/main/java/org/exist/xquery/VariableDeclaration.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/VariableImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
-                                <exclude>src/test/java/org/exist/xquery/WindowClauseTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XmldbBinariesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XPathOpOrSpecialCaseTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XPathQueryTest.java</exclude>
