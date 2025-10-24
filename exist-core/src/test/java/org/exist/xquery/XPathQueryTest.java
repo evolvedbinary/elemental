@@ -2141,15 +2141,15 @@ public class XPathQueryTest {
                 "   QName(\"http://test.org\", \"test:name\")\n" +
                 "};\n" +
                 "<test>{\n" +
-                "   element {QName(\"http://test.org\", \"test:name\") }{},\n" +
-                "   element {ex:elementName()} {}\n" +
+                "   element {QName(\"http://test.org\", \"test:name\") }{ 'a' },\n" +
+                "   element {ex:elementName()} { 'b' }\n" +
                 "}</test>";
 
         final EXistXQueryService service = (EXistXQueryService)getQueryService();
         service.setProperty(OutputKeys.INDENT, "no");
         final ResourceSet result = service.query(query);
         assertEquals(1, result.getSize());
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<test><test:name xmlns:test=\"http://test.org\"/><test:name xmlns:test=\"http://test.org\"/></test>"));
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<test><test:name xmlns:test=\"http://test.org\">a</test:name><test:name xmlns:test=\"http://test.org\">b</test:name></test>"));
     }
 
     @Test
