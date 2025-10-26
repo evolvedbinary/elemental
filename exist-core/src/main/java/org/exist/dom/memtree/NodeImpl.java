@@ -170,7 +170,7 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
     @Override
     public final String getNodeName() {
-        switch(getNodeType()) {
+        switch (getNodeType()) {
             case Node.DOCUMENT_NODE:
                 return "#document";
 
@@ -179,8 +179,14 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
             case Node.ELEMENT_NODE:
             case Node.ATTRIBUTE_NODE:
-            case NAMESPACE_NODE:
                 return getQName().getStringValue();
+
+            case NAMESPACE_NODE:
+                if (XMLConstants.XMLNS_ATTRIBUTE.equals(getQName().getPrefix()) && XMLConstants.DEFAULT_NS_PREFIX.equals(getQName().getLocalPart())) {
+                    return XMLConstants.XMLNS_ATTRIBUTE;
+                } else {
+                    return getQName().getStringValue();
+                }
 
             case Node.PROCESSING_INSTRUCTION_NODE:
                 return ((ProcessingInstructionImpl)this).getTarget();
@@ -201,11 +207,16 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
     @Override
     public String getLocalName() {
-        switch(getNodeType()) {
+        switch (getNodeType()) {
             case Node.ELEMENT_NODE:
             case Node.ATTRIBUTE_NODE:
-            case NAMESPACE_NODE:
                 return getQName().getLocalPart();
+            case NAMESPACE_NODE:
+                if (XMLConstants.XMLNS_ATTRIBUTE.equals(getQName().getPrefix()) && XMLConstants.DEFAULT_NS_PREFIX.equals(getQName().getLocalPart())) {
+                    return null;
+                } else {
+                    return getQName().getLocalPart();
+                }
 
             default:
                 return null;
