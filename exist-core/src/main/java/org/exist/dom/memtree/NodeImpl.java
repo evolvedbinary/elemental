@@ -161,24 +161,57 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
 
     @Override
     public final String getNodeName() {
-        return switch (getNodeType()) {
-            case Node.DOCUMENT_NODE -> "#document";
-            case Node.DOCUMENT_FRAGMENT_NODE -> "#document-fragment";
-            case Node.ELEMENT_NODE, Node.ATTRIBUTE_NODE, NAMESPACE_NODE -> getQName().getStringValue();
-            case Node.PROCESSING_INSTRUCTION_NODE -> ((ProcessingInstructionImpl) this).getTarget();
-            case Node.TEXT_NODE -> "#text";
-            case Node.COMMENT_NODE -> "#comment";
-            case Node.CDATA_SECTION_NODE -> "#cdata-section";
-            default -> "#unknown";
-        };
+        switch(getNodeType()) {
+            case Node.DOCUMENT_NODE:
+                return "#document";
+
+            case Node.DOCUMENT_FRAGMENT_NODE:
+                return "#document-fragment";
+
+            case Node.ELEMENT_NODE:
+            case Node.ATTRIBUTE_NODE:
+                return getQName().getStringValue();
+
+            case NAMESPACE_NODE:
+                if (XMLConstants.XMLNS_ATTRIBUTE.equals(getQName().getPrefix()) && XMLConstants.DEFAULT_NS_PREFIX.equals(getQName().getLocalPart())) {
+                    return XMLConstants.XMLNS_ATTRIBUTE;
+                } else {
+                    return getQName().getStringValue();
+                }
+
+            case Node.PROCESSING_INSTRUCTION_NODE:
+                return ((ProcessingInstructionImpl)this).getTarget();
+
+            case Node.TEXT_NODE:
+                return "#text";
+
+            case Node.COMMENT_NODE:
+                return "#comment";
+
+            case Node.CDATA_SECTION_NODE:
+                return "#cdata-section";
+
+            default:
+                return "#unknown";
+        }
     }
 
     @Override
     public String getLocalName() {
-        return switch (getNodeType()) {
-            case Node.ELEMENT_NODE, Node.ATTRIBUTE_NODE, NAMESPACE_NODE -> getQName().getLocalPart();
-            default -> null;
-        };
+        switch(getNodeType()) {
+            case Node.ELEMENT_NODE:
+            case Node.ATTRIBUTE_NODE:
+                return getQName().getLocalPart();
+            case NAMESPACE_NODE:
+                if (XMLConstants.XMLNS_ATTRIBUTE.equals(getQName().getPrefix()) && XMLConstants.DEFAULT_NS_PREFIX.equals(getQName().getLocalPart())) {
+                    return null;
+                } else {
+                    return getQName().getLocalPart();
+                }
+
+            default:
+                return null;
+        }
     }
 
     @Override

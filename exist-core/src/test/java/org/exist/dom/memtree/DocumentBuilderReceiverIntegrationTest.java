@@ -61,7 +61,7 @@ public class DocumentBuilderReceiverIntegrationTest {
                 {"merge-docs-ns-1", "<x>{parse-xml(\"<dummy xmlns=''/>\")}</x>", "<x><dummy/></x>"},
                 {"merge-docs-ns-2", "<x xmlns=''>{parse-xml(\"<dummy xmlns=''/>\")}</x>", "<x><dummy/></x>"},
                 {"merge-docs-ns-3", "<x xmlns='xyz'>{parse-xml(\"<dummy xmlns=''/>\")}</x>", "<x xmlns='xyz'><dummy xmlns=''/></x>"},
-                {"merge-docs-ns-3", "<x xmlns=''>{parse-xml(\"<dummy xmlns='xyz'/>\")}</x>", "<x><dummy xmlns='xyz'/></x>"}
+                {"merge-docs-ns-4", "<x xmlns=''>{parse-xml(\"<dummy xmlns='xyz'/>\")}</x>", "<x><dummy xmlns='xyz'/></x>"}
         });
     }
 
