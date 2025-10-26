@@ -34,6 +34,7 @@
   version="1.0.0">
 
   <xs:import schemaLocation="exist-serialized-types.xsd" namespace="http://exist-db.org/xquery/types/serialized"/>
+  <xs:import schemaLocation="exist-rest-api-exception.xsd"/>
 
 
   <!-- 
@@ -49,6 +50,9 @@
   </xs:annotation>
 
   <xs:element name="query">
+    <xs:annotation>
+      <xs:documentation>REST API XPath/XQuery.</xs:documentation>
+    </xs:annotation>
     <xs:complexType>
       <xs:sequence>
         <xs:element name="properties" minOccurs="0">
