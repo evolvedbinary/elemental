@@ -1,0 +1,937 @@
+openapi: 3.1.2
+info:
+  title: Elemental's eXist-db REST API
+  description: Elemental's eXist-db REST API
+  version: 1.0.0
+  contact:
+    email: tech@evolvedbinary.com
+  license:
+    name: Business Source License 1.1
+    url: https://mariadb.com/bsl11/
+servers:
+  - description: Elemental Server 7.x.x
+    url: http://localhost:8080/exist
+paths:
+  /rest:
+    get:
+      summary: REST Query API
+      operationId: restQuery
+      description: >-
+        By passing in the appropriate options, you can execute an XPath or
+        XQuery.
+      parameters:
+        - $ref: "#/components/parameters/_query"
+        - $ref: "#/components/parameters/_release"
+        - $ref: "#/components/parameters/_variables"
+        - $ref: "#/components/parameters/_howmany"
+        - $ref: "#/components/parameters/_start"
+        - $ref: "#/components/parameters/_typed"
+        - $ref: "#/components/parameters/_wrap"
+        - $ref: "#/components/parameters/_cache"
+        - $ref: "#/components/parameters/_indent"
+        - $ref: "#/components/parameters/_output-doctype"
+        - $ref: "#/components/parameters/_omit-xml-declaration"
+        - $ref: "#/components/parameters/_output-omit-original-xml-declaration"
+        - $ref: "#/components/parameters/_source"
+        - $ref: "#/components/parameters/_session"
+        - $ref: "#/components/parameters/_xsl"
+        - $ref: "#/components/parameters/_encoding"
+      responses:
+        '200':
+          $ref: "#/components/responses/QueryOK"
+        '400':
+          $ref: "#/components/responses/QueryBadRequest"
+        '403':
+          $ref: "#/components/responses/QueryForbidden"
+        '500':
+          $ref: "#/components/responses/QueryInternalServerError"
+    post:
+      summary: REST Post API
+      operationId: restPost
+      description: >-
+        You can POST an XQuery or XUpdate as the body of the request.
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/query"
+                - $ref: "#/components/schemas/xupdate"
+                - type: object
+      responses:
+        '200':
+          $ref: "#/components/responses/QueryOK"
+        '400':
+          $ref: "#/components/responses/QueryBadRequest"
+        '403':
+          $ref: "#/components/responses/QueryForbidden"
+        '500':
+          $ref: "#/components/responses/QueryInternalServerError"
+
+  /rest/{db-path:db.+}:
+    get:
+      summary: REST Database Resource Query API
+      operationId: restDbQuery
+      description: >-
+        You can address a database resource in the URI path to retrieve it, or by passing in
+        the appropriate options, you can execute an XPath or XQuery against
+        them.
+      parameters:
+        - $ref: "#/components/parameters/db-path"
+        - allOf:
+            - $ref: "#/components/parameters/_query"
+            - required: false
+        - $ref: "#/components/parameters/_release"
+        - $ref: "#/components/parameters/_variables"
+        - $ref: "#/components/parameters/_howmany"
+        - $ref: "#/components/parameters/_start"
+        - $ref: "#/components/parameters/_typed"
+        - $ref: "#/components/parameters/_wrap"
+        - $ref: "#/components/parameters/_cache"
+        - $ref: "#/components/parameters/_indent"
+        - $ref: "#/components/parameters/_output-doctype"
+        - $ref: "#/components/parameters/_omit-xml-declaration"
+        - $ref: "#/components/parameters/_output-omit-original-xml-declaration"
+        - $ref: "#/components/parameters/_source"
+        - $ref: "#/components/parameters/_session"
+        - $ref: "#/components/parameters/_xsl"
+        - $ref: "#/components/parameters/_encoding"
+      responses:
+        '200':
+          $ref: "#/components/responses/QueryOK"
+        '400':
+          $ref: "#/components/responses/QueryBadRequest"
+        '401':
+          $ref: "#/components/responses/QueryUnauthorized"
+        '403':
+          $ref: "#/components/responses/QueryForbidden"
+        '404':
+          $ref: "#/components/responses/QueryNotFound"
+        '500':
+          $ref: "#/components/responses/QueryInternalServerError"
+    head:
+      summary: REST Database Resource Metdata API
+      operationId: restDbHead
+      description: >-
+        You can address a database resource in the URI path to retieve its created and last modified dates, and content length.
+      parameters:
+        - $ref: "#/components/parameters/db-path"
+      responses:
+        '200':
+          description: OK. Results of the lookup of the database resource.
+          headers:
+            Created:
+              description: The date that the resource was created.
+              type: string
+              format: date-time
+            Last-Modified:
+              description: The date that the resource was last modified.
+              type: string
+              format: date-time
+            Content-Length:
+              description: The length of the resource when serialized as the response body.
+              type: integer
+        '401':
+          $ref: "#/components/responses/QueryUnauthorized"
+        '404':
+          $ref: "#/components/responses/QueryNotFound"
+    delete:
+      summary: REST Database Delete Resource API
+      operationId: restDbDelete
+      description: >-
+        You can address a database resource in the URI path to delete it from the database.
+      parameters:
+        - $ref: "#/components/parameters/db-path"
+      responses:
+        '200':
+          description: OK. The Resource or Collection was deleted from the database.
+        '401':
+          $ref: "#/components/responses/QueryUnauthorized"
+        '404':
+          $ref: "#/components/responses/QueryNotFound"
+    post:
+      summary: REST Database Resource Post API
+      operationId: restDbPost
+      description: >-
+        You can address a stored database query in the URI path to execute it with the POSTed data, or you can POST an XQuery or XUpdate as the body of the request.
+      parameters:
+        - $ref: "#/components/parameters/db-path"
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/query"
+                - $ref: "#/components/schemas/xupdate"
+                - type: object
+      responses:
+        '200':
+          $ref: "#/components/responses/QueryOK"
+        '400':
+          $ref: "#/components/responses/QueryBadRequest"
+        '401':
+          $ref: "#/components/responses/QueryUnauthorized"
+        '403':
+          $ref: "#/components/responses/QueryForbidden"
+        '404':
+          $ref: "#/components/responses/QueryNotFound"
+        '500':
+          $ref: "#/components/responses/QueryInternalServerError"
+
+    put:
+      summary: REST Database Resource Store API
+      operationId: restDbStore
+      description: >-
+        You can store (or replace) a Resource into the database at the path addressed. The body of the request is the content for the Resource.
+      parameters:
+        - $ref: "#/components/parameters/db-path"
+        - Content-Type:
+          in: header
+          description: The Content Type to store the resource as. If this is omitted then the Content Type will be looked up in the Media Type database from the file name.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "*/*":
+            type: string
+            format: binary
+      responses:
+        '201':
+          description: Created. The new resource has been created.
+        '400':
+          $ref: "#/components/responses/QueryBadRequest"
+        '401':
+          $ref: "#/components/responses/QueryUnauthorized"
+        '403':
+          $ref: "#/components/responses/QueryForbidden"
+        '404':
+          $ref: "#/components/responses/QueryNotFound"
+        '500':
+          $ref: "#/components/responses/QueryInternalServerError"
+
+components:
+  parameters:
+    db-path:
+      in: path
+      description: Path to a Collection or Resource in the database. Sets the context for any XPath or XQuery that may also be specified in the _query parameter. Without a _query parameter, either the contents of the Collection will be listed, the resource will be returned, or if the path points to a stored XQuery then the query will be executed.
+      required: true
+      schema:
+        type: string
+        example: /db/my-collection-1/my-sub-collection-2/my-resource-1.xml
+    _query:
+      in: query
+      description: An XPath or XQuery to execute.
+      required: true
+      schema:
+        type: string
+    _release:
+      in: query
+      description: >-
+        The results of XPath and XQuery executions by the REST Server are
+        cached if the Cache Parameter is set. This can be used to release
+        the cached results of a query. The value of the parameter should be
+        the cached session id.
+      required: false
+      schema:
+        type: integer
+    _variables:
+      in: query
+      description: Values for any XQuery external variables that you wish to bind.
+      required: false
+      schema:
+        $ref: '#/components/schemas/variables'
+    _howmany:
+      in: query
+      description: >-
+        The number of results should be returned (if the query returns a
+        sequence of items). The value of the parameter should be a number
+        greater than zero.
+      required: false
+      schema:
+        type: integer
+        default: 10
+    _start:
+      in: query
+      description: >-
+        The position in the result sequence to start from (if the query
+        returns a sequence of items). The value of the parameter should be a
+        positive number.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    _typed:
+      in: query
+      description: Annotates the the results of the query with data types.
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'no'
+    _wrap:
+      in: query
+      description: >-
+        Wraps the results of the query in an exist:result element with some
+        detail about the results.
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'yes'
+    _cache:
+      in: query
+      description: >-
+        Caches the results of the query on the server. This parameter is
+        useful in combination with Start and HowMany to enable you to
+        execute a query once, and then retrieve the results in pages. Cached
+        results are assigned a Session ID which you need to use in
+        subsequent requests. The Session ID is returned in the
+        exist:result/@session attribute if you have used the Wrap parameter,
+        and also in the HTTP Response Header X-Session-Id.
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'no'
+    _indent:
+      in: query
+      description: Causes the output XML to be serialized with indentation.
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'no'
+    _output-doctype:
+      in: query
+      description: >-
+        Causes the output XML to be serialized with a Document Type (if
+        present).
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'no'
+    _omit-xml-declaration:
+      in: query
+      description: Causes the output XML to be serialized without an XML declaration.
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'yes'
+    _output-omit-original-xml-declaration:
+      in: query
+      description: >-
+        Causes the output XML to be serialized without the XML declaration
+        from the original document (if present).
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'no'
+    _source:
+      in: query
+      description: >-
+        Retrieve the Source Code of an XQuery or XProc resource rather than
+        executing the resource.
+      required: false
+      schema:
+        allOf:
+          - $ref: '#/components/schemas/yesNo'
+          - default: 'no'
+    _session:
+      in: query
+      description: >-
+        The id of the results of a previous query that were cached on the
+        server. The value of the parameter should be a Session ID previously
+        assigned from a request made using the Cache parameter.
+      required: false
+      schema:
+        type: integer
+    _xsl:
+      in: query
+      description: >-
+        Enable or disable expansion of XSL Processing Instructions by the
+        serializer operating on the result of the request. It can also be
+        used to specify a specific XSL to be used by the serializer. The
+        value of the parameter should be either "yes", "no", or a path to an
+        XSL file in the database.
+      required: false
+      schema:
+        type: string
+        default: 'yes'
+    _encoding:
+      in: query
+      description: The character encoding to be used to form the response.
+      required: false
+      schema:
+        type: string
+        default: UTF-8
+
+  responses:
+    QueryOK:
+      description: OK. Results of the XPath/XQuery.
+      headers:
+        X-Session-Id:
+          description: The ID of the Session holding cached query results.
+          required: false
+          schema:
+            type: integer
+      content:
+        application/xml:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/result'
+              - $ref: '#/components/schemas/modifications'
+              - type: object
+        application/json:
+        text/html:
+        application/xhtml+xml:
+        text/plain:
+    QueryBadRequest:
+      description: Bad Request. Caused by an invalid XPath/XQuery or parameter.
+      content:
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/exception'
+    QueryUnauthorized:
+      description: Unauthorized. Caused by a path to a resource in the database that you are not authorized to access.
+    QueryForbidden:
+      description: Forbidden. The operation that you requested is forbidden. It may have been disabled through server configuration.
+    QueryNotFound:
+      description: Not Found. Caused by a path to a resource that does not exist in the database.
+      content:
+        text/html:
+    QueryInternalServerError:
+      description: Internal Server Error. Caused by an unexpected exception.
+      content:
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/exception'
+
+  schemas:
+    query:
+      description: REST API XPath/XQuery.
+      type: object
+      required:
+        - text
+      properties:
+        start:
+          description: >-
+            The position in the result sequence to start from (if the query
+            returns a sequence of items). The value of the parameter should be a
+            positive number.
+          type: integer
+          minimum: 1
+          default: 1
+        max:
+          description: >-
+            The number of results should be returned (if the query returns a
+            sequence of items). The value of the parameter should be a number
+            greater than zero.
+          type: integer
+          default: 10
+        cache:
+          description: >-
+            Caches the results of the query on the server. This parameter is
+            useful in combination with Start and HowMany to enable you to
+            execute a query once, and then retrieve the results in pages. Cached
+            results are assigned a Session ID which you need to use in
+            subsequent requests. The Session ID is returned in the
+            exist:result/@session attribute if you have used the Wrap parameter,
+            and also in the HTTP Response Header X-Session-Id.
+          type:
+            allOf:
+              - $ref: '#/components/schemas/yesNo'
+              - default: 'no'
+        session:
+          description: >-
+            The id of the results of a previous query that were cached on the
+            server. The value of the parameter should be a Session ID previously
+            assigned from a request made using the Cache parameter.
+          type: integer
+        typed:
+          description: Annotates the the results of the query with data types.
+          type:
+            allOf:
+              - $ref: '#/components/schemas/yesNo'
+              - default: 'no'
+        wrap:
+          description: >-
+            Wraps the results of the query in an exist:result element with some
+            detail about the results.
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/yesNo'
+              - default: 'yes'
+        encoding:
+          description: The character encoding to be used to form the response.
+          required: false
+          type: string
+          default: UTF-8
+        method:
+          description: The serialization method to use for the query results.
+          type: string
+          default: XML
+        properties:
+          description: Properties to pass to the Serializer.
+          type: array
+          items:
+            $ref: '#/components/schemas/property'
+        variables:
+          $ref: '#/components/schemas/variables'
+        text:
+          description: An XPath or XQuery to execute. To avoid escaping XML sensitive characters, it can be wrapped in a CData Section if necessary.
+          type: string
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+
+    property:
+      description: A key/value property.
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          xml:
+            attribute: true
+        value:
+          type: string
+          xml:
+            attribute: true
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+
+    xupdate:
+      description: "XUpdate (see: https://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html)"
+      type: object
+      xml:
+        prefix: xu
+        namespace: http://www.xmldb.org/xupdate
+        name: modifications
+    modifications:
+      description: Results of an XUpdate.
+      type: object
+      required:
+        - count
+        - value
+      properties:
+        count:
+          description: The number of XUpdate modifications made.
+          type: integer
+          xml:
+            attribute: true
+        value:
+          description: A description of the modifications made.
+          type: string
+          xml:
+            name: ""
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    variables:
+      description: Values for external variables that should be bound to the XQuery.
+      type: array
+      items:
+        $ref: '#/components/schemas/variable'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    variable:
+      description: The value of an external variable.
+      type: object
+      required:
+        - qname
+        - sequence
+      properties:
+        qname:
+          $ref: '#/components/schemas/qname'
+        sequence:
+          $ref: '#/components/schemas/sx_sequence'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    qname:
+      description: An XML Qualified Name.
+      type: object
+      required:
+        - localname
+      properties:
+        prefix:
+          $ref: '#/components/schemas/prefix'
+        localname:
+          $ref: '#/components/schemas/localname'
+        namespace:
+          $ref: '#/components/schemas/namespace'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    prefix:
+      description: The prefix of an XML Qualified Name.
+      type: string
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    localname:
+      description: The local part of an XML Qualified Name.
+      type: string
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    namespace:
+      description: An XML Namespace.
+      type: string
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    sx_sequence:
+      description: An XDM Sequence.
+      type: array
+      items:
+        $ref: '#/components/schemas/sx_value'
+      xml:
+        prefix: sx
+        namespace: http://exist-db.org/xquery/types/serialized
+        name: sequence
+    sx_value:
+      description: The type and value of an XDM Item.
+      type: object
+      properties:
+        name:
+          description: A name for the value, only used for attribute() values.
+          type: string
+          default: item()
+          xml:
+            attribute: true
+        type:
+          description: The XDM type of the value.
+          type: string
+          xml:
+            attribute: true
+        sequence:
+          $ref: '#/components/schemas/sx_sequence'
+        entry:
+          $ref: '#/components/schemas/sx_entry'
+      xml:
+        prefix: sx
+        namespace: http://exist-db.org/xquery/types/serialized
+        name: value
+    sx_entry:
+      description: An XDM Map Entry.
+      type: object
+      required:
+        - key
+        - sequence
+      properties:
+        key:
+          type: string
+        sequence:
+          $ref: '#/components/schemas/sequence'
+      xml:
+        prefix: sx
+        namespace: http://exist-db.org/xquery/types/serialized
+    yesNo:
+      description: The value 'yes' or 'no'
+      type: string
+      enum:
+        - 'yes'
+        - 'no'
+    result:
+      description: REST API Results Wrapper.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/result_attributes'
+        - anyOf:
+            - $ref: '#/components/schemas/collection'
+            - $ref: '#/components/schemas/sequence_children'
+            - type: object
+            - type: string
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    result_attributes:
+      properties:
+        hits:
+          description: The total number of results available in the result sequence.
+          type: integer
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        start:
+          type: integer
+          description: >-
+            The position in the result sequence that return results are returned
+            from. Should be equal to the 'start' parameter sent in the query.
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        count:
+          type: integer
+          description: >-
+            The number of results returned in this request. Should be equal or
+            less than the 'max' parameter sent in the query.
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        compilation-time:
+          type: integer
+          description: The time taken in milliseconds to compile the query.
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        execution-time:
+          type: integer
+          description: The time taken in milliseconds to execute the query.
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+    collection:
+      description: Metadata about a Collection in the database.
+      type: object
+      required:
+        - name
+        - created
+        - owner
+        - group
+        - permissions
+      properties:
+        name:
+          description: The URI of the Collection.
+          type: string
+          xml:
+            attribute: true
+        created:
+          description: The creation date of the Collection.
+          type: string
+          format: date-time
+          xml:
+            attribute: true
+        owner:
+          description: The user owning the Collection or Resource.
+          type: string
+          xml:
+            attribute: true
+        group:
+          description: The group owning the Collection or Resource.
+          type: string
+          xml:
+            attribute: true
+        permissions:
+          description: The permissions of the Collection or Resource.
+          type: string
+          xml:
+            attribute: true
+        value:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/collection'
+              - $ref: '#/components/schemas/resource'
+          xml:
+            name: ''
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    resource:
+      description: Metadata about a Resource in the database.
+      type: object
+      required:
+        - name
+        - created
+        - last-modified
+        - owner
+        - group
+        - permissions
+      properties:
+        name:
+          description: The name of the Resource.
+          type: string
+          xml:
+            attribute: true
+        created:
+          description: The creation date of the Resource.
+          type: string
+          format: date-time
+          xml:
+            attribute: true
+        last-modified:
+          description: The last modified date of the Resource.
+          type: string
+          format: date-time
+          xml:
+            attribute: true
+        owner:
+          description: The user owning the Resource.
+          type: string
+          xml:
+            attribute: true
+        group:
+          description: The group owning the Resource.
+          type: string
+          xml:
+            attribute: true
+        permissions:
+          description: The permissions of the Resource.
+          type: string
+          xml:
+            attribute: true
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    sequence_children:
+      type: array
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/value'
+          - $ref: '#/components/schemas/attribute'
+          - $ref: '#/components/schemas/document'
+          - $ref: '#/components/schemas/text'
+          - $ref: '#/components/schemas/array'
+          - $ref: '#/components/schemas/map'
+    value:
+      description: The type and value of an XDM Atomic Value.
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          description: The XDM type of the value.
+          type: string
+          xml:
+            attribute: true
+        value:
+          type: string
+          xml:
+            name: ''
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    attribute:
+      description: Wrapper for an XDM Attribute Node.
+      type: object
+      required:
+        - local
+      properties:
+        local:
+          description: The local name part of the Attribute's Qualified Name.
+          type: string
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        prefix:
+          description: The prefix part of the Attribute's Qualified Name.
+          type: string
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        target-namespace:
+          description: The namespace part of the Attribute's Qualified Name.
+          type: string
+          xml:
+            attribute: true
+            prefix: exist
+            namespace: http://exist.sourceforge.net/NS/exist
+        value:
+          type: string
+          xml:
+            name: ''
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    document:
+      description: Wrapper for an XDM Document Node.
+      type: object
+      properties:
+        uri:
+          description: The Base URI of the document.
+          type: string
+          xml:
+            attribute: true
+        has-element:
+          description: Indicates whether the Document Node has an Element child Node.
+          type: boolean
+          default: true
+          xml:
+            attribute: true
+        value:
+          type: object
+          xml:
+            name: ''
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    text:
+      description: Wrapper for an XDM Text Node.
+      type: string
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    array:
+      description: Wrapper for an XDM Array.
+      type: array
+      items:
+        $ref: '#/components/schemas/sequence'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    sequence:
+      description: An XDM Sequence.
+      type: array
+      items:
+        $ref: '#/components/schemas/sequence_children'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    map:
+      description: Wrapper for an XDM Map.
+      type: array
+      items:
+        $ref: '#/components/schemas/entry'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    entry:
+      description: An XDM Map entry.
+      type: object
+      required:
+        - key
+        - sequence
+      properties:
+        key:
+          $ref: '#/components/schemas/value'
+        sequence:
+          $ref: '#/components/schemas/sequence'
+      xml:
+        prefix: exist
+        namespace: http://exist.sourceforge.net/NS/exist
+    exception:
+      description: An exception caused during XPath/XQuery execution.
+      type: object
+      required:
+        - path
+        - message
+      properties:
+        path:
+          description: The REST API path that raised the exception.
+          type: string
+        message:
+          description: The message of the exception.
+          type: string
+        query:
+          description: The XPath/XQuery that raised the exception.
+          type: string
