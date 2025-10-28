@@ -1067,6 +1067,7 @@
                                 <include>src/main/java/org/exist/xquery/Module.java</include>
                                 <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
+                                <include>src/main/java/org/exist/xquery/Option.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
                                 <include>src/test/java/org/exist/xquery/RestBinariesTest.java</include>
                                 <include>src/test/java/org/exist/xquery/StoredModuleTest.java</include>
@@ -1116,6 +1117,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDefaultCollation.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDistinctValues.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDoc.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunElementWithId.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunEmpty.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunEncodeForURI.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunEndsWith.java</include>
@@ -1715,6 +1717,7 @@
                                 <exclude>src/main/java/org/exist/xquery/NamedFunctionReference.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Option.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStats.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/StoredModuleTest.java</exclude>
@@ -1768,6 +1771,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDistinctValues.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDoc.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunElementWithId.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunEmpty.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunEncodeForURI.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunEndsWith.java</exclude>

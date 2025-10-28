@@ -1979,13 +1979,13 @@ public class XQueryContext implements BinaryValueManager, Context {
 
             //Type.EMPTY is *not* a subtype of other types ; checking cardinality first
             if (!var.getSequenceType().getCardinality().isSuperCardinalityOrEqualOf(actualCardinality)) {
-                throw new XPathException(rootExpression, "XPTY0004: Invalid cardinality for variable $" + var.getQName() + ". Expected " + var.getSequenceType().getCardinality().getHumanDescription() + ", got " + actualCardinality.getHumanDescription());
+                throw new XPathException(rootExpression, ErrorCodes.XPTY0004, "Invalid cardinality for variable $" + var.getQName() + ". Expected " + var.getSequenceType().getCardinality().getHumanDescription() + ", got " + actualCardinality.getHumanDescription());
             }
 
             //TODO : ignore nodes right now ; they are returned as xs:untypedAtomicType
             if (!Type.subTypeOf(var.getSequenceType().getPrimaryType(), Type.NODE)) {
                 if (!val.isEmpty() && !Type.subTypeOf(val.getItemType(), var.getSequenceType().getPrimaryType())) {
-                    throw new XPathException(rootExpression, "XPTY0004: Invalid type for variable $" + var.getQName() + ". Expected " + Type.getTypeName(var.getSequenceType().getPrimaryType()) + ", got " + Type.getTypeName(val.getItemType()));
+                    throw new XPathException(rootExpression, ErrorCodes.XPTY0004, "Invalid type for variable $" + var.getQName() + ". Expected " + Type.getTypeName(var.getSequenceType().getPrimaryType()) + ", got " + Type.getTypeName(val.getItemType()));
                 }
 
                 //Here is an attempt to process the nodes correctly
@@ -1993,7 +1993,7 @@ public class XQueryContext implements BinaryValueManager, Context {
 
                 //Same as above : we probably may factorize
                 if (!val.isEmpty() && !Type.subTypeOf(val.getItemType(), var.getSequenceType().getPrimaryType())) {
-                    throw new XPathException(rootExpression, "XPTY0004: Invalid type for variable $" + var.getQName() + ". Expected " + Type.getTypeName(var.getSequenceType().getPrimaryType()) + ", got " + Type.getTypeName(val.getItemType()));
+                    throw new XPathException(rootExpression, ErrorCodes.XPTY0004, "Invalid type for variable $" + var.getQName() + ". Expected " + Type.getTypeName(var.getSequenceType().getPrimaryType()) + ", got " + Type.getTypeName(val.getItemType()));
                 }
 
             }
