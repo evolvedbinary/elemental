@@ -1486,7 +1486,7 @@ public class XPathQueryTest {
         queryResource(service, "quotes.xml", "/test[title = '&quot;Hello&quot;']", 1);
 
         service.declareVariable("content", "&quot;Hello&quot;");
-        queryResource(service, "quotes.xml", "/test[title = $content]", 1);
+        queryResource(service, "quotes.xml", "declare variable $content as xs:string external; /test[title = $content]", 1);
     }
 
     @Test
@@ -1896,18 +1896,17 @@ public class XPathQueryTest {
 
         final EXistXPathQueryService service2 = (EXistXPathQueryService) service;
         service2.declareVariable("name", "MONTAGUE");
+        ResourceSet result = service.query("declare variable $name as xs:string external; //SPEECH[SPEAKER = $name]");
+        assertEquals(0, result.getSize());
         service2.declareVariable("name", "43");
-
-        //ResourceSet result = service.query("//SPEECH[SPEAKER=$name]");
-        ResourceSet result = service2.query( doc, "//item[stock=$name]");
-        result = service2.query("$name");
+        result = service2.query(doc, "declare variable $name as xs:string external; //item[stock = $name]");
         assertEquals(1, result.getSize());
-        result = service2.query( doc, "//item[stock=43]");
+        result = service2.query("declare variable $name as xs:string external; $name");
+        assertEquals(1, result.getSize());
+        result = service2.query( doc, "//item[stock = 43]");
         assertEquals(1, result.getSize());
         result = service2.query(doc, "//item");
         assertEquals(4, result.getSize());
-
-        // assertEquals(10, result.getSize());
     }
 
     @Test

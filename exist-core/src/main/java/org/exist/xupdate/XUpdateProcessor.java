@@ -769,18 +769,11 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
         try {
 			context = new XQueryContext(broker.getBrokerPool());
 			context.setStaticallyKnownDocuments(documentSet);
-			Map.Entry<String, String> namespaceEntry;
-			for (Map.Entry<String, String> stringStringEntry : namespaces.entrySet()) {
-				namespaceEntry = stringStringEntry;
-				context.declareNamespace(
-						namespaceEntry.getKey(),
-						namespaceEntry.getValue());
+
+			for (final Map.Entry<String, String> namespace : namespaces.entrySet()) {
+				context.declareNamespace(namespace.getKey(), namespace.getValue());
 			}
-			Map.Entry<String, Object> entry;
-			for (Map.Entry<String, Object> stringObjectEntry : variables.entrySet()) {
-				entry = stringObjectEntry;
-				context.declareVariable(entry.getKey(), true, entry.getValue());
-			}
+
 			// TODO(pkaminsk2): why replicate XQuery.compile here?
 			final XQueryLexer lexer = new XQueryLexer(context, new StringReader(select));
 			final XQueryParser parser = new XQueryParser(lexer);
@@ -801,6 +794,11 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 			if (treeParser.foundErrors()) {
 				throw new SAXException(treeParser.getErrorMessage());
 			}
+
+            for (final Map.Entry<String, Object> variable : variables.entrySet()) {
+                context.declareVariable(variable.getKey(), true, variable.getValue());
+            }
+
 			expr.analyze(new AnalyzeContextInfo());
 			final Sequence seq = expr.eval(null, null);
 			return seq;

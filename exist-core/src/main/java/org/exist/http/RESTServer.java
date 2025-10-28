@@ -1381,7 +1381,6 @@ public class RESTServer {
             context.setBaseURI(new AnyURIValue(pathUri.toString()));
 
             declareNamespaces(context, namespaces);
-            declareVariables(context, variables, request, response);
 
             final long compilationTime;
             if (compiled == null) {
@@ -1393,6 +1392,8 @@ public class RESTServer {
                 context.getWatchDog().reset();
                 compilationTime = 0;
             }
+
+            declareVariables(context, variables, request, response);
 
             final long executeStart = System.currentTimeMillis();
             final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
@@ -1568,10 +1569,6 @@ public class RESTServer {
             context.setStaticallyKnownDocuments(
                     new XmldbURI[]{resource.getCollection().getURI()});
 
-            final HttpRequestWrapper reqw = declareVariables(context, null, request, response);
-            reqw.setServletPath(servletPath);
-            reqw.setPathInfo(pathInfo);
-
             final long compilationTime;
             if (compiled == null) {
                 try {
@@ -1586,6 +1583,10 @@ public class RESTServer {
                 context.getWatchDog().reset();
                 compilationTime = 0;
             }
+
+            final HttpRequestWrapper reqw = declareVariables(context, null, request, response);
+            reqw.setServletPath(servletPath);
+            reqw.setPathInfo(pathInfo);
 
             DebuggeeFactory.checkForDebugRequest(request, context);
 
@@ -1634,6 +1635,32 @@ public class RESTServer {
                 context.prepareForReuse();
             }
 
+            // TODO: don't hardcode this?
+            context.setModuleLoadPath(
+                    XmldbURI.EMBEDDED_SERVER_URI.append(
+                            resource.getCollection().getURI()).toString());
+
+            context.setStaticallyKnownDocuments(
+                    new XmldbURI[]{resource.getCollection().getURI()});
+
+            // compile query
+            final long compilationTime;
+            if (compiled == null) {
+                try {
+                    final long compilationStart = System.currentTimeMillis();
+                    compiled = xquery.compile(context, source);
+                    compilationTime = System.currentTimeMillis() - compilationStart;
+                } catch (final IOException e) {
+                    throw new BadRequestException("Failed to read query from "
+                            + source.getURL(), e);
+                }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+                compilationTime = 0;
+            }
+
+            // declare variables
             context.declareVariable("pipeline", true, resource.getURI().toString());
 
             final String stdin = request.getParameter("stdin");
@@ -1651,34 +1678,11 @@ public class RESTServer {
             final String options = request.getParameter("options");
             context.declareVariable("options", true, options == null ? "<options/>" : options);
 
-            // TODO: don't hardcode this?
-            context.setModuleLoadPath(
-                    XmldbURI.EMBEDDED_SERVER_URI.append(
-                            resource.getCollection().getURI()).toString());
-
-            context.setStaticallyKnownDocuments(
-                    new XmldbURI[]{resource.getCollection().getURI()});
-
             final HttpRequestWrapper reqw = declareVariables(context, null, request, response);
             reqw.setServletPath(servletPath);
             reqw.setPathInfo(pathInfo);
 
-            final long compilationTime;
-            if (compiled == null) {
-                try {
-                    final long compilationStart = System.currentTimeMillis();
-                    compiled = xquery.compile(context, source);
-                    compilationTime = System.currentTimeMillis() - compilationStart;
-                } catch (final IOException e) {
-                    throw new BadRequestException("Failed to read query from "
-                            + source.getURL(), e);
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-                compilationTime = 0;
-            }
-
+            // execute query
             final long executeStart = System.currentTimeMillis();
             final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
             writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, false, compilationTime, System.currentTimeMillis() - executeStart);

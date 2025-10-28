@@ -190,7 +190,9 @@ public abstract class Modification {
             }
             context.setStaticallyKnownDocuments(docs);
             declareNamespaces(context);
+
             declareVariables(context);
+
             if (compiled == null) {
                 try {
                     compiled = xquery.compile(context, source);

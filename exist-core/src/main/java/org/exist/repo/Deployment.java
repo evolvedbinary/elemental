@@ -728,17 +728,8 @@ public class Deployment {
                 context.prepareForReuse();
             }
 
-            context.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
-            final Optional<Path> home = broker.getConfiguration().getExistHome();
-            if (home.isPresent()) {
-                context.declareVariable("home", true, home.get().toAbsolutePath().toString());
-            }
-
             if (targetCollection != null) {
-                context.declareVariable("target", true, targetCollection.toString());
                 context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
-            } else {
-                context.declareVariable("target", true, Sequence.EMPTY_SEQUENCE);
             }
             if (QueryPurpose.PREINSTALL == purpose) {
                 // when running pre-setup scripts, base path should point to directory
@@ -746,8 +737,8 @@ public class Deployment {
                 context.setModuleLoadPath(tempDir.toAbsolutePath().toString());
             }
 
+            // Compile query
             final XQuery xqueryService = broker.getBrokerPool().getXQueryService();
-
             if (compiled == null) {
                 compiled = xqueryService.compile(context, source);
             } else {
@@ -755,6 +746,19 @@ public class Deployment {
                 context.getWatchDog().reset();
             }
 
+            // Set variables
+            context.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
+            final Optional<Path> home = broker.getConfiguration().getExistHome();
+            if (home.isPresent()) {
+                context.declareVariable("home", true, home.get().toAbsolutePath().toString());
+            }
+            if (targetCollection != null) {
+                context.declareVariable("target", true, targetCollection.toString());
+            } else {
+                context.declareVariable("target", true, Sequence.EMPTY_SEQUENCE);
+            }
+
+            // Execute query
             return xqueryService.execute(broker, compiled, null);
 
         } catch (final PermissionDeniedException e) {

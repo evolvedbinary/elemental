@@ -1070,6 +1070,8 @@
                                 <include>src/main/java/org/exist/xquery/LocationStep.java</include>
                                 <include>src/main/java/org/exist/xquery/Module.java</include>
                                 <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
+                                <include>src/main/java/org/exist/xquery/NameTest.java</include>
+                                <include>src/test/java/org/exist/xquery/NodeTypeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/Option.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
@@ -1284,6 +1286,7 @@
                                 <include>src/main/java/org/exist/xupdate/Modification.java</include>
                                 <include>src/test/java/org/exist/xupdate/RemoveAppendTest.java</include>
                                 <include>src/main/java/org/exist/xupdate/XUpdateProcessor.java</include>
+                                <include>src/test/java/org/exist/xupdate/XUpdateTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -1725,6 +1728,7 @@
                                 <exclude>src/main/java/org/exist/xquery/Module.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NamedFunctionReference.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/NodeTypeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Option.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStats.java</exclude>
@@ -1970,6 +1974,7 @@
                                 <exclude>src/main/java/org/exist/xupdate/Modification.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/RemoveAppendTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>
+                                <exclude>src/test/java/org/exist/xupdate/XUpdateTest.java</exclude>
 
                                 <!--
                                     Derivative work licensed under dbXML 1.0 and LGPL 2.1
