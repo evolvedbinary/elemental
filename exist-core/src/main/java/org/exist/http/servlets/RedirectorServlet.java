@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -45,6 +69,8 @@ import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -270,27 +296,38 @@ public class RedirectorServlet extends AbstractExistHttpServlet {
         final XQuery xquery = getPool().getXQueryService();
         final XQueryPool pool = getPool().getXQueryPool();
 
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try (final DBBroker broker = getPool().getBroker()) {
 
-            final XQueryContext context;
-            CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
+            compiled = pool.borrowCompiledXQuery(broker, source);
+
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+
             if (compiled == null) {
-                // special header to indicate that the query is not returned from
-                // cache
-                response.setHeader("X-XQuery-Cached", "false");
                 context = new XQueryContext(getPool());
-                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.toString());
-                compiled = xquery.compile(context, source);
             } else {
-                response.setHeader("X-XQuery-Cached", "true");
                 context = compiled.getContext();
                 context.prepareForReuse();
             }
 
-            try {
-                return xquery.execute(broker, compiled, null, new Properties());
-            } finally {
+            context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.toString());
+
+            if (compiled == null) {
+                compiled = xquery.compile(context, source);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            return xquery.execute(broker, compiled, null, new Properties());
+
+        } finally {
+            if (context != null) {
                 context.runCleanupTasks();
+            }
+            if (compiled != null) {
                 pool.returnCompiledXQuery(source, compiled);
             }
         }

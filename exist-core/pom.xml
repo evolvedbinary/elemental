@@ -904,10 +904,12 @@
                                 <include>src/main/java/org/exist/dom/persistent/VirtualNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/XMLUtil.java</include>
                                 <include>src/test/java/org/exist/http/AbstractHttpTest.java</include>
+                                <include>src/main/java/org/exist/http/AuditTrailSessionListener.java</include>
                                 <include>src/main/java/org/exist/http/Descriptor.java</include>
                                 <include>src/main/java/org/exist/http/RESTServer.java</include>
                                 <include>src/test/java/org/exist/http/RESTServiceTest.java</include>
                                 <include>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</include>
+                                <include>src/main/java/org/exist/http/servlets/RedirectorServlet.java</include>
                                 <include>src/main/java/org/exist/http/servlets/XQueryServlet.java</include>
                                 <include>src/main/java/org/exist/http/servlets/XSLTServlet.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</include>
@@ -940,6 +942,7 @@
                                 <include>src/main/java/org/exist/management/impl/DatabaseMXBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/ExistMBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/JMXAgent.java</include>
+                                <include>src/main/java/org/exist/management/impl/SanityReport.java</include>
                                 <include>src/main/java/org/exist/numbering/DLN.java</include>
                                 <include>src/main/java/org/exist/numbering/DLNFactory.java</include>
                                 <include>src/main/java/org/exist/numbering/NodeId.java</include>
@@ -1110,6 +1113,7 @@
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicVariable.java</include>
+                                <include>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
                                 <include>src/main/java/org/exist/xquery/ExternalModuleImpl.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
@@ -1328,6 +1332,7 @@
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
+                                <include>src/main/java/org/exist/xupdate/Conditional.java</include>
                                 <include>src/main/java/org/exist/xupdate/Modification.java</include>
                                 <include>src/test/java/org/exist/xupdate/RemoveAppendTest.java</include>
                                 <include>src/main/java/org/exist/xupdate/XUpdateProcessor.java</include>
@@ -1479,11 +1484,13 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/XMLDeclarationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/XMLUtil.java</exclude>
                                 <exclude>src/test/java/org/exist/http/AbstractHttpTest.java</exclude>
+                                <exclude>src/main/java/org/exist/http/AuditTrailSessionListener.java</exclude>
                                 <exclude>src/main/java/org/exist/http/Descriptor.java</exclude>
                                 <exclude>src/test/java/org/exist/http/RESTExternalVariableTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/RESTServer.java</exclude>
                                 <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</exclude>
+                                <exclude>src/main/java/org/exist/http/servlets/RedirectorServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/XQueryServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/XSLTServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</exclude>
@@ -1517,6 +1524,7 @@
                                 <exclude>src/main/java/org/exist/management/impl/DatabaseMXBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/ExistMBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/JMXAgent.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/SanityReport.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLN.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLNFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/NodeId.java</exclude>
@@ -1766,6 +1774,7 @@
                                 <exclude>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DynamicVariable.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ExternalModuleImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
@@ -2023,6 +2032,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Conditional.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Modification.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/RemoveAppendTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>

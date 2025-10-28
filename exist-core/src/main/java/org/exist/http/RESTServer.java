@@ -171,6 +171,9 @@ public class RESTServer {
 
     private static final String DEFAULT_ENCODING = UTF_8.name();
 
+    private static final String XQUERY_CACHED_RESPONSE_HEADER = "X-XQuery-Cached";
+    private static final String SESSION_ID_HEADER = "X-Session-Id";
+
     private final String formEncoding; // TODO: we may be able to remove this
     // eventually, in favour of
     // HttpServletRequestWrapper being setup in
@@ -1381,12 +1384,15 @@ public class RESTServer {
         final XmldbURI pathUri = XmldbURI.create(path);
         final Source source = new StringSource(query);
         final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        CompiledXQuery compiled = null;
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
             final XQuery xquery = broker.getBrokerPool().getXQueryService();
             compiled = pool.borrowCompiledXQuery(broker, source);
 
-            XQueryContext context;
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+
             if (compiled == null) {
                 context = new XQueryContext(broker.getBrokerPool());
             } else {
@@ -1411,32 +1417,30 @@ public class RESTServer {
                 compilationTime = 0;
             }
 
-            try {
-                final long executeStart = System.currentTimeMillis();
-                final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
-                final long executionTime = System.currentTimeMillis() - executeStart;
+            final long executeStart = System.currentTimeMillis();
+            final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
+            final long executionTime = System.currentTimeMillis() - executeStart;
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Found {} in {}ms.", resultSequence.getItemCount(), executionTime);
-                }
-
-                if (cache) {
-                    final int sessionId = sessionManager.add(query, resultSequence);
-                    outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
-                    if (!response.isCommitted()) {
-                        response.setIntHeader("X-Session-Id", sessionId);
-                    }
-                }
-
-                writeResults(response, broker, transaction, resultSequence, howmany, start, typed, outputProperties, wrap, compilationTime, executionTime);
-
-            } finally {
-                context.runCleanupTasks();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Found {} in {}ms.", resultSequence.getItemCount(), executionTime);
             }
+
+            if (cache) {
+                final int sessionId = sessionManager.add(query, resultSequence);
+                outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
+                if (!response.isCommitted()) {
+                    response.setIntHeader(SESSION_ID_HEADER, sessionId);
+                }
+            }
+
+            writeResults(response, broker, transaction, resultSequence, howmany, start, typed, outputProperties, wrap, compilationTime, executionTime);
 
         } catch (final IOException e) {
             throw new BadRequestException(e.getMessage(), e);
         } finally {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
             if (compiled != null) {
                 pool.returnCompiledXQuery(source, compiled);
             }
@@ -1563,19 +1567,18 @@ public class RESTServer {
 
         final Source source = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, true);
         final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        CompiledXQuery compiled = null;
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
             final XQuery xquery = broker.getBrokerPool().getXQueryService();
             compiled = pool.borrowCompiledXQuery(broker, source);
 
-            XQueryContext context;
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+
             if (compiled == null) {
-                // special header to indicate that the query is not returned from
-                // cache
-                response.setHeader("X-XQuery-Cached", "false");
                 context = new XQueryContext(broker.getBrokerPool());
             } else {
-                response.setHeader("X-XQuery-Cached", "true");
                 context = compiled.getContext();
                 context.prepareForReuse();
             }
@@ -1602,23 +1605,23 @@ public class RESTServer {
                     throw new BadRequestException("Failed to read query from " + resource.getURI(), e);
                 }
             } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
                 compilationTime = 0;
             }
 
             DebuggeeFactory.checkForDebugRequest(request, context);
 
-            boolean wrap = outputProperties.getProperty("_wrap") != null
-                    && "yes".equals(outputProperties.getProperty("_wrap"));
+            final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
 
-            try {
-                final long executeStart = System.currentTimeMillis();
-                final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
-                writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, wrap, compilationTime, System.currentTimeMillis() - executeStart);
+            final long executeStart = System.currentTimeMillis();
+            final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
+            writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, wrap, compilationTime, System.currentTimeMillis() - executeStart);
 
-            } finally {
+        } finally {
+            if (context != null) {
                 context.runCleanupTasks();
             }
-        } finally {
             if (compiled != null) {
                 pool.returnCompiledXQuery(source, compiled);
             }
@@ -1637,13 +1640,16 @@ public class RESTServer {
 
         final URLSource source = new URLSource(this.getClass().getResource("run-xproc.xq"));
         final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        CompiledXQuery compiled = null;
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
 
         try {
             final XQuery xquery = broker.getBrokerPool().getXQueryService();
             compiled = pool.borrowCompiledXQuery(broker, source);
 
-            XQueryContext context;
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+
             if (compiled == null) {
                 context = new XQueryContext(broker.getBrokerPool());
             } else {
@@ -1691,18 +1697,19 @@ public class RESTServer {
                             + source.getURL(), e);
                 }
             } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
                 compilationTime = 0;
             }
 
-            try {
-                final long executeStart = System.currentTimeMillis();
-                final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
-                writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, false, compilationTime, System.currentTimeMillis() - executeStart);
-            } finally {
-                context.runCleanupTasks();
+            final long executeStart = System.currentTimeMillis();
+            final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
+            writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, false, compilationTime, System.currentTimeMillis() - executeStart);
 
-            }
         } finally {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
             if (compiled != null) {
                 pool.returnCompiledXQuery(source, compiled);
             }

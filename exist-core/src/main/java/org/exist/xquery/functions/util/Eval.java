@@ -492,7 +492,9 @@ public class Eval extends BasicFunction {
             throw new XPathException(this, ioe);
         } finally {
             if (compiled != null) {
-                compiled.getContext().runCleanupTasks();
+                if (compiled.getContext() != null) {
+                    compiled.getContext().runCleanupTasks();
+                }
                 if (cache) {
                     pool.returnCompiledXQuery(querySource, compiled);
                 } else {

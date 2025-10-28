@@ -434,7 +434,9 @@ public class XIncludeFilter implements Receiver {
             // process the xpointer or the stored XQuery
             Source source = null;
             final XQueryPool pool = serializer.broker.getBrokerPool().getXQueryPool();
-            CompiledXQuery compiled = null;
+            final XQuery xquery = serializer.broker.getBrokerPool().getXQueryService();
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
             try {
                 if (xpointer == null) {
                     source = new DBSource(serializer.broker.getBrokerPool(), (BinaryDocument) doc, true);
@@ -442,8 +444,7 @@ public class XIncludeFilter implements Receiver {
                     xpointer = checkNamespaces(xpointer);
                     source = new StringSource(xpointer);
                 }
-                final XQuery xquery = serializer.broker.getBrokerPool().getXQueryService();
-                XQueryContext context;
+
                 compiled = pool.borrowCompiledXQuery(serializer.broker, source);
                 if (compiled == null) {
                     context = new XQueryContext(serializer.broker.getBrokerPool());
@@ -451,6 +452,7 @@ public class XIncludeFilter implements Receiver {
                     context = compiled.getContext();
                     context.prepareForReuse();
                 }
+
                 if (namespaces != null) {
                     context.declareNamespaces(namespaces);
                 }
@@ -493,39 +495,39 @@ public class XIncludeFilter implements Receiver {
                     context.getWatchDog().reset();
                 }
                 LOG.info("xpointer query: {}", ExpressionDumper.dump((Expression) compiled));
+
                 Sequence contextSeq = null;
                 if (memtreeDoc != null) {
                     contextSeq = memtreeDoc;
                 }
 
-                try {
-                    final Sequence seq = xquery.execute(serializer.broker, compiled, contextSeq);
+                final Sequence seq = xquery.execute(serializer.broker, compiled, contextSeq);
 
-                    if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("xpointer found: {}", seq.getItemCount());
-                        }
-
-                        NodeValue node;
-                        for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                            node = (NodeValue) i.nextItem();
-                            serializer.serializeToReceiver(node, false);
-                        }
-                    } else {
-                        String val;
-                        for (int i = 0; i < seq.getItemCount(); i++) {
-                            val = seq.itemAt(i).getStringValue();
-                            characters(val);
-                        }
+                if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("xpointer found: {}", seq.getItemCount());
                     }
-                } finally {
-                    context.runCleanupTasks();
+
+                    NodeValue node;
+                    for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                        node = (NodeValue) i.nextItem();
+                        serializer.serializeToReceiver(node, false);
+                    }
+                } else {
+                    String val;
+                    for (int i = 0; i < seq.getItemCount(); i++) {
+                        val = seq.itemAt(i).getStringValue();
+                        characters(val);
+                    }
                 }
 
             } catch (final XPathException | PermissionDeniedException e) {
                 LOG.warn("xpointer error", e);
                 throw new SAXException("Error while processing XInclude expression: " + e.getMessage(), e);
             } finally {
+                if (context != null) {
+                    context.runCleanupTasks();
+                }
                 if (compiled != null) {
                     pool.returnCompiledXQuery(source, compiled);
                 }

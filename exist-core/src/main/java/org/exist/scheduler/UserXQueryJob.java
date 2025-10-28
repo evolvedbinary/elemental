@@ -73,6 +73,8 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
+import javax.annotation.Nullable;
+
 
 /**
  * Class to represent a User's XQuery Job Extends UserJob.
@@ -204,14 +206,12 @@ public class UserXQueryJob extends UserJob {
     }
 
     private void executeXQuery(final BrokerPool pool, final DBBroker broker, final Source source, final Properties params) throws PermissionDeniedException, XPathException, JobExecutionException {
-        XQueryPool xqPool  = null;
-        CompiledXQuery compiled = null;
-        XQueryContext context = null;
-
+        final XQueryPool xqPool = pool.getXQueryPool();
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
             //execute the xquery
             final XQuery xquery = pool.getXQueryService();
-            xqPool = pool.getXQueryPool();
 
             //try and get a pre-compiled query from the pool
             compiled = xqPool.borrowCompiledXQuery(broker, source);
@@ -230,12 +230,14 @@ public class UserXQueryJob extends UserJob {
             }
 
             if (compiled == null) {
-
                 try {
                     compiled = xquery.compile(context, source);
                 } catch (final IOException e) {
                     abort("Failed to read query from " + xqueryResource);
                 }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
             }
 
             //declare any parameters as external variables

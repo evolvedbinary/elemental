@@ -87,6 +87,8 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 
+import javax.annotation.Nullable;
+
 public class LocalXPathQueryService extends AbstractLocalService implements EXistXPathQueryService, EXistXQueryService {
 
 	private final static Logger LOG = LogManager.getLogger(LocalXPathQueryService.class);
@@ -287,39 +289,47 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             final XQuery xquery = brokerPool.getXQueryService();
             final XQueryPool pool = brokerPool.getXQueryPool();
 
-            XQueryContext context;
-            CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            context.setStaticallyKnownDocuments(docs);
-
-            if (variableDecls.containsKey(Debuggee.PREFIX + ":session")) {
-                context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX + ":session"));
-                variableDecls.remove(Debuggee.PREFIX + ":session");
-            }
-
-            setupContext(source, context);
-
-            if (compiled == null) {
-                compiled = xquery.compile(context, source);
-            }
-
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
             try {
+                compiled = pool.borrowCompiledXQuery(broker, source);
+                if (compiled == null) {
+                    context = new XQueryContext(broker.getBrokerPool());
+                } else {
+                    context = compiled.getContext();
+                    context.prepareForReuse();
+                }
+
+                context.setStaticallyKnownDocuments(docs);
+
+                if (variableDecls.containsKey(Debuggee.PREFIX + ":session")) {
+                    context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX + ":session"));
+                    variableDecls.remove(Debuggee.PREFIX + ":session");
+                }
+
+                setupContext(source, context);
+
+                if (compiled == null) {
+                    compiled = xquery.compile(context, source);
+                } else {
+                    compiled.getContext().updateContext(context);
+                    context.getWatchDog().reset();
+                }
+
                 final Sequence result = xquery.execute(broker, compiled, null, properties);
-                if(LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled()) {
                     LOG.debug("query took {} ms.", System.currentTimeMillis() - start);
                 }
                 final Properties resourceSetProperties = new Properties(properties);
                 resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
                 return result != null ? new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, result, null) : null;
             } finally {
-                compiled.getContext().runCleanupTasks();
-                pool.returnCompiledXQuery(source, compiled);
+                if (context != null) {
+                    context.runCleanupTasks();
+                }
+                if (compiled != null) {
+                    pool.returnCompiledXQuery(source, compiled);
+                }
             }
         });
     }
