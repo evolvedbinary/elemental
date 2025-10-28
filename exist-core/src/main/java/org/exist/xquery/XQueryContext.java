@@ -1993,7 +1993,7 @@ public class XQueryContext implements BinaryValueManager, Context {
         //Type.EMPTY is *not* a subtype of other types ; checking cardinality first
         if (!var.getSequenceType().getCardinality().isSuperCardinalityOrEqualOf(actualCardinality)) {
             throw new XPathException(rootExpression, ErrorCodes.XPTY0004,
-                    "XPTY0004: Invalid cardinality for variable $" + var.getQName() + ". " +
+                    "Invalid cardinality for variable $" + var.getQName() + ". " +
                             "Expected " + var.getSequenceType().getCardinality().getHumanDescription() + ", " +
                             "got " + actualCardinality.getHumanDescription());
         }
@@ -2001,7 +2001,7 @@ public class XQueryContext implements BinaryValueManager, Context {
         //TODO : ignore nodes right now ; they are returned as xs:untypedAtomicType
         if (!val.isEmpty() && !Type.subTypeOf(val.getItemType(), var.getSequenceType().getPrimaryType())) {
             throw new XPathException(rootExpression, ErrorCodes.XPTY0004,
-                    "XPTY0004: Invalid type for variable $" + var.getQName() + ". " +
+                    "Invalid type for variable $" + var.getQName() + ". " +
                             "Expected " + Type.getTypeName(var.getSequenceType().getPrimaryType()) + ", " +
                             "got " + Type.getTypeName(val.getItemType()));
         }

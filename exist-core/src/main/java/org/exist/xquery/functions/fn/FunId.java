@@ -131,11 +131,11 @@ public class FunId extends Function {
                 final Sequence nodes = getArgument(1).eval(contextSequence, null);
                 if (nodes.isEmpty()) {
                     logger.error("{} No node or context item for fn:id", ErrorCodes.XPDY0002);
-                    throw new XPathException(this, ErrorCodes.XPDY0002, "XPDY0002: no node or context item for fn:id", nodes);
+                    throw new XPathException(this, ErrorCodes.XPDY0002, "No node or context item for fn:id", nodes);
                 }
                 if (!Type.subTypeOf(nodes.itemAt(0).getType(), Type.NODE)) {
                     logger.error("{} fn:id() argument is not a node", ErrorCodes.XPTY0004);
-                	throw new XPathException(this, ErrorCodes.XPTY0004, "XPTY0004: fn:id() argument is not a node", nodes);
+                	throw new XPathException(this, ErrorCodes.XPTY0004, "fn:id() argument is not a node", nodes);
                 }
                 NodeValue node = (NodeValue)nodes.itemAt(0);
                 if (node.getImplementationType() == NodeValue.IN_MEMORY_NODE)
