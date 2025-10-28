@@ -1500,19 +1500,23 @@ public class RESTServer {
                 child = (NodeImpl) child.getNextSibling();
             }
 
-            if (uri != null && prefix != null) {
-                context.declareNamespace(prefix, uri);
+            if (localname == null) {
+                throw new XPathException(ErrorCodes.W3CErrorCode.XPDY0002, String.format("External variable is missing local name in its qualified name. Prefix=%s URI=%s", prefix, uri));
             }
 
-            if (localname == null) {
-                continue;
+            if (uri == null && prefix != null) {
+                uri = context.getURIForPrefix(prefix);
             }
 
             final QName q;
-            if (prefix != null && localname != null) {
+            if (prefix != null) {
                 q = new QName(localname, uri, prefix);
             } else {
                 q = new QName(localname, uri, XMLConstants.DEFAULT_NS_PREFIX);
+            }
+
+            if (uri != null && prefix != null) {
+                context.declareNamespace(prefix, uri);
             }
 
             // get serialized sequence
