@@ -81,6 +81,7 @@ import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
 import org.xmlunit.matchers.CompareMatcher;
 
+import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import java.io.IOException;
@@ -1156,8 +1157,8 @@ public class XQueryTest {
             final XQuery xquery = brokerPool.getXQueryService();
             final XQueryPool queryPool = brokerPool.getXQueryPool();
 
-            CompiledXQuery compiled = null;
-            XQueryContext context = null;
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
             try {
                 compiled = queryPool.borrowCompiledXQuery(broker, source);
                 if (compiled == null) {
@@ -1169,8 +1170,11 @@ public class XQueryTest {
 
                 context.declareVariable(new QName("s"), true, new IntegerValue(timestamp));
 
-                if(compiled == null) {
+                if (compiled == null) {
                     compiled = xquery.compile(context, source);
+                } else {
+                    compiled.getContext().updateContext(context);
+                    context.getWatchDog().reset();
                 }
 
                 final Sequence result = xquery.execute(broker, compiled, null, null);
@@ -1187,11 +1191,8 @@ public class XQueryTest {
                 assertFalse(diff.toString(), diff.hasDifferences());
 
             } finally {
-                if (compiled != null) {
-                    compiled.reset();
-                }
                 if (context != null) {
-                    context.reset();
+                    context.runCleanupTasks();
                 }
                 if (compiled != null) {
                     queryPool.returnCompiledXQuery(source, compiled);

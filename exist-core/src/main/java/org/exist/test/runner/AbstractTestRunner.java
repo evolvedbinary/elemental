@@ -63,6 +63,7 @@ import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.runner.Runner;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,7 +95,7 @@ public abstract class AbstractTestRunner extends Runner {
             final XQueryPool queryPool = brokerPool.getXQueryPool();
             CompiledXQuery compiledQuery = queryPool.borrowCompiledXQuery(broker, query);
 
-            XQueryContext context = null;
+            @Nullable XQueryContext context = null;
             try {
                 if (compiledQuery == null) {
                     context = new XQueryContext(broker.getBrokerPool());
@@ -136,8 +137,9 @@ public abstract class AbstractTestRunner extends Runner {
                 if (context != null) {
                     context.runCleanupTasks();
                 }
-
-                queryPool.returnCompiledXQuery(query, compiledQuery);
+                if (compiledQuery != null) {
+                    queryPool.returnCompiledXQuery(query, compiledQuery);
+                }
             }
         }
     }

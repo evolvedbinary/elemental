@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -41,6 +65,7 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.*;
 import org.junit.ClassRule;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -91,21 +116,29 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
         final XQueryPool pool = brokerPool.getXQueryPool();
         final XQuery xquery = brokerPool.getXQueryService();
 
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final CompiledXQuery existingCompiled = pool.borrowCompiledXQuery(broker, source);
+            compiled = pool.borrowCompiledXQuery(broker, source);
 
-            final XQueryContext context;
-            final CompiledXQuery compiled;
-            if (existingCompiled == null) {
+            if (compiled == null) {
                 context = new XQueryContext(brokerPool);
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            if (compiled == null) {
                 compiled = xquery.compile(context, source);
             } else {
-                context = existingCompiled.getContext();
-                context.prepareForReuse();
-                compiled = existingCompiled;
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
             }
 
             final Sequence results = xquery.execute(broker, compiled, null);
+
+            @Nullable final XQueryContext fContext = context;
+            @Nullable final CompiledXQuery fCompiled = compiled;
 
             return consumer2E -> {
                 try {
@@ -114,8 +147,12 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
                     consumer2E.accept(results);
                 } finally {
                     //TODO(AR) performing #runCleanupTasks causes the stream to be closed, so if we do so before we are finished with the results, serialization fails.
-                    context.runCleanupTasks();
-                    pool.returnCompiledXQuery(source, compiled);
+                    if (fContext != null) {
+                        fContext.runCleanupTasks();
+                    }
+                    if (fCompiled != null) {
+                        pool.returnCompiledXQuery(source, fCompiled);
+                    }
                 }
             };
         }

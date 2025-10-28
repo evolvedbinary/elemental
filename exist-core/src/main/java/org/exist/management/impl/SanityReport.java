@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,6 +47,7 @@ package org.exist.management.impl;
 
 import java.util.*;
 
+import javax.annotation.Nullable;
 import javax.management.*;
 
 import org.apache.logging.log4j.LogManager;
@@ -185,18 +210,32 @@ public class SanityReport extends NotificationBroadcasterSupport implements Sani
             if (checkQueryEngine) {
                 final XQuery xquery = pool.getXQueryService();
                 final XQueryPool xqPool = pool.getXQueryPool();
-                CompiledXQuery compiled = xqPool.borrowCompiledXQuery(broker, TEST_XQUERY);
-                if (compiled == null) {
-                    final XQueryContext context = new XQueryContext(pool);
-                    compiled = xquery.compile(context, TEST_XQUERY);
-                } else {
-                    compiled.getContext().prepareForReuse();
-                }
+                @Nullable CompiledXQuery compiled = null;
+                @Nullable XQueryContext context = null;
                 try {
+                    compiled = xqPool.borrowCompiledXQuery(broker, TEST_XQUERY);
+                    if (compiled == null) {
+                        context = new XQueryContext(pool);
+                    } else {
+                        context = compiled.getContext();
+                        context.prepareForReuse();
+                    }
+
+                    if (compiled == null) {
+                        compiled = xquery.compile(context, TEST_XQUERY);
+                    } else {
+                        compiled.getContext().updateContext(context);
+                        context.getWatchDog().reset();
+                    }
+
                     xquery.execute(broker, compiled, null);
                 } finally {
-                    compiled.getContext().runCleanupTasks();
-                    xqPool.returnCompiledXQuery(TEST_XQUERY, compiled);
+                    if (context != null) {
+                        context.runCleanupTasks();
+                    }
+                    if (compiled != null) {
+                        xqPool.returnCompiledXQuery(TEST_XQUERY, compiled);
+                    }
                 }
             }
         } catch (final Exception e) {

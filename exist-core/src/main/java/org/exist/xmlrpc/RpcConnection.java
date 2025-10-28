@@ -329,55 +329,75 @@ public class RpcConnection implements RpcAPI {
     private CompiledXQuery compile(final DBBroker broker, final Source source, final Map<String, Object> parameters) throws XPathException, IOException, PermissionDeniedException {
         final XQuery xquery = broker.getBrokerPool().getXQueryService();
         final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-        XQueryContext context;
-        if (compiled == null) {
-            context = new XQueryContext(broker.getBrokerPool());
-        } else {
-            context = compiled.getContext();
-            context.prepareForReuse();
-        }
-        final String base = (String) parameters.get(RpcAPI.BASE_URI);
-        if (base != null) {
-            context.setBaseURI(new AnyURIValue(base));
-        }
-        final String moduleLoadPath = (String) parameters.get(RpcAPI.MODULE_LOAD_PATH);
-        if (moduleLoadPath != null) {
-            context.setModuleLoadPath(moduleLoadPath);
-        }
-        final Map<String, String> namespaces = (Map<String, String>) parameters.get(RpcAPI.NAMESPACES);
-        if (namespaces != null && !namespaces.isEmpty()) {
-            context.declareNamespaces(namespaces);
-        }
-        //  declare static variables
-        final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
-        if (variableDecls != null) {
-            for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
-                }
-                context.declareVariable(entry.getKey(), true, entry.getValue());
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
+
+        try {
+            compiled = pool.borrowCompiledXQuery(broker, source);
+
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
             }
-        }
-        final Object[] staticDocuments = (Object[]) parameters.get(RpcAPI.STATIC_DOCUMENTS);
-        if (staticDocuments != null) {
-            try {
-                final XmldbURI[] d = new XmldbURI[staticDocuments.length];
-                for (int i = 0; i < staticDocuments.length; i++) {
-                    XmldbURI next = XmldbURI.xmldbUriFor((String) staticDocuments[i]);
-                    d[i] = next;
-                }
-                context.setStaticallyKnownDocuments(d);
-            } catch (final URISyntaxException e) {
-                throw new XPathException((Expression) null, e);
+
+            final String base = (String) parameters.get(RpcAPI.BASE_URI);
+            if (base != null) {
+                context.setBaseURI(new AnyURIValue(base));
             }
-        } else if (context.isBaseURIDeclared()) {
-            context.setStaticallyKnownDocuments(new XmldbURI[]{context.getBaseURI().toXmldbURI()});
+            final String moduleLoadPath = (String) parameters.get(RpcAPI.MODULE_LOAD_PATH);
+            if (moduleLoadPath != null) {
+                context.setModuleLoadPath(moduleLoadPath);
+            }
+            final Map<String, String> namespaces = (Map<String, String>) parameters.get(RpcAPI.NAMESPACES);
+            if (namespaces != null && !namespaces.isEmpty()) {
+                context.declareNamespaces(namespaces);
+            }
+            //  declare static variables
+            final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
+            if (variableDecls != null) {
+                for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
+                    }
+                    context.declareVariable(entry.getKey(), true, entry.getValue());
+                }
+            }
+            final Object[] staticDocuments = (Object[]) parameters.get(RpcAPI.STATIC_DOCUMENTS);
+            if (staticDocuments != null) {
+                try {
+                    final XmldbURI[] d = new XmldbURI[staticDocuments.length];
+                    for (int i = 0; i < staticDocuments.length; i++) {
+                        XmldbURI next = XmldbURI.xmldbUriFor((String) staticDocuments[i]);
+                        d[i] = next;
+                    }
+                    context.setStaticallyKnownDocuments(d);
+                } catch (final URISyntaxException e) {
+                    throw new XPathException((Expression) null, e);
+                }
+            } else if (context.isBaseURIDeclared()) {
+                context.setStaticallyKnownDocuments(new XmldbURI[]{context.getBaseURI().toXmldbURI()});
+            }
+
+            if (compiled == null) {
+                compiled = xquery.compile(context, source);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            return compiled;
+
+        } catch (final XPathException | IOException | PermissionDeniedException e) {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                pool.returnCompiledXQuery(source, compiled);
+            }
+            throw e;
         }
-        if (compiled == null) {
-            compiled = xquery.compile(context, source);
-        }
-        return compiled;
     }
 
     @Override
@@ -3900,7 +3920,9 @@ public class RpcConnection implements RpcAPI {
                 throw new EXistException(e);
             } finally {
                 if (compiled != null) {
-                    compiled.getContext().runCleanupTasks();
+                    if (compiled.getContext() != null) {
+                        compiled.getContext().runCleanupTasks();
+                    }
                     pool.returnCompiledXQuery(source, compiled);
                 }
             }

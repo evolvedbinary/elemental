@@ -73,6 +73,8 @@ import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 
+import javax.annotation.Nullable;
+
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 
 /**
@@ -256,33 +258,47 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			LOG.warn(e.getMessage());
 			return;
 		}
-		
-		final XQueryContext context = new XQueryContext(broker.getBrokerPool());
-        CompiledXQuery compiledQuery = null;
-        try {
-        	//compile the XQuery
-        	compiledQuery = service.compile(context, query);
-			declareExternalVariables(context, TriggerPhase.BEFORE, event, src, dst, isCollection);
-        	
-        } catch (final XPathException | IOException | PermissionDeniedException e) {
-    		TriggerStatePerThread.clear();
-        	throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
-	    }
 
-        //execute the XQuery
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
-        	//TODO : should we provide another contextSet ?
-	        final NodeSet contextSet = NodeSet.EMPTY_SET;
-			service.execute(broker, compiledQuery, contextSet);
-			//TODO : should we have a special processing ?
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("Trigger fired for prepare");
-			}
-        } catch (final XPathException | PermissionDeniedException e) {
-			TriggerStatePerThread.clear();
-        	throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
+
+            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, query);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            if (compiled == null) {
+                compiled = service.compile(context, query);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            declareExternalVariables(context, TriggerPhase.BEFORE, event, src, dst, isCollection);
+
+            //execute the XQuery
+            //TODO : should we provide another contextSet ?
+            final NodeSet contextSet = NodeSet.EMPTY_SET;
+            service.execute(broker, compiled, contextSet);
+            //TODO : should we have a special processing ?
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Trigger fired for prepare");
+            }
+
+        } catch (final XPathException | IOException | PermissionDeniedException e) {
+            TriggerStatePerThread.clear();
+            throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
         } finally {
-        	context.runCleanupTasks();
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(query, compiled);
+            }
         }
     }
     
@@ -300,33 +316,42 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			LOG.warn(e.getMessage());
 			return;
 		}
-		
-        final XQueryContext context = new XQueryContext(broker.getBrokerPool());
-        CompiledXQuery compiledQuery = null;
+
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
-        	//compile the XQuery
-        	compiledQuery = service.compile(context, query);
-			declareExternalVariables(context, TriggerPhase.AFTER, event, src, dst, isCollection);
+            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, query);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            if (compiled == null) {
+                compiled = service.compile(context, query);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            declareExternalVariables(context, TriggerPhase.AFTER, event, src, dst, isCollection);
+
+            //execute the XQuery
+            //TODO : should we provide another contextSet ?
+            final NodeSet contextSet = NodeSet.EMPTY_SET;
+            service.execute(broker, compiled, contextSet);
+            //TODO : should we have a special processing ?
 
         } catch (final XPathException | IOException | PermissionDeniedException e) {
-        	//Should never be reached
-        	LOG.error(e);
-	    }
-
-        //execute the XQuery
-        try {
-        	//TODO : should we provide another contextSet ?
-	        final NodeSet contextSet = NodeSet.EMPTY_SET;	        
-			service.execute(broker, compiledQuery, contextSet);
-			//TODO : should we have a special processing ?
-        } catch (final XPathException e) {
-        	//Should never be reached
-			LOG.error("Error during trigger finish", e);
-        } catch (final PermissionDeniedException e) {
-        	//Should never be reached
-        	LOG.error(e);
+            LOG.error("Error during trigger finish", e);
         } finally {
-        	context.runCleanupTasks();
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(query, compiled);
+            }
         }
 
 		TriggerStatePerThread.clearIfFinished(TriggerPhase.AFTER);
@@ -380,16 +405,29 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 		if(query == null) {
 			return null;
 		}
-		
-		final XQueryContext context = new XQueryContext(broker.getBrokerPool());
-        if (query instanceof DBSource) {
-            context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + ((DBSource)query).getDocumentPath().removeLastSegment().toString());
-        }
 
-        CompiledXQuery compiledQuery;
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
+            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, query);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            if (query instanceof DBSource) {
+                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + ((DBSource)query).getDocumentPath().removeLastSegment().toString());
+            }
+
         	//compile the XQuery
-        	compiledQuery = service.compile(context, query);
+            if (compiled == null) {
+                compiled = service.compile(context, query);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
 
         	//declare user defined parameters as external variables
 			if (userDefinedVariables != null) {
@@ -400,17 +438,15 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 					context.declareVariable(bindingPrefix + varName, true, new StringValue(varValue));
 				}
 			}
-        	
-        	//reset & prepareForExecution for execution
-        	compiledQuery.reset();
 
-        	context.getWatchDog().reset();
-
-            //do any preparation before execution
-            context.prepareForExecution();
-
-        	return compiledQuery;
+        	return compiled;
         } catch(final XPathException | IOException | PermissionDeniedException e) {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(query, compiled);
+            }
             LOG.warn(e.getMessage(), e);
         	throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
 	    }
@@ -430,23 +466,18 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			LOG.debug("Execute: {} {}({}): {}", phase, event, src, getClass().getSimpleName());
 		}
 
-		final CompiledXQuery compiledQuery;
+		@Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
 		try {
-			compiledQuery = getScript(broker, transaction);
-			if (compiledQuery == null) {
+			compiled = getScript(broker, transaction);
+			if (compiled == null) {
 				// NOTE: can occur if there is no such XQueryTrigger library module available in the database
 				TriggerStatePerThread.clearIfFinished(phase);
 				return;
 			}
-		} catch (final TriggerException e) {
-			TriggerStatePerThread.clear();
-			throw e;
-		}
+            context = compiled.getContext();
 
-		final XQueryContext context = compiledQuery.getContext();
-
-		//execute the XQuery
-        try {
+		    //execute the XQuery
             final int nParams;
             if (dst != null) {
 				nParams = 2;
@@ -467,14 +498,19 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 				args.add(new LiteralValue(context, new AnyURIValue(src)));
 			}
 
-			service.execute(broker, compiledQuery, Tuple(functionName, args, Optional.empty()), null, null, true);
+			service.execute(broker, compiled, Tuple(functionName, args, Optional.empty()), null, null, true);
+
+        } catch (final TriggerException e) {
+            TriggerStatePerThread.clear();
+            throw e;
+
         } catch (final XPathException | PermissionDeniedException e) {
 			// if the exception just indicates that there is no function in the trigger to call, then we can just log and return
 			if (e instanceof XPathException) {
 				final XPathException xpe = (XPathException) e;
 				if (xpe.getErrorCode() == ErrorCodes.EXXQDY0005 || xpe.getErrorCode() == ErrorCodes.EXXQDY0006) {
 					if (LOG.isDebugEnabled()) {
-						LOG.debug("No such function '" + functionName + "' in XQueryTrigger: " + compiledQuery.getSource());
+						LOG.debug("No such function '" + functionName + "' in XQueryTrigger: " + compiled.getSource());
 					}
 					TriggerStatePerThread.clearIfFinished(phase);
 					return;
@@ -484,8 +520,12 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			TriggerStatePerThread.clear();
         	throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
         } finally {
-    		compiledQuery.reset();
-        	context.runCleanupTasks();
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(compiled.getSource(), compiled);
+            }
         }
 
 		TriggerStatePerThread.clearIfFinished(phase);

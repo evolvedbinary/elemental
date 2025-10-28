@@ -39,6 +39,7 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.*;
 import org.junit.ClassRule;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -89,21 +90,28 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
         final XQueryPool pool = brokerPool.getXQueryPool();
         final XQuery xquery = brokerPool.getXQueryService();
 
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final CompiledXQuery existingCompiled = pool.borrowCompiledXQuery(broker, source);
 
-            final XQueryContext context;
-            final CompiledXQuery compiled;
-            if (existingCompiled == null) {
+            compiled = pool.borrowCompiledXQuery(broker, source);
+            if (compiled == null) {
                 context = new XQueryContext(brokerPool);
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            if (compiled == null) {
                 compiled = xquery.compile(context, source);
             } else {
-                context = existingCompiled.getContext();
-                context.prepareForReuse();
-                compiled = existingCompiled;
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
             }
 
             final Sequence results = xquery.execute(broker, compiled, null);
+            @Nullable final XQueryContext fContext = context;
+            @Nullable final CompiledXQuery fCompiled = compiled;
 
             return consumer2E -> {
                 try {
@@ -112,8 +120,12 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
                     consumer2E.accept(results);
                 } finally {
                     //TODO(AR) performing #runCleanupTasks causes the stream to be closed, so if we do so before we are finished with the results, serialization fails.
-                    context.runCleanupTasks();
-                    pool.returnCompiledXQuery(source, compiled);
+                    if (fContext != null) {
+                        fContext.runCleanupTasks();
+                    }
+                    if (fCompiled != null) {
+                        pool.returnCompiledXQuery(source, fCompiled);
+                    }
                 }
             };
         }

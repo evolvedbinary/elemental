@@ -177,39 +177,50 @@ public abstract class Modification {
 		final XQuery xquery = broker.getBrokerPool().getXQueryService();
 		final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
 		final Source source = new StringSource(selectStmt);
-		CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-		XQueryContext context;
-		if(compiled == null) {
-			context = new XQueryContext(broker.getBrokerPool());
-		} else {
-			context = compiled.getContext();
-			context.prepareForReuse();
-		}
-		context.setStaticallyKnownDocuments(docs);
-		declareNamespaces(context);
-		declareVariables(context);
-		if(compiled == null)
-			try {
-				compiled = xquery.compile(context, source);
-			} catch (final IOException e) {
-				throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
-			}
-		
-		Sequence resultSeq = null;
-		try {
-			resultSeq = xquery.execute(broker, compiled, null);
-		} finally {
-			context.runCleanupTasks();
-			pool.returnCompiledXQuery(source, compiled);
-		}
 
-		if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE)))
-			{throw new EXistException("select expression should evaluate to a node-set; got " +
-			        Type.getTypeName(resultSeq.getItemType()));}
-		if (LOG.isDebugEnabled())
-			{
-				LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);}
-		return resultSeq.toNodeSet();
+        @Nullable CompiledXQuery compiled = null;
+		@Nullable XQueryContext context = null;
+        try {
+            compiled = pool.borrowCompiledXQuery(broker, source);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+            context.setStaticallyKnownDocuments(docs);
+            declareNamespaces(context);
+            declareVariables(context);
+            if (compiled == null) {
+                try {
+                    compiled = xquery.compile(context, source);
+                } catch (final IOException e) {
+                    throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
+                }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            final Sequence resultSeq = xquery.execute(broker, compiled, null);
+            if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE))) {
+                throw new EXistException("select expression should evaluate to a node-set; got " +
+                    Type.getTypeName(resultSeq.getItemType()));
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);
+            }
+
+            return resultSeq.toNodeSet();
+        } finally {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                pool.returnCompiledXQuery(source, compiled);
+            }
+        }
 	}
 
 	/**

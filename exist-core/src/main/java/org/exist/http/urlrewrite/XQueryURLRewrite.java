@@ -673,35 +673,46 @@ public class XQueryURLRewrite extends HttpServlet {
         final XQuery xquery = broker.getBrokerPool().getXQueryService();
         final XQueryPool xqyPool = broker.getBrokerPool().getXQueryPool();
 
-        CompiledXQuery compiled = null;
-        if (compiledCache) {
-            compiled = xqyPool.borrowCompiledXQuery(broker, sourceInfo.source);
-        }
-        final XQueryContext queryContext;
-        if (compiled == null) {
-            queryContext = new XQueryContext(broker.getBrokerPool());
-        } else {
-            queryContext = compiled.getContext();
-            queryContext.prepareForReuse();
-        }
-
-        // Find correct module load path
-        queryContext.setModuleLoadPath(sourceInfo.moduleLoadPath);
-        declareVariables(queryContext, sourceInfo, staticRewrite, basePath, request, response);
-        if (compiled == null) {
-            try {
-                compiled = xquery.compile(queryContext, sourceInfo.source);
-            } catch (final IOException e) {
-                throw new ServletException("Failed to read query from " + query, e);
-            }
-        }
-        model.setSourceInfo(sourceInfo);
-
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
+            if (compiledCache) {
+                compiled = xqyPool.borrowCompiledXQuery(broker, sourceInfo.source);
+            }
+
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            // Find correct module load path
+            context.setModuleLoadPath(sourceInfo.moduleLoadPath);
+            declareVariables(context, sourceInfo, staticRewrite, basePath, request, response);
+
+            if (compiled == null) {
+                try {
+                    compiled = xquery.compile(context, sourceInfo.source);
+                } catch (final IOException e) {
+                    throw new ServletException("Failed to read query from " + query, e);
+                }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            model.setSourceInfo(sourceInfo);
+
             return xquery.execute(broker, compiled, null, outputProperties);
+
         } finally {
-            queryContext.runCleanupTasks();
-            xqyPool.returnCompiledXQuery(sourceInfo.source, compiled);
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null && compiledCache) {
+                xqyPool.returnCompiledXQuery(sourceInfo.source, compiled);
+            }
         }
     }
 
