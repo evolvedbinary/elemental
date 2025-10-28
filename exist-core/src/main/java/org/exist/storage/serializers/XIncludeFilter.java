@@ -463,24 +463,11 @@ public class XIncludeFilter implements Receiver {
                     context.setHttpContext(serializer.httpContext);
                 }
 
-                //TODO: change these to putting the XmldbURI in, but we need to warn users!
-                if (document != null) {
-                    context.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
-                    context.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
-                }
-
                 if (xpointer != null) {
                     if (doc != null) {
                         context.setStaticallyKnownDocuments(new XmldbURI[]{doc.getURI()});
                     } else if (docUri != null) {
                         context.setStaticallyKnownDocuments(new XmldbURI[]{docUri});
-                    }
-                }
-
-                // pass parameters as variables
-                if (params != null) {
-                    for (final Map.Entry<String, String> entry : params.entrySet()) {
-                        context.declareVariable(entry.getKey(), true, entry.getValue());
                     }
                 }
 
@@ -495,6 +482,18 @@ public class XIncludeFilter implements Receiver {
                     context.getWatchDog().reset();
                 }
                 LOG.info("xpointer query: {}", ExpressionDumper.dump((Expression) compiled));
+
+                //TODO: change these to putting the XmldbURI in, but we need to warn users!
+                if (document != null) {
+                    context.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
+                    context.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
+                }
+                // pass parameters as variables
+                if (params != null) {
+                    for (final Map.Entry<String, String> entry : params.entrySet()) {
+                        context.declareVariable(entry.getKey(), true, entry.getValue());
+                    }
+                }
 
                 Sequence contextSeq = null;
                 if (memtreeDoc != null) {

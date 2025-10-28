@@ -224,6 +224,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 context.setProtectedDocs(lockedDocuments);
             }
             setupContext(null, context);
+            declareVariables(context);
 
             final XQuery xquery = brokerPool.getXQueryService();
             result = xquery.execute(broker, expr, contextSet, properties);
@@ -302,11 +303,6 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 
                 context.setStaticallyKnownDocuments(docs);
 
-                if (variableDecls.containsKey(Debuggee.PREFIX + ":session")) {
-                    context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX + ":session"));
-                    variableDecls.remove(Debuggee.PREFIX + ":session");
-                }
-
                 setupContext(source, context);
 
                 if (compiled == null) {
@@ -315,6 +311,8 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                     compiled.getContext().updateContext(context);
                     context.getWatchDog().reset();
                 }
+
+                declareVariables(context);
 
                 final Sequence result = xquery.execute(broker, compiled, null, properties);
                 if (LOG.isDebugEnabled()) {
@@ -415,6 +413,13 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         // declare namespace/prefix mappings
         for (final Map.Entry<String, String> entry : namespaceDecls.entrySet()) {
             context.declareNamespace(entry.getKey(), entry.getValue());
+        }
+    }
+
+    protected void declareVariables(final XQueryContext context) throws XPathException {
+        if (variableDecls.containsKey(Debuggee.PREFIX + ":session")) {
+            context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX + ":session"));
+            variableDecls.remove(Debuggee.PREFIX + ":session");
         }
 
         // declare static variables

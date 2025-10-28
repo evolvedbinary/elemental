@@ -269,6 +269,17 @@ public class RpcConnection implements RpcAPI {
         checkPragmas(compiled.getContext(), parameters);
         LockedDocumentMap lockedDocuments = null;
         try {
+            //  declare static variables
+            final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
+            if (variableDecls != null) {
+                for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
+                    }
+                    compiled.getContext().declareVariable(entry.getKey(), true, entry.getValue());
+                }
+            }
+
             final long start = System.currentTimeMillis();
             lockedDocuments = beginProtected(broker, parameters);
             if (lockedDocuments != null) {
@@ -354,16 +365,7 @@ public class RpcConnection implements RpcAPI {
             if (namespaces != null && !namespaces.isEmpty()) {
                 context.declareNamespaces(namespaces);
             }
-            //  declare static variables
-            final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
-            if (variableDecls != null) {
-                for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
-                    }
-                    context.declareVariable(entry.getKey(), true, entry.getValue());
-                }
-            }
+
             final Object[] staticDocuments = (Object[]) parameters.get(RpcAPI.STATIC_DOCUMENTS);
             if (staticDocuments != null) {
                 try {

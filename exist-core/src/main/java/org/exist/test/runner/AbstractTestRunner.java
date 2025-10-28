@@ -115,12 +115,6 @@ public abstract class AbstractTestRunner extends Runner {
                     }
                 }
 
-                // declare variables for the query
-                for(final Function<XQueryContext, Tuple2<String, Object>> externalVariableBinding : externalVariableBindings) {
-                    final Tuple2<String, Object> nameValue = externalVariableBinding.apply(context);
-                    context.declareVariable(nameValue._1, true, nameValue._2);
-                }
-
                 final XQuery xqueryService = brokerPool.getXQueryService();
 
                 // compile or update the context
@@ -129,6 +123,12 @@ public abstract class AbstractTestRunner extends Runner {
                 } else {
                     compiledQuery.getContext().updateContext(context);
                     context.getWatchDog().reset();
+                }
+
+                // declare variables for the query
+                for(final Function<XQueryContext, Tuple2<String, Object>> externalVariableBinding : externalVariableBindings) {
+                    final Tuple2<String, Object> nameValue = externalVariableBinding.apply(context);
+                    context.declareVariable(nameValue._1, true, nameValue._2);
                 }
 
                 return xqueryService.execute(broker, compiledQuery, null);

@@ -691,7 +691,6 @@ public class XQueryURLRewrite extends HttpServlet {
 
             // Find correct module load path
             context.setModuleLoadPath(sourceInfo.moduleLoadPath);
-            declareVariables(context, sourceInfo, staticRewrite, basePath, request, response);
 
             if (compiled == null) {
                 try {
@@ -703,6 +702,8 @@ public class XQueryURLRewrite extends HttpServlet {
                 compiled.getContext().updateContext(context);
                 context.getWatchDog().reset();
             }
+
+            declareVariables(context, sourceInfo, staticRewrite, basePath, request, response);
 
             model.setSourceInfo(sourceInfo);
 

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -101,28 +125,30 @@ public class NodeTypeTest {
 	 * @param xml the xml document
 	 * @param document the document name	 
 	 */
-	private final void store(final String xml, final String document) throws XMLDBException {
+	private void store(final String xml, final String document) throws XMLDBException {
 		final StringBuilder query = new StringBuilder();
 		query.append("declare namespace xmldb='http://exist-db.org/xquery/xmldb';");
+        query.append("declare variable $document as xs:string external;");
+        query.append("declare variable $data as xs:string external;");
 		query.append("let $isLoggedIn := xmldb:login('" + XmldbURI.ROOT_COLLECTION_URI + "', '" + TestUtils.ADMIN_DB_USER + "', '" + TestUtils.ADMIN_DB_USER + "'),");
 		query.append("$doc := xmldb:store('" + XmldbURI.ROOT_COLLECTION + "', $document, $data)");
 		query.append("return <result/>");
 
 		final XQueryService service = server.getRoot().getService(XQueryService.class);
-
+        final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("document", document);
         service.declareVariable("data", xml);
-        final CompiledExpression cQuery = service.compile(query.toString());
         service.execute(cQuery);
 	}
 
 	/**
 	 * Updates the given xml fragment in the database using XUpdate.
 	 */
-	private final void prepareWorkVersion() throws XMLDBException {
+	private void prepareWorkVersion() throws XMLDBException {
 		final StringBuilder query = new StringBuilder();
 		query.append("declare namespace xmldb='http://exist-db.org/xquery/xmldb';\n");
 		query.append("declare namespace f='urn:weblounge';\n");
+        query.append("declare variable $collection as xs:string external;");
 
 		// Returns a new with a given body and a new header
 		query.append("declare function f:create($live as node(), $target as xs:string) as node() { \n");
@@ -150,8 +176,8 @@ public class NodeTypeTest {
 		query.append("		              ()\n");
 
 		final XQueryService service = server.getRoot().getService(XQueryService.class);
-        service.declareVariable("collection", XmldbURI.ROOT_COLLECTION);
         final CompiledExpression cQuery = service.compile(query.toString());
+        service.declareVariable("collection", XmldbURI.ROOT_COLLECTION);
         service.execute(cQuery);
 	}
 
@@ -179,12 +205,13 @@ public class NodeTypeTest {
 	@SuppressWarnings("unused")
 	private Node load(final String document) throws XMLDBException {
 		final StringBuilder query = new StringBuilder();
+        query.append("declare variable $document as xs:string external;");
 		query.append("let $result := doc(string-join(('" + XmldbURI.ROOT_COLLECTION + "', $document), '/'))");
 		query.append("return ($result)");
 
 		final XQueryService service = server.getRoot().getService(XQueryService.class);
-        service.declareVariable("document", document);
         final CompiledExpression cQuery = service.compile(query.toString());
+        service.declareVariable("document", document);
         final ResourceSet set = service.execute(cQuery);
         if (set != null && set.getSize() > 0) {
             return ((XMLResource)set.getIterator().nextResource()).getContentAsDOM();

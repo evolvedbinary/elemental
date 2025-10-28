@@ -113,7 +113,6 @@ public class Conditional extends Modification {
             //context.setBackwardsCompatibility(true);
             context.setStaticallyKnownDocuments(docs);
             declareNamespaces(context);
-            declareVariables(context);
 
             if (compiled == null) {
                 try {
@@ -125,6 +124,8 @@ public class Conditional extends Modification {
                 compiled.getContext().updateContext(context);
                 context.getWatchDog().reset();
             }
+
+            declareVariables(context);
 
             final Sequence seq = xquery.execute(broker, compiled, null);
             if (seq.effectiveBooleanValue()) {
