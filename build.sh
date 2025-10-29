@@ -99,7 +99,7 @@ if [ "${OFFLINE}" == "true" ]; then
 fi
 
 if [ "${TARGET}" == "clean" ]; then
-  CMD="${BASE_CMD} ${CONCURRENCY} clean"
+  CMD="${BASE_CMD} ${CONCURRENCY} clean -Pinstaller,docker,concurrency-stress-tests,micro-benchmarks"
   $CMD
   exit 0;
 fi
@@ -111,7 +111,7 @@ if [ "${TARGET}" == "quick" ]; then
 fi
 
 if [ "${TARGET}" == "quick-archives" ]; then
-  CMD="${BASE_CMD} ${CONCURRENCY} clean package -DskipTests -Ddependency-check.skip=true -Ddocker=true -P installer,!concurrency-stress-tests,!micro-benchmarks"
+  CMD="${BASE_CMD} ${CONCURRENCY} clean package -DskipTests -Ddependency-check.skip=true -Ddocker=false -P installer,!concurrency-stress-tests,!micro-benchmarks"
   $CMD
   exit 0;
 fi
