@@ -854,7 +854,7 @@
                                 <include>src/main/java/org/exist/config/Configurator.java</include>
                                 <include>src/main/java/org/exist/dom/NodeListImpl.java</include>
                                 <include>src/main/java/org/exist/dom/QName.java</include>
-                                <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DOMIndexer.java</include>
@@ -862,9 +862,9 @@
                                 <include>src/test/java/org/exist/dom/memtree/DOMTest.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/ElementImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/MemTreeBuilder.java</include>
-                                <exclude>src/main/java/org/exist/dom/memtree/NamespaceNode.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/NamespaceNode.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/NodeImpl.java</include>
-                                <exclude>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/AbstractArrayNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/AttrImpl.java</include>
