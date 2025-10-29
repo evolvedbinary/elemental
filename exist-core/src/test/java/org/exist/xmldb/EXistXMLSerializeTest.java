@@ -89,7 +89,7 @@ import org.xmldb.api.modules.XMLResource;
  *
  * @author  bmadigan
  */
-public class TestEXistXMLSerialize {
+public class EXistXMLSerializeTest {
 
     @ClassRule
     public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);

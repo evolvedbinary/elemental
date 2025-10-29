@@ -28,7 +28,7 @@ import org.junit.BeforeClass;
 
 import static org.junit.Assert.fail;
 
-public abstract class AbstractTimeRelatedTestCase {
+public abstract class AbstractTimeRelatedTest {
 
     @BeforeClass
     public static void setUp() throws Exception {

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -88,6 +112,18 @@ public class JaxvTest {
     }
 
     @Test
+    public void xsd_stored_invalid() throws XMLDBException {
+        final String query = "validation:jaxv( " +
+            "doc('/db/personal/personal-invalid.xml'), " +
+            "doc('/db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "false",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
     public void xsd_stored_report_valid() throws XMLDBException, SAXException, IOException, XpathException {
         final String query = "validation:jaxv-report( " +
                 "doc('/db/personal/personal-valid.xml'), " +
@@ -101,7 +137,7 @@ public class JaxvTest {
     }
 
     @Test
-    public void xsd_stored_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+    public void xsd_stored_report_invalid() throws XMLDBException, SAXException, IOException, XpathException {
         final String query = "validation:jaxv-report( " +
                 "doc('/db/personal/personal-invalid.xml'), " +
                 "doc('/db/personal/personal.xsd') )";
@@ -115,6 +151,30 @@ public class JaxvTest {
 
     @Test
     public void xsd_anyuri_valid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv( " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "true",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
+    public void xsd_anyuri_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv( " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "false",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
+    public void xsd_anyuri_report_valid() throws XMLDBException, SAXException, IOException, XpathException {
         final String query = "validation:jaxv-report( " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
@@ -127,10 +187,110 @@ public class JaxvTest {
     }
 
     @Test
-    public void xsd_anyuri_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+    public void xsd_anyuri_report_invalid() throws XMLDBException, SAXException, IOException, XpathException {
         final String query = "validation:jaxv-report( " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+
+        final String r = (String) results.getResource(0).getContent();
+        assertXpathEvaluatesTo("invalid", "//status/text()", r);
+    }
+
+    @Test
+    public void xsd_stored_anyuri_valid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv( " +
+            "doc('/db/personal/personal-valid.xml'), " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "true",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
+    public void xsd_stored_anyuri_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv( " +
+            "doc('/db/personal/personal-invalid.xml'), " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "false",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
+    public void xsd_stored_anyuri_report_valid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv-report( " +
+            "doc('/db/personal/personal-valid.xml'), " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+
+        final String r = (String) results.getResource(0).getContent();
+        assertXpathEvaluatesTo("valid", "//status/text()", r);
+    }
+
+    @Test
+    public void xsd_stored_anyuri_report_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv-report( " +
+            "doc('/db/personal/personal-invalid.xml'), " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+
+        final String r = (String) results.getResource(0).getContent();
+        assertXpathEvaluatesTo("invalid", "//status/text()", r);
+    }
+
+    @Test
+    public void xsd_anyuri_stored_valid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv( " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
+            "doc('/db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "true",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
+    public void xsd_anyuri_stored_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv( " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
+            "doc('/db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+        assertEquals(query, "false",
+            results.getResource(0).getContent().toString());
+    }
+
+    @Test
+    public void xsd_anyuri_stored_report_valid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv-report( " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
+            "doc('/db/personal/personal.xsd') )";
+
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        assertEquals(1, results.getSize());
+
+        final String r = (String) results.getResource(0).getContent();
+        assertXpathEvaluatesTo("valid", "//status/text()", r);
+    }
+
+    @Test
+    public void xsd_anyuri_stored_report_invalid() throws XMLDBException, SAXException, IOException, XpathException {
+        final String query = "validation:jaxv-report( " +
+            "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
+            "doc('/db/personal/personal.xsd') )";
 
         final ResourceSet results = existEmbeddedServer.executeQuery(query);
         assertEquals(1, results.getSize());

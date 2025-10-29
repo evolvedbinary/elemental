@@ -61,7 +61,7 @@ import javax.xml.transform.Source;
 import static org.junit.Assert.*;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
-public class UpdateReplaceTest extends AbstractTestUpdate {
+public class UpdateReplaceTest extends AbstractUpdateTest {
 
     @Test
     public void replaceOnlyChildWhereParentHasNoAttributes() throws XMLDBException {

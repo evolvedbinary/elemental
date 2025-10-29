@@ -95,7 +95,7 @@ if "%TARGET%"=="quick" (
 ) else if "%TARGET%"=="test" (
     set "CMD=%BASE_CMD% clean test -Ddependency-check.skip=true"
 ) else if "%TARGET%"=="site" (
-    set "CMD=%BASE_CMD% clean test -Ddependency-check.skip=true"
+    set "CMD=%BASE_CMD% clean verify site -Ddependency-check.skip=true"
 ) else if "%TARGET%"=="license-check" (
     set "CMD=%BASE_CMD% license:check"
 ) else if "%TARGET%"=="license-format" (

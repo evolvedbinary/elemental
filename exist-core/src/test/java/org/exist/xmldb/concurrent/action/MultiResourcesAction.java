@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,13 +46,11 @@
 package org.exist.xmldb.concurrent.action;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
-import org.exist.util.FileUtils;
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.xmldb.concurrent.DBUtils;
+import org.xml.sax.InputSource;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -37,12 +59,11 @@ import org.xmldb.api.base.XMLDBException;
  * @author wolf
  */
 public class MultiResourcesAction extends Action {
-    
-    private final String dirPath;
+    private final List<Tuple2<String, InputSource>> sources;
 
-    public MultiResourcesAction(final String dirPath, final String collectionPath) {
+    public MultiResourcesAction(final List<Tuple2<String, InputSource>> sources, final String collectionPath) {
         super(collectionPath, "");
-        this.dirPath = dirPath;
+        this.sources = sources;
     }
 
     @Override
@@ -52,17 +73,9 @@ public class MultiResourcesAction extends Action {
         return true;
     }
 
-    private void addFiles(final Collection col) throws XMLDBException, IOException {
-        final Path d = Paths.get(dirPath);
-        if(!(Files.isReadable(d) && Files.isDirectory(d))) {
-            throw new RuntimeException("Cannot read directory: " + dirPath);
-        }
-
-        final List<Path> files = FileUtils.list(d);
-        for(final Path file : files) {
-            if(Files.isRegularFile(file)) {
-                DBUtils.addXMLResource(col, FileUtils.fileName(file), file);
-            }
+    private void addFiles(final Collection col) throws XMLDBException {
+        for (final Tuple2<String, InputSource> source : sources) {
+            DBUtils.addXMLResource(col, source._1, source._2);
         }
     }
 }

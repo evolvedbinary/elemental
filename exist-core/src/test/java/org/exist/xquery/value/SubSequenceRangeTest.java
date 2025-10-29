@@ -43,9 +43,9 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>

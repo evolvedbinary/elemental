@@ -325,10 +325,10 @@ public class RecoveryManager {
             } catch (final Exception e) {
                 LOG.error("Exception caught while redoing transactions. Aborting recovery to avoid possible damage. " +
                     "Before starting again, make sure to run a check via the emergency export tool.", e);
-                if (next != null)
-                    {
-                        LOG.info("Log entry that caused the exception: {}", next.dump());}
-                throw new LogException("Recovery aborted. ");
+                if (next != null) {
+                    LOG.info("Log entry that caused the exception: {}", next.dump());
+                }
+                throw new LogException("Recovery aborted: " + e.getMessage(), e);
             } finally {
                 LOG.info("Redo processed {} out of {} transactions.", redoCnt, txnCount);
             }
@@ -375,10 +375,10 @@ public class RecoveryManager {
                     }
                 } catch (final Exception e) {
                     LOG.warn("Exception caught while undoing dirty transactions. Remaining transactions to be undone: {}. Aborting recovery to avoid possible damage. Before starting again, make sure to run a check via the emergency export tool.", runningTxns.size(), e);
-                    if (next != null)
-                        {
-                            LOG.warn("Log entry that caused the exception: {}", next.dump());}
-                    throw new LogException("Recovery aborted", e);
+                    if (next != null) {
+                        LOG.warn("Log entry that caused the exception: {}", next.dump());
+                    }
+                    throw new LogException("Recovery aborted: " + e.getMessage(), e);
                 }
             }
         } finally {
