@@ -45,6 +45,7 @@
  */
 package org.exist.dom.persistent;
 
+import org.exist.dom.QName;
 import org.exist.numbering.NodeId;
 import org.exist.storage.Signatures;
 import org.exist.util.ByteConversion;
@@ -61,7 +62,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  *
  * @author wolf
  */
-public class ProcessingInstructionImpl extends StoredNode<ProcessingInstructionImpl> implements ProcessingInstruction {
+public class ProcessingInstructionImpl extends NamedNode<ProcessingInstructionImpl> implements ProcessingInstruction {
 
     public static final int LENGTH_TARGET_DATA = 4; //Sizeof int;
 
@@ -81,7 +82,7 @@ public class ProcessingInstructionImpl extends StoredNode<ProcessingInstructionI
     }
 
     public ProcessingInstructionImpl(final Expression expression, final NodeId nodeId, final String target, final String data) {
-        super(expression, Node.PROCESSING_INSTRUCTION_NODE, nodeId);
+        super(expression, Node.PROCESSING_INSTRUCTION_NODE, nodeId, new QName(target, null));
         this.target = target;
         this.data = data;
     }
@@ -98,6 +99,7 @@ public class ProcessingInstructionImpl extends StoredNode<ProcessingInstructionI
     public void clear() {
         super.clear();
         target = null;
+        setQName(null);
         data = null;
     }
 
@@ -118,6 +120,7 @@ public class ProcessingInstructionImpl extends StoredNode<ProcessingInstructionI
      */
     public void setTarget(final String target) {
         this.target = target;
+        setQName(new QName(target, null));
     }
 
     @Override
