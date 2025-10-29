@@ -24,19 +24,28 @@
 -->
 <xs:schema
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:sx="http://exist-db.org/xquery/types/serialized"
     targetNamespace="http://exist-db.org/xquery/types/serialized"
     elementFormDefault="qualified">
-    
+
     <xs:element name="sequence">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="value" minOccurs="0" maxOccurs="unbounded">
-                    <xs:complexType mixed="true">
-                        <xs:attribute name="type" type="xs:QName" use="required"/>
-                    </xs:complexType>
-                </xs:element>
+                <xs:element ref="sx:value" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
-    
+
+    <xs:element name="value">
+        <xs:complexType mixed="true">
+            <xs:sequence>
+                <xs:choice minOccurs="0">
+                    <xs:any processContents="skip"/>
+                </xs:choice>
+            </xs:sequence>
+            <xs:attribute name="type" type="xs:string" default="item()"/>
+            <xs:attribute name="name" type="xs:string" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
 </xs:schema>

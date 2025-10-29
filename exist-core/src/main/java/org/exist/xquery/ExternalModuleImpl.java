@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -183,14 +207,18 @@ public class ExternalModuleImpl implements ExternalModule {
         return mGlobalVariables.values();
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Module#declareVariable(org.exist.dom.QName, java.lang.Object)
-     */
-    public Variable declareVariable(QName qname, Object value) throws XPathException {
+    @Override
+    public Variable declareVariable(final QName qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    @Override
+    public Variable declareVariable(final QName qname, final boolean external, final Object value) throws XPathException {
         final Sequence val = XPathUtil.javaObjectToXPath(value, mContext, null);
         Variable var = mStaticVariables.get(qname);
         if (var == null) {
             var = new VariableImpl(qname);
+            var.setExternal(external);
             mStaticVariables.put(qname, var);
         }
         var.setValue(val);
@@ -210,9 +238,15 @@ public class ExternalModuleImpl implements ExternalModule {
         mGlobalVariables.put(qname, decl);
     }
 
-    public boolean isVarDeclared(QName qname) {
+    @Override
+    public boolean isVarDeclared(final QName qname) {
         if (mGlobalVariables.get(qname) != null)
             {return true;}
+        return mStaticVariables.get(qname) != null;
+    }
+
+    @Override
+    public boolean isVarSet(final QName qname) {
         return mStaticVariables.get(qname) != null;
     }
 

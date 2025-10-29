@@ -322,7 +322,7 @@ public class Eval extends BasicFunction {
                 final Item varName = externalVars.itemAt(i);
                 if (varName.getType() == Type.QNAME) {
                     final Item varValue = externalVars.itemAt(++i);
-                    innerContext.declareVariable(((QNameValue) varName).getQName(), varValue);
+                    innerContext.declareVariable(((QNameValue) varName).getQName(), true, varValue);
                 }
             }
         }
@@ -413,7 +413,7 @@ public class Eval extends BasicFunction {
                         return new StringValue(this, writer.toString());
 
                     } catch (final SAXException e) {
-                        throw new XPathException(this, FnModule.SENR0001, e.getMessage());
+                        throw new XPathException(this, ErrorCodes.W3CErrorCode.SENR0001, e.getMessage());
                     }
                 }
             } finally {
@@ -492,7 +492,9 @@ public class Eval extends BasicFunction {
             throw new XPathException(this, ioe);
         } finally {
             if (compiled != null) {
-                compiled.getContext().runCleanupTasks();
+                if (compiled.getContext() != null) {
+                    compiled.getContext().runCleanupTasks();
+                }
                 if (cache) {
                     pool.returnCompiledXQuery(querySource, compiled);
                 } else {
@@ -589,9 +591,9 @@ public class Eval extends BasicFunction {
                 }
                 final String type = elem.getAttribute("type");
                 if ((!type.isEmpty()) && Type.subTypeOf(Type.getType(type), Type.ANY_ATOMIC_TYPE)) {
-                    innerContext.declareVariable(qname, value.atomize().convertTo(Type.getType(type)));
+                    innerContext.declareVariable(qname, true, value.atomize().convertTo(Type.getType(type)));
                 } else {
-                    innerContext.declareVariable(qname, value);
+                    innerContext.declareVariable(qname, true, value);
                 }
             } else if (child.getNodeType() == Node.ELEMENT_NODE && "output-size-limit".equals(child.getLocalName())) {
                 final Element elem = (Element) child;

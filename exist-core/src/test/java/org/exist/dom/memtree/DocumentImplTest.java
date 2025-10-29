@@ -155,8 +155,7 @@ public class DocumentImplTest {
 
         final ElementImpl elem = (ElementImpl)doc.getDocumentElement();
         final NamedNodeMap attrs = elem.getAttributes();
-        assertEquals(1, attrs.getLength());
-//        assertEquals(2, attrs.getLength());
+        assertEquals(2, attrs.getLength());
 
         int index = 0;
 
@@ -169,14 +168,14 @@ public class DocumentImplTest {
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr1.getNodeName());
         assertEquals("http://exist-db.org/xquery/repo", attr1.getValue());
 
-//        final Attr attr2 = (Attr)attrs.item(index++);
-//        assertEquals(NodeImpl.NAMESPACE_NODE, attr2.getNodeType());
-//        assertTrue(attr2 instanceof NamespaceNode);
-//        assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr2.getNamespaceURI());
-//        assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr2.getPrefix());
-//        assertEquals("repo", attr2.getLocalName());
-//        assertEquals(XMLConstants.XMLNS_ATTRIBUTE + ":repo", attr2.getNodeName());
-//        assertEquals("http://exist-db.org/xquery/repo", attr2.getValue());
+        final Attr attr2 = (Attr)attrs.item(index++);
+        assertEquals(NodeImpl.NAMESPACE_NODE, attr2.getNodeType());
+        assertTrue(attr2 instanceof NamespaceNode);
+        assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr2.getNamespaceURI());
+        assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr2.getPrefix());
+        assertEquals("repo", attr2.getLocalName());
+        assertEquals(XMLConstants.XMLNS_ATTRIBUTE + ":repo", attr2.getNodeName());
+        assertEquals("http://exist-db.org/xquery/repo", attr2.getValue());
     }
 
     private Document parseXerces(final InputStream is) throws ParserConfigurationException, SAXException, IOException {

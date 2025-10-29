@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -410,7 +434,9 @@ public class XIncludeFilter implements Receiver {
             // process the xpointer or the stored XQuery
             Source source = null;
             final XQueryPool pool = serializer.broker.getBrokerPool().getXQueryPool();
-            CompiledXQuery compiled = null;
+            final XQuery xquery = serializer.broker.getBrokerPool().getXQueryService();
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
             try {
                 if (xpointer == null) {
                     source = new DBSource(serializer.broker.getBrokerPool(), (BinaryDocument) doc, true);
@@ -418,8 +444,7 @@ public class XIncludeFilter implements Receiver {
                     xpointer = checkNamespaces(xpointer);
                     source = new StringSource(xpointer);
                 }
-                final XQuery xquery = serializer.broker.getBrokerPool().getXQueryService();
-                XQueryContext context;
+
                 compiled = pool.borrowCompiledXQuery(serializer.broker, source);
                 if (compiled == null) {
                     context = new XQueryContext(serializer.broker.getBrokerPool());
@@ -427,6 +452,7 @@ public class XIncludeFilter implements Receiver {
                     context = compiled.getContext();
                     context.prepareForReuse();
                 }
+
                 if (namespaces != null) {
                     context.declareNamespaces(namespaces);
                 }
@@ -437,24 +463,11 @@ public class XIncludeFilter implements Receiver {
                     context.setHttpContext(serializer.httpContext);
                 }
 
-                //TODO: change these to putting the XmldbURI in, but we need to warn users!
-                if (document != null) {
-                    context.declareVariable("xinclude:current-doc", document.getFileURI().toString());
-                    context.declareVariable("xinclude:current-collection", document.getCollection().getURI().toString());
-                }
-
                 if (xpointer != null) {
                     if (doc != null) {
                         context.setStaticallyKnownDocuments(new XmldbURI[]{doc.getURI()});
                     } else if (docUri != null) {
                         context.setStaticallyKnownDocuments(new XmldbURI[]{docUri});
-                    }
-                }
-
-                // pass parameters as variables
-                if (params != null) {
-                    for (final Map.Entry<String, String> entry : params.entrySet()) {
-                        context.declareVariable(entry.getKey(), entry.getValue());
                     }
                 }
 
@@ -469,39 +482,51 @@ public class XIncludeFilter implements Receiver {
                     context.getWatchDog().reset();
                 }
                 LOG.info("xpointer query: {}", ExpressionDumper.dump((Expression) compiled));
+
+                //TODO: change these to putting the XmldbURI in, but we need to warn users!
+                if (document != null) {
+                    context.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
+                    context.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
+                }
+                // pass parameters as variables
+                if (params != null) {
+                    for (final Map.Entry<String, String> entry : params.entrySet()) {
+                        context.declareVariable(entry.getKey(), true, entry.getValue());
+                    }
+                }
+
                 Sequence contextSeq = null;
                 if (memtreeDoc != null) {
                     contextSeq = memtreeDoc;
                 }
 
-                try {
-                    final Sequence seq = xquery.execute(serializer.broker, compiled, contextSeq);
+                final Sequence seq = xquery.execute(serializer.broker, compiled, contextSeq);
 
-                    if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("xpointer found: {}", seq.getItemCount());
-                        }
-
-                        NodeValue node;
-                        for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                            node = (NodeValue) i.nextItem();
-                            serializer.serializeToReceiver(node, false);
-                        }
-                    } else {
-                        String val;
-                        for (int i = 0; i < seq.getItemCount(); i++) {
-                            val = seq.itemAt(i).getStringValue();
-                            characters(val);
-                        }
+                if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("xpointer found: {}", seq.getItemCount());
                     }
-                } finally {
-                    context.runCleanupTasks();
+
+                    NodeValue node;
+                    for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                        node = (NodeValue) i.nextItem();
+                        serializer.serializeToReceiver(node, false);
+                    }
+                } else {
+                    String val;
+                    for (int i = 0; i < seq.getItemCount(); i++) {
+                        val = seq.itemAt(i).getStringValue();
+                        characters(val);
+                    }
                 }
 
             } catch (final XPathException | PermissionDeniedException e) {
                 LOG.warn("xpointer error", e);
                 throw new SAXException("Error while processing XInclude expression: " + e.getMessage(), e);
             } finally {
+                if (context != null) {
+                    context.runCleanupTasks();
+                }
                 if (compiled != null) {
                     pool.returnCompiledXQuery(source, compiled);
                 }

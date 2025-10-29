@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,22 +45,20 @@
  */
 package org.exist.xquery.functions.validate;
 
-import org.custommonkey.xmlunit.exceptions.XpathException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
 import static org.exist.samples.Samples.SAMPLES;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
-
-import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
+import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
@@ -54,7 +76,7 @@ public class JingXsdTest {
     public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
 
     @BeforeClass
-    public static void prepareResources() throws XMLDBException, URISyntaxException, IOException {
+    public static void prepareResources() throws XMLDBException, IOException {
         final String noValidation = "<?xml version='1.0'?>" +
                 "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
                 "    <validation mode='no'/>" +
@@ -78,7 +100,7 @@ public class JingXsdTest {
     }
 
     @Test
-    public void xsd_stored_valid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void xsd_stored_valid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "doc('/db/personal/personal-valid.xml'), " +
                 "doc('/db/personal/personal.xsd') )";
@@ -86,7 +108,7 @@ public class JingXsdTest {
     }
 
     @Test
-    public void xsd_stored_invalid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void xsd_stored_invalid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "doc('/db/personal/personal-invalid.xml'), " +
                 "doc('/db/personal/personal.xsd') )";
@@ -94,7 +116,7 @@ public class JingXsdTest {
     }
 
     @Test
-    public void xsd_anyuri_valid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void xsd_anyuri_valid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
@@ -102,18 +124,18 @@ public class JingXsdTest {
     }
 
     @Test
-    public void xsd_anyuri_invalid() throws XMLDBException, SAXException, XpathException, IOException {
+    public void xsd_anyuri_invalid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
         executeAndEvaluate(query,"invalid");
     }
 
-    private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException, SAXException, IOException, XpathException {
+    private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
         final ResourceSet results = existEmbeddedServer.executeQuery(query);
         assertEquals(1, results.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertXpathEvaluatesTo(expectedValue, "//status/text()", r);
+        final String result = (String) results.getResource(0).getContent();
+        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
     }
 }

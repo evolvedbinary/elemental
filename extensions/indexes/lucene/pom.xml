@@ -155,8 +155,14 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.xmlunit</groupId>
-            <artifactId>xmlunit-legacy</artifactId>
+            <artifactId>xmlunit-matchers</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -238,12 +244,19 @@
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</include>
+                                <include>src/test/java/org/exist/indexing/lucene/LuceneIndexTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</include>
+                                <include>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/TextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/Facets.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/lucene/Field.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/GetField.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/InspectIndex.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/lucene/LuceneModule.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/Query.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/lucene/QueryOptions.java</include>
                             </includes>
                         </licenseSet>
 
@@ -268,11 +281,18 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/lucene/LuceneIndexTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/Facets.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/lucene/Field.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/GetField.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/InspectIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/lucene/LuceneModule.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/Query.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/lucene/QueryOptions.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

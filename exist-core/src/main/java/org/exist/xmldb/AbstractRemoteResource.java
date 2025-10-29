@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -41,11 +65,16 @@ import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
+import org.exist.xqj.Marshaller;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.value.Sequence;
 import org.xml.sax.InputSource;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
+
+import javax.xml.stream.XMLStreamException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.util.io.InputStreamUtil.copy;
@@ -54,10 +83,13 @@ public abstract class AbstractRemoteResource extends AbstractRemote
         implements EXistResource, ExtendedResource, Resource {
     protected final XmldbURI path;
     private String mimeType;
+    protected final Optional<String> type;
 
+    // those are the different types of content this resource may have to deal with
     protected Path file = null;
-    private ContentFile contentFile = null;
+    protected ContentFile contentFile = null;
     protected InputSource inputSource = null;
+
     private long contentLen = -1L;
     private Permission permissions = null;
     private boolean closed;
@@ -66,7 +98,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
     Instant dateCreated = null;
     Instant dateModified = null;
 
-    protected AbstractRemoteResource(final RemoteCollection parent, final XmldbURI documentName, final String mimeType) {
+    protected AbstractRemoteResource(final RemoteCollection parent, final XmldbURI documentName, final String mimeType, final Optional<String> type) {
         super(parent);
         if (documentName.numSegments() > 1) {
             this.path = documentName;
@@ -74,6 +106,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
             this.path = parent.getPathURI().append(documentName);
         }
         this.mimeType = mimeType;
+        this.type = type;
     }
 
     @Override
@@ -95,7 +128,23 @@ public abstract class AbstractRemoteResource extends AbstractRemote
             } else if (res instanceof InputSource) {
                 return readFile((InputSource) res);
             } else if (res instanceof ContentFile) {
-                return ((ContentFile) res).getBytes();
+
+                if (((ContentFile) res).getType() == ContentFile.ContentFileType.XQJ_SERIALIZATION) {
+                    try (final InputStream is = ((ContentFile) res).newInputStream()) {
+                        final Sequence result = Marshaller.demarshall(is);
+                        // NOTE(AR) we are only expecting one value here!
+                        if (!result.hasOne()) {
+                            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "Expected a single Item from XQJ deserialization");
+                        }
+                        return result.itemAt(0);
+
+
+                    } catch (final XMLStreamException | XPathException | IOException e) {
+                        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e);
+                    }
+                } else {
+                    return ((ContentFile) res).getBytes();
+                }
             }
         }
         return res;
@@ -212,11 +261,11 @@ public abstract class AbstractRemoteResource extends AbstractRemote
                 }
                 wasSet = true;
             } else if (value instanceof byte[]) {
-                contentFile = ByteArrayContent.of((byte[]) value);
+                contentFile = ByteArrayContent.of(ContentFile.ContentFileType.UNKNOWN, (byte[]) value);
                 setExtendendContentLength(contentFile.size());
                 wasSet = true;
             } else if (value instanceof String) {
-                contentFile = ByteArrayContent.of((String) value);
+                contentFile = ByteArrayContent.of(ContentFile.ContentFileType.UNKNOWN, (String) value);
                 setExtendendContentLength(contentFile.size());
                 wasSet = true;
             }
@@ -258,7 +307,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
         }
     }
 
-    protected void getRemoteContentIntoLocalFile(final OutputStream os, final boolean isRetrieve, final int handle, final int pos) throws XMLDBException {
+    protected ContentFile getRemoteContentIntoLocalFile(final OutputStream os, final boolean isRetrieve, final int handle, final int pos) throws XMLDBException {
         final String command;
         final List<Object> params = new ArrayList<>();
         if (isRetrieve) {
@@ -273,10 +322,16 @@ public abstract class AbstractRemoteResource extends AbstractRemote
         params.add(properties);
 
         try {
-            final TemporaryFileManager tempFileManager = TemporaryFileManager.getInstance();
-            final VirtualTempPath tempFile = new VirtualTempPath(getInMemorySize(properties), tempFileManager);
+            Map<Object, Object> table = (Map<Object, Object>) collection.execute(command, params);
 
-            Map<?, ?> table = (Map<?, ?>) collection.execute(command, params);
+            final ContentFile.ContentFileType type;
+            if ("yes".equals(table.getOrDefault(EXistOutputKeys.XQJ_SERIALIZATION, "no"))) {
+                type = ContentFile.ContentFileType.XQJ_SERIALIZATION;
+            } else {
+                type = ContentFile.ContentFileType.XDM_SERIALIZATION;
+            }
+            final TemporaryFileManager tempFileManager = TemporaryFileManager.getInstance();
+            final VirtualTempPath tempFile = new VirtualTempPath(type, getInMemorySize(properties), tempFileManager);
 
             final String method;
             final boolean useLongOffset;
@@ -323,7 +378,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
                     params.clear();
                     params.add(table.get("handle"));
                     params.add(useLongOffset ? Long.toString(offset) : Integer.valueOf((int) offset));
-                    table = (Map<?, ?>) collection.execute(method, params);
+                    table = (Map<Object, Object>) collection.execute(method, params);
                     offset = useLongOffset ? Long.parseLong((String) table.get("offset")) : ((Integer) table.get("offset"));
                     data = (byte[]) table.get("data");
 
@@ -352,7 +407,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
                 }
             }
 
-            contentFile = tempFile;
+            return tempFile;
         } catch (final IOException | DataFormatException e) {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         }
@@ -419,7 +474,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
             }
         } else {
             // Let's fetch it, and save just in time!!!
-            getRemoteContentIntoLocalFile(os, isRetrieve, handle, pos);
+            contentFile = getRemoteContentIntoLocalFile(os, isRetrieve, handle, pos);
         }
     }
 
@@ -433,7 +488,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
             return inputSource;
         } else {
             if (contentFile == null) {
-                getRemoteContentIntoLocalFile(null, isRetrieve, handle, pos);
+                contentFile = getRemoteContentIntoLocalFile(null, isRetrieve, handle, pos);
             }
             return contentFile;
         }
@@ -452,7 +507,7 @@ public abstract class AbstractRemoteResource extends AbstractRemote
             } else {
                 // At least one value, please!!!
                 if (contentFile == null) {
-                    getRemoteContentIntoLocalFile(null, isRetrieve, handle, pos);
+                    contentFile = getRemoteContentIntoLocalFile(null, isRetrieve, handle, pos);
                 }
                 retval = contentFile.newInputStream();
             }
@@ -541,12 +596,17 @@ public abstract class AbstractRemoteResource extends AbstractRemote
     }
 
     @Override
+    public String getTypeName() {
+        return type.orElse("item()");
+    }
+
+    @Override
     public final boolean isClosed() {
         return closed;
     }
 
     @Override
-    public final void close() {
+    public void close() {
         if (!isClosed()) {
             try {
                 file = null;

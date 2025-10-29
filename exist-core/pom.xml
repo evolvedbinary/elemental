@@ -95,6 +95,13 @@
             <version>2.19.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.fasterxml</groupId>
+            <artifactId>aalto-xml</artifactId>
+            <version>1.3.4</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- dependency>
             <groupId>com.fasterxml.woodstox</groupId>
             <artifactId>woodstox-core</artifactId>
@@ -355,15 +362,9 @@
         -->
 
         <dependency>
-            <groupId>org.apache.ws.commons.util</groupId>
+            <groupId>com.evolvedbinary.thirdparty.org.apache.ws.commons.util</groupId>
             <artifactId>ws-commons-util</artifactId>
-            <version>1.0.2</version>
-            <exclusions>
-                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
-                    <groupId>xml-apis</groupId>
-                    <artifactId>xml-apis</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>1.1.0</version>
         </dependency>
 
         <!-- xml-resolver is needed at runtime because xercesImpl declares this as optional,
@@ -453,12 +454,6 @@
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.org.apache.xmlrpc</groupId>
             <artifactId>xmlrpc-common</artifactId>
-            <exclusions>
-                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
-                    <groupId>xml-apis</groupId>
-                    <artifactId>xml-apis</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.org.apache.xmlrpc</groupId>
@@ -633,7 +628,7 @@
         </dependency>
         <dependency>
             <groupId>org.xmlunit</groupId>
-            <artifactId>xmlunit-legacy</artifactId>
+            <artifactId>xmlunit-matchers</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -748,6 +743,7 @@
                                 <include>src/main/java/org/exist/dom/memtree/reference/ElementReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</include>
+                                <include>src/test/java/org/exist/http/RESTExternalVariableTest.java</include>
                                 <include>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</include>
                                 <include>src/main/java/org/exist/security/PermissionRequiredCheck.java</include>
                                 <include>src/main/java/org/exist/storage/io/AbstractVariableByteOutput.java</include>
@@ -757,17 +753,24 @@
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterInputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteOutput.java</include>
+                                <include>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</include>
                                 <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
+                                <include>src/main/java/org/exist/util/io/AbstractContentFile.java</include>
                                 <include>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</include>
+                                <include>src/test/java/org/exist/xmldb/XMLDBExternalVariableTest.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/main/java/org/exist/xquery/JavaBinding.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/JavaBindingTest.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/JavaBindingTest.java</include>
                                 <include>src/test/java/org/exist/xquery/WatchdogTest.java</include>
+                                <include>src/test/java/org/exist/xquery/XPathUtilTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/FunXmlToJsonTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/ParsingFunctionsTest.java</include>
@@ -778,6 +781,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
+                                <include>src/main/java/org/exist/xquery/value/ArrayWrapper.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
                             </includes>
                         </licenseSet>
@@ -811,6 +815,7 @@
                                 <include>src/test/java/org/exist/Indexer3Test.java</include>
                                 <include>src/test/java/org/exist/IndexerTest.java</include>
                                 <include>src/main/java/org/exist/Namespaces.java</include>
+                                <include>src/test/java/org/exist/TestDataGenerator</include>
                                 <include>src/main/resources-filtered/org/exist/system.properties</include>
                                 <include>src/main/java/org/exist/backup/ExportGUI.java</include>
                                 <include>src/main/java/org/exist/backup/ExportMain.java</include>
@@ -855,6 +860,7 @@
                                 <include>src/test/java/org/exist/collections/triggers/MessagesTrigger.java</include>
                                 <include>src/test/java/org/exist/collections/triggers/TriggerConfigTest.java</include>
                                 <include>src/main/java/org/exist/collections/triggers/XQueryStartupTrigger.java</include>
+                                <include>src/main/java/org/exist/collections/triggers/XQueryTrigger.java</include>
                                 <include>src/main/java/org/exist/config/Configuration.java</include>
                                 <include>src/main/java/org/exist/config/ConfigurationImpl.java</include>
                                 <include>src/main/java/org/exist/config/Configurator.java</include>
@@ -863,6 +869,7 @@
                                 <include>src/main/java/org/exist/dom/QName.java</include>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
+                                <include>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DOMIndexer.java</include>
@@ -897,16 +904,19 @@
                                 <include>src/main/java/org/exist/dom/persistent/VirtualNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/XMLUtil.java</include>
                                 <include>src/test/java/org/exist/http/AbstractHttpTest.java</include>
+                                <include>src/main/java/org/exist/http/AuditTrailSessionListener.java</include>
                                 <include>src/main/java/org/exist/http/Descriptor.java</include>
                                 <include>src/main/java/org/exist/http/RESTServer.java</include>
                                 <include>src/test/java/org/exist/http/RESTServiceTest.java</include>
                                 <include>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</include>
+                                <include>src/main/java/org/exist/http/servlets/RedirectorServlet.java</include>
                                 <include>src/main/java/org/exist/http/servlets/XQueryServlet.java</include>
                                 <include>src/main/java/org/exist/http/servlets/XSLTServlet.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/PathForward.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/Redirect.java</include>
                                 <include>src/main/java/org/exist/http/urlrewrite/RewriteConfig.java</include>
+                                <include>src/main/java/org/exist/http/urlrewrite/XQueryURLRewrite.java</include>
                                 <include>src/main/java/org/exist/indexing/Index.java</include>
                                 <include>src/main/java/org/exist/indexing/IndexController.java</include>
                                 <include>src/main/java/org/exist/indexing/IndexManager.java</include>
@@ -932,6 +942,7 @@
                                 <include>src/main/java/org/exist/management/impl/DatabaseMXBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/ExistMBean.java</include>
                                 <include>src/main/java/org/exist/management/impl/JMXAgent.java</include>
+                                <include>src/main/java/org/exist/management/impl/SanityReport.java</include>
                                 <include>src/main/java/org/exist/numbering/DLN.java</include>
                                 <include>src/main/java/org/exist/numbering/DLNFactory.java</include>
                                 <include>src/main/java/org/exist/numbering/NodeId.java</include>
@@ -941,6 +952,7 @@
                                 <include>src/main/java/org/exist/repo/ClasspathHelper.java</include>
                                 <include>src/main/java/org/exist/repo/Deployment.java</include>
                                 <include>src/main/java/org/exist/repo/ExistRepository.java</include>
+                                <include>src/main/java/org/exist/scheduler/UserXQueryJob.java</include>
                                 <include>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</include>
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
                                 <include>src/test/java/org/exist/security/FnDocSecurityTest.java</include>
@@ -975,7 +987,9 @@
                                 <include>src/test/java/org/exist/storage/RecoverBinary2Test.java</include>
                                 <include>src/test/java/org/exist/storage/RecoveryTest.java</include>
                                 <include>src/test/java/org/exist/storage/Recovery2Test.java</include>
+                                <include>src/test/java/org/exist/storage/RemoveCollectionTest.java</include>
                                 <include>src/main/java/org/exist/storage/StorageAddress.java</include>
+                                <include>src/test/java/org/exist/storage/XIncludeSerializerTest.java</include>
                                 <include>src/test/java/org/exist/storage/btree/BTreeTest.java</include>
                                 <include>src/main/java/org/exist/storage/btree/TreeMetrics.java</include>
                                 <include>src/main/java/org/exist/storage/index/BFile.java</include>
@@ -985,13 +999,18 @@
                                 <include>src/main/java/org/exist/storage/io/VariableByteInputToInputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteOutputToOutputStream.java</include>
                                 <include>src/test/java/org/exist/storage/io/VariableByteStreamTest.java</include>
+                                <include>src/test/java/org/exist/storage/lock/DeadlockTest.java</include>
                                 <include>src/main/java/org/exist/storage/lock/FileLock.java</include>
+                                <include>src/test/java/org/exist/storage/lock/ProtectedModeTest.java</include>
                                 <include>src/main/java/org/exist/storage/recovery/RecoveryManager.java</include>
+                                <include>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</include>
                                 <include>src/main/java/org/exist/storage/serializers/Serializer.java</include>
+                                <include>src/main/java/org/exist/storage/serializers/XIncludeFilter.java</include>
                                 <include>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</include>
                                 <include>src/main/java/org/exist/storage/sync/SyncTask.java</include>
                                 <include>src/test/java/org/exist/storage/util/PauseFunction.java</include>
                                 <include>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</include>
+                                <include>src/main/java/org/exist/test/runner/AbstractTestRunner.java</include>
                                 <include>src/main/java/org/exist/test/runner/ExtTestAssumptionFailedFunction.java</include>
                                 <include>src/main/java/org/exist/test/runner/ExtTestErrorFunction.java</include>
                                 <include>src/main/java/org/exist/test/runner/ExtTestFailureFunction.java</include>
@@ -1010,10 +1029,17 @@
                                 <include>src/test/java/org/exist/util/LeasableTest.java</include>
                                 <include>src/main/java/org/exist/util/ParametersExtractor.java</include>
                                 <include>src/main/java/org/exist/util/crypto/digest/DigestType.java</include>
+                                <include>src/main/java/org/exist/util/io/ByteArrayContent.java</include>
+                                <include>src/test/java/org/exist/util/io/ByteArrayContentTest.java</include>
+                                <include>src/main/java/org/exist/util/io/ContentFile.java</include>
+                                <include>src/main/java/org/exist/util/io/ContentFilePoolObjectFactory.java</include>
                                 <include>src/test/java/org/exist/util/io/FilterInputStreamCacheMonitorTest.java</include>
                                 <include>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</include>
+                                <include>src/main/java/org/exist/util/io/VirtualTempPath.java</include>
+                                <include>src/test/java/org/exist/util/io/VirtualTempPathTest.java</include>
                                 <include>src/test/java/org/exist/util/pool/NodePoolTest.java</include>
                                 <include>src/main/java/org/exist/util/serializer/AttrList.java</include>
+                                <include>src/main/java/org/exist/util/serializer/DOMSerializer.java</include>
                                 <include>src/main/java/org/exist/util/serializer/DOMStreamer.java</include>
                                 <include>src/main/java/org/exist/util/serializer/EXISerializer.java</include>
                                 <include>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</include>
@@ -1032,19 +1058,31 @@
                                 <include>src/test/java/org/exist/util/sorters/SortTestNodeId.java</include>
                                 <include>src/test/resources/org/exist/validation/catalog.xml</include>
                                 <include>src/test/java/org/exist/validation/CollectionConfigurationValidationModeTest.java</include>
+                                <include>src/main/java/org/exist/validation/internal/DatabaseResources.java</include>
+                                <include>src/main/resources/org/exist/validation/internal/query/find_catalogs_with_dtd.xq</include>
+                                <include>src/main/resources/org/exist/validation/internal/query/find_schema_by_targetNamespace.xq</include>
                                 <include>src/main/java/org/exist/validation/resolver/SearchResourceResolver.java</include>
                                 <include>src/test/java/org/exist/w3c/tests/TestCase.java</include>
                                 <include>src/main/java/org/exist/webstart/JnlpJarFiles.java</include>
+                                <include>src/main/java/org/exist/xmldb/AbstractRemoteResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/ContentAsDOMTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/EXistXMLSerializeTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/EXistResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/IndexingTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/LocalBinaryResource.java</include>
                                 <include>src/main/java/org/exist/xmldb/LocalResourceSet.java</include>
                                 <include>src/main/java/org/exist/xmldb/LocalXMLResource.java</include>
-                                <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
+                                <include>src/main/java/org/exist/xmldb/LocalXPathQueryService.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteBinaryResource.java</include>
                                 <include>src/test/java/org/exist/xmldb/RemoteDOMTest.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteResourceSet.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteRestoreService.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteXMLResource.java</include>
+                                <include>src/main/java/org/exist/xmldb/RemoteXPathQueryService.java</include>
                                 <include>src/test/java/org/exist/xmldb/ResourceTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/SerializationTest.java</include>
+                                <include>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</include>
                                 <include>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/AbstractConcurrentTest.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/ComplexUpdateTest.java</include>
@@ -1061,33 +1099,53 @@
                                 <include>src/test/java/org/exist/xmldb/concurrent/XMLGenerator.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/action/MultiResourcesAction.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
+                                <include>src/test/java/org/exist/xmlrpc/QuerySessionTest.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/RpcAPI.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
+                                <include>src/main/java/org/exist/xquery/AbstractInternalModule.java</include>
                                 <include>src/test/java/org/exist/xquery/CardinalityTest.java</include>
                                 <include>src/test/java/org/exist/xquery/CleanupTest.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
+                                <include>src/main/java/org/exist/xquery/Context.java</include>
                                 <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
+                                <include>src/main/java/org/exist/xquery/DynamicVariable.java</include>
+                                <include>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
+                                <include>src/main/java/org/exist/xquery/ExternalModuleImpl.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Function.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
                                 <include>src/main/java/org/exist/xquery/LocationStep.java</include>
+                                <include>src/main/java/org/exist/xquery/Module.java</include>
                                 <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
+                                <include>src/main/java/org/exist/xquery/NameTest.java</include>
+                                <include>src/test/java/org/exist/xquery/NodeTypeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
+                                <include>src/main/java/org/exist/xquery/Option.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</include>
+                                <include>src/test/java/org/exist/xquery/RestBinariesTest.java</include>
+                                <include>src/test/java/org/exist/xquery/StoredModuleTest.java</include>
                                 <include>src/main/java/org/exist/xquery/TryCatchExpression.java</include>
                                 <include>src/main/java/org/exist/xquery/UserDefinedFunction.java</include>
+                                <include>src/main/java/org/exist/xquery/Variable.java</include>
+                                <include>src/main/java/org/exist/xquery/VariableDeclaration.java</include>
+                                <include>src/main/java/org/exist/xquery/VariableImpl.java</include>
+                                <include>src/main/java/org/exist/xquery/VariableReference.java</include>
                                 <include>src/test/java/org/exist/xquery/WindowClauseTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XmldbBinariesTest.java</include>
+                                <include>src/test/java/org/exist/xquery/XPathQueryTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XPathOpOrSpecialCaseTest.java</include>
                                 <include>src/main/java/org/exist/xquery/XPathUtil.java</include>
                                 <include>src/main/java/org/exist/xquery/XQueryContext.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</include>
+                                <include>src/main/java/org/exist/xquery/XQueryProcessingInstruction.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryProcessingInstructionTest.java</include>
                                 <include>src/test/java/org/exist/xquery/XQueryTest.java</include>
+                                <include>src/test/java/org/exist/xquery/XQueryUpdateTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/array/ArrayType.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/fn/DocTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/ExtCollection.java</include>
@@ -1119,6 +1177,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDefaultCollation.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDistinctValues.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunDoc.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunElementWithId.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunEmpty.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunEncodeForURI.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunEndsWith.java</include>
@@ -1197,11 +1256,15 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/map/MapExpr.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/request/GetHeaderTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GetPermissionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/securitymanager/IdFunctionTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChmodTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChownTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/system/GetRunningXQueriesTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/GetUptime.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/Shutdown.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/SystemModule.java</include>
@@ -1209,16 +1272,25 @@
                                 <include>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</include>
                                 <include>src/main/java/org/exist/xquery/functions/transform/Transform.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/transform/TransformTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/FunctionFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/LogFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/ModuleInfo.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JaxpDtdCatalogTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JaxpParseTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JaxpXsdCatalogTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/validate/JaxvTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JingOnvdlTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JingRelaxNgTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JingSchematronTest.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/validate/JingXsdTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/xquery3/TryCatchTest.java</include>
                                 <include>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</include>
                                 <include>src/test/java/org/exist/xquery/update/AbstractUpdateTest.java</include>
                                 <include>src/test/java/org/exist/xquery/update/IndexIntegrationTest.java</include>
@@ -1263,7 +1335,11 @@
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
+                                <include>src/main/java/org/exist/xupdate/Conditional.java</include>
+                                <include>src/main/java/org/exist/xupdate/Modification.java</include>
                                 <include>src/test/java/org/exist/xupdate/RemoveAppendTest.java</include>
+                                <include>src/main/java/org/exist/xupdate/XUpdateProcessor.java</include>
+                                <include>src/test/java/org/exist/xupdate/XUpdateTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -1315,6 +1391,7 @@
                                 <exclude>src/test/java/org/exist/Indexer3Test.java</exclude>
                                 <exclude>src/test/java/org/exist/IndexerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/Namespaces.java</exclude>
+                                <exclude>src/test/java/org/exist/TestDataGenerator</exclude>
                                 <exclude>src/main/resources-filtered/org/exist/system.properties</exclude>
                                 <exclude>src/main/java/org/exist/backup/ExportGUI.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/ExportMain.java</exclude>
@@ -1359,6 +1436,7 @@
                                 <exclude>src/test/java/org/exist/collections/triggers/MessagesTrigger.java</exclude>
                                 <exclude>src/test/java/org/exist/collections/triggers/TriggerConfigTest.java</exclude>
                                 <exclude>src/main/java/org/exist/collections/triggers/XQueryStartupTrigger.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/triggers/XQueryTrigger.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configuration.java</exclude>
                                 <exclude>src/main/java/org/exist/config/ConfigurationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configurator.java</exclude>
@@ -1367,6 +1445,7 @@
                                 <exclude>src/main/java/org/exist/dom/QName.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</exclude>
@@ -1409,10 +1488,13 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/XMLDeclarationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/XMLUtil.java</exclude>
                                 <exclude>src/test/java/org/exist/http/AbstractHttpTest.java</exclude>
+                                <exclude>src/main/java/org/exist/http/AuditTrailSessionListener.java</exclude>
                                 <exclude>src/main/java/org/exist/http/Descriptor.java</exclude>
+                                <exclude>src/test/java/org/exist/http/RESTExternalVariableTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/RESTServer.java</exclude>
                                 <exclude>src/test/java/org/exist/http/RESTServiceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/AbstractExistHttpServlet.java</exclude>
+                                <exclude>src/main/java/org/exist/http/servlets/RedirectorServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/XQueryServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/servlets/XSLTServlet.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/ModuleCall.java</exclude>
@@ -1420,6 +1502,7 @@
                                 <exclude>src/main/java/org/exist/http/urlrewrite/Redirect.java</exclude>
                                 <exclude>src/test/java/org/exist/http/urlrewrite/RedirectTest.java</exclude>
                                 <exclude>src/main/java/org/exist/http/urlrewrite/RewriteConfig.java</exclude>
+                                <exclude>src/main/java/org/exist/http/urlrewrite/XQueryURLRewrite.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/Index.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/IndexController.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/IndexManager.java</exclude>
@@ -1445,6 +1528,7 @@
                                 <exclude>src/main/java/org/exist/management/impl/DatabaseMXBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/ExistMBean.java</exclude>
                                 <exclude>src/main/java/org/exist/management/impl/JMXAgent.java</exclude>
+                                <exclude>src/main/java/org/exist/management/impl/SanityReport.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLN.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLNFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/NodeId.java</exclude>
@@ -1456,6 +1540,7 @@
                                 <exclude>src/main/java/org/exist/repo/ExistRepository.java</exclude>
                                 <exclude>src/main/java/org/exist/resolver/ResolverFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/resolver/XercesXmlResolverAdapter.java</exclude>
+                                <exclude>src/main/java/org/exist/scheduler/UserXQueryJob.java</exclude>
                                 <exclude>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
                                 <exclude>src/test/java/org/exist/security/FnDocSecurityTest.java</exclude>
@@ -1501,7 +1586,9 @@
                                 <exclude>src/test/java/org/exist/storage/RecoverXmlTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoveryTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/Recovery2Test.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/RemoveCollectionTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/StorageAddress.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/XIncludeSerializerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/XQueryPool.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/blob/**</exclude>
                                 <exclude>src/test/java/org/exist/storage/blob/**</exclude>
@@ -1528,6 +1615,7 @@
                                 <exclude>src/test/java/org/exist/storage/journal/JournalXmlTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/journal/LsnTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/lock/CollectionLocksTest.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/lock/DeadlockTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/lock/DocumentLocksTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/EnsureContainerLocked.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/EnsureContainerUnlocked.java</exclude>
@@ -1550,8 +1638,12 @@
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedLockGroupDocumentLock.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/lock/ManagedSingleLockDocumentLock.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/lock/ProtectedModeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</exclude>
+                                <exclude>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/Serializer.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/serializers/XIncludeFilter.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</exclude>
                                 <exclude>src/main/java/org/exist/storage/sync/SyncTask.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/util/PauseFunction.java</exclude>
@@ -1564,6 +1656,7 @@
                                 <exclude>src/main/java/org/exist/test/DiffMatcher.java</exclude>
                                 <exclude>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</exclude>
                                 <exclude>src/test/java/org/exist/test/Util.java</exclude>
+                                <exclude>src/main/java/org/exist/test/runner/AbstractTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/ExtTestAssumptionFailedFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/ExtTestErrorFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/ExtTestFailureFunction.java</exclude>
@@ -1591,10 +1684,18 @@
                                 <exclude>src/main/java/org/exist/util/StringUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/UTF8.java</exclude>
                                 <exclude>src/main/java/org/exist/util/crypto/digest/DigestType.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/AbstractContentFile.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/ByteArrayContent.java</exclude>
+                                <exclude>src/test/java/org/exist/util/io/ByteArrayContentTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/ContentFile.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/ContentFilePoolObjectFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/util/io/FilterInputStreamCacheMonitorTest.java</exclude>
                                 <exclude>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/VirtualTempPath.java</exclude>
+                                <exclude>src/test/java/org/exist/util/io/VirtualTempPathTest.java</exclude>
                                 <exclude>src/test/java/org/exist/util/pool/NodePoolTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/AttrList.java</exclude>
+                                <exclude>src/main/java/org/exist/util/serializer/DOMSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/DOMStreamer.java</exclude>
                                 <exclude>src/main/java/org/exist/util/serializer/EXISerializer.java</exclude>
                                 <exclude>src/test/java/org/exist/util/serializer/HTML5WriterTest.java</exclude>
@@ -1614,20 +1715,33 @@
                                 <exclude>src/test/java/org/exist/util/sorters/SortTestNodeId.java</exclude>
                                 <exclude>src/test/resources/org/exist/validation/catalog.xml</exclude>
                                 <exclude>src/test/java/org/exist/validation/CollectionConfigurationValidationModeTest.java</exclude>
+                                <exclude>src/main/java/org/exist/validation/internal/DatabaseResources.java</exclude>
+                                <exclude>src/main/resources/org/exist/validation/internal/query/find_catalogs_with_dtd.xq</exclude>
+                                <exclude>src/main/resources/org/exist/validation/internal/query/find_schema_by_targetNamespace.xq</exclude>
                                 <exclude>src/main/java/org/exist/validation/resolver/SearchResourceResolver.java</exclude>
                                 <exclude>src/test/java/org/exist/w3c/tests/TestCase.java</exclude>
                                 <exclude>src/main/java/org/exist/webstart/JnlpJarFiles.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/AbstractRemoteResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ContentAsDOMTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/CreateCollectionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/EXistXMLSerializeTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/EXistResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/IndexingTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/LocalBinaryResource.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalResourceSet.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalXMLResource.java</exclude>
-                                <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/LocalXPathQueryService.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteBinaryResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/RemoteDOMTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteResourceSet.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteRestoreService.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteXMLResource.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/RemoteXPathQueryService.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/ResourceTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/SerializationTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/TestEXistXMLSerialize.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/TreeLevelOrderTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xmldb/XMLDBExternalVariableTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/AbstractConcurrentTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/ComplexUpdateTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/ConcurrentAttrUpdateTest.java</exclude>
@@ -1644,19 +1758,29 @@
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/action/MultiResourcesAction.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderSerializer.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
+                                <exclude>src/test/java/org/exist/xmlrpc/QuerySessionTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/RpcAPI.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/AbstractInternalModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CardinalityTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CastExpressionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CleanupTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Context.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DeferredFunctionCall.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/DynamicVariable.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/ExternalModuleImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Function.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/FunctionFactory.java</exclude>
@@ -1668,22 +1792,35 @@
                                 <exclude>src/test/java/org/exist/xquery/JavaBindingTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/LocationStep.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Materializable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Module.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NamedFunctionReference.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/NodeTypeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Option.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/StoredModuleTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/TryCatchExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/UserDefinedFunction.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Variable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/VariableDeclaration.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/VariableImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/VariableReference.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WatchdogTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/WindowClauseTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XmldbBinariesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XPathOpOrSpecialCaseTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/XPathQueryTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XPathUtil.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/XPathUtilTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/XQueryContext.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryContextAttributesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryFunctionsTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/XQueryProcessingInstruction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryProcessingInstructionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/XQueryTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/XQueryUpdateTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/array/ArrayType.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/ExtCollection.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/DocTest.java</exclude>
@@ -1716,6 +1853,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDistinctValues.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDoc.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunDocAvailable.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunElementWithId.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunEmpty.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunEncodeForURI.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunEndsWith.java</exclude>
@@ -1798,17 +1936,21 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/map/MapExpr.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/map/MapType.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/request/GetHeaderTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/AccountMetadataFunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GetPermissionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/securitymanager/IdFunctionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChmodTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChownTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/SecurityManagerTestUtil.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AbstractSessionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AttributeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/system/GetRunningXQueriesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Shutdown.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/SystemModule.java</exclude>
@@ -1816,13 +1958,21 @@
                                 <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/transform/Transform.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/transform/TransformTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/Eval.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/FunctionFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/LogFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/ModuleInfo.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JaxpDtdCatalogTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JaxpParseTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JaxpXsdCatalogTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/validate/JaxvTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JingOnvdlTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JingRelaxNgTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JingSchematronTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/validate/JingXsdTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/AbstractXMLDBTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</exclude>
@@ -1831,6 +1981,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/xquery3/TryCatchTest.java</exclude>
                                 <exclude>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</exclude>
                                 <exclude>src/main/java/org/exist/xquery/pragmas/TimePragma.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/update/AbstractUpdateTest.java</exclude>
@@ -1845,6 +1996,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/AbstractTimeRelatedTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AnyURIValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ArrayListValueSequence.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/ArrayWrapper.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/AtomicValueComparator.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/Base64BinaryValueTypeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/BifurcanMapTest.java</exclude>
@@ -1886,7 +2038,11 @@
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Conditional.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Modification.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/RemoveAppendTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>
+                                <exclude>src/test/java/org/exist/xupdate/XUpdateTest.java</exclude>
 
                                 <!--
                                     Derivative work licensed under dbXML 1.0 and LGPL 2.1
@@ -2131,6 +2287,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                                 <ignoredUnusedDeclaredDependency>org.eclipse.jetty:jetty-security:jar:${jetty.version}</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>xyz.elemental:exist-core-build-tools:jar:${project.version}</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>${project.groupId}:exist-jetty-config:jar:${project.version}</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.fasterxml:aalto-xml:jar</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
 
                             <ignoredNonTestScopedDependencies>

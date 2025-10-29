@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -40,10 +64,17 @@ import java.util.Optional;
  */
 public class VariableDeclaration extends AbstractExpression implements RewritableExpression {
 
-    final QName qname;
-    Optional<Expression> expression;
-    SequenceType sequenceType = null;
-    boolean analyzeDone = false;
+    private final QName qname;
+    private Optional<Expression> expression;
+    private SequenceType sequenceType = null;
+    private boolean external = false;
+
+    /**
+     * This is needed as calls made in {@link #analyze(AnalyzeContextInfo)} can cause
+     * other expressions to ask for this to be analyzed.
+     * This flag is used to prevent re-entry and therefore prevents a potential {@link StackOverflowError}.
+     */
+    private AnalyzeState analyzeState = AnalyzeState.UNANALYZED;
 
     public VariableDeclaration(final XQueryContext context, final QName qname, final Expression expr) {
         super(context);
@@ -68,27 +99,68 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
         return sequenceType;
     }
 
+    /**
+     * Is this variable declared as external?
+     *
+     * @return true if the variable is declared external, false otherwise.
+     */
+    public boolean isExternal() {
+        return external;
+    }
+
+    /**
+     * Set whether this variable is declared as external.
+     *
+     * @param external true if the variable is declared external, false otherwise.
+     */
+    public void setExternal(final boolean external) {
+        this.external = external;
+    }
+
     @Override
     public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
-        contextInfo.setParent(this);
-        final Variable var = new VariableImpl(qname);
-        var.setIsInitialized(false);
-
-        if (!analyzeDone) {
-            final Module[] modules = context.getModules(qname.getNamespaceURI());
-
-            // can we find a module which declared this variable
-            final Module myModule = findDeclaringModule(modules);
-
-            if (myModule != null) {
-                // NOTE: duplicate var declaration is handled in the XQuery tree parser, and may throw XQST0049
-                myModule.declareVariable(var);
-            } else {
-                // NOTE: duplicate var declaration is handled in the XQuery tree parser, and may throw XQST0049
-                context.declareGlobalVariable(var);
-            }
-            analyzeDone = true;
+        if (analyzeState == AnalyzeState.ANALYZING) {
+            return;
         }
+        analyzeState = AnalyzeState.ANALYZING;
+
+        contextInfo.setParent(this);
+
+        // can we find a module which declared this variable
+        final Module[] modules = context.getModules(qname.getNamespaceURI());
+        @Nullable final Module myModule = findDeclaringModule(modules);
+
+        @Nullable Variable var = null;
+        if (isExternal()) {
+            // As this is an external variable, there may already be a value get for the variable in the context
+            if (myModule != null) {
+                if (myModule.isVarSet(qname)) {
+                    var = myModule.resolveVariable(qname);
+                } else {
+                    var = null;
+                }
+            } else {
+                var = context.resolveGlobalVariable(qname);
+            }
+        }
+
+        if (var == null) {
+            var = new VariableImpl(qname);
+            var.setExternal(external);
+            var.setIsInitialized(false);
+
+            if (analyzeState != AnalyzeState.ANALIZED) {
+                if (myModule != null) {
+                    // NOTE: duplicate var declaration is handled in the XQuery tree parser, and may throw XQST0049
+                    myModule.declareVariable(var);
+                } else {
+                    // NOTE: duplicate var declaration is handled in the XQuery tree parser, and may throw XQST0049
+                    context.declareGlobalVariable(var);
+                }
+            }
+        }
+
+        analyzeState = AnalyzeState.ANALIZED;
         analyzeExpression(contextInfo);
         var.setIsInitialized(true);
     }
@@ -146,11 +218,12 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
                     final Sequence seq = expression.get().eval(contextSequence, null);
                     final Variable var;
                     if (myModule != null) {
-                        var = myModule.declareVariable(qname, seq);
+                        var = myModule.declareVariable(qname, external, seq);
                         var.setSequenceType(sequenceType);
                         var.checkType();
                     } else {
                         var = new VariableImpl(qname);
+                        var.setExternal(external);
                         var.setValue(seq);
                         var.setSequenceType(sequenceType);
                         var.checkType();
@@ -162,15 +235,15 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
                         context.getProfiler().end(this, "", seq);
                     }
                 } else {
-                    // external variable without default
+                    // external variable without default, try and get its value from the external environment (should have already been set in the global context)
                     final Variable external = context.resolveGlobalVariable(qname);
                     if (external == null) {
                         // If no value is provided for the variable by the external environment, and VarDefaultValue
                         // is not specified, then a dynamic error is raised [err:XPDY0002]
-                        throw new XPathException(this, ErrorCodes.XPDY0002, "no value specified for external variable " +
-                                qname);
+                        throw new XPathException(this, ErrorCodes.XPDY0002, "no value specified for external variable " + qname);
                     }
                     external.setSequenceType(sequenceType);
+                    external.checkType();
 
                     if (myModule != null) {
                         // declare on module
@@ -274,7 +347,13 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
         super.resetState(postOptimization);
         expression.ifPresent(e -> e.resetState(postOptimization));
         if (!postOptimization) {
-            analyzeDone = false;
+            analyzeState = AnalyzeState.UNANALYZED;
         }
+    }
+
+    private enum AnalyzeState {
+        UNANALYZED,
+        ANALYZING,
+        ANALIZED
     }
 }

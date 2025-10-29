@@ -264,6 +264,7 @@ public class LoadXQueryModule extends BasicFunction {
             }
 
             final Variable var = new VariableImpl(((QNameValue) entry.key()).getQName());
+            var.setExternal(true);
             var.setValue(entry.value());
             setter.accept(var);
         }

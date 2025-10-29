@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.test.runner;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
@@ -40,6 +63,7 @@ import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.runner.Runner;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,7 +95,7 @@ public abstract class AbstractTestRunner extends Runner {
             final XQueryPool queryPool = brokerPool.getXQueryPool();
             CompiledXQuery compiledQuery = queryPool.borrowCompiledXQuery(broker, query);
 
-            XQueryContext context = null;
+            @Nullable XQueryContext context = null;
             try {
                 if (compiledQuery == null) {
                     context = new XQueryContext(broker.getBrokerPool());
@@ -91,12 +115,6 @@ public abstract class AbstractTestRunner extends Runner {
                     }
                 }
 
-                // declare variables for the query
-                for(final Function<XQueryContext, Tuple2<String, Object>> externalVariableBinding : externalVariableBindings) {
-                    final Tuple2<String, Object> nameValue = externalVariableBinding.apply(context);
-                    context.declareVariable(nameValue._1, nameValue._2);
-                }
-
                 final XQuery xqueryService = brokerPool.getXQueryService();
 
                 // compile or update the context
@@ -107,14 +125,21 @@ public abstract class AbstractTestRunner extends Runner {
                     context.getWatchDog().reset();
                 }
 
+                // declare variables for the query
+                for(final Function<XQueryContext, Tuple2<String, Object>> externalVariableBinding : externalVariableBindings) {
+                    final Tuple2<String, Object> nameValue = externalVariableBinding.apply(context);
+                    context.declareVariable(nameValue._1, true, nameValue._2);
+                }
+
                 return xqueryService.execute(broker, compiledQuery, null);
 
             } finally {
                 if (context != null) {
                     context.runCleanupTasks();
                 }
-
-                queryPool.returnCompiledXQuery(query, compiledQuery);
+                if (compiledQuery != null) {
+                    queryPool.returnCompiledXQuery(query, compiledQuery);
+                }
             }
         }
     }

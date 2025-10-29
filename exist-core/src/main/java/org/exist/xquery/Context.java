@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -495,16 +519,62 @@ public interface Context {
      * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
      *
      * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
-     * @param value a Java object, representing the fixed value of the variable
+     * @param value a Java object, representing the fixed value of the variable.
      *
-     * @return the created Variable object
+     * @return the created Variable object.
      *
      * @throws XPathException if the value cannot be converted into a known XPath value or the variable QName
      *     references an unknown namespace-prefix.
      */
     Variable declareVariable(String qname, Object value) throws XPathException;
 
-    Variable declareVariable(QName qn, Object value) throws XPathException;
+    /**
+     * Declare a user-defined variable.
+     *
+     * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
+     *
+     * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
+     * @param value a Java object, representing the fixed value of the variable. A Java Array or List will
+     *              be interpreted as an XDM Sequence.
+     *
+     * @return the created Variable object.
+     *
+     * @throws XPathException if the value cannot be converted into a known XPath value or the variable QName
+     *     references an unknown namespace-prefix.
+     */
+    Variable declareVariable(QName qname, Object value) throws XPathException;
+
+    /**
+     * Declare a user-defined variable.
+     *
+     * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
+     *
+     * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
+     * @param external true if the variable is external, false otherwise.
+     * @param value a Java object, representing the fixed value of the variable.
+     *
+     * @return the created Variable object.
+     *
+     * @throws XPathException if the value cannot be converted into a known XPath value or the variable QName
+     *     references an unknown namespace-prefix.
+     */
+    Variable declareVariable(String qname, boolean external, Object value) throws XPathException;
+
+    /**
+     * Declare a user-defined variable.
+     *
+     * The value argument is converted into an XPath value (@see XPathUtil#javaObjectToXPath(Object)).
+     *
+     * @param qname the qualified name of the new variable. Any namespaces should have been declared before.
+     * @param external true if the variable is external, false otherwise.
+     * @param value a Java object, representing the fixed value of the variable.
+     *
+     * @return the created Variable object.
+     *
+     * @throws XPathException if the value cannot be converted into a known XPath value or the variable QName
+     *     references an unknown namespace-prefix.
+     */
+    Variable declareVariable(QName qname, boolean external, Object value) throws XPathException;
 
     /**
      * Try to resolve a variable.

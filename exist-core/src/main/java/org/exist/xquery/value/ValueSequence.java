@@ -796,7 +796,14 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
                 result.append(", ");
             }
             moreThanOne = true;
+            final boolean isString = Type.subTypeOf(next.getType(), Type.STRING);
+            if (isString) {
+                result.append('"');
+            }
             result.append(next.toString());
+            if (isString) {
+                result.append('"');
+            }
         }
         result.append(")");
         return result.toString();

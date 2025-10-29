@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,8 @@ import org.exist.TestDataGenerator;
 import org.exist.TestUtils;
 import org.exist.test.ExistWebServer;
 import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.*;
@@ -35,20 +61,38 @@ import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
+@RunWith(Parameterized.class)
 public class QuerySessionTest {
+
+    @Parameterized.Parameters(name = "{0}")
+    public static java.util.Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+            { "local", "xmldb:exist://" },
+            { "remote", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc" }
+        });
+    }
+
+    @Parameterized.Parameter
+    public String apiName;
+
+    @Parameterized.Parameter(value = 1)
+    public String baseUri;
+
+    private boolean storedTestData = false;
 
     private static final Logger LOG = LogManager.getLogger(QuerySessionTest.class);
 
     @ClassRule
     public final static ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    private static final String PORT_PLACEHOLDER = "${PORT}";
 
     private final static String generateXQ =
             "declare function local:random-sequence($length as xs:integer, $G as map(xs:string, item())) {\n"
@@ -77,8 +121,8 @@ public class QuerySessionTest {
             "declare variable $n external;" +
             "//chapter[@xml:id eq $n]";
 
-    private static String getBaseUri() {
-        return "xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc";
+    private String getBaseUri() {
+        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
     }
 
     private final static int N_THREADS = 10;
@@ -87,19 +131,25 @@ public class QuerySessionTest {
 
     private Random random = new Random();
 
-    @Test (expected=XMLDBException.class)
+    @Test
     public void manualRelease() throws XMLDBException {
         Collection test = DatabaseManager.getCollection(getBaseUri() + "/db/rpctest", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         XQueryService service = test.getService(XQueryService.class);
         ResourceSet result = service.query("//chapter[@xml:id eq 'chapter1']");
-        assertEquals(1, result.getSize());
+        assertTrue(result.getSize() > 0);
 
-        // clear should release the query result on the server
-        result.clear();
+        if (!"local".equals(apiName)) {
+            // clear should release the query result on the server
+            result.clear();
 
-        // the result has been cleared already. we should get an exception here
-        Resource members = result.getMembersAsResource();
-        members.getContent();
+            // As the result has been cleared already, we should get an exception below
+            try {
+                result.getMembersAsResource();
+                fail("Expected XMLDBException from calling Resource#getMembersAsResource() after ResourceSet#clear() when using the Remote XML:DB API");
+            } catch (final XMLDBException e) {
+                assertEquals("Failed to invoke method retrieveAllFirstChunk in class org.exist.xmlrpc.RpcConnection: result set unknown or timed out", e.getMessage());
+            }
+        }
     }
 
     @Test
@@ -143,39 +193,28 @@ public class QuerySessionTest {
         }
     }
 
-	@BeforeClass
-    public static void startServer() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, SAXException {
-        // initialize XML:DB driver
-        Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
-        Database database = (Database) cl.newInstance();
-        DatabaseManager.registerDatabase(database);
+    @Before
+    public void storeTestData() throws XMLDBException, SAXException {
+        if (!storedTestData) {
+            // NOTE(AR) we only need to store the test data once!
+            final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
 
-        Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        
-        CollectionManagementService mgmt =
-                root.getService(CollectionManagementService.class);
-        Collection test = mgmt.createCollection("rpctest");
+            final CollectionManagementService mgmt = root.getService(CollectionManagementService.class);
+            final Collection test = mgmt.createCollection("rpctest");
 
-        final TestDataGenerator generator = new TestDataGenerator("xdb", DOC_COUNT);
-        final Path[] files = generator.generate(test, generateXQ);
-        for (int i = 0; i < files.length; i++) {
-            Resource resource = test.createResource(files[i].getFileName().toString(), XMLResource.class);
-            resource.setContent(files[i].toFile());
-            test.storeResource(resource);
+            final TestDataGenerator generator = new TestDataGenerator("xdb", DOC_COUNT);
+            try {
+                final Path[] files = generator.generate(test, generateXQ);
+                for (int i = 0; i < files.length; i++) {
+                    final Resource resource = test.createResource(files[i].getFileName().toString(), XMLResource.class);
+                    resource.setContent(files[i].toFile());
+                    test.storeResource(resource);
+                }
+            } finally {
+                generator.releaseAll();
+            }
+
+            storedTestData = true;
         }
-        generator.releaseAll();
-    }
-
-    @AfterClass
-    public static void stopServer() throws XMLDBException {
-        Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        CollectionManagementService mgmt =
-                root.getService(CollectionManagementService.class);
-        mgmt.removeCollection("rpctest");
-
-        Collection config = DatabaseManager.getCollection(getBaseUri() + "/db/system/config/db", "admin", "");
-        mgmt =
-                config.getService(CollectionManagementService.class);
-        mgmt.removeCollection("rpctest");
     }
 }

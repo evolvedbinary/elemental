@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -178,10 +202,32 @@ public abstract class AbstractInternalModule implements InternalModule {
      */
     @Override
     public Variable declareVariable(final QName qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    /**
+     * Declares a variable defined by the module.
+     * <p>
+     * NOTE: this should not be called from the constructor of a module
+     * otherwise when {@link #reset(XQueryContext, boolean)} is called
+     * with {@code keepGlobals = false}, the variables will be removed
+     * from the module. Which means they will not be available
+     * for subsequent re-executions of a cached XQuery.
+     * Instead, module level variables should be initialised
+     * in {@link #prepare(XQueryContext)}.
+     *
+     * @param qname The name of the variable
+     * @param external true if the variable is external, false otherwise.
+     * @param value The Java value of the variable, will be converted to an XDM type.
+     * @return the variable
+     */
+    @Override
+    public Variable declareVariable(final QName qname, final boolean external, final Object value) throws XPathException {
         final Sequence val = XPathUtil.javaObjectToXPath(value, null, null);
         Variable var = mGlobalVariables.get(qname);
         if (var == null){
             var = new VariableImpl(qname);
+            var.setExternal(external);
             mGlobalVariables.put(qname, var);
         }
         var.setValue(val);
@@ -222,6 +268,11 @@ public abstract class AbstractInternalModule implements InternalModule {
 
     @Override
     public boolean isVarDeclared(final QName qname) {
+        return isVarSet(qname);
+    }
+
+    @Override
+    public boolean isVarSet(final QName qname) {
         return mGlobalVariables.get(qname) != null;
     }
 

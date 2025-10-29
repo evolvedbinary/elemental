@@ -85,8 +85,6 @@ public class TestDataGenerator {
             final DocumentSet docs = collection.allDocs(broker, new DefaultDocumentSet(), true);
             final XQuery service = broker.getBrokerPool().getXQueryService();
             final XQueryContext context = new XQueryContext(broker.getBrokerPool());
-            context.declareVariable("filename", "");
-            context.declareVariable("count", "0");
             context.setStaticallyKnownDocuments(docs);
 
             final String query = IMPORT + xqueryContent;
@@ -96,8 +94,8 @@ public class TestDataGenerator {
             for (int i = 0; i < count; i++) {
                 generatedFiles[i] = Files.createTempFile(prefix, ".xml");
 
-                context.declareVariable("filename", generatedFiles[i].getFileName().toString());
-                context.declareVariable("count", Integer.valueOf(i));
+                context.declareVariable("filename", true, generatedFiles[i].getFileName().toString());
+                context.declareVariable("count", true, Integer.valueOf(i));
                 final Sequence results = service.execute(broker, compiled, Sequence.EMPTY_SEQUENCE);
 
                 final Serializer serializer = broker.borrowSerializer();

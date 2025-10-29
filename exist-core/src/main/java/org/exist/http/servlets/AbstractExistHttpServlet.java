@@ -85,6 +85,8 @@ public abstract class AbstractExistHttpServlet extends HttpServlet {
 	private static final long serialVersionUID = 804071766041263220L;
 
 	public final static String DEFAULT_ENCODING = UTF_8.name();
+
+    protected static final String XQUERY_CACHED_RESPONSE_HEADER = "X-XQuery-Cached";
     
     private BrokerPool pool;
     private String formEncoding = DEFAULT_ENCODING;

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -42,6 +66,8 @@ import org.exist.xquery.value.Sequence;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -90,8 +116,14 @@ public class AuditTrailSessionListener implements HttpSessionListener {
         if (xqueryResourcePath != null && xqueryResourcePath.length() > 0) {
             xqueryResourcePath = xqueryResourcePath.trim();
 
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
+            @Nullable Source source = null;
+
             try {
                 final BrokerPool pool = BrokerPool.getInstance();
+                final XQueryPool xqpool = pool.getXQueryPool();
+
                 final Subject sysSubject = pool.getSecurityManager().getSystemSubject();
 
                 try (final DBBroker broker = pool.get(Optional.of(sysSubject))) {
@@ -102,10 +134,8 @@ public class AuditTrailSessionListener implements HttpSessionListener {
 
                     final XmldbURI pathUri = XmldbURI.create(xqueryResourcePath);
 
+                    try (final LockedDocument lockedResource = broker.getXMLResource(pathUri, LockMode.READ_LOCK)) {
 
-                    try(final LockedDocument lockedResource = broker.getXMLResource(pathUri, LockMode.READ_LOCK)) {
-
-                        final Source source;
                         if (lockedResource != null) {
                             if (LOG.isTraceEnabled()) {
                                 LOG.trace("Resource [{}] exists.", xqueryResourcePath);
@@ -116,16 +146,13 @@ public class AuditTrailSessionListener implements HttpSessionListener {
                             return;
                         }
 
-
                         final XQuery xquery = pool.getXQueryService();
                         if (xquery == null) {
                             LOG.error("broker unable to retrieve XQueryService");
                             return;
                         }
 
-                        final XQueryPool xqpool = pool.getXQueryPool();
-                        CompiledXQuery compiled = xqpool.borrowCompiledXQuery(broker, source);
-                        final XQueryContext context;
+                        compiled = xqpool.borrowCompiledXQuery(broker, source);
                         if (compiled == null) {
                             context = new XQueryContext(broker.getBrokerPool());
                         } else {
@@ -144,17 +171,19 @@ public class AuditTrailSessionListener implements HttpSessionListener {
 
                         final Properties outputProperties = new Properties();
 
-                        try {
-                            final long startTime = System.currentTimeMillis();
-                            final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
-                            final long queryTime = System.currentTimeMillis() - startTime;
-                            if (LOG.isTraceEnabled()) {
-                                LOG.trace("XQuery execution results: {} in {}ms.", result.toString(), queryTime);
-                            }
-                        } finally {
-                            context.runCleanupTasks();
-                            xqpool.returnCompiledXQuery(source, compiled);
+                        final long startTime = System.currentTimeMillis();
+                        final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
+                        final long queryTime = System.currentTimeMillis() - startTime;
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("XQuery execution results: {} in {}ms.", result.toString(), queryTime);
                         }
+                    }
+                } finally {
+                    if (context != null) {
+                        context.runCleanupTasks();
+                    }
+                    if (compiled != null && source != null) {
+                        xqpool.returnCompiledXQuery(source, compiled);
                     }
                 }
 

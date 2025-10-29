@@ -835,7 +835,7 @@ public class XQueryContext implements BinaryValueManager, Context {
      *
      * @return The next unique expression id.
      */
-    int nextExpressionId() {
+    public int nextExpressionId() {
         return expressionCounter++;
     }
 
@@ -1464,7 +1464,14 @@ public class XQueryContext implements BinaryValueManager, Context {
         cachedUriCollectionResults.clear();
 
         if (!keepGlobals) {
-            globalVariables.clear();
+            for (final Variable globalVariable : globalVariables.values()) {
+                if (globalVariable.isExternal()) {
+                    if (globalVariable instanceof VariableImpl) {
+                        ((VariableImpl) globalVariable).destroy(this, null);
+                    }
+                    globalVariable.setValue(null);
+                }
+            }
         }
 
         if (dynamicOptions != null) {
@@ -1931,18 +1938,57 @@ public class XQueryContext implements BinaryValueManager, Context {
         globalVariables.remove(name);
     }
 
+    /**
+     * Determines if a Global External Variable is declared.
+     *
+     * @param variableName The name of the variable.
+     *
+     * @return true, if the variable is declared (in either this module or an imported module), or false if the variable is undeclared.
+     */
+    public boolean isExternalVariableDeclared(final QName variableName) {
+        for (final Map.Entry<QName, Variable> mainGlobalVariable : globalVariables.entrySet()) {
+            if (mainGlobalVariable.getValue().isExternal() && mainGlobalVariable.getKey().equals(variableName)) {
+                return true;
+            }
+        }
+
+        for (final Module[] namespaceModules : modules.values()) {
+            for (final Module namespaceModule : namespaceModules) {
+                if (!namespaceModule.isInternalModule()) {
+                    for (final VariableDeclaration libGlobalVariable : ((ExternalModule) namespaceModule).getVariableDeclarations()) {
+                        if (libGlobalVariable.isExternal() && libGlobalVariable.getName().equals(variableName)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public Variable declareVariable(final String qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    @Override
+    public Variable declareVariable(final String qname, final boolean external, final Object value) throws XPathException {
         try {
-            return declareVariable(QName.parse(this, qname, null), value);
+            return declareVariable(QName.parse(this, qname, null), external, value);
         } catch (final QName.IllegalQNameException e) {
             throw new XPathException(rootExpression, ErrorCodes.XPST0081, "No namespace defined for prefix: " + qname);
         }
     }
 
     @Override
-    public Variable declareVariable(final QName qn, final Object value) throws XPathException {
-        @Nullable final Module[] modules = getModules(qn.getNamespaceURI());
+    public Variable declareVariable(final QName qname, final Object value) throws XPathException {
+        return declareVariable(qname, false, value);
+    }
+
+    @Override
+    public Variable declareVariable(final QName qname, final boolean external, final Object value) throws XPathException {
+        @Nullable final Module[] modules = getModules(qname.getNamespaceURI());
 
         if (modules != null && modules.length > 0) {
             if (modules.length > 1) {
@@ -1950,17 +1996,18 @@ public class XQueryContext implements BinaryValueManager, Context {
                 throw new IllegalStateException("There is more than one module, but the variable can only be declared in one!");
             }
 
-            return modules[0].declareVariable(qn, value);
+            return modules[0].declareVariable(qname, external, value);
         }
 
         final Sequence val = XPathUtil.javaObjectToXPath(value, this, rootExpression);
 
         final Variable var;
-        if (globalVariables.containsKey(qn)) {
-            var = globalVariables.get(qn);
+        if (globalVariables.containsKey(qname)) {
+            var = globalVariables.get(qname);
         } else {
-            var = new VariableImpl(qn);
-            globalVariables.put(qn, var);
+            var = new VariableImpl(qname);
+            var.setExternal(external);
+            globalVariables.put(qname, var);
         }
 
         // deliberate duplication of code to return early
@@ -1982,7 +2029,7 @@ public class XQueryContext implements BinaryValueManager, Context {
         //Type.EMPTY is *not* a subtype of other types ; checking cardinality first
         if (!var.getSequenceType().getCardinality().isSuperCardinalityOrEqualOf(actualCardinality)) {
             throw new XPathException(rootExpression, ErrorCodes.XPTY0004,
-                    "XPTY0004: Invalid cardinality for variable $" + var.getQName() + ". " +
+                    "Invalid cardinality for variable $" + var.getQName() + ". " +
                             "Expected " + var.getSequenceType().getCardinality().getHumanDescription() + ", " +
                             "got " + actualCardinality.getHumanDescription());
         }
@@ -1990,7 +2037,7 @@ public class XQueryContext implements BinaryValueManager, Context {
         //TODO : ignore nodes right now ; they are returned as xs:untypedAtomicType
         if (!val.isEmpty() && !Type.subTypeOf(val.getItemType(), var.getSequenceType().getPrimaryType())) {
             throw new XPathException(rootExpression, ErrorCodes.XPTY0004,
-                    "XPTY0004: Invalid type for variable $" + var.getQName() + ". " +
+                    "Invalid type for variable $" + var.getQName() + ". " +
                             "Expected " + Type.getTypeName(var.getSequenceType().getPrimaryType()) + ", " +
                             "got " + Type.getTypeName(val.getItemType()));
         }

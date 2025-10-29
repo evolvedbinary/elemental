@@ -45,17 +45,16 @@
  */
 package org.exist.xquery;
 
-import java.io.IOException;
-
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
+import org.xmlunit.matchers.CompareMatcher;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
+import static org.junit.Assert.assertThat;
+
 /**
  *
  * @author jimfuller
@@ -66,15 +65,15 @@ public class XQueryProcessingInstructionTest {
     public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
 
     @Test
-    public void testPI() throws XPathException, SAXException, IOException, XMLDBException {
+    public void testPI() throws XMLDBException {
         final String query = "let $xml := <doc>" +
                 "<?pi test?>" +
                 "This is a p." +
                 "</doc>" +
                 "return\n" +
                 "$xml";
-        final ResourceSet result = existEmbeddedServer.executeQuery(query);
-        final String r = (String) result.getResource(0).getContent();
-        assertXMLEqual(r, "<doc><?pi test?>This is a p.</doc>");
+        final ResourceSet results = existEmbeddedServer.executeQuery(query);
+        final String result = (String) results.getResource(0).getContent();
+        assertThat(result, CompareMatcher.isIdenticalTo("<doc><?pi test?>This is a p.</doc>"));
     }
 }

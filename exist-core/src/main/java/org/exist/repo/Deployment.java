@@ -58,6 +58,7 @@ import org.exist.security.*;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.source.FileSource;
+import org.exist.source.Source;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
@@ -710,33 +711,62 @@ public class Deployment {
             LOG.warn("The XQuery resource specified in the {} was not found for EXPath Package: '{}'", purpose.getPurposeString(), pkgName);
             return Sequence.EMPTY_SEQUENCE;
         }
-        final XQuery xqs = broker.getBrokerPool().getXQueryService();
-        final XQueryContext ctx = new XQueryContext(broker.getBrokerPool());
-        ctx.declareVariable("dir", tempDir.toAbsolutePath().toString());
-        final Optional<Path> home = broker.getConfiguration().getExistHome();
-        if(home.isPresent()) {
-            ctx.declareVariable("home", home.get().toAbsolutePath().toString());
-        }
 
-        if (targetCollection != null) {
-            ctx.declareVariable("target", targetCollection.toString());
-            ctx.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
-        } else
-            {ctx.declareVariable("target", Sequence.EMPTY_SEQUENCE);}
-        if (QueryPurpose.PREINSTALL == purpose) {
-            // when running pre-setup scripts, base path should point to directory
-            // because the target collection does not yet exist
-            ctx.setModuleLoadPath(tempDir.toAbsolutePath().toString());
-        }
+        final Source source = new FileSource(xquery, false);
 
-        CompiledXQuery compiled;
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
-            compiled = xqs.compile(ctx, new FileSource(xquery, false));
-            return xqs.execute(broker, compiled, null);
+            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, source);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+
+            if (targetCollection != null) {
+                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
+            }
+            if (QueryPurpose.PREINSTALL == purpose) {
+                // when running pre-setup scripts, base path should point to directory
+                // because the target collection does not yet exist
+                context.setModuleLoadPath(tempDir.toAbsolutePath().toString());
+            }
+
+            // Compile query
+            final XQuery xqueryService = broker.getBrokerPool().getXQueryService();
+            if (compiled == null) {
+                compiled = xqueryService.compile(context, source);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            // Set variables
+            context.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
+            final Optional<Path> home = broker.getConfiguration().getExistHome();
+            if (home.isPresent()) {
+                context.declareVariable("home", true, home.get().toAbsolutePath().toString());
+            }
+            if (targetCollection != null) {
+                context.declareVariable("target", true, targetCollection.toString());
+            } else {
+                context.declareVariable("target", true, Sequence.EMPTY_SEQUENCE);
+            }
+
+            // Execute query
+            return xqueryService.execute(broker, compiled, null);
+
         } catch (final PermissionDeniedException e) {
             throw new PackageException(e.getMessage(), e);
         } finally {
-            ctx.runCleanupTasks();
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(source, compiled);
+            }
         }
     }
 

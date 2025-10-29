@@ -1603,28 +1603,43 @@ public class ImportModuleTest {
             return op.apply(compiledQuery);
         } finally {
             if (compiledQuery != null) {
+                if (compiledQuery.getContext() != null) {
+                    compiledQuery.getContext().runCleanupTasks();
+                }
                 xqueryPool.returnCompiledXQuery(source, compiledQuery);
             }
         }
     }
 
     private CompiledXQuery compileQuery(final DBBroker broker, final XQuery xqueryService, final XQueryPool xqueryPool, final Source query) throws PermissionDeniedException, XPathException, IOException {
-        CompiledXQuery compiled = xqueryPool.borrowCompiledXQuery(broker, query);
-        XQueryContext context;
-        if (compiled == null) {
-            context = new XQueryContext(broker.getBrokerPool());
-        } else {
-            context = compiled.getContext();
-            context.prepareForReuse();
-        }
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
+        try {
+            compiled = xqueryPool.borrowCompiledXQuery(broker, query);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
 
-        if (compiled == null) {
-            compiled = xqueryService.compile(context, query);
-        } else {
-            compiled.getContext().updateContext(context);
-            context.getWatchDog().reset();
-        }
+            if (compiled == null) {
+                compiled = xqueryService.compile(context, query);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
 
-        return compiled;
+            return compiled;
+
+        } catch (final PermissionDeniedException | XPathException | IOException e) {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                xqueryPool.returnCompiledXQuery(query, compiled);
+            }
+            throw e;
+        }
     }
 }
