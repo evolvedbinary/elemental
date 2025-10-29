@@ -868,7 +868,7 @@
                                 <include>src/test/java/org/exist/deadlocks/GetReleaseBrokerDeadlocksTest.java</include>
                                 <include>src/main/java/org/exist/dom/NodeListImpl.java</include>
                                 <include>src/main/java/org/exist/dom/QName.java</include>
-                                <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
@@ -879,9 +879,10 @@
                                 <include>src/main/java/org/exist/dom/memtree/ElementImpl.java</include>
                                 <include>src/test/java/org/exist/dom/memtree/MemtreeInXQueryTest.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/MemTreeBuilder.java</include>
-                                <exclude>src/main/java/org/exist/dom/memtree/NamespaceNode.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/NamespaceNode.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/NodeImpl.java</include>
-                                <exclude>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/AbstractArrayNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/AttrImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/BinaryDocument.java</include>
@@ -892,7 +893,9 @@
                                 <include>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/DocumentSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/ElementImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeProxy.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/NodeSet.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/NodeTest.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/LockToken.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/PersistentDomTest.java</include>
@@ -1466,6 +1469,7 @@
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/ElementReferenceImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/ProcessingInstructionReferenceImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/TextReferenceImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/AbstractArrayNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/AttrImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/BinaryDocument.java</exclude>
@@ -1476,7 +1480,9 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/ElementImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeProxy.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/NodeSet.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/NodeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/LockToken.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/PersistentDomTest.java</exclude>

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -41,7 +65,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * A fast node set implementation, based on arrays to store nodes and documents.
@@ -67,7 +96,7 @@ import java.util.*;
  */
 public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet, DocumentSet {
 
-    private Set<Collection> cachedCollections = null;
+    @Nullable private WeakReference<Set<Collection>> cachedCollectionsRef = null;
 
     private int documentCount = 0;
 
@@ -935,10 +964,10 @@ public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet,
                 if(contextNode.getContextId() == contextId) {
                     final NodeProxy context = contextNode.getNode();
                     context.addMatches(current);
-                    if(Expression.NO_CONTEXT_ID != contextId) {
+                    if (Expression.NO_CONTEXT_ID != contextId) {
                         context.addContextNode(contextId, context);
                     }
-                    if(lastDoc != null && lastDoc.getDocId() != context.getOwnerDocument().getDocId()) {
+                    if (lastDoc == null || lastDoc.getDocId() != context.getOwnerDocument().getDocId()) {
                         lastDoc = context.getOwnerDocument();
                         result.add(context, getSizeHint(lastDoc));
                     } else {
@@ -1014,16 +1043,27 @@ public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet,
 
     @Override
     public Iterator<Collection> getCollectionIterator() {
-        sort();
-        if(cachedCollections == null) {
-            cachedCollections = new HashSet<>();
-            for(int i = 0; i < documentCount; i++) {
-                final DocumentImpl doc = nodes[documentNodesOffset[i]].getOwnerDocument();
-                if(!cachedCollections.contains(doc.getCollection())) {
-                    cachedCollections.add(doc.getCollection());
-                }
+        // First, try and retrieve from Cache
+        Set<Collection> cachedCollections;
+        if (this.cachedCollectionsRef != null) {
+            cachedCollections = this.cachedCollectionsRef.get();
+            if (cachedCollections != null) {
+                return cachedCollections.iterator();
             }
         }
+
+        sort();
+
+        // Second, Cache is empty, so create a Cache and return
+        cachedCollections = new HashSet<>();
+        for (int i = 0; i < documentCount; i++) {
+            final DocumentImpl doc = nodes[documentNodesOffset[i]].getOwnerDocument();
+            final Collection collection = doc.getCollection();
+            cachedCollections.add(collection);
+        }
+
+        this.cachedCollectionsRef = new WeakReference<>(cachedCollections);
+
         return cachedCollections.iterator();
     }
 
