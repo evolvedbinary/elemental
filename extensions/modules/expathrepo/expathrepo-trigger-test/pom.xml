@@ -179,6 +179,7 @@
                                 <include>pom.xml</include>
                                 <include>src/main/java/org/exist/repo/ExampleModule.java</include>
                                 <include>src/test/resources/conf.xml</include>
+                                <include>src/main/xar-resources/controller.xq</include>
                                 <include>xar-assembly.xml</include>
                             </includes>
                         </licenseSet>
@@ -192,6 +193,7 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/main/java/org/exist/repo/ExampleModule.java</exclude>
                                 <exclude>src/test/resources/conf.xml</exclude>
+                                <exclude>src/main/xar-resources/controller.xq</exclude>
                                 <exclude>xar-assembly.xml</exclude>
                             </excludes>
                         </licenseSet>
