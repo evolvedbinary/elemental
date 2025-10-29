@@ -685,6 +685,7 @@
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>project-suppression.xml</include>
+                                <include>src/test/xquery/pi.xqm</include>
                                 <include>src/test/xquery/securitymanager/acl.xqm</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceCharacterData.java</include>
@@ -1319,6 +1320,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
                                 <exclude>src/test/xquery/binary-value.xqm</exclude>
+                                <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/maps/maps.xqm</exclude>
                                 <exclude>src/test/xquery/securitymanager/acl.xqm</exclude>
