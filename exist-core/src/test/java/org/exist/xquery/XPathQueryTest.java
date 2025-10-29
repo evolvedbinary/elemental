@@ -1903,6 +1903,7 @@ public class XPathQueryTest {
         assertEquals(1, result.getSize());
         result = service2.query("declare variable $name as xs:string external; $name");
         assertEquals(1, result.getSize());
+        service2.clearVariables();
         result = service2.query( doc, "//item[stock = 43]");
         assertEquals(1, result.getSize());
         result = service2.query(doc, "//item");
