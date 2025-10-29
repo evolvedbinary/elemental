@@ -1538,6 +1538,10 @@ public class RESTServer {
                 q = new QName(localname, uri, XMLConstants.DEFAULT_NS_PREFIX);
             }
 
+            if (!context.isExternalVariableDeclared(q)) {
+                throw new XPathException(ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + q + " is not declared in the XQuery");
+            }
+
             if (uri != null && prefix != null) {
                 context.declareNamespace(prefix, uri);
             }
