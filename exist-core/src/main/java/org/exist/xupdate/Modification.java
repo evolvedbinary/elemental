@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -153,39 +177,52 @@ public abstract class Modification {
 		final XQuery xquery = broker.getBrokerPool().getXQueryService();
 		final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
 		final Source source = new StringSource(selectStmt);
-		CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-		XQueryContext context;
-		if(compiled == null) {
-			context = new XQueryContext(broker.getBrokerPool());
-		} else {
-			context = compiled.getContext();
-			context.prepareForReuse();
-		}
-		context.setStaticallyKnownDocuments(docs);
-		declareNamespaces(context);
-		declareVariables(context);
-		if(compiled == null)
-			try {
-				compiled = xquery.compile(context, source);
-			} catch (final IOException e) {
-				throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
-			}
-		
-		Sequence resultSeq = null;
-		try {
-			resultSeq = xquery.execute(broker, compiled, null);
-		} finally {
-			context.runCleanupTasks();
-			pool.returnCompiledXQuery(source, compiled);
-		}
 
-		if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE)))
-			{throw new EXistException("select expression should evaluate to a node-set; got " +
-			        Type.getTypeName(resultSeq.getItemType()));}
-		if (LOG.isDebugEnabled())
-			{
-				LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);}
-		return resultSeq.toNodeSet();
+        @Nullable CompiledXQuery compiled = null;
+		@Nullable XQueryContext context = null;
+        try {
+            compiled = pool.borrowCompiledXQuery(broker, source);
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
+            }
+            context.setStaticallyKnownDocuments(docs);
+            declareNamespaces(context);
+
+            declareVariables(context);
+
+            if (compiled == null) {
+                try {
+                    compiled = xquery.compile(context, source);
+                } catch (final IOException e) {
+                    throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
+                }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            final Sequence resultSeq = xquery.execute(broker, compiled, null);
+            if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE))) {
+                throw new EXistException("select expression should evaluate to a node-set; got " +
+                    Type.getTypeName(resultSeq.getItemType()));
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);
+            }
+
+            return resultSeq.toNodeSet();
+        } finally {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                pool.returnCompiledXQuery(source, compiled);
+            }
+        }
 	}
 
 	/**
@@ -194,7 +231,7 @@ public abstract class Modification {
 	 */
 	protected void declareVariables(XQueryContext context) throws XPathException {
         for (final Map.Entry<String, Object> entry : variables.entrySet()) {
-            context.declareVariable(entry.getKey(), entry.getValue());
+            context.declareVariable(entry.getKey(), true, entry.getValue());
         }
 	}
 

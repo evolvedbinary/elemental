@@ -97,7 +97,7 @@ public class NonLazyCacheTest {
             fail("Should not be able to lazily create a cache when lazy creation is disabled");
         } catch (final XPathException e) {
             final ErrorCodes.ErrorCode errorCode = e.getErrorCode();
-            assertEquals("Expected lazy creation disabled error", CacheModule.LAZY_CREATION_DISABLED, errorCode);
+            assertEquals("Expected lazy creation disabled error", CacheModule.CacheModuleErrorCode.LAZY_CREATION_DISABLED, errorCode);
         }
     }
 

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,20 +46,16 @@
 package org.exist.xquery.functions.xquery3;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.custommonkey.xmlunit.XMLUnit;
-import org.custommonkey.xmlunit.XMLAssert;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.ResourceSet;
 
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.junit.Test;
 import org.xmldb.api.base.XMLDBException;
-
-import java.io.IOException;
+import org.xmlunit.matchers.CompareMatcher;
 
 import static org.junit.Assert.*;
 
@@ -72,16 +92,15 @@ public class TryCatchTest {
     }
 
    @Test
-    public void encapsulated_3() throws XMLDBException, IOException, SAXException {
+    public void encapsulated_3() throws XMLDBException {
         final String query1 = "xquery version '3.0';"
                 + "<foo>{ for $i in (1,2,3,4) return <a>{ try { 'b' + $i } catch * { 'c' } }</a> }</foo>";
 
         final ResourceSet results = existEmbeddedServer.executeQuery(query1);
         assertEquals(1, results.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLAssert.assertXMLEqual("<foo><a>c</a><a>c</a><a>c</a><a>c</a></foo>", r);
+        final String result = (String) results.getResource(0).getContent();
+        assertThat(result, CompareMatcher.isSimilarTo("<foo><a>c</a><a>c</a><a>c</a><a>c</a></foo>").ignoreWhitespace());
     }
 
     @Test

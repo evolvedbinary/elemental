@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.validation.internal;
 
 import java.io.IOException;
@@ -28,6 +51,8 @@ import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
+import org.exist.Namespaces;
+import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.ClassLoaderSource;
@@ -39,6 +64,8 @@ import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
+
+import javax.annotation.Nullable;
 
 /**
  *  Helper class for accessing grammars.
@@ -120,12 +147,11 @@ public class DatabaseResources {
     }
     
     
-    public Sequence executeQuery(String queryPath, Map<String,String> params, Subject user){
-        
-        final String namespace = params.get(TARGETNAMESPACE);
-        final String publicId = params.get(PUBLICID);
-        final String catalogPath = params.get(CATALOG);
-        final String collection = params.get(COLLECTION);
+    public Sequence executeQuery(final String queryPath, final Map<String,String> params, final Subject user){
+        @Nullable final String namespace = params.get(TARGETNAMESPACE);
+        @Nullable final String publicId = params.get(PUBLICID);
+        @Nullable final String catalogPath = params.get(CATALOG);
+        @Nullable final String collection = params.get(COLLECTION);
         
         if(logger.isDebugEnabled()) {
             logger.debug("collection={} namespace={} publicId={} catalogPath={}", collection, namespace, publicId, catalogPath);
@@ -137,20 +163,20 @@ public class DatabaseResources {
 
             final XQuery xquery = brokerPool.getXQueryService();
             
-            if(collection!=null){
-                context.declareVariable(COLLECTION, collection);
+            if (collection != null){
+                context.declareVariable(new QName(COLLECTION, Namespaces.XQUERY_LOCAL_NS), true, collection);
             }
             
-            if(namespace!=null){
-                context.declareVariable(TARGETNAMESPACE, namespace);
+            if (namespace != null){
+                context.declareVariable(new QName(TARGETNAMESPACE, Namespaces.XQUERY_LOCAL_NS), true, namespace);
             }
             
-            if(publicId!=null){
-                context.declareVariable(PUBLICID, publicId);
+            if (publicId != null){
+                context.declareVariable(new QName(PUBLICID, Namespaces.XQUERY_LOCAL_NS), true, publicId);
             }
             
-            if(catalogPath!=null){
-                context.declareVariable(CATALOG, catalogPath);
+            if (catalogPath != null){
+                context.declareVariable(new QName(CATALOG, Namespaces.XQUERY_LOCAL_NS), true, catalogPath);
             }
             
             CompiledXQuery compiled = xquery.compile(context, new ClassLoaderSource(queryPath) );

@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
@@ -61,9 +60,12 @@ import org.exist.dom.QName;
 
 import org.exist.xquery.ErrorCodes.ErrorCode;
 import org.exist.xquery.ErrorCodes.JavaErrorCode;
+import org.exist.xquery.functions.fn.FunError;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.*;
+
+import javax.annotation.Nullable;
 
 /**
  * XQuery 3.0 try {...} catch{...} expression.
@@ -372,16 +374,22 @@ public class TryCatchExpression extends AbstractExpression {
     // description is available (for example, if the error function 
     // was called with one argument).
     private void addErrDescription(final Throwable t, final ErrorCode errorCode) throws XPathException {
-        final Optional<String> errorDesc = Optional.ofNullable(errorCode.getDescription());
-        final Optional<String> throwableDesc = Optional.ofNullable(t instanceof XPathException ? ((XPathException) t).getDetailMessage() : t.getMessage());
-        final Expression expression = this;
-        final Sequence description = errorDesc
-                .<Sequence>map(
-                    d -> new StringValue(expression, throwableDesc.filter(td -> !td.equals(d)).map(td -> d + (d.endsWith(".") ? " " : ". ") + td).orElse(d))
-                ).orElse(
-                        errorDesc.<Sequence>map(d -> new StringValue(expression, "")).orElse(Sequence.EMPTY_SEQUENCE)
-                );
+        @Nullable String errorDesc = null;
+        if (t instanceof FunError.FnErrorXPathException) {
+            errorDesc = ((FunError.FnErrorXPathException) t).getDetailMessage();
+        }
 
+        if (errorDesc == null) {
+            errorDesc = errorCode.getDescription();
+            if (errorDesc != null) {
+                @Nullable final String throwableDesc = t instanceof XPathException ? ((XPathException) t).getDetailMessage() : t.getMessage();
+                if (!errorDesc.equals(throwableDesc)) {
+                    errorDesc = errorDesc + (errorDesc.endsWith(".") ? " " : ". ") + throwableDesc;
+                }
+            }
+        }
+
+        final Sequence description = errorDesc != null ? new StringValue(this, errorDesc) : Sequence.EMPTY_SEQUENCE;
         final LocalVariable err_description = new LocalVariable(QN_DESCRIPTION);
         err_description.setSequenceType(new SequenceType(Type.QNAME, Cardinality.ZERO_OR_ONE));
         err_description.setValue(description);
@@ -414,7 +422,7 @@ public class TryCatchExpression extends AbstractExpression {
     }
 
     /**
-     *  Extract and construct errorcode from error text.
+     *  Extract and construct error code from error text.
      */
     private ErrorCode extractErrorCode(final XPathException xpe)  {
 
@@ -425,10 +433,26 @@ public class TryCatchExpression extends AbstractExpression {
         if (':' == message.charAt(8)) {
 
             final String[] data = extractLocalName(xpe.getMessage());
-            final ErrorCode errorCode = new ErrorCode(data[0], data[1]);
+
+
+            QName errorQName = null;
+            ErrorCode errorCode = null;
+            try {
+                errorQName = QName.parse(context, data[0]);
+            } catch (final QName.IllegalQNameException e) {
+                errorCode = ErrorCodes.EXistErrorCode.ERROR;
+            }
+
+            if (errorCode == null) {
+                try {
+                    errorCode = ErrorCodes.fromQName(errorQName);
+                } catch (final IllegalArgumentException e) {
+                    errorCode = new ErrorCodes.DynamicErrorCode(errorQName, data[1]);
+                }
+            }
+
             LOG.debug("Parsed string '{}' for Errorcode. Qname='{}' message='{}'", xpe.getMessage(), data[0], data[1]);
             return errorCode;
-
         }
 
         // Convert xpe to Throwable

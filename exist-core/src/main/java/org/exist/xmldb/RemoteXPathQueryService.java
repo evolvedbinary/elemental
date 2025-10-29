@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,7 @@ import java.util.*;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
+import org.exist.dom.QName;
 import org.exist.source.Source;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.Leasable;
@@ -40,6 +65,7 @@ import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -119,6 +145,7 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
         }
         final Properties resourceSetProperties = new Properties(outputProperties);
         resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+        resourceSetProperties.setProperty(EXistOutputKeys.XQJ_SERIALIZATION, "yes");
         return new RemoteResourceSet(leasableXmlRpcClient, collection, resourceSetProperties, resources, handle, hash);
     }
 
@@ -157,22 +184,35 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
     }
 
     private void throwException(final Map result) throws XMLDBException {
-        final String message = (String) result.get(RpcAPI.ERROR);
-        final Integer lineInt = (Integer) result.get(RpcAPI.LINE);
-        final Integer columnInt = (Integer) result.get(RpcAPI.COLUMN);
-        final int line = lineInt == null ? 0 : lineInt;
-        final int column = columnInt == null ? 0 : columnInt;
-        final XPathException cause = new XPathException(line, column, message);
-        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, message, cause);
+        final XPathException cause = errorToXPathException(result);
+        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, cause.getMessage(), cause);
     }
 
     private void throwXPathException(final Map result) throws XPathException {
+        throw errorToXPathException(result);
+    }
+
+    private XPathException errorToXPathException(final Map result) {
         final String message = (String) result.get(RpcAPI.ERROR);
+
         final Integer lineInt = (Integer) result.get(RpcAPI.LINE);
         final Integer columnInt = (Integer) result.get(RpcAPI.COLUMN);
         final int line = lineInt == null ? 0 : lineInt;
         final int column = columnInt == null ? 0 : columnInt;
-        throw new XPathException(line, column, message);
+
+        final org.exist.xquery.ErrorCodes.ErrorCode errorCode;
+        @Nullable final Map<String, Object> code = (Map<String, Object>) result.get(RpcAPI.CODE);
+        if (code != null) {
+            final String namespaceUri = (String) code.get(RpcAPI.QNAME_NAMESPACE_URI);
+            final String prefix = (String) code.get(RpcAPI.QNAME_PREFIX);
+            final String localPart = (String) code.get(RpcAPI.QNAME_LOCAL_PART);
+            final QName qname = new QName(localPart, namespaceUri, prefix);
+            errorCode = org.exist.xquery.ErrorCodes.fromQName(qname);
+        } else {
+            errorCode = org.exist.xquery.ErrorCodes.EXistErrorCode.ERROR;
+        }
+
+        return new XPathException(line, column, errorCode, message);
     }
 
     @Override
@@ -207,6 +247,7 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
         }
         final Properties resourceSetProperties = new Properties(outputProperties);
         resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+        resourceSetProperties.setProperty(EXistOutputKeys.XQJ_SERIALIZATION, "yes");
         return new RemoteResourceSet(leasableXmlRpcClient, collection, outputProperties, resources, handle, hash);
     }
 
@@ -258,6 +299,7 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
         }
         final Properties resourceSetProperties = new Properties(outputProperties);
         resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+        resourceSetProperties.setProperty(EXistOutputKeys.XQJ_SERIALIZATION, "yes");
         return new RemoteResourceSet(leasableXmlRpcClient, collection, resourceSetProperties, resources, handle, hash);
     }
 

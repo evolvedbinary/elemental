@@ -76,7 +76,7 @@ public class AttrImpl extends NodeImpl implements Attr {
 
     @Override
     public String getName() {
-        return getQName().getStringValue();
+        return getNodeName();
     }
 
     @Override

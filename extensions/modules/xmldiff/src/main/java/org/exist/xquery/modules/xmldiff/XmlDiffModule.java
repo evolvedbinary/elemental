@@ -90,11 +90,25 @@ public class XmlDiffModule extends AbstractInternalModule {
         return FunctionDSL.functionSignature(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, paramTypes);
     }
 
-    static class XmldDiffModuleErrorCode extends ErrorCodes.ErrorCode {
-        private XmldDiffModuleErrorCode(final String code, final String description) {
-            super(new QName(code, NAMESPACE_URI, PREFIX), description);
+    enum XmldDiffModuleErrorCode implements ErrorCodes.ErrorCode {
+        UNSUPPORTED_DOM_IMPLEMENTATION ("The DOM implementation of a Node is unsupported.");
+
+        private final QName qname;
+        private final String description;
+
+        XmldDiffModuleErrorCode(final String description) {
+            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
+            this.description = description;
+        }
+
+        @Override
+        public QName getErrorQName() {
+            return qname;
+        }
+
+        @Override
+        public String getDescription() {
+            return description;
         }
     }
-
-    static final ErrorCodes.ErrorCode UNSUPPORTED_DOM_IMPLEMENTATION = new XmldDiffModuleErrorCode("unsupported-dom-impl", "The DOM implementation of a Node is unsupported.");
 }

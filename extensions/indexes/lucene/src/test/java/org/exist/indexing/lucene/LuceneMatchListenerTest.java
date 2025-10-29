@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,13 +45,7 @@
  */
 package org.exist.indexing.lucene;
 
-import org.custommonkey.xmlunit.NamespaceContext;
-import org.custommonkey.xmlunit.SimpleNamespaceContext;
-import org.custommonkey.xmlunit.XMLAssert;
-import org.custommonkey.xmlunit.XMLUnit;
-import org.custommonkey.xmlunit.exceptions.XpathException;
 import org.exist.EXistException;
-import org.exist.Namespaces;
 import org.exist.TestUtils;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationException;
@@ -42,10 +60,7 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
-import org.exist.util.DatabaseConfigurationException;
-import org.exist.util.LockException;
-import org.exist.util.MimeType;
-import org.exist.util.StringInputSource;
+import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
@@ -53,15 +68,20 @@ import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.AfterClass;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
+import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
+
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import org.xmlunit.matchers.CompareMatcher;
 
 import javax.xml.transform.OutputKeys;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -158,6 +178,11 @@ public class LuceneMatchListenerTest {
     private static String MATCH_START = "<exist:match xmlns:exist=\"http://exist.sourceforge.net/NS/exist\">";
     private static String MATCH_END = "</exist:match>";
 
+    private static final Map<String, String> NS_CONTEXT = MapUtil.HashMap(
+        Tuple("tei", "http://www.tei-c.org/ns/1.0"),
+        Tuple("exist", "http://exist.sourceforge.net/NS/exist")
+    );
+
     /**
      * Test match highlighting for index configured by QName, e.g.
      * &lt;create qname="a"/&gt;.
@@ -176,31 +201,25 @@ public class LuceneMatchListenerTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<para>some paragraph with <hi>" + MATCH_START + "mixed" +
-                    MATCH_END + "</hi> content.</para>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> content.</para>"));
 
             seq = xquery.execute(broker, "//para[ft:query(., '+nested +inner +elements')]", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<para>another paragraph with <note><hi>" + MATCH_START + "nested" +
-                    MATCH_END + "</hi> " + MATCH_START +
-                    "inner" + MATCH_END + "</note> " + MATCH_START + "elements" + MATCH_END + ".</para>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> " + MATCH_START + "inner" + MATCH_END + "</note> " + MATCH_START + "elements" + MATCH_END + ".</para>"));
 
             seq = xquery.execute(broker, "//para[ft:query(term, 'term')]", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END +
-                    "</term>.</para>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
 
             seq = xquery.execute(broker, "//para[ft:query(., '+double +match')]", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<para>" + MATCH_START + "double" + MATCH_END + " " +
-                    MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " +
-                    MATCH_START + "match" + MATCH_END + "</para>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para>"));
 
             seq = xquery.execute(broker,
                     "for $para in //para[ft:query(., '+double +match')] return\n" +
@@ -208,14 +227,12 @@ public class LuceneMatchListenerTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<hit><para>" + MATCH_START + "double" + MATCH_END + " " +
-                    MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " +
-                    MATCH_START + "match" + MATCH_END + "</para></hit>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<hit><para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para></hit>"));
         }
     }
 
     @Test
-    public void matchInAncestor() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException, XpathException, LockException, CollectionConfigurationException {
+    public void matchInAncestor() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException, LockException, CollectionConfigurationException {
         configureAndStore(CONF1, XML);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
@@ -225,18 +242,18 @@ public class LuceneMatchListenerTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
-            XMLAssert.assertXpathEvaluatesTo("1", "count(//exist:match)", result);
+            assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
 
             seq = xquery.execute(broker, "//para[ft:query(., 'nested')]/note", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertXpathEvaluatesTo("1", "count(//hi/exist:match)", result);
+            assertThat(result, hasXPath("count(//hi/exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
         }
     }
 
     @Test
-    public void matchInDescendant() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException, XpathException, LockException, CollectionConfigurationException {
+    public void matchInDescendant() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException, LockException, CollectionConfigurationException {
         configureAndStore(CONF3, XML);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
@@ -246,13 +263,13 @@ public class LuceneMatchListenerTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
-            XMLAssert.assertXpathEvaluatesTo("1", "count(//exist:match)", result);
+            assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
 
             seq = xquery.execute(broker, "//hi[ft:query(., 'nested')]/parent::note", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertXpathEvaluatesTo("1", "count(//hi/exist:match)", result);
+            assertThat(result, hasXPath("count(//hi/exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
         }
     }
 
@@ -268,36 +285,31 @@ public class LuceneMatchListenerTest {
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<p>Paragraphs with <s>" + MATCH_START + "mix" + MATCH_END +
-                    "</s><s>ed</s> content are <s>danger</s>ous.</p>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<p>Paragraphs with <s>" + MATCH_START + "mix" + MATCH_END + "</s><s>ed</s> content are <s>danger</s>ous.</p>"));
 
             seq = xquery.execute(broker, "//p[ft:query(., 'ignored')]", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<p>A simple<note>sic</note> paragraph with <hi>highlighted</hi> text <note>and a note</note> to be " +
-                    MATCH_START + "ignored" + MATCH_END + ".</p>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>highlighted</hi> text <note>and a note</note> to be " + MATCH_START + "ignored" + MATCH_END + ".</p>"));
 
             seq = xquery.execute(broker, "//p[ft:query(., 'highlighted')]", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<p>A simple<note>sic</note> paragraph with <hi>" + MATCH_START +
-                    "highlighted" + MATCH_END + "</hi> text <note>and a note</note> to be " +
-                    "ignored.</p>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi> text <note>and a note</note> to be " + "ignored.</p>"));
 
             seq = xquery.execute(broker, "//p[ft:query(., 'highlighted')]/hi", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi>", result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi>"));
             
             seq = xquery.execute(broker, "//head[ft:query(., 'title')]", null);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
-            XMLAssert.assertEquals("<head>The <b>" + MATCH_START + "title" + MATCH_END + "</b>of it</head>",
-                    result);
+            assertThat(result, CompareMatcher.isIdenticalTo("<head>The <b>" + MATCH_START + "title" + MATCH_END + "</b>of it</head>"));
         }
     }
 
@@ -342,7 +354,7 @@ public class LuceneMatchListenerTest {
             "        <w>љуте</w>.</s>\n" +
             "</p>";
 
-            XMLAssert.assertEquals(expected, result);
+            assertThat(result, CompareMatcher.isIdenticalTo(expected));
         }
     }
 
@@ -362,11 +374,6 @@ public class LuceneMatchListenerTest {
 
             transact.commit(transaction);
         }
-
-        final Map<String, String> m = new HashMap<>();
-        m.put(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
-        final NamespaceContext ctx = new SimpleNamespaceContext(m);
-        XMLUnit.setXpathNamespaceContext(ctx);
     }
 
     @AfterClass

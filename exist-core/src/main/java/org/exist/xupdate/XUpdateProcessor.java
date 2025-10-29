@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -745,18 +769,11 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
         try {
 			context = new XQueryContext(broker.getBrokerPool());
 			context.setStaticallyKnownDocuments(documentSet);
-			Map.Entry<String, String> namespaceEntry;
-			for (Map.Entry<String, String> stringStringEntry : namespaces.entrySet()) {
-				namespaceEntry = stringStringEntry;
-				context.declareNamespace(
-						namespaceEntry.getKey(),
-						namespaceEntry.getValue());
+
+			for (final Map.Entry<String, String> namespace : namespaces.entrySet()) {
+				context.declareNamespace(namespace.getKey(), namespace.getValue());
 			}
-			Map.Entry<String, Object> entry;
-			for (Map.Entry<String, Object> stringObjectEntry : variables.entrySet()) {
-				entry = stringObjectEntry;
-				context.declareVariable(entry.getKey(), entry.getValue());
-			}
+
 			// TODO(pkaminsk2): why replicate XQuery.compile here?
 			final XQueryLexer lexer = new XQueryLexer(context, new StringReader(select));
 			final XQueryParser parser = new XQueryParser(lexer);
@@ -777,6 +794,11 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 			if (treeParser.foundErrors()) {
 				throw new SAXException(treeParser.getErrorMessage());
 			}
+
+            for (final Map.Entry<String, Object> variable : variables.entrySet()) {
+                context.declareVariable(variable.getKey(), true, variable.getValue());
+            }
+
 			expr.analyze(new AnalyzeContextInfo());
 			final Sequence seq = expr.eval(null, null);
 			return seq;

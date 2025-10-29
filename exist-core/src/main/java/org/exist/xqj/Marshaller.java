@@ -45,18 +45,31 @@
  */
 package org.exist.xqj;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.*;
 import org.exist.storage.DBBroker;
+import org.exist.storage.ElementValue;
 import org.exist.xquery.Expression;
 import org.exist.xquery.NameTest;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryContext;
+import org.exist.xquery.functions.array.ArrayType;
+import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
+import org.w3c.dom.Comment;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.ProcessingInstruction;
+import org.w3c.dom.Text;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -64,9 +77,15 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.xquery.XQException;
 import javax.xml.xquery.XQItemType;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
+
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.exist.util.StringUtil.nullIfEmpty;
 
 
 /**
@@ -82,7 +101,7 @@ public class Marshaller {
     public final static String PREFIX = "sx";
 
     
-    private final static Properties OUTPUT_PROPERTIES = new Properties();
+    private final static Properties DEFAULT_OUTPUT_PROPERTIES = new Properties();
 
     private final static String VALUE_ELEMENT = "value";
     private final static String VALUE_ELEMENT_QNAME = PREFIX + ":value";
@@ -94,7 +113,11 @@ public class Marshaller {
     private final static String ATTR_TYPE = "type";
     private final static String ATTR_ITEM_TYPE = "item-type";
 
-    public final static QName ROOT_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
+    private final static String ATTR_NAME = "name";
+
+    public final static QName SEQUENCE_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
+    public final static QName ENTRY_ELEMENT_QNAME = new QName("entry", NAMESPACE, PREFIX);
+    public final static QName KEY_ELEMENT_QNAME = new QName("key", NAMESPACE, PREFIX);
     
     /**
      * Marshall a sequence in an xml based string representation.
@@ -149,10 +172,27 @@ public class Marshaller {
      * @param item Sequence(or Item) to me marshalled
      * @param handler Content handler for building the resulting string
      *
+     *
      * @throws XPathException if an XPath error occurs
      * @throws SAXException if a SAX parsing exception occurs
      */
     public static void marshallItem(final DBBroker broker, final Item item, final ContentHandler handler)
+        throws SAXException, XPathException {
+        marshallItem(broker, item, handler, DEFAULT_OUTPUT_PROPERTIES);
+    }
+
+    /**
+     * Marshall an item in an xml based string representation.
+     *
+     * @param broker the database broker
+     * @param item Sequence(or Item) to me marshalled
+     * @param handler Content handler for building the resulting string
+     * @param outputProperties any output properties for the Serializer
+     *
+     * @throws XPathException if an XPath error occurs
+     * @throws SAXException if a SAX parsing exception occurs
+     */
+    public static void marshallItem(final DBBroker broker, final Item item, final ContentHandler handler, final Properties outputProperties)
             throws SAXException, XPathException {
         final AttributesImpl attrs = new AttributesImpl();
         int type = item.getType();
@@ -162,7 +202,7 @@ public class Marshaller {
         if (Type.subTypeOf(item.getType(), Type.NODE)) {
             handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME, attrs);
             final NodeValue nv = (NodeValue) item;
-            nv.toSAX(broker, handler, OUTPUT_PROPERTIES);
+            nv.toSAX(broker, handler, outputProperties);
             handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME);
         } else {
             handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME, attrs);
@@ -172,38 +212,51 @@ public class Marshaller {
         }
     }
 
-    public static Sequence demarshall(DBBroker broker, Reader reader) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final InputStream is) throws XMLStreamException, XPathException {
+        final XMLInputFactory factory = XMLInputFactory.newInstance();
+        factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
+        factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+        final XMLStreamReader parser = factory.createXMLStreamReader(is);
+        return demarshall(parser);
+    }
+
+    public static Sequence demarshall(final Reader reader) throws XMLStreamException, XPathException {
         final XMLInputFactory factory = XMLInputFactory.newInstance();
         factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
         factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
         final XMLStreamReader parser = factory.createXMLStreamReader(reader);
-        return demarshall(broker, parser);
+        return demarshall(parser);
     }
     
-    public static Sequence demarshall(DBBroker broker,Node n) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final Node n) throws XMLStreamException, XPathException {
     	final DOMSource source = new DOMSource(n, null);
     	final XMLInputFactory factory = XMLInputFactory.newInstance();
         factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
         factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
         
         final XMLStreamReader parser = factory.createXMLStreamReader(source);
-    	return demarshall(broker,parser);    	
+    	return demarshall(parser);
     	
     }
 
-    public static Sequence demarshall(DBBroker broker, XMLStreamReader parser) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final XMLStreamReader parser) throws XMLStreamException, XPathException {
         int event = parser.next();
-        while (event != XMLStreamConstants.START_ELEMENT)
+        while (event != XMLStreamConstants.START_ELEMENT) {
             event = parser.next();
-        if (!NAMESPACE.equals(parser.getNamespaceURI()))
-            {throw new XMLStreamException("Root element is not in the correct namespace. Expected: " + NAMESPACE);}
-        if (!SEQ_ELEMENT.equals(parser.getLocalName()))
-            {throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_QNAME);}
+        }
+        if (!NAMESPACE.equals(parser.getNamespaceURI())) {
+            throw new XMLStreamException("Root element is not in the correct namespace. Expected: " + NAMESPACE);
+        }
+        if (!SEQ_ELEMENT.equals(parser.getLocalName())) {
+            throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_QNAME);
+        }
         final ValueSequence result = new ValueSequence();
         while ((event = parser.next()) != XMLStreamConstants.END_DOCUMENT) {
             switch (event) {
                 case XMLStreamConstants.START_ELEMENT :
                     if (NAMESPACE.equals(parser.getNamespaceURI()) && VALUE_ELEMENT.equals(parser.getLocalName())) {
+                        int type = Type.ITEM;
+
                         String typeName = null;
                         // scan through attributes instead of direct lookup to work around issue in xerces
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -212,15 +265,17 @@ public class Marshaller {
                                 break;
                             }
                         }
-                        if (typeName != null) {
-                            final int type = Type.getType(typeName);
-                            Item item;
-                            if (Type.subTypeOf(type, Type.NODE))
-                                {item = streamToDOM(type, parser, null);}
-                            else
-                                {item = new StringValue(null, parser.getElementText()).convertTo(type);}
-                            result.add(item);
+                        if (typeName != null && !typeName.isEmpty()) {
+                            type = Type.getType(typeName);
                         }
+
+                        final Item item;
+                        if (Type.subTypeOf(type, Type.NODE)) {
+                            item = streamToDOM(type, parser, null);
+                        } else {
+                            item = new StringValue(null, parser.getElementText()).convertTo(type);
+                        }
+                        result.add(item);
                     }
                     break;
                 case XMLStreamConstants.END_ELEMENT :
@@ -232,52 +287,175 @@ public class Marshaller {
         return result;
     }
 
-    public static Sequence demarshall(NodeImpl node) throws XMLStreamException, XPathException {
+    public static Sequence demarshall(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
+        return demarshallSequence(context, node);
+    }
+
+    private static Sequence demarshallSequence(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
         final String ns = node.getNamespaceURI();
         if (ns == null || !NAMESPACE.equals(ns)) {
-            throw new XMLStreamException("Root element is not in the correct namespace. Expected: " + NAMESPACE);
+            throw new XMLStreamException("Sequence element is not in the correct namespace. Expected: " + NAMESPACE);
         }
-        if (!SEQ_ELEMENT.equals(node.getLocalName()))
-            {throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_QNAME);}
+        if (!SEQ_ELEMENT.equals(node.getLocalName())) {
+            throw new XMLStreamException("Element should be a " + SEQ_ELEMENT_QNAME);
+        }
+
+        return demarshallValues(context, node);
+    }
+
+    private static Sequence demarshallValues(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
         final ValueSequence result = new ValueSequence();
-        final InMemoryNodeSet values = new InMemoryNodeSet();
-        node.selectChildren(new NameTest(Type.ELEMENT, VALUE_QNAME), values);
-        for (final SequenceIterator i = values.iterate(); i.hasNext();) {
-            final ElementImpl child = (ElementImpl) i.nextItem();
-            final String typeName = child.getAttribute(ATTR_TYPE);
-            if (!typeName.isEmpty()) {
-                final int type = Type.getType(typeName);
-                Item item;
-                if (Type.subTypeOf(type, Type.NODE)) {
-                    item = (Item) child.getFirstChild();
-                    if (type == Type.DOCUMENT) {
-                        final DocumentImpl n = (DocumentImpl) item;
-                        final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(n.getExpression());
-                        try {
-                            receiver.startDocument();
-                            n.copyTo(n, receiver);
-                            receiver.endDocument();
-                        } catch (final SAXException e) {
-                            throw new XPathException(item != null ? item.getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
-                        }
-                        item = (Item) receiver.getDocument();
-                    }
-                } else {
-                    final StringBuilder data = new StringBuilder();
-                    Node txt = child.getFirstChild();
-                    while (txt != null) {
-                        if (!(txt.getNodeType() == Node.TEXT_NODE || txt.getNodeType() == Node.CDATA_SECTION_NODE)) {
-                            throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
-                        }
-                        data.append(txt.getNodeValue());
-                        txt = txt.getNextSibling();
-                    }
-                    item = new StringValue(data.toString()).convertTo(type);
-                }
-                result.add(item);
-            }
+        final InMemoryNodeSet sxValues = new InMemoryNodeSet();
+        node.selectChildren(new NameTest(Type.ELEMENT, VALUE_QNAME), sxValues);
+        for (final SequenceIterator itSxValue = sxValues.iterate(); itSxValue.hasNext();) {
+            final ElementImpl sxValue = (ElementImpl) itSxValue.nextItem();
+            final Item item = demarshallValue(context, sxValue);
+            result.add(item);
         }
         return result;
+    }
+
+    private static Item demarshallValue(final XQueryContext context, final ElementImpl sxValue) throws XMLStreamException, XPathException {
+        int type = Type.ITEM;
+        final String typeName = sxValue.getAttribute(ATTR_TYPE);
+        if (!typeName.isEmpty()) {
+            type = Type.getType(typeName);
+        }
+
+        @Nullable String attrNameString = null;
+        if (sxValue instanceof Element) {
+            attrNameString = nullIfEmpty(sxValue.getAttribute(ATTR_NAME));
+        }
+
+        final InMemoryNodeSet sxSequences = new InMemoryNodeSet();
+        sxValue.selectChildren(new NameTest(Type.ELEMENT, SEQUENCE_ELEMENT_QNAME), sxSequences);
+
+        final InMemoryNodeSet sxEntries = new InMemoryNodeSet();
+        sxValue.selectChildren(new NameTest(Type.ELEMENT, ENTRY_ELEMENT_QNAME), sxEntries);
+
+        Node item = sxValue.getFirstChild();
+
+        if (type == Type.ATTRIBUTE || (type == Type.ITEM && attrNameString != null)) {
+            if (attrNameString.isEmpty()) {
+                throw new XMLStreamException("sx:value must contain a name attribute if type is " + typeName);
+            }
+
+            final String attrPrefix;
+            final String attrNamespace;
+            final String attrLocalName;
+            final int colonSep = attrNameString.indexOf(':');
+            if (colonSep > -1) {
+                attrPrefix = attrNameString.substring(0, colonSep);
+                attrNamespace = item.lookupNamespaceURI(attrPrefix);
+                if (attrNamespace == null) {
+                    throw new XMLStreamException("sx:value's name attribute contains the QName prefix '" +  attrPrefix + "' for which the namespace has not been declared if type is " + typeName);
+                }
+                attrLocalName = attrNameString.substring(colonSep + 1);
+            } else {
+                attrPrefix = XMLConstants.DEFAULT_NS_PREFIX;
+                attrNamespace = XMLConstants.NULL_NS_URI;
+                attrLocalName = attrNameString;
+            }
+
+            final QName attrName = new QName(attrLocalName, attrNamespace, attrPrefix, ElementValue.ATTRIBUTE);
+            final MemTreeBuilder builder = new MemTreeBuilder(context);
+            builder.startDocument();
+            final int attrNodeNumber = builder.addAttribute(attrName, sxValue.getTextContent());
+            builder.endDocument();
+            final AttrImpl attr = (AttrImpl) builder.getDocument().getAttribute(attrNodeNumber);
+            return attr;
+
+        } else if (Type.subTypeOf(type, Type.NODE)) {
+
+            switch (type) {
+                case Type.ELEMENT:
+                    if (item instanceof Document) {
+                        return (ElementImpl) ((DocumentImpl) item).getDocumentElement();
+                    } else if (!(item instanceof Element)) {
+                        throw new XMLStreamException("sx:value should only contain an Element if type is " + typeName);
+                    } else {
+                        return (ElementImpl) item;
+                    }
+
+                case Type.COMMENT:
+                    if (!(item instanceof Comment)) {
+                        throw new XMLStreamException("sx:value should only contain a Comment node if type is " + typeName);
+                    }
+                    return (CommentImpl) item;
+
+                case Type.PROCESSING_INSTRUCTION:
+                    if (!(item instanceof ProcessingInstruction)) {
+                        throw new XMLStreamException("sx:value should only contain a Processing Instruction node if type is " + typeName);
+                    }
+                    return (ProcessingInstructionImpl) item;
+
+                case Type.TEXT:
+                    if (!(item instanceof Text)) {
+                        throw new XMLStreamException("sx:value should only contain a Text node if type is " + typeName);
+                    }
+                    return (TextImpl) item;
+
+                case Type.DOCUMENT:
+                default:
+                    if (item instanceof Document || item instanceof Element) {
+                        final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(((NodeImpl) item).getExpression());
+                        try {
+                            receiver.startDocument();
+                            ((NodeImpl) item).copyTo(null, receiver);
+                            receiver.endDocument();
+                        } catch (final SAXException e) {
+                            throw new XPathException(item != null ? ((NodeImpl) item).getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
+                        }
+                        return (NodeImpl) receiver.getDocument();
+                    } else {
+                        throw new XMLStreamException("sx:value should only contain a Node if type is " + typeName);
+                    }
+            }
+
+        } else if (type == Type.ITEM && !(item instanceof Text)) {
+            // item() type requested and we have been given a node which is not a text() node
+            return (NodeImpl) item;
+
+        } else if (type == Type.ARRAY || (type == Type.ITEM && !sxSequences.isEmpty())) {
+            // array(*) type
+            final List<Sequence> arrayValues = new ArrayList<>();
+            for (final SequenceIterator itSxSequence = sxSequences.iterate(); itSxSequence.hasNext();) {
+                final ElementImpl sxSequence = (ElementImpl) itSxSequence.nextItem();
+                final Sequence arrayValue = demarshallSequence(context, sxSequence);
+                arrayValues.add(arrayValue);
+            }
+            return new ArrayType(context, arrayValues);
+
+        } else if (type == Type.MAP || (type == Type.ITEM && !sxEntries.isEmpty())) {
+            // map(*) type
+            final List<Tuple2<AtomicValue, Sequence>> mapEntries = new ArrayList<>();
+
+            for (final SequenceIterator itSxEntry = sxEntries.iterate(); itSxEntry.hasNext();) {
+                final ElementImpl sxEntry = (ElementImpl) itSxEntry.nextItem();
+                final NodeList entryKeys = sxEntry.getElementsByTagNameNS(KEY_ELEMENT_QNAME.getNamespaceURI(), KEY_ELEMENT_QNAME.getLocalPart());
+                final Element entryKey = (Element) entryKeys.item(0);
+                final int keyType = Type.getType(entryKey.getAttribute(ATTR_TYPE));
+                final String keyStr = entryKey.getTextContent();
+                final AtomicValue key = new StringValue(keyStr).convertTo(keyType);
+                final NodeList entrySequences = sxEntry.getElementsByTagNameNS(SEQUENCE_ELEMENT_QNAME.getNamespaceURI(), SEQUENCE_ELEMENT_QNAME.getLocalPart());
+                final ElementImpl entrySequence = (ElementImpl) entrySequences.item(0);
+                final Sequence value = demarshallSequence(context, entrySequence);
+                mapEntries.add(Tuple(key, value));
+            }
+            return new MapType(context, null, mapEntries);
+
+        } else {
+            // specific non-node type or text()
+            final StringBuilder data = new StringBuilder();
+            while (item != null) {
+                if (!(item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)) {
+                    throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+                }
+                data.append(item.getNodeValue());
+                item = item.getNextSibling();
+            }
+            return new StringValue(data.toString()).convertTo(type);
+        }
     }
 
     public static Item streamToDOM(XMLStreamReader parser, XQItemType type) throws XMLStreamException, XQException {
@@ -338,6 +516,18 @@ public class Marshaller {
                     break;
                 case XMLStreamConstants.CHARACTERS :
                     builder.characters(parser.getText());
+                    break;
+
+                case XMLStreamConstants.COMMENT:
+                    builder.comment(parser.getText());
+                    break;
+
+                case XMLStreamConstants.PROCESSING_INSTRUCTION:
+                    builder.processingInstruction(parser.getPITarget(), parser.getPIData());
+                    break;
+
+                case XMLStreamConstants.CDATA:
+                    builder.cdataSection(parser.getText());
                     break;
             }
             if (finish) {break;}

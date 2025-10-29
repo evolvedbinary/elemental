@@ -79,7 +79,9 @@ import org.xmldb.api.modules.XQueryService;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import org.xmlunit.matchers.CompareMatcher;
 
+import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import java.io.IOException;
@@ -89,7 +91,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
@@ -241,9 +243,8 @@ public class XQueryTest {
         assertEquals("XQuery: " + query, 50, result.getSize());
 
         //WARNING : the return order CHANGES !!!!!!!!!!!!!!!!!!
-
-        assertXMLEqual("<value>99</value>", ((XMLResource) result.getResource(0)).getContent().toString());
-        assertXMLEqual("<value>1</value>", ((XMLResource) result.getResource(49)).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<value>99</value>"));
+        assertThat(result.getResource(49).getContent().toString(), CompareMatcher.isIdenticalTo("<value>1</value>"));
     }
 
     @Test
@@ -494,25 +495,25 @@ public class XQueryTest {
                 "return <a>{$node}</a>";
         result = service.queryResource(NUMBERS_XML, query);
         assertEquals("XQuery: " + query, 1, result.getSize());
-        assertXMLEqual("<a id='cool'/>", ((XMLResource) result.getResource(0)).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a id='cool'/>"));
 
         query = "let $node := (<c id='OK'><b id='cool'/></c>)/descendant-or-self::*/child::b " +
                 "return <a>{$node}</a>";
         result = service.queryResource(NUMBERS_XML, query);
         assertEquals("XQuery: " + query, 1, result.getSize());
-        assertXMLEqual("<a><b id='cool'/></a>", ((XMLResource) result.getResource(0)).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><b id='cool'/></a>"));
 
         query = "let $node := (<c id='OK'><b id='cool'/></c>)/descendant-or-self::*/descendant::b " +
                 "return <a>{$node}</a>";
         result = service.queryResource(NUMBERS_XML, query);
         assertEquals("XQuery: " + query, 1, result.getSize());
-        assertXMLEqual("<a><b id='cool'/></a>", ((XMLResource) result.getResource(0)).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><b id='cool'/></a>"));
 
         query = "let $doc := <a id='a'><b id='b'/></a> " +
                 "return $doc/*/(<id>{@id}</id>)";
         result = service.queryResource(NUMBERS_XML, query);
         assertEquals("XQuery: " + query, 1, result.getSize());
-        assertXMLEqual("<id id='b' />", ((XMLResource) result.getResource(0)).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<id id='b' />"));
     }
 
     @Test
@@ -540,8 +541,7 @@ public class XQueryTest {
                 "return $x";
         result = service.queryResource(NUMBERS_XML, query);
         assertEquals("XQuery: " + query, 1, result.getSize());
-        assertXMLEqual("<node1 id='id'><node1>1</node1><node2>2</node2></node1>",
-                ((XMLResource) result.getResource(0)).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<node1 id='id'><node1>1</node1><node2>2</node2></node1>"));
     }
 
     @Test
@@ -950,8 +950,8 @@ public class XQueryTest {
                 "for $x in <parent4 xmlns=\"http://www.example.com/parent4\"><child4/></parent4> " +
                 "return <new>{$x//*:child4}</new>";
         result = service.query(query);
-        assertXMLEqual("<new><child4 xmlns='http://www.example.com/parent4'/></new>",
-                ((XMLResource) result.getResource(0)).getContent().toString());
+
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<new><child4 xmlns='http://www.example.com/parent4'/></new>"));
     }
 
     @Test
@@ -1065,7 +1065,7 @@ public class XQueryTest {
         assertEquals("XQuery: " + query, "bar1", result.getResource(1).getContent());
         assertEquals("XQuery: " + query, "bar2", result.getResource(2).getContent());
 
-//			Non-heritance check
+//			Non-transitive inheritance check
         query = "xquery version \"1.0\";\n" + "import module namespace foo=\"foo\" at \"" + URI + "/test/" + FATHER_MODULE_NAME + "\";\n" + "declare namespace foo1=\"foo1\"; \n" + "$foo1:bar";
         try {
             message = "";
@@ -1073,9 +1073,9 @@ public class XQueryTest {
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
-        assertTrue(message.indexOf("XPDY0002") > -1);
+        assertTrue(message.indexOf("XPST0008") > -1);
 
-//			Non-heritance check
+//			Non-transitive inheritance check
         query = "xquery version \"1.0\";\n" + "import module namespace foo=\"foo\" at \"" + URI + "/test/" + FATHER_MODULE_NAME + "\";\n" + "declare namespace foo2=\"foo2\"; \n" + "$foo2:bar";
         try {
             message = "";
@@ -1083,7 +1083,7 @@ public class XQueryTest {
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
-        assertTrue(message.indexOf("XPDY0002") > -1);
+        assertTrue(message.indexOf("XPST0008") > -1);
         query = "xquery version \"1.0\";\n" + "import module namespace foo1=\"foo\" at \"" + URI + "/test/" + CHILD1_MODULE_NAME + "\";\n" + "import module namespace foo2=\"foo\" at \"" + URI + "/test/" + CHILD1_MODULE_NAME + "\";\n" + "$foo1:bar";
         try {
             message = "";
@@ -1134,8 +1134,7 @@ public class XQueryTest {
         ResourceSet result = service.query(query);
         assertEquals(1, result.getSize());
         result.getResource(0).getContent();
-        assertXMLEqual("<div xmlns='http://www.w3.org/1999/xhtml'><a xmlns=\"\" href='#'>Link</a></div>",
-                result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<div xmlns='http://www.w3.org/1999/xhtml'><a xmlns=\"\" href='#'>Link</a></div>"));
 
         query = "xquery version \"1.0\";\n" +
                 "import module namespace foo=\"foo\" at \"" + URI + "/test/" + MODULE7_NAME + "\";\n" +
@@ -1145,8 +1144,7 @@ public class XQueryTest {
         result = service.query(query);
         assertEquals(1, result.getSize());
         result.getResource(0).getContent();
-        assertXMLEqual("<div xmlns='http://www.w3.org/1999/xhtml'><a>Link</a></div>",
-                result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<div xmlns='http://www.w3.org/1999/xhtml'><a>Link</a></div>"));
     }
 
     @Test
@@ -1159,8 +1157,8 @@ public class XQueryTest {
             final XQuery xquery = brokerPool.getXQueryService();
             final XQueryPool queryPool = brokerPool.getXQueryPool();
 
-            CompiledXQuery compiled = null;
-            XQueryContext context = null;
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
             try {
                 compiled = queryPool.borrowCompiledXQuery(broker, source);
                 if (compiled == null) {
@@ -1170,10 +1168,13 @@ public class XQueryTest {
                     context.prepareForReuse();
                 }
 
-                context.declareVariable(new QName("s"), new IntegerValue(timestamp));
+                context.declareVariable(new QName("s"), true, new IntegerValue(timestamp));
 
-                if(compiled == null) {
+                if (compiled == null) {
                     compiled = xquery.compile(context, source);
+                } else {
+                    compiled.getContext().updateContext(context);
+                    context.getWatchDog().reset();
                 }
 
                 final Sequence result = xquery.execute(broker, compiled, null, null);
@@ -1190,11 +1191,8 @@ public class XQueryTest {
                 assertFalse(diff.toString(), diff.hasDifferences());
 
             } finally {
-                if (compiled != null) {
-                    compiled.reset();
-                }
                 if (context != null) {
-                    context.reset();
+                    context.runCleanupTasks();
                 }
                 if (compiled != null) {
                     queryPool.returnCompiledXQuery(source, compiled);
@@ -1896,7 +1894,7 @@ public class XQueryTest {
                 "return <row>{$a/titolo/text()} {' '} {$a/autor/text()}</row>";
         XPathQueryService service = (XPathQueryService) getTestCollection().getService("XPathQueryService", "1.0");
         ResourceSet result = service.query(query);
-        assertXMLEqual("<row>titolo giulio</row>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<row>titolo giulio</row>"));
     }
 
     @Test
@@ -2035,7 +2033,7 @@ public class XQueryTest {
         ResourceSet result = service.query(query);
 
         assertEquals(1, result.getSize());
-        assertXMLEqual("Oops", xmldoc, result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo(xmldoc));
     }
 
     /**

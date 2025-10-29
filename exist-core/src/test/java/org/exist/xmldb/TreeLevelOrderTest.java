@@ -96,7 +96,7 @@ public class TreeLevelOrderTest {
      * </ul>
      */
     @Test
-    public void treeLevelOrder() throws XMLDBException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    public void treeLevelOrder() throws XMLDBException {
         // create document
         // write document to the database
         store(DOC1, DOC1_NAME);
@@ -131,14 +131,16 @@ public class TreeLevelOrderTest {
     private void store(final String xml, final String document) throws XMLDBException {
         final StringBuilder query = new StringBuilder();
         query.append("declare namespace xmldb='http://exist-db.org/xquery/xmldb';");
+        query.append("declare variable $survey as xs:string external;");
+        query.append("declare variable $document as xs:string external;");
         query.append("let $isLoggedIn := xmldb:login('" + XmldbURI.ROOT_COLLECTION + "', '" + TestUtils.ADMIN_DB_USER + "', '" + TestUtils.ADMIN_DB_PWD + "'),");
         query.append("$doc := xmldb:store('" + XmldbURI.ROOT_COLLECTION + "', $document, $survey)");
         query.append("return <result/>");
 
         final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
+        final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("survey", xml);
         service.declareVariable("document", document);
-        final CompiledExpression cQuery = service.compile(query.toString());
         service.execute(cQuery);
     }
 
@@ -149,12 +151,13 @@ public class TreeLevelOrderTest {
      */
     private Node load(final String document) throws XMLDBException {
         final StringBuilder query = new StringBuilder();
+        query.append("declare variable $document as xs:string external;");
         query.append("let $survey := doc(string-join(('" + XmldbURI.ROOT_COLLECTION + "', $document), '/'))");
         query.append("return $survey");
 
         final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
-        service.declareVariable("document", document);
         final CompiledExpression cQuery = service.compile(query.toString());
+        service.declareVariable("document", document);
         final ResourceSet set = service.execute(cQuery);
         if (set != null && set.getSize() > 0) {
             return ((XMLResource) set.getIterator().nextResource()).getContentAsDOM();

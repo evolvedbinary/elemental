@@ -72,6 +72,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+
+import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -452,29 +454,37 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 //            baseUri = null;
 //        }
 
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         final String requestAttr = (String) request.getAttribute(ATTR_XQUERY_ATTRIBUTE);
         try(final DBBroker broker = getPool().get(Optional.ofNullable(user))) {
             final XQuery xquery = broker.getBrokerPool().getXQueryService();
-            CompiledXQuery query = getPool().getXQueryPool().borrowCompiledXQuery(broker, source);
+            compiled = getPool().getXQueryPool().borrowCompiledXQuery(broker, source);
 
-            XQueryContext context;
-            if (query==null) {
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+
+            if (compiled == null) {
                context = new XQueryContext(getPool());
                context.setModuleLoadPath(moduleLoadPath);
-               try {
-            	   query = xquery.compile(context, source);
-                   
-               } catch (final XPathException ex) {
-                  throw new EXistException("Cannot compile xquery: "+ ex.getMessage(), ex);
-                  
-               } catch (final IOException ex) {
-                  throw new EXistException("I/O exception while compiling xquery: " + ex.getMessage() ,ex);
-               }
-               
             } else {
-               context = query.getContext();
+               context = compiled.getContext();
                context.setModuleLoadPath(moduleLoadPath);
                context.prepareForReuse();
+            }
+
+
+            if (compiled == null) {
+                try {
+                    compiled = xquery.compile(context, source);
+                } catch (final XPathException e) {
+                    throw new EXistException("Cannot compile xquery: " + e.getMessage(), e);
+                } catch (final IOException e) {
+                    throw new EXistException("I/O exception while compiling xquery: " + e.getMessage(), e);
+                }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
             }
 
             final Properties outputProperties = new Properties();
@@ -506,14 +516,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 
             DebuggeeFactory.checkForDebugRequest(request, context);
 
-            Sequence resultSequence;
-            try {
-                resultSequence = xquery.execute(broker, query, null, outputProperties);
-                
-            } finally {
-                context.runCleanupTasks();
-                getPool().getXQueryPool().returnCompiledXQuery(source, query);
-            }
+            final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
 
             final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
             if (mediaType != null) {
@@ -580,6 +583,13 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             	sendError(output, "Error", e.getMessage());
             }
             
+        } finally {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                getPool().getXQueryPool().returnCompiledXQuery(source, compiled);
+            }
         }
 
         output.flush();

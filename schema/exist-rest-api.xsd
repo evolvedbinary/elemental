@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" vc:minVersion="1.1"
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:exist="http://exist.sourceforge.net/NS/exist"
+  xmlns:sx="http://exist-db.org/xquery/types/serialized"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified"
+  targetNamespace="http://exist.sourceforge.net/NS/exist"
+  version="1.0.0">
+
+  <xs:import schemaLocation="exist-serialized-types.xsd" namespace="http://exist-db.org/xquery/types/serialized"/>
+  <xs:import schemaLocation="exist-rest-api-exception.xsd"/>
+
+
+  <!-- 
+    Schema for Elemental's eXist-db REST API
+  -->
+  <xs:annotation>
+    <xs:documentation>Schema for Elemental's eXist-db REST API document formats</xs:documentation>
+    <xs:appinfo>
+      <dcterms:title>Schema for Elemental's eXist-db REST API</dcterms:title>
+      <dcterms:created xsi:type="dcterms:W3CDTF">2025-10-09T11:27:21.419+02:00</dcterms:created>
+      <dcterms:creator>Adam Retter</dcterms:creator>
+    </xs:appinfo>
+  </xs:annotation>
+
+  <xs:element name="query">
+    <xs:annotation>
+      <xs:documentation>REST API XPath/XQuery.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="properties" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Properties to pass to the Serializer.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="property" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:documentation>A key/value property.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:attribute name="key" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:documentation>The key of the property.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="value" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:documentation>The value of the property.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="variables" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Values for external variables that should be bound to the XQuery.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="variable" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:documentation>The value of an external variable.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="qname">
+                      <xs:annotation>
+                        <xs:documentation>A Qualified Name.</xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="namespace" type="xs:string" minOccurs="0">
+                            <xs:annotation>
+                              <xs:documentation>Namespace for the Qualified Name.</xs:documentation>
+                            </xs:annotation>
+                          </xs:element>
+                          <xs:element name="prefix" type="xs:NCName" minOccurs="0">
+                            <xs:annotation>
+                              <xs:documentation>Prefix for the Qualified Name.</xs:documentation>
+                            </xs:annotation>
+                          </xs:element>
+                          <xs:element name="localname" type="xs:NCName">
+                            <xs:annotation>
+                              <xs:documentation>Local name part of the Qualified Name.</xs:documentation>
+                            </xs:annotation>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element ref="sx:sequence"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="text" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>An XPath or XQuery to execute. To avoid escaping XML sensitive characters, it can be wrapped in a CData Section if necessary.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="start" type="exist:nonZeroPositiveInt" default="1">
+        <xs:annotation>
+          <xs:documentation>The position in the result sequence to return results from, similar to fn:subsequence($result, $start)</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="max" type="exist:negOneOrOnePlusInt" default="10">
+        <xs:annotation>
+          <xs:documentation>The maximum number of results to return from the result sequence, similar to fn:subsequence($result, $start, $max)</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="cache" type="exist:yes_no" default="no">
+        <xs:annotation>
+          <xs:documentation>When set to 'yes' the results of the query will be cached and a Session ID will be returned in: (a) the HTTP Response Header 'X-Session-Id', and (b) if the 'wrap' attribute is set to 'yes', then also as the value of the 'session' attribute of the 'exist:result' element. This can be useful if you want to make multiple calls to page through the result sequence using the 'session', 'start', and 'max' attributes.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="session" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>The Session ID of a cached session to retrieve results from. This can only be used after the first call of a query with cache='yes' set.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="typed" type="exist:yes_no" default="no">
+        <xs:annotation>
+          <xs:documentation>When set to 'yes' the result sequence will be annotated with XDM type information.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="wrap" type="exist:yes_no" default="yes">
+        <xs:annotation>
+          <xs:documentation>When set to 'yes' the result sequence will be wrapped in an 'exist:result' element.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="enclose" type="exist:yes_no" default="yes">
+        <xs:annotation>
+          <xs:documentation>Deprecated. Use the 'wrap' attribute instead.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="encoding" type="xs:string" default="UTF-8">
+        <xs:annotation>
+          <xs:documentation>The character encoding to use.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="method" type="exist:serializationMethod" default="xml">
+        <xs:annotation>
+          <xs:documentation>The serialization method to use for the query resultds</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  
+  <xs:element name="result">
+    <xs:annotation>
+      <xs:documentation>REST API Results Wrapper.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:choice minOccurs="0">
+          <xs:element ref="exist:collection"/>
+          <xs:choice maxOccurs="unbounded">
+            <xs:element ref="exist:value"/>
+            <xs:element ref="exist:attribute"/>
+            <xs:element ref="exist:document"/>
+            <xs:element ref="exist:text"/>
+            <xs:element ref="exist:array"/>
+            <xs:element ref="exist:map"/>
+            <xs:any processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
+          </xs:choice>
+        </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="hits" form="qualified" type="xs:positiveInteger">
+        <xs:annotation>
+          <xs:documentation>The total number of results available in the result sequence.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="start" form="qualified" type="exist:nonZeroPositiveInt">
+        <xs:annotation>
+          <xs:documentation>The position in the result sequence that return results are returned from. Should be equal to the 'start' parameter sent in the query.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="count" form="qualified" type="xs:positiveInteger">
+        <xs:annotation>
+          <xs:documentation>The number of results returned in this request. Should be equal or less than the 'max' parameter sent in the query.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="compilation-time" form="qualified" type="xs:positiveInteger">
+        <xs:annotation>
+          <xs:documentation>The time taken in milliseconds to compile the query.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="execution-time" form="qualified" type="xs:positiveInteger">
+        <xs:annotation>
+          <xs:documentation>The time taken in milliseconds to execute the query.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="collection">
+    <xs:annotation>
+      <xs:documentation>Metadata about a Collection in the database.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="collection" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>Metadata about a child Collection in the database.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required">
+              <xs:annotation>
+                <xs:documentation>The name of the child Collection.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attributeGroup ref="exist:commonCollectionAttrs"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="resource" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>Metadata about a Resource in the database.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required">
+              <xs:annotation>
+                <xs:documentation>The name of the Resource.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute ref="exist:created" use="required"/>
+            <xs:attribute ref="exist:last-modified" use="required"/>
+            <xs:attribute ref="exist:owner" use="required"/>
+            <xs:attribute ref="exist:group" use="required"/>
+            <xs:attribute ref="exist:permissions" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:anyURI" use="required">
+        <xs:annotation>
+          <xs:documentation>The URI of the Collection.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="exist:commonCollectionAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="value">
+    <xs:annotation>
+      <xs:documentation>The type and value of an XDM Atomic Value.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="type" form="qualified" type="xs:QName" use="required">
+            <xs:annotation>
+              <xs:documentation>The XDM type of the value</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="sequence">
+    <xs:annotation>
+      <xs:documentation>An XDM Sequence.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element ref="exist:value"/>
+          <xs:element ref="exist:attribute"/>
+          <xs:element ref="exist:document"/>
+          <xs:element ref="exist:text"/>
+          <xs:element ref="exist:array"/>
+          <xs:element ref="exist:map"/>
+          <xs:any processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="attribute">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Attribute Node.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="local" form="qualified" type="xs:NCName" use="required">
+            <xs:annotation>
+              <xs:documentation>The local name part of the Attribute's Qualified Name.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="prefix" form="qualified" type="xs:NCName" use="optional">
+            <xs:annotation>
+              <xs:documentation>The prefix part of the Attribute's Qualified Name.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="target-namespace" form="qualified" type="xs:NCName" use="optional">
+            <xs:annotation>
+              <xs:documentation>The namespace part of the Attribute's Qualified Name.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="document">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Document Node.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:any maxOccurs="unbounded" processContents="lax" notNamespace="##targetNamespace http://exist-db.org/xquery/types/serialized"/>
+      </xs:sequence>
+      <xs:attribute name="uri" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>The Base URI of the document.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="has-element" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:documentation>Indicates whether the Document Node has an Element child Node.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="text" type="xs:string">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Text Node.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="array">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Array.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:annotation>
+          <xs:documentation>Can be used for XDM Array entries.</xs:documentation>
+        </xs:annotation>
+        <xs:element ref="exist:sequence" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="map">
+    <xs:annotation>
+      <xs:documentation>Wrapper for an XDM Map.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="entry" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>Can be used for XDM Map entries.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="key">
+                <xs:annotation>
+                  <xs:documentation>The key for the Map entry.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="exist:value"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element ref="exist:sequence"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="yes_no">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="yes"/>
+      <xs:enumeration value="no"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="nonZeroPositiveInt">
+    <xs:annotation>
+      <xs:documentation>An xs:int that starts from 1</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:int">
+      <xs:minInclusive value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="negOneInt">
+    <xs:annotation>
+      <xs:documentation>An xs:int that can only be -1</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:int">
+      <xs:minInclusive value="-1"/>
+      <xs:maxInclusive value="-1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="negOneOrOnePlusInt">
+    <xs:annotation>
+      <xs:documentation>An xs:int that is either -1 or 1 or more</xs:documentation>
+    </xs:annotation>
+    <xs:union memberTypes="exist:negOneInt exist:nonZeroPositiveInt"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="serializationMethod">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="xml"/>
+      <xs:enumeration value="xhtml"/>
+      <xs:enumeration value="html"/>
+      <xs:enumeration value="html5"/>
+      <xs:enumeration value="json"/>
+      <xs:enumeration value="adaptive"/>
+      <xs:enumeration value="text"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:attributeGroup name="commonCollectionAttrs">
+    <xs:attribute ref="exist:created" use="required"/>
+    <xs:attribute ref="exist:owner" use="required"/>
+    <xs:attribute ref="exist:group" use="required"/>
+    <xs:attribute ref="exist:permissions" use="required"/>
+  </xs:attributeGroup>
+
+  <xs:attribute name="created" type="xs:dateTimeStamp">
+    <xs:annotation>
+      <xs:documentation>The creation date of the Collection.</xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
+
+  <xs:attribute name="last-modified" type="xs:dateTimeStamp">
+    <xs:annotation>
+      <xs:documentation>The last modified date of the Collection or Resource.</xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
+
+  <xs:attribute name="owner" type="xs:NCName">
+    <xs:annotation>
+      <xs:documentation>The user owning the Collection or Resource.</xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
+
+  <xs:attribute name="group" type="xs:NCName">
+    <xs:annotation>
+      <xs:documentation>The group owning the Collection or Resource.</xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
+
+  <xs:attribute name="permissions">
+    <xs:annotation>
+      <xs:documentation>The permissions of the Collection or Resource.</xs:documentation>
+    </xs:annotation>
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="([r-][w-][xsS-]){2}([r-][w-][xt-])"/>
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+
+</xs:schema>

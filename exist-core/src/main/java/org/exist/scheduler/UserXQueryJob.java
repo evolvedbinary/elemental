@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -48,6 +72,8 @@ import org.exist.xquery.value.StringValue;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -179,14 +205,12 @@ public class UserXQueryJob extends UserJob {
     }
 
     private void executeXQuery(final BrokerPool pool, final DBBroker broker, final Source source, final Properties params) throws PermissionDeniedException, XPathException, JobExecutionException {
-        XQueryPool xqPool  = null;
-        CompiledXQuery compiled = null;
-        XQueryContext context = null;
-
+        final XQueryPool xqPool = pool.getXQueryPool();
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
         try {
             //execute the xquery
             final XQuery xquery = pool.getXQueryService();
-            xqPool = pool.getXQueryPool();
 
             //try and get a pre-compiled query from the pool
             compiled = xqPool.borrowCompiledXQuery(broker, source);
@@ -205,12 +229,14 @@ public class UserXQueryJob extends UserJob {
             }
 
             if (compiled == null) {
-
                 try {
                     compiled = xquery.compile(context, source);
                 } catch (final IOException e) {
                     abort("Failed to read query from " + xqueryResource);
                 }
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
             }
 
             //declare any parameters as external variables
@@ -225,7 +251,7 @@ public class UserXQueryJob extends UserJob {
                 for (final Entry param : params.entrySet()) {
                     final String key = (String) param.getKey();
                     final String value = (String) param.getValue();
-                    context.declareVariable(bindingPrefix + ":" + key, new StringValue(value));
+                    context.declareVariable(bindingPrefix + ":" + key, true, new StringValue(value));
                 }
             }
 

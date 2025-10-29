@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,20 +50,21 @@ import java.nio.charset.StandardCharsets;
 /**
  * @author <a href="mailto:patrick@reini.net">Patrick Reinhart</a>
  */
-public final class ByteArrayContent implements ContentFile {
+public final class ByteArrayContent extends AbstractContentFile {
     private static final byte[] EMPTY_BUFFER = new byte[0];
 
     private byte[] data;
 
-    public static ByteArrayContent of(byte[] data) {
-        return new ByteArrayContent(data);
+    public static ByteArrayContent of(final ContentFileType type, final byte[] data) {
+        return new ByteArrayContent(type, data);
     }
 
-    public static ByteArrayContent of(String data) {
-        return new ByteArrayContent(data.getBytes(StandardCharsets.UTF_8));
+    public static ByteArrayContent of(final ContentFileType type, final String data) {
+        return of(type, data.getBytes(StandardCharsets.UTF_8));
     }
 
-    private ByteArrayContent(byte[] data) {
+    private ByteArrayContent(final ContentFileType type, final byte[] data) {
+        super(type);
         this.data = data;
     }
 

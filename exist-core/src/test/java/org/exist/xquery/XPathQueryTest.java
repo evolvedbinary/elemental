@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -40,6 +64,7 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 import org.xmldb.api.modules.XQueryService;
+import org.xmlunit.matchers.CompareMatcher;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -53,10 +78,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class XPathQueryTest {
@@ -434,7 +456,7 @@ public class XPathQueryTest {
         if (node.getNodeType() == Node.DOCUMENT_NODE) {
             node = node.getFirstChild();
         }
-        assertEquals("XPath: " + query, "a", node.getLocalName());
+        assertEquals("XPath: " + query, "a", node.getNodeName());
 
         query = "let $c := (<a/>,<b/>,<c/>,<d/>,<e/>) return count($c/root())";
         result = service.queryResource("numbers.xml", query);
@@ -569,16 +591,16 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.INDENT, "no");
 
         ResourceSet result = queryResource(service, "siblings.xml", "//a[preceding-sibling::*[1]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>Z</s> <n>4</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>4</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "//a[preceding-sibling::a[1]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>Z</s> <n>4</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>4</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "//a[preceding-sibling::*[2]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>C</s> <n>5</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>C</s> <n>5</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "//a[preceding-sibling::a[2]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>C</s> <n>5</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>C</s> <n>5</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "/test/preceding-sibling::node()", 2);
         assertEquals("<!-- 1 -->", result.getResource(0).getContent().toString());
@@ -637,9 +659,10 @@ public class XPathQueryTest {
         rs = service.query("let $doc := <doc><div id='1'/><div id='2'><div id='3'/></div><div id='4'/><div id='5'><div id='6'/></div></doc> " +
                 "return $doc/div/preceding-sibling::div");
         assertEquals(3, rs.getSize());
-        assertXMLEqual("<div id='1'/>", rs.getResource(0).getContent().toString());
-        assertXMLEqual("<div id='2'><div id='3'/></div>", rs.getResource(1).getContent().toString());
-        assertXMLEqual("<div id='4'/>", rs.getResource(2).getContent().toString());
+
+        assertThat(rs.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='1'/>"));
+        assertThat(rs.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='2'><div id='3'/></div>"));
+        assertThat(rs.getResource(2).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='4'/>"));
 
         rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[1]/preceding-sibling::node()");
         assertEquals(0, rs.getSize());
@@ -689,16 +712,16 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.INDENT, "no");
 
         ResourceSet result = queryResource(service, "siblings.xml", "//a[following-sibling::*[1]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>Z</s> <n>2</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>2</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "//a[following-sibling::a[1]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>Z</s> <n>2</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>2</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "//a[following-sibling::*[2]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>A</s> <n>1</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>A</s> <n>1</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "//a[following-sibling::a[2]/s = 'B']", 1);
-        assertXMLEqual("<a> <s>A</s> <n>1</n> </a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>A</s> <n>1</n> </a>"));
 
         result = queryResource(service, "siblings.xml", "/test/following-sibling::node()", 1);
         assertEquals("<!-- 3 -->", result.getResource(0).getContent().toString());
@@ -749,7 +772,7 @@ public class XPathQueryTest {
         rs = service.query("let $doc := <doc><div id='1'><div id='2'/></div><div id='3'/></doc> " +
                 "return $doc/div[1]/following-sibling::div");
         assertEquals(1, rs.getSize());
-        assertXMLEqual("<div id='3'/>", rs.getResource(0).getContent().toString());
+        assertThat(rs.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='3'/>"));
 
         rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/test/following-sibling::node()");
         assertEquals(1, rs.getSize());
@@ -758,7 +781,7 @@ public class XPathQueryTest {
         rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[1]/following-sibling::node()");
         assertEquals(3, rs.getSize());
         assertEquals("<!-- 2 -->", rs.getResource(0).getContent().toString());
-        assertXMLEqual("<test/>", rs.getResource(1).getContent().toString());
+        assertThat(rs.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<test/>"));
         assertEquals("<!-- 3 -->", rs.getResource(2).getContent().toString());
 
         rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/following-sibling::comment()[1]");
@@ -793,9 +816,10 @@ public class XPathQueryTest {
         queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s", 3);
         queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::n", 4);
         ResourceSet result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[1]", 1);
-        assertXMLEqual("<s>Z</s>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<s>Z</s>"));
+
         result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[2]", 1);
-        assertXMLEqual("<s>C</s>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<s>C</s>"));
     }
 
     @Test
@@ -884,7 +908,7 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.INDENT, "no");
         result = service.queryResource("numbers.xml", query);
         assertEquals("XPath: " + query, 1, result.getSize());
-        assertXMLEqual("<a><b/></a>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><b/></a>"));
 
         //TODO : make this work ! It currently returns some content
         //query = "let $doc := document {<a><b><c>1</c></b><b><c>a</c></b></a>} " +
@@ -991,18 +1015,15 @@ public class XPathQueryTest {
 
         result = queryResource(service, "numbers.xml", "for $i in //item return " +
                 "<item>{$i/price, $i/stock}</item>", 4);
-        assertXMLEqual("<item><price>5.6</price><stock>22</stock></item>",
-                result.getResource(0).getContent().toString());
-        assertXMLEqual("<item><price>65.54</price><stock>16</stock></item>",
-                result.getResource(3).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<item><price>5.6</price><stock>22</stock></item>"));
+        assertThat(result.getResource(3).getContent().toString(), CompareMatcher.isIdenticalTo("<item><price>65.54</price><stock>16</stock></item>"));
 
         // test positional predicates
         result = queryResource(service, "numbers.xml", "/test/node()[2]", 1);
-        assertXMLEqual("<item id='2'><price>7.4</price><stock>43</stock></item>",
-                result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<item id='2'><price>7.4</price><stock>43</stock></item>"));
+
         result = queryResource(service, "numbers.xml", "/test/element()[2]", 1);
-        assertXMLEqual("<item id='2'><price>7.4</price><stock>43</stock></item>",
-                result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<item id='2'><price>7.4</price><stock>43</stock></item>"));
 
         // positional predicate on sequence of atomic values
         result = queryResource(service, "numbers.xml", "('test', 'pass')[2]", 1);
@@ -1037,8 +1058,7 @@ public class XPathQueryTest {
                 + "<a> <s>Z</s> 6 </a>" + "</test>"
                 + "return $t//a[s='Z' and preceding-sibling::*[1]/s='B']";
         ResourceSet result = queryResource(service, "numbers.xml", query, 1);
-        assertXMLEqual("<a><s>Z</s> 4 </a>", result.getResource(0)
-        .getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
 
         query = "let $t := <test>" + "<a> <s>A</s> 1 </a>"
                 + "<a> <s>Z</s> 2 </a>" + "<a> <s>B</s> 3 </a>"
@@ -1046,28 +1066,23 @@ public class XPathQueryTest {
                 + "<a> <s>Z</s> 6 </a>" + "</test>"
                 + "return $t//a[s='Z' and ./preceding-sibling::*[1]/s='B']";
         result = queryResource(service, "numbers.xml", query, 1);
-        assertXMLEqual("<a><s>Z</s> 4 </a>", result.getResource(0)
-        .getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
 
         query = "let $doc := <doc><rec n='1'><a>first</a><b>second</b></rec>" +
                 "<rec n='2'><a>first</a><b>third</b></rec></doc> " +
                 "return $doc//rec[fn:not(b = 'second') and (./a = 'first')]";
         result = queryResource(service, "numbers.xml", query, 1);
-        assertXMLEqual("<rec n=\"2\"><a>first</a><b>third</b></rec>", result.getResource(0)
-        .getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<rec n=\"2\"><a>first</a><b>third</b></rec>"));
 
         query = "let $doc := <doc><a b='c' d='e'/></doc> " +
                 "return $doc/a[$doc/a/@b or $doc/a/@d]";
         result = queryResource(service, "numbers.xml", query, 1);
-        assertXMLEqual("<a b=\"c\" d=\"e\"/>", result.getResource(0)
-                .getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a b=\"c\" d=\"e\"/>"));
 
         query = "let $x := <a><b><x/><x/></b><b><x/></b></a>" +
             "return $x//b[count(x) = 2]";
         result = queryResource(service, "numbers.xml", query, 1);
-        assertXMLEqual("<b><x/><x/></b>", result.getResource(0)
-                .getContent().toString());
-
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<b><x/><x/></b>"));
 
 
         //Boolean evaluation for "." (atomic sequence)
@@ -1079,8 +1094,7 @@ public class XPathQueryTest {
 
         query = " 	let $c := (<a/>,<b/>), $i := 1 return $c[$i]";
         result = queryResource(service, "numbers.xml", query, 1);
-        assertXMLEqual("<a/>", result.getResource(0)
-                .getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a/>"));
 
         query = "(1,2,3)[position() = last()]";
         result = queryResource(service, "numbers.xml", query, 1);
@@ -1141,8 +1155,9 @@ public class XPathQueryTest {
             "for $name in ('A', 'B') return " +
             "$res/element[@name=$name][1]";
         result = queryResource(service, "numbers.xml", query, 2);
-        assertXMLEqual("<element name='A'/>", result.getResource(0).getContent().toString());
-        assertXMLEqual("<element name='B'/>", result.getResource(1).getContent().toString());
+
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<element name='A'/>"));
+        assertThat(result.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<element name='B'/>"));
     }
 
 
@@ -1207,8 +1222,7 @@ public class XPathQueryTest {
 	    rs = service.query(xQuery);
 
 	    assertEquals(1, rs.getSize());
-	    assertXMLEqual("<element><complexType><attribute name=\"design\" fixed=\"1\"/></complexType></element>", 
-	    		rs.getResource(0).getContent().toString());
+        assertThat(rs.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<element><complexType><attribute name=\"design\" fixed=\"1\"/></complexType></element>"));
 
     }
 
@@ -1472,7 +1486,7 @@ public class XPathQueryTest {
         queryResource(service, "quotes.xml", "/test[title = '&quot;Hello&quot;']", 1);
 
         service.declareVariable("content", "&quot;Hello&quot;");
-        queryResource(service, "quotes.xml", "/test[title = $content]", 1);
+        queryResource(service, "quotes.xml", "declare variable $content as xs:string external; /test[title = $content]", 1);
     }
 
     @Test
@@ -1575,13 +1589,13 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
             
-        ResourceSet result = queryResource(service, "strings.xml",	"<test>{() or ()}</test>", 1);
-        Resource r = result.getResource(0);
-        assertXMLEqual("<test>false</test>", r.getContent().toString());
+        ResourceSet results = queryResource(service, "strings.xml",	"<test>{() or ()}</test>", 1);
+        Resource result = results.getResource(0);
+        assertThat(result.getContent().toString(), CompareMatcher.isIdenticalTo("<test>false</test>"));
 
-        result = queryResource(service, "strings.xml",	"() or ()", 1);
-        r = result.getResource(0);
-        assertEquals("false", r.getContent().toString());
+        results = queryResource(service, "strings.xml",	"() or ()", 1);
+        result = results.getResource(0);
+        assertEquals("false", result.getContent().toString());
     } 
     
     @Test
@@ -1589,13 +1603,13 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
-        ResourceSet result = queryResource(service, "strings.xml",	"<test>{() and ()}</test>", 1);
-        Resource r = result.getResource(0);
-        assertXMLEqual("<test>false</test>", r.getContent().toString());
+        ResourceSet results = queryResource(service, "strings.xml",	"<test>{() and ()}</test>", 1);
+        Resource result = results.getResource(0);
+        assertThat(result.getContent().toString(), CompareMatcher.isIdenticalTo("<test>false</test>"));
 
-        result = queryResource(service, "strings.xml",	"() and ()", 1);
-        r = result.getResource(0);
-        assertEquals("false", r.getContent().toString());
+        results = queryResource(service, "strings.xml",	"() and ()", 1);
+        result = results.getResource(0);
+        assertEquals("false", result.getContent().toString());
     }     
     
     @Test
@@ -1853,9 +1867,10 @@ public class XPathQueryTest {
         assertEquals(2, result.getSize());
 
         String item = result.getResource(0).getContent().toString();
-        assertXMLEqual("<text> </text>", item);
+        assertThat(item, CompareMatcher.isIdenticalTo("<text> </text>"));
+
         item = result.getResource(1).getContent().toString();
-        assertXMLEqual("<text xml:space=\"default\"> </text>", item);
+        assertThat(item, CompareMatcher.isIdenticalTo("<text xml:space=\"default\"> </text>"));
     }
     
     @Test
@@ -1881,18 +1896,18 @@ public class XPathQueryTest {
 
         final EXistXPathQueryService service2 = (EXistXPathQueryService) service;
         service2.declareVariable("name", "MONTAGUE");
+        ResourceSet result = service.query("declare variable $name as xs:string external; //SPEECH[SPEAKER = $name]");
+        assertEquals(0, result.getSize());
         service2.declareVariable("name", "43");
-
-        //ResourceSet result = service.query("//SPEECH[SPEAKER=$name]");
-        ResourceSet result = service2.query( doc, "//item[stock=$name]");
-        result = service2.query("$name");
+        result = service2.query(doc, "declare variable $name as xs:string external; //item[stock = $name]");
         assertEquals(1, result.getSize());
-        result = service2.query( doc, "//item[stock=43]");
+        result = service2.query("declare variable $name as xs:string external; $name");
+        assertEquals(1, result.getSize());
+        service2.clearVariables();
+        result = service2.query( doc, "//item[stock = 43]");
         assertEquals(1, result.getSize());
         result = service2.query(doc, "//item");
         assertEquals(4, result.getSize());
-
-        // assertEquals(10, result.getSize());
     }
 
     @Test
@@ -2126,15 +2141,15 @@ public class XPathQueryTest {
                 "   QName(\"http://test.org\", \"test:name\")\n" +
                 "};\n" +
                 "<test>{\n" +
-                "   element {QName(\"http://test.org\", \"test:name\") }{},\n" +
-                "   element {ex:elementName()} {}\n" +
+                "   element {QName(\"http://test.org\", \"test:name\") }{ 'a' },\n" +
+                "   element {ex:elementName()} { 'b' }\n" +
                 "}</test>";
 
         final EXistXQueryService service = (EXistXQueryService)getQueryService();
         service.setProperty(OutputKeys.INDENT, "no");
         final ResourceSet result = service.query(query);
         assertEquals(1, result.getSize());
-        assertXMLEqual("<test><test:name xmlns:test=\"http://test.org\"/><test:name xmlns:test=\"http://test.org\"/></test>", result.getResource(0).getContent().toString());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<test><test:name xmlns:test=\"http://test.org\">a</test:name><test:name xmlns:test=\"http://test.org\">b</test:name></test>"));
     }
 
     @Test

@@ -103,8 +103,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
     private Properties outputProperties;
     private LexicalHandler lexicalHandler = null;
 
-    // those are the different types of content this resource
-    // may have to deal with
+    // those are the different types of content this resource may have to deal with
     protected String content = null;
     protected Path file = null;
     protected InputSource inputSource = null;
@@ -612,4 +611,19 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             content = getWriter().toString();
         }
     }
+
+    @Override
+    public String getTypeName() {
+        int type = Type.ITEM;
+
+        if (value != null) {
+            type = value.getType();
+
+        } else if (root != null) {
+            type = NodeProxy.nodeType2XQuery(root.getNodeType());
+        }
+
+        return Type.getTypeName(type);
+    }
 }
+

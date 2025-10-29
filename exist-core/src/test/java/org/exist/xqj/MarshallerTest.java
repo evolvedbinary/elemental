@@ -126,7 +126,7 @@ public class MarshallerTest {
                 Marshaller.marshall(broker, values, serializer);
                 String serialized = writer.toString();
 
-                Sequence seq = Marshaller.demarshall(broker, new StringReader(serialized));
+                Sequence seq = Marshaller.demarshall(new StringReader(serialized));
                 assertEquals(seq.itemAt(0).getStringValue(), "foo");
                 assertEquals(seq.itemAt(1).getStringValue(), "2000");
                 assertEquals(seq.itemAt(2).getStringValue(), "1000");
@@ -150,7 +150,7 @@ public class MarshallerTest {
                 Marshaller.marshall(broker, p, serializer);
                 String serialized = writer.toString();
 
-                Sequence seq = Marshaller.demarshall(broker, new StringReader(serialized));
+                Sequence seq = Marshaller.demarshall(new StringReader(serialized));
                 assertTrue(Type.subTypeOf(seq.getItemType(), Type.NODE));
 
                 NodeValue n = (NodeValue) seq.itemAt(0);

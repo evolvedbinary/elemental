@@ -109,7 +109,9 @@ import org.exist.xmlrpc.function.XmlRpcCollectionFunction;
 import org.exist.xmlrpc.function.XmlRpcCompiledXQueryFunction;
 import org.exist.xmlrpc.function.XmlRpcDocumentFunction;
 import org.exist.xmlrpc.function.XmlRpcFunction;
+import org.exist.xqj.Marshaller;
 import org.exist.xquery.*;
+import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.util.HTTPUtils;
 import org.exist.xquery.value.*;
 import org.exist.xupdate.Modification;
@@ -137,6 +139,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.DeflaterOutputStream;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
@@ -262,19 +265,43 @@ public class RpcConnection implements RpcAPI {
     protected QueryResult doQuery(final DBBroker broker, final CompiledXQuery compiled,
                                   final NodeSet contextSet, final Map<String, Object> parameters) throws XPathException, EXistException, PermissionDeniedException {
         final XQuery xquery = broker.getBrokerPool().getXQueryService();
-
-        checkPragmas(compiled.getContext(), parameters);
+        final XQueryContext context = compiled.getContext();
+        checkPragmas(context, parameters);
         LockedDocumentMap lockedDocuments = null;
         try {
+            //  declare static variables
+            final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
+            if (variableDecls != null) {
+                for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
+                    final String varNameStr = entry.getKey();
+
+                    final QName varName;
+                    try {
+                        varName = QName.parse(context, varNameStr);
+                    } catch (final QName.IllegalQNameException e) {
+                        throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPST0081, "Error declaring variable, invalid qname: " + varNameStr + ". " + e.getMessage(), e);
+                    }
+
+                    if (!context.isExternalVariableDeclared(varName)) {
+                        throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + varName + " is not declared in the XQuery");
+                    }
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("declaring {} = {}", varName, entry.getValue());
+                    }
+                    context.declareVariable(varName, true, entry.getValue());
+                }
+            }
+
             final long start = System.currentTimeMillis();
             lockedDocuments = beginProtected(broker, parameters);
             if (lockedDocuments != null) {
-                compiled.getContext().setProtectedDocs(lockedDocuments);
+                context.setProtectedDocs(lockedDocuments);
             }
             final Properties outputProperties = new Properties();
             final Sequence result = xquery.execute(broker, compiled, contextSet, outputProperties);
             // pass last modified date to the HTTP response
-            HTTPUtils.addLastModifiedHeader(result, compiled.getContext());
+            HTTPUtils.addLastModifiedHeader(result, context);
             LOG.info("query took {}ms.", System.currentTimeMillis() - start);
             return new QueryResult(result, outputProperties);
         } catch (final XPathException e) {
@@ -326,55 +353,66 @@ public class RpcConnection implements RpcAPI {
     private CompiledXQuery compile(final DBBroker broker, final Source source, final Map<String, Object> parameters) throws XPathException, IOException, PermissionDeniedException {
         final XQuery xquery = broker.getBrokerPool().getXQueryService();
         final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-        XQueryContext context;
-        if (compiled == null) {
-            context = new XQueryContext(broker.getBrokerPool());
-        } else {
-            context = compiled.getContext();
-            context.prepareForReuse();
-        }
-        final String base = (String) parameters.get(RpcAPI.BASE_URI);
-        if (base != null) {
-            context.setBaseURI(new AnyURIValue(base));
-        }
-        final String moduleLoadPath = (String) parameters.get(RpcAPI.MODULE_LOAD_PATH);
-        if (moduleLoadPath != null) {
-            context.setModuleLoadPath(moduleLoadPath);
-        }
-        final Map<String, String> namespaces = (Map<String, String>) parameters.get(RpcAPI.NAMESPACES);
-        if (namespaces != null && !namespaces.isEmpty()) {
-            context.declareNamespaces(namespaces);
-        }
-        //  declare static variables
-        final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
-        if (variableDecls != null) {
-            for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
-                }
-                context.declareVariable(entry.getKey(), entry.getValue());
+        @Nullable CompiledXQuery compiled = null;
+        @Nullable XQueryContext context = null;
+
+        try {
+            compiled = pool.borrowCompiledXQuery(broker, source);
+
+            if (compiled == null) {
+                context = new XQueryContext(broker.getBrokerPool());
+            } else {
+                context = compiled.getContext();
+                context.prepareForReuse();
             }
-        }
-        final Object[] staticDocuments = (Object[]) parameters.get(RpcAPI.STATIC_DOCUMENTS);
-        if (staticDocuments != null) {
-            try {
-                final XmldbURI[] d = new XmldbURI[staticDocuments.length];
-                for (int i = 0; i < staticDocuments.length; i++) {
-                    XmldbURI next = XmldbURI.xmldbUriFor((String) staticDocuments[i]);
-                    d[i] = next;
-                }
-                context.setStaticallyKnownDocuments(d);
-            } catch (final URISyntaxException e) {
-                throw new XPathException((Expression) null, e);
+
+            final String base = (String) parameters.get(RpcAPI.BASE_URI);
+            if (base != null) {
+                context.setBaseURI(new AnyURIValue(base));
             }
-        } else if (context.isBaseURIDeclared()) {
-            context.setStaticallyKnownDocuments(new XmldbURI[]{context.getBaseURI().toXmldbURI()});
+            final String moduleLoadPath = (String) parameters.get(RpcAPI.MODULE_LOAD_PATH);
+            if (moduleLoadPath != null) {
+                context.setModuleLoadPath(moduleLoadPath);
+            }
+            final Map<String, String> namespaces = (Map<String, String>) parameters.get(RpcAPI.NAMESPACES);
+            if (namespaces != null && !namespaces.isEmpty()) {
+                context.declareNamespaces(namespaces);
+            }
+
+            final Object[] staticDocuments = (Object[]) parameters.get(RpcAPI.STATIC_DOCUMENTS);
+            if (staticDocuments != null) {
+                try {
+                    final XmldbURI[] d = new XmldbURI[staticDocuments.length];
+                    for (int i = 0; i < staticDocuments.length; i++) {
+                        XmldbURI next = XmldbURI.xmldbUriFor((String) staticDocuments[i]);
+                        d[i] = next;
+                    }
+                    context.setStaticallyKnownDocuments(d);
+                } catch (final URISyntaxException e) {
+                    throw new XPathException((Expression) null, e);
+                }
+            } else if (context.isBaseURIDeclared()) {
+                context.setStaticallyKnownDocuments(new XmldbURI[]{context.getBaseURI().toXmldbURI()});
+            }
+
+            if (compiled == null) {
+                compiled = xquery.compile(context, source);
+            } else {
+                compiled.getContext().updateContext(context);
+                context.getWatchDog().reset();
+            }
+
+            return compiled;
+
+        } catch (final XPathException | IOException | PermissionDeniedException e) {
+            if (context != null) {
+                context.runCleanupTasks();
+            }
+            if (compiled != null) {
+                pool.returnCompiledXQuery(source, compiled);
+            }
+            throw e;
         }
-        if (compiled == null) {
-            compiled = xquery.compile(context, source);
-        }
-        return compiled;
     }
 
     @Override
@@ -680,37 +718,51 @@ public class RpcConnection implements RpcAPI {
     private String getDocumentAsString(final XmldbURI docUri, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
         return this.<String>readDocument(docUri).apply((document, broker, transaction) -> {
             try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
+                final Properties properties = toProperties(parameters);
+                saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.toSAX(document)), writer);
                 return writer.toString();
             }
         });
     }
 
-    private void serialize(final DBBroker broker, final Properties properties, final ConsumerE<Serializer, SAXException> toSaxFunction, final Writer writer) throws SAXException, IOException {
+    private void saxSerialize(final DBBroker broker, final Properties properties, final ConsumerE<SAXSerializer, SAXException> saxSerializerConsumer, final Writer writer) throws SAXException, IOException {
         if (!properties.containsKey(EXistOutputKeys.OUTPUT_DOCTYPE)) {
             final String outputDocType = broker.getConfiguration().getProperty(Serializer.PROPERTY_OUTPUT_DOCTYPE, "yes");
             properties.setProperty(EXistOutputKeys.OUTPUT_DOCTYPE, outputDocType);
         }
 
-        final Serializer serializer = broker.borrowSerializer();
-
         SAXSerializer saxSerializer = null;
         try {
-            serializer.setUser(user);
-            serializer.setProperties(properties);
             saxSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
-
             saxSerializer.setOutput(writer, properties);
-            serializer.setSAXHandlers(saxSerializer, saxSerializer);
 
-            toSaxFunction.accept(serializer);
+            saxSerializerConsumer.accept(saxSerializer);
 
             writer.flush();
         } finally {
             if (saxSerializer != null) {
                 SerializerPool.getInstance().returnObject(saxSerializer);
             }
+        }
+    }
+
+    private void serialize(final DBBroker broker, final Properties properties, final SAXSerializer saxSerializer, final ConsumerE<Serializer, SAXException> serializerConsumer) throws SAXException {
+        final Serializer serializer = broker.borrowSerializer();
+        try {
+            serializer.setUser(user);
+            serializer.setProperties(properties);
+            serializer.setSAXHandlers(saxSerializer, saxSerializer);
+            serializerConsumer.accept(serializer);
+        } finally {
             broker.returnSerializer(serializer);
+        }
+    }
+
+    private void serializeXqj(final DBBroker broker, final NodeValue nodeValue, final SAXSerializer saxSerializer) throws SAXException {
+        try {
+            Marshaller.marshall(broker, nodeValue, saxSerializer);
+        } catch (final XPathException e) {
+            throw new SAXException(e.getMessage(), e);
         }
     }
 
@@ -734,7 +786,8 @@ public class RpcConnection implements RpcAPI {
             if (document.getResourceType() == DocumentImpl.XML_FILE) {
                 try (final OutputStream out = tempFile.newOutputStream();
                      final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, encoding))) {
-                    serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
+                    final Properties properties = toProperties(parameters);
+                    saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.toSAX(document)), writer);
                 }
             } else {
                 try (final OutputStream os = new BufferedOutputStream(tempFile.newOutputStream())) {
@@ -1668,7 +1721,7 @@ public class RpcConnection implements RpcAPI {
                 }
                 if (item.getType() == Type.ELEMENT) {
                     final NodeValue node = (NodeValue) item;
-                    serialize(broker, serializationProps, saxSerializer -> saxSerializer.toSAX(node), writer);
+                    saxSerialize(broker, serializationProps, saxSerializer -> serialize(broker, serializationProps, saxSerializer, serializer -> serializer.toSAX(node)), writer);
                 } else {
                     writer.write("<exist:value type=\"");
                     writer.write(Type.getTypeName(item.getType()));
@@ -1690,14 +1743,41 @@ public class RpcConnection implements RpcAPI {
             try {
                 compileQuery(broker, transaction, source, parameters).apply(compiledQuery -> null);
             } catch (final XPathException e) {
-                ret.put(RpcAPI.ERROR, e.getMessage());
-                if (e.getLine() != 0) {
-                    ret.put(RpcAPI.LINE, e.getLine());
-                    ret.put(RpcAPI.COLUMN, e.getColumn());
-                }
+                setErrorInformation(ret, e);
             }
             return ret;
         });
+    }
+
+    private static void setErrorInformation(Map<String, Object> rpcResult, final XPathException e) {
+        if (e.getDetailMessage() != null) {
+            rpcResult.put(RpcAPI.ERROR, e.getDetailMessage());
+        } else {
+            rpcResult.put(RpcAPI.ERROR, e.getMessage());
+        }
+        final Map<String, Object> errorCode = errorCodeToMap(new HashMap(), e.getErrorCode());
+        rpcResult.put(RpcAPI.CODE, errorCode);
+        if (e.getLine() != 0) {
+            rpcResult.put(RpcAPI.LINE, e.getLine());
+            rpcResult.put(RpcAPI.COLUMN, e.getColumn());
+        }
+    }
+
+    private static Map<String, Object> errorCodeToMap(Map<String, Object> map, final ErrorCodes.ErrorCode errorCode) {
+        map = qnameToMap(map, errorCode.getErrorQName());
+//        map.put(RpcAPI.DESCRIPTION, errorCode.getDescription());  // NOTE(AR) unneeded as it can be reconstructed via {@link ErrorCodes#fromQName(QName)}
+        return map;
+    }
+
+    private static Map<String, Object> qnameToMap(final Map<String, Object> map, final QName qname) {
+        if (qname.getNamespaceURI() != null && !qname.getNamespaceURI().equals(XMLConstants.NULL_NS_URI)) {
+            map.put(RpcAPI.QNAME_NAMESPACE_URI, qname.getNamespaceURI());
+        }
+        if (qname.getPrefix() != null && !qname.getPrefix().equals(XMLConstants.DEFAULT_NS_PREFIX)) {
+            map.put(RpcAPI.QNAME_PREFIX, qname.getPrefix());
+        }
+        map.put(RpcAPI.QNAME_LOCAL_PART, qname.getLocalPart());
+        return map;
     }
 
     public String query(final String xpath, final int howmany, final int start,
@@ -1810,11 +1890,7 @@ public class RpcConnection implements RpcAPI {
         if (queryResult.hasErrors()) {
             // return an error description
             final XPathException e = queryResult.getException();
-            ret.put(RpcAPI.ERROR, e.getMessage());
-            if (e.getLine() != 0) {
-                ret.put(RpcAPI.LINE, e.getLine());
-                ret.put(RpcAPI.COLUMN, e.getColumn());
-            }
+            setErrorInformation(ret, e);
             return ret;
         }
 
@@ -1914,7 +1990,7 @@ public class RpcConnection implements RpcAPI {
 
             try {
                 final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
-                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, doQuery(broker, compiledQuery, nodes, parameters), sortBy));
+                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, getXdmSerializationOptions(compiledQuery.getContext()), doQuery(broker, compiledQuery, nodes, parameters), sortBy));
                 return rpcResponse;
             } catch (final XPathException e) {
                 throw new EXistException(e);
@@ -1922,7 +1998,13 @@ public class RpcConnection implements RpcAPI {
         });
     }
 
-    private Map<String, Object> queryResultToTypedRpcResponse(final long startTime, final QueryResult queryResult, final Optional<String> sortBy) throws XPathException {
+    private Properties getXdmSerializationOptions(final XQueryContext context) throws XPathException {
+        final Properties properties = new Properties();
+        context.checkOptions(properties);
+        return properties;
+    }
+
+    private Map<String, Object> queryResultToTypedRpcResponse(final long startTime, final Properties xdmSerializationOptions, final QueryResult queryResult, final Optional<String> sortBy) throws XPathException {
         final Map<String, Object> ret = new HashMap<>();
         if (queryResult == null) {
             return ret;
@@ -1931,11 +2013,7 @@ public class RpcConnection implements RpcAPI {
         if (queryResult.hasErrors()) {
             // return an error description
             final XPathException e = queryResult.getException();
-            ret.put(RpcAPI.ERROR, e.getMessage());
-            if (e.getLine() != 0) {
-                ret.put(RpcAPI.LINE, e.getLine());
-                ret.put(RpcAPI.COLUMN, e.getColumn());
-            }
+            setErrorInformation(ret, e);
             return ret;
         }
 
@@ -1950,15 +2028,15 @@ public class RpcConnection implements RpcAPI {
             resultSeq = sorted;
         }
 
-        final List<Map<String, String>> result = new ArrayList<>();
+        final List<Map<String, Object>> result = new ArrayList<>();
         if (resultSeq != null) {
             final SequenceIterator i = resultSeq.iterate();
             if (i != null) {
                 while (i.hasNext()) {
                     final Item next = i.nextItem();
-                    final Map<String, String> entry;
+                    final Map<String, Object> entry;
                     if (Type.subTypeOf(next.getType(), Type.NODE)) {
-                        entry = nodeMap(next);
+                        entry = nodeMap(xdmSerializationOptions, next);
                     } else {
                         entry = atomicMap(next);
                     }
@@ -1983,8 +2061,8 @@ public class RpcConnection implements RpcAPI {
         return ret;
     }
 
-    private @Nullable Map<String, String> nodeMap(final Item item) {
-        final Map<String, String> result;
+    private @Nullable Map<String, Object> nodeMap(final Properties xdmSerializationOptions, final Item item) {
+        final Map<String, Object> result;
 
         if (item instanceof NodeValue &&
                 ((NodeValue)item).getImplementationType() == NodeValue.PERSISTENT_NODE) {
@@ -1992,7 +2070,7 @@ public class RpcConnection implements RpcAPI {
 
             result = new HashMap<>();
             result.put("type", Type.getTypeName(p.getType()));
-            result.put("docUri", p.getOwnerDocument().getURI().toString());
+            result.put("docUri", p.getOwnerDocument().getURI().toString());  // NOTE(AR) Persistent Nodes do not need to be sent in the result, as they can be retrieved later
             result.put("nodeId", p.getNodeId().toString());
 
         } else if(item instanceof org.exist.dom.memtree.NodeImpl) {
@@ -2002,6 +2080,12 @@ public class RpcConnection implements RpcAPI {
             result.put("type", Type.getTypeName(ni.getType()));
             result.put("docUri", "temp_xquery/" + item.hashCode());
             result.put("nodeId", String.valueOf(ni.getNodeNumber()));
+            result.put("xdmSerializationOptions", xdmSerializationOptions);
+
+            // TODO(AR) enable this later in Elemental for improved serialization over XML-RPC and performance (it also means that we could then cleanup the XML:DB Remote API by removing its uses of XQJ Marshaller and org.exist.xquery.value.*)
+            // NOTE(AR) In-memory Nodes can alternatively be returned directly as part of the result, however doing so changes the XML:RPC result format in a manner that would be incompatible with eXist-db 6.x.x
+            //            result.put("value", item);
+
         } else {
             LOG.error("Omitting from results, unsure how to process: {}", item.getClass());
             result = null;
@@ -2010,8 +2094,8 @@ public class RpcConnection implements RpcAPI {
         return result;
     }
 
-    private Map<String, String> atomicMap(final Item item) throws XPathException {
-        final Map<String, String> result = new HashMap<>();
+    private Map<String, Object> atomicMap(final Item item) throws XPathException {
+        final Map<String, Object> result = new HashMap<>();
 
         final int type = item.getType();
         result.put("type", Type.getTypeName(type));
@@ -2076,7 +2160,7 @@ public class RpcConnection implements RpcAPI {
 
             try {
                 final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
-                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, doQuery(broker, compiledQuery, null, parameters), sortBy));
+                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, getXdmSerializationOptions(compiledQuery.getContext()), doQuery(broker, compiledQuery, null, parameters), sortBy));
                 return rpcResponse;
             } catch (final XPathException e) {
                 throw new EXistException(e);
@@ -2195,7 +2279,8 @@ public class RpcConnection implements RpcAPI {
             final NodeProxy node = new NodeProxy(null, document, nodeId);
 
             try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.serialize(node), writer);
+                final Properties properties = toProperties(parameters);
+                saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.serialize(node)), writer);
                 return writer.toString();
             }
         });
@@ -2217,6 +2302,8 @@ public class RpcConnection implements RpcAPI {
             final NodeId nodeId = factory.getBrokerPool().getNodeFactory().createFromString(id);
             final NodeProxy node = new NodeProxy(null, document, nodeId);
 
+            final Properties serializationProperties = toProperties(parameters);
+
             final Map<String, Object> result = new HashMap<>();
             final ContentFile tempFile = filePool.borrowObject();
 
@@ -2228,7 +2315,11 @@ public class RpcConnection implements RpcAPI {
                     ? new DeflaterOutputStream(new BufferedOutputStream(tempFile.newOutputStream()))
                     : new BufferedOutputStream(tempFile.newOutputStream());
                     final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
-                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(node), writer);
+                if ("yes".equals(serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"))) {
+                    saxSerialize(broker, serializationProperties, saxSerializer -> serializeXqj(broker, node, saxSerializer), writer);
+                } else {
+                    saxSerialize(broker, serializationProperties, saxSerializer -> serialize(broker, serializationProperties, saxSerializer, serializer -> serializer.toSAX(node)), writer);
+                }
             }
 
             final byte[] firstChunk = getChunk(tempFile, 0);
@@ -2244,6 +2335,8 @@ public class RpcConnection implements RpcAPI {
                 filePool.returnObject(tempFile);
             }
             result.put("offset", offset);
+            result.put(EXistOutputKeys.XDM_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XDM_SERIALIZATION, "no"));
+            result.put(EXistOutputKeys.XQJ_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"));
             return result;
         });
     }
@@ -2290,8 +2383,9 @@ public class RpcConnection implements RpcAPI {
                     parameters.put(entry.getKey().toString(), entry.getValue().toString());
                 }
                 try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                  serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
-                  return writer.toString();
+                    final Properties properties = toProperties(parameters);
+                    saxSerialize(broker, properties, saxSerializer -> serialize(broker, properties, saxSerializer, serializer -> serializer.toSAX(nodeValue)), writer);
+                    return writer.toString();
                 }
             } else {
                 try {
@@ -2320,6 +2414,11 @@ public class RpcConnection implements RpcAPI {
                 throw new EXistException("index out of range");
             }
 
+            final Properties serializationProperties = toProperties(parameters);
+            for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
+                serializationProperties.put(entry.getKey().toString(), entry.getValue().toString());
+            }
+
             final Map<String, Object> result = new HashMap<>();
             final ContentFile tempFile = filePool.borrowObject();
 
@@ -2331,15 +2430,19 @@ public class RpcConnection implements RpcAPI {
                     ? new DeflaterOutputStream(new BufferedOutputStream(tempFile.newOutputStream()))
                     : new BufferedOutputStream(tempFile.newOutputStream());
                     final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
+
                 if (Type.subTypeOf(item.getType(), Type.NODE)) {
                     final NodeValue nodeValue = (NodeValue) item;
-                    for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
-                        parameters.put(entry.getKey().toString(), entry.getValue().toString());
+                    if ("yes".equals(serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"))) {
+                        saxSerialize(broker, serializationProperties, saxSerializer -> serializeXqj(broker, nodeValue, saxSerializer), writer);
+                    } else {
+                        saxSerialize(broker, serializationProperties, saxSerializer -> serialize(broker, serializationProperties, saxSerializer, serializer -> serializer.toSAX(nodeValue)), writer);
                     }
-                    serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
                 } else {
+                    // TODO(AR) in future we should transfer more information about the XDM Type to the consumer using the XQJ Marshaller - see above!
                     writer.write(item.getStringValue());
                 }
+
             } catch (final XPathException e) {
                 throw new EXistException(e);
             }
@@ -2357,6 +2460,8 @@ public class RpcConnection implements RpcAPI {
                 filePool.returnObject(tempFile);
             }
             result.put("offset", offset);
+            result.put(EXistOutputKeys.XDM_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XDM_SERIALIZATION, "no"));
+            result.put(EXistOutputKeys.XQJ_SERIALIZATION, serializationProperties.getProperty(EXistOutputKeys.XQJ_SERIALIZATION, "no"));
             return result;
         });
     }
@@ -3830,7 +3935,9 @@ public class RpcConnection implements RpcAPI {
                 throw new EXistException(e);
             } finally {
                 if (compiled != null) {
-                    compiled.getContext().runCleanupTasks();
+                    if (compiled.getContext() != null) {
+                        compiled.getContext().runCleanupTasks();
+                    }
                     pool.returnCompiledXQuery(source, compiled);
                 }
             }

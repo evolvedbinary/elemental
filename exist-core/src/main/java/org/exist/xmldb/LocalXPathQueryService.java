@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,6 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.debuggee.Debuggee;
+import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.DBSource;
@@ -39,6 +64,13 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.xmldb.function.LocalXmldbFunction;
+import org.exist.xquery.CompiledXQuery;
+import org.exist.xquery.ExternalModule;
+import org.exist.xquery.Variable;
+import org.exist.xquery.VariableDeclaration;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.Sequence;
@@ -60,10 +92,8 @@ import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.security.Permission;
 import com.evolvedbinary.j8fu.Either;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.XQueryContext;
+
+import javax.annotation.Nullable;
 
 public class LocalXPathQueryService extends AbstractLocalService implements EXistXPathQueryService, EXistXQueryService {
 
@@ -195,6 +225,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 context.setProtectedDocs(lockedDocuments);
             }
             setupContext(null, context);
+            declareVariables(context);
 
             final XQuery xquery = brokerPool.getXQueryService();
             result = xquery.execute(broker, expr, contextSet, properties);
@@ -260,39 +291,44 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             final XQuery xquery = brokerPool.getXQueryService();
             final XQueryPool pool = brokerPool.getXQueryPool();
 
-            XQueryContext context;
-            CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            context.setStaticallyKnownDocuments(docs);
-
-            if (variableDecls.containsKey(Debuggee.PREFIX + ":session")) {
-                context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX + ":session"));
-                variableDecls.remove(Debuggee.PREFIX + ":session");
-            }
-
-            setupContext(source, context);
-
-            if (compiled == null) {
-                compiled = xquery.compile(context, source);
-            }
-
+            @Nullable CompiledXQuery compiled = null;
+            @Nullable XQueryContext context = null;
             try {
+                compiled = pool.borrowCompiledXQuery(broker, source);
+                if (compiled == null) {
+                    context = new XQueryContext(broker.getBrokerPool());
+                } else {
+                    context = compiled.getContext();
+                    context.prepareForReuse();
+                }
+
+                context.setStaticallyKnownDocuments(docs);
+
+                setupContext(source, context);
+
+                if (compiled == null) {
+                    compiled = xquery.compile(context, source);
+                } else {
+                    compiled.getContext().updateContext(context);
+                    context.getWatchDog().reset();
+                }
+
+                declareVariables(context);
+
                 final Sequence result = xquery.execute(broker, compiled, null, properties);
-                if(LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled()) {
                     LOG.debug("query took {} ms.", System.currentTimeMillis() - start);
                 }
                 final Properties resourceSetProperties = new Properties(properties);
                 resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
                 return result != null ? new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, result, null) : null;
             } finally {
-                compiled.getContext().runCleanupTasks();
-                pool.returnCompiledXQuery(source, compiled);
+                if (context != null) {
+                    context.runCleanupTasks();
+                }
+                if (compiled != null) {
+                    pool.returnCompiledXQuery(source, compiled);
+                }
             }
         });
     }
@@ -379,10 +415,30 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         for (final Map.Entry<String, String> entry : namespaceDecls.entrySet()) {
             context.declareNamespace(entry.getKey(), entry.getValue());
         }
+    }
+
+    protected void declareVariables(final XQueryContext context) throws XPathException {
+        if (variableDecls.containsKey(Debuggee.PREFIX + ":session")) {
+            context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX + ":session"));
+            variableDecls.remove(Debuggee.PREFIX + ":session");
+        }
 
         // declare static variables
         for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
-            context.declareVariable(entry.getKey(), entry.getValue());
+            final String varNameStr = entry.getKey();
+
+            final QName varName;
+            try {
+                varName = QName.parse(context, varNameStr);
+            } catch (final QName.IllegalQNameException e) {
+                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPST0081, "Error declaring variable, invalid qname: " + varNameStr + ". " + e.getMessage(), e);
+            }
+
+            if (!context.isExternalVariableDeclared(varName)) {
+                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + varName + " is not declared in the XQuery");
+            }
+
+            context.declareVariable(varName, true, entry.getValue());
         }
     }
 

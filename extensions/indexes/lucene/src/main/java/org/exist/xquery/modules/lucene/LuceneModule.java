@@ -71,14 +71,6 @@ public class LuceneModule extends AbstractInternalModule {
     public static final String PREFIX = "ft";
     public final static String INCLUSION_DATE = "2008-09-03";
     public final static String RELEASED_IN_VERSION = "eXist-1.4";
-
-    public final static ErrorCode EXXQDYFT0001 = new LuceneErrorCode("EXXQDYFT0001", "Permission denied.");
-    public final static ErrorCode EXXQDYFT0002 = new LuceneErrorCode("EXXQDYFT0002", "IO Exception in lucene index.");
-    public final static ErrorCode EXXQDYFT0003 = new LuceneErrorCode("EXXQDYFT0003", "Document not found.");
-    public final static ErrorCode EXXQDYFT0004 = new LuceneErrorCode("EXXQDYFT0004", "Wrong configuration passed to ft:query");
-    public final static ErrorCode EXXQDYFT0005 = new LuceneErrorCode("EXXQDYFT0005", "Unable to deserialize binary value in call to ft:field");
-    public final static ErrorCode EXXQDYFT0006 = new LuceneErrorCode("EXXQDYFT0006", "Unable to deserialize string value in call to ft:field");
-    public final static ErrorCode EXXQDYFT0007 = new LuceneErrorCode("EXXQDYFT0007", "Unable to deserialize numeric value in call to ft:field");
     
     public static final FunctionDef[] functions = {
         new FunctionDef(Query.signatures[0], Query.class),
@@ -139,12 +131,32 @@ public class LuceneModule extends AbstractInternalModule {
         return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 
-    protected final static class LuceneErrorCode extends ErrorCode {
+    enum LuceneErrorCode implements ErrorCode {
+        EXXQDYFT0001 ("Permission denied."),
+        EXXQDYFT0002 ("IO Exception in lucene index."),
+        EXXQDYFT0003 ("Document not found."),
+        EXXQDYFT0004 ("Wrong configuration passed to ft:query"),
+        EXXQDYFT0005 ("Unable to deserialize binary value in call to ft:field"),
+        EXXQDYFT0006 ("Unable to deserialize string value in call to ft:field"),
+        EXXQDYFT0007 ("Unable to deserialize numeric value in call to ft:field");
 
-		public LuceneErrorCode(String code, String description) {
-			super(new QName(code, NAMESPACE_URI, PREFIX), description);
-		}
-    	
+        private final QName qname;
+        private final String description;
+
+        LuceneErrorCode(final String description) {
+            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
+            this.description = description;
+        }
+
+        @Override
+        public QName getErrorQName() {
+            return qname;
+        }
+
+        @Override
+        public String getDescription() {
+            return description;
+        }
     }
 }
 

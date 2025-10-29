@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -56,7 +80,10 @@ public class DocumentBuilderReceiver implements ContentHandler, LexicalHandler, 
 
     private boolean suppressWhitespace = true;
 
+    private StringBuilder cdataBuffer;
+
     private final Expression expression;
+
 
     public DocumentBuilderReceiver() {
         this((Expression) null);
@@ -190,12 +217,20 @@ public class DocumentBuilderReceiver implements ContentHandler, LexicalHandler, 
 
     @Override
     public void characters(final CharSequence seq) throws SAXException {
-        builder.characters(seq);
+        if (cdataBuffer != null) {
+            cdataBuffer.append(seq);
+        } else {
+            builder.characters(seq);
+        }
     }
 
     @Override
     public void characters(final char[] ch, final int start, final int len) throws SAXException {
-        builder.characters(ch, start, len);
+        if (cdataBuffer != null) {
+            cdataBuffer.append(ch, start, len);
+        } else {
+            builder.characters(ch, start, len);
+        }
     }
 
     @Override
@@ -229,15 +264,14 @@ public class DocumentBuilderReceiver implements ContentHandler, LexicalHandler, 
     }
 
     @Override
-    public void endCDATA() throws SAXException {
-    }
-
-    @Override
-    public void endDTD() throws SAXException {
-    }
-
-    @Override
     public void startCDATA() throws SAXException {
+        this.cdataBuffer = new StringBuilder();
+    }
+
+    @Override
+    public void endCDATA() throws SAXException {
+        builder.cdataSection(this.cdataBuffer);
+        this.cdataBuffer = null;
     }
 
     @Override
@@ -251,15 +285,19 @@ public class DocumentBuilderReceiver implements ContentHandler, LexicalHandler, 
     }
 
     @Override
-    public void endEntity(final String name) throws SAXException {
-    }
-
-    @Override
     public void startEntity(final String name) throws SAXException {
     }
 
     @Override
+    public void endEntity(final String name) throws SAXException {
+    }
+
+    @Override
     public void startDTD(final String name, final String publicId, final String systemId) throws SAXException {
+    }
+
+    @Override
+    public void endDTD() throws SAXException {
     }
 
     @Override

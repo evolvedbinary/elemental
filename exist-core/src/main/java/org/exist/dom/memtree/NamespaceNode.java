@@ -90,7 +90,7 @@ public class NamespaceNode extends NodeImpl implements Attr {
 
     @Override
     public String getName() {
-        return getQName().getStringValue();
+        return getNodeName();
     }
 
     @Override

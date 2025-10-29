@@ -126,7 +126,7 @@ public class Compare extends BasicFunction {
             final Node node2 = toNode(nodeSet2.itemAt(i));
 
             if (node1 == null || node2 == null) {
-                throw new XPathException(this, XmlDiffModule.UNSUPPORTED_DOM_IMPLEMENTATION, "Unable to determine DOM implementation of node set item");
+                throw new XPathException(this, XmlDiffModule.XmldDiffModuleErrorCode.UNSUPPORTED_DOM_IMPLEMENTATION, "Unable to determine DOM implementation of node set item");
             }
 
             final Source expected = Input.fromNode(node1).build();
