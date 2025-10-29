@@ -49,6 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.debuggee.Debuggee;
+import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.DBSource;
@@ -63,6 +64,13 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.xmldb.function.LocalXmldbFunction;
+import org.exist.xquery.CompiledXQuery;
+import org.exist.xquery.ExternalModule;
+import org.exist.xquery.Variable;
+import org.exist.xquery.VariableDeclaration;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.Sequence;
@@ -82,10 +90,6 @@ import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.security.Permission;
 import com.evolvedbinary.j8fu.Either;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.XQueryContext;
 
 import javax.annotation.Nullable;
 
@@ -424,7 +428,20 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 
         // declare static variables
         for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
-            context.declareVariable(entry.getKey(), true, entry.getValue());
+            final String varNameStr = entry.getKey();
+
+            final QName varName;
+            try {
+                varName = QName.parse(context, varNameStr);
+            } catch (final QName.IllegalQNameException e) {
+                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPST0081, "Error declaring variable, invalid qname: " + varNameStr + ". " + e.getMessage(), e);
+            }
+
+            if (!context.isExternalVariableDeclared(varName)) {
+                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + varName + " is not declared in the XQuery");
+            }
+
+            context.declareVariable(varName, true, entry.getValue());
         }
     }
 

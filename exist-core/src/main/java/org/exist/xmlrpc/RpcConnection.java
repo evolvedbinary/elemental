@@ -265,30 +265,43 @@ public class RpcConnection implements RpcAPI {
     protected QueryResult doQuery(final DBBroker broker, final CompiledXQuery compiled,
                                   final NodeSet contextSet, final Map<String, Object> parameters) throws XPathException, EXistException, PermissionDeniedException {
         final XQuery xquery = broker.getBrokerPool().getXQueryService();
-
-        checkPragmas(compiled.getContext(), parameters);
+        final XQueryContext context = compiled.getContext();
+        checkPragmas(context, parameters);
         LockedDocumentMap lockedDocuments = null;
         try {
             //  declare static variables
             final Map<String, Object> variableDecls = (Map<String, Object>) parameters.get(RpcAPI.VARIABLES);
             if (variableDecls != null) {
                 for (final Map.Entry<String, Object> entry : variableDecls.entrySet()) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("declaring {} = {}", entry.getKey(), entry.getValue());
+                    final String varNameStr = entry.getKey();
+
+                    final QName varName;
+                    try {
+                        varName = QName.parse(context, varNameStr);
+                    } catch (final QName.IllegalQNameException e) {
+                        throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPST0081, "Error declaring variable, invalid qname: " + varNameStr + ". " + e.getMessage(), e);
                     }
-                    compiled.getContext().declareVariable(entry.getKey(), true, entry.getValue());
+
+                    if (!context.isExternalVariableDeclared(varName)) {
+                        throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + varName + " is not declared in the XQuery");
+                    }
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("declaring {} = {}", varName, entry.getValue());
+                    }
+                    context.declareVariable(varName, true, entry.getValue());
                 }
             }
 
             final long start = System.currentTimeMillis();
             lockedDocuments = beginProtected(broker, parameters);
             if (lockedDocuments != null) {
-                compiled.getContext().setProtectedDocs(lockedDocuments);
+                context.setProtectedDocs(lockedDocuments);
             }
             final Properties outputProperties = new Properties();
             final Sequence result = xquery.execute(broker, compiled, contextSet, outputProperties);
             // pass last modified date to the HTTP response
-            HTTPUtils.addLastModifiedHeader(result, compiled.getContext());
+            HTTPUtils.addLastModifiedHeader(result, context);
             LOG.info("query took {}ms.", System.currentTimeMillis() - start);
             return new QueryResult(result, outputProperties);
         } catch (final XPathException e) {

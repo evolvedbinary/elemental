@@ -116,6 +116,31 @@ public class XMLDBExternalVariableTest {
     }
 
     @Test
+    public void queryPostWithExternalVariableNotSupplied() throws XMLDBException {
+        try (final Collection dbCollection = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final XQueryService xqueryService = dbCollection.getService(XQueryService.class);
+
+            xqueryService.declareVariable("local:my-variable", "hello");
+            xqueryService.declareVariable("local:other-variable", "goodbye");
+
+            final CompiledExpression compiled = xqueryService.compile("declare variable $local:my-variable as xs:string* external;\n$local:my-variable");
+
+            try {
+                xqueryService.execute(compiled);
+                fail("Expected XMLDBException with cause XPathException: XPDY0002 External variable local:other-variable is not declared in the XQuery");
+            } catch (final XMLDBException e) {
+                final Throwable cause = e.getCause();
+                assertTrue(cause instanceof XPathException);
+            }
+        }
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUndeclared() throws XMLDBException {
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "xs:string*", (ExternalVariableValueRep[]) null);
+    }
+
+    @Test
     public void queryPostWithExternalVariableUntypedNotSupplied() throws XMLDBException {
         queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, null, (ExternalVariableValueRep[]) null);
     }
