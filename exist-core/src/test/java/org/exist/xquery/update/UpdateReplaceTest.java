@@ -60,7 +60,7 @@ import javax.xml.transform.Source;
 
 import static org.junit.Assert.*;
 
-public class UpdateReplaceTest extends AbstractTestUpdate {
+public class UpdateReplaceTest extends AbstractUpdateTest {
 
     @Test
     public void replaceOnlyChildWhereParentHasNoAttributes() throws XMLDBException {

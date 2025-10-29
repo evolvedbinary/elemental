@@ -46,6 +46,8 @@
 package org.exist.storage;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -55,6 +57,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.LockedDocument;
+import org.exist.samples.Samples;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.dom.DOMFile;
@@ -64,16 +67,19 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
-import org.exist.util.DatabaseConfigurationException;
-import org.exist.util.FileUtils;
-import org.exist.util.LockException;
-import org.exist.util.MimeType;
+import org.exist.util.*;
+import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.XPathException;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.samples.Samples.SAMPLES;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -82,25 +88,27 @@ import static org.junit.Assert.assertNotNull;
  * @author wolf
  *
  */
-public class RecoveryTest2 {
+public class Recovery2Test {
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
-
-    private static String xmlDir = "/home/wolf/xml/Saami";
-    
-    @SuppressWarnings("unused")
-	private static String TEST_XML =
-        "<?xml version=\"1.0\"?>" +
-        "<test>" +
-        "  <title>Hello</title>" +
-        "  <para>Hello World!</para>" +
-        "</test>";
+    @Rule
+    public ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
 
     @Test
-    public void store() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, BTreeException, LockException {
+    public void storeRead() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, BTreeException, XPathException, URISyntaxException {
+
         BrokerPool.FORCE_CORRUPTION = true;
-        final BrokerPool pool = startDb();
+        store(existEmbeddedServer.getBrokerPool());
+
+        // flush journal
+        existEmbeddedServer.getBrokerPool().getJournalManager().get().flush(true, false);
+
+        existEmbeddedServer.restart();
+        BrokerPool.FORCE_CORRUPTION = false;
+
+        read(existEmbeddedServer.getBrokerPool());
+    }
+
+    private void store(final BrokerPool pool) throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, BTreeException, LockException, URISyntaxException {
         final TransactionManager transact = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
@@ -121,26 +129,24 @@ public class RecoveryTest2 {
             }
 
             // store some documents. Will be replaced below
-            final Path dir = Paths.get(xmlDir);
-            final List<Path> docs = FileUtils.list(dir);
-            for (final Path f : docs) {
-                broker.storeDocument(transaction, XmldbURI.create(FileUtils.fileName(f)), new InputSource(f.toUri().toASCIIString()), MimeType.XML_TYPE, test2);
+            for (final String modsFilename : Samples.SAMPLES.getModsXmlSampleNames()) {
+                final String modsContent;
+                try (final InputStream is = SAMPLES.getModsSample(modsFilename)) {
+                    modsContent = InputStreamUtil.readString(is, UTF_8);
+                }
+                broker.storeDocument(transaction, XmldbURI.create(modsFilename), new StringInputSource(modsContent), MimeType.XML_TYPE, test2);
             }
 
             transact.commit(transaction);
         }
     }
 
-    @Test
-    public void read() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, SAXException, IOException {
-        BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = startDb();
-
+    private void read(final BrokerPool pool) throws EXistException, DatabaseConfigurationException, PermissionDeniedException, SAXException, IOException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             assertNotNull(broker);
             final Serializer serializer = broker.borrowSerializer();
             
-            try(final LockedDocument lockedDoc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append("terms-eng.xml"), LockMode.READ_LOCK)) {
+            try(final LockedDocument lockedDoc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append("0d569a0b-2738-4865-8b47-a9f8b821a653.xml"), LockMode.READ_LOCK)) {
                 assertNotNull("Document should not be null", lockedDoc);
                 String data = serializer.serialize(lockedDoc.getDocument());
                 assertNotNull(data);
@@ -150,13 +156,9 @@ public class RecoveryTest2 {
         }
     }
 
-    private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException {
-        existEmbeddedServer.startDb();
-        return existEmbeddedServer.getBrokerPool();
-    }
-
-    @After
-    public void stopDb() {
-        existEmbeddedServer.stopDb();
+    @AfterClass
+    public static void cleanup() {
+        // restore the flag in-case of a test failure
+        BrokerPool.FORCE_CORRUPTION = false;
     }
 }

@@ -106,7 +106,6 @@ public class RangeIndexConfigTest {
         expect(mockCreateDocument.getDocumentURI()).andReturn(mockCollectionXConfUri);
 
         final Capture<String> errorMsgCapture = newCapture();
-
         mockLogger.error(capture(errorMsgCapture));
 
         replay(mockConfigNodes, mockConfigNode, mockCreates, mockCreateDocument, mockCreate, mockEmptyNodeList, mockLogger);
@@ -116,26 +115,17 @@ public class RangeIndexConfigTest {
         final Map<String, String> namespaces = new HashMap<>();
         namespaces.put("tei", "http://www.tei-c.org/ns/1.0");
 
-        overrideLogger(RangeIndexConfig.class, mockLogger);
-        final RangeIndexConfig config = new RangeIndexConfig(mockConfigNodes, namespaces);
+        final RangeIndexConfig config = new RangeIndexConfig(mockConfigNodes, namespaces) {
+            @Override
+            Logger getLogger() {
+                return mockLogger;
+            }
+        };
 
         assertTrue(errorMsgCapture.getValue().contains("Illegal QName: '" + badCreateQName + "'.. QName is invalid: INVALID_LOCAL_PART"));
         assertTrue(errorMsgCapture.getValue().contains("(" + mockCollectionXConfUri + ")"));
 
-        verify(mockConfigNodes, mockConfigNode, mockCreates, mockCreateDocument, mockCreate, mockEmptyNodeList, mockLogger);
+        verify(mockConfigNodes, mockConfigNode, mockCreates, mockCreateDocument, mockCreate, mockEmptyNodeList);
     }
 
-    private void overrideLogger(final Class clazz, final Logger logger) throws NoSuchFieldException, IllegalAccessException {
-        final Field loggerField = clazz.getDeclaredField("LOG");
-
-        // allow access to private field
-        loggerField.setAccessible(true);
-
-        // remove final modifier
-        final Field modifiersField = JDKCompatibility.getModifiersField();
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(loggerField, loggerField.getModifiers() & ~Modifier.FINAL);
-
-        loggerField.set(null, logger);
-    }
 }

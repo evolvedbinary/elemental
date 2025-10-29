@@ -530,12 +530,13 @@ jobs:
                       else
                         export JAVA_TOOL_OPTIONS="<< pipeline.parameters.java_tool_options >>"
                       fi
-                      $MAVEN_BIN test -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives
+                      $MAVEN_BIN test integration-test -Dappbundler.skip=true -Ddocker=false -P !mac-dmg-on-mac,!codesign-mac-app,!codesign-mac-dmg,!mac-dmg-on-unix,!installer,!concurrency-stress-tests,!micro-benchmarks,skip-build-dist-archives
       - run:
           name: Save test results
           command: |
             mkdir -p ~/test-results/junit/
             /usr/bin/find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+            /usr/bin/find . -type f -regex ".*/target/failsafe-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
           when: always
       - store_test_results:
           path: ~/test-results

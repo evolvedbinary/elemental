@@ -63,9 +63,9 @@ public class ImportFromPkgTest {
 
         final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
 
-        for (int i = 0; i < resultSet.getSize(); i++) {
-            System.out.println(resultSet.getResource(i).getContent().toString());
-        }
+        assertEquals(2, resultSet.getSize());
+        assertEquals("functx.xsl", resultSet.getResource(0).getContent().toString());
+        assertEquals("functx.xq", resultSet.getResource(1).getContent().toString());
     }
 
     @Test

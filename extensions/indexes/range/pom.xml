@@ -188,6 +188,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/xquery/range/conditions.xql</include>
                                 <include>src/main/java/org/exist/indexing/range/RangeIndexAnalyzer.java</include>
+                                <include>src/main/java/org/exist/indexing/range/RangeIndexConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/range/RangeIndexConfigAttributeCondition.java</include>
                                 <include>src/main/java/org/exist/indexing/range/RangeIndexConfigElement.java</include>
                                 <include>src/main/java/org/exist/indexing/range/RangeIndexConfigField.java</include>
@@ -206,6 +207,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/xquery/range/conditions.xql</exclude>
                                 <exclude>src/main/java/org/exist/indexing/range/RangeIndexAnalyzer.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/range/RangeIndexConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/range/RangeIndexConfigAttributeCondition.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/range/RangeIndexConfigElement.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/range/RangeIndexConfigField.java</exclude>

@@ -138,6 +138,7 @@ public abstract class AbstractUpdateTest {
 
     @AfterClass
     public static void cleanup() {
+        // restore the flag in-case of a test failure
         BrokerPool.FORCE_CORRUPTION = false;
     }
 }
