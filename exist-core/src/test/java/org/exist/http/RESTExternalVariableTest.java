@@ -99,6 +99,57 @@ public class RESTExternalVariableTest {
         .build());
 
     @Test
+    public void queryPostWithExternalVariableNotSupplied() throws IOException {
+        final String query =
+                "<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n" +
+                "\t<exist:text><![CDATA[\n" +
+                "declare variable $local:my-variable as xs:string* external;\n" +
+                "$local:my-variable\n" +
+                "\t]]></exist:text>\n" +
+                "</exist:query>\n";
+
+        final HttpResponse response = doPostWithAuth(getResourceUri(), query);
+        final int resultStatusCode = response.getStatusLine()
+               .getStatusCode();
+
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+
+        final String actual = readResponse(response.getEntity());
+        assertThat(actual, CompareMatcher.isIdenticalTo("<exception><path>/db/test/test.xml</path><message>err:XPDY0002 The value of external variable: local:my-variable has not been set</message></exception>"));
+    }
+
+    @Test
+    public void queryPostWithExternalVariableUndeclared() throws IOException {
+        final String query =
+                "<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n" +
+                "\t<exist:variables>\n" +
+                "\t\t<exist:variable>\n" +
+                "\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>my-variable</exist:localname></exist:qname>\n" +
+                "\t\t\t<sx:sequence><sx:value type=\"xs:string\">hello</sx:value></sx:sequence>\n" +
+                "\t\t</exist:variable>\n" +
+                "\t\t<exist:variable>\n" +
+                "\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>other-variable</exist:localname></exist:qname>\n" +
+                "\t\t\t<sx:sequence><sx:value type=\"xs:string\">goodbye</sx:value></sx:sequence>\n" +
+                "\t\t</exist:variable>\n" +
+                "\t</exist:variables>\n" +
+                "\t<exist:text><![CDATA[\n" +
+                "declare variable $local:my-variable as xs:string* external;\n" +
+                "$local:my-variable\n" +
+                "\t]]></exist:text>\n" +
+                "</exist:query>\n";
+
+        final HttpResponse response = doPostWithAuth(getResourceUri(), query);
+        final int resultStatusCode = response.getStatusLine()
+                .getStatusCode();
+
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+
+        final String actual = readResponse(response.getEntity());
+
+        assertThat(actual, CompareMatcher.isIdenticalTo("<exception><path>/db/test/test.xml</path><message>err:XPDY0002 External variable local:other-variable is not declared in the XQuery</message></exception>"));
+    }
+
+    @Test
     public void queryPostWithExternalVariableUntypedNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, null, (ExternalVariableValueRep[]) null);
     }
@@ -1592,7 +1643,8 @@ public class RESTExternalVariableTest {
 
         assertEquals("Server returned response code: " + resultStatusCode, (int) expectedResponse._1, resultStatusCode);
 
-        final String actual = readResponse(response.getEntity());
+        String actual = readResponse(response.getEntity());
+        actual = actual.replaceFirst("\\s*\\[source:[^\\]]*\\]</message></exception>$", "</message></exception>");  // NOTE(AR) remove any source information from the actual response
 
         @Nullable final String expected;
         if (expectedResponse._1 == HttpStatus.OK_200) {

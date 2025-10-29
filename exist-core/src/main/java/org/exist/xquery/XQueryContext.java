@@ -1535,7 +1535,14 @@ public class XQueryContext implements BinaryValueManager, Context {
         cachedUriCollectionResults.clear();
 
         if (!keepGlobals) {
-            globalVariables.clear();
+            for (final Variable globalVariable : globalVariables.values()) {
+                if (globalVariable.isExternal()) {
+                    if (globalVariable instanceof VariableImpl) {
+                        ((VariableImpl) globalVariable).destroy(this, null);
+                    }
+                    globalVariable.setValue(null);
+                }
+            }
         }
 
         if (dynamicOptions != null) {
@@ -1921,6 +1928,35 @@ public class XQueryContext implements BinaryValueManager, Context {
     @Override
     public void undeclareGlobalVariable(final QName name) {
         globalVariables.remove(name);
+    }
+
+    /**
+     * Determines if a Global External Variable is declared.
+     *
+     * @param variableName The name of the variable.
+     *
+     * @return true, if the variable is declared (in either this module or an imported module), or false if the variable is undeclared.
+     */
+    public boolean isExternalVariableDeclared(final QName variableName) {
+        for (final Map.Entry<QName, Variable> mainGlobalVariable : globalVariables.entrySet()) {
+            if (mainGlobalVariable.getValue().isExternal() && mainGlobalVariable.getKey().equals(variableName)) {
+                return true;
+            }
+        }
+
+        for (final Module[] namespaceModules : modules.values()) {
+            for (final Module namespaceModule : namespaceModules) {
+                if (!namespaceModule.isInternalModule()) {
+                    for (final VariableDeclaration libGlobalVariable : ((ExternalModule) namespaceModule).getVariableDeclarations()) {
+                        if (libGlobalVariable.isExternal() && libGlobalVariable.getName().equals(variableName)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     @Override
