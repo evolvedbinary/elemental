@@ -740,6 +740,7 @@
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>project-suppression.xml</include>
+                                <include>src/test/xquery/pi.xqm</include>
                                 <include>src/test/xquery/securitymanager/acl.xqm</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceCharacterData.java</include>
@@ -1228,6 +1229,7 @@
                                 <exclude>src/test/xquery/instance-of.xqm</exclude>
                                 <exclude>src/test/xquery/operator-mapping.xqm</exclude>
                                 <exclude>src/test/xquery/order.xqm</exclude>
+                                <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/type-promotion.xqm</exclude>
                                 <exclude>src/test/xquery/maps/maps.xqm</exclude>
