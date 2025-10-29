@@ -547,7 +547,7 @@ public abstract class AbstractNodeSet extends AbstractSequence implements NodeSe
                     if (Expression.NO_CONTEXT_ID != contextId) {
                         context.addContextNode(contextId, context);
                     }
-                    if (lastDoc != null && lastDoc.getDocId() != context.getOwnerDocument().getDocId()) {
+                    if (lastDoc == null || lastDoc.getDocId() != context.getOwnerDocument().getDocId()) {
                         lastDoc = context.getOwnerDocument();
                         result.add(context, getSizeHint(lastDoc));
                     } else {

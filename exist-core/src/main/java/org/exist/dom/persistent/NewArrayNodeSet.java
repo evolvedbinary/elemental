@@ -65,7 +65,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * A fast node set implementation, based on arrays to store nodes and documents.
@@ -91,7 +96,7 @@ import java.util.*;
  */
 public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet, DocumentSet {
 
-    private Set<Collection> cachedCollections = null;
+    @Nullable private WeakReference<Set<Collection>> cachedCollectionsRef = null;
 
     private int documentCount = 0;
 
@@ -959,10 +964,10 @@ public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet,
                 if(contextNode.getContextId() == contextId) {
                     final NodeProxy context = contextNode.getNode();
                     context.addMatches(current);
-                    if(Expression.NO_CONTEXT_ID != contextId) {
+                    if (Expression.NO_CONTEXT_ID != contextId) {
                         context.addContextNode(contextId, context);
                     }
-                    if(lastDoc != null && lastDoc.getDocId() != context.getOwnerDocument().getDocId()) {
+                    if (lastDoc == null || lastDoc.getDocId() != context.getOwnerDocument().getDocId()) {
                         lastDoc = context.getOwnerDocument();
                         result.add(context, getSizeHint(lastDoc));
                     } else {
@@ -1038,16 +1043,27 @@ public class NewArrayNodeSet extends AbstractArrayNodeSet implements ExtNodeSet,
 
     @Override
     public Iterator<Collection> getCollectionIterator() {
-        sort();
-        if(cachedCollections == null) {
-            cachedCollections = new HashSet<>();
-            for(int i = 0; i < documentCount; i++) {
-                final DocumentImpl doc = nodes[documentNodesOffset[i]].getOwnerDocument();
-                if(!cachedCollections.contains(doc.getCollection())) {
-                    cachedCollections.add(doc.getCollection());
-                }
+        // First, try and retrieve from Cache
+        Set<Collection> cachedCollections;
+        if (this.cachedCollectionsRef != null) {
+            cachedCollections = this.cachedCollectionsRef.get();
+            if (cachedCollections != null) {
+                return cachedCollections.iterator();
             }
         }
+
+        sort();
+
+        // Second, Cache is empty, so create a Cache and return
+        cachedCollections = new HashSet<>();
+        for (int i = 0; i < documentCount; i++) {
+            final DocumentImpl doc = nodes[documentNodesOffset[i]].getOwnerDocument();
+            final Collection collection = doc.getCollection();
+            cachedCollections.add(collection);
+        }
+
+        this.cachedCollectionsRef = new WeakReference<>(cachedCollections);
+
         return cachedCollections.iterator();
     }
 
