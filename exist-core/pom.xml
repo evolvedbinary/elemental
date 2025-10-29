@@ -874,6 +874,7 @@
                                 <include>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/DocumentSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/ElementImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeProxy.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/NodeTest.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/LockToken.java</include>
@@ -1318,6 +1319,7 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/ElementImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeProxy.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/NodeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/LockToken.java</exclude>
