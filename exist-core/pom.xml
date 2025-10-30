@@ -700,6 +700,7 @@
                                 <include>src/test/xquery/pi.xqm</include>
                                 <include>src/test/xquery/securitymanager/acl.xqm</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentTypeImpl.java</include>
+                                <include>src/test/resources/org/exist/dom/memtree/simple.xhtml</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceNodeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/reference/CommentReferenceImpl.java</include>
@@ -1412,6 +1413,7 @@
                                 <exclude>src/main/java/org/exist/dom/memtree/NamespaceNode.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/NodeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/ProcessingInstructionImpl.java</exclude>
+                                <exclude>src/test/resources/org/exist/dom/memtree/simple.xhtml</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/AbstractReferenceNodeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/reference/CommentReferenceImpl.java</exclude>
