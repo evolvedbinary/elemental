@@ -31,6 +31,12 @@ import java.util.Optional;
 public class StringUtil {
 
     /**
+     * The platform specific separator to use for line separation.
+     * Just a static constant for {@code System.getProperty("line.separator")}.
+     */
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
+
+    /**
      * Determines if a String is null or empty.
      *
      * @param string the string to test.
