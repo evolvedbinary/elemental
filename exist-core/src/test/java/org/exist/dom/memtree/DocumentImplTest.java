@@ -55,14 +55,14 @@ import org.junit.runner.RunWith;
 import org.w3c.dom.*;
 import org.xml.sax.*;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.*;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.*;
 
 /**
  * @author Adam Retter <adam@evolvedbinary.com>
@@ -176,6 +176,34 @@ public class DocumentImplTest {
         assertEquals("repo", attr2.getLocalName());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE + ":repo", attr2.getNodeName());
         assertEquals("http://exist-db.org/xquery/repo", attr2.getValue());
+    }
+
+    @Test
+    public void testGetInScopePrefix() throws IOException, ParserConfigurationException, SAXException {
+        final MemTreeBuilder memtreeBuilder = new MemTreeBuilder();
+        final DocumentBuilderReceiver documentBuilderReceiver = new DocumentBuilderReceiver(memtreeBuilder, true);
+
+        try (final InputStream is = getClass().getResourceAsStream("simple.xhtml")) {
+            final SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+            saxParserFactory.setNamespaceAware(true);
+            final SAXParser saxParser = saxParserFactory.newSAXParser();
+            final XMLReader xmlReader = saxParser.getXMLReader();
+            xmlReader.setContentHandler(documentBuilderReceiver);
+
+            memtreeBuilder.startDocument();
+            xmlReader.parse(new InputSource(is));
+            memtreeBuilder.endDocument();
+        }
+
+        final Document document = memtreeBuilder.getDocument();
+        assertTrue(document instanceof DocumentImpl);
+        final DocumentImpl documentImpl = (DocumentImpl) document;
+
+        final int lastNodeNumber = documentImpl.getLastNode();
+        assertEquals(81, lastNodeNumber);
+
+        @Nullable final String namespaceUri = documentImpl.getInScopePrefix(XMLConstants.DEFAULT_NS_PREFIX, lastNodeNumber);
+        assertEquals(Namespaces.XHTML_NS, namespaceUri);
     }
 
     private Document parseXerces(final InputStream is) throws ParserConfigurationException, SAXException, IOException {

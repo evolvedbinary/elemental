@@ -1773,7 +1773,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
             if (ns != -1) {
                 while (ns < nextNamespace && namespaceParent[ns] == nodeNumber) {
                     final QName nsQName = namespaceCode[ns];
-                    if (prefix.equals(nsQName.getPrefix())) {
+                    if (prefix.equals(nsQName.getPrefix()) || (prefix.equals(XMLConstants.DEFAULT_NS_PREFIX) && nsQName.getPrefix() == null && XMLConstants.XMLNS_ATTRIBUTE.equals(nsQName.getLocalPart()))) {
                         return nsQName.getNamespaceURI();
                     }
                     ++ns;
@@ -1787,7 +1787,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
             while (parent > nodeNumber) {
                 parent = next[parent];
             }
-            if (parent != -1) {
+            if (parent != -1 && !(nodeNumber == 0 && parent == 0)) {
                 return getInScopePrefix(prefix, parent);
             }
         }
