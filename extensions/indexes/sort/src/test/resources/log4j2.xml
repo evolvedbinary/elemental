@@ -170,7 +170,6 @@
         </Logger>
         
         <Logger name="org.exist.statistics" additivity="false" level="info">
-            <AppenderRef ref="elemental.core"/>
             <AppenderRef ref="elemental.statistics"/>
         </Logger>
         
