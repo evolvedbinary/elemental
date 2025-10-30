@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<body xmlns="http://www.w3.org/1999/xhtml">
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="index.html">
+                    <object class="logo-filtered" data="images/logo.svg" height="40" type="image/svg+xml" width="200"/>
+                </a>
+                <button aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbarCollapse" data-bs-toggle="collapse" type="button">
+                    <span class="navbar-toggler-icon"/>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                    <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                        <li class="nav-item">
+                            <a aria-current="page" class="nav-link active" href="index.html">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="docs.html" target="_blank">Handbook</a>
+                        </li>
+                    </ul>
+                    <span class="d-flex" role="search">
+                            <span data-template="app:userinfo">
+                                <ul class="nav navbar-nav">
+                                    <li>
+                                        <p class="navbar-btn">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn btn-outline-light dropdown-toggle" data-bs-toggle="dropdown" type="button">
+                                                    <span class="glyphicon glyphicon-user"/>
+                                                    admin
+                                                    <span class="caret"/>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <!--<li><a href="{$app:navbase}/user.html?user={$user}">Account</a></li>-->
+                                                    <li>
+                                                        <a href="admin?logout=true" id="logout">Logout</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </p>
+                                    </li>
+                                </ul>
+                            </span>
+                        </span>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid grayed"/>
+</body>
