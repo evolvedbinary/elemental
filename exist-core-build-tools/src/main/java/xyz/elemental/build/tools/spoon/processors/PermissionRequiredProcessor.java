@@ -20,12 +20,12 @@
  */
 package xyz.elemental.build.tools.spoon.processors;
 
-import com.palantir.javapoet.ClassName;
-import com.palantir.javapoet.CodeBlock;
-import com.palantir.javapoet.JavaFile;
-import com.palantir.javapoet.MethodSpec;
-import com.palantir.javapoet.ParameterSpec;
-import com.palantir.javapoet.TypeSpec;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.Nullable;
 import javax.annotation.processing.AbstractProcessor;
