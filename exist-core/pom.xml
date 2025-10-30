@@ -156,7 +156,8 @@
             <artifactId>jing</artifactId>
             <version>20241231</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xml-apis:xml-apis -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -321,6 +322,7 @@
             <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.org.apache.ws.commons.util</groupId>
             <artifactId>ws-commons-util</artifactId>
@@ -342,6 +344,11 @@
             <version>${xmlresolver.version}</version>
             <exclusions>
                 <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xml-apis:xml-apis -->
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+                <exclusion>
                     <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xerces:xercesImpl -->
                     <groupId>xerces</groupId>
                     <artifactId>xercesImpl</artifactId>
@@ -356,6 +363,11 @@
             <classifier>data</classifier>
             <scope>runtime</scope>
             <exclusions>
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xml-apis:xml-apis -->
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
                 <exclusion>
                     <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xerces:xercesImpl -->
                     <groupId>xerces</groupId>
@@ -2267,7 +2279,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
-                    <excludePackageNames>org.exist.xquery.parser:org.exist.xquery.xqdoc.parser</excludePackageNames>
+                    <sourcepath>${project.build.sourceDirectory}:${project.build.directory}/generated-sources/annotations:${project.build.directory}/generated-sources/antlr</sourcepath>
                 </configuration>
             </plugin>
 
