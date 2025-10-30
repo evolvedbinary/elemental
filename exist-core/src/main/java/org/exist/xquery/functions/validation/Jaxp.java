@@ -106,6 +106,7 @@ import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
 
+import org.exist.xslt.TransformerFactoryAllocator;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -460,7 +461,7 @@ public class Jaxp extends BasicFunction {
 
         final StreamResult result = new StreamResult(tmp.toFile());
 
-        final TransformerFactory tf = TransformerFactory.newInstance();
+        final TransformerFactory tf = TransformerFactoryAllocator.getTransformerFactory(context.getBroker().getBrokerPool());
 
         final Transformer transformer = tf.newTransformer();
 

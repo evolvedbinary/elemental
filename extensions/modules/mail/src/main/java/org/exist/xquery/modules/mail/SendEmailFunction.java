@@ -54,6 +54,7 @@ import org.exist.dom.QName;
 import org.exist.util.MimeTable;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
+import org.exist.xslt.TransformerFactoryAllocator;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -65,8 +66,8 @@ import jakarta.mail.util.ByteArrayDataSource;
 import javax.annotation.Nullable;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.net.InetAddress;
@@ -90,7 +91,6 @@ import static org.exist.util.StringUtil.isNullOrEmpty;
 public class SendEmailFunction extends BasicFunction {
 
     private static final Logger LOGGER = LogManager.getLogger(SendEmailFunction.class);
-    private static final TransformerFactory TRANSFORMER_FACTORY = TransformerFactory.newInstance();
 
     private final static int MIME_BASE64_MAX_LINE_LENGTH = 76; //RFC 2045, page 24
 
@@ -700,7 +700,8 @@ public class SendEmailFunction extends BasicFunction {
                                         mail.setText(bodyPart.getFirstChild().getNodeValue());
                                     } else if ("xhtml".equals(bodyPart.getLocalName())) {
                                         //Convert everything inside <xhtml></xhtml> to text
-                                        final Transformer transformer = TRANSFORMER_FACTORY.newTransformer();
+                                        final SAXTransformerFactory factory = TransformerFactoryAllocator.getTransformerFactory(context.getBroker().getBrokerPool());
+                                        final Transformer transformer = factory.newTransformer();
                                         final DOMSource source = new DOMSource(bodyPart.getFirstChild());
                                         try (final StringBuilderWriter strWriter = new StringBuilderWriter()) {
                                             final StreamResult result = new StreamResult(strWriter);
@@ -839,7 +840,8 @@ public class SendEmailFunction extends BasicFunction {
                                             break;
                                         case "xhtml":
                                             //Convert everything inside <xhtml></xhtml> to text
-                                            final Transformer transformer = TRANSFORMER_FACTORY.newTransformer();
+                                            final SAXTransformerFactory factory = TransformerFactoryAllocator.getTransformerFactory(context.getBroker().getBrokerPool());
+                                            final Transformer transformer = factory.newTransformer();
                                             final DOMSource source = new DOMSource(bodyPart.getFirstChild());
                                             try (final StringBuilderWriter strWriter = new StringBuilderWriter()) {
                                                 final StreamResult result = new StreamResult(strWriter);
@@ -906,7 +908,8 @@ public class SendEmailFunction extends BasicFunction {
                                 Node attachChild = attachment.getFirstChild();
                                 while (attachChild != null) {
                                     if (Node.ELEMENT_NODE == attachChild.getNodeType()) {
-                                        final Transformer transformer = TRANSFORMER_FACTORY.newTransformer();
+                                        final SAXTransformerFactory factory = TransformerFactoryAllocator.getTransformerFactory(context.getBroker().getBrokerPool());
+                                        final Transformer transformer = factory.newTransformer();
                                         final DOMSource source = new DOMSource(attachChild);
                                         try (final StringBuilderWriter strWriter = new StringBuilderWriter()) {
                                             final StreamResult result = new StreamResult(strWriter);
