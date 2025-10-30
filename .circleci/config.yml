@@ -41,9 +41,9 @@ executors:
       - image: "cimg/openjdk:11.0"
     environment:
       MAVEN_BIN: /opt/apache-maven/bin/mvn
-  macos-vm-xcode13:
+  macos-vm-xcode16:
     macos:
-      xcode: 13.4.1
+      xcode: 16.4.0
     environment:
       MAVEN_BIN: /tmp/maven/bin/mvn
       JAVA_HOME: /Library/Java/JavaVirtualMachines/liberica-jdk-8.jdk/Contents/Home
@@ -665,7 +665,7 @@ workflows:
           name: build-<< matrix.os >>
           matrix:
             parameters:
-              os: [linux-docker-jdk8, macos-vm-xcode13, windows-vm]
+              os: [linux-docker-jdk8, macos-vm-xcode16, windows-vm]
               compute_size: [<< pipeline.parameters.compute_size_small >>, << pipeline.parameters.compute_size_mac_medium >>, << pipeline.parameters.compute_size_windows_medium >>]
               maven_cache_name_prefix: [ << matrix.os >> ]
             exclude:
@@ -675,10 +675,10 @@ workflows:
               - os: linux-docker-jdk8
                 compute_size: << pipeline.parameters.compute_size_windows_medium >>
                 maven_cache_name_prefix: << matrix.os >>
-              - os: macos-vm-xcode13
+              - os: macos-vm-xcode16
                 compute_size: << pipeline.parameters.compute_size_small >>
                 maven_cache_name_prefix: << matrix.os >>
-              - os: macos-vm-xcode13
+              - os: macos-vm-xcode16
                 compute_size: << pipeline.parameters.compute_size_windows_medium >>
                 maven_cache_name_prefix: << matrix.os >>
               - os: windows-vm
@@ -707,7 +707,7 @@ workflows:
           name: test-<< matrix.os >>
           matrix:
             parameters:
-              os: [linux-docker-jdk8, macos-vm-xcode13, windows-vm]
+              os: [linux-docker-jdk8, macos-vm-xcode16, windows-vm]
               compute_size: [<< pipeline.parameters.compute_size_large >>, << pipeline.parameters.compute_size_mac_medium >>, << pipeline.parameters.compute_size_windows_medium >>]
               maven_cache_name_prefix: [<< matrix.os >>]
             exclude:
@@ -717,10 +717,10 @@ workflows:
               - os: linux-docker-jdk8
                 compute_size: << pipeline.parameters.compute_size_windows_medium >>
                 maven_cache_name_prefix: << matrix.os >>
-              - os: macos-vm-xcode13
+              - os: macos-vm-xcode16
                 compute_size: << pipeline.parameters.compute_size_large >>
                 maven_cache_name_prefix: << matrix.os >>
-              - os: macos-vm-xcode13
+              - os: macos-vm-xcode16
                 compute_size: << pipeline.parameters.compute_size_windows_medium >>
                 maven_cache_name_prefix: << matrix.os >>
               - os: windows-vm
