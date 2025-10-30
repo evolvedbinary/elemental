@@ -2352,7 +2352,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
-                    <excludePackageNames>org.exist.xquery.parser:org.exist.xquery.xqdoc.parser</excludePackageNames>
+                    <sourcepath>${project.build.sourceDirectory}:${project.build.directory}/generated-sources/annotations:${project.build.directory}/generated-sources/antlr</sourcepath>
                 </configuration>
             </plugin>
 
