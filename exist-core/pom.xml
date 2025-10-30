@@ -180,7 +180,8 @@
             <artifactId>jing</artifactId>
             <version>20241231</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Xerces dependency on xml-apis -->
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xml-apis:xml-apis -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -332,12 +333,6 @@
             <artifactId>xercesImpl</artifactId>
             <version>${xerces.version}</version>
             <classifier>jdk14-xml-schema-1.1</classifier>
-            <exclusions>
-                <exclusion>  <!-- conflicts with Java 21's javax.xml module -->
-                    <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
-                    <artifactId>xml-apis</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -353,13 +348,10 @@
             </exclusions>
         </dependency>
 
-        <!-- conflicts with Java 21's javax.xml module -->
-        <!--
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
         </dependency>
-        -->
 
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.org.apache.ws.commons.util</groupId>
@@ -381,7 +373,8 @@
             <artifactId>xmlresolver</artifactId>
             <version>${xmlresolver.version}</version>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 21's javax.xml module -->
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xml-apis:xml-apis -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -400,7 +393,8 @@
             <classifier>data</classifier>
             <scope>runtime</scope>
             <exclusions>
-                <exclusion> <!-- conflicts with Java 21's javax.xml module -->
+                <exclusion>
+                    <!-- NOTE(AR): conflicts with com.evolvedbinary.thirdparty.xml-apis:xml-apis -->
                     <groupId>xml-apis</groupId>
                     <artifactId>xml-apis</artifactId>
                 </exclusion>
@@ -419,12 +413,6 @@
             <artifactId>xpath2</artifactId>
             <version>1.2.1.1</version>
             <scope>runtime</scope>
-            <exclusions>
-                <exclusion>  <!-- conflicts with Java 21's javax.xml module -->
-                    <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
-                    <artifactId>xml-apis</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>edu.princeton.cup</groupId>
