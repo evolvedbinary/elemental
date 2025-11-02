@@ -846,7 +846,9 @@
                                 <include>src/main/java/org/exist/collections/MutableCollection.java</include>
                                 <include>src/test/java/org/exist/collections/OpenCollectionTest</include>
                                 <include>src/main/java/org/exist/collections/triggers/CollectionTrigger.java</include>
+                                <include>src/main/java/org/exist/collections/triggers/CollectionTriggers.java</include>
                                 <include>src/main/java/org/exist/collections/triggers/DocumentTrigger.java</include>
+                                <include>src/main/java/org/exist/collections/triggers/DocumentTriggers.java</include>
                                 <include>src/test/java/org/exist/collections/triggers/MessagesTrigger.java</include>
                                 <include>src/test/java/org/exist/collections/triggers/TriggerConfigTest.java</include>
                                 <include>src/main/java/org/exist/collections/triggers/XQueryStartupTrigger.java</include>
@@ -1428,7 +1430,9 @@
                                 <exclude>src/main/java/org/exist/collections/MutableCollection.java</exclude>
                                 <exclude>src/test/java/org/exist/collections/OpenCollectionTest</exclude>
                                 <exclude>src/main/java/org/exist/collections/triggers/CollectionTrigger.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/triggers/CollectionTriggers.java</exclude>
                                 <exclude>src/main/java/org/exist/collections/triggers/DocumentTrigger.java</exclude>
+                                <exclude>src/main/java/org/exist/collections/triggers/DocumentTriggers.java</exclude>
                                 <exclude>src/test/java/org/exist/collections/triggers/MessagesTrigger.java</exclude>
                                 <exclude>src/test/java/org/exist/collections/triggers/TriggerConfigTest.java</exclude>
                                 <exclude>src/main/java/org/exist/collections/triggers/XQueryStartupTrigger.java</exclude>
