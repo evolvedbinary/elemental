@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -39,119 +63,146 @@ public class CollectionTriggers implements CollectionTrigger {
     
     private final List<CollectionTrigger> triggers;
 
-    public CollectionTriggers(DBBroker broker, Txn transaction) throws TriggerException {
+    public CollectionTriggers(final DBBroker broker, final Txn transaction) throws TriggerException {
         this(broker, transaction, null, null);
     }
 
-    public CollectionTriggers(DBBroker broker, Txn transaction, Collection collection) throws TriggerException {
+    public CollectionTriggers(final DBBroker broker, final Txn transaction, final Collection collection) throws TriggerException {
         this(broker, transaction, collection, collection.getConfiguration(broker));
     }
 
-    public CollectionTriggers(DBBroker broker, Txn transaction, Collection collection, CollectionConfiguration config) throws TriggerException {
-        
-        List<TriggerProxy<? extends CollectionTrigger>> colTriggers = null;
-        if (config != null) {
-            colTriggers = config.collectionTriggers();
-        }
-        
-        java.util.Collection<TriggerProxy<? extends CollectionTrigger>> masterTriggers = broker.getDatabase().getCollectionTriggers();
+    public CollectionTriggers(final DBBroker broker, final Txn transaction, final Collection collection, final CollectionConfiguration config) throws TriggerException {
+        final List<TriggerProxy<? extends CollectionTrigger>> colTriggers = config != null ? config.collectionTriggers() : null;
+        final java.util.Collection<TriggerProxy<? extends CollectionTrigger>> masterTriggers = broker.getDatabase().getCollectionTriggers();
         
         triggers = new ArrayList<>(masterTriggers.size() + (colTriggers == null ? 0 : colTriggers.size()));
         
-        for (TriggerProxy<? extends CollectionTrigger> colTrigger : masterTriggers) {
-            
-            CollectionTrigger instance = colTrigger.newInstance(broker, transaction, collection);
-            
+        for (final TriggerProxy<? extends CollectionTrigger> colTrigger : masterTriggers) {
+            final CollectionTrigger instance = colTrigger.newInstance(broker, transaction, collection);
             register(instance);
         }
         
         if (colTriggers != null) {
-            for (TriggerProxy<? extends CollectionTrigger> colTrigger : colTriggers) {
-                
-                CollectionTrigger instance = colTrigger.newInstance(broker, transaction, collection);
-                
+            for (final TriggerProxy<? extends CollectionTrigger> colTrigger : colTriggers) {
+                final CollectionTrigger instance = colTrigger.newInstance(broker, transaction, collection);
                 register(instance);
             }
         }
     }
     
-    private void register(CollectionTrigger trigger) {
+    private void register(final CollectionTrigger trigger) {
         triggers.add(trigger);
     }
     
     @Override
-    public void configure(DBBroker broker, Txn transaction, Collection col, Map<String, List<? extends Object>> parameters) throws TriggerException {
+    public void configure(final DBBroker broker, final Txn transaction, final Collection col, final Map<String, List<? extends Object>> parameters) throws TriggerException {
     }
 
     @Override
-    public void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        for (CollectionTrigger trigger : triggers) {
-            trigger.beforeCreateCollection(broker, txn, uri);
+    public void beforeCreateCollection(final DBBroker broker, final Txn txn, final XmldbURI uri) throws TriggerException {
+        for (final CollectionTrigger trigger : triggers) {
+            try {
+                trigger.beforeCreateCollection(broker, txn, uri);
+            } catch (final Exception e) {
+                logAndThrowError("beforeCreateCollection", trigger, uri, e);
+            }
         }
     }
 
     @Override
-    public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) {
-        for (CollectionTrigger trigger : triggers) {
+    public void afterCreateCollection(final DBBroker broker, final Txn txn, final Collection collection) {
+        for (final CollectionTrigger trigger : triggers) {
             try {
                 trigger.afterCreateCollection(broker, txn, collection);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterCreateCollection", trigger, collection.getURI(), e);
             }
         }
     }
 
     @Override
-    public void beforeCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        for (CollectionTrigger trigger : triggers) {
-            trigger.beforeCopyCollection(broker, txn, collection, newUri);
+    public void beforeCopyCollection(final DBBroker broker, final Txn txn, final Collection collection, final XmldbURI newUri) throws TriggerException {
+        for (final CollectionTrigger trigger : triggers) {
+            try {
+                trigger.beforeCopyCollection(broker, txn, collection, newUri);
+            } catch (final Exception e) {
+                logAndThrowError("beforeCopyCollection", trigger, collection.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
-        for (CollectionTrigger trigger : triggers) {
+    public void afterCopyCollection(final DBBroker broker, final Txn txn, final Collection collection, final XmldbURI oldUri) {
+        for (final CollectionTrigger trigger : triggers) {
             try {
                 trigger.afterCopyCollection(broker, txn, collection, oldUri);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterCopyCollection", trigger, oldUri, e);
             }
         }
     }
 
     @Override
-    public void beforeMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        for (CollectionTrigger trigger : triggers) {
-            trigger.beforeMoveCollection(broker, txn, collection, newUri);
+    public void beforeMoveCollection(final DBBroker broker, final Txn txn, final Collection collection, final XmldbURI newUri) throws TriggerException {
+        for (final CollectionTrigger trigger : triggers) {
+            try {
+                trigger.beforeMoveCollection(broker, txn, collection, newUri);
+            } catch (final Exception e) {
+                logAndThrowError("beforeMoveCollection", trigger, collection.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
-        for (CollectionTrigger trigger : triggers) {
+    public void afterMoveCollection(final DBBroker broker, final Txn txn, final Collection collection, final XmldbURI oldUri) {
+        for (final CollectionTrigger trigger : triggers) {
             try {
                 trigger.afterMoveCollection(broker, txn, collection, oldUri);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterMoveCollection", trigger, oldUri, e);
             }
         }
     }
 
     @Override
-    public void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
-        for (CollectionTrigger trigger : triggers) {
-            trigger.beforeDeleteCollection(broker, txn, collection);
+    public void beforeDeleteCollection(final DBBroker broker, final Txn txn, final Collection collection) throws TriggerException {
+        for (final CollectionTrigger trigger : triggers) {
+            try {
+                trigger.beforeDeleteCollection(broker, txn, collection);
+            } catch (final Exception e) {
+                logAndThrowError("beforeDeleteCollection", trigger, collection.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) {
-        for (CollectionTrigger trigger : triggers) {
+    public void afterDeleteCollection(final DBBroker broker, final Txn txn, final XmldbURI uri) {
+        for (final CollectionTrigger trigger : triggers) {
             try {
                 trigger.afterDeleteCollection(broker, txn, uri);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterDeleteCollection", trigger, uri, e);
             }
+        }
+    }
+
+    private void logAndThrowError(final String eventName, final CollectionTrigger collectionTrigger, final XmldbURI source, final Exception e) throws TriggerException {
+        logError(eventName, collectionTrigger, source, e);
+        throwError(e);
+    }
+
+    private void logError(final String eventName, final CollectionTrigger collectionTrigger, final XmldbURI source, final Exception e) {
+        final String message = String.format("Error in %s#%s triggered by: %s, %s", collectionTrigger.getClass().getSimpleName(), eventName, source, e.getMessage());
+        Trigger.LOG.error(message, e);
+    }
+
+    private void throwError(final Exception e) throws TriggerException {
+        if (e instanceof TriggerException) {
+            throw (TriggerException) e;
+        } else if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        } else {
+            throw new TriggerException(e);
         }
     }
 }
