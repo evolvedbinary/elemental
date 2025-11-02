@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -58,37 +82,28 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     
     private final List<DocumentTrigger> triggers;
     
-    public DocumentTriggers(DBBroker broker, Txn transaction) throws TriggerException {
+    public DocumentTriggers(final DBBroker broker, final Txn transaction) throws TriggerException {
         this(broker, transaction, null, null, null);
     }
     
-    public DocumentTriggers(DBBroker broker, Txn transaction, Collection collection) throws TriggerException {
+    public DocumentTriggers(final DBBroker broker, final Txn transaction, final Collection collection) throws TriggerException {
         this(broker, transaction, null, collection, broker.isTriggersEnabled() ? collection.getConfiguration(broker) : null);
     }
 
-    public DocumentTriggers(DBBroker broker, Txn transaction, Indexer indexer, Collection collection, CollectionConfiguration config) throws TriggerException {
-        
-        List<TriggerProxy<? extends DocumentTrigger>> docTriggers = null;
-        if (config != null) {
-            docTriggers = config.documentTriggers();
-        }
-        
-        java.util.Collection<TriggerProxy<? extends DocumentTrigger>> masterTriggers = broker.getDatabase().getDocumentTriggers();
+    public DocumentTriggers(final DBBroker broker, final Txn transaction, final Indexer indexer, final Collection collection, final CollectionConfiguration config) throws TriggerException {
+        final List<TriggerProxy<? extends DocumentTrigger>> docTriggers = config != null ? config.documentTriggers() : null;
+        final java.util.Collection<TriggerProxy<? extends DocumentTrigger>> masterTriggers = broker.getDatabase().getDocumentTriggers();
         
         triggers = new ArrayList<>(masterTriggers.size() + (docTriggers == null ? 0 : docTriggers.size()));
         
-        for (TriggerProxy<? extends DocumentTrigger> docTrigger : masterTriggers) {
-            
-            DocumentTrigger instance = docTrigger.newInstance(broker, transaction, collection);
-
+        for (final TriggerProxy<? extends DocumentTrigger> docTrigger : masterTriggers) {
+            final DocumentTrigger instance = docTrigger.newInstance(broker, transaction, collection);
             register(instance);
         }
         
         if (docTriggers != null) {
-            for (TriggerProxy<? extends DocumentTrigger> docTrigger : docTriggers) {
-                
-                DocumentTrigger instance = docTrigger.newInstance(broker, transaction, collection);
-                
+            for (final TriggerProxy<? extends DocumentTrigger> docTrigger : docTriggers) {
+                final DocumentTrigger instance = docTrigger.newInstance(broker, transaction, collection);
                 register(instance);
             }
         }
@@ -100,7 +115,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
         last = null;
     }
     
-    private void finishPreparation(Indexer indexer) {
+    private void finishPreparation(final Indexer indexer) {
         if (last == null) {
             contentHandler = indexer;
             lexicalHandler = indexer;
@@ -112,9 +127,8 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
         this.indexer = indexer;
     }
 
-    private void register(DocumentTrigger trigger) {
+    private void register(final DocumentTrigger trigger) {
         if (trigger instanceof SAXTrigger filteringTrigger) {
-
             if (last == null) {
                 contentHandler = filteringTrigger;
                 lexicalHandler = filteringTrigger;
@@ -131,11 +145,11 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void configure(DBBroker broker, Txn txn, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
+    public void configure(final DBBroker broker, final Txn txn, final Collection parent, final Map<String, List<? extends Object>> parameters) throws TriggerException {
     }
 
     @Override
-    public void setDocumentLocator(Locator locator) {
+    public void setDocumentLocator(final Locator locator) {
         contentHandler.setDocumentLocator(locator);
     }
 
@@ -155,12 +169,12 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void startPrefixMapping(String prefix, String uri) throws SAXException {
+    public void startPrefixMapping(final String prefix, final String uri) throws SAXException {
         contentHandler.startPrefixMapping(prefix, uri);
     }
 
     @Override
-    public void endPrefixMapping(String prefix) throws SAXException {
+    public void endPrefixMapping(final String prefix) throws SAXException {
         contentHandler.endPrefixMapping(prefix);
     }
 
@@ -170,32 +184,32 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void endElement(String uri, String localName, String qName) throws SAXException {
+    public void endElement(final String uri, final String localName, final String qName) throws SAXException {
         contentHandler.endElement(uri, localName, qName);
     }
 
     @Override
-    public void characters(char[] ch, int start, int length) throws SAXException {
+    public void characters(final char[] ch, final int start, final int length) throws SAXException {
         contentHandler.characters(ch, start, length);
     }
 
     @Override
-    public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
+    public void ignorableWhitespace(final char[] ch, final int start, final int length) throws SAXException {
         contentHandler.ignorableWhitespace(ch, start, length);
     }
 
     @Override
-    public void processingInstruction(String target, String data) throws SAXException {
+    public void processingInstruction(final String target, final String data) throws SAXException {
         contentHandler.processingInstruction(target, data);
     }
 
     @Override
-    public void skippedEntity(String name) throws SAXException {
+    public void skippedEntity(final String name) throws SAXException {
         contentHandler.skippedEntity(name);
     }
 
     @Override
-    public void startDTD(String name, String publicId, String systemId) throws SAXException {
+    public void startDTD(final String name, final String publicId, final String systemId) throws SAXException {
         lexicalHandler.startDTD(name, publicId, systemId);
     }
 
@@ -205,12 +219,12 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void startEntity(String name) throws SAXException {
+    public void startEntity(final String name) throws SAXException {
         lexicalHandler.startEntity(name);
     }
 
     @Override
-    public void endEntity(String name) throws SAXException {
+    public void endEntity(final String name) throws SAXException {
         lexicalHandler.endEntity(name);
     }
 
@@ -225,114 +239,138 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void comment(char[] ch, int start, int length) throws SAXException {
+    public void comment(final char[] ch, final int start, final int length) throws SAXException {
         lexicalHandler.comment(ch, start, length);
     }
 
     @Override
-    public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        for (DocumentTrigger trigger : triggers) {
-            trigger.beforeCreateDocument(broker, txn, uri);
+    public void beforeCreateDocument(final DBBroker broker, final Txn txn, final XmldbURI uri) throws TriggerException {
+        for (final DocumentTrigger trigger : triggers) {
+            try {
+                trigger.beforeCreateDocument(broker, txn, uri);
+            } catch (final Exception e) {
+                logAndThrowError("beforeCreateDocument", trigger, uri, e);
+            }
         }
     }
 
     @Override
-    public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) {
-        for (DocumentTrigger trigger : triggers) {
+    public void afterCreateDocument(final DBBroker broker, final Txn txn, final DocumentImpl document) {
+        for (final DocumentTrigger trigger : triggers) {
             try {
                 trigger.afterCreateDocument(broker, txn, document);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterCreateDocument", trigger, document.getURI(), e);
             }
         }
     }
 
     @Override
-    public void beforeUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-        for (DocumentTrigger trigger : triggers) {
-            trigger.beforeUpdateDocument(broker, txn, document);
+    public void beforeUpdateDocument(final DBBroker broker, final Txn txn, final DocumentImpl document) throws TriggerException {
+        for (final DocumentTrigger trigger : triggers) {
+            try {
+                trigger.beforeUpdateDocument(broker, txn, document);
+            } catch (final Exception e) {
+                logAndThrowError("beforeUpdateDocument", trigger, document.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) {
-        for (DocumentTrigger trigger : triggers) {
+    public void afterUpdateDocument(final DBBroker broker, final Txn txn, final DocumentImpl document) {
+        for (final DocumentTrigger trigger : triggers) {
             try {
                 trigger.afterUpdateDocument(broker, txn, document);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterUpdateDocument", trigger, document.getURI(), e);
             }
         }
     }
 
     @Override
-    public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-        for (DocumentTrigger trigger : triggers) {
-            trigger.beforeUpdateDocumentMetadata(broker, txn, document);
+    public void beforeUpdateDocumentMetadata(final DBBroker broker, final Txn txn, final DocumentImpl document) throws TriggerException {
+        for (final DocumentTrigger trigger : triggers) {
+            try {
+                trigger.beforeUpdateDocumentMetadata(broker, txn, document);
+            } catch (final Exception e) {
+                logAndThrowError("beforeUpdateDocumentMetadata", trigger, document.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) {
-        for (DocumentTrigger trigger : triggers) {
+    public void afterUpdateDocumentMetadata(final DBBroker broker, final Txn txn, final DocumentImpl document) {
+        for (final DocumentTrigger trigger : triggers) {
             try {
                 trigger.afterUpdateDocumentMetadata(broker, txn, document);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterUpdateDocumentMetadata", trigger, document.getURI(), e);
             }
         }
     }
 
     @Override
-    public void beforeCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-        for (DocumentTrigger trigger : triggers) {
-            trigger.beforeCopyDocument(broker, txn, document, newUri);
+    public void beforeCopyDocument(final DBBroker broker, final Txn txn, final DocumentImpl document, final XmldbURI newUri) throws TriggerException {
+        for (final DocumentTrigger trigger : triggers) {
+            try {
+                trigger.beforeCopyDocument(broker, txn, document, newUri);
+            } catch (final Exception e) {
+                logAndThrowError("beforeCopyDocument", trigger, document.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) {
-        for (DocumentTrigger trigger : triggers) {
+    public void afterCopyDocument(final DBBroker broker, final Txn txn, final DocumentImpl document, final XmldbURI oldUri) {
+        for (final DocumentTrigger trigger : triggers) {
             try {
                 trigger.afterCopyDocument(broker, txn, document, oldUri);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterCopyDocument", trigger, oldUri, e);
             }
         }
     }
 
     @Override
-    public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-        for (DocumentTrigger trigger : triggers) {
-            trigger.beforeMoveDocument(broker, txn, document, newUri);
+    public void beforeMoveDocument(final DBBroker broker, final Txn txn, final DocumentImpl document, final XmldbURI newUri) throws TriggerException {
+        for (final DocumentTrigger trigger : triggers) {
+            try {
+                trigger.beforeMoveDocument(broker, txn, document, newUri);
+            } catch (final Exception e) {
+                logAndThrowError("beforeMoveDocument", trigger, document.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) {
-        for (DocumentTrigger trigger : triggers) {
+    public void afterMoveDocument(final DBBroker broker, final Txn txn, final DocumentImpl document, final XmldbURI oldUri) {
+        for (final DocumentTrigger trigger : triggers) {
             try {
                 trigger.afterMoveDocument(broker, txn, document, oldUri);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterMoveDocument", trigger, oldUri, e);
             }
         }
     }
 
     @Override
-    public void beforeDeleteDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-        for (DocumentTrigger trigger : triggers) {
-            trigger.beforeDeleteDocument(broker, txn, document);
+    public void beforeDeleteDocument(final DBBroker broker, final Txn txn, final DocumentImpl document) throws TriggerException {
+        for (final DocumentTrigger trigger : triggers) {
+            try {
+                trigger.beforeDeleteDocument(broker, txn, document);
+            } catch (final Exception e) {
+                logAndThrowError("beforeDeleteDocument", trigger, document.getURI(), e);
+            }
         }
     }
 
     @Override
-    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) {
-        for (DocumentTrigger trigger : triggers) {
+    public void afterDeleteDocument(final DBBroker broker, final Txn txn, final XmldbURI uri) {
+        for (final DocumentTrigger trigger : triggers) {
             try {
                 trigger.afterDeleteDocument(broker, txn, uri);
-            } catch (Exception e) {
-                Trigger.LOG.error(e.getMessage(), e);
+            } catch (final Exception e) {
+                logError("afterDeleteDocument", trigger, uri, e);
             }
         }
     }
@@ -343,8 +381,8 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void setValidating(boolean validating) {
-        for (DocumentTrigger trigger : triggers) {
+    public void setValidating(final boolean validating) {
+        for (final DocumentTrigger trigger : triggers) {
             trigger.setValidating(validating);
         }
         
@@ -352,20 +390,43 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
-    public void warning(SAXParseException exception) throws SAXException {
-        if (errorHandler != null)
+    public void warning(final SAXParseException exception) throws SAXException {
+        if (errorHandler != null) {
             errorHandler.warning(exception);
+        }
     }
 
     @Override
-    public void error(SAXParseException exception) throws SAXException {
-        if (errorHandler != null)
+    public void error(final SAXParseException exception) throws SAXException {
+        if (errorHandler != null) {
             errorHandler.error(exception);
+        }
     }
 
     @Override
-    public void fatalError(SAXParseException exception) throws SAXException {
-        if (errorHandler != null)
+    public void fatalError(final SAXParseException exception) throws SAXException {
+        if (errorHandler != null) {
             errorHandler.fatalError(exception);
+        }
+    }
+
+    private void logAndThrowError(final String eventName, final DocumentTrigger documentTrigger, final XmldbURI source, final Exception e) throws TriggerException {
+        logError(eventName, documentTrigger, source, e);
+        throwError(e);
+    }
+
+    private void logError(final String eventName, final DocumentTrigger documentTrigger, final XmldbURI source, final Exception e) {
+        final String message = String.format("Error in %s#%s triggered by: %s, %s", documentTrigger.getClass().getSimpleName(), eventName, source, e.getMessage());
+        Trigger.LOG.error(message, e);
+    }
+
+    private void throwError(final Exception e) throws TriggerException {
+        if (e instanceof TriggerException) {
+            throw (TriggerException) e;
+        } else if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        } else {
+            throw new TriggerException(e);
+        }
     }
 }
