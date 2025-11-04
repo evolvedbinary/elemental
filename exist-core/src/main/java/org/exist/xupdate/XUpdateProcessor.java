@@ -134,7 +134,8 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 	public static final String VARIABLE = "variable";
 	public static final String IF = "if";
 	
-	public final static String XUPDATE_NS = "http://www.xmldb.org/xupdate";
+    public static final String XUPDATE_NS = "http://www.xmldb.org/xupdate";
+    public static final String XUPDATE_PREFIX = "xupdate";
 
     private static final String XML_SPACE_DEFAULT = "default";
     private static final String XML_SPACE_PRESERVE = "preserve";
@@ -759,9 +760,15 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 			context = new XQueryContext(broker.getBrokerPool());
 			context.setStaticallyKnownDocuments(documentSet);
 
+            context.declareNamespace(XUPDATE_PREFIX, XUPDATE_NS);
             if (namespaces != null) {
                 for (final Map.Entry<String, String> namespace : namespaces.entrySet()) {
-                    context.declareNamespace(namespace.getKey(), namespace.getValue());
+                    final String prefix = namespace.getKey();
+                    final String uri = namespace.getValue();
+                    // NOTE(AR) guard against declaring XUpdate as the default namespace prefix
+                    if (!(XMLConstants.DEFAULT_NS_PREFIX.equals(prefix) && XUPDATE_NS.equals(uri))) {
+                        context.declareNamespace(prefix, uri);
+                    }
                 }
             }
 
