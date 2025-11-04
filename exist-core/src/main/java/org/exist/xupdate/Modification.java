@@ -46,13 +46,13 @@
 package org.exist.xupdate;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.TreeMap;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectRBTreeMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -109,15 +109,17 @@ public abstract class Modification {
 	protected DBBroker broker;
 	/** Documents concerned by this XUpdate modification,
 	 * i.e. the set of documents to which this XUpdate might apply. */
-	protected DocumentSet docs;
-	protected Map<String, String> namespaces;
-	protected Map<String, Object> variables;
-	protected ManagedLocks<ManagedDocumentLock> lockedDocumentsLocks = null;
-	protected MutableDocumentSet modifiedDocuments = new DefaultDocumentSet();
-    protected Int2ObjectMap<DocumentTrigger> triggers;
+	@Nullable protected final DocumentSet docs;
+	@Nullable private Map<String, String> namespaces = null;
+	@Nullable private Map<String, Object> variables = null;
+	@Nullable private ManagedLocks<ManagedDocumentLock> lockedDocumentsLocks = null;
+	@Nullable private MutableDocumentSet modifiedDocuments = null;
+    @Nullable private Int2ObjectMap<DocumentTrigger> triggers = null;
 
 	@SuppressWarnings("unused")
-	private Modification() {}
+	private Modification() {
+        this.docs = null;
+    }
 
 	/**
 	 * Constructor for Modification.
@@ -128,15 +130,16 @@ public abstract class Modification {
 	 * @param namespaces the namespace bindings
 	 * @param variables the variable bindings
 	 */
-	public Modification(DBBroker broker, DocumentSet docs, String selectStmt,
-	        Map<String, String> namespaces, Map<String, Object> variables) {
+	public Modification(final DBBroker broker, final DocumentSet docs, final String selectStmt, @Nullable final Map<String, String> namespaces, @Nullable final Map<String, Object> variables) {
 		this.selectStmt = selectStmt;
 		this.broker = broker;
 		this.docs = docs;
-		this.namespaces = new HashMap<>(namespaces);
-		this.variables = new TreeMap<>(variables);
-        this.triggers = new Int2ObjectOpenHashMap<>();
-        // DESIGN_QUESTION : wouldn't that be nice to apply selectStmt right here ?
+        if (namespaces != null) {
+            this.namespaces = new Object2ObjectArrayMap<>(namespaces);
+        }
+        if (variables != null) {
+            this.variables = new Object2ObjectRBTreeMap<>(variables);
+        }
 	}
 
 	/**
@@ -152,13 +155,12 @@ public abstract class Modification {
      * @throws XPathException if the XPath raises an error
 	 * @throws TriggerException if a trigger raises an error
 	 */
-	public abstract long process(Txn transaction) throws PermissionDeniedException, LockException, 
-		EXistException, XPathException, TriggerException;
+	public abstract long process(final Txn transaction) throws PermissionDeniedException, LockException, EXistException, XPathException, TriggerException;
 
 	public abstract String getName();
 
-	public void setContent(NodeList nodes) {
-		content = nodes;
+	public void setContent(final NodeList nodes) {
+		this.content = nodes;
 	}
 
 	/**
@@ -172,8 +174,7 @@ public abstract class Modification {
 	 * @throws EXistException if the database raises an error
 	 * @throws XPathException if the XPath raises an error
 	 */
-	protected NodeList select(DocumentSet docs)
-		throws PermissionDeniedException, EXistException, XPathException {
+	protected NodeList select(final DocumentSet docs) throws PermissionDeniedException, EXistException, XPathException {
 		final XQuery xquery = broker.getBrokerPool().getXQueryService();
 		final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
 		final Source source = new StringSource(selectStmt);
@@ -229,9 +230,11 @@ public abstract class Modification {
 	 * @param context the xquery context
 	 * @throws XPathException if an error occurs whilst declaring the variables
 	 */
-	protected void declareVariables(XQueryContext context) throws XPathException {
-        for (final Map.Entry<String, Object> entry : variables.entrySet()) {
-            context.declareVariable(entry.getKey(), true, entry.getValue());
+	protected void declareVariables(final XQueryContext context) throws XPathException {
+        if (variables != null) {
+            for (final Map.Entry<String, Object> entry : variables.entrySet()) {
+                context.declareVariable(entry.getKey(), true, entry.getValue());
+            }
         }
 	}
 
@@ -239,10 +242,11 @@ public abstract class Modification {
 	 * @param context the xquery context
 	 * @throws XPathException if an error occurs whilst declaring the namespaces
 	 */
-	protected void declareNamespaces(XQueryContext context) throws XPathException {
-
-        for (Map.Entry<String, String> entry : namespaces.entrySet()) {
-            context.declareNamespace(entry.getKey(), entry.getValue());
+	protected void declareNamespaces(final XQueryContext context) throws XPathException {
+        if (namespaces != null) {
+            for (final Map.Entry<String, String> entry : namespaces.entrySet()) {
+                context.declareNamespace(entry.getKey(), entry.getValue());
+            }
         }
 	}
 
@@ -263,9 +267,7 @@ public abstract class Modification {
 	 * @throws XPathException if the XPath raises an error
 	 * @throws TriggerException if a trigger raises an error
 	 */
-	protected final StoredNode[] selectAndLock(Txn transaction)
-			throws LockException, PermissionDeniedException, EXistException,
-			XPathException, TriggerException {
+	protected final StoredNode[] selectAndLock(final Txn transaction) throws LockException, PermissionDeniedException, EXistException, XPathException, TriggerException {
 		final java.util.concurrent.locks.Lock globalLock = broker.getBrokerPool().getGlobalUpdateLock();
 		globalLock.lock();
 	    try {
@@ -277,9 +279,9 @@ public abstract class Modification {
 	        // during the modification
 	        lockedDocumentsLocks = lockedDocuments.lock(broker, true);
 	        
-		    final StoredNode ql[] = new StoredNode[nl.getLength()];		    
+		    final StoredNode[] ql = new StoredNode[nl.getLength()];
 			for (int i = 0; i < ql.length; i++) {
-				ql[i] = (StoredNode)nl.item(i);
+				ql[i] = (StoredNode) nl.item(i);
 				final DocumentImpl doc = ql[i].getOwnerDocument();
 				
 				// call the eventual triggers
@@ -304,25 +306,32 @@ public abstract class Modification {
 	 *
 	 * @throws TriggerException if a trigger raises an error
 	 */
-	protected final void unlockDocuments(final Txn transaction) throws TriggerException
-	{
-		if(lockedDocumentsLocks == null) {
+	protected final void unlockDocuments(final Txn transaction) throws TriggerException {
+		if (lockedDocumentsLocks == null) {
 			return;
 		}
 
 		try {
 			//finish Trigger
-			final Iterator<DocumentImpl> iterator = modifiedDocuments.getDocumentIterator();
-			while (iterator.hasNext()) {
-				finishTrigger(transaction, iterator.next());
-			}
+            if (modifiedDocuments != null) {
+                final Iterator<DocumentImpl> iterator = modifiedDocuments.getDocumentIterator();
+                while (iterator.hasNext()) {
+                    finishTrigger(transaction, iterator.next());
+                }
+            }
 		} finally {
-			triggers.clear();
-			modifiedDocuments.clear();
+            if (triggers != null) {
+                triggers.clear();
+            }
+            if (modifiedDocuments != null) {
+                modifiedDocuments.clear();
+            }
 
 			//unlock documents
-	        lockedDocumentsLocks.close();
-	        lockedDocumentsLocks = null;
+            if (lockedDocumentsLocks != null) {
+                lockedDocumentsLocks.close();
+                lockedDocumentsLocks = null;
+            }
 		}
 	}
 	
@@ -333,21 +342,25 @@ public abstract class Modification {
 	 * document exceeds the limit defined in the configuration file.
 	 *
 	 * @param transaction the database transaction.
-	 * @param docs the documents
 	 *
 	 * @throws EXistException if an error occurs
 	 */
-	protected void checkFragmentation(Txn transaction, DocumentSet docs) throws EXistException {
+	protected void checkFragmentation(final Txn transaction) throws EXistException {
         int fragmentationLimit = -1;
         final Object property = broker.getBrokerPool().getConfiguration().getProperty(DBBroker.PROPERTY_XUPDATE_FRAGMENTATION_FACTOR);
-        if (property != null)
-	        {fragmentationLimit = (Integer) property;}
-	    for(final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext(); ) {
-	        final DocumentImpl next = i.next();
-	        if(next.getSplitCount() > fragmentationLimit)
-	            {broker.defragXMLResource(transaction, next);}
-	        broker.checkXMLResourceConsistency(next);
-	    }
+        if (property != null) {
+            fragmentationLimit = (Integer) property;
+        }
+
+        if (modifiedDocuments != null) {
+            for (final Iterator<DocumentImpl> i = modifiedDocuments.getDocumentIterator(); i.hasNext(); ) {
+                final DocumentImpl next = i.next();
+                if (next.getSplitCount() > fragmentationLimit) {
+                    broker.defragXMLResource(transaction, next);
+                }
+                broker.checkXMLResourceConsistency(next);
+            }
+        }
 	}
 	
 	/**
@@ -358,14 +371,14 @@ public abstract class Modification {
 	 *
 	 * @throws TriggerException if a trigger raises an error
 	 */
-	private void prepareTrigger(Txn transaction, DocumentImpl doc) throws TriggerException {
-            
+	private void prepareTrigger(final Txn transaction, final DocumentImpl doc) throws TriggerException {
 	    final Collection col = doc.getCollection();
-	        
-            final DocumentTrigger trigger = new DocumentTriggers(broker, transaction, col);
-            
-            trigger.beforeUpdateDocument(broker, transaction, doc);
-            triggers.put(doc.getDocId(), trigger);
+        final DocumentTrigger trigger = new DocumentTriggers(broker, transaction, col);
+        trigger.beforeUpdateDocument(broker, transaction, doc);
+        if (triggers == null) {
+            triggers = new Int2ObjectOpenHashMap<>();
+        }
+        triggers.put(doc.getDocId(), trigger);
 	}
 	
 	/** 
@@ -376,12 +389,16 @@ public abstract class Modification {
 	 *
 	 * @throws TriggerException if a trigger raises an error
 	 */
-	private void finishTrigger(Txn transaction, DocumentImpl doc) throws TriggerException {
-        final DocumentTrigger trigger = triggers.get(doc.getDocId());
-        if(trigger != null)
-            {trigger.afterUpdateDocument(broker, transaction, doc);}
+	private void finishTrigger(final Txn transaction, final DocumentImpl doc) throws TriggerException {
+        if (triggers != null) {
+            final DocumentTrigger trigger = triggers.get(doc.getDocId());
+            if (trigger != null) {
+                trigger.afterUpdateDocument(broker, transaction, doc);
+            }
+        }
 	}
-	
+
+    @Override
 	public String toString() {
 		//		buf.append(XMLUtil.dump(content));
 		return "<xu:" + getName() + " select=\"" + selectStmt + "\">" + "</xu:" +	getName() +	">";
@@ -403,4 +420,11 @@ public abstract class Modification {
 			return node.getParentNode();
 		}
 	}
+
+    protected void addModifiedDocument(final DocumentImpl document) {
+        if (modifiedDocuments == null) {
+            modifiedDocuments = new DefaultDocumentSet();
+        }
+        modifiedDocuments.add(document);
+    }
 }
