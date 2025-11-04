@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -39,6 +63,8 @@ import org.exist.util.LockException;
 import org.exist.xquery.XPathException;
 import org.w3c.dom.NodeList;
 
+import javax.annotation.Nullable;
+
 /**
  * Implements an XUpdate insert-after or insert-before modification.
  * 
@@ -61,8 +87,7 @@ public class Insert extends Modification {
      * @param namespaces the namespaces.
      * @param variables the variables.
      */
-    public Insert(DBBroker broker, DocumentSet docs, String selectStmt,
-            Map<String, String> namespaces, Map<String, Object> variables) {
+    public Insert(final DBBroker broker, final DocumentSet docs, final String selectStmt, @Nullable final Map<String, String> namespaces, @Nullable final Map<String, Object> variables) {
         super(broker, docs, selectStmt, namespaces,  variables);
     }
 
@@ -76,44 +101,50 @@ public class Insert extends Modification {
      * @param namespaces the namespaces.
      * @param variables the variables.
      */
-    public Insert(DBBroker broker, DocumentSet docs, String selectStmt,
-            int mode, Map<String, String> namespaces, Map<String, Object> variables) {
+    public Insert(final DBBroker broker, final DocumentSet docs, final String selectStmt, final int mode, @Nullable final Map<String, String> namespaces, @Nullable final Map<String, Object> variables) {
         this(broker, docs, selectStmt, namespaces, variables);
         this.mode = mode;
     }
 
     @Override
-    public long process(Txn transaction) throws PermissionDeniedException, LockException,
-            EXistException, XPathException, TriggerException {
+    public long process(final Txn transaction) throws PermissionDeniedException, LockException, EXistException, XPathException, TriggerException {
         final NodeList children = content;
-        if (children.getLength() == 0) {return 0;}
+        if (children.getLength() == 0) {
+            return 0;
+        }
+
         try {
             final StoredNode[] ql = selectAndLock(transaction);
             final NotificationService notifier = broker.getBrokerPool().getNotificationService();
             final int len = children.getLength();
-            if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("found {} nodes to insert", len);}
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("found {} nodes to insert", len);
+            }
+
             for (final StoredNode node : ql) {
                 final DocumentImpl doc = node.getOwnerDocument();
                 if (!doc.getPermissions().validate(broker.getCurrentSubject(), Permission.WRITE)) {
                     throw new PermissionDeniedException("permission to update document denied");
                 }
+
                 final NodeImpl parent = (NodeImpl) getParent(node);
                 switch (mode) {
+
                     case INSERT_BEFORE:
                         parent.insertBefore(transaction, children, node);
                         break;
+
                     case INSERT_AFTER:
                         parent.insertAfter(transaction, children, node);
                         break;
                 }
+
                 doc.setLastModified(System.currentTimeMillis());
-                modifiedDocuments.add(doc);
+                addModifiedDocument(doc);
                 broker.storeXMLResource(transaction, doc);
                 notifier.notifyUpdate(doc, UpdateListener.UPDATE);
             }
-            checkFragmentation(transaction, modifiedDocuments);
+            checkFragmentation(transaction);
             return ql.length;
         } finally {
             unlockDocuments(transaction);
