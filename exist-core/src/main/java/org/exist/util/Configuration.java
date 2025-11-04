@@ -282,7 +282,7 @@ public class Configuration implements ErrorHandler {
     }
 
     public Configuration(@Nullable String configFilename, Optional<Path> existHomeDirname)
-            throws DatabaseConfigurationException {
+        throws DatabaseConfigurationException {
         InputStream is = null;
         try {
             if (configFilename == null) {
@@ -311,7 +311,7 @@ public class Configuration implements ErrorHandler {
             // location if necessary
             if (is == null) {
                 existHome = existHomeDirname.map(Optional::of)
-                        .orElse(ConfigurationHelper.getExistHome(configFilename));
+                    .orElse(ConfigurationHelper.getExistHome(configFilename));
 
                 if (existHome.isEmpty()) {
 
@@ -351,67 +351,74 @@ public class Configuration implements ErrorHandler {
             // path from conf file
             final Optional<Path> existHomePath = configFilePath.map(Path::getParent);
 
-            // initialize xml parser
-            // we use eXist's in-memory DOM implementation to work
-            // around a bug in Xerces
-            final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
-            factory.setNamespaceAware(true);
+            loadConfigFile(is, existHomePath);
 
-            final InputSource src = new InputSource(is);
-            final SAXParser parser = factory.newSAXParser();
-            final XMLReader reader = parser.getXMLReader();
-
-            reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-            reader.setFeature(FEATURE_SECURE_PROCESSING, true);
-
-            final SAXAdapter adapter = new SAXAdapter((Expression) null);
-            reader.setContentHandler(adapter);
-            reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
-            reader.parse(src);
-
-            final Document doc = adapter.getDocument();
-
-            //indexer settings
-            configureElement(doc, Indexer.CONFIGURATION_ELEMENT_NAME, element -> configureIndexer(doc, element));
-            //scheduler settings
-            configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
-            //db connection settings
-            configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(existHomePath, element));
-            // lock-table settings
-            configureElement(doc, "lock-manager", this::configureLockManager);
-            // repository settings
-            configureElement(doc, "repository", this::configureRepository);
-            // binary manager settings
-            configureElement(doc, "binary-manager", this::configureBinaryManager);
-            // transformer settings
-            configureElement(doc, TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME, this::configureTransformer);
-            // saxon settings (most importantly license file for PE or EE features)
-            configureElement(doc, SaxonConfiguration.SAXON_CONFIGURATION_ELEMENT_NAME, this::configureSaxon);
-            // parser settings
-            configureElement(doc, HtmlToXmlParser.PARSER_ELEMENT_NAME, this::configureParser);
-            // serializer settings
-            configureElement(doc, Serializer.CONFIGURATION_ELEMENT_NAME, this::configureSerializer);
-            // XUpdate settings
-            configureElement(doc, DBBroker.CONFIGURATION_ELEMENT_NAME, this::configureXUpdate);
-            // XQuery settings
-            configureElement(doc, XQUERY_CONFIGURATION_ELEMENT_NAME, this::configureXQuery);
-            // Validation
-            configureElement(doc, XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME, element -> configureValidation(existHomePath, element));
-            // RPC server
-            configureElement(doc, "rpc-server", this::configureRpcServer);
         } catch (final SAXException | IOException | ParserConfigurationException e) {
-            LOG.error("error while reading config file: {}", configFilename, e);
+            LOG.error("Error while reading config file: {}", configFilename, e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (final IOException ioe) {
-                    LOG.error(ioe);
-                }
-            }
         }
+    }
+
+    public Configuration(final InputStream config, final Optional<Path> existHome) throws DatabaseConfigurationException {
+        try {
+            this.existHome = existHome;
+            loadConfigFile(config, existHome);
+        } catch (final SAXException | IOException | ParserConfigurationException e) {
+            LOG.error("Error while reading config file: {}", e.getMessage(), e);
+            throw new DatabaseConfigurationException(e.getMessage(), e);
+        }
+    }
+
+    private void loadConfigFile(final InputStream is, final Optional<Path> existHomePath) throws ParserConfigurationException, IOException, SAXException, DatabaseConfigurationException {
+        // initialize xml parser
+        // we use eXist's in-memory DOM implementation to work
+        // around a bug in Xerces
+        final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
+        factory.setNamespaceAware(true);
+
+        final InputSource src = new InputSource(is);
+        final SAXParser parser = factory.newSAXParser();
+        final XMLReader reader = parser.getXMLReader();
+
+        reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        reader.setFeature(FEATURE_SECURE_PROCESSING, true);
+
+        final SAXAdapter adapter = new SAXAdapter((Expression) null);
+        reader.setContentHandler(adapter);
+        reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
+        reader.parse(src);
+
+        final Document doc = adapter.getDocument();
+
+        //indexer settings
+        configureElement(doc, Indexer.CONFIGURATION_ELEMENT_NAME, element -> configureIndexer(doc, element));
+        //scheduler settings
+        configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
+        //db connection settings
+        configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(existHomePath, element));
+        // lock-table settings
+        configureElement(doc, "lock-manager", this::configureLockManager);
+        // repository settings
+        configureElement(doc, "repository", this::configureRepository);
+        // binary manager settings
+        configureElement(doc, "binary-manager", this::configureBinaryManager);
+        // transformer settings
+        configureElement(doc, TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME, this::configureTransformer);
+        // saxon settings (most importantly license file for PE or EE features)
+        configureElement(doc, SaxonConfiguration.SAXON_CONFIGURATION_ELEMENT_NAME, this::configureSaxon);
+        // parser settings
+        configureElement(doc, HtmlToXmlParser.PARSER_ELEMENT_NAME, this::configureParser);
+        // serializer settings
+        configureElement(doc, Serializer.CONFIGURATION_ELEMENT_NAME, this::configureSerializer);
+        // XUpdate settings
+        configureElement(doc, DBBroker.CONFIGURATION_ELEMENT_NAME, this::configureXUpdate);
+        // XQuery settings
+        configureElement(doc, XQUERY_CONFIGURATION_ELEMENT_NAME, this::configureXQuery);
+        // Validation
+        configureElement(doc, XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME, element -> configureValidation(existHomePath, element));
+        // RPC server
+        configureElement(doc, "rpc-server", this::configureRpcServer);
     }
 
     @FunctionalInterface
