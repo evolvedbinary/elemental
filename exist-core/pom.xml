@@ -1332,9 +1332,15 @@
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
+                                <include>src/main/java/org/exist/xupdate/Append.java</include>
                                 <include>src/main/java/org/exist/xupdate/Conditional.java</include>
+                                <include>src/main/java/org/exist/xupdate/Insert.java</include>
                                 <include>src/main/java/org/exist/xupdate/Modification.java</include>
+                                <include>src/main/java/org/exist/xupdate/Remove.java</include>
                                 <include>src/test/java/org/exist/xupdate/RemoveAppendTest.java</include>
+                                <include>src/main/java/org/exist/xupdate/Rename.java</include>
+                                <include>src/main/java/org/exist/xupdate/Replace.java</include>
+                                <include>src/main/java/org/exist/xupdate/Update.java</include>
                                 <include>src/main/java/org/exist/xupdate/XUpdateProcessor.java</include>
                                 <include>src/test/java/org/exist/xupdate/XUpdateTest.java</include>
                             </includes>
@@ -2044,9 +2050,15 @@
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Append.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Conditional.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Insert.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Modification.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Remove.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/RemoveAppendTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Rename.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Replace.java</exclude>
+                                <exclude>src/main/java/org/exist/xupdate/Update.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/XUpdateTest.java</exclude>
 
