@@ -914,6 +914,7 @@
                                 <include>src/main/java/org/exist/numbering/NodeIdFactory.java</include>
                                 <include>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</include>
                                 <include>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</include>
+                                <include>src/main/java/org/exist/repo/AutoDeploymentTrigger.java</include>
                                 <include>src/main/java/org/exist/repo/ClasspathHelper.java</include>
                                 <include>src/main/java/org/exist/repo/Deployment.java</include>
                                 <include>src/main/java/org/exist/repo/ExistRepository.java</include>
@@ -1504,6 +1505,7 @@
                                 <exclude>src/main/java/org/exist/numbering/NodeIdFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/protocolhandler/xmldb/XmldbURL.java</exclude>
                                 <exclude>src/main/java/org/exist/protocolhandler/xmlrpc/XmlrpcUpload.java</exclude>
+                                <exclude>src/main/java/org/exist/repo/AutoDeploymentTrigger.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/ClasspathHelper.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/Deployment.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/ExistRepository.java</exclude>
