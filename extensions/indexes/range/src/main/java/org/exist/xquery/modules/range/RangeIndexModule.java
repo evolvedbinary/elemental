@@ -103,25 +103,32 @@ public class RangeIndexModule extends AbstractInternalModule {
 
     }
 
-    protected enum RangeIndexErrorCode implements ErrorCodes.ErrorCode {
+    protected enum RangeIndexErrorCode implements ErrorCodes.IErrorCode {
         EXXQDYFT0001 ("Collation not supported");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCodes.ErrorCode errorCode;
 
         RangeIndexErrorCode(final String description) {
-            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCodes.ErrorCode(new QName(name(), NAMESPACE_URI, PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCodes.ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 

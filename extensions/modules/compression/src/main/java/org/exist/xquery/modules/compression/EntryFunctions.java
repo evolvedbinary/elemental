@@ -241,7 +241,7 @@ public class EntryFunctions extends BasicFunction {
             final Path destPath = fsDest.resolve(path).normalize();
 
             if (!destPath.startsWith(fsDest)) {
-                throw new XPathException(this, CompressionModule.CompressionModuleErrorCode.ARCHIVE_EXIT_ATTACK, "Detected archive exit attack!");
+                throw new XPathException(this, CompressionModule.CompressionModuleErrorCode.ARCHIVE_EXIT_ATTACK.getErrorCode(), "Detected archive exit attack!");
             }
 
             switch (dataType) {
@@ -316,7 +316,7 @@ public class EntryFunctions extends BasicFunction {
             final XmldbURI destPath = destCollection.resolveCollectionPath(XmldbURI.create(path));
 
             if (!destPath.startsWith(destCollection)) {
-                throw new XPathException(this, CompressionModule.CompressionModuleErrorCode.ARCHIVE_EXIT_ATTACK, "Detected archive exit attack!");
+                throw new XPathException(this, CompressionModule.CompressionModuleErrorCode.ARCHIVE_EXIT_ATTACK.getErrorCode(), "Detected archive exit attack!");
             }
 
             switch (dataType) {

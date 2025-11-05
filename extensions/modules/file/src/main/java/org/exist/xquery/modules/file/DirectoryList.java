@@ -193,7 +193,7 @@ public class DirectoryList extends BasicFunction {
 
             return (NodeValue) builder.getDocument().getDocumentElement();
         } catch (final IOException | IllegalStateException e) {
-            throw new XPathException(this, DIRECTORY_NOT_FOUND, e.getMessage());
+            throw new XPathException(this, DIRECTORY_NOT_FOUND.getErrorCode(), e.getMessage());
         } finally {
             context.popDocumentContext();
         }

@@ -57,7 +57,7 @@ public class ErrorCodes {
     /**
      * A defined Error Code.
      */
-    public interface ErrorCode {
+    public interface IErrorCode {
 
         /**
          * Get the name of the error code.
@@ -74,6 +74,34 @@ public class ErrorCodes {
         @Nullable String getDescription();
     }
 
+    public static class ErrorCode {
+        private final QName errorQName;
+        private @Nullable final String description;
+
+        public ErrorCode(final String code, @Nullable final String description) {
+            this.errorQName = new QName(code, Namespaces.EXIST_XQUERY_XPATH_ERROR_NS, Namespaces.EXIST_XQUERY_XPATH_ERROR_PREFIX);
+            this.description = description;
+        }
+
+        public ErrorCode(final QName errorQName, final String description) {
+            this.errorQName = errorQName;
+            this.description = description;
+        }
+
+        public QName getErrorQName() {
+            return errorQName;
+        }
+
+        @Override
+        public String toString() {
+            return "(" + errorQName.toString() + "): " + description;
+        }
+
+        public @Nullable String getDescription(){
+            return description;
+        }
+    }
+
     /**
      * Get a defined Error Code by its qualified name.
      *
@@ -85,10 +113,10 @@ public class ErrorCodes {
      */
     public static ErrorCode fromQName(final QName qname) {
         if (Namespaces.W3C_XQUERY_XPATH_ERROR_NS.equals(qname.getNamespaceURI())) {
-            return W3CErrorCode.valueOf(qname.getLocalPart());
+            return W3CErrorCode.valueOf(qname.getLocalPart()).errorCode;
 
         } else if (Namespaces.EXIST_XQUERY_XPATH_ERROR_NS.equals(qname.getNamespaceURI())) {
-            return EXistErrorCode.valueOf(qname.getLocalPart());
+            return EXistErrorCode.valueOf(qname.getLocalPart()).errorCode;
         }
 
         throw new IllegalArgumentException("There is no error code defined for the name: " + qname);
@@ -97,7 +125,7 @@ public class ErrorCodes {
     /**
      * Error codes defined in W3C standards.
      */
-    public enum W3CErrorCode implements ErrorCode {
+    public enum W3CErrorCode implements IErrorCode {
         XPDY0002 ("It is a dynamic error if evaluation of an expression relies on some part of the dynamic context that has not been assigned a value."),
         XPST0003 ("It is a static error if an expression is not a valid instance of the grammar defined in A.1 EBNF."),
         XPTY0004 ("It is a type error if, during the static analysis phase, an expression is found to have a static type that is not appropriate for the context in which the expression occurs, or during the dynamic evaluation phase, the dynamic type of a value does not match a required type as specified by the matching rules in 2.5.4 SequenceType Matching."),
@@ -298,22 +326,29 @@ public class ErrorCodes {
         FOXT0006 ("XSLT output contains non-accepted characters"),
         XTSE0165 ("It is a static error if the processor is not able to retrieve the resource identified by the URI reference [ in the href attribute of xsl:include or xsl:import] , or if the resource that is retrieved does not contain a stylesheet module conforming to this specification.");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCode errorCode;
 
         W3CErrorCode(final String description) {
-            this.qname = new QName(name(), Namespaces.W3C_XQUERY_XPATH_ERROR_NS, Namespaces.W3C_XQUERY_XPATH_ERROR_PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCode(new QName(name(), Namespaces.W3C_XQUERY_XPATH_ERROR_NS, Namespaces.W3C_XQUERY_XPATH_ERROR_PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public @Nullable String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 
@@ -330,7 +365,7 @@ public class ErrorCodes {
      * nnnn = number
      * </p>
      */
-    public enum EXistErrorCode implements ErrorCode {
+    public enum EXistErrorCode implements IErrorCode {
         EXXQDY0001 ("Index cannot be applied to the given expression."),
         EXXQDY0002 ("Error parsing XML."),
         EXXQDY0003 ("Only Supported for xquery version \"3.0\" and later."),
@@ -349,32 +384,35 @@ public class ErrorCodes {
         @Deprecated
         ERROR ("Error.");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCode errorCode;
 
         EXistErrorCode(final String description) {
-            this.qname = new QName(name(), Namespaces.EXIST_XQUERY_XPATH_ERROR_NS, Namespaces.EXIST_XQUERY_XPATH_ERROR_PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCode(new QName(name(), Namespaces.EXIST_XQUERY_XPATH_ERROR_NS, Namespaces.EXIST_XQUERY_XPATH_ERROR_PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public @Nullable String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 
-    public static class JavaErrorCode implements ErrorCode {
-        private final QName qname;
-        private @Nullable final String description;
-
+    public static class JavaErrorCode extends ErrorCode {
         private JavaErrorCode(final QName qname, @Nullable final String description) {
-            this.qname = qname;
-            this.description = description;
+            super(qname, description);
         }
 
         public static JavaErrorCode fromThrowable(final Throwable throwable) {
@@ -389,35 +427,11 @@ public class ErrorCodes {
             }
             return new JavaErrorCode(errorQName, description);
         }
-
-        @Override
-        public QName getErrorQName() {
-            return qname;
-        }
-
-        @Override
-        public @Nullable String getDescription() {
-            return description;
-        }
     }
 
-    public static class DynamicErrorCode implements ErrorCode {
-        private final QName qname;
-        private @Nullable final String description;
-
+    public static class DynamicErrorCode extends ErrorCode {
         public DynamicErrorCode(final QName qname, @Nullable final String description) {
-            this.qname = qname;
-            this.description = description;
-        }
-
-        @Override
-        public QName getErrorQName() {
-            return qname;
-        }
-
-        @Override
-        public @Nullable String getDescription() {
-            return description;
+            super(qname, description);
         }
     }
 
@@ -425,1163 +439,1163 @@ public class ErrorCodes {
      * @deprecated Use {@link W3CErrorCode#XPDY0002}.
      */
     @Deprecated
-    public static final ErrorCode XPDY0002 = W3CErrorCode.XPDY0002;
+    public static final ErrorCode XPDY0002 = W3CErrorCode.XPDY0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0003}.
      */
     @Deprecated
-    public static final ErrorCode XPST0003 = W3CErrorCode.XPST0003;
+    public static final ErrorCode XPST0003 = W3CErrorCode.XPST0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPTY0004}.
      */
     @Deprecated
-    public static final ErrorCode XPTY0004 = W3CErrorCode.XPTY0004;
+    public static final ErrorCode XPTY0004 = W3CErrorCode.XPTY0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0005}.
      */
     @Deprecated
-    public static final ErrorCode XPST0005 = W3CErrorCode.XPST0005;
+    public static final ErrorCode XPST0005 = W3CErrorCode.XPST0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPTY0006}.
      */
     @Deprecated
-    public static final ErrorCode XPTY0006 = W3CErrorCode.XPTY0006;
+    public static final ErrorCode XPTY0006 = W3CErrorCode.XPTY0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPTY0007}.
      */
     @Deprecated
-    public static final ErrorCode XPTY0007 = W3CErrorCode.XPTY0007;
+    public static final ErrorCode XPTY0007 = W3CErrorCode.XPTY0007.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0008}.
      */
     @Deprecated
-    public static final ErrorCode XPST0008 = W3CErrorCode.XPST0008;
+    public static final ErrorCode XPST0008 = W3CErrorCode.XPST0008.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0010}.
      */
     @Deprecated
-    public static final ErrorCode XPST0010 = W3CErrorCode.XPST0010;
+    public static final ErrorCode XPST0010 = W3CErrorCode.XPST0010.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0017}.
      */
     @Deprecated
-    public static final ErrorCode XPST0017 = W3CErrorCode.XPST0017;
+    public static final ErrorCode XPST0017 = W3CErrorCode.XPST0017.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPTY0018}.
      */
     @Deprecated
-    public static final ErrorCode XPTY0018 = W3CErrorCode.XPTY0018;
+    public static final ErrorCode XPTY0018 = W3CErrorCode.XPTY0018.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPTY0019}.
      */
     @Deprecated
-    public static final ErrorCode XPTY0019 = W3CErrorCode.XPTY0019;
+    public static final ErrorCode XPTY0019 = W3CErrorCode.XPTY0019.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPTY0020}.
      */
     @Deprecated
-    public static final ErrorCode XPTY0020 = W3CErrorCode.XPTY0020;
+    public static final ErrorCode XPTY0020 = W3CErrorCode.XPTY0020.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPDY0021}.
      */
     @Deprecated
-    public static final ErrorCode XPDY0021 = W3CErrorCode.XPDY0021;
+    public static final ErrorCode XPDY0021 = W3CErrorCode.XPDY0021.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPDY0050}.
      */
     @Deprecated
-    public static final ErrorCode XPDY0050 = W3CErrorCode.XPDY0050;
+    public static final ErrorCode XPDY0050 = W3CErrorCode.XPDY0050.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0051}.
      */
     @Deprecated
-    public static final ErrorCode XPST0051 = W3CErrorCode.XPST0051;
+    public static final ErrorCode XPST0051 = W3CErrorCode.XPST0051.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0080}.
      */
     @Deprecated
-    public static final ErrorCode XPST0080 = W3CErrorCode.XPST0080;
+    public static final ErrorCode XPST0080 = W3CErrorCode.XPST0080.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0081}.
      */
     @Deprecated
-    public static final ErrorCode XPST0081 = W3CErrorCode.XPST0081;
+    public static final ErrorCode XPST0081 = W3CErrorCode.XPST0081.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XPST0083}.
      */
     @Deprecated
-    public static final ErrorCode XPST0083 = W3CErrorCode.XPST0083;
+    public static final ErrorCode XPST0083 = W3CErrorCode.XPST0083.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0009}.
      */
     @Deprecated
-    public static final ErrorCode XQST0009 = W3CErrorCode.XQST0009;
+    public static final ErrorCode XQST0009 = W3CErrorCode.XQST0009.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0012}.
      */
     @Deprecated
-    public static final ErrorCode XQST0012 = W3CErrorCode.XQST0012;
+    public static final ErrorCode XQST0012 = W3CErrorCode.XQST0012.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0013}.
      */
     @Deprecated
-    public static final ErrorCode XQST0013 = W3CErrorCode.XQST0013;
+    public static final ErrorCode XQST0013 = W3CErrorCode.XQST0013.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0014}.
      */
     @Deprecated
-    public static final ErrorCode XQST0014 = W3CErrorCode.XQST0014;
+    public static final ErrorCode XQST0014 = W3CErrorCode.XQST0014.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0015}.
      */
     @Deprecated
-    public static final ErrorCode XQST0015 = W3CErrorCode.XQST0015;
+    public static final ErrorCode XQST0015 = W3CErrorCode.XQST0015.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0016}.
      */
     @Deprecated
-    public static final ErrorCode XQST0016 = W3CErrorCode.XQST0016;
+    public static final ErrorCode XQST0016 = W3CErrorCode.XQST0016.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0022}.
      */
     @Deprecated
-    public static final ErrorCode XQST0022 = W3CErrorCode.XQST0022;
+    public static final ErrorCode XQST0022 = W3CErrorCode.XQST0022.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQTY0023}.
      */
     @Deprecated
-    public static final ErrorCode XQTY0023 = W3CErrorCode.XQTY0023;
+    public static final ErrorCode XQTY0023 = W3CErrorCode.XQTY0023.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQTY0024}.
      */
     @Deprecated
-    public static final ErrorCode XQTY0024 = W3CErrorCode.XQTY0024;
+    public static final ErrorCode XQTY0024 = W3CErrorCode.XQTY0024.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0025}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0025 = W3CErrorCode.XQDY0025;
+    public static final ErrorCode XQDY0025 = W3CErrorCode.XQDY0025.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0026}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0026 = W3CErrorCode.XQDY0026;
+    public static final ErrorCode XQDY0026 = W3CErrorCode.XQDY0026.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0027}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0027 = W3CErrorCode.XQDY0027;
+    public static final ErrorCode XQDY0027 = W3CErrorCode.XQDY0027.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQTY0028}.
      */
     @Deprecated
-    public static final ErrorCode XQTY0028 = W3CErrorCode.XQTY0028;
+    public static final ErrorCode XQTY0028 = W3CErrorCode.XQTY0028.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0029}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0029 = W3CErrorCode.XQDY0029;
+    public static final ErrorCode XQDY0029 = W3CErrorCode.XQDY0029.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQTY0030}.
      */
     @Deprecated
-    public static final ErrorCode XQTY0030 = W3CErrorCode.XQTY0030;
+    public static final ErrorCode XQTY0030 = W3CErrorCode.XQTY0030.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0031}.
      */
     @Deprecated
-    public static final ErrorCode XQST0031 = W3CErrorCode.XQST0031;
+    public static final ErrorCode XQST0031 = W3CErrorCode.XQST0031.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0032}.
      */
     @Deprecated
-    public static final ErrorCode XQST0032 = W3CErrorCode.XQST0032;
+    public static final ErrorCode XQST0032 = W3CErrorCode.XQST0032.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0033}.
      */
     @Deprecated
-    public static final ErrorCode XQST0033 = W3CErrorCode.XQST0033;
+    public static final ErrorCode XQST0033 = W3CErrorCode.XQST0033.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0034}.
      */
     @Deprecated
-    public static final ErrorCode XQST0034 = W3CErrorCode.XQST0034;
+    public static final ErrorCode XQST0034 = W3CErrorCode.XQST0034.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0035}.
      */
     @Deprecated
-    public static final ErrorCode XQST0035 = W3CErrorCode.XQST0035;
+    public static final ErrorCode XQST0035 = W3CErrorCode.XQST0035.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0036}.
      */
     @Deprecated
-    public static final ErrorCode XQST0036 = W3CErrorCode.XQST0036;
+    public static final ErrorCode XQST0036 = W3CErrorCode.XQST0036.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0037}.
      */
     @Deprecated
-    public static final ErrorCode XQST0037 = W3CErrorCode.XQST0037;
+    public static final ErrorCode XQST0037 = W3CErrorCode.XQST0037.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0038}.
      */
     @Deprecated
-    public static final ErrorCode XQST0038 = W3CErrorCode.XQST0038;
+    public static final ErrorCode XQST0038 = W3CErrorCode.XQST0038.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0039}.
      */
     @Deprecated
-    public static final ErrorCode XQST0039 = W3CErrorCode.XQST0039;
+    public static final ErrorCode XQST0039 = W3CErrorCode.XQST0039.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0040}.
      */
     @Deprecated
-    public static final ErrorCode XQST0040 = W3CErrorCode.XQST0040;
+    public static final ErrorCode XQST0040 = W3CErrorCode.XQST0040.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0041}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0041 = W3CErrorCode.XQDY0041;
+    public static final ErrorCode XQDY0041 = W3CErrorCode.XQDY0041.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0042}.
      */
     @Deprecated
-    public static final ErrorCode XQST0042 = W3CErrorCode.XQST0042;
+    public static final ErrorCode XQST0042 = W3CErrorCode.XQST0042.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0043}.
      */
     @Deprecated
-    public static final ErrorCode XQST0043 = W3CErrorCode.XQST0043;
+    public static final ErrorCode XQST0043 = W3CErrorCode.XQST0043.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0044}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0044 = W3CErrorCode.XQDY0044;
+    public static final ErrorCode XQDY0044 = W3CErrorCode.XQDY0044.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0045}.
      */
     @Deprecated
-    public static final ErrorCode XQST0045 = W3CErrorCode.XQST0045;
+    public static final ErrorCode XQST0045 = W3CErrorCode.XQST0045.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0046}.
      */
     @Deprecated
-    public static final ErrorCode XQST0046 = W3CErrorCode.XQST0046;
+    public static final ErrorCode XQST0046 = W3CErrorCode.XQST0046.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0047}.
      */
     @Deprecated
-    public static final ErrorCode XQST0047 = W3CErrorCode.XQST0047;
+    public static final ErrorCode XQST0047 = W3CErrorCode.XQST0047.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0048}.
      */
     @Deprecated
-    public static final ErrorCode XQST0048 = W3CErrorCode.XQST0048;
+    public static final ErrorCode XQST0048 = W3CErrorCode.XQST0048.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0049}.
      */
     @Deprecated
-    public static final ErrorCode XQST0049 = W3CErrorCode.XQST0049;
+    public static final ErrorCode XQST0049 = W3CErrorCode.XQST0049.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0052}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0052 = W3CErrorCode.XQDY0052;
+    public static final ErrorCode XQDY0052 = W3CErrorCode.XQDY0052.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0053}.
      */
     @Deprecated
-    public static final ErrorCode XQST0053 = W3CErrorCode.XQST0053;
+    public static final ErrorCode XQST0053 = W3CErrorCode.XQST0053.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0054}.
      */
     @Deprecated
-    public static final ErrorCode XQST0054 = W3CErrorCode.XQST0054;
+    public static final ErrorCode XQST0054 = W3CErrorCode.XQST0054.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0055}.
      */
     @Deprecated
-    public static final ErrorCode XQST0055 = W3CErrorCode.XQST0055;
+    public static final ErrorCode XQST0055 = W3CErrorCode.XQST0055.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0056}.
      */
     @Deprecated
-    public static final ErrorCode XQST0056 = W3CErrorCode.XQST0056;
+    public static final ErrorCode XQST0056 = W3CErrorCode.XQST0056.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0057}.
      */
     @Deprecated
-    public static final ErrorCode XQST0057 = W3CErrorCode.XQST0057;
+    public static final ErrorCode XQST0057 = W3CErrorCode.XQST0057.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0058}.
      */
     @Deprecated
-    public static final ErrorCode XQST0058 = W3CErrorCode.XQST0058;
+    public static final ErrorCode XQST0058 = W3CErrorCode.XQST0058.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0059}.
      */
     @Deprecated
-    public static final ErrorCode XQST0059 = W3CErrorCode.XQST0059;
+    public static final ErrorCode XQST0059 = W3CErrorCode.XQST0059.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0060}.
      */
     @Deprecated
-    public static final ErrorCode XQST0060 = W3CErrorCode.XQST0060;
+    public static final ErrorCode XQST0060 = W3CErrorCode.XQST0060.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0061}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0061 = W3CErrorCode.XQDY0061;
+    public static final ErrorCode XQDY0061 = W3CErrorCode.XQDY0061.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0062}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0062 = W3CErrorCode.XQDY0062;
+    public static final ErrorCode XQDY0062 = W3CErrorCode.XQDY0062.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0063}.
      */
     @Deprecated
-    public static final ErrorCode XQST0063 = W3CErrorCode.XQST0063;
+    public static final ErrorCode XQST0063 = W3CErrorCode.XQST0063.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0064}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0064 = W3CErrorCode.XQDY0064;
+    public static final ErrorCode XQDY0064 = W3CErrorCode.XQDY0064.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0065}.
      */
     @Deprecated
-    public static final ErrorCode XQST0065 = W3CErrorCode.XQST0065;
+    public static final ErrorCode XQST0065 = W3CErrorCode.XQST0065.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0066}.
      */
     @Deprecated
-    public static final ErrorCode XQST0066 = W3CErrorCode.XQST0066;
+    public static final ErrorCode XQST0066 = W3CErrorCode.XQST0066.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0067}.
      */
     @Deprecated
-    public static final ErrorCode XQST0067 = W3CErrorCode.XQST0067;
+    public static final ErrorCode XQST0067 = W3CErrorCode.XQST0067.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0068}.
      */
     @Deprecated
-    public static final ErrorCode XQST0068 = W3CErrorCode.XQST0068;
+    public static final ErrorCode XQST0068 = W3CErrorCode.XQST0068.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0069}.
      */
     @Deprecated
-    public static final ErrorCode XQST0069 = W3CErrorCode.XQST0069;
+    public static final ErrorCode XQST0069 = W3CErrorCode.XQST0069.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0070}.
      */
     @Deprecated
-    public static final ErrorCode XQST0070 = W3CErrorCode.XQST0070;
+    public static final ErrorCode XQST0070 = W3CErrorCode.XQST0070.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0071}.
      */
     @Deprecated
-    public static final ErrorCode XQST0071 = W3CErrorCode.XQST0071;
+    public static final ErrorCode XQST0071 = W3CErrorCode.XQST0071.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0072}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0072 = W3CErrorCode.XQDY0072;
+    public static final ErrorCode XQDY0072 = W3CErrorCode.XQDY0072.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0073}.
      */
     @Deprecated
-    public static final ErrorCode XQST0073 = W3CErrorCode.XQST0073;
+    public static final ErrorCode XQST0073 = W3CErrorCode.XQST0073.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0074}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0074 = W3CErrorCode.XQDY0074;
+    public static final ErrorCode XQDY0074 = W3CErrorCode.XQDY0074.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0075}.
      */
     @Deprecated
-    public static final ErrorCode XQST0075 = W3CErrorCode.XQST0075;
+    public static final ErrorCode XQST0075 = W3CErrorCode.XQST0075.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0076}.
      */
     @Deprecated
-    public static final ErrorCode XQST0076 = W3CErrorCode.XQST0076;
+    public static final ErrorCode XQST0076 = W3CErrorCode.XQST0076.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0077}.
      */
     @Deprecated
-    public static final ErrorCode XQST0077 = W3CErrorCode.XQST0077;
+    public static final ErrorCode XQST0077 = W3CErrorCode.XQST0077.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0078}.
      */
     @Deprecated
-    public static final ErrorCode XQST0078 = W3CErrorCode.XQST0078;
+    public static final ErrorCode XQST0078 = W3CErrorCode.XQST0078.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0079}.
      */
     @Deprecated
-    public static final ErrorCode XQST0079 = W3CErrorCode.XQST0079;
+    public static final ErrorCode XQST0079 = W3CErrorCode.XQST0079.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0082}.
      */
     @Deprecated
-    public static final ErrorCode XQST0082 = W3CErrorCode.XQST0082;
+    public static final ErrorCode XQST0082 = W3CErrorCode.XQST0082.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0084}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0084 = W3CErrorCode.XQDY0084;
+    public static final ErrorCode XQDY0084 = W3CErrorCode.XQDY0084.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0085}.
      */
     @Deprecated
-    public static final ErrorCode XQST0085 = W3CErrorCode.XQST0085;
+    public static final ErrorCode XQST0085 = W3CErrorCode.XQST0085.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQTY0086}.
      */
     @Deprecated
-    public static final ErrorCode XQTY0086 = W3CErrorCode.XQTY0086;
+    public static final ErrorCode XQTY0086 = W3CErrorCode.XQTY0086.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0087}.
      */
     @Deprecated
-    public static final ErrorCode XQST0087 = W3CErrorCode.XQST0087;
+    public static final ErrorCode XQST0087 = W3CErrorCode.XQST0087.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0088}.
      */
     @Deprecated
-    public static final ErrorCode XQST0088 = W3CErrorCode.XQST0088;
+    public static final ErrorCode XQST0088 = W3CErrorCode.XQST0088.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0089}.
      */
     @Deprecated
-    public static final ErrorCode XQST0089 = W3CErrorCode.XQST0089;
+    public static final ErrorCode XQST0089 = W3CErrorCode.XQST0089.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0090}.
      */
     @Deprecated
-    public static final ErrorCode XQST0090 = W3CErrorCode.XQST0090;
+    public static final ErrorCode XQST0090 = W3CErrorCode.XQST0090.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0091}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0091 = W3CErrorCode.XQDY0091;
+    public static final ErrorCode XQDY0091 = W3CErrorCode.XQDY0091.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0092}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0092 = W3CErrorCode.XQDY0092;
+    public static final ErrorCode XQDY0092 = W3CErrorCode.XQDY0092.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0093}.
      */
     @Deprecated
-    public static final ErrorCode XQST0093 = W3CErrorCode.XQST0093;
+    public static final ErrorCode XQST0093 = W3CErrorCode.XQST0093.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0094}.
      */
     @Deprecated
-    public static final ErrorCode XQST0094 = W3CErrorCode.XQST0094;
+    public static final ErrorCode XQST0094 = W3CErrorCode.XQST0094.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0101}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0101 = W3CErrorCode.XQDY0101;
+    public static final ErrorCode XQDY0101 = W3CErrorCode.XQDY0101.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0102}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0102 = W3CErrorCode.XQDY0102;
+    public static final ErrorCode XQDY0102 = W3CErrorCode.XQDY0102.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQST0103}.
      */
     @Deprecated
-    public static final ErrorCode XQST0103 = W3CErrorCode.XQST0103;
+    public static final ErrorCode XQST0103 = W3CErrorCode.XQST0103.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0137}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0137 = W3CErrorCode.XQDY0137;
+    public static final ErrorCode XQDY0137 = W3CErrorCode.XQDY0137.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQDY0138}.
      */
     @Deprecated
-    public static final ErrorCode XQDY0138 = W3CErrorCode.XQDY0138;
+    public static final ErrorCode XQDY0138 = W3CErrorCode.XQDY0138.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XUDY0023}.
      */
     @Deprecated
-    public static final ErrorCode XUDY0023 = W3CErrorCode.XUDY0023;
+    public static final ErrorCode XUDY0023 = W3CErrorCode.XUDY0023.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOER0000}.
      */
     @Deprecated
-    public static final ErrorCode FOER0000 = W3CErrorCode.FOER0000;
+    public static final ErrorCode FOER0000 = W3CErrorCode.FOER0000.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOAR0001}.
      */
     @Deprecated
-    public static final ErrorCode FOAR0001 = W3CErrorCode.FOAR0001;
+    public static final ErrorCode FOAR0001 = W3CErrorCode.FOAR0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOAR0002}.
      */
     @Deprecated
-    public static final ErrorCode FOAR0002 = W3CErrorCode.FOAR0002;
+    public static final ErrorCode FOAR0002 = W3CErrorCode.FOAR0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCA0001}.
      */
     @Deprecated
-    public static final ErrorCode FOCA0001 = W3CErrorCode.FOCA0001;
+    public static final ErrorCode FOCA0001 = W3CErrorCode.FOCA0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCA0002}.
      */
     @Deprecated
-    public static final ErrorCode FOCA0002 = W3CErrorCode.FOCA0002;
+    public static final ErrorCode FOCA0002 = W3CErrorCode.FOCA0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCA0003}.
      */
     @Deprecated
-    public static final ErrorCode FOCA0003 = W3CErrorCode.FOCA0003;
+    public static final ErrorCode FOCA0003 = W3CErrorCode.FOCA0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCA0005}.
      */
     @Deprecated
-    public static final ErrorCode FOCA0005 = W3CErrorCode.FOCA0005;
+    public static final ErrorCode FOCA0005 = W3CErrorCode.FOCA0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCA0006}.
      */
     @Deprecated
-    public static final ErrorCode FOCA0006 = W3CErrorCode.FOCA0006;
+    public static final ErrorCode FOCA0006 = W3CErrorCode.FOCA0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCH0001}.
      */
     @Deprecated
-    public static final ErrorCode FOCH0001 = W3CErrorCode.FOCH0001;
+    public static final ErrorCode FOCH0001 = W3CErrorCode.FOCH0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCH0002}.
      */
     @Deprecated
-    public static final ErrorCode FOCH0002 = W3CErrorCode.FOCH0002;
+    public static final ErrorCode FOCH0002 = W3CErrorCode.FOCH0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCH0003}.
      */
     @Deprecated
-    public static final ErrorCode FOCH0003 = W3CErrorCode.FOCH0003;
+    public static final ErrorCode FOCH0003 = W3CErrorCode.FOCH0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOCH0004}.
      */
     @Deprecated
-    public static final ErrorCode FOCH0004 = W3CErrorCode.FOCH0004;
+    public static final ErrorCode FOCH0004 = W3CErrorCode.FOCH0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODC0001}.
      */
     @Deprecated
-    public static final ErrorCode FODC0001 = W3CErrorCode.FODC0001;
+    public static final ErrorCode FODC0001 = W3CErrorCode.FODC0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODC0002}.
      */
     @Deprecated
-    public static final ErrorCode FODC0002 = W3CErrorCode.FODC0002;
+    public static final ErrorCode FODC0002 = W3CErrorCode.FODC0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODC0003}.
      */
     @Deprecated
-    public static final ErrorCode FODC0003 = W3CErrorCode.FODC0003;
+    public static final ErrorCode FODC0003 = W3CErrorCode.FODC0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODC0004}.
      */
     @Deprecated
-    public static final ErrorCode FODC0004 = W3CErrorCode.FODC0004;
+    public static final ErrorCode FODC0004 = W3CErrorCode.FODC0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODC0005}.
      */
     @Deprecated
-    public static final ErrorCode FODC0005 = W3CErrorCode.FODC0005;
+    public static final ErrorCode FODC0005 = W3CErrorCode.FODC0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODT0001}.
      */
     @Deprecated
-    public static final ErrorCode FODT0001 = W3CErrorCode.FODT0001;
+    public static final ErrorCode FODT0001 = W3CErrorCode.FODT0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODT0002}.
      */
     @Deprecated
-    public static final ErrorCode FODT0002 = W3CErrorCode.FODT0002;
+    public static final ErrorCode FODT0002 = W3CErrorCode.FODT0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODT0003}.
      */
     @Deprecated
-    public static final ErrorCode FODT0003 = W3CErrorCode.FODT0003;
+    public static final ErrorCode FODT0003 = W3CErrorCode.FODT0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FONS0004}.
      */
     @Deprecated
-    public static final ErrorCode FONS0004 = W3CErrorCode.FONS0004;
+    public static final ErrorCode FONS0004 = W3CErrorCode.FONS0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FONS0005}.
      */
     @Deprecated
-    public static final ErrorCode FONS0005 = W3CErrorCode.FONS0005;
+    public static final ErrorCode FONS0005 = W3CErrorCode.FONS0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0001}.
      */
     @Deprecated
-    public static final ErrorCode FORG0001 = W3CErrorCode.FORG0001;
+    public static final ErrorCode FORG0001 = W3CErrorCode.FORG0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0002}.
      */
     @Deprecated
-    public static final ErrorCode FORG0002 = W3CErrorCode.FORG0002;
+    public static final ErrorCode FORG0002 = W3CErrorCode.FORG0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0003}.
      */
     @Deprecated
-    public static final ErrorCode FORG0003 = W3CErrorCode.FORG0003;
+    public static final ErrorCode FORG0003 = W3CErrorCode.FORG0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0004}.
      */
     @Deprecated
-    public static final ErrorCode FORG0004 = W3CErrorCode.FORG0004;
+    public static final ErrorCode FORG0004 = W3CErrorCode.FORG0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0005}.
      */
     @Deprecated
-    public static final ErrorCode FORG0005 = W3CErrorCode.FORG0005;
+    public static final ErrorCode FORG0005 = W3CErrorCode.FORG0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0006}.
      */
     @Deprecated
-    public static final ErrorCode FORG0006 = W3CErrorCode.FORG0006;
+    public static final ErrorCode FORG0006 = W3CErrorCode.FORG0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0008}.
      */
     @Deprecated
-    public static final ErrorCode FORG0008 = W3CErrorCode.FORG0008;
+    public static final ErrorCode FORG0008 = W3CErrorCode.FORG0008.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0009}.
      */
     @Deprecated
-    public static final ErrorCode FORG0009 = W3CErrorCode.FORG0009;
+    public static final ErrorCode FORG0009 = W3CErrorCode.FORG0009.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORG0010}.
      */
     @Deprecated
-    public static final ErrorCode FORG0010 = W3CErrorCode.FORG0010;
+    public static final ErrorCode FORG0010 = W3CErrorCode.FORG0010.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORX0001}.
      */
     @Deprecated
-    public static final ErrorCode FORX0001 = W3CErrorCode.FORX0001;
+    public static final ErrorCode FORX0001 = W3CErrorCode.FORX0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORX0002}.
      */
     @Deprecated
-    public static final ErrorCode FORX0002 = W3CErrorCode.FORX0002;
+    public static final ErrorCode FORX0002 = W3CErrorCode.FORX0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORX0003}.
      */
     @Deprecated
-    public static final ErrorCode FORX0003 = W3CErrorCode.FORX0003;
+    public static final ErrorCode FORX0003 = W3CErrorCode.FORX0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FORX0004}.
      */
     @Deprecated
-    public static final ErrorCode FORX0004 = W3CErrorCode.FORX0004;
+    public static final ErrorCode FORX0004 = W3CErrorCode.FORX0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOTY0012}.
      */
     @Deprecated
-    public static final ErrorCode FOTY0012 = W3CErrorCode.FOTY0012;
+    public static final ErrorCode FOTY0012 = W3CErrorCode.FOTY0012.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOTY0013}.
      */
     @Deprecated
-    public static final ErrorCode FOTY0013 = W3CErrorCode.FOTY0013;
+    public static final ErrorCode FOTY0013 = W3CErrorCode.FOTY0013.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SENR0001}.
      */
     @Deprecated
-    public static final ErrorCode SENR0001 = W3CErrorCode.SENR0001;
+    public static final ErrorCode SENR0001 = W3CErrorCode.SENR0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0003}.
      */
     @Deprecated
-    public static final ErrorCode SERE0003 = W3CErrorCode.SERE0003;
+    public static final ErrorCode SERE0003 = W3CErrorCode.SERE0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0004}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0004 = W3CErrorCode.SEPM0004;
+    public static final ErrorCode SEPM0004 = W3CErrorCode.SEPM0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0005}.
      */
     @Deprecated
-    public static final ErrorCode SERE0005 = W3CErrorCode.SERE0005;
+    public static final ErrorCode SERE0005 = W3CErrorCode.SERE0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0006}.
      */
     @Deprecated
-    public static final ErrorCode SERE0006 = W3CErrorCode.SERE0006;
+    public static final ErrorCode SERE0006 = W3CErrorCode.SERE0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SESU0007}.
      */
     @Deprecated
-    public static final ErrorCode SESU0007 = W3CErrorCode.SESU0007;
+    public static final ErrorCode SESU0007 = W3CErrorCode.SESU0007.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0008}.
      */
     @Deprecated
-    public static final ErrorCode SERE0008 = W3CErrorCode.SERE0008;
+    public static final ErrorCode SERE0008 = W3CErrorCode.SERE0008.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0009}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0009 = W3CErrorCode.SEPM0009;
+    public static final ErrorCode SEPM0009 = W3CErrorCode.SEPM0009.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0010}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0010 = W3CErrorCode.SEPM0010;
+    public static final ErrorCode SEPM0010 = W3CErrorCode.SEPM0010.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SESU0011}.
      */
     @Deprecated
-    public static final ErrorCode SESU0011 = W3CErrorCode.SESU0011;
+    public static final ErrorCode SESU0011 = W3CErrorCode.SESU0011.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0012}.
      */
     @Deprecated
-    public static final ErrorCode SERE0012 = W3CErrorCode.SERE0012;
+    public static final ErrorCode SERE0012 = W3CErrorCode.SERE0012.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SESU0013}.
      */
     @Deprecated
-    public static final ErrorCode SESU0013 = W3CErrorCode.SESU0013;
+    public static final ErrorCode SESU0013 = W3CErrorCode.SESU0013.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0014}.
      */
     @Deprecated
-    public static final ErrorCode SERE0014 = W3CErrorCode.SERE0014;
+    public static final ErrorCode SERE0014 = W3CErrorCode.SERE0014.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0015}.
      */
     @Deprecated
-    public static final ErrorCode SERE0015 = W3CErrorCode.SERE0015;
+    public static final ErrorCode SERE0015 = W3CErrorCode.SERE0015.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0016}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0016 = W3CErrorCode.SEPM0016;
+    public static final ErrorCode SEPM0016 = W3CErrorCode.SEPM0016.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0017}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0017 = W3CErrorCode.SEPM0017;
+    public static final ErrorCode SEPM0017 = W3CErrorCode.SEPM0017.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0018}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0018 = W3CErrorCode.SEPM0018;
+    public static final ErrorCode SEPM0018 = W3CErrorCode.SEPM0018.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SEPM0019}.
      */
     @Deprecated
-    public static final ErrorCode SEPM0019 = W3CErrorCode.SEPM0019;
+    public static final ErrorCode SEPM0019 = W3CErrorCode.SEPM0019.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#SERE0021}.
      */
     @Deprecated
-    public static final ErrorCode SERE0021 = W3CErrorCode.SERE0021;
+    public static final ErrorCode SERE0021 = W3CErrorCode.SERE0021.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODF1280}.
      */
     @Deprecated
-    public static final ErrorCode FODF1280 = W3CErrorCode.FODF1280;
+    public static final ErrorCode FODF1280 = W3CErrorCode.FODF1280.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODF1310}.
      */
     @Deprecated
-    public static final ErrorCode FODF1310 = W3CErrorCode.FODF1310;
+    public static final ErrorCode FODF1310 = W3CErrorCode.FODF1310.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOFD1340}.
      */
     @Deprecated
-    public static final ErrorCode FOFD1340 = W3CErrorCode.FOFD1340;
+    public static final ErrorCode FOFD1340 = W3CErrorCode.FOFD1340.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOFD1350}.
      */
     @Deprecated
-    public static final ErrorCode FOFD1350 = W3CErrorCode.FOFD1350;
+    public static final ErrorCode FOFD1350 = W3CErrorCode.FOFD1350.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FTDY0020}.
      */
     @Deprecated
-    public static final ErrorCode FTDY0020 = W3CErrorCode.FTDY0020;
+    public static final ErrorCode FTDY0020 = W3CErrorCode.FTDY0020.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FODC0006}.
      */
     @Deprecated
-    public static final ErrorCode FODC0006 = W3CErrorCode.FODC0006;
+    public static final ErrorCode FODC0006 = W3CErrorCode.FODC0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOAP0001}.
      */
     @Deprecated
-    public static final ErrorCode FOAP0001 = W3CErrorCode.FOAP0001;
+    public static final ErrorCode FOAP0001 = W3CErrorCode.FOAP0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XQTY0105}.
      */
     @Deprecated
-    public static final ErrorCode XQTY0105 = W3CErrorCode.XQTY0105;
+    public static final ErrorCode XQTY0105 = W3CErrorCode.XQTY0105.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOAY0001}.
      */
     @Deprecated
-    public static final ErrorCode FOAY0001 = W3CErrorCode.FOAY0001;
+    public static final ErrorCode FOAY0001 = W3CErrorCode.FOAY0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOAY0002}.
      */
     @Deprecated
-    public static final ErrorCode FOAY0002 = W3CErrorCode.FOAY0002;
+    public static final ErrorCode FOAY0002 = W3CErrorCode.FOAY0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOJS0001}.
      */
     @Deprecated
-    public static final ErrorCode FOJS0001 = W3CErrorCode.FOJS0001;
+    public static final ErrorCode FOJS0001 = W3CErrorCode.FOJS0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOJS0002}.
      */
     @Deprecated
-    public static final ErrorCode FOJS0002 = W3CErrorCode.FOJS0002;
+    public static final ErrorCode FOJS0002 = W3CErrorCode.FOJS0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOJS0003}.
      */
     @Deprecated
-    public static final ErrorCode FOJS0003 = W3CErrorCode.FOJS0003;
+    public static final ErrorCode FOJS0003 = W3CErrorCode.FOJS0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOJS0005}.
      */
     @Deprecated
-    public static final ErrorCode FOJS0005 = W3CErrorCode.FOJS0005;
+    public static final ErrorCode FOJS0005 = W3CErrorCode.FOJS0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOJS0006}.
      */
     @Deprecated
-    public static final ErrorCode FOJS0006 = W3CErrorCode.FOJS0006;
+    public static final ErrorCode FOJS0006 = W3CErrorCode.FOJS0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOJS0007}.
      */
     @Deprecated
-    public static final ErrorCode FOJS0007 = W3CErrorCode.FOJS0007;
+    public static final ErrorCode FOJS0007 = W3CErrorCode.FOJS0007.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOUT1170}.
      */
     @Deprecated
-    public static final ErrorCode FOUT1170 = W3CErrorCode.FOUT1170;
+    public static final ErrorCode FOUT1170 = W3CErrorCode.FOUT1170.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOUT1190}.
      */
     @Deprecated
-    public static final ErrorCode FOUT1190 = W3CErrorCode.FOUT1190;
+    public static final ErrorCode FOUT1190 = W3CErrorCode.FOUT1190.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOUT1200}.
      */
     @Deprecated
-    public static final ErrorCode FOUT1200 = W3CErrorCode.FOUT1200;
+    public static final ErrorCode FOUT1200 = W3CErrorCode.FOUT1200.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOQM0001}.
      */
     @Deprecated
-    public static final ErrorCode FOQM0001 = W3CErrorCode.FOQM0001;
+    public static final ErrorCode FOQM0001 = W3CErrorCode.FOQM0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOQM0002}.
      */
     @Deprecated
-    public static final ErrorCode FOQM0002 = W3CErrorCode.FOQM0002;
+    public static final ErrorCode FOQM0002 = W3CErrorCode.FOQM0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOQM0003}.
      */
     @Deprecated
-    public static final ErrorCode FOQM0003 = W3CErrorCode.FOQM0003;
+    public static final ErrorCode FOQM0003 = W3CErrorCode.FOQM0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOQM0005}.
      */
     @Deprecated
-    public static final ErrorCode FOQM0005 = W3CErrorCode.FOQM0005;
+    public static final ErrorCode FOQM0005 = W3CErrorCode.FOQM0005.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOQM0006}.
      */
     @Deprecated
-    public static final ErrorCode FOQM0006 = W3CErrorCode.FOQM0006;
+    public static final ErrorCode FOQM0006 = W3CErrorCode.FOQM0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOXT0001}.
      */
     @Deprecated
-    public static final ErrorCode FOXT0001 = W3CErrorCode.FOXT0001;
+    public static final ErrorCode FOXT0001 = W3CErrorCode.FOXT0001.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOXT0002}.
      */
     @Deprecated
-    public static final ErrorCode FOXT0002 = W3CErrorCode.FOXT0002;
+    public static final ErrorCode FOXT0002 = W3CErrorCode.FOXT0002.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOXT0003}.
      */
     @Deprecated
-    public static final ErrorCode FOXT0003 = W3CErrorCode.FOXT0003;
+    public static final ErrorCode FOXT0003 = W3CErrorCode.FOXT0003.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOXT0004}.
      */
     @Deprecated
-    public static final ErrorCode FOXT0004 = W3CErrorCode.FOXT0004;
+    public static final ErrorCode FOXT0004 = W3CErrorCode.FOXT0004.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#FOXT0006}.
      */
     @Deprecated
-    public static final ErrorCode FOXT0006 = W3CErrorCode.FOXT0006;
+    public static final ErrorCode FOXT0006 = W3CErrorCode.FOXT0006.errorCode;
 
     /**
      * @deprecated Use {@link W3CErrorCode#XTSE0165}.
      */
     @Deprecated
-    public static final ErrorCode XTSE0165 = W3CErrorCode.XTSE0165;
+    public static final ErrorCode XTSE0165 = W3CErrorCode.XTSE0165.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQDY0001}.
      */
     @Deprecated
-    public static final ErrorCode EXXQDY0001 = EXistErrorCode.EXXQDY0001;
+    public static final ErrorCode EXXQDY0001 = EXistErrorCode.EXXQDY0001.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQDY0002}.
      */
     @Deprecated
-    public static final ErrorCode EXXQDY0002 = EXistErrorCode.EXXQDY0002;
+    public static final ErrorCode EXXQDY0002 = EXistErrorCode.EXXQDY0002.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQDY0003}.
      */
     @Deprecated
-    public static final ErrorCode EXXQDY0003 = EXistErrorCode.EXXQDY0003;
+    public static final ErrorCode EXXQDY0003 = EXistErrorCode.EXXQDY0003.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQDY0004}.
      */
     @Deprecated
-    public static final ErrorCode EXXQDY0004 = EXistErrorCode.EXXQDY0004;
+    public static final ErrorCode EXXQDY0004 = EXistErrorCode.EXXQDY0004.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQDY0005}.
      */
     @Deprecated
-    public static final ErrorCode EXXQDY0005 = EXistErrorCode.EXXQDY0005;
+    public static final ErrorCode EXXQDY0005 = EXistErrorCode.EXXQDY0005.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQDY0006}.
      */
     @Deprecated
-    public static final ErrorCode EXXQDY0006 = EXistErrorCode.EXXQDY0006;
+    public static final ErrorCode EXXQDY0006 = EXistErrorCode.EXXQDY0006.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQST0001}.
      */
     @Deprecated
-    public static final ErrorCode EXXQST0001 = EXistErrorCode.EXXQST0001;
+    public static final ErrorCode EXXQST0001 = EXistErrorCode.EXXQST0001.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQST0002}.
      */
     @Deprecated
-    public static final ErrorCode EXXQST0002 = EXistErrorCode.EXXQST0002;
+    public static final ErrorCode EXXQST0002 = EXistErrorCode.EXXQST0002.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#EXXQST0003}.
      */
     @Deprecated
-    public static final ErrorCode EXXQST0003 = EXistErrorCode.EXXQST0003;
+    public static final ErrorCode EXXQST0003 = EXistErrorCode.EXXQST0003.errorCode;
 
     /**
      * @deprecated Use {@link EXistErrorCode#ERROR}.
      */
     @Deprecated
-    public static final ErrorCode ERROR = EXistErrorCode.ERROR;
+    public static final ErrorCode ERROR = EXistErrorCode.ERROR.errorCode;
 }

@@ -49,11 +49,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.exist.dom.QName;
-import org.exist.xquery.AbstractInternalModule;
-import org.exist.xquery.ErrorCodes.ErrorCode;
-import org.exist.xquery.FunctionDSL;
-import org.exist.xquery.FunctionDef;
-import org.exist.xquery.FunctionSignature;
+import org.exist.xquery.*;
+import org.exist.xquery.ErrorCodes.IErrorCode;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.FunctionReturnSequenceType;
 
@@ -131,7 +128,7 @@ public class LuceneModule extends AbstractInternalModule {
         return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 
-    enum LuceneErrorCode implements ErrorCode {
+    enum LuceneErrorCode implements IErrorCode {
         EXXQDYFT0001 ("Permission denied."),
         EXXQDYFT0002 ("IO Exception in lucene index."),
         EXXQDYFT0003 ("Document not found."),
@@ -140,22 +137,29 @@ public class LuceneModule extends AbstractInternalModule {
         EXXQDYFT0006 ("Unable to deserialize string value in call to ft:field"),
         EXXQDYFT0007 ("Unable to deserialize numeric value in call to ft:field");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCodes.ErrorCode errorCode;
 
         LuceneErrorCode(final String description) {
-            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCodes.ErrorCode(new QName(name(), NAMESPACE_URI, PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCodes.ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 }

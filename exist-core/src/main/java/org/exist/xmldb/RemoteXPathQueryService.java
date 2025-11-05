@@ -204,7 +204,7 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
             final QName qname = new QName(localPart, namespaceUri, prefix);
             errorCode = org.exist.xquery.ErrorCodes.fromQName(qname);
         } else {
-            errorCode = org.exist.xquery.ErrorCodes.EXistErrorCode.ERROR;
+            errorCode = org.exist.xquery.ErrorCodes.EXistErrorCode.ERROR.getErrorCode();
         }
 
         return new XPathException(line, column, errorCode, message);
