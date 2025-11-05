@@ -137,12 +137,12 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableUndeclared() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "xs:string*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "xs:string*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, null, (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), null, (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -160,13 +160,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableStringNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "xs:string", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "xs:string", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableStringSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "xs:string", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "xs:string", externalVariable);
     }
 
     @Test
@@ -178,7 +178,7 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableStringSuppliedStrings() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[]{ UntypedValueRep.value("hello"), UntypedValueRep.value("goodbye") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "xs:string", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "xs:string", externalVariable);
     }
 
     @Test
@@ -203,7 +203,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptStringNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "xs:string?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "xs:string?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -221,7 +221,7 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptStringSuppliedStrings() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "xs:string?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "xs:string?", externalVariable);
     }
 
     @Test
@@ -233,13 +233,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableStringsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "xs:string+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "xs:string+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableStringsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "xs:string+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "xs:string+", externalVariable);
     }
 
     @Test
@@ -270,7 +270,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableStringzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "xs:string*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "xs:string*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -319,13 +319,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "element()", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "element()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableElementSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "element()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "element()", externalVariable);
     }
 
     @Test
@@ -337,7 +337,7 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableElementSuppliedElements() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "element()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "element()", externalVariable);
     }
 
     @Test
@@ -346,7 +346,7 @@ public class XMLDBExternalVariableTest {
         // NOTE(AR) unlike {@link RESTExternalVariableTest#queryPostWithExternalVariableElementSuppliedUntyped} a value supplied as an 'untyped' Element cannot be inferred by the XML:DB API as it can be via the REST API
 //        queryPostWithExternalVariable("element()", externalVariable);
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected element(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "element()", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "element()", externalVariable);
     }
 
     @Test
@@ -363,7 +363,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptElementNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "element()?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "element()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -381,7 +381,7 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptElementSuppliedElements() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "element()?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "element()?", externalVariable);
     }
 
     @Test
@@ -390,18 +390,18 @@ public class XMLDBExternalVariableTest {
         // NOTE(AR) unlike {@link RESTExternalVariableTest#queryPostWithExternalVariableOptElementSuppliedUntyped} a value supplied as an 'untyped' Element cannot be inferred by the XML:DB API as it can be via the REST API
 //        queryPostWithExternalVariable("element()?", externalVariable);
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected element(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "element()?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "element()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "element()+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "element()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableElementsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "element()+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "element()+", externalVariable);
     }
 
     @Test
@@ -422,7 +422,7 @@ public class XMLDBExternalVariableTest {
         // NOTE(AR) unlike {@link RESTExternalVariableTest#queryPostWithExternalVariableElementsSuppliedUntyped} a value supplied as an 'untyped' Element cannot be inferred by the XML:DB API as it can be via the REST API
 //        queryPostWithExternalVariable("element()+", externalVariable);
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected element(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "element()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "element()+", externalVariable);
     }
 
     @Test
@@ -431,12 +431,12 @@ public class XMLDBExternalVariableTest {
         // NOTE(AR) unlike {@link RESTExternalVariableTest#queryPostWithExternalVariableElementsSuppliedUntypeds} a value supplied as an 'untyped' Element cannot be inferred by the XML:DB API as it can be via the REST API
 //        queryPostWithExternalVariable("element()+", externalVariable);
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected element(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "element()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "element()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "element()*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "element()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -463,7 +463,7 @@ public class XMLDBExternalVariableTest {
         // NOTE(AR) unlike {@link RESTExternalVariableTest#queryPostWithExternalVariableElementszSuppliedUntyped} a value supplied as an 'untyped' Element cannot be inferred by the XML:DB API as it can be via the REST API
 //        queryPostWithExternalVariable("element()*", externalVariable);
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected element(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "element()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "element()*", externalVariable);
     }
 
     @Test
@@ -472,7 +472,7 @@ public class XMLDBExternalVariableTest {
         // NOTE(AR) unlike {@link RESTExternalVariableTest#queryPostWithExternalVariableElementzSuppliedUntypeds} a value supplied as an 'untyped' Element cannot be inferred by the XML:DB API as it can be via the REST API
 //        queryPostWithExternalVariable("element()*", externalVariable);
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected element(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "element()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "element()*", externalVariable);
     }
 
     @Test
@@ -489,13 +489,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "document-node()", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "document-node()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "document-node()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "document-node()", externalVariable);
     }
 
     @Test
@@ -507,14 +507,14 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedDocuments() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "document-node()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "document-node()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected document-node(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "document-node()", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "document-node()", externalVariable);
     }
 
     @Test
@@ -531,7 +531,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptDocumentNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "document-node()?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "document-node()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -549,25 +549,25 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptDocumentSuppliedDocuments() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "document-node()?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "document-node()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptDocumentSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected document-node(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "document-node()?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "document-node()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "document-node()+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "document-node()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "document-node()+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "document-node()+", externalVariable);
     }
 
     @Test
@@ -586,19 +586,19 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableDocumentsSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected document-node(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "document-node()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "document-node()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected document-node(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "document-node()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "document-node()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "document-node()*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "document-node()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -623,14 +623,14 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableDocumentszSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected document-node(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "document-node()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "document-node()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentzSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected document-node(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "document-node()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "document-node()*", externalVariable);
     }
 
     @Test
@@ -647,13 +647,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableCommentNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "comment()", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "comment()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "comment()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "comment()", externalVariable);
     }
 
     @Test
@@ -665,14 +665,14 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableCommentSuppliedComments() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<!-- hello world -->"), UntypedValueRep.value("<!-- goodbye see you soon -->") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "comment()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "comment()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<!-- hello world -->");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected comment(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "comment()", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "comment()", externalVariable);
     }
 
     @Test
@@ -689,7 +689,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptCommentNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "comment()?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "comment()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -707,25 +707,25 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptCommentSuppliedComments() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.COMMENT, "<!-- hello world -->"), value(Type.COMMENT, "<!-- goodbye see you soon -->") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "comment()?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "comment()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptCommentSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<!-- hello world -->");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected comment(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "comment()?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "comment()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "comment()+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "comment()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "comment()+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "comment()+", externalVariable);
     }
 
     @Test
@@ -744,19 +744,19 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableCommentsSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<!-- hello world -->") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected comment(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "comment()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "comment()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentsSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<!-- hello world -->"), UntypedValueRep.value("<!-- goodbye see you soon -->") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected comment(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "comment()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "comment()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "comment()*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "comment()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -781,14 +781,14 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableCommentszSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<!-- hello world -->") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected comment(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "comment()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "comment()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableCommentzSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<!-- hello world -->"), UntypedValueRep.value("<!-- goodbye see you soon -->") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected comment(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "comment()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "comment()*", externalVariable);
     }
 
     @Test
@@ -805,13 +805,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "processing-instruction()", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "processing-instruction()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "processing-instruction()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "processing-instruction()", externalVariable);
     }
 
     @Test
@@ -823,14 +823,14 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableProcessingInstructionSuppliedProcessingInstructions() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<?hello world?>"), UntypedValueRep.value("<?goodbye see-you-soon?>") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "processing-instruction()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "processing-instruction()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<?hello world?>");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected processing-instruction(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "processing-instruction()", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "processing-instruction()", externalVariable);
     }
 
     @Test
@@ -847,7 +847,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptProcessingInstructionNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "processing-instruction()?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "processing-instruction()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -865,25 +865,25 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptProcessingInstructionSuppliedProcessingInstructions() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.PROCESSING_INSTRUCTION, "<?hello world?>"), value(Type.PROCESSING_INSTRUCTION, "<?goodbye see-you-soon?>") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "processing-instruction()?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "processing-instruction()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptProcessingInstructionSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<?hello world?>");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected processing-instruction(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "processing-instruction()?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "processing-instruction()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "processing-instruction()+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "processing-instruction()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "processing-instruction()+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "processing-instruction()+", externalVariable);
     }
 
     @Test
@@ -902,19 +902,19 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableProcessingInstructionsSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<?hello world?>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected processing-instruction(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "processing-instruction()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "processing-instruction()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionsSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<?hello world?>"), UntypedValueRep.value("<?goodbye see-you-soon?>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected processing-instruction(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "processing-instruction()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "processing-instruction()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "processing-instruction()*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "processing-instruction()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -939,14 +939,14 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableProcessingInstructionszSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<?hello world?>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected processing-instruction(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "processing-instruction()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "processing-instruction()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableProcessingInstructionzSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<?hello world?>"), UntypedValueRep.value("<?goodbye see-you-soon?>") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected processing-instruction(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "processing-instruction()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "processing-instruction()*", externalVariable);
     }
 
     @Test
@@ -965,13 +965,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableTextNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "text()", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "text()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableTextSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "text()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "text()", externalVariable);
     }
 
     @Test
@@ -983,14 +983,14 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableTextSuppliedTexts() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world"), UntypedValueRep.value("goodbye see you soon") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "text()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "text()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("hello world");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected text(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "text()", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "text()", externalVariable);
     }
 
     @Test
@@ -1009,7 +1009,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptTextNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "text()?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "text()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1027,25 +1027,25 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptTextSuppliedTexts() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.TEXT, "hello world"), value(Type.TEXT, "goodbye see you soon") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "text()?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "text()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptTextSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = UntypedValueRep.value("hello world");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected text(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "text()?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "text()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "text()+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "text()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableTextsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "text()+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "text()+", externalVariable);
     }
 
     @Test
@@ -1064,19 +1064,19 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableTextsSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected text(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "text()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "text()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextsSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world"), UntypedValueRep.value("goodbye see you soon") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected text(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "text()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "text()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "text()*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "text()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1101,14 +1101,14 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableTextszSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected text(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "text()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "text()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableTextzSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("hello world"), UntypedValueRep.value("goodbye see you soon") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected text(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "text()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "text()*", externalVariable);
     }
 
     @Test
@@ -1125,13 +1125,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableAttributeNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "attribute()", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "attribute()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributeSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "attribute()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "attribute()", externalVariable);
     }
 
     @Test
@@ -1143,14 +1143,14 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableAttributeSuppliedAttributes() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("xevt:hello", "world"), value("goodbye", "see you soon") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "attribute()", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "attribute()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributeSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = value("xevt:hello", "world");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected attribute(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "attribute()", externalVariable);
     }
 
     @Test
@@ -1167,7 +1167,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptAttributeNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "attribute()?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "attribute()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1185,25 +1185,25 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptAttributeSuppliedAttributes() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ATTRIBUTE, "xevt:hello", "world"), value(Type.ATTRIBUTE, "goodbye", "see you soon") };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "attribute()?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "attribute()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptAttributeSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = value("xevt:hello", "world");
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected attribute(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "attribute()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributesNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "attribute()+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "attribute()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributesSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "attribute()+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "attribute()+", externalVariable);
     }
 
     @Test
@@ -1222,19 +1222,19 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableAttributesSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("xevt:hello", "world") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected attribute(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "attribute()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributesSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("xevt:hello", "world"), value("goodbye", "see you soon") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected attribute(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "attribute()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributezNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "attribute()*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "attribute()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1259,14 +1259,14 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableAttributeszSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("xevt:hello", "world") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected attribute(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "attribute()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableAttributezSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("xevt:hello", "world"), value("goodbye", "see you soon") };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected attribute(), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "attribute()*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "attribute()*", externalVariable);
     }
 
     @Test
@@ -1283,13 +1283,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableArrayNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "array(*)", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableArraySuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "array(*)", externalVariable);
     }
 
     @Test
@@ -1301,14 +1301,14 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableArraySuppliedArrays() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"))), array(sequence(value(Type.STRING, "goodbye"))) };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "array(*)", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableArraySuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "array(*)", externalVariable);
     }
 
     @Test
@@ -1325,7 +1325,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptArrayNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "array(*)?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1343,25 +1343,25 @@ public class XMLDBExternalVariableTest {
     @Test
     public void queryPostWithExternalVariableOptArraySuppliedArrays() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, 42))), array(sequence(value(Type.STRING, "goodbye"))) };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "array(*)?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptArraySuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)?", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "array(*)?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableArraysNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "array(*)+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableArraysSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "array(*)+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "array(*)+", externalVariable);
     }
 
     @Test
@@ -1380,19 +1380,19 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableArraysSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "array(*)+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableArraysSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)+", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "array(*)+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableArrayzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "array(*)*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "array(*)*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1417,14 +1417,14 @@ public class XMLDBExternalVariableTest {
     public void queryPostWithExternalVariableArrayszSuppliedUntyped() throws XMLDBException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "array(*)*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableArrayzSuppliedUntypeds() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
         final String expectedResponseError = "Invalid type for variable $local:my-variable. Expected array(*), got xs:string";
-        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004, expectedResponseError), "array(*)*", externalVariable);
+        queryPostWithExternalVariable(Tuple(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), expectedResponseError), "array(*)*", externalVariable);
     }
 
     @Test
@@ -1441,13 +1441,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableMapNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "map(*)", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableMapSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new MapRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "map(*)", externalVariable);
     }
 
     @Test
@@ -1467,7 +1467,7 @@ public class XMLDBExternalVariableTest {
                 entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
             )
         };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "map(*)", externalVariable);
     }
 
     @Test
@@ -1506,7 +1506,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptMapNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)?", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "map(*)?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
@@ -1532,7 +1532,7 @@ public class XMLDBExternalVariableTest {
                 entry(key(Type.STRING, "key3"), sequence(value(Type.STRING, "in the beginning"), value(Type.STRING, "but at the end"), value(Type.INTEGER, 42)))
             )
         };
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)?", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "map(*)?", externalVariable);
     }
 
     @Test
@@ -1543,13 +1543,13 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableMapsNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)+", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "map(*)+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
     public void queryPostWithExternalVariableMapsSuppliedEmpty() throws XMLDBException {
         final ExternalVariableValueRep[] externalVariable = new MapRep[0];
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004, "map(*)+", externalVariable);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPTY0004.getErrorCode(), "map(*)+", externalVariable);
     }
 
     @Test
@@ -1595,7 +1595,7 @@ public class XMLDBExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableMapzNotSupplied() throws XMLDBException {
-        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002, "map(*)*", (ExternalVariableValueRep[]) null);
+        queryPostWithExternalVariable(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "map(*)*", (ExternalVariableValueRep[]) null);
     }
 
     @Test

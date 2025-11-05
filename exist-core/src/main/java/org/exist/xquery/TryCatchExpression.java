@@ -440,7 +440,7 @@ public class TryCatchExpression extends AbstractExpression {
             try {
                 errorQName = QName.parse(context, data[0]);
             } catch (final QName.IllegalQNameException e) {
-                errorCode = ErrorCodes.EXistErrorCode.ERROR;
+                errorCode = ErrorCodes.EXistErrorCode.ERROR.getErrorCode();
             }
 
             if (errorCode == null) {

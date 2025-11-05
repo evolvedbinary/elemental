@@ -167,7 +167,7 @@ public class Facets extends BasicFunction {
             try {
                 addFacetsToMap(map, dimension, count, paths, match);
             } catch (IOException e) {
-                throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002, e.getMessage());
+                throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002.getErrorCode(), e.getMessage());
             }
         }
         return new MapType(this, context, map.forked(), Type.STRING);

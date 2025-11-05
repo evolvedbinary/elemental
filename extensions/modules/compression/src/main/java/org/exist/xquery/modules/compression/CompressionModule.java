@@ -145,25 +145,32 @@ public class CompressionModule extends AbstractInternalModule {
         return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 
-    enum CompressionModuleErrorCode implements ErrorCodes.ErrorCode {
+    enum CompressionModuleErrorCode implements ErrorCodes.IErrorCode {
         ARCHIVE_EXIT_ATTACK ("The archive likely contains an exit attack, whereby a file extraction tries to escape the destination path.");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCodes.ErrorCode errorCode;
 
         CompressionModuleErrorCode(final String description) {
-            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCodes.ErrorCode(new QName(name(), NAMESPACE_URI, PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCodes.ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 }

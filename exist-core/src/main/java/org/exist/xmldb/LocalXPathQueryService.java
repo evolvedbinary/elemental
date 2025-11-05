@@ -431,11 +431,11 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             try {
                 varName = QName.parse(context, varNameStr);
             } catch (final QName.IllegalQNameException e) {
-                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPST0081, "Error declaring variable, invalid qname: " + varNameStr + ". " + e.getMessage(), e);
+                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPST0081.getErrorCode(), "Error declaring variable, invalid qname: " + varNameStr + ". " + e.getMessage(), e);
             }
 
             if (!context.isExternalVariableDeclared(varName)) {
-                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + varName + " is not declared in the XQuery");
+                throw new XPathException(org.exist.xquery.ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "External variable " + varName + " is not declared in the XQuery");
             }
 
             context.declareVariable(varName, true, entry.getValue());

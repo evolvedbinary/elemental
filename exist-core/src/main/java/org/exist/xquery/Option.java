@@ -85,7 +85,7 @@ public class Option {
 	
 	public Option(final Expression expression, QName qname, String contents)  throws XPathException {
 		if (qname.getPrefix() == null || qname.getPrefix().isEmpty()) {
-            throw new XPathException(expression, ErrorCodes.W3CErrorCode.XPST0081, "Options must have a prefix");
+            throw new XPathException(expression, ErrorCodes.W3CErrorCode.XPST0081.getErrorCode(), "Options must have a prefix");
         }
 		this.qname = qname;
 		this.contents = contents;

@@ -78,7 +78,7 @@ public class UriFunctions extends BasicFunction {
         }
 
         if(var == null) {
-            throw new XPathException(EXQueryErrorCode.RQDY0101, getLine(), getColumn());
+            throw new XPathException(EXQueryErrorCode.RQDY0101.getErrorCode(), getLine(), getColumn());
         } else {
             return var.getValue();
         }
