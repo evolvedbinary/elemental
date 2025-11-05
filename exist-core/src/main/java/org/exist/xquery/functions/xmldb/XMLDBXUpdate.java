@@ -45,85 +45,117 @@
  */
 package org.exist.xquery.functions.xmldb;
 
-import org.apache.commons.io.output.StringBuilderWriter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import org.exist.dom.QName;
-import org.exist.util.serializer.DOMSerializer;
-import org.exist.xquery.Cardinality;
+import org.exist.EXistException;
+import org.exist.collections.Collection;
+import org.exist.dom.persistent.*;
+import org.exist.security.PermissionDeniedException;
+import org.exist.storage.lock.Lock;
+import org.exist.util.LockException;
+import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.BasicFunction;
 import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.value.FunctionReturnSequenceType;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.IntegerValue;
-import org.exist.xquery.value.NodeValue;
+import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XUpdateQueryService;
+import org.exist.xupdate.Modification;
+import org.exist.xupdate.XUpdateProcessor;
+import org.xml.sax.SAXException;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.TransformerException;
+import javax.annotation.Nullable;
+import javax.xml.parsers.ParserConfigurationException;
+
+import java.util.List;
 import java.util.Properties;
 
+import static org.exist.xquery.FunctionDSL.*;
+import static org.exist.xquery.functions.xmldb.XMLDBModule.functionSignatures;
+
 /**
- * 
- * @author wolf
- *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class XMLDBXUpdate extends XMLDBAbstractCollectionManipulator
-{
-	protected static final Logger logger = LogManager.getLogger(XMLDBXUpdate.class);
+public class XMLDBXUpdate extends BasicFunction {
+    private static final FunctionParameterSequenceType FS_PARAM_COLLECTION_URI = param("collection-uri", Type.STRING, "The collection URI");
+    private static final FunctionParameterSequenceType FS_PARAM_DOCUMENT_URI = param("document-uri", Type.STRING, "The document URI");
+    private static final FunctionParameterSequenceType FS_PARAM_MODIFICATIONS = param("modifications", Type.NODE, "The XUpdate modifications to be processed");
 
-	public final static FunctionSignature signature = new FunctionSignature(
-			new QName("update", XMLDBModule.NAMESPACE_URI, XMLDBModule.PREFIX),
-			"Processes an XUpdate request, $modifications, against a collection $collection-uri. "
-            + XMLDBModule.COLLECTION_URI 
-            + "The modifications are passed in a "
-            + "document conforming to the XUpdate specification. "
-            + "http://rx4rdf.liminalzone.org/xupdate-wd.html#N1a32e0"
-            + "The function returns the number of modifications caused by the XUpdate.",
-			new SequenceType[]{
-					new FunctionParameterSequenceType("collection-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The collection URI"),
-					new FunctionParameterSequenceType("modifications", Type.NODE, Cardinality.EXACTLY_ONE, "The XUpdate modifications to be processed")},
-			new FunctionReturnSequenceType(Type.INTEGER, Cardinality.EXACTLY_ONE, "the number of modifications, as xs:integer, caused by the XUpdate"));
+    private static final String FS_UPDATE_NAME = "update";
+    static final FunctionSignature[] FS_UPDATE = functionSignatures(
+            FS_UPDATE_NAME,
+            "Processes an XUpdate request, $modifications, against a collection $collection-uri. "
+                + XMLDBModule.COLLECTION_URI
+                + "The modifications are passed in a "
+                + "document conforming to the XUpdate specification. "
+                + "https://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html"
+                + "The function returns the number of modifications caused by the XUpdate.",
+            returns(Type.INTEGER, "The number of modifications, as an xs:integer, caused by the XUpdate"),
+            arities(
+                arity(
+                    FS_PARAM_COLLECTION_URI,
+                    FS_PARAM_MODIFICATIONS
+                ),
+                arity(
+                    FS_PARAM_COLLECTION_URI,
+                    FS_PARAM_DOCUMENT_URI,
+                    FS_PARAM_MODIFICATIONS
+                )
+            )
+    );
 
-	public XMLDBXUpdate(XQueryContext context) {
-		super(context, signature);
+	public XMLDBXUpdate(final XQueryContext context, final FunctionSignature functionSignature) {
+		super(context, functionSignature);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.exist.xquery.BasicFunction#eval(org.exist.xquery.value.Sequence[], org.exist.xquery.value.Sequence)
-	 */
-	public Sequence evalWithCollection(Collection c, Sequence[] args, Sequence contextSequence)
-        throws XPathException {
-		final NodeValue data = (NodeValue) args[1].itemAt(0);
-		final String xupdate;
-		try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-			final Properties properties = new Properties();
-			properties.setProperty(OutputKeys.INDENT, "yes");
-			final DOMSerializer serializer = new DOMSerializer(writer, properties);
-			serializer.serialize(data.getNode());
-			xupdate = writer.toString();
-		} catch(final TransformerException e) {
-			logger.debug("Exception while serializing XUpdate document", e);
-			throw new XPathException(this, "Exception while serializing XUpdate document: " + e.getMessage(), e);
-		}
+	@Override
+	public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
+        final String collectionUri = args[0].itemAt(0).getStringValue();
+        @Nullable final String documentUri;
+        final Item modifications;
+        if (args.length == 3) {
+            documentUri = args[1].itemAt(0).getStringValue();
+            modifications = args[2].itemAt(0);
+        } else {
+            documentUri = null;
+            modifications = args[1].itemAt(0);
+        }
 
-		long modifications = 0;
-		try {
-			final XUpdateQueryService service = c.getService(XUpdateQueryService.class);
-			logger.debug("Processing XUpdate request: {}", xupdate);
-			modifications = service.update(xupdate);
-		} catch(final XMLDBException e) {
-			throw new XPathException(this, "Exception while processing xupdate: " + e.getMessage(), e);
-		}
-		
-		context.getRootExpression().resetState(false);
-		return new IntegerValue(this, modifications);
+        final MutableDocumentSet documentSet = new DefaultDocumentSet();
+        try (final Collection collection = context.getBroker().openCollection(XmldbURI.create(collectionUri), Lock.LockMode.READ_LOCK)) {
+            if (documentUri == null) {
+                collection.allDocs(context.getBroker(), documentSet, true);
+
+            } else {
+                try (final LockedDocument lockedDocument = collection.getDocumentWithLock(context.getBroker(), XmldbURI.create(documentUri), Lock.LockMode.READ_LOCK)) {
+
+                    // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                    collection.close();
+
+                    final DocumentImpl doc = lockedDocument == null ? null : lockedDocument.getDocument();
+                    if (doc == null) {
+                        throw new XPathException(this, "Resource not found: " + documentUri);
+                    }
+                    documentSet.add(doc);
+                }
+            }
+
+            final XUpdateProcessor processor = new XUpdateProcessor(context.getBroker(), documentSet);
+            modifications.toSAX(context.getBroker(), processor, new Properties());
+            final List<Modification> modificationList = processor.getModifications();
+            long mods = 0;
+            for (final Modification modification : modificationList) {
+                mods += modification.process(context.getBroker().getCurrentTransaction());
+                context.getBroker().flush();
+            }
+
+            context.getRootExpression().resetState(false);
+
+            return new IntegerValue(this, mods);
+
+        } catch (final PermissionDeniedException | LockException | EXistException | ParserConfigurationException | SAXException e) {
+            throw new XPathException(this, e);
+        }
 	}
 }

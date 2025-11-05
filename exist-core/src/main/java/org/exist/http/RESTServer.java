@@ -959,13 +959,12 @@ public class RESTServer {
                     }
 
                     final XUpdateProcessor processor = new XUpdateProcessor(broker, docs);
+                    root.toSAX(broker, processor, new Properties());
+                    final List<Modification> modifications = processor.getModifications();
                     long mods = 0;
-                    try(final Reader reader = new StringReader(content)) {
-                        final Modification modifications[] = processor.parse(new InputSource(reader));
-                        for (Modification modification : modifications) {
-                            mods += modification.process(transaction);
-                            broker.flush();
-                        }
+                    for (final Modification modification : modifications) {
+                        mods += modification.process(transaction);
+                        broker.flush();
                     }
 
                     // FD : Returns an XML doc
