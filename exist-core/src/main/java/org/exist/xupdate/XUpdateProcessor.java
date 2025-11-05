@@ -867,16 +867,20 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 	public void startEntity(final String name) throws SAXException {
 	}
 
+	public List<Modification> getModifications() {
+            return modifications;
+	}
+
 	public void reset() {
-        if (this.whiteSpaceHandling != null) {
-            this.whiteSpaceHandling.clear();
-        }
-        this.whiteSpaceHandlingIdx = 0;
+            if (this.whiteSpaceHandling != null) {
+                this.whiteSpaceHandling.clear();
+            }
+            this.whiteSpaceHandlingIdx = 0;
 	    this.inModification = false;
 		this.inAttribute = false;
 		this.modification = null;
 		this.builder.reset();
-        this.doc = null;
+	    this.doc = null;
 		this.contents = null;
         if (this.stack != null) {
             this.stack.clear();
