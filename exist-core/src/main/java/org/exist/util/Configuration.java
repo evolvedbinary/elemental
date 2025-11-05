@@ -225,118 +225,123 @@ public class Configuration implements ErrorHandler
             // path from conf file
             existHomeDirname = configFilePath.map(Path::getParent);
 
-            // initialize xml parser
-            // we use eXist's in-memory DOM implementation to work
-            // around a bug in Xerces
-            final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
-            factory.setNamespaceAware(true);
+            loadConfigFile(is, existHomeDirname);
 
-//            factory.setFeature("http://apache.org/xml/features/validation/schema", true);
-//            factory.setFeature("http://apache.org/xml/features/validation/dynamic", true);
-            final InputSource src = new InputSource(is);
-            final SAXParser parser = factory.newSAXParser();
-            final XMLReader reader = parser.getXMLReader();
-
-            reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-            reader.setFeature(FEATURE_SECURE_PROCESSING, true);
-
-            final SAXAdapter adapter = new SAXAdapter((Expression) null);
-            reader.setContentHandler(adapter);
-            reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
-            reader.parse(src);
-
-            final Document doc = adapter.getDocument();
-
-            //indexer settings
-            final NodeList indexers = doc.getElementsByTagName(Indexer.CONFIGURATION_ELEMENT_NAME);
-            if(indexers.getLength() > 0) {
-                configureIndexer( existHomeDirname, doc, (Element)indexers.item( 0 ) );
-            }
-
-            //scheduler settings
-            final NodeList schedulers = doc.getElementsByTagName(JobConfig.CONFIGURATION_ELEMENT_NAME);
-            if(schedulers.getLength() > 0) {
-                configureScheduler((Element)schedulers.item(0));
-            }
-
-            //db connection settings
-            final NodeList dbcon = doc.getElementsByTagName(BrokerPool.CONFIGURATION_CONNECTION_ELEMENT_NAME);
-            if(dbcon.getLength() > 0) {
-                configureBackend(existHomeDirname, (Element)dbcon.item(0));
-            }
-
-            // lock-table settings
-            final NodeList lockManager = doc.getElementsByTagName("lock-manager");
-            if(lockManager.getLength() > 0) {
-                configureLockManager((Element) lockManager.item(0));
-            }
-
-            // repository settings
-            final NodeList repository = doc.getElementsByTagName("repository");
-            if(repository.getLength() > 0) {
-                configureRepository((Element) repository.item(0));
-            }
-
-            // binary manager settings
-            final NodeList binaryManager = doc.getElementsByTagName("binary-manager");
-            if(binaryManager.getLength() > 0) {
-                configureBinaryManager((Element)binaryManager.item(0));
-            }
-            
-            //transformer settings
-            final NodeList transformers = doc.getElementsByTagName(TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME);
-            if( transformers.getLength() > 0 ) {
-                configureTransformer((Element)transformers.item(0));
-            }
-
-            //parser settings
-            final NodeList parsers = doc.getElementsByTagName(HtmlToXmlParser.PARSER_ELEMENT_NAME);
-            if(parsers.getLength() > 0) {
-                configureParser((Element)parsers.item(0));
-            }
-
-            //serializer settings
-            final NodeList serializers = doc.getElementsByTagName(Serializer.CONFIGURATION_ELEMENT_NAME);
-            if(serializers.getLength() > 0) {
-                configureSerializer((Element)serializers.item(0));
-            }
-
-            //XUpdate settings
-            final NodeList xupdates = doc.getElementsByTagName(DBBroker.CONFIGURATION_ELEMENT_NAME);
-            if(xupdates.getLength() > 0) {
-                configureXUpdate((Element)xupdates.item(0));
-            }
-
-            //XQuery settings
-            final NodeList xquery = doc.getElementsByTagName(XQUERY_CONFIGURATION_ELEMENT_NAME);
-            if(xquery.getLength() > 0) {
-                configureXQuery((Element)xquery.item(0));
-            }
-
-            //Validation
-            final NodeList validations = doc.getElementsByTagName(XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME);
-            if(validations.getLength() > 0) {
-                configureValidation(existHomeDirname, (Element)validations.item(0));
-            }
-
-            //RPC server
-            final NodeList rpcServer = doc.getElementsByTagName("rpc-server");
-            if (rpcServer.getLength() > 0) {
-                configureRpcServer((Element) rpcServer.item(0));
-            }
-        }
-        catch(final SAXException | IOException | ParserConfigurationException e) {
-            LOG.error("error while reading config file: {}", configFilename, e);
+        } catch (final SAXException | IOException | ParserConfigurationException e) {
+            LOG.error("Error while reading config file: {}", configFilename, e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
-        } finally {
-            if(is != null) {
-                try {
-                    is.close();
-                } catch(final IOException ioe) {
-                    LOG.error(ioe);
-                }
-            }
+        }
+    }
+
+    public Configuration(final InputStream config, final Optional<Path> existHomePath) throws DatabaseConfigurationException {
+        try {
+            this.existHome = existHomePath;
+            loadConfigFile(config, existHome);
+        } catch (final SAXException | IOException | ParserConfigurationException e) {
+            LOG.error("Error while reading config file: {}", e.getMessage(), e);
+            throw new DatabaseConfigurationException(e.getMessage(), e);
+        }
+    }
+
+    private void loadConfigFile(final InputStream is, final Optional<Path> existHomePath) throws ParserConfigurationException, IOException, SAXException, DatabaseConfigurationException {
+
+        // initialize xml parser
+        // we use eXist's in-memory DOM implementation to work
+        // around a bug in Xerces
+        final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
+        factory.setNamespaceAware(true);
+
+        final InputSource src = new InputSource(is);
+        final SAXParser parser = factory.newSAXParser();
+        final XMLReader reader = parser.getXMLReader();
+
+        reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        reader.setFeature(FEATURE_SECURE_PROCESSING, true);
+
+        final SAXAdapter adapter = new SAXAdapter((Expression) null);
+        reader.setContentHandler(adapter);
+        reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
+        reader.parse(src);
+
+        final Document doc = adapter.getDocument();
+
+        //indexer settings
+        final NodeList indexers = doc.getElementsByTagName(Indexer.CONFIGURATION_ELEMENT_NAME);
+        if(indexers.getLength() > 0) {
+            configureIndexer(existHomePath, doc, (Element)indexers.item( 0 ) );
+        }
+
+        //scheduler settings
+        final NodeList schedulers = doc.getElementsByTagName(JobConfig.CONFIGURATION_ELEMENT_NAME);
+        if(schedulers.getLength() > 0) {
+            configureScheduler((Element)schedulers.item(0));
+        }
+
+        //db connection settings
+        final NodeList dbcon = doc.getElementsByTagName(BrokerPool.CONFIGURATION_CONNECTION_ELEMENT_NAME);
+        if(dbcon.getLength() > 0) {
+            configureBackend(existHomePath, (Element)dbcon.item(0));
+        }
+
+        // lock-table settings
+        final NodeList lockManager = doc.getElementsByTagName("lock-manager");
+        if(lockManager.getLength() > 0) {
+            configureLockManager((Element) lockManager.item(0));
+        }
+
+        // repository settings
+        final NodeList repository = doc.getElementsByTagName("repository");
+        if(repository.getLength() > 0) {
+            configureRepository((Element) repository.item(0));
+        }
+
+        // binary manager settings
+        final NodeList binaryManager = doc.getElementsByTagName("binary-manager");
+        if(binaryManager.getLength() > 0) {
+            configureBinaryManager((Element)binaryManager.item(0));
+        }
+
+        //transformer settings
+        final NodeList transformers = doc.getElementsByTagName(TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME);
+        if( transformers.getLength() > 0 ) {
+            configureTransformer((Element)transformers.item(0));
+        }
+
+        //parser settings
+        final NodeList parsers = doc.getElementsByTagName(HtmlToXmlParser.PARSER_ELEMENT_NAME);
+        if(parsers.getLength() > 0) {
+            configureParser((Element)parsers.item(0));
+        }
+
+        //serializer settings
+        final NodeList serializers = doc.getElementsByTagName(Serializer.CONFIGURATION_ELEMENT_NAME);
+        if(serializers.getLength() > 0) {
+            configureSerializer((Element)serializers.item(0));
+        }
+
+        //XUpdate settings
+        final NodeList xupdates = doc.getElementsByTagName(DBBroker.CONFIGURATION_ELEMENT_NAME);
+        if(xupdates.getLength() > 0) {
+            configureXUpdate((Element)xupdates.item(0));
+        }
+
+        //XQuery settings
+        final NodeList xquery = doc.getElementsByTagName(XQUERY_CONFIGURATION_ELEMENT_NAME);
+        if(xquery.getLength() > 0) {
+            configureXQuery((Element)xquery.item(0));
+        }
+
+        //Validation
+        final NodeList validations = doc.getElementsByTagName(XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME);
+        if(validations.getLength() > 0) {
+            configureValidation(existHomePath, (Element)validations.item(0));
+        }
+
+        //RPC server
+        final NodeList rpcServer = doc.getElementsByTagName("rpc-server");
+        if (rpcServer.getLength() > 0) {
+            configureRpcServer((Element) rpcServer.item(0));
         }
     }
 
