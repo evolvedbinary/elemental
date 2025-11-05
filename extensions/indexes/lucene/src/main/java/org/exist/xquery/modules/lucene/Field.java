@@ -189,7 +189,7 @@ public class Field extends BasicFunction {
             return result;
 
         } catch (final IOException e) {
-            throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002, "Error retrieving field: " + e.getMessage(), e);
+            throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002.getErrorCode(), "Error retrieving field: " + e.getMessage(), e);
         }
     }
 
@@ -429,7 +429,7 @@ public class Field extends BasicFunction {
 
                 case Type.NOTATION:
                 default:
-                    throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0005, "Cannot convert binary field to " + Type.getTypeName(type));
+                    throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0005.getErrorCode(), "Cannot convert binary field to " + Type.getTypeName(type));
             }
         } catch (final NumberFormatException e) {
             throw new XPathException(this, e.getMessage(), e);
@@ -514,7 +514,7 @@ public class Field extends BasicFunction {
                 try {
                     return new QNameValue(null, QName.parse(value));
                 } catch (final QName.IllegalQNameException e) {
-                    throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0006, "Cannot convert string field to " + Type.getTypeName(type), e);
+                    throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0006.getErrorCode(), "Cannot convert string field to " + Type.getTypeName(type), e);
                 }
 
             case Type.STRING:
@@ -531,7 +531,7 @@ public class Field extends BasicFunction {
 
             case Type.NOTATION:
             default:
-                throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0006, "Cannot convert string field to " + Type.getTypeName(type));
+                throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0006.getErrorCode(), "Cannot convert string field to " + Type.getTypeName(type));
         }
     }
 
@@ -596,7 +596,7 @@ public class Field extends BasicFunction {
             case Type.IDREF:
             case Type.ENTITY:
             default:
-                throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0007, "Cannot convert numeric field to " + Type.getTypeName(type));
+                throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0007.getErrorCode(), "Cannot convert numeric field to " + Type.getTypeName(type));
         }
     }
 }

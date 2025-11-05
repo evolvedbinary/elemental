@@ -372,7 +372,7 @@ public class Query extends Function implements Optimizable {
         } else if (Type.subTypeOf(optSeq.getItemType(), Type.MAP_ITEM)) {
             return new QueryOptions((AbstractMapType) optSeq.itemAt(0));
         } else {
-            throw new XPathException(funct, LuceneModule.LuceneErrorCode.EXXQDYFT0004, "Argument 3 should be either a map or an XML element");
+            throw new XPathException(funct, LuceneModule.LuceneErrorCode.EXXQDYFT0004.getErrorCode(), "Argument 3 should be either a map or an XML element");
         }
     }
 

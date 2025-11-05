@@ -1523,7 +1523,7 @@ public class RESTServer {
             }
 
             if (localname == null) {
-                throw new XPathException(ErrorCodes.W3CErrorCode.XPDY0002, String.format("External variable is missing local name in its qualified name. Prefix=%s URI=%s", prefix, uri));
+                throw new XPathException(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), String.format("External variable is missing local name in its qualified name. Prefix=%s URI=%s", prefix, uri));
             }
 
             if (uri == null && prefix != null) {
@@ -1538,7 +1538,7 @@ public class RESTServer {
             }
 
             if (!context.isExternalVariableDeclared(q)) {
-                throw new XPathException(ErrorCodes.W3CErrorCode.XPDY0002, "External variable " + q + " is not declared in the XQuery");
+                throw new XPathException(ErrorCodes.W3CErrorCode.XPDY0002.getErrorCode(), "External variable " + q + " is not declared in the XQuery");
             }
 
             if (uri != null && prefix != null) {

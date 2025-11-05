@@ -308,7 +308,7 @@ public class Lookup extends Function implements Optimizable {
         // throw an exception if substring match operation is applied to collated index
         final RangeIndex.Operator operator = getOperator();
         if (usesCollation && !operator.supportsCollation()) {
-            throw new XPathException(this, RangeIndexModule.RangeIndexErrorCode.EXXQDYFT0001, "Index defines a collation which cannot be " +
+            throw new XPathException(this, RangeIndexModule.RangeIndexErrorCode.EXXQDYFT0001.getErrorCode(), "Index defines a collation which cannot be " +
                     "used with the '" + operator + "' operation.");
         }
 
@@ -404,7 +404,7 @@ public class Lookup extends Function implements Optimizable {
 
                 // throw an exception if substring match operation is applied to collated index
                 if (usesCollation && !operator.supportsCollation()) {
-                    throw new XPathException(this, RangeIndexModule.RangeIndexErrorCode.EXXQDYFT0001, "Index defines a collation which cannot be " +
+                    throw new XPathException(this, RangeIndexModule.RangeIndexErrorCode.EXXQDYFT0001.getErrorCode(), "Index defines a collation which cannot be " +
                             "used with the '" + operator + "' operation.");
                 }
 

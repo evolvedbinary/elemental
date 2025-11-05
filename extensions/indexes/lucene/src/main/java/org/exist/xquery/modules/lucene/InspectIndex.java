@@ -104,11 +104,11 @@ public class InspectIndex extends BasicFunction {
 				context.getBroker().getIndexController().getWorkerByIndexId(LuceneIndex.ID);
 			return new BooleanValue(this, index.hasIndex(lockedDoc.getDocument().getDocId()));
 		} catch (PermissionDeniedException e) {
-			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0001, e.getMessage());
+			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0001.getErrorCode(), e.getMessage());
 		} catch (URISyntaxException e) {
-			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0003, e.getMessage());
+			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0003.getErrorCode(), e.getMessage());
 		} catch (IOException e) {
-			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002, e.getMessage());
+			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002.getErrorCode(), e.getMessage());
 		}
 	}
 

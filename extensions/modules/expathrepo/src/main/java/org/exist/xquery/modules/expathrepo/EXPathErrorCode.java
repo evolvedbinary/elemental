@@ -46,7 +46,8 @@
 package org.exist.xquery.modules.expathrepo;
 
 import org.exist.dom.QName;
-import org.exist.xquery.ErrorCodes.ErrorCode;
+import org.exist.xquery.ErrorCodes;
+import org.exist.xquery.ErrorCodes.IErrorCode;
 
 import javax.annotation.Nullable;
 
@@ -62,7 +63,7 @@ import javax.annotation.Nullable;
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public enum EXPathErrorCode implements ErrorCode {
+public enum EXPathErrorCode implements IErrorCode {
     EXPDY001 ("Package not found."),
     EXPDY002 ("Bad collection URI."),
     EXPDY003 ("Permission denied."),
@@ -75,21 +76,28 @@ public enum EXPathErrorCode implements ErrorCode {
     public final static String EXPATH_ERROR_NS = "http://expath.org/ns/error";
     public final static String EXPATH_ERROR_PREFIX = "experr";
 
-    private final QName qname;
-    private @Nullable final String description;
+    private final ErrorCodes.ErrorCode errorCode;
 
     EXPathErrorCode(@Nullable final String description) {
-        this.qname = new QName(name(), EXPATH_ERROR_NS, EXPATH_ERROR_PREFIX);
-        this.description = description;
+        this.errorCode = new ErrorCodes.ErrorCode(new QName(name(), EXPATH_ERROR_NS, EXPATH_ERROR_PREFIX), description);
     }
 
     @Override
     public QName getErrorQName() {
-        return qname;
+        return errorCode.getErrorQName();
     }
 
     @Override
     public @Nullable String getDescription() {
-        return description;
+        return errorCode.getDescription();
+    }
+
+    /**
+     * Get the error code.
+     *
+     * @return the error code.
+     */
+    public ErrorCodes.ErrorCode getErrorCode() {
+        return errorCode;
     }
 }
