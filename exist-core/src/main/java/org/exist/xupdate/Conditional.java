@@ -82,8 +82,7 @@ public class Conditional extends Modification {
 	 * @param namespaces the namespaces.
 	 * @param variables the variables.
 	 */
-	public Conditional(DBBroker broker, DocumentSet docs, String selectStmt,
-			Map<String, String> namespaces, Map<String, Object> variables) {
+	public Conditional(final DBBroker broker, final DocumentSet docs, final String selectStmt, @Nullable final Map<String, String> namespaces, @Nullable final Map<String, Object> variables) {
 		super(broker, docs, selectStmt, namespaces, variables);
 	}
 
@@ -92,9 +91,11 @@ public class Conditional extends Modification {
 	}
 	
 	@Override
-	public long process(Txn transaction) throws PermissionDeniedException, LockException,
-			EXistException, XPathException, TriggerException {
-		LOG.debug("Processing xupdate:if ...");
+	public long process(final Txn transaction) throws PermissionDeniedException, LockException, EXistException, XPathException, TriggerException {
+		if (LOG.isDebugEnabled()) {
+            LOG.debug("Processing xupdate:if ...");
+        }
+
 		final XQuery xquery = broker.getBrokerPool().getXQueryService();
 		final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
 		final Source source = new StringSource(selectStmt);
