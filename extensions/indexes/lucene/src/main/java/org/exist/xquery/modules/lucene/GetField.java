@@ -103,9 +103,9 @@ public class GetField extends BasicFunction {
             final String content = index.getFieldContent(lockedDoc.getDocument().getDocId(), field);
             return content == null ? Sequence.EMPTY_SEQUENCE : new org.exist.xquery.value.StringValue(this, content);
 		} catch (PermissionDeniedException e) {
-			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0001, "Permission denied to read document " + args[0].getStringValue());
+			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0001.getErrorCode(), "Permission denied to read document " + args[0].getStringValue());
 		} catch (IOException e) {
-			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002, "IO error while reading document " + args[0].getStringValue());
+			throw new XPathException(this, LuceneModule.LuceneErrorCode.EXXQDYFT0002.getErrorCode(), "IO error while reading document " + args[0].getStringValue());
 		}
 	}
 

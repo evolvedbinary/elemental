@@ -145,7 +145,7 @@ public class Deploy extends BasicFunction {
 	public Sequence eval(final Sequence[] args, final Sequence contextSequence)
 			throws XPathException {
 		if (!context.getSubject().hasDbaRole())
-			throw new XPathException(this, EXPathErrorCode.EXPDY003, "Permission denied. You need to be a member " +
+			throw new XPathException(this, EXPathErrorCode.EXPDY003.getErrorCode(), "Permission denied. You need to be a member " +
 					"of the dba group to use repo:deploy/undeploy");
 		
 		final String pkgName = args[0].getStringValue();
@@ -192,7 +192,7 @@ public class Deploy extends BasicFunction {
 	        target.orElseThrow(() -> new XPathException(this, "expath repository is not available."));
             return statusReport(target);
         } catch (PackageException e) {
-            throw new XPathException(this, EXPathErrorCode.EXPDY001, e.getMessage(), args[0], e);
+            throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(), e.getMessage(), args[0], e);
         } catch (IOException e) {
             throw new XPathException(this, ErrorCodes.FOER0000, "Caught IO error while deploying expath archive", args[0], e);
         } catch (TransactionException e) {
@@ -210,10 +210,10 @@ public class Deploy extends BasicFunction {
             }
             return Optional.empty();
         } catch (final MalformedURLException e) {
-            throw new XPathException(this, EXPathErrorCode.EXPDY005, "Malformed URL: " + repoURI);
+            throw new XPathException(this, EXPathErrorCode.EXPDY005.getErrorCode(), "Malformed URL: " + repoURI);
         } catch (final PackageException | IOException e) {
             LOG.error(e.getMessage(), e);
-            throw new XPathException(this, EXPathErrorCode.EXPDY007, e.getMessage());
+            throw new XPathException(this, EXPathErrorCode.EXPDY007.getErrorCode(), e.getMessage());
         }
     }
 
@@ -221,12 +221,12 @@ public class Deploy extends BasicFunction {
         final XmldbURI docPath = XmldbURI.createInternal(path);
         try(final LockedDocument lockedDoc = context.getBroker().getXMLResource(docPath, LockMode.READ_LOCK)) {
             if(lockedDoc == null) {
-                throw new XPathException(this, EXPathErrorCode.EXPDY001, path + " no such .xar", new StringValue(this, path));
+                throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(), path + " no such .xar", new StringValue(this, path));
             }
 
             final DocumentImpl doc = lockedDoc.getDocument();
             if (doc.getResourceType() != DocumentImpl.BINARY_FILE) {
-                throw new XPathException(this, EXPathErrorCode.EXPDY001, path + " is not a valid .xar", new StringValue(this, path));
+                throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(), path + " is not a valid .xar", new StringValue(this, path));
             }
 
             RepoPackageLoader loader = null;
@@ -239,7 +239,7 @@ public class Deploy extends BasicFunction {
             return deployment.installAndDeploy(context.getBroker(), transaction, xarSource, loader);
         } catch (PackageException | IOException | PermissionDeniedException e) {
             LOG.error(e.getMessage(), e);
-            throw new XPathException(this, EXPathErrorCode.EXPDY007, "Package installation failed: " + e.getMessage(), new StringValue(this, e.getMessage()));
+            throw new XPathException(this, EXPathErrorCode.EXPDY007.getErrorCode(), "Package installation failed: " + e.getMessage(), new StringValue(this, e.getMessage()));
         }
     }
 

@@ -126,25 +126,32 @@ public class FileModule extends AbstractInternalModule
         return RELEASED_IN_VERSION;
     }
 
-    enum FileModuleErrorCode implements ErrorCodes.ErrorCode {
+    enum FileModuleErrorCode implements ErrorCodes.IErrorCode {
         DIRECTORY_NOT_FOUND ("The directory could not be found.");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCodes.ErrorCode errorCode;
 
         FileModuleErrorCode(final String description) {
-            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCodes.ErrorCode(new QName(name(), NAMESPACE_URI, PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCodes.ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 }

@@ -118,7 +118,7 @@ public class FunSerialize extends BasicFunction {
 
             return new StringValue(this, writer.toString());
         } catch (final SAXException e) {
-            throw new XPathException(this, ErrorCodes.W3CErrorCode.SENR0001, e.getMessage());
+            throw new XPathException(this, ErrorCodes.W3CErrorCode.SENR0001.getErrorCode(), e.getMessage());
         }
     }
 
@@ -192,7 +192,7 @@ public class FunSerialize extends BasicFunction {
             final int itemType = next.getType();
             if (Type.subTypeOf(itemType, Type.NODE)) {
                 if (itemType == Type.ATTRIBUTE || itemType == Type.NAMESPACE || itemType == Type.FUNCTION_REFERENCE) {
-                    throw new XPathException(callingExpr, ErrorCodes.W3CErrorCode.SENR0001,
+                    throw new XPathException(callingExpr, ErrorCodes.W3CErrorCode.SENR0001.getErrorCode(),
                         "It is an error if an item in the sequence to serialize is an attribute node or a namespace node.");
                 }
                 step2.add(next);
@@ -225,7 +225,7 @@ public class FunSerialize extends BasicFunction {
             }
             return (DocumentImpl)receiver.getDocument();
         } catch (final SAXException e) {
-            throw new XPathException(callingExpr, ErrorCodes.W3CErrorCode.SENR0001, e.getMessage());
+            throw new XPathException(callingExpr, ErrorCodes.W3CErrorCode.SENR0001.getErrorCode(), e.getMessage());
         } finally {
             context.popDocumentContext();
         }

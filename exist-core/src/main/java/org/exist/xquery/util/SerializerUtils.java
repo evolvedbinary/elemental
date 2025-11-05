@@ -282,7 +282,7 @@ public class SerializerUtils {
             }
 
             if (!Namespaces.XSLT_XQUERY_SERIALIZATION_NS.equals(reader.getNamespaceURI())) {
-                throw new XPathException(parent, ErrorCodes.W3CErrorCode.SENR0001, "serialization parameter elements should be in the output namespace");
+                throw new XPathException(parent, ErrorCodes.W3CErrorCode.SENR0001.getErrorCode(), "serialization parameter elements should be in the output namespace");
             }
 
             final int thisLevel = ((NodeId) reader.getProperty(ExtendedXMLStreamReader.PROPERTY_NODE_ID)).getTreeLevel();
@@ -311,7 +311,7 @@ public class SerializerUtils {
         final String local = key.getLocalPart();
         final String prefix = key.getPrefix();
         if (properties.containsKey(local)) {
-            throw new XPathException(parent, ErrorCodes.W3CErrorCode.SEPM0019, "serialization parameter specified twice: " + key);
+            throw new XPathException(parent, ErrorCodes.W3CErrorCode.SEPM0019.getErrorCode(), "serialization parameter specified twice: " + key);
         }
         if (prefix.equals(OUTPUT_NAMESPACE) && !W3CParameterConventionKeys.contains(local)) {
             throw new XPathException(ErrorCodes.SEPM0017, "serialization parameter not recognized: " + key);
@@ -469,7 +469,7 @@ public class SerializerUtils {
 
             return properties;
         } catch (final UnsupportedOperationException e) {
-            throw new XPathException(parent, ErrorCodes.W3CErrorCode.SENR0001, e.getMessage());
+            throw new XPathException(parent, ErrorCodes.W3CErrorCode.SENR0001.getErrorCode(), e.getMessage());
         }
     }
 

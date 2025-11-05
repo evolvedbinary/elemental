@@ -144,27 +144,34 @@ public class CacheModule extends AbstractInternalModule {
         return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 
-    enum CacheModuleErrorCode implements ErrorCodes.ErrorCode {
+    enum CacheModuleErrorCode implements ErrorCodes.IErrorCode {
         INSUFFICIENT_PERMISSIONS ("The calling user does not have sufficient permissions to operate on the cache."),
         KEY_SERIALIZATION ("Unable to serialize the provided key."),
         LAZY_CREATION_DISABLED ("There is no such named cache, and lazy creation of the cache has been disabled.");
 
-        private final QName qname;
-        private final String description;
+        private final ErrorCodes.ErrorCode errorCode;
 
         CacheModuleErrorCode(final String description) {
-            this.qname = new QName(name(), NAMESPACE_URI, PREFIX);
-            this.description = description;
+            this.errorCode = new ErrorCodes.ErrorCode(new QName(name(), NAMESPACE_URI, PREFIX), description);
         }
 
         @Override
         public QName getErrorQName() {
-            return qname;
+            return errorCode.getErrorQName();
         }
 
         @Override
         public String getDescription() {
-            return description;
+            return errorCode.getDescription();
+        }
+
+        /**
+         * Get the error code.
+         *
+         * @return the error code.
+         */
+        public ErrorCodes.ErrorCode getErrorCode() {
+            return errorCode;
         }
     }
 

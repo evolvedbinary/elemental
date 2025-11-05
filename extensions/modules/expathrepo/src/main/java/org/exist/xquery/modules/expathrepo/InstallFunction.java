@@ -163,12 +163,12 @@ public class InstallFunction extends BasicFunction {
         try {
             uri = new URI(s);
         } catch (URISyntaxException ex) {
-            throw new XPathException(this, EXPathErrorCode.EXPDY001, s + " is not a valid URI: " + ex.getMessage(), new StringValue(this, s), ex);
+            throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(), s + " is not a valid URI: " + ex.getMessage(), new StringValue(this, s), ex);
         }
         if (uri.isAbsolute()) {
             return uri;
         } else {
-            throw new XPathException(this, EXPathErrorCode.EXPDY001, s + " must be an absolute URI", new StringValue(this, s));
+            throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(), s + " must be an absolute URI", new StringValue(this, s));
         }
     }
 
@@ -177,20 +177,20 @@ public class InstallFunction extends BasicFunction {
           final XmldbURI uri = XmldbURI.createInternal(path);
           final LockedDocument lockedDoc = context.getBroker().getXMLResource(uri, LockMode.READ_LOCK);
           if (lockedDoc == null) {
-            throw new XPathException(this, EXPathErrorCode.EXPDY001,
+            throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(),
                 path + " is not .xar resource",
                 new StringValue(this, path)
             );
           } else if (lockedDoc.getDocument().getResourceType() != DocumentImpl.BINARY_FILE) {
             lockedDoc.close();
-            throw new XPathException(this, EXPathErrorCode.EXPDY001,
+            throw new XPathException(this, EXPathErrorCode.EXPDY001.getErrorCode(),
                 path + " is not a valid .xar, it's not a binary resource",
                 new StringValue(this, path)
             );
           }
           return lockedDoc;
       } catch (PermissionDeniedException e) {
-        throw new XPathException(this, EXPathErrorCode.EXPDY003, e.getMessage(), new StringValue(this, path), e);
+        throw new XPathException(this, EXPathErrorCode.EXPDY003.getErrorCode(), e.getMessage(), new StringValue(this, path), e);
       }
   }
 }
