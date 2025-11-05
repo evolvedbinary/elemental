@@ -950,7 +950,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 
     private @Nullable Conditional peekConditional() {
         if (conditionals == null) {
-            throw null;
+            return null;
         }
         return conditionals.peek();
     }
