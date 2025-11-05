@@ -1257,6 +1257,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/validate/JingXsdTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBModule.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/TryCatchTest.java</include>
@@ -1948,6 +1949,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/AbstractXMLDBTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/XMLDBAuthenticateTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</exclude>
