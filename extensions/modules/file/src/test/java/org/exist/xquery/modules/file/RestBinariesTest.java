@@ -53,8 +53,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
-import org.exist.http.jaxb.Query;
-import org.exist.http.jaxb.Result;
+import org.exist.http.rest.Query;
+import org.exist.http.rest.Result;
+import org.exist.http.rest.Value;
 import org.exist.test.ExistWebServer;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
@@ -75,13 +76,13 @@ import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.exist.TestUtils.ADMIN_DB_PWD;
 import static org.exist.TestUtils.ADMIN_DB_USER;
-import static org.exist.http.jaxb.YesNo.YES;
+import static org.exist.http.rest.YesNo.YES;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class RestBinariesTest extends AbstractBinariesTest<Result, Result.Value, Exception> {
+public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Exception> {
 
     @ClassRule
     public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
@@ -177,7 +178,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Result.Value,
         final HttpResponse response = postXquery(xquery);
         final HttpEntity entity = response.getEntity();
         try(final InputStream is = entity.getContent()) {
-            final JAXBContext jaxbContext = JAXBContext.newInstance("org.exist.http.jaxb");
+            final JAXBContext jaxbContext = JAXBContext.newInstance("org.exist.http.rest");
             final Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             final Result result = (Result)unmarshaller.unmarshal(is);
 
@@ -190,7 +191,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Result.Value,
         query.setText(xquery);
         query.setTyped(YES);
 
-        final JAXBContext jaxbContext = JAXBContext.newInstance("org.exist.http.jaxb");
+        final JAXBContext jaxbContext = JAXBContext.newInstance("org.exist.http.rest");
         final Marshaller marshaller = jaxbContext.createMarshaller();
 
         final HttpResponse response;
@@ -214,23 +215,23 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Result.Value,
     }
 
     @Override
-    protected Result.Value item(final Result results, final int index) throws Exception {
-        return results.getValue().get(index);
+    protected Value item(final Result results, final int index) throws Exception {
+        return (Value) results.getCollectionOrValueOrAttribute().get(index);
     }
 
     @Override
-    protected boolean isBinaryType(final Result.Value item) throws Exception {
+    protected boolean isBinaryType(final Value item) throws Exception {
         final String type = item.getType();
         return "xs:base64Binary".equals(type) || "xs:hexBinary".equals(type);
     }
 
     @Override
-    protected boolean isBooleanType(Result.Value item) throws Exception {
+    protected boolean isBooleanType(Value item) throws Exception {
         return "xs:boolean".equals(item.getType());
     }
 
     @Override
-    protected byte[] getBytes(final Result.Value item) throws Exception {
+    protected byte[] getBytes(final Value item) throws Exception {
         switch(item.getType()) {
             case "xs:base64Binary":
                 return Base64.decodeBase64(item.getContent().get(0).toString());
@@ -244,7 +245,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Result.Value,
     }
 
     @Override
-    protected boolean getBoolean(final Result.Value item) throws Exception {
+    protected boolean getBoolean(final Value item) throws Exception {
         return Boolean.parseBoolean(item.getContent().get(0).toString());
     }
 }

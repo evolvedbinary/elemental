@@ -763,6 +763,7 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/main/xjb/rest-api.xjb</include>
                                 <include>src/test/xquery/tail-recursion.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/numbers/format-numbers.xql</include>
@@ -1342,6 +1343,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/main/xjb/rest-api.xjb</exclude>
                                 <exclude>src/test/xquery/binary-value.xqm</exclude>
                                 <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
@@ -2270,6 +2272,24 @@ The BaseX Team. The original license statement is also included below.]]></pream
                 </configuration>
                 <executions>
                     <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jvnet.jaxb</groupId>
+                <artifactId>jaxb-maven-plugin</artifactId>
+                <version>${jaxb.impl.version}</version>
+                <configuration>
+                    <bindingDirectory>src/main/xjb</bindingDirectory>
+                    <schemaDirectory>src/main/xsd</schemaDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-jaxb-objects</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
