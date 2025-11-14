@@ -87,7 +87,7 @@ public class JaxpParseTest {
         Collection conf = null;
         try {
             conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse_validate");
-            ExistXmldbEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         } finally {
             if(conf != null) {
                 conf.close();
@@ -101,7 +101,7 @@ public class JaxpParseTest {
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/parse_validate/" + testResource)) {
                     assertNotNull(is);
-                    ExistXmldbEmbeddedServer.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
+                    existEmbeddedServer.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
                 }
             }
         } finally {

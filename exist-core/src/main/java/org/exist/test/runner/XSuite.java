@@ -45,7 +45,9 @@
  */
 package org.exist.test.runner;
 
+import com.evolvedbinary.j8fu.lazy.LazyVal;
 import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.MimeTable;
 import org.exist.util.StringUtil;
 import org.exist.util.XMLFilenameFilter;
 import org.exist.util.XQueryFilenameFilter;
@@ -87,6 +89,8 @@ public class XSuite extends ParentRunner<Runner> {
 
     private static boolean DEFAULT_DISABLE_EXPATH_AUTO_DEPLOY = true;
     private static boolean DEFAULT_DATABASE_USE_TEMPORARY_STORAGE = true;
+
+    private static final LazyVal<MimeTable> mimeTable = new LazyVal<>(MimeTable::getInstance);
 
     /**
      * Returns an empty suite.
@@ -286,9 +290,9 @@ public class XSuite extends ParentRunner<Runner> {
     }
 
     private static @Nullable Runner getRunner(final Path path, final boolean parallel) throws InitializationError {
-        if(XMLFilenameFilter.asPredicate().test(path)) {
+        if(XMLFilenameFilter.asPredicate(mimeTable.get()).test(path)) {
             return new XMLTestRunner(path, parallel);
-        } else if(XQueryFilenameFilter.asPredicate().test(path) && !path.getFileName().toString().equals("runTests.xql")) {
+        } else if(XQueryFilenameFilter.asPredicate(mimeTable.get()).test(path) && !path.getFileName().toString().equals("runTests.xql")) {
             return new XQueryTestRunner(path, parallel);
         } else {
             return null;

@@ -854,7 +854,7 @@ public class Deployment {
             files = Collections.EMPTY_LIST;
         }
 
-        final MimeTable mimeTab = MimeTable.getInstance();
+        final MimeTable mimeTab = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver();
 
         for (final Path file : files) {
             if (inRootDir && FileUtils.fileName(file).equals("repo.xml")) {

@@ -301,7 +301,7 @@ public class ExistCollection extends ExistResource {
         XmldbURI newNameUri = XmldbURI.create(newName);
 
         // Get mime, or NULL when not available
-        MimeType mime = MimeTable.getInstance().getContentTypeFor(newName);
+        MimeType mime = brokerPool.getMediaTypeService().getMediaTypeResolver().getContentTypeFor(newName);
         if (mime == null) {
             mime = MimeType.BINARY_TYPE;
         }

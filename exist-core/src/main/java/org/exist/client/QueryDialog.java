@@ -439,7 +439,7 @@ public class QueryDialog extends JFrame {
         chooser.setCurrentDirectory(Paths.get(workDir).toFile());
         chooser.setMultiSelectionEnabled(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xquery"));
+        chooser.addChoosableFileFilter(new MimeTypeFileFilter(client.getMediaTypeResolver(), "application/xquery"));
 
         if (chooser.showDialog(this, Messages.getString("QueryDialog.opendialog")) == JFileChooser.APPROVE_OPTION) {
             final Path selectedDir = chooser.getCurrentDirectory().toPath();
@@ -475,10 +475,10 @@ public class QueryDialog extends JFrame {
         chooser.setCurrentDirectory(Paths.get(workDir).toFile());
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         if ("result".equals(fileCategory)) {
-            chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xhtml+xml"));
-            chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xml"));
+            chooser.addChoosableFileFilter(new MimeTypeFileFilter(client.getMediaTypeResolver(), "application/xhtml+xml"));
+            chooser.addChoosableFileFilter(new MimeTypeFileFilter(client.getMediaTypeResolver(), "application/xml"));
         } else {
-            chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xquery"));
+            chooser.addChoosableFileFilter(new MimeTypeFileFilter(client.getMediaTypeResolver(), "application/xquery"));
         }
         if (chooser.showDialog(this, Messages.getString("QueryDialog.savedialogpre") + " " + fileCategory + " " + Messages.getString("QueryDialog.savedialogpost"))
                 == JFileChooser.APPROVE_OPTION) {

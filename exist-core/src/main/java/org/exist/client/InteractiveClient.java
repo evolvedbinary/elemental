@@ -223,6 +223,8 @@ public class InteractiveClient {
     private static final NamedThreadGroupFactory clientThreadGroupFactory = new NamedThreadGroupFactory("java-admin-client");
     private final ThreadGroup clientThreadGroup = clientThreadGroupFactory.newThreadGroup(null);
 
+    private final MimeTable mimeTable = MimeTable.getInstance();
+
     /**
      * Display help on commands
      */
@@ -1353,12 +1355,16 @@ public class InteractiveClient {
     private void storeBinary(final String fileName) throws XMLDBException {
         final Path file = Paths.get(fileName).normalize();
         if (Files.isReadable(file)) {
-            final MimeType mime = MimeTable.getInstance().getContentTypeFor(FileUtils.fileName(file));
+            final MimeType mime = mimeTable.getContentTypeFor(FileUtils.fileName(file));
             final BinaryResource resource = (BinaryResource) current.createResource(FileUtils.fileName(file), BinaryResource.RESOURCE_TYPE);
             resource.setContent(file);
             ((EXistResource) resource).setMimeType(mime == null ? "application/octet-stream" : mime.getName());
             current.storeResource(resource);
         }
+    }
+
+    MimeTable getMediaTypeResolver() {
+        return mimeTable;
     }
 
     private synchronized boolean findRecursive(final Collection collection, final Path dir, final XmldbURI base) throws XMLDBException {
@@ -1390,7 +1396,7 @@ public class InteractiveClient {
                         findRecursive(c, file, next);
                     } else {
                         final long start1 = System.currentTimeMillis();
-                        mimeType = MimeTable.getInstance().getContentTypeFor(FileUtils.fileName(file));
+                        mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(file));
                         if (mimeType == null) {
                             messageln("File " + FileUtils.fileName(file) + " has an unknown suffix. Cannot determine file type.");
                             mimeType = MimeType.BINARY_TYPE;
@@ -1466,7 +1472,7 @@ public class InteractiveClient {
                     continue;
                 }
                 final long start = System.currentTimeMillis();
-                mimeType = MimeTable.getInstance().getContentTypeFor(FileUtils.fileName(files.get(i)));
+                mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(files.get(i)));
                 if (mimeType == null) {
                     mimeType = MimeType.BINARY_TYPE;
                 }
@@ -1528,7 +1534,7 @@ public class InteractiveClient {
                             break;
                         }
                     }
-                    mimeType = MimeTable.getInstance().getContentTypeFor(localName);
+                    mimeType = mimeTable.getContentTypeFor(localName);
                     if (mimeType == null) {
                         messageln("File " + compressedName + " has an unknown suffix. Cannot determine file type.");
                         mimeType = MimeType.BINARY_TYPE;
@@ -1623,7 +1629,7 @@ public class InteractiveClient {
                     break;
                 }
             }
-            mimeType = MimeTable.getInstance().getContentTypeFor(localName);
+            mimeType = mimeTable.getContentTypeFor(localName);
             if (mimeType == null) {
                 mimeType = MimeType.BINARY_TYPE;
             }
@@ -1702,7 +1708,7 @@ public class InteractiveClient {
                 if (!ze.isDirectory()) {
                     final String localName = pathSteps[pathSteps.length - 1];
                     final long start = System.currentTimeMillis();
-                    MimeType mimeType = MimeTable.getInstance().getContentTypeFor(localName);
+                    MimeType mimeType = mimeTable.getContentTypeFor(localName);
                     if (mimeType == null) {
                         mimeType = MimeType.BINARY_TYPE;
                     }
@@ -1826,12 +1832,12 @@ public class InteractiveClient {
             final long fileSize = FileUtils.sizeQuietly(file);
             upload.setCurrentSize(fileSize);
 
-            MimeType mimeType = MimeTable.getInstance().getContentTypeFor(FileUtils.fileName(file));
+            MimeType mimeType = mimeTable.getContentTypeFor(FileUtils.fileName(file));
             // unknown mime type, here prefered is to do nothing
             if (mimeType == null) {
                 upload.showMessage(file.toAbsolutePath() +
                         " - unknown suffix. No matching mime-type found in : " +
-                        MimeTable.getInstance().getSrc());
+                        mimeTable.getSrc());
 
                 // if some one prefers to store it as binary by default, but dangerous
                 mimeType = MimeType.BINARY_TYPE;

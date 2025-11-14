@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -69,7 +93,7 @@ public class XMLDBSetMimeType extends BasicFunction {
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
 
         // Get handle to Mime-type info
-        final MimeTable mimeTable = MimeTable.getInstance();
+        final MimeTable mimeTable = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
 
         // Get first parameter
         final Expression expression = this;
@@ -107,7 +131,7 @@ public class XMLDBSetMimeType extends BasicFunction {
         }
 
         // Get mime-type of resource
-        MimeType currentMimeType = getMimeTypeStoredResource(pathUri);
+        MimeType currentMimeType = getMimeTypeStoredResource(mimeTable, pathUri);
         if (currentMimeType == null) {
             // stored resource has no mime-type (unexpected situation)
             // fall back to document name
@@ -165,7 +189,7 @@ public class XMLDBSetMimeType extends BasicFunction {
      * Determine mimetype of currently stored resource. Copied from
      * get-mime-type.
      */
-    private MimeType getMimeTypeStoredResource(XmldbURI pathUri) throws XPathException {
+    private MimeType getMimeTypeStoredResource(final MimeTable mimeTable, XmldbURI pathUri) throws XPathException {
         MimeType returnValue = null;
         try {
             // relative collection Path: add the current base URI
@@ -184,7 +208,7 @@ public class XMLDBSetMimeType extends BasicFunction {
                 throw new XPathException(this, "Resource '" + pathUri + "' does not exist.");
             } else {
                 final String mimetype = doc.getMimeType();
-                returnValue = MimeTable.getInstance().getContentType(mimetype);
+                returnValue = mimeTable.getContentType(mimetype);
             }
 
         } catch (final PermissionDeniedException ex) {

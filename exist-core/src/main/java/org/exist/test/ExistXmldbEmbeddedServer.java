@@ -66,7 +66,6 @@ import javax.xml.transform.OutputKeys;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -82,6 +81,7 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
     private Database database = null;
     private Collection root = null;
     private EXistXQueryService xpathQueryService = null;
+    private MimeTable mimeTable = null;
 
     public ExistXmldbEmbeddedServer() {
         this(false, false);
@@ -132,6 +132,7 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
     private void startDb() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         try {
             existEmbeddedServer.startDb();
+            this.mimeTable = existEmbeddedServer.getBrokerPool().getMediaTypeService().getMediaTypeResolver();
         } catch (final DatabaseConfigurationException | EXistException | IOException e) {
             throw new XMLDBException(ErrorCodes.INVALID_DATABASE, e);
         }
@@ -236,9 +237,9 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
         return newCollection;
     }
 
-    public static void storeResource(final Collection collection, final String documentName, final byte[] content)
+    public void storeResource(final Collection collection, final String documentName, final byte[] content)
             throws XMLDBException {
-        final MimeType mime = MimeTable.getInstance().getContentTypeFor(documentName);
+        final MimeType mime = mimeTable.getContentTypeFor(documentName);
         final String type = mime.isXMLType() ? XMLResource.RESOURCE_TYPE : BinaryResource.RESOURCE_TYPE;
         final Resource resource = collection.createResource(documentName, type);
         resource.setContent(content);

@@ -335,7 +335,7 @@ public class EntryFunctions extends BasicFunction {
                         try (final Txn transaction = context.getBroker().getBrokerPool().getTransactionManager().beginTransaction()) {
 
                             try (final Collection collection = context.getBroker().openCollection(destPath.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
-                                final MimeType mimeType = MimeTable.getInstance().getContentTypeFor(destPath.lastSegment());
+                                final MimeType mimeType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentTypeFor(destPath.lastSegment());
 
                                 if (data.get() instanceof BinaryValue) {
                                     // binary

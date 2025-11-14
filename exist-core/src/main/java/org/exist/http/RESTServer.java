@@ -1089,9 +1089,9 @@ public class RESTServer {
                 if (semicolon > 0) {
                     contentType = contentType.substring(0, semicolon).trim();
                 }
-                mime = MimeTable.getInstance().getContentType(contentType);
+                mime = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentType(contentType);
             } else {
-                mime = MimeTable.getInstance().getContentTypeFor(docUri);
+                mime = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentTypeFor(docUri);
             }
 
             // TODO(AR) in storeDocument need to handle mime == null and use MimeType.BINARY_TYPE

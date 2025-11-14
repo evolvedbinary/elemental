@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -597,7 +621,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         modify().apply((collection, broker, transaction) -> {
             try {
                 final String strMimeType = res.getMimeType(broker, transaction);
-                final MimeType mimeType = strMimeType != null ? MimeTable.getInstance().getContentType(strMimeType) : null;
+                final MimeType mimeType = strMimeType != null ? broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentType(strMimeType) : null;
                 final long conLength = res.getStreamLength();
                 if (conLength != -1) {
                     broker.storeDocument(transaction, resURI, new InputStreamSupplierInputSource(() -> Try(() -> res.getStreamContent(broker, transaction)).getOrElse((InputStream) null)), mimeType, res.datecreated, res.datemodified, null, null, null, collection);
@@ -632,7 +656,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
             try(final ManagedDocumentLock documentLock = broker.getBrokerPool().getLockManager().acquireDocumentWriteLock(collection.getURI().append(resURI))) {
 
                 final String strMimeType = res.getMimeType(broker, transaction);
-                final MimeType mimeType = strMimeType != null ? MimeTable.getInstance().getContentType(strMimeType) : null;
+                final MimeType mimeType = strMimeType != null ? broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentType(strMimeType) : null;
 
                 if (res.root != null) {
                     collection.storeDocument(transaction, broker, resURI, res.root, mimeType, res.datecreated, res.datemodified, null, null, null);
