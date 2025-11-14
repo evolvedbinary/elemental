@@ -165,7 +165,7 @@ class RestXqServiceImpl extends AbstractRestXqService {
                         contentType = contentType.substring(0, contentType.indexOf(";"));
                     }
 
-                    MimeType mimeType = MimeTable.getInstance().getContentType(contentType);
+                    MimeType mimeType = getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentType(contentType);
                     if (mimeType != null && !mimeType.isXMLType()) {
 
                         //binary data

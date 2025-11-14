@@ -998,8 +998,8 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         final JFileChooser chooser = new JFileChooser(preferences.get("directory.last", System.getProperty("user.dir")));
         chooser.setMultiSelectionEnabled(true);
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        chooser.addChoosableFileFilter(new BinaryFileFilter());
-        chooser.addChoosableFileFilter(new XMLFileFilter());
+        chooser.addChoosableFileFilter(new BinaryFileFilter(client.getMediaTypeResolver()));
+        chooser.addChoosableFileFilter(new XMLFileFilter(client.getMediaTypeResolver()));
         if (chooser.showDialog(this, Messages.getString("ClientFrame.146")) == JFileChooser.APPROVE_OPTION) { //$NON-NLS-1$
             // remember directory in preferences
             preferences.put("directory.last", chooser.getCurrentDirectory().getAbsolutePath());
@@ -1887,46 +1887,44 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     }
 
     static class BinaryFileFilter extends FileFilter {
+        private final MimeTable mimeTable;
 
-        /* (non-Javadoc)
-         * @see javax.swing.filechooser.FileFilter#getDescription()
-         */
+        public BinaryFileFilter(final MimeTable mimeTable) {
+            this.mimeTable = mimeTable;
+        }
+
         @Override
         public String getDescription() {
             return Messages.getString("ClientFrame.220"); //$NON-NLS-1$
         }
 
-        /* (non-Javadoc)
-         * @see javax.swing.filechooser.FileFilter#accept(java.io.File)
-         */
         @Override
         public boolean accept(final File f) {
             if (f.isDirectory()) {
                 return true;
             }
-            return !MimeTable.getInstance().isXMLContent(f.getName());
+            return !mimeTable.isXMLContent(f.getName());
         }
     }
 
     static class XMLFileFilter extends FileFilter {
+        private final MimeTable mimeTable;
 
-        /* (non-Javadoc)
-         * @see javax.swing.filechooser.FileFilter#getDescription()
-         */
+        public XMLFileFilter(final MimeTable mimeTable) {
+            this.mimeTable = mimeTable;
+        }
+
         @Override
         public String getDescription() {
             return Messages.getString("ClientFrame.221"); //$NON-NLS-1$
         }
 
-        /* (non-Javadoc)
-         * @see javax.swing.filechooser.FileFilter#accept(java.io.File)
-         */
         @Override
         public boolean accept(final File f) {
             if (f.isDirectory()) {
                 return true;
             }
-            return MimeTable.getInstance().isXMLContent(f.getName());
+            return mimeTable.isXMLContent(f.getName());
         }
     }
 

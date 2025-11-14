@@ -100,33 +100,17 @@ public class MimeTable {
         }
         return instance;
     }
-    
-    /**
-     * Returns the singleton, using a custom mime-types.xml stream,
-     * like for instance an internal database resource.
-     *
-     * @param stream the input stream
-     * @param src the name of the input
-     *
-     * @return the mimetable
-     */
-    public static MimeTable getInstance(final InputStream stream, final String src) {
-        if (instance == null) {
-            instance = new MimeTable(stream, src);
-        }
-        return instance;
-    }
 
     private MimeType defaultMime = null;
     private Map<String, MimeType> mimeTypes = new TreeMap<>();
     private Map<String, MimeType> extensions = new TreeMap<>();
     private Map<String, String> preferredExtension = new TreeMap<>();
     
-    public MimeTable() {
+    private MimeTable() {
         load();
     }
     
-    public MimeTable(final Path path) {
+    MimeTable(final Path path) {
         if (Files.isReadable(path)) {
             try {
                 LOG.info("Loading mime table from file: {}", path.toAbsolutePath().toString());
@@ -138,10 +122,6 @@ public class MimeTable {
                 LOG.error(FILE_LOAD_FAILED_ERR + "{}", path.toAbsolutePath().toString(), e);
             }
         }
-    }
-    
-    public MimeTable(final InputStream stream, final String src) {
-        load(stream, src);
     }
     
     /**

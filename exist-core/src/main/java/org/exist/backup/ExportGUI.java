@@ -437,11 +437,12 @@ public class ExportGUI extends javax.swing.JFrame {
                 .toFile());
         chooser.setCurrentDirectory(dir.resolve("etc").toFile());
         chooser.setFileFilter(new FileFilter() {
+            @Override
             public boolean accept(final File f) {
                 if (f.isDirectory()) {
                     return (true);
                 }
-                final MimeType mime = MimeTable.getInstance().getContentTypeFor(f.getName());
+                final MimeType mime = pool.getMediaTypeService().getMediaTypeResolver().getContentTypeFor(f.getName());
 
                 if (mime == null) {
                     return false;
@@ -449,7 +450,7 @@ public class ExportGUI extends javax.swing.JFrame {
                 return mime.isXMLType();
             }
 
-
+            @Override
             public String getDescription() {
                 return ("Database XML configuration file");
             }

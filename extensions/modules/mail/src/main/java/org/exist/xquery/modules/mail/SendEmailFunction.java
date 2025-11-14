@@ -899,7 +899,7 @@ public class SendEmailFunction extends BasicFunction {
                                 final Element attachment = (Element) child;
                                 final MimeBodyPart part;
                                 // if mimetype indicates a binary resource, assume the content is base64 encoded
-                                if (MimeTable.getInstance().isTextContent(attachment.getAttribute("mimetype"))) {
+                                if (context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().isTextContent(attachment.getAttribute("mimetype"))) {
                                     part = new MimeBodyPart();
                                 } else {
                                     part = new PreencodedMimeBodyPart("base64");

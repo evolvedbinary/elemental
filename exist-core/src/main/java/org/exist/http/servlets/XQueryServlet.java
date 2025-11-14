@@ -520,12 +520,14 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 
             final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
             if (mediaType != null) {
-                if (!response.isCommitted())
-                	{if (MimeTable.getInstance().isTextContent(mediaType)) {
+                if (!response.isCommitted()) {
+                    if (isTextContent(mediaType)) {
                 		response.setContentType(mediaType + "; charset=" + getFormEncoding());
                         response.setCharacterEncoding(getFormEncoding());
-                    } else
-                		response.setContentType(mediaType);}
+                    } else {
+                        response.setContentType(mediaType);
+                    }
+                }
                 
             } else {
 	            String contentType = this.contentType;
@@ -538,8 +540,9 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 	                contentType = this.contentType;
                     
 	            } finally {
-	                if (MimeTable.getInstance().isTextContent(contentType))
-	                    {contentType += "; charset=" + getFormEncoding();}
+	                if (isTextContent(contentType)) {
+                        contentType += "; charset=" + getFormEncoding();
+                    }
 	                response.setContentType(contentType );
 	            }
             }
@@ -594,6 +597,11 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 
         output.flush();
         output.close();
+    }
+
+    private boolean isTextContent(final String mediaType) {
+        final MimeTable mimeTable = getPool().getMediaTypeService().getMediaTypeResolver();
+        return mimeTable.isTextContent(mediaType);
     }
 
     private String getSessionAttribute(HttpSession session, String attribute) {

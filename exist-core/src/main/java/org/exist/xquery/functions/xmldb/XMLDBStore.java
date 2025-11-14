@@ -167,16 +167,18 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
 
         final Item item = args[2].itemAt(0);
 
+        final MimeTable mimeTable = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+
         // determine the mime type
         final boolean storeAsBinary = isCalledAs(FS_STORE_BINARY_NAME);
         MimeType mimeType = null;
         if (getSignature().getArgumentCount() == 4) {
             final String strMimeType = args[3].getStringValue();
-            mimeType = MimeTable.getInstance().getContentType(strMimeType);
+            mimeType = mimeTable.getContentType(strMimeType);
         }
 
         if (mimeType == null && docName != null) {
-            mimeType = MimeTable.getInstance().getContentTypeFor(docName);
+            mimeType = mimeTable.getContentTypeFor(docName);
         }
 
         if (mimeType == null) {

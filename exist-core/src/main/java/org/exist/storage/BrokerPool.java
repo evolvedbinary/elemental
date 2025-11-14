@@ -68,6 +68,7 @@ import org.exist.debuggee.DebuggeeFactory;
 import org.exist.dom.persistent.SymbolTable;
 import org.exist.indexing.IndexManager;
 import org.exist.management.AgentFactory;
+import org.exist.mediatype.MediaTypeService;
 import org.exist.numbering.DLNFactory;
 import org.exist.numbering.NodeIdFactory;
 import org.exist.repo.ClasspathHelper;
@@ -165,6 +166,8 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 
     private final int concurrencyLevel;
     private LockManager lockManager;
+
+    private MediaTypeService mediaTypeService;
 
     /**
      * Root thread group for all threads related
@@ -489,6 +492,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         }
 
         // register core broker pool services
+        this.mediaTypeService = servicesManager.register(new MediaTypeService());
         this.scheduler = servicesManager.register(new QuartzSchedulerImpl(this));
 
         // NOTE: this must occur after the scheduler, and before any other service which requires access to the data directory
@@ -976,6 +980,15 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 
     public NotificationService getNotificationService() {
         return notificationService;
+    }
+
+    /**
+     * Get the Media Type Service.
+     *
+     * @return the Media Type Service.
+     */
+    public MediaTypeService getMediaTypeService() {
+        return mediaTypeService;
     }
 
     /**

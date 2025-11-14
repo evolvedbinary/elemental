@@ -305,7 +305,7 @@ public abstract class AbstractExtractFunction extends BasicFunction {
             final Path file = Paths.get(path).normalize();
             path = file.getParent().toAbsolutePath().toString();
             final String name = FileUtils.fileName(file);
-            final MimeType mediaType = MimeTable.getInstance().getContentTypeFor(name);
+            final MimeType mediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().getContentTypeFor(name);
 
             // store document
             try (final Collection collection = broker.getOrCreateCollection(broker.getCurrentTransaction(), XmldbURI.create(path));

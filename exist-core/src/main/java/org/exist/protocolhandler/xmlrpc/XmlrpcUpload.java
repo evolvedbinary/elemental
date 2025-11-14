@@ -83,9 +83,10 @@ public class XmlrpcUpload {
      * 
      * @param xmldbURL URL pointing to location on the server.
      * @param is Document stream
+     * @param mimeTable The MIME table.
      * @throws IOException When something is wrong.
      */
-    public void stream(XmldbURL xmldbURL, InputStream is) throws IOException {
+    public void stream(final XmldbURL xmldbURL, final InputStream is, final MimeTable mimeTable) throws IOException {
         LOG.debug("Begin document upload");
         try {
             // Setup xmlrpc client
@@ -102,9 +103,8 @@ public class XmlrpcUpload {
             client.setConfig(config);
 
             String contentType=MimeType.BINARY_TYPE.getName();
-            final MimeType mime
-                    = MimeTable.getInstance().getContentTypeFor(xmldbURL.getDocumentName());
-            if (mime != null){
+            final MimeType mime = mimeTable.getContentTypeFor(xmldbURL.getDocumentName());
+            if (mime != null) {
                 contentType = mime.getName();
             }
             
