@@ -103,9 +103,9 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
-                                <include>src/main/resources/org/exist/jetty/etc/webapps/portal/index.html</include>
-                                <include>src/main/resources/webapp/controller.xq</include>
                                 <include>src/main/resources/webapp/404.html</include>
+                                <include>src/main/resources/webapp/controller.xq</include>
+                                <include>src/main/resources/org/exist/jetty/etc/webapps/portal/index.html</include>
                             </includes>
                         </licenseSet>
 

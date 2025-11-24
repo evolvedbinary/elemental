@@ -623,12 +623,12 @@
                             -->
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
-                                <exclude>**.txt</exclude>
                                 <exclude>**.md</exclude>
-                                <exclude>**LICENSE</exclude>
+                                <exclude>**.txt</exclude>
                                 <exclude>**.xar</exclude>
-                                <exclude>xquery-license-style.xml</exclude>
+                                <exclude>**LICENSE</exclude>
                                 <exclude>pom.xml</exclude>
+                                <exclude>xquery-license-style.xml</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -649,10 +649,10 @@
                                 <include>pom.xml</include>
                             </includes>
                             <excludes>
-                                <exclude>**.txt</exclude>
                                 <exclude>**.md</exclude>
-                                <exclude>**LICENSE</exclude>
+                                <exclude>**.txt</exclude>
                                 <exclude>**.xar</exclude>
+                                <exclude>**LICENSE</exclude>
                                 <exclude>xquery-license-style.xml</exclude>
                             </excludes>
                         </licenseSet>
@@ -663,12 +663,12 @@
                             -->
                             <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
-                                <exclude>**.txt</exclude>
                                 <exclude>**.md</exclude>
-                                <exclude>**LICENSE</exclude>
+                                <exclude>**.txt</exclude>
                                 <exclude>**.xar</exclude>
-                                <exclude>xquery-license-style.xml</exclude>
+                                <exclude>**LICENSE</exclude>
                                 <exclude>pom.xml</exclude>
+                                <exclude>xquery-license-style.xml</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

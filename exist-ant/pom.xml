@@ -172,8 +172,8 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
-                                <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
+                                <include>src/test/resources/log4j2.xml</include>
                             </includes>
                         </licenseSet>
 
@@ -183,14 +183,14 @@
                             -->
                             <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
-                                <exclude>**.txt</exclude>
                                 <exclude>**.md</exclude>
-                                <exclude>**LICENSE</exclude>
+                                <exclude>**.txt</exclude>
                                 <exclude>**.xar</exclude>
-                                <exclude>xquery-license-style.xml</exclude>
+                                <exclude>**LICENSE</exclude>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>xquery-license-style.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
+                                <exclude>src/test/resources/log4j2.xml</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

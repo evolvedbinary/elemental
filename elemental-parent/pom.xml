@@ -409,7 +409,7 @@
                         </dependency>
                     </dependencies>
                     <configuration>
-                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory" />
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <forkCount>${surefire.forkCount}</forkCount>
                         <reuseForks>${surefire.reuseForks}</reuseForks>
                         <argLine>@{jacocoArgLine} --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.ref=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED -Dfile.encoding=${project.build.sourceEncoding}</argLine>
