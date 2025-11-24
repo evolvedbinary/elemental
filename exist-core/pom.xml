@@ -1338,9 +1338,7 @@
                                 <exclude>src/test/resources/org/exist/validation/entities/**</exclude>
                                 <exclude>src/test/resources/org/exist/xmldb/allowAnyUri.xml</exclude>
 
-                                <!--
-                                    Already under LGPL 2.1, but with a different Copyright
-                                -->
+                                <?license-section start description="Already under LGPL 2.1, but with a different Copyright"?>
                                 <exclude>pom.xml</exclude>
                                 <exclude>project-suppression.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
@@ -2023,10 +2021,9 @@
                                 <exclude>src/main/java/org/exist/xupdate/Update.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/XUpdateTest.java</exclude>
+                                <?license-section end?>
 
-                                <!--
-                                    Derivative work licensed under dbXML 1.0 and LGPL 2.1
-                                -->
+                                <?license-section start description="Derivative work licensed under dbXML 1.0 and LGPL 2.1"?>
                                 <exclude>src/main/java/org/exist/storage/btree/BTree.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/btree/BTreeCallback.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/btree/BTreeException.java</exclude>
@@ -2034,10 +2031,9 @@
                                 <exclude>src/main/java/org/exist/storage/btree/IndexQuery.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/btree/Paged.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/btree/Value.java</exclude>
+                                <?license-section end?>
 
-                                <!--
-                                   Licensed under BSD 3
-                                -->
+                                <?license-section start description="Licensed under BSD 3"?>
                                 <exclude>src/main/java/org/exist/util/CodePointString.java</exclude>
                                 <exclude>src/test/java/org/exist/util/CodePointStringTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/io/ByteBufferAccessor.java</exclude>
@@ -2051,6 +2047,7 @@
                                 <exclude>src/main/java/org/exist/util/io/MemoryMappedFileFilterInputStreamCache.java</exclude>
                                 <exclude>src/main/java/org/exist/util/io/TemporaryFileManager.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnFormatNumbers.java</exclude>
+                                <?license-section end?>
                             </excludes>
                         </licenseSet>
 

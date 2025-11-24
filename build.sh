@@ -38,7 +38,7 @@ do
 key="$1"
 
 case $key in
-    clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check)
+    clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check|format-poms)
     TARGET="$1"
     shift
     ;;
@@ -75,6 +75,7 @@ function print-useage() {
   echo -e "\tlicence-format - Adds the correct license header to any source files that are missing it"
   echo -e "\tdependency-check - Checks that all modules have correctly declared their dependencies"
   echo -e "\tdependency-security-check - Checks that all dependencies have no unexpected CVE security issues"
+  echo -e "\tformat-poms - Format the pom.xml files"
   echo -e "\tclean - Remove all built artifacts"
   echo -e "\n--offline - attempts to run the Maven build in offline mode"
 }
@@ -167,6 +168,25 @@ fi
 if [ "${TARGET}" == "dependency-security-check" ]; then
   CMD="${BASE_CMD} dependency-check:check"
   $CMD
+  exit 0;
+fi
+
+if [ "${TARGET}" == "format-poms" ]; then
+  SAXON="${HOME}/.m2/repository/net/sf/saxon/Saxon-HE/9.9.1-8/Saxon-HE-9.9.1-8.jar"
+  POMS="$(find . -name pom.xml)"
+  for pom in $POMS; do
+
+    echo -n "Formatting ${pom} ... "
+    CMD="java -jar ${SAXON} -s:${pom} -xsl:format-pom.xslt -o:${pom}"
+    $CMD
+    echo "OK"
+
+    echo -n "Checking for duplicate license entries in ${pom} ... "
+    CMD="java -cp ${SAXON} net.sf.saxon.Query -q:check-pom-license-uniqueness.xq pom-file-uri=file:${pom}"
+    $CMD
+    echo "OK"
+
+  done
   exit 0;
 fi
 
