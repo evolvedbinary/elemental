@@ -129,8 +129,8 @@
                                 <include>src/main/izpack/readme.html</include>
                                 <include>src/main/izpack/shortcutSpec.xml</include>
                                 <include>src/main/izpack/start.html</include>
-                                <include>src/main/izpack/userInput.xml</include>
                                 <include>src/main/izpack/UnixShortcutSpec.xml</include>
+                                <include>src/main/izpack/userInput.xml</include>
                             </includes>
                         </licenseSet>
 
@@ -147,8 +147,8 @@
                                 <exclude>src/main/izpack/readme.html</exclude>
                                 <exclude>src/main/izpack/shortcutSpec.xml</exclude>
                                 <exclude>src/main/izpack/start.html</exclude>
-                                <exclude>src/main/izpack/userInput.xml</exclude>
                                 <exclude>src/main/izpack/UnixShortcutSpec.xml</exclude>
+                                <exclude>src/main/izpack/userInput.xml</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

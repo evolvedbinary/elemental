@@ -190,11 +190,11 @@
                             -->
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
-                                <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
                                 <exclude>hsql.bat</exclude>
                                 <exclude>hsql.sh</exclude>
                                 <exclude>ivysettings.xml</exclude>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
                             </excludes>
                         </licenseSet>
 

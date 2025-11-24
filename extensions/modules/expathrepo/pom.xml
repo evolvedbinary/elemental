@@ -142,8 +142,8 @@
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
                                 <exclude>expathrepo-trigger-test/**</exclude>
+                                <exclude>src/**</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -163,12 +163,12 @@
                             <includes>
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
-                                <include>extensions/modules/expathrepo/src/test/resources/log4j2.xml</include>
+                                <include>src/test/resources/log4j2.xml</include>
+                                <include>src/test/java/org/exist/repo/PackageTriggerTest.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/expathrepo/EXPathErrorCode.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/expathrepo/InstallFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/expathrepo/RemoveFunction.java</include>
                                 <include>src/main/resources/org/exist/xquery/modules/expathrepo/repair.xql</include>
-                                <include>src/test/java/org/exist/repo/PackageTriggerTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -179,16 +179,15 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
+                                <exclude>expathrepo-trigger-test/**</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
-                                <exclude>extensions/modules/expathrepo/src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/resources/exist-expathrepo-trigger-test.xar</exclude>
+                                <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/java/org/exist/repo/PackageTriggerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/expathrepo/EXPathErrorCode.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/expathrepo/InstallFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/expathrepo/RemoveFunction.java</exclude>
                                 <exclude>src/main/resources/org/exist/xquery/modules/expathrepo/repair.xql</exclude>
-                                <exclude>src/test/java/org/exist/repo/PackageTriggerTest.java</exclude>
-                                <exclude>src/test/resources/exist-expathrepo-trigger-test.xar</exclude>
-
-                                <exclude>expathrepo-trigger-test/**</exclude>
                             </excludes>
                         </licenseSet>
 

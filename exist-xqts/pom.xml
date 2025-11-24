@@ -119,8 +119,8 @@
                             -->
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
-                                <exclude>pom.xml</exclude>
                                 <exclude>existdb-LGPL-21-license.txt</exclude>
+                                <exclude>pom.xml</exclude>
                                 <exclude>src/**</exclude>
                             </excludes>
                         </licenseSet>
@@ -149,8 +149,8 @@
                             -->
                             <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
-                                <exclude>pom.xml</exclude>
                                 <exclude>existdb-LGPL-21-license.txt</exclude>
+                                <exclude>pom.xml</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
@@ -178,7 +178,7 @@
                         </goals>
                         <configuration>
                             <assembleDirectory>${assemble.dir}</assembleDirectory>
-                            <programs />
+                            <programs/>
                             <configurationDirectory>etc</configurationDirectory>
                             <copyConfigurationDirectory>true</copyConfigurationDirectory>
                             <logsDirectory>logs</logsDirectory>

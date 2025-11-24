@@ -157,8 +157,8 @@
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
                                 <exclude>xar-assembly.xml</exclude>
+                                <exclude>src/**</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -177,10 +177,10 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
-                                <include>src/main/java/org/exist/repo/ExampleModule.java</include>
+                                <include>xar-assembly.xml</include>
                                 <include>src/test/resources/conf.xml</include>
                                 <include>src/main/xar-resources/controller.xq</include>
-                                <include>xar-assembly.xml</include>
+                                <include>src/main/java/org/exist/repo/ExampleModule.java</include>
                             </includes>
                         </licenseSet>
 
@@ -191,10 +191,10 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/main/java/org/exist/repo/ExampleModule.java</exclude>
+                                <exclude>xar-assembly.xml</exclude>
                                 <exclude>src/test/resources/conf.xml</exclude>
                                 <exclude>src/main/xar-resources/controller.xq</exclude>
-                                <exclude>xar-assembly.xml</exclude>
+                                <exclude>src/main/java/org/exist/repo/ExampleModule.java</exclude>
                             </excludes>
                         </licenseSet>
 

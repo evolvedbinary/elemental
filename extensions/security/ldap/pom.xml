@@ -83,9 +83,9 @@
                             -->
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
+                                <exclude>ldap-realm.xsd</exclude>
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/**</exclude>
-                                <exclude>ldap-realm.xsd</exclude>
                             </excludes>
                         </licenseSet>
 
