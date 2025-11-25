@@ -145,10 +145,10 @@
                             -->
                             <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
-                                <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
                                 <exclude>ant-example.xml</exclude>
+                                <exclude>pom.xml</exclude>
                                 <exclude>xqdoc-1.0.xsd</exclude>
+                                <exclude>src/**</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -180,10 +180,10 @@
                             <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
+                                <exclude>xqdoc-1.0.xsd</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/main/java/org/exist/xqdoc/xquery/Scan.java</exclude>
-                                <exclude>xqdoc-1.0.xsd</exclude>
                             </excludes>
                         </licenseSet>
 

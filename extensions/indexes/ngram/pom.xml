@@ -172,9 +172,9 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/java/org/exist/indexing/ngram/CustomIndexTest.java</include>
+                                <include>src/test/java/org/exist/indexing/ngram/MatchListenerTest.java</include>
                                 <include>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</include>
                                 <include>src/main/java/org/exist/indexing/ngram/NGramMatch.java</include>
-                                <include>src/test/java/org/exist/indexing/ngram/MatchListenerTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -188,9 +188,9 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/java/org/exist/indexing/ngram/CustomIndexTest.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/ngram/MatchListenerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/ngram/NGramIndexWorker.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/ngram/NGramMatch.java</exclude>
-                                <exclude>src/test/java/org/exist/indexing/ngram/MatchListenerTest.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
