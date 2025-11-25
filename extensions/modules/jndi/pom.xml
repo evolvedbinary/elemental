@@ -101,9 +101,9 @@
                             -->
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
+                                <exclude>jndiExample.xql</exclude>
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/**</exclude>
-                                <exclude>jndiExample.xql</exclude>
                             </excludes>
                         </licenseSet>
 

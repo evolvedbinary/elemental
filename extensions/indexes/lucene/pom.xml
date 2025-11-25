@@ -280,8 +280,8 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneFieldConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexConfig.java</exclude>
-                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</exclude>
                                 <exclude>src/test/java/org/exist/indexing/lucene/LuceneIndexTest.java</exclude>
+                                <exclude>src/main/java/org/exist/indexing/lucene/LuceneIndexWorker.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</exclude>
                                 <exclude>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>

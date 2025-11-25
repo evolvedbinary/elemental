@@ -139,9 +139,9 @@
                             -->
                             <header>${project.parent.relativePath}/../../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
                             <excludes>
+                                <exclude>example-*.xql</exclude>
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/**</exclude>
-                                <exclude>example-*.xql</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -169,7 +169,6 @@
                                 <include>src/main/java/org/exist/xquery/modules/compression/EntryFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/UnTarFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/UnZipFunction.java</include>
-
                             </includes>
                         </licenseSet>
 

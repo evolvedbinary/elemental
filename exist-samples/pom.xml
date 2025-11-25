@@ -135,11 +135,11 @@
                                 <exclude>src/main/resources/org/exist/samples/shakespeare/shakes.xsl</exclude>
                                 <exclude>src/main/resources/org/exist/samples/validation/dtd/**</exclude>
                                 <exclude>src/main/resources/org/exist/samples/validation/personal/**</exclude>
+                                <exclude>src/main/resources/org/exist/samples/validation/tournament/**</exclude>
                                 <exclude>src/main/resources/org/exist/samples/xinclude/db2html.xsl</exclude>
                                 <exclude>src/main/resources/org/exist/samples/xinclude/xinclude.xml</exclude>
                                 <exclude>src/main/resources/org/exist/samples/xinclude/scripts/syntax/**</exclude>
                                 <exclude>src/main/resources/org/exist/samples/xinclude/styles/**</exclude>
-                                <exclude>src/main/resources/org/exist/samples/validation/tournament/**</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

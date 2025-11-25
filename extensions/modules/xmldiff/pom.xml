@@ -162,11 +162,11 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
-                                <exclude>src/main/java/org/exist/xquery/modules/xmldiff/Compare.java</exclude>
-                                <exclude>src/main/java/org/exist/xquery/modules/xmldiff/XmlDiffModule.java</exclude>
-                                <exclude>src/test/java/xquery/modules/xmldiff/XmlDiffTests.java</exclude>
                                 <exclude>src/test/xquery/modules/xmldiff/compare.xqm</exclude>
                                 <exclude>src/test/xquery/modules/xmldiff/diff.xqm</exclude>
+                                <exclude>src/test/java/xquery/modules/xmldiff/XmlDiffTests.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/xmldiff/Compare.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/xmldiff/XmlDiffModule.java</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -176,11 +176,11 @@
                             -->
                             <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
-                                <include>src/main/java/org/exist/xquery/modules/xmldiff/Compare.java</include>
-                                <include>src/main/java/org/exist/xquery/modules/xmldiff/XmlDiffModule.java</include>
-                                <include>src/test/java/xquery/modules/xmldiff/XmlDiffTests.java</include>
                                 <include>src/test/xquery/modules/xmldiff/compare.xqm</include>
                                 <include>src/test/xquery/modules/xmldiff/diff.xqm</include>
+                                <include>src/test/java/xquery/modules/xmldiff/XmlDiffTests.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/xmldiff/Compare.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/xmldiff/XmlDiffModule.java</include>
                             </includes>
 
                         </licenseSet>

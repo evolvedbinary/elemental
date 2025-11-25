@@ -68,6 +68,8 @@ if /I "%~1"=="--debug" (
     set "TARGET=dependency-check"
 ) else if /I "%~1"=="dependency-security-check" (
     set "TARGET=dependency-security-check"
+) else if /I "%~1"=="format-poms" (
+    set "TARGET=format-poms"
 )
 shift
 goto parse_args
@@ -115,6 +117,18 @@ if "%TARGET%"=="clean" (
     set "CMD=%BASE_CMD% dependency:analyze"
 ) else if "%TARGET%"=="dependency-security-check" (
     set "CMD=%BASE_CMD% dependency-check:check"
+) else if "%TARGET%"=="format-poms" (
+    set "SAXON=%USERPROFILE%\.m2\repository\net\sf\saxon\Saxon-HE\9.9.1-8\Saxon-HE-9.9.1-8.jar"
+    for /r %%POM in (pom.xml) do (
+        echo | set /p dummyName="Formatting %%POM ..."
+        java -jar "%SAXON%" -s:%%POM -xsl:format-pom.xslt -o:%%POM
+        echo OK
+
+        echo | set /p dummyName="Checking for duplicate license entries in %%POM ... "
+        java -cp "%SAXON%" net.sf.saxon.Query -q:check-pom-license-uniqueness.xq pom-file-uri=file:%%POM
+        echo OK
+    )
+    goto end
 ) else (
     echo Invalid target: %TARGET%
     goto show_useage

@@ -130,10 +130,10 @@
                             <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/test/resources-filtered/conf.xml</exclude>
-                                <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>debuggee/**</exclude>
                                 <exclude>images/**</exclude>
+                                <exclude>src/test/resources-filtered/conf.xml</exclude>
+                                <exclude>src/test/resources/log4j2.xml</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
