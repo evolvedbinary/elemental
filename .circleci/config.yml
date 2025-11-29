@@ -310,6 +310,24 @@ commands:
             - attach_workspace:
                 at: C:\Users\circleci\project
 
+  create_maven_settings:
+    steps:
+      - run:
+          name: Create Maven settings.xml
+          command: |
+            mkdir -p ~/.m2
+            cat > ~/.m2/settings.xml \<< EOF
+            <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+              <servers>
+                <server>
+                  <id>ossindex</id>
+                  <username>${OSSINDEX_USERNAME}</username>
+                  <password>${OSSINDEX_TOKEN}</password>
+                </server>
+              </servers>
+            </settings>
+            EOF
+
 jobs:
   license-check:
     parameters:
@@ -432,6 +450,7 @@ jobs:
           compute_size: << parameters.compute_size >>
       - install_maven:
           compute_size: << parameters.compute_size >>
+      - create_maven_settings
       - restore_cache:
           keys:
             - << parameters.maven_cache_name_prefix >>-dependency-check-data-{{ checksum "/tmp/dependency-check-data/odc.mv.db" }}
