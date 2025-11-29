@@ -257,6 +257,7 @@
                         <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
                         <nvdApiServerId>nvd-api</nvdApiServerId>
 
+                        <ossIndexServerId>ossindex</ossIndexServerId>
                         <!-- The OSS Index Server (https://ossindex.sonatype.org) can sometimes be flaky -->
                         <ossIndexWarnOnlyOnRemoteErrors>true</ossIndexWarnOnlyOnRemoteErrors>
 
