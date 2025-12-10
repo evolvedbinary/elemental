@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -150,6 +174,8 @@ imaginaryTokenDefinitions
 	NAMESPACE_DECL
 	DEF_NAMESPACE_DECL
 	DEF_COLLATION_DECL
+	DECIMAL_FORMAT_DECL
+	DEFAULT_DECIMAL_FORMAT
 	DEF_FUNCTION_NS_DECL
 	CONTEXT_ITEM_DECL
 	ANNOT_DECL
@@ -256,7 +282,7 @@ prolog throws XPathException
 		(
 			importDecl
 			|
-			( "declare" ( "default" | "boundary-space" | "ordering" | "construction" | "base-uri" | "copy-namespaces" | "namespace" ) ) =>
+			( "declare" ( "default" | "boundary-space" | "ordering" | "construction" | "base-uri" | "copy-namespaces" | "namespace" | "decimal-format" ) ) =>
 			s:setter
 			{
 				if(!inSetters)
@@ -295,10 +321,44 @@ versionDecl throws XPathException
         { #versionDecl = #(#[VERSION_DECL, v.getText()], enc); }
 	;
 
+dfPropertyName
+:
+    "decimal-separator"
+    | "grouping-separator"
+    | "infinity"
+    | "minus-sign"
+    | "NaN"
+    | "percent"
+    | "per-mille"
+    | "zero-digit"
+    | "digit"
+    | "pattern-separator"
+    | "exponent-separator"
+    ;
+
+decimalFormatDecl
+{ String dfName = null; }
+:
+    "declare"!
+    (
+        "default" "decimal-format"
+        ( dfPropertyName EQ! STRING_LITERAL )*
+        {
+            ## = #( #[DECIMAL_FORMAT_DECL, "DECIMAL_FORMAT_DECL"], #[DEFAULT_DECIMAL_FORMAT, "DEFAULT_DECIMAL_FORMAT"], ## );
+        }
+    |
+        "decimal-format" eqName
+        ( dfPropertyName EQ! STRING_LITERAL )*
+        {
+            ## = #( #[DECIMAL_FORMAT_DECL, "DECIMAL_FORMAT_DECL"], ## );
+        }
+    )
+;
+
 setter
 :
 	(
-		( "declare" "default" ) =>
+		( "declare" "default" ( "collation" | "element" | "function" | "order" ) ) =>
 		"declare"! "default"!
 		(
 			"collation"! defc:STRING_LITERAL
@@ -330,6 +390,8 @@ setter
 		|
 		( "declare" "namespace" ) =>
         namespaceDecl
+        | ( "declare" ( "default" )? "decimal-format" ) =>
+        decimalFormatDecl
 	)
 	;
 
