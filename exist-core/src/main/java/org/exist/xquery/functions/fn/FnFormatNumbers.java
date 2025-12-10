@@ -647,7 +647,7 @@ public class FnFormatNumbers extends BasicFunction {
             }
         }
 
-        adjustedNumber = new DecimalValue(this, adjustedNumber.convertTo(Type.DECIMAL).toJavaObject(BigDecimal.class).multiply(BigDecimal.ONE, MathContext.DECIMAL64)).round(new IntegerValue(this, subPicture.getMaximumFractionalPartSize())).abs();
+        adjustedNumber = new DecimalValue(this, adjustedNumber.convertTo(Type.DECIMAL).toJavaObject(BigDecimal.class).multiply(BigDecimal.ONE, MathContext.DECIMAL128)).round(new IntegerValue(this, subPicture.getMaximumFractionalPartSize())).abs();
 
         /* we can now start formatting for display */
 
