@@ -722,6 +722,11 @@ public class FnFormatNumbers extends BasicFunction {
         if (minimumExponentSize > 0) {
             formatted.append(decimalFormat.exponentSeparator);
 
+            final boolean negativeExp = exp < 0;
+            if (negativeExp) {
+                // negative exponent, make positive
+                exp *= -1;
+            }
             final CodePointString expStr = new CodePointString(String.valueOf(exp));
 
             final int expPadLen = subPicture.getMinimumExponentSize() - expStr.length();
@@ -729,6 +734,10 @@ public class FnFormatNumbers extends BasicFunction {
                 expStr.leftPad(decimalFormat.zeroDigit, expPadLen);
             }
 
+            if (negativeExp) {
+                // restore the minus sign for the negative exponent in the output
+                formatted.append('-');
+            }
             formatted.append(expStr);
         }
 
