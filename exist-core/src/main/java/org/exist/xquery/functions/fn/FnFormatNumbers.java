@@ -484,6 +484,14 @@ public class FnFormatNumbers extends BasicFunction {
                     } else {
                         /* passive character */
                         analyzePassiveChar(decimalFormat, c, capturePrefix, subPicture);
+
+                        if (subPicture.hasPercent()) {
+                            throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a percent character as it already has an exponent separator sign.");
+                        }
+
+                        if (subPicture.hasPerMille()) {
+                            throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a per-mille character as it already has an exponent separator sign.");
+                        }
                     }
 
                     break;  // end of EXPONENT_PART
