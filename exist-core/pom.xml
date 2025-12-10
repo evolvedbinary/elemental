@@ -765,6 +765,7 @@
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/test/xquery/tail-recursion.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
+                                <include>src/test/xquery/numbers/format-numbers.xql</include>
                                 <include>src/test/xquery/util/util.xml</include>
                                 <include>src/test/xquery/xquery3/parse-xml.xqm</include>
                                 <include>src/test/xquery/xquery3/serialize.xql</include>
@@ -1342,6 +1343,7 @@
                                 <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/maps/maps.xqm</exclude>
+                                <exclude>src/test/xquery/numbers/format-numbers.xql</exclude>
                                 <exclude>src/test/xquery/securitymanager/acl.xqm</exclude>
                                 <exclude>src/test/xquery/util/util.xml</exclude>
                                 <exclude>src/test/xquery/xquery3/parse-xml.xqm</exclude>
