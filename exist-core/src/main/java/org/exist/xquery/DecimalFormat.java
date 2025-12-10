@@ -106,6 +106,36 @@ public class DecimalFormat {
         this.minusSign = minusSign;
     }
 
+    /**
+     * Checks that the characters used in a picture string have distinct values.
+     *
+     * @return true if all the characters are distinct, false otherwise.
+     */
+    public boolean checkDistinctCharacters() {
+        final int[] characters = new int[] {
+            decimalSeparator,
+            exponentSeparator,
+            groupingSeparator,
+            percent,
+            perMille,
+            zeroDigit,
+            digit,
+            patternSeparator
+        };
+
+        for (int i = 0; i < characters.length; i++) {
+            final int c = characters[i];
+            for (int j = i + 1; j < characters.length; j++) {
+                final int o = characters[j];
+                if (c == o) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     public static DecimalFormat fromProperties(final Map<String, String> properties) {
         int decimalSeparator = UNNAMED.decimalSeparator;
         int exponentSeparator = UNNAMED.exponentSeparator;
