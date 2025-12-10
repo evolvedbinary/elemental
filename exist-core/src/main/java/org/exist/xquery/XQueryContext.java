@@ -444,7 +444,7 @@ public class XQueryContext implements BinaryValueManager, Context {
      */
     @Nullable
     private HttpContext httpContext = null;
-    private static final QName UNNAMED_DECIMAL_FORMAT = new QName("__UNNAMED__", Namespaces.XPATH_FUNCTIONS_NS);
+    public static final QName UNNAMED_DECIMAL_FORMAT = new QName("__UNNAMED__", Namespaces.XPATH_FUNCTIONS_NS);
 
     private final Map<QName, DecimalFormat> staticDecimalFormats = HashMap(Tuple(UNNAMED_DECIMAL_FORMAT, DecimalFormat.UNNAMED));
 

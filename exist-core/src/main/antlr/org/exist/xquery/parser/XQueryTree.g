@@ -498,6 +498,56 @@ throws PermissionDeniedException, EXistException, XPathException
         )
         |
         #(
+            DECIMAL_FORMAT_DECL
+            {
+                  final XQueryAST root = (XQueryAST) _t; // points to DECIMAL_FORMAT_DECL
+                  // first sibling is either DEFAULT_DECIMAL_FORMAT (default) or EQNAME (named)
+                  final XQueryAST dfName = (XQueryAST) root.getNextSibling();
+
+                  // position current at the first property name for the decimal format
+                  XQueryAST current = (XQueryAST) dfName.getNextSibling();
+                  if ("default".equals(dfName.getText())) {
+                      current = (XQueryAST) current.getNextSibling();
+                  }
+
+                  final Map<String, String> dfProperties = new HashMap<>();
+
+                  while (current != null) {
+                      final XQueryAST pname = current;
+                      final XQueryAST pval  = (XQueryAST) current.getNextSibling();
+
+                      if (pval == null) {
+                        break;
+                      }
+
+                      final String pn = pname.getText();
+                      String pv = pval.getText();
+                      if (pv.length() >= 2 && (pv.startsWith("\"") || pv.startsWith("'"))) {
+                          pv = pv.substring(1, pv.length() - 1);
+                      }
+                      dfProperties.put(pn, pv);
+
+                      current = (XQueryAST) pval.getNextSibling();
+                  }
+
+                  final QName qnDfName;
+                  if ("default".equals(dfName.getText())) {
+                      qnDfName = XQueryContext.UNNAMED_DECIMAL_FORMAT;
+                  } else {
+                      try {
+                          qnDfName = QName.parse(staticContext, dfName.getText(), null);
+                      } catch (final IllegalQNameException iqe) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + dfName.getText());
+                      }
+                  }
+
+                  final DecimalFormat df = DecimalFormat.fromProperties(dfProperties);
+                  staticContext.setStaticDecimalFormat(qnDfName, df);
+                  context.setStaticDecimalFormat(qnDfName, df);
+            }
+        )
+        |
+        #(
             qname:GLOBAL_VAR
             {
                 PathExpr enclosed= new PathExpr(context);

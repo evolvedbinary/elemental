@@ -1073,6 +1073,7 @@
                                 <include>src/main/java/org/exist/xquery/CombiningExpression.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Context.java</include>
+                                <include>src/main/java/org/exist/xquery/DecimalFormat.java</include>
                                 <include>src/main/java/org/exist/xquery/DeferredFunctionCall.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</include>
                                 <include>src/main/java/org/exist/xquery/DynamicTypeCheck.java</include>
@@ -1256,6 +1257,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBStore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/TryCatchTest.java</include>
+                                <include>src/main/antlr/org/exist/xquery/parser/XQuery.g</include>
                                 <include>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</include>
                                 <include>src/main/java/org/exist/xquery/pragmas/Optimize.java</include>
                                 <include>src/test/java/org/exist/xquery/update/AbstractUpdateTest.java</include>
@@ -1738,6 +1740,7 @@
                                 <exclude>src/main/java/org/exist/xquery/CombiningExpression.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Context.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/DecimalFormat.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DeferredFunctionCall.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DynamicCardinalityCheck.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/DynamicTypeCheck.java</exclude>
@@ -1947,6 +1950,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBXUpdate.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xquery3/TryCatchTest.java</exclude>
+                                <exclude>src/main/antlr/org/exist/xquery/parser/XQuery.g</exclude>
                                 <exclude>src/main/antlr/org/exist/xquery/parser/XQueryTree.g</exclude>
                                 <exclude>src/main/java/org/exist/xquery/pragmas/Optimize.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/pragmas/TimePragma.java</exclude>
