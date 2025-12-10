@@ -556,6 +556,10 @@ throws PermissionDeniedException, EXistException, XPathException
                   }
 
                   final DecimalFormat df = DecimalFormat.fromProperties(dfProperties);
+                  if (!df.checkDistinctCharacters()) {
+                      throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0098.getErrorCode(), "Characters within the picture string of the decimal format: " + dfName.getText() + " are not distinct.");
+                  }
+
                   staticContext.setStaticDecimalFormat(qnDfName, df);
                   context.setStaticDecimalFormat(qnDfName, df);
             }
