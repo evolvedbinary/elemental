@@ -567,7 +567,12 @@ throws PermissionDeniedException, EXistException, XPathException
                       current = (XQueryAST) pval.getNextSibling();
                   }
 
-                  final DecimalFormat df = DecimalFormat.fromProperties(dfProperties);
+                  final DecimalFormat df;
+                  try {
+                      df = DecimalFormat.fromProperties(dfProperties);
+                  } catch (final IllegalArgumentException ex) {
+                      throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0097.getErrorCode(), ex.getMessage() + " within the picture string of the decimal format: " + dfName.getText() + ".");
+                  }
                   if (!df.checkDistinctCharacters()) {
                       throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0098.getErrorCode(), "Characters within the picture string of the decimal format: " + dfName.getText() + " are not distinct.");
                   }
