@@ -225,6 +225,7 @@ public class ErrorCodes {
         XQDY0102 ("If the name of an element in an element constructor is in no namespace, creating a default namespace for that element using a computed namespace constructor is an error."),
         XQST0103 ("All variables in a window clause must have distinct names."),
         XQST0111 ("It is a static error for a query prolog to contain two decimal formats with the same name, or to contain two default decimal formats."),
+        XQST0114 ("It is a static error for a decimal format declaration to define the same property more than once."),
         XQDY0137 ("No two keys in a map may have the same key value"),
         XQDY0138 ("Position n does not exist in this array"),
         XUDY0023 ("It is a dynamic error if an insert, replace, or rename expression affects an element node by introducing a new namespace binding that conflicts with one of its existing namespace bindings."),

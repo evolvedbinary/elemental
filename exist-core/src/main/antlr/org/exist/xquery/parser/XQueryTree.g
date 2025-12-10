@@ -560,7 +560,9 @@ throws PermissionDeniedException, EXistException, XPathException
                       if (pv.length() >= 2 && (pv.startsWith("\"") || pv.startsWith("'"))) {
                           pv = pv.substring(1, pv.length() - 1);
                       }
-                      dfProperties.put(pn, pv);
+                      if (dfProperties.put(pn, pv) != null) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0114.getErrorCode(), "Decimal format: " + dfName.getText() + " defines the property: " + pn + " more than once.");
+                      }
 
                       current = (XQueryAST) pval.getNextSibling();
                   }
