@@ -116,6 +116,7 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/test/java/org/exist/xquery/modules/persistentlogin/LoginModuleTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -129,6 +130,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/test/java/org/exist/xquery/modules/persistentlogin/LoginModuleTest.java</exclude>
                             </excludes>
                         </licenseSet>
 

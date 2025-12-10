@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,10 +57,11 @@ import org.exist.test.ExistWebServer;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.UserManagementService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -44,31 +69,41 @@ import org.xmldb.api.modules.BinaryResource;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 
+@RunWith(Parameterized.class)
 public class LoginModuleTest {
 
-    private static String XQUERY = "import module namespace login=\"http://exist-db.org/xquery/login\" " +
-            "at \"resource:org/exist/xquery/modules/persistentlogin/login.xql\";" +
-            "login:set-user('org.exist.login', (), false())," +
-            "sm:id()/(descendant::sm:effective,descendant::sm:real)[1]/sm:username/string()";
+    @Parameters
+    public static Iterable<? extends Object> loginDomains() {
+        return Arrays.asList("xyz.elemental.login", "org.exist.login");
+    }
 
     @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true);
+    public static final ExistWebServer EXIST_WEB_SERVER = new ExistWebServer(true, false, true);
 
     private final static String XQUERY_FILENAME = "test-login.xql";
 
-    private static Collection root;
-    private static HttpClient client;
+    private Collection root;
+    private HttpClient client;
 
-    @BeforeClass
-    public static void beforeClass() throws XMLDBException {
-        root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+    @Parameter
+    public String loginDomain;
+
+    @Before
+    public void setup() throws XMLDBException {
+        final String xquery = "import module namespace login=\"http://exist-db.org/xquery/login\" " +
+            "at \"resource:org/exist/xquery/modules/persistentlogin/login.xql\";" +
+            "login:set-user('" + loginDomain + "', (), false())," +
+            "sm:id()/(descendant::sm:effective,descendant::sm:real)[1]/sm:username/string()";
+
+        root = DatabaseManager.getCollection("xmldb:exist://localhost:" + EXIST_WEB_SERVER.getPort() + "/xmlrpc" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         final BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class);
         ((EXistResource) res).setMimeType("application/xquery");
-        res.setContent(XQUERY);
+        res.setContent(xquery);
         root.storeResource(res);
         final UserManagementService ums = root.getService(UserManagementService.class);
         ums.chmod(res, 0777);
@@ -77,8 +112,8 @@ public class LoginModuleTest {
         client = HttpClientBuilder.create().setDefaultCookieStore(store).build();
     }
 
-    @AfterClass
-    public static void afterClass() throws XMLDBException {
+    @After
+    public void cleanup() throws XMLDBException {
         final BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME);
         root.removeResource(res);
     }
@@ -98,11 +133,11 @@ public class LoginModuleTest {
         doGet("logout=true", TestUtils.GUEST_DB_USER);
     }
 
-    private void doGet(@Nullable String params, String expected) throws IOException {
-        final HttpGet httpGet = new HttpGet("http://localhost:" + existWebServer.getPort() + "/rest" + XmldbURI.ROOT_COLLECTION + '/' + XQUERY_FILENAME +
+    private void doGet(@Nullable final String params, final String expected) throws IOException {
+        final HttpGet httpGet = new HttpGet("http://localhost:" + EXIST_WEB_SERVER.getPort() + "/rest" + XmldbURI.ROOT_COLLECTION + '/' + XQUERY_FILENAME +
                 (params == null ? "" : "?" + params));
-        HttpResponse response = client.execute(httpGet);
-        HttpEntity entity = response.getEntity();
+        final HttpResponse response = client.execute(httpGet);
+        final HttpEntity entity = response.getEntity();
         final String responseBody = EntityUtils.toString(entity);
         assertEquals(responseBody, SC_OK, response.getStatusLine().getStatusCode());
         assertEquals(expected, responseBody);
