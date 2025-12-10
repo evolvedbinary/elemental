@@ -106,6 +106,7 @@ options {
     protected Set<String> importedModules = new HashSet<>();
     protected Set<String> importedModuleFunctions = null;
     protected Set<QName> importedModuleVariables = null;
+    private boolean hasDefaultDecimalFormat = false;
 
     public XQueryTreeParser(XQueryContext context) {
         this(context, null);
@@ -518,6 +519,26 @@ throws PermissionDeniedException, EXistException, XPathException
                   // first sibling is either DEFAULT_DECIMAL_FORMAT (default) or EQNAME (named)
                   final XQueryAST dfName = (XQueryAST) root.getNextSibling();
 
+                  final QName qnDfName;
+                  if ("default".equals(dfName.getText())) {
+                      qnDfName = XQueryContext.UNNAMED_DECIMAL_FORMAT;
+                      if (hasDefaultDecimalFormat) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0111.getErrorCode(), "Query prolog cannot contain two default decimal format declarations.");
+                      } else {
+                          hasDefaultDecimalFormat = true;
+                      }
+                  } else {
+                      try {
+                          qnDfName = QName.parse(staticContext, dfName.getText(), null);
+                      } catch (final IllegalQNameException iqe) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + dfName.getText());
+                      }
+
+                      if (staticContext.getStaticDecimalFormat(qnDfName) != null) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0111.getErrorCode(), "Query prolog cannot contain two decimal format declarations with the same name: " + dfName.getText());
+                      }
+                  }
+
                   // position current at the first property name for the decimal format
                   XQueryAST current = (XQueryAST) dfName.getNextSibling();
                   if ("default".equals(dfName.getText())) {
@@ -542,17 +563,6 @@ throws PermissionDeniedException, EXistException, XPathException
                       dfProperties.put(pn, pv);
 
                       current = (XQueryAST) pval.getNextSibling();
-                  }
-
-                  final QName qnDfName;
-                  if ("default".equals(dfName.getText())) {
-                      qnDfName = XQueryContext.UNNAMED_DECIMAL_FORMAT;
-                  } else {
-                      try {
-                          qnDfName = QName.parse(staticContext, dfName.getText(), null);
-                      } catch (final IllegalQNameException iqe) {
-                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + dfName.getText());
-                      }
                   }
 
                   final DecimalFormat df = DecimalFormat.fromProperties(dfProperties);
