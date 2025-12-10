@@ -401,7 +401,7 @@ public class FnFormatNumbers extends BasicFunction {
                         subPicture.clearSuffix();
 
                         subPicture.incrementMaximumFractionalPartSize();
-                    }  else if (c == decimalFormat.patternSeparator) {
+                    } else if (c == decimalFormat.patternSeparator) {
                         capturePrefix = false;
                         subPicture.clearSuffix();
 
@@ -442,16 +442,54 @@ public class FnFormatNumbers extends BasicFunction {
                     break;  // end of FRACTIONAL_PART
 
 
-
                 case EXPONENT_PART:
+
                     if (c == decimalFormat.decimalSeparator
-                            || c == decimalFormat.exponentSeparator
                             || c == decimalFormat.groupingSeparator
                             || c == decimalFormat.digit) {
                         capturePrefix = false;
                         subPicture.clearSuffix();
 
                         throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture in $picture cannot have any active characters following the exponent-separator-sign");
+
+                    } else if (c == decimalFormat.exponentSeparator) {
+
+                        /*
+                        A character that matches the exponent-separator property is treated as an
+                        exponent-separator-sign if it is both preceded and followed within the
+                        sub-picture by an active character.
+                        */
+
+                        // we need to peek at the next char to determine if it is active
+                        final boolean nextIsActive;
+                        if (idx + 1 < pictureString.length()) {
+                            nextIsActive = isActiveChar(decimalFormat, pictureString.codePointAt(idx + 1));
+                        } else {
+                            nextIsActive = false;
+                        }
+
+                        if (isActiveChar(decimalFormat, prevChar) && nextIsActive) {
+                            // this is an exponent-separator-sign... but we already have one
+                            capturePrefix = false;
+                            subPicture.clearSuffix();
+
+                            throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture in $picture cannot have any active characters following the exponent-separator-sign");
+
+                        } else {
+                            // just another passive character
+
+                            /* passive character */
+                            analyzePassiveChar(decimalFormat, c, capturePrefix, subPicture);
+
+                            if (subPicture.hasPercent()) {
+                                throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a percent character as it already has an exponent separator sign.");
+                            }
+
+                            if (subPicture.hasPerMille()) {
+                                throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a per-mille character as it already has an exponent separator sign.");
+                            }
+                        }
+
 
                     }  else if (c == decimalFormat.patternSeparator) {
                         capturePrefix = false;
