@@ -136,7 +136,16 @@ public class DecimalFormat {
         return true;
     }
 
-    public static DecimalFormat fromProperties(final Map<String, String> properties) {
+    /**
+     * Constructs a Decimal Format from a map of decimal format properties.
+     *
+     * @param properties the properties for the decimal format.
+     *
+     * @return the Decimal Format.
+     *
+     * @throws IllegalArgumentException if any of the properties are invalid.
+     */
+    public static DecimalFormat fromProperties(final Map<String, String> properties) throws IllegalArgumentException {
         int decimalSeparator = UNNAMED.decimalSeparator;
         int exponentSeparator = UNNAMED.exponentSeparator;
         int groupingSeparator = UNNAMED.groupingSeparator;
@@ -153,36 +162,73 @@ public class DecimalFormat {
             final String value = property.getValue();
             switch (property.getKey()) {
                 case "decimal-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("decimal-separator must be a single character");
+                    }
                     decimalSeparator = value.charAt(0);
                     break;
+
                 case "exponent-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("exponent-separator must be a single character");
+                    }
                     exponentSeparator = value.charAt(0);
                     break;
+
                 case "grouping-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("groupung-separator must be a single character");
+                    }
                     groupingSeparator = value.charAt(0);
                     break;
+
                 case "percent":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("percent must be a single character");
+                    }
                     percent = value.charAt(0);
                     break;
+
                 case "per-mille":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("per-mille must be a single character");
+                    }
                     perMille = value.charAt(0);
                     break;
+
                 case "zero-digit":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("zero-digit must be a single character");
+                    }
                     zeroDigit = value.charAt(0);
                     break;
+
                 case "digit":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("digit must be a single character");
+                    }
                     digit = value.charAt(0);
                     break;
+
                 case "pattern-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("pattern-separator must be a single character");
+                    }
                     patternSeparator = value.charAt(0);
                     break;
+
                 case "infinity":
                     infinity = value;
                     break;
+
                 case "NaN":
                     NaN = value;
                     break;
+
                 case "minus-sign":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("minus-sign must be a single character");
+                    }
                     minusSign = value.charAt(0);
                     break;
             }
