@@ -752,7 +752,12 @@ public class FnFormatNumbers extends BasicFunction {
 
         // Rule 12 - strip decimal separator if unneeded
         if (!subPicture.hasDecimalSeparator() || fractLen == 0) {
-            formatted.removeFirst(decimalFormat.decimalSeparator);
+            // decimal separator must be the rightmost character in the string
+            final int rightMostIndex = formatted.length() - 1;
+            final int rightMost = formatted.codePointAt(rightMostIndex);
+            if (rightMost == decimalFormat.decimalSeparator) {
+                formatted.removeChar(rightMostIndex);
+            }
         }
 
         // Rule 13 - add exponent if exists
