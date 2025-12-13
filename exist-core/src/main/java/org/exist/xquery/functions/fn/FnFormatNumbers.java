@@ -331,6 +331,10 @@ public class FnFormatNumbers extends BasicFunction {
                         analyzePassiveChar(decimalFormat, c, capturePrefix, subPicture);
                     }
 
+                    if (state == AnalyzeState.INTEGER_PART) {
+                        subPicture.incrementIntegerPartExtent();
+                    }
+
                     break;  // end of INTEGER_PART
 
 
@@ -796,6 +800,8 @@ public class FnFormatNumbers extends BasicFunction {
      * See https://www.w3.org/TR/xpath-functions-31/#analyzing-picture-string
      */
     private static class SubPicture {
+        private int integerPartStartIdx = 0;
+        private int integerPartLength = 0;
         private int[] integerPartGroupingPositions;
         private int minimumIntegerPartSize;
         private int scalingFactor;
@@ -815,6 +821,8 @@ public class FnFormatNumbers extends BasicFunction {
         public SubPicture copy() {
             final SubPicture copy = new SubPicture();
 
+            copy.integerPartStartIdx = integerPartStartIdx;
+            copy.integerPartLength = integerPartLength;
             copy.integerPartGroupingPositions = integerPartGroupingPositions == null ? null : Arrays.copyOf(integerPartGroupingPositions, integerPartGroupingPositions.length);
             copy.minimumIntegerPartSize = minimumIntegerPartSize;
             copy.scalingFactor = scalingFactor;
@@ -865,7 +873,7 @@ public class FnFormatNumbers extends BasicFunction {
          * @return the value of G if regular, or -1 if irregular
          */
         public int integerPartGroupingPositionsAreRegular() {
-            // There is an least one grouping-separator in the integer part of the sub-picture.
+            // There is at least one grouping-separator in the integer part of the sub-picture.
             if (integerPartGroupingPositions.length > 0) {
 
                 // There is a positive integer G (the grouping size) such that the position of every grouping-separator
@@ -891,29 +899,33 @@ public class FnFormatNumbers extends BasicFunction {
                     return -1;
                 }
 
-                // Every position in the integer part of the sub-picture that is a positive integer multiple of G is
-                // occupied by a grouping-separator.
-                final int largestGroupPosition = integerPartGroupingPositions[integerPartGroupingPositions.length - 1];
-                int m = 2;
-                for (int p = g; p <= largestGroupPosition; p = g * m++) {
+                // Check that every position in the integer part of the sub-picture that is a positive integer multiple
+                // of G is occupied by a grouping-separator.
+                // We can test this by determining if the leftmost group (the group to the left of the leftmost
+                // separator) is not larger than G.
 
-                    boolean isGroupSeparator = false;
-                    for (final int integerPartGroupingPosition : integerPartGroupingPositions) {
-                        if (integerPartGroupingPosition == p) {
-                            isGroupSeparator = true;
-                            break;
-                        }
-                    }
+                // Calculate total active characters: integerPartLength includes all characters (digits + separators),
+                // so we subtract the number of separators to get just the active characters.
+                final int totalActiveCharacters = integerPartLength - integerPartGroupingPositions.length;
 
-                    if (!isGroupSeparator) {
-                        return -1;
-                    }
+                // The leftmost separator is always at index 0, and its numberOfCharacters tells us how many active
+                // characters are to the right of it. Therefore, the leftmost group size is the remaining characters.
+                final int leftmostGroupSize = totalActiveCharacters - integerPartGroupingPositions[0];
+
+                // If the leftmost group is larger than G, it means that there should have been another separator
+                // within it (at position G from the right of the leftmost group), but there isn't... so it's irregular!
+                if (leftmostGroupSize > g) {
+                    return -1;
                 }
 
                 return g;
             }
 
             return -1;
+        }
+
+        public void incrementIntegerPartExtent() {
+            integerPartLength++;
         }
 
         public void incrementMinimumIntegerPartSize() {
