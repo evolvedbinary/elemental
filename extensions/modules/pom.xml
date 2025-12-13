@@ -81,6 +81,7 @@
         <module>file</module>
         <module>image</module>
         <module>jndi</module>
+        <module>kwic</module>
         <module>mail</module>
         <module>persistentlogin</module>
         <module>process</module>
