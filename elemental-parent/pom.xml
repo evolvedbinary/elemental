@@ -95,8 +95,8 @@
         <sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
 
         <!-- Dependencies -->
-        <junit.platform.version>1.14.0</junit.platform.version>
-        <junit.jupiter.version>5.14.0</junit.jupiter.version>
+        <junit.platform.version>1.14.1</junit.platform.version>
+        <junit.jupiter.version>5.14.1</junit.jupiter.version>
         <objenesis.version>3.4</objenesis.version>
         <jakarta.activation.version>2.0.1</jakarta.activation.version>
         <jaxb.api.version>3.0.1</jaxb.api.version>
@@ -490,7 +490,7 @@
                             <user.country>UK</user.country>
                             <user.language>en</user.language>
                             <user.timezone>Europe/Berlin</user.timezone>
-                            <java.locale.providers>JRE,CLDR,SPI</java.locale.providers>
+                            <java.locale.providers>CLDR,SPI</java.locale.providers>
                             <log4j.configurationFile>${project.build.testOutputDirectory}/log4j2.xml</log4j.configurationFile>
                         </systemPropertyVariables>
                         <includes>
