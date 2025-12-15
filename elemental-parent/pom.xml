@@ -96,8 +96,8 @@
 
         <!-- Dependencies -->
         <eclipse.angus-activation.version>2.0.3</eclipse.angus-activation.version>
-        <junit.platform.version>6.0.0</junit.platform.version>
-        <junit.jupiter.version>6.0.0</junit.jupiter.version>
+        <junit.platform.version>6.0.1</junit.platform.version>
+        <junit.jupiter.version>6.0.1</junit.jupiter.version>
         <objenesis.version>3.4</objenesis.version>
         <jakarta.activation-api.version>2.1.4</jakarta.activation-api.version>
         <jaxb.api.version>4.0.4</jaxb.api.version>
@@ -504,7 +504,7 @@
                             <user.country>UK</user.country>
                             <user.language>en</user.language>
                             <user.timezone>Europe/Berlin</user.timezone>
-                            <java.locale.providers>JRE,CLDR,SPI</java.locale.providers>
+                            <java.locale.providers>CLDR,SPI</java.locale.providers>
                             <log4j.configurationFile>${project.build.testOutputDirectory}/log4j2.xml</log4j.configurationFile>
                         </systemPropertyVariables>
                         <includes>
