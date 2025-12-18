@@ -2801,19 +2801,33 @@ throws PermissionDeniedException, EXistException, XPathException
                         rs.setAxis(Constants.DESCENDANT_AXIS);
                     } else if (rs.getAxis() == Constants.SELF_AXIS) {
                         rs.setAxis(Constants.DESCENDANT_SELF_AXIS);
-                    } else {
+                    } else if (rs.getAxis() == Constants.CHILD_AXIS || rs.getAxis() == Constants.UNKNOWN_AXIS) {
+                        // For CHILD_AXIS or UNKNOWN_AXIS, change to descendant-or-self
                         rs.setAxis(Constants.DESCENDANT_SELF_AXIS);
                         rs.setAbbreviated(true);
+                    } else {
+                        // For other explicit axes (following, preceding, ancestor, etc.)
+                        // insert a separate descendant-or-self::node() step before this step
+                        final LocationStep dsStep = new LocationStep(context, Constants.DESCENDANT_SELF_AXIS, new AnyNodeTest());
+                        path.insertBeforeLast(dsStep);
                     }
 
                 } else {
-                    rightStep.setPrimaryAxis(Constants.DESCENDANT_SELF_AXIS);
-                    if(rightStep instanceof VariableReference) {
-                        rightStep = new SimpleStep(context, Constants.DESCENDANT_SELF_AXIS, rightStep);
-                        path.replaceLastExpression(rightStep);
-                    } else if (rightStep instanceof FilteredExpression)
-                        ((FilteredExpression)rightStep).setAbbreviated(true);
-
+                    if (rightStep instanceof Function) {
+                        // For non-LocationStep expressions (function calls, etc.)
+                        // insert a separate descendant-or-self::node() step before this step
+                        final LocationStep dsStep = new LocationStep(context, Constants.DESCENDANT_SELF_AXIS, new AnyNodeTest());
+                        path.insertBeforeLast(dsStep);
+                    } else {
+                        rightStep.setPrimaryAxis(Constants.DESCENDANT_SELF_AXIS);
+                        if(rightStep instanceof VariableReference) {
+                            // VariableReference needs special handling
+                            rightStep = new SimpleStep(context, Constants.DESCENDANT_SELF_AXIS, rightStep);
+                            path.replaceLastExpression(rightStep);
+                        } else if (rightStep instanceof FilteredExpression) {
+                            ((FilteredExpression)rightStep).setAbbreviated(true);
+                        }
+                    }
                 }
             }
         )?

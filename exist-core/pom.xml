@@ -1193,6 +1193,7 @@
                                 <include>src/test/java/org/exist/xquery/NodeTypeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/Option.java</include>
+                                <include>src/main/java/org/exist/xquery/PathExpr.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStats.java</include>
                                 <include>src/test/java/org/exist/xquery/RestBinariesTest.java</include>
                                 <include>src/test/java/org/exist/xquery/StoredModuleTest.java</include>
@@ -1974,6 +1975,7 @@
                                 <exclude>src/test/java/org/exist/xquery/NodeTypeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Option.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/PathExpr.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStats.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/StoredModuleTest.java</exclude>
