@@ -141,7 +141,7 @@
             <el1 att1="test">test</el1>
         </expected>
     </test>
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[attribute] parenthesized final location step, non-parenthesized preceding step</task>
         <code><![CDATA[
             for $a in collection('/db/test')//level1//(@att1)[ft:query(., 'test')]
@@ -152,7 +152,7 @@
             <result att1="test"/>
         </expected>
     </test>
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[attribute] parenthesized final location step, no preceding step</task>
         <code><![CDATA[
             for $a in collection('/db/test')//(@att1)[ft:query(., 'test')]
@@ -163,7 +163,7 @@
             <result att1="test"/>
         </expected>
     </test>    
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[attribute] parenthesized final location step, parenthesized preceding step</task>
         <code><![CDATA[
             for $a in collection('/db/test')//(level1)//(@att1)[ft:query(., 'test')]
@@ -174,7 +174,7 @@
             <result att1="test"/>
         </expected>
     </test>    
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[attribute] parenthesized final location step, non-parenthesized preceding step with self selector</task>
         <code><![CDATA[
             for $a in collection('/db/test')//level1//.//(@att1)[ft:query(., 'test')] 
@@ -185,7 +185,7 @@
             <result att1="test"/>
         </expected>
     </test>
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[attribute retrieval] parenthesized final location step</task>
         <code><![CDATA[
             for $a in collection('/db/test')//level1//(@att1)
@@ -207,7 +207,7 @@
             <result att1="test"/>
         </expected>
     </test>
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[attribute retrieval] parenthesized attribute context node causes 'bleed-through' when name equals element name</task>
         <code><![CDATA[
             for $a in collection('/db/test')//level1//(@el1)
