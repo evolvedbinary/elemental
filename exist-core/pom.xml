@@ -802,6 +802,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/main/xjb/rest-api.xjb</include>
+                                <include>src/test/xquery/parenthesizedLocationStep.xml</include>
                                 <include>src/test/xquery/tail-recursion.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/numbers/format-numbers.xql</include>
@@ -1490,6 +1491,7 @@
                                 <exclude>src/test/xquery/instance-of.xqm</exclude>
                                 <exclude>src/test/xquery/operator-mapping.xqm</exclude>
                                 <exclude>src/test/xquery/order.xqm</exclude>
+                                <exclude>src/test/xquery/parenthesizedLocationStep.xml</exclude>
                                 <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/type-promotion.xqm</exclude>

@@ -3083,7 +3083,12 @@ throws PermissionDeniedException, EXistException, XPathException
                         final LocationStep dsStep = new LocationStep(context, Constants.DESCENDANT_SELF_AXIS, new AnyNodeTest());
                         path.insertBeforeLast(dsStep);
                     } else {
-                        rightStep.setPrimaryAxis(Constants.DESCENDANT_SELF_AXIS);
+                        if (rightStep.getPrimaryAxis() == Constants.ATTRIBUTE_AXIS) {
+                            rightStep.setPrimaryAxis(Constants.DESCENDANT_ATTRIBUTE_AXIS);
+                        } else {
+                            rightStep.setPrimaryAxis(Constants.DESCENDANT_SELF_AXIS);
+                        }
+
                         if(rightStep instanceof VariableReference) {
                             // VariableReference needs special handling
                             rightStep = new SimpleStep(context, Constants.DESCENDANT_SELF_AXIS, rightStep);
