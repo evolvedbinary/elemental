@@ -230,14 +230,14 @@ public abstract class AtomicValue implements Item, Sequence, Indexable {
 		if (!effectiveBooleanValue())
 			return NodeSet.EMPTY_SET;
 		*/
-        throw new XPathException(getExpression(), 
+        throw new XPathException(getExpression(), ErrorCodes.W3CErrorCode.XPTY0019.getErrorCode(),
                 "cannot convert " + Type.getTypeName(getType()) + "('" + getStringValue() + "')"
                         + " to a node set");
     }
 
     @Override
     public MemoryNodeSet toMemNodeSet() throws XPathException {
-        throw new XPathException(getExpression(), 
+        throw new XPathException(getExpression(), ErrorCodes.W3CErrorCode.XPTY0019.getErrorCode(),
                 "cannot convert " + Type.getTypeName(getType()) + "('" + getStringValue() + "')"
                         + " to a node set");
     }
