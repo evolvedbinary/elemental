@@ -59,7 +59,6 @@ public class Union extends CombiningExpression {
                 final ValueSequence values = new ValueSequence(true);
                 values.addAll(ls);
                 values.addAll(rs);
-                values.sortInDocumentOrder();
                 values.removeDuplicates();
                 result = values;
             }
