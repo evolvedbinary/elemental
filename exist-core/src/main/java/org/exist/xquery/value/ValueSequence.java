@@ -433,9 +433,11 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public void removeDuplicates() {
-        enforceOrder = true;
-        isOrdered = false;
+        final boolean prevEnforceOrder = this.enforceOrder;
+        this.enforceOrder = true;
+        this.isOrdered = false;
         sortInDocumentOrder();
+        this.enforceOrder = prevEnforceOrder;
     }
 
     private void ensureCapacity() {
