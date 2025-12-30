@@ -1272,6 +1272,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunInsertBefore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunIRIToURI.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLang.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLast.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunMax.java</include>
@@ -2061,6 +2062,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunInsertBefore.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunIRIToURI.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLang.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLast.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunMax.java</exclude>

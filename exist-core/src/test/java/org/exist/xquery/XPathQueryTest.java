@@ -1100,11 +1100,17 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.INDENT, "no");
 
 
-        String query = "let $t := <test>" + "<a> <s>A</s> 1 </a>"
-                + "<a> <s>Z</s> 2 </a>" + "<a> <s>B</s> 3 </a>"
-                + "<a> <s>Z</s> 4 </a>" + "<a> <s>C</s> 5 </a>"
-                + "<a> <s>Z</s> 6 </a>" + "</test>"
-                + "return $t//a[s='Z' and preceding-sibling::*[1]/s='B']";
+        String query = "let $t := " +
+            "<test>" +
+            "<a> <s>A</s> 1 </a>" +
+            "<a> <s>Z</s> 2 </a>" +
+            "<a> <s>B</s> 3 </a>" +
+            "<a> <s>Z</s> 4 </a>" +
+            "<a> <s>C</s> 5 </a>" +
+            "<a> <s>Z</s> 6 </a>" +
+            "</test>" +
+            "return " +
+            "$t//a[s = 'Z' and preceding-sibling::*[1]/s = 'B']";
         ResourceSet result = queryResource(service, "numbers.xml", query, 1);
         assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
 
