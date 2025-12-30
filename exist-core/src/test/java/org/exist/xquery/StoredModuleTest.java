@@ -52,7 +52,6 @@ import org.xmldb.api.base.Resource;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.XmldbURI;
@@ -67,6 +66,8 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
 import org.junit.*;
+import xyz.elemental.mediatype.MediaType;
+
 import static org.junit.Assert.*;
 
 /**
@@ -104,7 +105,7 @@ public class StoredModuleTest {
 
     private void writeModule(Collection collection, String modulename, String module) throws XMLDBException {
         BinaryResource res = (BinaryResource) collection.createResource(modulename, "BinaryResource");
-        ((EXistResource) res).setMimeType("application/xquery");
+        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
         res.setContent(module.getBytes());
         collection.storeResource(res);
         collection.close();

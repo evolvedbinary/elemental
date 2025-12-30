@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -39,7 +63,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
@@ -48,6 +71,7 @@ import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -112,7 +136,8 @@ public class SerializeAttrMatchesTest {
                 mgr.addConfiguration(transaction, broker, test, configuration);
             }
 
-            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(data), MimeType.XML_TYPE, test);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(data), xmlMediaType, test);
 
             docs.add(test.getDocument(broker, XmldbURI.create(docName)));
             transact.commit(transaction);

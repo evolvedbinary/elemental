@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -38,14 +62,13 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.CachingFilterInputStreamInputSource;
 import org.exist.util.Configuration;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.CachingFilterInputStream;
 import org.exist.util.io.FilterInputStreamCache;
 import org.exist.util.io.FilterInputStreamCacheFactory;
 import org.exist.xmldb.XmldbURI;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -127,9 +150,9 @@ public class InMemoryOutputStream extends OutputStream {
                 -> (String) broker.getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY), is);
              final CachingFilterInputStream cfis = new CachingFilterInputStream(cache)) {
 
-          final MimeType mime = MimeTable.getInstance().getContentTypeFor(documentUri);
+          final MediaType mediaType = db.getMediaTypeService().getMediaTypeResolver().fromFileName(documentUri.lastSegmentString());
           try (final ManagedDocumentLock lock = lockManager.acquireDocumentWriteLock(documentUri)) {
-            broker.storeDocument(txn, documentUri, new CachingFilterInputStreamInputSource(cfis), mime, collection);
+            broker.storeDocument(txn, documentUri, new CachingFilterInputStreamInputSource(cfis), mediaType, collection);
           }
         }
 

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,6 +46,7 @@
 package org.exist.backup;
 
 import org.exist.client.ClientFrame;
+import org.exist.mediatype.MediaTypeUtil;
 import org.exist.start.CompatibleJavaVersionCheck;
 import org.exist.start.StartException;
 import org.exist.util.ConfigurationHelper;
@@ -33,7 +58,9 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
 import org.xmldb.api.base.XMLDBException;
 import se.softhouse.jargo.*;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
@@ -198,12 +225,17 @@ public class Main {
             return;
         }
 
+        // load MediaTypeResolver
+        final Optional<Path> existHome = ConfigurationHelper.getExistHome();
+        @Nullable final Path applicationConfigDir = existHome.map(p -> p.resolve("etc")).filter(Files::exists).orElse(null);
+        @Nullable final MediaTypeResolver mediaTypeResolver = MediaTypeUtil.newMediaTypeResolver(applicationConfigDir);
+
         // process
         if (backupCollection.isPresent()) {
             String collection = backupCollection.get();
             if (collection.isEmpty()) {
                 if (guiMode) {
-                    final CreateBackupDialog dialog = new CreateBackupDialog(properties.getProperty(URI_PROP, DEFAULT_URI), properties.getProperty(USER_PROP, DEFAULT_USER), properties.getProperty(PASSWORD_PROP, DEFAULT_PASSWORD), Paths.get(preferences.get("directory.backup", System.getProperty("user.dir"))));
+                    final CreateBackupDialog dialog = new CreateBackupDialog(properties.getProperty(URI_PROP, DEFAULT_URI), properties.getProperty(USER_PROP, DEFAULT_USER), properties.getProperty(PASSWORD_PROP, DEFAULT_PASSWORD), Paths.get(preferences.get("directory.backup", System.getProperty("user.dir"))), mediaTypeResolver);
 
                     if (JOptionPane.showOptionDialog(null, dialog, "Create Backup", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null) == JOptionPane.YES_OPTION) {
                         collection = dialog.getCollection();

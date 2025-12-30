@@ -79,6 +79,12 @@
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -176,6 +182,7 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/main/java/org/exist/contentextraction/ContentReceiver.java</include>
+                                <include>src/test/java/org/exist/contentextraction/xquery/ContentFunctionsTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -189,6 +196,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/main/java/org/exist/contentextraction/ContentReceiver.java</exclude>
+                                <exclude>src/test/java/org/exist/contentextraction/xquery/ContentFunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/contentextraction/xquery/Util.java</exclude>
                             </excludes>
                         </licenseSet>
@@ -197,7 +205,7 @@
                             <!--
                                 FDB backport to LGPL 2.1-only licensed code
                             -->
-                            <header>${project.parent.relativePath}/../exist-parent/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
+                            <header>${project.parent.relativePath}/../exist-parent/FDB-backport-to-existdb-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/test/java/org/exist/contentextraction/xquery/Util.java</include>
                             </includes>

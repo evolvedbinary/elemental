@@ -60,7 +60,6 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
@@ -78,6 +77,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
@@ -512,8 +512,9 @@ public class PersistentDomTest {
         try (final ManagedCollectionLock collectionLock = broker.getBrokerPool().getLockManager().acquireCollectionWriteLock(collectionUri)) {
             final Collection collection = broker.getOrCreateCollection(transaction, collectionUri);
             broker.saveCollection(transaction, collection);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
             for (final Tuple2<XmldbURI, String> doc : docs) {
-                broker.storeDocument(transaction, doc._1, new StringInputSource(doc._2), MimeType.XML_TYPE, collection);
+                broker.storeDocument(transaction, doc._1, new StringInputSource(doc._2), xmlMediaType, collection);
             }
         }
     }

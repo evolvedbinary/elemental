@@ -70,7 +70,6 @@
   </scm>
 
     <properties>
-        <jakarta.activation.version>2.0.1</jakarta.activation.version>
         <jakarta.mail.version>2.0.2</jakarta.mail.version>
         <greenmail.version>2.0.1</greenmail.version>
     </properties>
@@ -79,6 +78,11 @@
         <dependency>
             <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -96,7 +100,6 @@
         <dependency>
             <groupId>jakarta.activation</groupId>
             <artifactId>jakarta.activation-api</artifactId>
-            <version>${jakarta.activation.version}</version>
         </dependency>
 
         <dependency>
@@ -222,6 +225,7 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/MailSessionFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/modules/mail/MessageFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</include>
                             </includes>
@@ -237,6 +241,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/MailSessionFunctions.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/mail/MessageFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</exclude>
@@ -249,7 +254,7 @@
                             <!--
                                 FDB backport to LGPL 2.1-only licensed code
                             -->
-                            <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-LGPL-21-ONLY-license.template.txt</header>
+                            <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-to-existdb-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</include>
                                 <include>src/test/java/org/exist/xquery/modules/mail/Util.java</include>

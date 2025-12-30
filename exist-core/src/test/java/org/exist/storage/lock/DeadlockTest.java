@@ -69,7 +69,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
@@ -85,6 +84,7 @@ import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.CollectionManagementService;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Test deadlock detection and resolution.
@@ -254,6 +254,8 @@ public class DeadlockTest {
 			final TransactionManager transact = pool.getTransactionManager();
 			try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
+                final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+
 				final TestDataGenerator generator = new TestDataGenerator("xdb", docCount);
 				Collection coll;
 				int fileCount = 0;
@@ -274,7 +276,7 @@ public class DeadlockTest {
                                 final InputSource is = new InputSource(files[j].toUri()
                                     .toASCIIString());
 
-                                broker.storeDocument(transaction, XmldbURI.create("test" + fileCount + ".xml"), is, MimeType.XML_TYPE, coll);
+                                broker.storeDocument(transaction, XmldbURI.create("test" + fileCount + ".xml"), is, xmlMediaType, coll);
                                 transact.commit(transaction);
                             }
                         }

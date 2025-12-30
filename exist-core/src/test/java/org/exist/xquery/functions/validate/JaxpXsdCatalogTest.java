@@ -85,7 +85,7 @@ public class JaxpXsdCatalogTest {
         Collection conf = null;
         try {
             conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse");
-            ExistXmldbEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         } finally {
             if(conf != null) {
                 conf.close();
@@ -98,12 +98,12 @@ public class JaxpXsdCatalogTest {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/schemas/MyNameSpace.xsd")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(schemasCollection, "MyNameSpace.xsd", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(schemasCollection, "MyNameSpace.xsd", InputStreamUtil.readAll(is));
             }
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/schemas/AnotherNamespace.xsd")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(schemasCollection, "AnotherNamespace.xsd", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(schemasCollection, "AnotherNamespace.xsd", InputStreamUtil.readAll(is));
             }
 
         } finally {
@@ -117,7 +117,7 @@ public class JaxpXsdCatalogTest {
             parseCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse");
             try (final InputStream is = SAMPLES.getSample("validation/parse/catalog.xml")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
             }
         } finally {
             if(parseCollection != null) {
@@ -131,12 +131,12 @@ public class JaxpXsdCatalogTest {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/valid.xml")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(instanceCollection, "valid.xml", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(instanceCollection, "valid.xml", InputStreamUtil.readAll(is));
             }
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/invalid.xml")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(instanceCollection, "invalid.xml", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(instanceCollection, "invalid.xml", InputStreamUtil.readAll(is));
             }
         } finally {
             if(instanceCollection != null) {

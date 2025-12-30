@@ -79,6 +79,7 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
@@ -365,7 +366,7 @@ public class XIncludeFilter implements Receiver {
 
             /* Check if the document is a stored XQuery */
             if (doc != null && doc.getResourceType() == DocumentImpl.BINARY_FILE) {
-                xqueryDoc = "application/xquery".equals(doc.getMimeType());
+                xqueryDoc = MediaType.APPLICATION_XQUERY.equals(doc.getMediaType());
             }
         }
         // The document could not be found: check if it points to an external resource

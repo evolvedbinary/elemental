@@ -70,6 +70,7 @@ import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.exist.util.StringUtil.isNullOrEmpty;
 
@@ -93,9 +94,9 @@ public class NewResourceDialog extends JFrame {
     }
     
     private enum ResourceType {
-        XML_DOCUMENT("XML Document", "xml", "application/xml", "xml-resource.tmpl"),
-        XQUERY_MAIN("XQuery Main Module", "xqy", "application/xquery", "xquery-resource.tmpl"),
-        XQUERY_LIBRARY("XQuery Library Module", "xqm", "application/xquery", "xquery-lib-resource.tmpl");
+        XML_DOCUMENT("XML Document", "xml", MediaType.APPLICATION_XML, "xml-resource.tmpl"),
+        XQUERY_MAIN("XQuery Main Module", "xqy", MediaType.APPLICATION_XQUERY, "xquery-resource.tmpl"),
+        XQUERY_LIBRARY("XQuery Library Module", "xqm", MediaType.APPLICATION_XQUERY, "xquery-lib-resource.tmpl");
         
         private final String label;
         private final String fileExtension;
@@ -319,7 +320,7 @@ public class NewResourceDialog extends JFrame {
             
             final Resource resource = collection.createResource(resName, resType);
             resource.setContent(resourceContent);
-            ((EXistResource)resource).setMimeType(resourceType.getMimeType());
+            ((EXistResource)resource).setMediaType(resourceType.getMimeType());
             collection.storeResource(resource);
             collection.close();
             client.reloadCollection();

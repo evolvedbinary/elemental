@@ -52,7 +52,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.UUIDGenerator;
 import org.exist.xmldb.XmldbURI;
@@ -66,6 +65,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -134,9 +134,10 @@ public class SendEmailIT {
         try (final Txn transaction = brokerPool.getTransactionManager().beginTransaction();
              final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
 
+            final MediaType xmlMediaType = brokerPool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
              try (final Collection collection = broker.getOrCreateCollection(transaction, TEST_COLLECTION)) {
-                broker.storeDocument(transaction, XML_DOC1_NAME, new StringInputSource(XML_DOC1_CONTENT), MimeType.XML_TYPE, collection);
-                broker.storeDocument(transaction, BIN_DOC1_NAME, new StringInputSource(BIN_DOC1_CONTENT), null, collection);
+                broker.storeDocument(transaction, XML_DOC1_NAME, new StringInputSource(XML_DOC1_CONTENT), xmlMediaType, collection);
+                broker.storeDocument(transaction, BIN_DOC1_NAME, new StringInputSource(BIN_DOC1_CONTENT), (MediaType) null, collection);
              }
 
             transaction.commit();
@@ -157,7 +158,7 @@ public class SendEmailIT {
 
         final MimeMessage receivedMessage = sendEmail(message, null);
 
-        assertEquals("text/plain; charset=UTF-8", receivedMessage.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", receivedMessage.getContentType());
         assertEquals(messageText, GreenMailUtil.getBody(receivedMessage));
     }
 
@@ -170,19 +171,19 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(XML_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertEquals(messageText, firstPartBody);
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/xml; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_XML + "; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertEquals(XML_DOC1_CONTENT, new String(Base64.decodeBase64(secondPartBody), UTF_8));
     }
@@ -196,19 +197,19 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(BIN_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertEquals(messageText, firstPartBody);
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/octet-stream; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_OCTET_STREAM + "; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertArrayEquals(BIN_DOC1_CONTENT, Base64.decodeBase64(secondPartBody));
     }
@@ -223,24 +224,24 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(BIN_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(3, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertEquals(messageText, firstPartBody);
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/xml; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_XML + "; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertEquals(XML_DOC1_CONTENT, new String(Base64.decodeBase64(secondPartBody), UTF_8));
 
         final BodyPart thirdPart = multipartContent.getBodyPart(2);
-        assertEquals("application/octet-stream; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", thirdPart.getContentType());
+        assertEquals(MediaType.APPLICATION_OCTET_STREAM + "; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", thirdPart.getContentType());
         final String thirdPartBody = GreenMailUtil.getBody(thirdPart);
         assertArrayEquals(BIN_DOC1_CONTENT, Base64.decodeBase64(thirdPartBody));
     }
@@ -255,7 +256,7 @@ public class SendEmailIT {
 
         final MimeMessage receivedMessage = sendEmail(htmlMessage, null);
 
-        assertEquals("text/html; charset=UTF-8", receivedMessage.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", receivedMessage.getContentType());
         final String body = GreenMailUtil.getBody(receivedMessage);
         assertTrue(body.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(body.contains("<h1>" + htmlHeading + "</h1>"));
@@ -274,21 +275,21 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(XML_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/html; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertTrue(firstPartBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(firstPartBody.contains("<h1>" + htmlHeading + "</h1>"));
         assertTrue(firstPartBody.contains("<p>" + htmlMessageText + "</p>"));
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/xml; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_XML + "; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertEquals(XML_DOC1_CONTENT, new String(Base64.decodeBase64(secondPartBody), UTF_8));
     }
@@ -305,21 +306,21 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(BIN_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/html; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertTrue(firstPartBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(firstPartBody.contains("<h1>" + htmlHeading + "</h1>"));
         assertTrue(firstPartBody.contains("<p>" + htmlMessageText + "</p>"));
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/octet-stream; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_OCTET_STREAM + "; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertArrayEquals(BIN_DOC1_CONTENT, Base64.decodeBase64(secondPartBody));
     }
@@ -337,26 +338,26 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(BIN_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(3, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/html; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertTrue(firstPartBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(firstPartBody.contains("<h1>" + htmlHeading + "</h1>"));
         assertTrue(firstPartBody.contains("<p>" + htmlMessageText + "</p>"));
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/xml; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_XML + "; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertEquals(XML_DOC1_CONTENT, new String(Base64.decodeBase64(secondPartBody), UTF_8));
 
         final BodyPart thirdPart = multipartContent.getBodyPart(2);
-        assertEquals("application/octet-stream; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", thirdPart.getContentType());
+        assertEquals(MediaType.APPLICATION_OCTET_STREAM + "; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", thirdPart.getContentType());
         final String thirdPartBody = GreenMailUtil.getBody(thirdPart);
         assertArrayEquals(BIN_DOC1_CONTENT, Base64.decodeBase64(thirdPartBody));
     }
@@ -374,19 +375,19 @@ public class SendEmailIT {
 
         final MimeMessage receivedMessage = sendEmail(message + htmlMessage, null);
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/alternative"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_ALTERNATIVE));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPart.getContentType());
         final String firstPartBody = GreenMailUtil.getBody(firstPart);
         assertEquals(messageText, firstPartBody);
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("text/html; charset=UTF-8", secondPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertTrue(secondPartBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(secondPartBody.contains("<h1>" + htmlHeading + "</h1>"));
@@ -408,33 +409,33 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(XML_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertTrue(firstPart.getContentType().startsWith("multipart/alternative"));
+        assertTrue(firstPart.getContentType().startsWith(MediaType.MULTIPART_ALTERNATIVE));
         final Object firstPartContent = firstPart.getContent();
         assertTrue(firstPartContent instanceof MimeMultipart);
         final MimeMultipart multipartFirstPartContent = (MimeMultipart) firstPartContent;
         assertEquals(2, multipartFirstPartContent.getCount());
 
         final BodyPart firstPartFirstBodyPart = multipartFirstPartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPartFirstBodyPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPartFirstBodyPart.getContentType());
         final String firstPartFirstBody = GreenMailUtil.getBody(firstPartFirstBodyPart);
         assertEquals(messageText, firstPartFirstBody);
 
         final BodyPart firstPartSecondBodyPart = multipartFirstPartContent.getBodyPart(1);
-        assertEquals("text/html; charset=UTF-8", firstPartSecondBodyPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", firstPartSecondBodyPart.getContentType());
         final String firstPartSecondBody = GreenMailUtil.getBody(firstPartSecondBodyPart);
         assertTrue(firstPartSecondBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(firstPartSecondBody.contains("<h1>" + htmlHeading + "</h1>"));
         assertTrue(firstPartSecondBody.contains("<p>" + htmlMessageText + "</p>"));
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/xml; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_XML + "; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertEquals(XML_DOC1_CONTENT, new String(Base64.decodeBase64(secondPartBody), UTF_8));
     }
@@ -454,33 +455,33 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(BIN_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(2, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertTrue(firstPart.getContentType().startsWith("multipart/alternative"));
+        assertTrue(firstPart.getContentType().startsWith(MediaType.MULTIPART_ALTERNATIVE));
         final Object firstPartContent = firstPart.getContent();
         assertTrue(firstPartContent instanceof MimeMultipart);
         final MimeMultipart multipartFirstPartContent = (MimeMultipart) firstPartContent;
         assertEquals(2, multipartFirstPartContent.getCount());
 
         final BodyPart firstPartFirstBodyPart = multipartFirstPartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPartFirstBodyPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPartFirstBodyPart.getContentType());
         final String firstPartFirstBody = GreenMailUtil.getBody(firstPartFirstBodyPart);
         assertEquals(messageText, firstPartFirstBody);
 
         final BodyPart firstPartSecondBodyPart = multipartFirstPartContent.getBodyPart(1);
-        assertEquals("text/html; charset=UTF-8", firstPartSecondBodyPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", firstPartSecondBodyPart.getContentType());
         final String firstPartSecondBody = GreenMailUtil.getBody(firstPartSecondBodyPart);
         assertTrue(firstPartSecondBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(firstPartSecondBody.contains("<h1>" + htmlHeading + "</h1>"));
         assertTrue(firstPartSecondBody.contains("<p>" + htmlMessageText + "</p>"));
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/octet-stream; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_OCTET_STREAM + "; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertArrayEquals(BIN_DOC1_CONTENT, Base64.decodeBase64(secondPartBody));
     }
@@ -501,38 +502,38 @@ public class SendEmailIT {
                 TEST_COLLECTION.append(BIN_DOC1_NAME).getCollectionPath()
         });
 
-        assertTrue(receivedMessage.getContentType().startsWith("multipart/mixed"));
+        assertTrue(receivedMessage.getContentType().startsWith(MediaType.MULTIPART_MIXED));
         final Object content = receivedMessage.getContent();
         assertTrue(content instanceof MimeMultipart);
         final MimeMultipart multipartContent = (MimeMultipart) content;
         assertEquals(3, multipartContent.getCount());
 
         final BodyPart firstPart = multipartContent.getBodyPart(0);
-        assertTrue(firstPart.getContentType().startsWith("multipart/alternative"));
+        assertTrue(firstPart.getContentType().startsWith(MediaType.MULTIPART_ALTERNATIVE));
         final Object firstPartContent = firstPart.getContent();
         assertTrue(firstPartContent instanceof MimeMultipart);
         final MimeMultipart multipartFirstPartContent = (MimeMultipart) firstPartContent;
         assertEquals(2, multipartFirstPartContent.getCount());
 
         final BodyPart firstPartFirstBodyPart = multipartFirstPartContent.getBodyPart(0);
-        assertEquals("text/plain; charset=UTF-8", firstPartFirstBodyPart.getContentType());
+        assertEquals(MediaType.TEXT_PLAIN + "; charset=UTF-8", firstPartFirstBodyPart.getContentType());
         final String firstPartFirstBody = GreenMailUtil.getBody(firstPartFirstBodyPart);
         assertEquals(messageText, firstPartFirstBody);
 
         final BodyPart firstPartSecondBodyPart = multipartFirstPartContent.getBodyPart(1);
-        assertEquals("text/html; charset=UTF-8", firstPartSecondBodyPart.getContentType());
+        assertEquals(MediaType.TEXT_HTML + "; charset=UTF-8", firstPartSecondBodyPart.getContentType());
         final String firstPartSecondBody = GreenMailUtil.getBody(firstPartSecondBodyPart);
         assertTrue(firstPartSecondBody.contains("<title>" + htmlTitle + "</title>"));
         assertTrue(firstPartSecondBody.contains("<h1>" + htmlHeading + "</h1>"));
         assertTrue(firstPartSecondBody.contains("<p>" + htmlMessageText + "</p>"));
 
         final BodyPart secondPart = multipartContent.getBodyPart(1);
-        assertEquals("application/xml; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
+        assertEquals(MediaType.APPLICATION_XML + "; name=" + XML_DOC1_NAME.lastSegment().getCollectionPath(), secondPart.getContentType());
         final String secondPartBody = GreenMailUtil.getBody(secondPart);
         assertEquals(XML_DOC1_CONTENT, new String(Base64.decodeBase64(secondPartBody), UTF_8));
 
         final BodyPart thirdPart = multipartContent.getBodyPart(2);
-        assertEquals("application/octet-stream; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", thirdPart.getContentType());
+        assertEquals(MediaType.APPLICATION_OCTET_STREAM + "; name=\"" + BIN_DOC1_NAME.lastSegment().getCollectionPath() + "\"", thirdPart.getContentType());
         final String thirdPartBody = GreenMailUtil.getBody(thirdPart);
         assertArrayEquals(BIN_DOC1_CONTENT, Base64.decodeBase64(thirdPartBody));
     }

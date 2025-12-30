@@ -56,7 +56,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.HashSet;
@@ -77,6 +76,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.util.UUIDGenerator;
 import org.exist.util.serializer.DOMSerializer;
 import org.w3c.dom.Element;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.exist.util.StringUtil.notNullOrEmpty;
 import static org.exist.util.StringUtil.notNullOrEmptyOrWs;
@@ -197,7 +197,7 @@ public class JMXServlet extends HttpServlet {
             root = client.generateXMLReport(null, categories);
         }
 
-        response.setContentType("application/xml");
+        response.setContentType(MediaType.APPLICATION_XML);
 
         final Object useAttribute = request.getAttribute("jmx.attribute");
         if (useAttribute != null) {

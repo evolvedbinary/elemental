@@ -87,7 +87,7 @@ public class JingSchematronTest {
         Collection conf = null;
         try {
             conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/tournament");
-            ExistXmldbEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         } finally {
             if(conf != null) {
                 conf.close();
@@ -102,7 +102,7 @@ public class JingSchematronTest {
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/tournament/1.5/" + testResource)) {
                     assertNotNull(is);
-                    ExistXmldbEmbeddedServer.storeResource(col15, testResource, InputStreamUtil.readAll(is));
+                    existEmbeddedServer.storeResource(col15, testResource, InputStreamUtil.readAll(is));
                 }
             }
         } finally {

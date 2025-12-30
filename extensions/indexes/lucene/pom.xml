@@ -75,6 +75,12 @@
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -249,6 +255,7 @@
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</include>
                                 <include>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</include>
+                                <include>src/test/java/org/exist/indexing/lucene/SerializeAttrMatchesTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/TextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/lucene/Facets.java</include>
@@ -287,6 +294,7 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</exclude>
                                 <exclude>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/lucene/SerializeAttrMatchesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/lucene/Facets.java</exclude>

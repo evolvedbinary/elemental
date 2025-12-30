@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.webdav;
 
 import com.bradmcevoy.http.exceptions.BadRequestException;
@@ -35,6 +58,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -74,7 +98,7 @@ public class ReplaceTest {
         final String docName = "webdav-copy-test.xml";
         final String docContent = "<elem1>Hello there</elem1>";
         final String replacementDocContent = "<elem2>Goodbye friend</elem2>";
-        replaceDocument(docName, docContent, replacementDocContent, "application/xml");
+        replaceDocument(docName, docContent, replacementDocContent, MediaType.APPLICATION_XML);
     }
 
     @Test
@@ -82,7 +106,7 @@ public class ReplaceTest {
         final String docName = "webdav-copy-test.bin";
         final String docContent = "0123456789";
         final String replacementDocContent = "9876543210";
-        replaceDocument(docName, docContent, replacementDocContent, "application/octet-stream");
+        replaceDocument(docName, docContent, replacementDocContent, MediaType.APPLICATION_OCTET_STREAM);
     }
 
     private void replaceDocument(final String docName, final String docContent, final String replacementDocContent, final String expectedMediaType) throws BadRequestException, HttpException, IOException, NotAuthorizedException, ConflictException, NotFoundException {

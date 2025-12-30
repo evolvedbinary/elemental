@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,7 +52,6 @@ import org.exist.security.Account;
 import org.exist.security.MessageDigester;
 import org.exist.security.SecurityManager;
 import org.exist.test.ExistWebServer;
-import org.exist.util.MimeType;
 import org.exist.xmldb.*;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
@@ -40,6 +63,8 @@ import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -67,13 +92,13 @@ public class XMLDBRestoreTest {
 
     private static final String COLLECTION1_NAME = "col1";
     private static final DocInfo[] BACKUP_DOCS = {
-            new DocInfo("doc1.xml", MimeType.XML, "application/xml", "<doc1/>"),
-            new DocInfo("doc2.xml", MimeType.XML, "application/xml", "<doc2/>"),
-            new DocInfo("doc3.svg", MimeType.XML, "image/svg+xml", "<svg height=\"100\" width=\"100\"><circle cx=\"50\" cy=\"50\" r=\"40\" stroke=\"black\" stroke-width=\"3\" fill=\"red\" />Sorry, your browser does not support inline SVG.</svg>"),
-            new DocInfo("doc4.html", MimeType.BINARY, "text/html", "<html><body><h1>BinaryResource</h1></body></html>"),
-            new DocInfo("doc5.html", MimeType.XML, "text/html", "<html><body><h1>XMLResource</h1></body></html>"),
-            new DocInfo("doc6.xml", MimeType.XML, "<doc6/>"),
-            new DocInfo("doc7.bin", MimeType.BINARY, "1234567")
+            new DocInfo("doc1.xml", StorageType.XML, MediaType.APPLICATION_XML, "<doc1/>"),
+            new DocInfo("doc2.xml", StorageType.XML, MediaType.APPLICATION_XML, "<doc2/>"),
+            new DocInfo("doc3.svg", StorageType.XML, MediaType.IMAGE_SVG, "<svg height=\"100\" width=\"100\"><circle cx=\"50\" cy=\"50\" r=\"40\" stroke=\"black\" stroke-width=\"3\" fill=\"red\" />Sorry, your browser does not support inline SVG.</svg>"),
+            new DocInfo("doc4.html", StorageType.BINARY, MediaType.TEXT_HTML, "<html><body><h1>BinaryResource</h1></body></html>"),
+            new DocInfo("doc5.html", StorageType.XML, MediaType.TEXT_HTML, "<html><body><h1>XMLResource</h1></body></html>"),
+            new DocInfo("doc6.xml", StorageType.XML, "<doc6/>"),
+            new DocInfo("doc7.bin", StorageType.BINARY, "1234567")
     };
 
     @ClassRule
@@ -301,15 +326,17 @@ public class XMLDBRestoreTest {
     private void checkMediaType(final XmldbURI collectionUri, final DocInfo backupDocInfo) throws XMLDBException {
         final Collection collection = DatabaseManager.getCollection(XmldbURI.create(getBaseUri()).append(collectionUri).toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         final Resource resource = collection.getResource(backupDocInfo.name);
-        if (backupDocInfo.type == MimeType.XML) {
+        if (backupDocInfo.storageType == StorageType.XML) {
             assertTrue(resource instanceof XMLResource);
         } else {
             assertTrue(resource instanceof BinaryResource);
         }
         if (backupDocInfo.mediaType != null) {
-            assertEquals(backupDocInfo.mediaType, ((EXistResource) resource).getMimeType());
+            assertEquals(backupDocInfo.mediaType, ((EXistResource) resource).getMediaType());
+        } else if (backupDocInfo.storageType == StorageType.XML) {
+            assertEquals(MediaType.APPLICATION_XML, ((EXistResource) resource).getMediaType());
         } else {
-            assertEquals(backupDocInfo.type == MimeType.XML ? MimeType.XML_TYPE.getName() : MimeType.BINARY_TYPE.getName(), ((EXistResource) resource).getMimeType());
+            assertEquals(MediaType.APPLICATION_OCTET_STREAM, ((EXistResource) resource).getMediaType());
         }
     }
 
@@ -336,7 +363,7 @@ public class XMLDBRestoreTest {
         col1Contents.append("<collection xmlns=\"http://exist.sourceforge.net/NS/exist\" name=\"/db/").append(COLLECTION1_NAME).append("\" owner=\"admin\" group=\"dba\" mode=\"755\" created=\"2019-05-15T15:58:39.385+04:00\" deduplicate-blobs=\"false\" version=\"2\">\n");
         col1Contents.append("    <acl entries=\"0\" version=\"1\"/>\n");
         for (final DocInfo backupDocInfo : BACKUP_DOCS) {
-            col1Contents.append("    <resource type=\"").append(backupDocInfo.type == MimeType.XML ? "XMLResource" : "BinaryResource").append("\" name=\"").append(backupDocInfo.name).append("\" owner=\"admin\" group=\"dba\" mode=\"644\" created=\"2019-05-15T15:58:48.638+04:00\" modified=\"2019-05-15T15:58:48.638+04:00\" filename=\"").append(backupDocInfo.name).append(backupDocInfo.mediaType != null ? "\" mimetype=\"" + backupDocInfo.mediaType + "\">\n" : "\">\n");
+            col1Contents.append("    <resource type=\"").append(backupDocInfo.storageType == StorageType.XML ? "XMLResource" : "BinaryResource").append("\" name=\"").append(backupDocInfo.name).append("\" owner=\"admin\" group=\"dba\" mode=\"644\" created=\"2019-05-15T15:58:48.638+04:00\" modified=\"2019-05-15T15:58:48.638+04:00\" filename=\"").append(backupDocInfo.name).append(backupDocInfo.mediaType != null ? "\" mimetype=\"" + backupDocInfo.mediaType + "\">\n" : "\">\n");
             col1Contents.append("        <acl entries=\"0\" version=\"1\"/>\n");
             col1Contents.append("    </resource>\n");
         }
@@ -642,17 +669,17 @@ public class XMLDBRestoreTest {
 
     private static class DocInfo {
         final String name;
-        final int type;
+        final StorageType storageType;
         @Nullable final String mediaType;
         final String content;
 
-        private DocInfo(final String name, final int type, final String content) {
-            this(name, type, null, content);
+        private DocInfo(final String name, final StorageType storageType, final String content) {
+            this(name, storageType, null, content);
         }
 
-        private DocInfo(final String name, final int type, final String mediaType, final String content) {
+        private DocInfo(final String name, final StorageType storageType, final String mediaType, final String content) {
             this.name = name;
-            this.type = type;
+            this.storageType = storageType;
             this.mediaType = mediaType;
             this.content = content;
         }

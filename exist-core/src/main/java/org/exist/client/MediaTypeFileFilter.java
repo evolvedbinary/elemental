@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,12 +46,10 @@
 package org.exist.client;
 
 import java.io.File;
-import java.util.Iterator;
 
-import java.util.List;
 import javax.swing.filechooser.FileFilter;
 
-import org.exist.util.MimeTable;
+import xyz.elemental.mediatype.MediaType;
 
 
 /**
@@ -36,18 +58,16 @@ import org.exist.util.MimeTable;
  * 
  *  Java 6 API has a similar FileNameExtensionFilter
  */
-public class MimeTypeFileFilter extends FileFilter {
+public class MediaTypeFileFilter extends FileFilter {
     
-    private String description = null;	
-    private List<String> extensions = null;
+    private final MediaType mediaType;
 
-    public MimeTypeFileFilter(String mimeType) {
-        description = MimeTable.getInstance().getContentType(mimeType).getDescription();
-        extensions = MimeTable.getInstance().getAllExtensions(mimeType);
+    public MediaTypeFileFilter(final MediaType mediaType) {
+        this.mediaType = mediaType;
     }
 	
     @Override
-    public boolean accept(File file) {
+    public boolean accept(final File file) {
         if(file.isDirectory()){ //permit directories to be viewed
             return true;
         }
@@ -60,8 +80,9 @@ public class MimeTypeFileFilter extends FileFilter {
         //check the extension is that of a file as defined in mime-types.xml
         final String fileExtension = file.getName().substring(extensionOffset).toLowerCase();
 
-        for(final String extension : extensions) {
-            if(fileExtension.equals(extension)) {
+        final String[] extensions = mediaType.getKnownFileExtensions();
+        for (final String extension : extensions) {
+            if (fileExtension.equals(extension)) {
                 return true;
             }
         }
@@ -71,15 +92,16 @@ public class MimeTypeFileFilter extends FileFilter {
     
     @Override
     public String getDescription() {
-        final StringBuilder description = new StringBuilder(this.description);
+        final StringBuilder description = new StringBuilder(mediaType.getIdentifier());
 
         description.append(" (");
 
-        for(final Iterator<String> itExtensions = extensions.iterator(); itExtensions.hasNext();) {
-            description.append(itExtensions.next());
-            if(itExtensions.hasNext()) {
+        final String[] extensions = mediaType.getKnownFileExtensions();
+        for (int i = 0; i < extensions.length; i++) {
+            if (i > 0) {
                 description.append(' ');
             }
+            description.append(extensions[i]);
         }
 
         description.append(")");

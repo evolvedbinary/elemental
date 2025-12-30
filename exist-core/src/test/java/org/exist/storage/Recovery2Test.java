@@ -48,9 +48,6 @@ package org.exist.storage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -71,12 +68,11 @@ import org.exist.util.*;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.samples.Samples.SAMPLES;
@@ -128,13 +124,15 @@ public class Recovery2Test {
                 domDb.dump(writer);
             }
 
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+
             // store some documents. Will be replaced below
             for (final String modsFilename : Samples.SAMPLES.getModsXmlSampleNames()) {
                 final String modsContent;
                 try (final InputStream is = SAMPLES.getModsSample(modsFilename)) {
                     modsContent = InputStreamUtil.readString(is, UTF_8);
                 }
-                broker.storeDocument(transaction, XmldbURI.create(modsFilename), new StringInputSource(modsContent), MimeType.XML_TYPE, test2);
+                broker.storeDocument(transaction, XmldbURI.create(modsFilename), new StringInputSource(modsContent), xmlMediaType, test2);
             }
 
             transact.commit(transaction);

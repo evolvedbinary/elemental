@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,7 +60,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.EXistCollectionManagementService;
 import org.exist.xmldb.DatabaseImpl;
@@ -54,6 +77,7 @@ import org.xmldb.api.base.Database;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XUpdateQueryService;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
@@ -120,7 +144,8 @@ public class UpdateRecoverTest {
                 assertNotNull(test2);
                 broker.saveCollection(transaction, test2);
 
-                broker.storeDocument(transaction, TestConstants.TEST_XML_URI, new StringInputSource(TEST_XML), MimeType.XML_TYPE, test2);
+                final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(transaction, TestConstants.TEST_XML_URI, new StringInputSource(TEST_XML), xmlMediaType, test2);
                 doc = test2.getDocument(broker, TestConstants.TEST_XML_URI);
                 //TODO : unlock the collection here ?
 

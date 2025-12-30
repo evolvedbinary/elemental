@@ -46,6 +46,7 @@
 
     <modules>
         <module>elemental-parent</module>
+        <module>elemental-media-type</module>
         <module>exist-parent</module>
         <module>exist-ant</module>
         <module>exist-core-build-tools</module>

@@ -79,6 +79,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xmlunit.matchers.CompareMatcher;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.OutputKeys;
 import java.io.IOException;
@@ -392,7 +393,8 @@ public class LuceneMatchListenerTest {
             final CollectionConfigurationManager mgr = pool.getConfigurationManager();
             mgr.addConfiguration(transaction, broker, root, config);
 
-            broker.storeDocument(transaction, XmldbURI.create("test_matches.xml"), new StringInputSource(data), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create("test_matches.xml"), new StringInputSource(data), xmlMediaType, root);
 
             transact.commit(transaction);
         }

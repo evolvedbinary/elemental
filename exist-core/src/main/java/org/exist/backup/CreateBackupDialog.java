@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,12 +46,14 @@
 package org.exist.backup;
 
 import org.exist.client.Messages;
-import org.exist.client.MimeTypeFileFilter;
+import org.exist.client.MediaTypeFileFilter;
 import org.exist.security.PermissionDeniedException;
 import org.exist.xmldb.XmldbURI;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import javax.swing.*;
 import java.awt.*;
@@ -49,12 +75,13 @@ public class CreateBackupDialog extends JPanel {
     final String passwd;
     Path backupDir;
     final String defaultSelectedCollection;
+    private final MediaTypeResolver mediaTypeResolver;
 
-    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir) throws HeadlessException {
-        this(uri, user, passwd, backupDir, null);
+    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir, final MediaTypeResolver mediaTypeResolver) throws HeadlessException {
+        this(uri, user, passwd, backupDir, null, mediaTypeResolver);
     }
 
-    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir, final String defaultSelectedCollection) throws HeadlessException {
+    public CreateBackupDialog(final String uri, final String user, final String passwd, final Path backupDir, final String defaultSelectedCollection, final MediaTypeResolver mediaTypeResolver) throws HeadlessException {
         super(false);
 
         this.uri = uri;
@@ -62,6 +89,7 @@ public class CreateBackupDialog extends JPanel {
         this.passwd = passwd;
         this.backupDir = backupDir;
         this.defaultSelectedCollection = defaultSelectedCollection;
+        this.mediaTypeResolver = mediaTypeResolver;
 
         setupComponents();
         setSize(new Dimension(350, 200));
@@ -147,7 +175,8 @@ public class CreateBackupDialog extends JPanel {
         final JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/zip"));
+        final MediaType mediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_ZIP);
+        chooser.addChoosableFileFilter(new MediaTypeFileFilter(mediaType));
         chooser.setSelectedFile(Paths.get("eXist-backup.zip").toFile());
         chooser.setCurrentDirectory(backupDir.toFile());
 

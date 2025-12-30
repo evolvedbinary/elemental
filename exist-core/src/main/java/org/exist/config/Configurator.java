@@ -93,7 +93,6 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.StringInputSource;
@@ -105,6 +104,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.lang.invoke.MethodType.methodType;
 import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
@@ -1335,7 +1335,8 @@ public class Configurator {
                 systemResourcePermission.setGroup(systemSubject.getDefaultGroup());
                 systemResourcePermission.setMode(Permission.DEFAULT_SYSTEM_RESOURCE_PERM);
 
-                broker.storeDocument(txn, uri, new StringInputSource(data), MimeType.XML_TYPE, null, null, systemResourcePermission, null, null, collection);
+                final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(txn, uri, new StringInputSource(data), xmlMediaType, null, null, systemResourcePermission, null, null, collection);
 
                 broker.saveCollection(txn, collection);
                 if (!txnInProgress) {

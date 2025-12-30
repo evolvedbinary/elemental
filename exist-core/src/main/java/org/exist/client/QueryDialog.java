@@ -107,6 +107,7 @@ import org.xmldb.api.base.ResourceIterator;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -439,7 +440,7 @@ public class QueryDialog extends JFrame {
         chooser.setCurrentDirectory(Paths.get(workDir).toFile());
         chooser.setMultiSelectionEnabled(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xquery"));
+        chooser.addChoosableFileFilter(new MediaTypeFileFilter(client.getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY)));
 
         if (chooser.showDialog(this, Messages.getString("QueryDialog.opendialog")) == JFileChooser.APPROVE_OPTION) {
             final Path selectedDir = chooser.getCurrentDirectory().toPath();
@@ -475,10 +476,10 @@ public class QueryDialog extends JFrame {
         chooser.setCurrentDirectory(Paths.get(workDir).toFile());
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         if ("result".equals(fileCategory)) {
-            chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xhtml+xml"));
-            chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xml"));
+            chooser.addChoosableFileFilter(new MediaTypeFileFilter(client.getMediaTypeResolver().fromString(MediaType.APPLICATION_XHTML)));
+            chooser.addChoosableFileFilter(new MediaTypeFileFilter(client.getMediaTypeResolver().fromString(MediaType.APPLICATION_XML)));
         } else {
-            chooser.addChoosableFileFilter(new MimeTypeFileFilter("application/xquery"));
+            chooser.addChoosableFileFilter(new MediaTypeFileFilter(client.getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY)));
         }
         if (chooser.showDialog(this, Messages.getString("QueryDialog.savedialogpre") + " " + fileCategory + " " + Messages.getString("QueryDialog.savedialogpost"))
                 == JFileChooser.APPROVE_OPTION) {

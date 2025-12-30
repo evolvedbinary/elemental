@@ -1,0 +1,57 @@
+/*
+ * Copyright (C) 2014, Evolved Binary Ltd
+ *
+ * This file was originally ported from FusionDB to Elemental by
+ * Evolved Binary, for the benefit of the Elemental Open Source community.
+ * Only the ported code as it appears in this file, at the time that
+ * it was contributed to Elemental, was re-licensed under The GNU
+ * Lesser General Public License v2.1 only for use in Elemental.
+ *
+ * This license grant applies only to a snapshot of the code as it
+ * appeared when ported, it does not offer or infer any rights to either
+ * updates of this source code or access to the original source code.
+ *
+ * The GNU Lesser General Public License v2.1 only license follows.
+ *
+ * =====================================================================
+ *
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+package xyz.elemental.mediatype.impl;
+
+import javax.annotation.Nullable;
+
+/**
+ * Utilities for working with Strings.
+ *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ */
+class StringUtil {
+
+    static @Nullable String emptyStringAsNull(@Nullable String str) {
+        if (str != null) {
+            str = str.trim();
+            if (str.isEmpty()) {
+                str = null;
+            }
+        }
+        return str;
+    }
+}

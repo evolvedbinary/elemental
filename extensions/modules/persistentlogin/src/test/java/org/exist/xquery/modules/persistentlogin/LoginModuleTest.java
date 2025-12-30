@@ -67,6 +67,7 @@ import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -103,7 +104,7 @@ public class LoginModuleTest {
 
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + EXIST_WEB_SERVER.getPort() + "/xmlrpc" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         final BinaryResource res = (BinaryResource)root.createResource(XQUERY_FILENAME, "BinaryResource");
-        ((EXistResource) res).setMimeType("application/xquery");
+        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
         res.setContent(xquery);
         root.storeResource(res);
         final UserManagementService ums = (UserManagementService)root.getService("UserManagementService", "1.0");

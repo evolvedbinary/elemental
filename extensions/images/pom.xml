@@ -74,6 +74,11 @@
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>javax.media</groupId>
@@ -88,6 +93,60 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseSets>
+
+                        <licenseSet>
+                            <!--
+                                Elemental License - (LGPL 2.1 only)
+                            -->
+                            <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
+                            </excludes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                Combined: Elemental License (LGPL 2.1 only) + eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <multi>
+                                <header>${project.parent.relativePath}/../elemental-parent/elemental-LGPL-21-ONLY-license.template.txt</header>
+                                <separator><![CDATA[NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+      The original license header is included below.
+
+=====================================================================
+                                        ]]></separator>
+                                <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            </multi>
+                            <includes>
+                                <include>pom.xml</include>
+                                <include>src/**</include>
+                            </includes>
+                        </licenseSet>
+
+                        <licenseSet>
+                            <!--
+                                eXist-db License (LGPL 2.1 or later)
+                            -->
+                            <header>${project.parent.relativePath}/../exist-parent/existdb-LGPL-21-license.template.txt</header>
+                            <excludes>
+                                <exclude>pom.xml</exclude>
+                                <exclude>src/**</exclude>
+                            </excludes>
+                        </licenseSet>
+                    </licenseSets>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <repositories>
         <repository>

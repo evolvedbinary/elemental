@@ -61,7 +61,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XPathException;
@@ -74,6 +73,7 @@ import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Tests the indexer.
@@ -361,7 +361,8 @@ public class Indexer3Test {
                 final Txn txn = txnMgr.beginTransaction()) {
 
             try (final Collection collection = broker.getOrCreateCollection(txn, TestConstants.TEST_COLLECTION_URI)) {
-                broker.storeDocument(txn, TestConstants.TEST_XML_URI, new StringInputSource(xml), MimeType.XML_TYPE, collection);
+                final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(txn, TestConstants.TEST_XML_URI, new StringInputSource(xml), xmlMediaType, collection);
 
                 broker.flush();
                 broker.saveCollection(txn, collection);

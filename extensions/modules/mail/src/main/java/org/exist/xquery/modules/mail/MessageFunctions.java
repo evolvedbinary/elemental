@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -49,6 +73,7 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.modules.ModuleUtils;
 import org.exist.xquery.value.*;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Modified by alisterpillow on 19/08/2014.
@@ -322,13 +347,13 @@ public class MessageFunctions extends BasicFunction {
         String contentType = part.getContentType();
 
             // Check if plain
-        if (contentType.contains("text/plain")) {
+        if (contentType.contains(MediaType.TEXT_PLAIN)) {
             builder.startElement(new QName("text", MailModule.NAMESPACE_URI, MailModule.PREFIX), null);
             mimeParamsToAttributes(builder, part.getContentType());
             builder.characters(part.getContent().toString());
             builder.endElement();
 
-        } else if (contentType.contains("text/html")) {
+        } else if (contentType.contains(MediaType.TEXT_HTML)) {
             builder.startElement(new QName("xhtml", MailModule.NAMESPACE_URI, MailModule.PREFIX), null);
             mimeParamsToAttributes(builder, part.getContentType());
             // extract and clean up the html

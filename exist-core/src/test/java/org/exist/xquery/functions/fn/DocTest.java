@@ -79,6 +79,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -114,9 +115,9 @@ public class DocTest {
         test = cms.createCollection("test");
         assertNotNull(test);
 
-        storeResource(test, "test.xq", "BinaryResource", "application/xquery", "doc('test.xml')");
-        storeResource(test, "test1.xq", "BinaryResource", "application/xquery", "doc('/test.xml')");
-        storeResource(test, "test2.xq", "BinaryResource", "application/xquery", "doc('/db/test.xml')");
+        storeResource(test, "test.xq", "BinaryResource", MediaType.APPLICATION_XQUERY, "doc('test.xml')");
+        storeResource(test, "test1.xq", "BinaryResource", MediaType.APPLICATION_XQUERY, "doc('/test.xml')");
+        storeResource(test, "test2.xq", "BinaryResource", MediaType.APPLICATION_XQUERY, "doc('/db/test.xml')");
 
         storeResource(existEmbeddedServer.getRoot(), "test.xml", "XMLResource", null, "<x/>");
         storeResource(test, "test.xml", "XMLResource", null, "<y/>");
@@ -139,7 +140,7 @@ public class DocTest {
     	res.setContent(content);
     	
     	if (mimeType != null) {
-            ((EXistResource) res).setMimeType(mimeType);
+            ((EXistResource) res).setMediaType(mimeType);
         }
         
     	col.storeResource(res);

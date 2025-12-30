@@ -68,6 +68,7 @@ import org.exist.xquery.modules.ModuleUtils;
 import org.exist.xquery.value.*;
 
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -305,7 +306,7 @@ public abstract class AbstractExtractFunction extends BasicFunction {
             final Path file = Paths.get(path).normalize();
             path = file.getParent().toAbsolutePath().toString();
             final String name = FileUtils.fileName(file);
-            final MimeType mediaType = MimeTable.getInstance().getContentTypeFor(name);
+            final MediaType mediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromFileName(name);
 
             // store document
             try (final Collection collection = broker.getOrCreateCollection(broker.getCurrentTransaction(), XmldbURI.create(path));

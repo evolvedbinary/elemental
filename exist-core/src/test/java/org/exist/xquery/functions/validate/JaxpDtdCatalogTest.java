@@ -85,7 +85,7 @@ public class JaxpDtdCatalogTest {
         Collection conf = null;
         try {
             conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse");
-            ExistXmldbEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         } finally {
             if(conf != null) {
                 conf.close();
@@ -98,7 +98,7 @@ public class JaxpDtdCatalogTest {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/dtds/MyNameSpace.dtd")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(dtdsCollection, "MyNameSpace.dtd", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(dtdsCollection, "MyNameSpace.dtd", InputStreamUtil.readAll(is));
             }
         } finally {
             if(dtdsCollection != null) {
@@ -112,7 +112,7 @@ public class JaxpDtdCatalogTest {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/catalog.xml")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
             }
         } finally {
             if(parseCollection != null) {
@@ -126,12 +126,12 @@ public class JaxpDtdCatalogTest {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/valid-dtd.xml")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(instanceCollection, "valid-dtd.xml", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(instanceCollection, "valid-dtd.xml", InputStreamUtil.readAll(is));
             }
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/invalid-dtd.xml")) {
                 assertNotNull(is);
-                ExistXmldbEmbeddedServer.storeResource(instanceCollection, "invalid-dtd.xml", InputStreamUtil.readAll(is));
+                existEmbeddedServer.storeResource(instanceCollection, "invalid-dtd.xml", InputStreamUtil.readAll(is));
             }
         } finally {
             if(instanceCollection != null) {

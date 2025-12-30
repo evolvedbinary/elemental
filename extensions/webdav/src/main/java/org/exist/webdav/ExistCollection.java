@@ -65,6 +65,8 @@ import org.exist.webdav.exceptions.CollectionDoesNotExistException;
 import org.exist.webdav.exceptions.CollectionExistsException;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -301,14 +303,14 @@ public class ExistCollection extends ExistResource {
         XmldbURI newNameUri = XmldbURI.create(newName);
 
         // Get mime, or NULL when not available
-        MimeType mime = MimeTable.getInstance().getContentTypeFor(newName);
-        if (mime == null) {
-            mime = MimeType.BINARY_TYPE;
+        MediaType mediaType = brokerPool.getMediaTypeService().getMediaTypeResolver().fromFileName(newName);
+        if (mediaType == null) {
+            mediaType = brokerPool.getMediaTypeService().getMediaTypeResolver().forUnknown();
         }
 
         // To support LockNullResource, a 0-byte XML document can be received. Since 0-byte
         // XML documents are not supported a small file will be created.
-        if (mime.isXMLType() && length == 0) {
+        if (mediaType.getStorageType() == StorageType.XML && length == 0) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Creating dummy XML file for null resource lock '{}'", newNameUri);
             }
@@ -330,10 +332,10 @@ public class ExistCollection extends ExistResource {
             }
 
             if (LOG.isDebugEnabled()) {
-                if (mime.isXMLType()) {
-                    LOG.debug("Inserting XML document '{}'", mime.getName());
+                if (mediaType.getStorageType() == StorageType.XML) {
+                    LOG.debug("Inserting XML document '{}'", mediaType.getIdentifier());
                 } else {
-                    LOG.debug("Inserting BINARY document '{}'", mime.getName());
+                    LOG.debug("Inserting BINARY document '{}'", mediaType.getIdentifier());
                 }
             }
 
@@ -342,7 +344,7 @@ public class ExistCollection extends ExistResource {
                     -> (String) broker.getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY), is);
                  final CachingFilterInputStream cfis = new CachingFilterInputStream(cache);
                  final EXistInputSource eis = new CachingFilterInputStreamInputSource(cfis)) {
-                broker.storeDocument(txn, newNameUri, eis, mime, collection);
+                broker.storeDocument(txn, newNameUri, eis, mediaType, collection);
             }
 
             // Commit change

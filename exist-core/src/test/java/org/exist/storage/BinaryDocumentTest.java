@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.storage;
 
 import org.exist.EXistException;
@@ -28,12 +51,12 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -61,15 +84,17 @@ public class BinaryDocumentTest {
             final Collection thingCollection = broker.getOrCreateCollection(transaction, thingUri);
             broker.saveCollection(transaction, thingCollection);
 
+            final MediaType binMediaType = pool.getMediaTypeService().getMediaTypeResolver().forUnknown();
+
             // add a binary document to the collection
-            broker.storeDocument(transaction, XmldbURI.create("file1.bin"), new StringInputSource("binary-file1".getBytes(UTF_8)), MimeType.BINARY_TYPE, thingCollection);
+            broker.storeDocument(transaction, XmldbURI.create("file1.bin"), new StringInputSource("binary-file1".getBytes(UTF_8)), binMediaType, thingCollection);
 
             // remove the collection
             assertTrue(broker.removeCollection(transaction, thingCollection));
 
             // try and store a binary doc with the same name as the thing collection (should succeed)
             final Collection testCollection = broker.getCollection(testCollectionUri);
-            broker.storeDocument(transaction, XmldbURI.create("thing"), new StringInputSource("binary-file2".getBytes(UTF_8)), MimeType.BINARY_TYPE, testCollection);
+            broker.storeDocument(transaction, XmldbURI.create("thing"), new StringInputSource("binary-file2".getBytes(UTF_8)), binMediaType, testCollection);
         }
     }
 
@@ -90,7 +115,8 @@ public class BinaryDocumentTest {
             final Collection testCollection = broker.getCollection(testCollectionUri);
 
             try {
-                broker.storeDocument(transaction, thingUri.lastSegment(), new StringInputSource("binary-file".getBytes(UTF_8)), MimeType.BINARY_TYPE, testCollection);
+                final MediaType binMediaType = pool.getMediaTypeService().getMediaTypeResolver().forUnknown();
+                broker.storeDocument(transaction, thingUri.lastSegment(), new StringInputSource("binary-file".getBytes(UTF_8)), binMediaType, testCollection);
                 fail("Should not have been able to overwrite Collection with Binary Document");
 
             } catch (final EXistException e) {

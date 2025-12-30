@@ -44,7 +44,6 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
@@ -55,6 +54,7 @@ import org.exist.xquery.value.Type;
 import org.junit.Rule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Map;
@@ -134,8 +134,9 @@ public class ConnectionIT {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // store module
+            final MediaType xqueryMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
             try (final Collection collection = broker.openCollection(XmldbURI.create("/db"), Lock.LockMode.WRITE_LOCK)) {
-                broker.storeDocument(transaction, XmldbURI.create("mymodule.xqm"), new StringInputSource(moduleQuery.getBytes(UTF_8)), MimeType.XQUERY_TYPE, collection);
+                broker.storeDocument(transaction, XmldbURI.create("mymodule.xqm"), new StringInputSource(moduleQuery.getBytes(UTF_8)), xqueryMediaType, collection);
             }
 
             final Tuple2<XQueryContext, ModuleContext> escapedContexts = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {

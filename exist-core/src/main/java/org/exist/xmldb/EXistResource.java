@@ -81,9 +81,39 @@ public interface EXistResource extends Resource, AutoCloseable {
 
     void setLexicalHandler(LexicalHandler handler);
 
-    void setMimeType(String mime);
+    /**
+     * Set the Internet Media Type of the resource.
+     *
+     * @param mediaType the Internet Media Type.
+     *
+     * @deprecated Use {@link #setMediaType(String)} instead.
+     */
+    @Deprecated
+    void setMimeType(String mediaType);
 
+    /**
+     * Set the Internet Media Type of the resource.
+     *
+     * @param mediaType the Internet Media Type.
+     */
+    void setMediaType(String mediaType);
+
+    /**
+     * Get the Internet Media Type of the resource.
+     *
+     * @return the Internet Media Type.
+     *
+     * @deprecated Use {@link #getMediaType()} instead.
+     */
+    @Deprecated
     String getMimeType() throws XMLDBException;
+
+    /**
+     * Get the Internet Media Type of the resource.
+     *
+     * @return the Internet Media Type.
+     */
+    String getMediaType() throws XMLDBException;
 
     DocumentType getDocType() throws XMLDBException;
 
