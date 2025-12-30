@@ -980,6 +980,7 @@
                                 <include>src/main/java/org/exist/management/impl/JMXAgent.java</include>
                                 <include>src/main/java/org/exist/management/impl/SanityReport.java</include>
                                 <include>src/main/java/org/exist/numbering/DLN.java</include>
+                                <include>src/main/java/org/exist/numbering/DLNBase.java</include>
                                 <include>src/main/java/org/exist/numbering/DLNFactory.java</include>
                                 <include>src/test/java/org/exist/numbering/DLNStorageTest.java</include>
                                 <include>src/main/java/org/exist/numbering/NodeId.java</include>
@@ -1690,6 +1691,7 @@
                                 <exclude>src/main/java/org/exist/mediatype/MediaTypeService.java</exclude>
                                 <exclude>src/main/java/org/exist/mediatype/MediaTypeUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLN.java</exclude>
+                                <exclude>src/main/java/org/exist/numbering/DLNBase.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLNFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/numbering/DLNStorageTest.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/NodeId.java</exclude>
