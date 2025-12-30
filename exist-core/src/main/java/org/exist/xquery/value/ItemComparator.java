@@ -56,6 +56,8 @@ public class ItemComparator implements Comparator<Item> {
     @Nullable private final Collator collator;
     @Nullable private AtomicValueComparator atomicValueComparator = null;
 
+    public static ItemComparator WITHOUT_COLLATOR = new ItemComparator();
+
     public ItemComparator() {
         this(null);
     }
@@ -70,7 +72,11 @@ public class ItemComparator implements Comparator<Item> {
             return Constants.INFERIOR;
         } else if (n1 instanceof AtomicValue && n2 instanceof AtomicValue) {
             if (atomicValueComparator == null) {
-                atomicValueComparator = new AtomicValueComparator(collator);
+                if (collator == null) {
+                    atomicValueComparator = AtomicValueComparator.WITHOUT_COLLATOR;
+                } else {
+                    atomicValueComparator = new AtomicValueComparator(collator);
+                }
             }
             return atomicValueComparator.compare((AtomicValue)n1, (AtomicValue)n2);
         } else if (n1 instanceof Comparable) {
