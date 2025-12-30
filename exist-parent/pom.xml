@@ -98,7 +98,7 @@
         <icu.version>59.1</icu.version>
         <izpack.version>5.2.4</izpack.version>
         <jline.version>3.30.6</jline.version>
-        <lz4-java.version>1.8.0</lz4-java.version>
+        <lz4-java.version>1.10.2</lz4-java.version>
         <jetty.version>9.4.58.v20250814</jetty.version>
         <log4j.version>2.25.2</log4j.version>
         <lucene.version>4.10.4</lucene.version>
@@ -169,13 +169,13 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.19.0</version>
+                <version>1.20.0</version>
             </dependency>
 
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
-                <version>2.20.0</version>
+                <version>2.21.0</version>
             </dependency>
 
             <dependency>
@@ -486,7 +486,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.7.1</version>
+                    <version>3.8.0</version>
                     <configuration>
                         <archive>
                             <manifest>
