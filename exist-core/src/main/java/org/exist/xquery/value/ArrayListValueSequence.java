@@ -266,7 +266,7 @@ public class ArrayListValueSequence extends AbstractSequence implements MemoryNo
         final List<Item> newValues = new ArrayList<>(values.size());
         int newType = Type.ANY_TYPE;
 
-        final ItemComparator itemComparator = new ItemComparator();
+        final ItemComparator itemComparator = ItemComparator.WITHOUT_COLLATOR;
 
         for (int i = 0; i < values.size(); i++) {
             final Item value = values.get(i);

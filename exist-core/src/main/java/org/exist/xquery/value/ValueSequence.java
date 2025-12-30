@@ -499,7 +499,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
             if (!hasNodes) {
                 return;
             }
-            final Map<Item, Item> nodes = new TreeMap<>(new ItemComparator());
+            final Map<Item, Item> nodes = new TreeMap<>(ItemComparator.WITHOUT_COLLATOR);
             int j = 0;
             for (int i = 0; i <= size; i++) {
                 if (Type.subTypeOf(values[i].getType(), Type.NODE)) {
