@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,8 +51,6 @@ import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.storage.lock.Lock.LockMode;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
@@ -38,6 +60,9 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
+import xyz.elemental.mediatype.MediaType;
+
+import java.nio.file.Paths;
 
 import static org.exist.xquery.XPathException.execAndAddErrorIfMissing;
 
@@ -70,10 +95,9 @@ public class XMLDBGetMimeType extends BasicFunction {
 		
 		if(path.matches("^[a-z]+://.*")) {
 			//external
-			final MimeTable mimeTable = MimeTable.getInstance();
-			final MimeType mimeType = mimeTable.getContentTypeFor(path);
-			if(mimeType != null) {
-				return new StringValue(this, mimeType.getName());
+			final MediaType mediaType = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromFileName(Paths.get(path));
+			if (mediaType != null) {
+				return new StringValue(this, mediaType.getIdentifier());
             }
 		} else {
 			//database
@@ -84,7 +108,7 @@ public class XMLDBGetMimeType extends BasicFunction {
 				// try to open the document and acquire a lock
 				try(final LockedDocument lockedDoc = context.getBroker().getXMLResource(pathUri, LockMode.READ_LOCK)) {
 					if (lockedDoc != null) {
-						return new StringValue(this, lockedDoc.getDocument().getMimeType());
+						return new StringValue(this, lockedDoc.getDocument().getMediaType());
 					}
 				}
 			} catch(final Exception e) {

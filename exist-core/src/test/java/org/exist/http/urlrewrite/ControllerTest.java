@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.http.urlrewrite;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
@@ -32,6 +55,7 @@ import org.exist.http.AbstractHttpTest;
 import org.exist.test.ExistWebServer;
 import org.junit.Rule;
 import org.junit.Test;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 
@@ -58,7 +82,7 @@ public class ControllerTest extends AbstractHttpTest {
         final String testCollectionName = "test-finds-legacy-controller";
 
         // store the legacy controller
-        store(testCollectionName, "application/xquery", LEGACY_XQUERY_CONTROLLER_FILENAME, LEGACY_CONTROLLER_XQUERY);
+        store(testCollectionName, MediaType.APPLICATION_XQUERY, LEGACY_XQUERY_CONTROLLER_FILENAME, LEGACY_CONTROLLER_XQUERY);
 
         // make a request and see if the legacy controller responds
         final Tuple2<Integer, String> responseCodeAndBody = get(testCollectionName, TEST_DOCUMENT_NAME);
@@ -71,7 +95,7 @@ public class ControllerTest extends AbstractHttpTest {
         final String testCollectionName = "test-finds-controller";
 
         // store the controller
-        store(testCollectionName, "application/xquery", XQUERY_CONTROLLER_FILENAME, CONTROLLER_XQUERY);
+        store(testCollectionName, MediaType.APPLICATION_XQUERY, XQUERY_CONTROLLER_FILENAME, CONTROLLER_XQUERY);
 
         // make a request and see if the controller responds
         final Tuple2<Integer, String> responseCodeAndBody = get(testCollectionName, TEST_DOCUMENT_NAME);
@@ -84,8 +108,8 @@ public class ControllerTest extends AbstractHttpTest {
         final String testCollectionName = "test-prefers-non-legacy-controller";
 
         // store the controller and the legacy controller
-        store(testCollectionName, "application/xquery", XQUERY_CONTROLLER_FILENAME, CONTROLLER_XQUERY);
-        store(testCollectionName, "application/xquery", LEGACY_XQUERY_CONTROLLER_FILENAME, LEGACY_CONTROLLER_XQUERY);
+        store(testCollectionName, MediaType.APPLICATION_XQUERY, XQUERY_CONTROLLER_FILENAME, CONTROLLER_XQUERY);
+        store(testCollectionName, MediaType.APPLICATION_XQUERY, LEGACY_XQUERY_CONTROLLER_FILENAME, LEGACY_CONTROLLER_XQUERY);
 
         // make a request and see if the (non-legacy) controller responds
         final Tuple2<Integer, String> responseCodeAndBody = get(testCollectionName, TEST_DOCUMENT_NAME);

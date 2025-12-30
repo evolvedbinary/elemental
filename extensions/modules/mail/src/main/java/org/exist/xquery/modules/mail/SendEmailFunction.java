@@ -51,7 +51,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Version;
 import org.exist.dom.QName;
-import org.exist.util.MimeTable;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 import org.exist.xslt.TransformerFactoryAllocator;
@@ -62,6 +61,9 @@ import jakarta.activation.DataHandler;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import jakarta.mail.util.ByteArrayDataSource;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
 import javax.annotation.Nullable;
 import javax.xml.transform.Transformer;
@@ -533,7 +535,7 @@ public class SendEmailFunction extends BasicFunction {
         if (!multipartBoundary.isEmpty()) {
             //multipart message
 
-            out.print("Content-Type: " + (multipartAlternative ? "multipart/alternative" : "multipart/mixed") + "; boundary=" + parameterValue(multipartBoundary.peekFirst()) + eol);
+            out.print("Content-Type: " + (multipartAlternative ? MediaType.MULTIPART_ALTERNATIVE : MediaType.MULTIPART_MIXED) + "; boundary=" + parameterValue(multipartBoundary.peekFirst()) + eol);
 
             //Mime warning
             out.print(eol);
@@ -554,7 +556,7 @@ public class SendEmailFunction extends BasicFunction {
 
         //text email
         if (nonEmpty(aMail.getText())) {
-            out.print("Content-Type: text/plain; charset=" + charset + eol);
+            out.print("Content-Type: " + MediaType.TEXT_PLAIN + "; charset=" + charset + eol);
             out.print("Content-Transfer-Encoding: 8bit" + eol);
 
             //now send the txt message
@@ -574,7 +576,7 @@ public class SendEmailFunction extends BasicFunction {
 
         //HTML email
         if (nonEmpty(aMail.getXHTML())) {
-            out.print("Content-Type: text/html; charset=" + charset + eol);
+            out.print("Content-Type: " + MediaType.TEXT_HTML + "; charset=" + charset + eol);
             out.print("Content-Transfer-Encoding: 8bit" + eol);
 
             //now send the html message
@@ -899,7 +901,12 @@ public class SendEmailFunction extends BasicFunction {
                                 final Element attachment = (Element) child;
                                 final MimeBodyPart part;
                                 // if mimetype indicates a binary resource, assume the content is base64 encoded
-                                if (MimeTable.getInstance().isTextContent(attachment.getAttribute("mimetype"))) {
+                                final MediaTypeResolver mediaTypeResolver = context.getBroker().getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+                                @Nullable MediaType mediaType = mediaTypeResolver.fromString(attachment.getAttribute("mimetype"));
+                                if (mediaType == null) {
+                                    mediaType = mediaTypeResolver.forUnknown();
+                                }
+                                if (isTextContent(mediaType)) {
                                     part = new MimeBodyPart();
                                 } else {
                                     part = new PreencodedMimeBodyPart("base64");
@@ -979,6 +986,10 @@ public class SendEmailFunction extends BasicFunction {
         }
 
         return mails;
+    }
+
+    private static boolean isTextContent(final MediaType mediaType) {
+        return mediaType.getIdentifier().startsWith("text/") || mediaType.getIdentifier().endsWith("xquery") || mediaType.getStorageType() == StorageType.XML;
     }
 
     /**

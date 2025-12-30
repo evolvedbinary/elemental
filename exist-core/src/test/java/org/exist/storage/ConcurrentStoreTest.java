@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -44,6 +68,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.samples.Samples.SAMPLES;
@@ -151,10 +176,11 @@ public class ConcurrentStoreTest {
                     final Txn transaction = transact.beginTransaction()) {
 
                 // store some documents into the test collection
+                final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
                 for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
                     try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
                         final String sample = InputStreamUtil.readString(is, UTF_8);
-                        broker.storeDocument(transaction, XmldbURI.create(sampleName), new StringInputSource(sample), MimeType.XML_TYPE, test);
+                        broker.storeDocument(transaction, XmldbURI.create(sampleName), new StringInputSource(sample), xmlMediaType, test);
                     } catch (SAXException e) {
                         System.err.println("Error found while parsing document: " + sampleName + ": " + e.getMessage());
                     }
@@ -195,7 +221,8 @@ public class ConcurrentStoreTest {
 
                 try (final InputStream is = SAMPLES.getHamletSample()) {
                     final String sample = InputStreamUtil.readString(is, UTF_8);
-                    broker.storeDocument(transaction, XmldbURI.create("test.xml"), new StringInputSource(sample), MimeType.XML_TYPE, test);
+                    final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                    broker.storeDocument(transaction, XmldbURI.create("test.xml"), new StringInputSource(sample), xmlMediaType, test);
                 } catch (SAXException e) {
                     System.err.println("Error found while parsing document: hamlet.xml: " + e.getMessage());
                 }

@@ -60,7 +60,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
@@ -69,6 +68,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.Source;
 import java.io.IOException;
@@ -99,7 +99,8 @@ public class CollectionStoreTest {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             try (final Collection col = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI)) {
-                broker.storeDocument(transaction, TEST_XML_DOC_URI, new StringInputSource(TEST_XML_DOC), MimeType.XML_TYPE, col);
+                final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(transaction, TEST_XML_DOC_URI, new StringInputSource(TEST_XML_DOC), xmlMediaType, col);
                 broker.saveCollection(transaction, col);
             }
 
@@ -144,7 +145,7 @@ public class CollectionStoreTest {
                 final byte[] bin = TEST_BIN_DOC.getBytes(UTF_8);
                 try (final InputStream is = new UnsynchronizedByteArrayInputStream(bin)) {
                     final int docId = broker.getNextResourceId(transaction);
-                    final BinaryDocument binDoc = col.addBinaryResource(transaction, broker, new BinaryDocument(null, broker.getBrokerPool(), col, docId, TEST_BIN_DOC_URI), is, "text/plain", bin.length, null, null, preserveOnCopy);
+                    final BinaryDocument binDoc = col.addBinaryResource(transaction, broker, new BinaryDocument(null, broker.getBrokerPool(), col, docId, TEST_BIN_DOC_URI), is, MediaType.TEXT_PLAIN, bin.length, null, null, preserveOnCopy);
                     assertNotNull(binDoc);
                 }
                 broker.saveCollection(transaction, col);

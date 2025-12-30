@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -55,6 +79,10 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
+import xyz.elemental.mediatype.impl.MediaTypeImpl;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -63,6 +91,7 @@ import java.util.*;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.util.StringUtil.isNullOrEmpty;
 
 /**
  * SAX Content Handler that can act upon
@@ -89,7 +118,6 @@ public abstract class AbstractRestoreHandler extends DefaultHandler {
     @Nullable private final Txn transaction;
     private final BackupDescriptor descriptor;
     private final RestoreListener listener;
-
     @Nullable private final Set<String> pathsToIgnore;
 
     //handler state
@@ -312,7 +340,7 @@ public abstract class AbstractRestoreHandler extends DefaultHandler {
 
         final boolean xmlType = Optional.ofNullable(attributes.getValue("type")).filter(s -> s.equals("XMLResource")).isPresent();
         final String filename = getAttr(attributes, "filename", commonAttributes.name);
-        @Nullable final String mimeTypeStr = attributes.getValue("mimetype");
+        @Nullable final String mediaTypeStr = attributes.getValue("mimetype");
         @Nullable final String dateModifiedStr = attributes.getValue("modified");
         @Nullable final String publicId = attributes.getValue("publicid");
         @Nullable final String systemId = attributes.getValue("systemid");
@@ -343,12 +371,19 @@ public abstract class AbstractRestoreHandler extends DefaultHandler {
             }
         }
 
-        final MimeType mimeType;
-        if (mimeTypeStr == null || mimeTypeStr.trim().isEmpty()) {
-            mimeType = xmlType ? MimeType.XML_TYPE : MimeType.BINARY_TYPE;
-            listener.warn("Missing mimetype attribute in the backup __contents__.xml file for: " + commonAttributes.name + ", assuming: " + mimeType);
+        final MediaTypeResolver mediaTypeResolver = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver();
+
+        MediaType mediaType;
+        if (isNullOrEmpty(mediaTypeStr)) {
+            mediaType = xmlType ? mediaTypeResolver.fromString(MediaType.APPLICATION_XML) : mediaTypeResolver.forUnknown();
+            listener.warn("Missing mimetype attribute in the backup __contents__.xml file for: " + commonAttributes.name + ", assuming: " + mediaType);
         } else {
-            mimeType = new MimeType(mimeTypeStr.trim(), xmlType ? MimeType.XML : MimeType.BINARY);
+            mediaType = mediaTypeResolver.fromString(mediaTypeStr.trim());
+            if (xmlType && mediaType.getStorageType() != StorageType.XML) {
+                mediaType = MediaTypeImpl.builder(mediaTypeStr.trim(), StorageType.XML).build();
+            } else if ((!xmlType) && mediaType.getStorageType() != StorageType.BINARY) {
+                mediaType = MediaTypeImpl.builder(mediaTypeStr.trim(), StorageType.BINARY).build();
+            }
         }
 
         Date dateCreated = null;
@@ -385,7 +420,7 @@ public abstract class AbstractRestoreHandler extends DefaultHandler {
                     try (final Collection collection = broker.openCollection(currentCollectionUri, Lock.LockMode.WRITE_LOCK);
                          final ManagedDocumentLock docLock = broker.getBrokerPool().getLockManager().acquireDocumentWriteLock(docUri)) {
 
-                        broker.storeDocument(transaction, docName, is, mimeType, dateCreated, dateModified, null, docType, null, collection);
+                        broker.storeDocument(transaction, docName, is, mediaType, dateCreated, dateModified, null, docType, null, collection);
                         validated = true;
 
                         notifyStartDocumentRestore(docUri, attributes);
@@ -572,6 +607,7 @@ public abstract class AbstractRestoreHandler extends DefaultHandler {
      * @param descriptor the backup descriptor to start restoring from
      * @param listener the listener to report restore events to
      * @param pathsToIgnore database paths to ignore in the backup
+     *
      * @return a new restore handler
      */
     protected abstract AbstractRestoreHandler newSelf(final DBBroker broker, @Nullable final Txn transaction,

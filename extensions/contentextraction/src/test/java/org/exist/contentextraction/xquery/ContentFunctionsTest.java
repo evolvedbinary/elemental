@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -38,6 +62,7 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,12 +90,12 @@ public class ContentFunctionsTest {
 
                 try (final InputStream is = ContentFunctionsTest.class.getResourceAsStream("minimal.pdf")) {
                     assertNotNull(is);
-                    collection.addBinaryResource(transaction, broker, XmldbURI.create("minimal.pdf"), is, "application/pdf", -1);
+                    collection.addBinaryResource(transaction, broker, XmldbURI.create("minimal.pdf"), is, MediaType.APPLICATION_PDF, -1);
                 }
 
                 try (final InputStream is = ContentFunctionsTest.class.getResourceAsStream("test.xlsx")) {
                     assertNotNull(is);
-                    collection.addBinaryResource(transaction, broker, XmldbURI.create("test.xlsx"), is, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", -1);
+                    collection.addBinaryResource(transaction, broker, XmldbURI.create("test.xlsx"), is, MediaType.APPLICATION_OPENXML_SPREADSHEET, -1);
                 }
 
             }
@@ -118,7 +143,7 @@ public class ContentFunctionsTest {
             transaction.commit();
 
             assertEquals(1, metadata._1.intValue());
-            assertEquals("application/pdf", metadata._2);
+            assertEquals(MediaType.APPLICATION_PDF, metadata._2);
         }
     }
 
@@ -176,7 +201,7 @@ public class ContentFunctionsTest {
             transaction.commit();
 
             assertEquals(1, metadata._1.intValue());
-            assertEquals("application/pdf", metadata._2);
+            assertEquals(MediaType.APPLICATION_PDF, metadata._2);
         }
     }
 }

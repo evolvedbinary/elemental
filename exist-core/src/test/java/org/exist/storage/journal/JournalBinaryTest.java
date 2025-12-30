@@ -47,7 +47,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.FileInputSource;
 import org.exist.util.FileUtils;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.StreamableDigest;
 import org.exist.xmldb.XmldbURI;
@@ -56,6 +55,7 @@ import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -448,7 +448,8 @@ public class JournalBinaryTest extends AbstractJournalTest<JournalBinaryTest.Bin
 
         assertTrue(data instanceof FileInputSource);
 
-        broker.storeDocument(transaction, XmldbURI.create(dbFilename), data, MimeType.BINARY_TYPE, collection);
+        final MediaType binMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
+        broker.storeDocument(transaction, XmldbURI.create(dbFilename), data, binMediaType, collection);
         final BinaryDocument doc = (BinaryDocument) collection.getDocument(broker, XmldbURI.create(dbFilename));
         assertNotNull(doc);
         assertEquals(Files.size(((FileInputSource)data).getFile()), doc.getContentLength());

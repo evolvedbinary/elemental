@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -44,7 +68,9 @@ import org.exist.storage.lock.ManagedDocumentLock;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.Txn;
-import org.exist.util.*;
+import org.exist.util.HtmlToXmlParser;
+import org.exist.util.InputStreamSupplierInputSource;
+import org.exist.util.StringInputSource;
 import com.evolvedbinary.j8fu.Either;
 import com.evolvedbinary.j8fu.function.FunctionE;
 import org.exist.xmldb.function.LocalXmldbCollectionFunction;
@@ -59,6 +85,7 @@ import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 import org.xmldb.api.modules.XQueryService;
 import org.xmldb.api.modules.XUpdateQueryService;
+import xyz.elemental.mediatype.MediaType;
 
 import static com.evolvedbinary.j8fu.Try.Try;
 import static org.xmldb.api.base.ResourceType.BINARY_RESOURCE;
@@ -354,7 +381,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
                     case DocumentImpl.BINARY_FILE -> new LocalBinaryResource(user, brokerPool, this, idURI);
                     default -> throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type");
                 };
-                ((AbstractEXistResource) r).setMimeType(document.getMimeType());
+                ((AbstractEXistResource) r).setMediaType(document.getMediaType());
                 return r;
             }
         });
@@ -572,13 +599,13 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
 
         modify().apply((collection, broker, transaction) -> {
             try {
-                final String strMimeType = res.getMimeType(broker, transaction);
-                final MimeType mimeType = strMimeType != null ? MimeTable.getInstance().getContentType(strMimeType) : null;
+                final String strMimeType = res.getMediaType(broker, transaction);
+                final MediaType mediaType = strMimeType != null ? broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(strMimeType) : null;
                 final long conLength = res.getStreamLength();
                 if (conLength != -1) {
-                    broker.storeDocument(transaction, resURI, new InputStreamSupplierInputSource(() -> Try(() -> res.getStreamContent(broker, transaction)).getOrElse((InputStream) null)), mimeType, res.datecreated, res.datemodified, null, null, null, collection);
+                    broker.storeDocument(transaction, resURI, new InputStreamSupplierInputSource(() -> Try(() -> res.getStreamContent(broker, transaction)).getOrElse((InputStream) null)), mediaType, res.datecreated, res.datemodified, null, null, null, collection);
                 } else {
-                    broker.storeDocument(transaction, resURI, new StringInputSource((byte[]) res.getContent(broker, transaction)), mimeType, res.datecreated, res.datemodified, null, null, null, collection);
+                    broker.storeDocument(transaction, resURI, new StringInputSource((byte[]) res.getContent(broker, transaction)), mediaType, res.datecreated, res.datemodified, null, null, null, collection);
                 }
             } catch(final EXistException | SAXException e) {
                 throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -607,11 +634,11 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
 
             try(final ManagedDocumentLock documentLock = broker.getBrokerPool().getLockManager().acquireDocumentWriteLock(collection.getURI().append(resURI))) {
 
-                final String strMimeType = res.getMimeType(broker, transaction);
-                final MimeType mimeType = strMimeType != null ? MimeTable.getInstance().getContentType(strMimeType) : null;
+                final String strMimeType = res.getMediaType(broker, transaction);
+                final MediaType mediaType = strMimeType != null ? broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(strMimeType) : null;
 
                 if (res.root != null) {
-                    collection.storeDocument(transaction, broker, resURI, res.root, mimeType, res.datecreated, res.datemodified, null, null, null);
+                    collection.storeDocument(transaction, broker, resURI, res.root, mediaType, res.datecreated, res.datemodified, null, null, null);
 
                 } else {
                     final InputSource source;
@@ -630,7 +657,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
                         reader = null;
                     }
 
-                    broker.storeDocument(transaction, resURI, source, mimeType, res.datecreated, res.datemodified, null, null, reader, collection);
+                    broker.storeDocument(transaction, resURI, source, mediaType, res.datecreated, res.datemodified, null, null, reader, collection);
                 }
 
                 // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
@@ -662,7 +689,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
     private boolean useHtmlReader(final DBBroker broker, final Txn transaction, final LocalXMLResource res) throws XMLDBException {
         final String normalize = properties.getProperty(NORMALIZE_HTML, "no");
         return ((normalize.equalsIgnoreCase("yes") || normalize.equalsIgnoreCase("true")) &&
-                ("text/html".equals(res.getMimeType(broker, transaction)) || res.getId().endsWith(".htm") ||
+                (MediaType.TEXT_HTML.equals(res.getMediaType(broker, transaction)) || res.getId().endsWith(".htm") ||
                         res.getId().endsWith(".html")));
     }
 

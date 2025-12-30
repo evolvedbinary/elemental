@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,6 +57,7 @@ import org.exist.protocolhandler.embedded.InMemoryOutputStream;
 import org.exist.protocolhandler.xmldb.XmldbURL;
 import org.exist.protocolhandler.xmlrpc.XmlrpcInputStream;
 import org.exist.protocolhandler.xmlrpc.XmlrpcOutputStream;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  *  A URLConnection object manages the translation of a URL object into a
@@ -41,15 +66,18 @@ import org.exist.protocolhandler.xmlrpc.XmlrpcOutputStream;
 public class InMemoryURLConnection extends URLConnection {
     private static final Logger LOG = LogManager.getLogger(InMemoryURLConnection.class);
     private final ThreadGroup threadGroup;
+    private final MediaTypeResolver mediaTypeResolver;
 
     /**
      * Constructs a URL connection to the specified URL.
      * @param threadGroup Thread group
      * @param url URL
+     * @param mediaTypeResolver The Media Type resolver
      */
-    protected InMemoryURLConnection(final ThreadGroup threadGroup, final URL url) {
+    protected InMemoryURLConnection(final ThreadGroup threadGroup, final URL url, final MediaTypeResolver mediaTypeResolver) {
         super(url);
         this.threadGroup = threadGroup;
+        this.mediaTypeResolver = mediaTypeResolver;
 
         setDoInput(true);
         setDoOutput(true);
@@ -67,9 +95,9 @@ public class InMemoryURLConnection extends URLConnection {
         final XmldbURL xmldbURL = new XmldbURL(url);
 
         if(xmldbURL.isEmbedded()){
-            return InMemoryInputStream.stream( xmldbURL );
+            return InMemoryInputStream.stream(xmldbURL);
         } else {
-            return new XmlrpcInputStream(threadGroup, xmldbURL );
+            return new XmlrpcInputStream(threadGroup, xmldbURL);
         }
     }
 
@@ -78,9 +106,9 @@ public class InMemoryURLConnection extends URLConnection {
         final XmldbURL xmldbURL = new XmldbURL(url);
         
         if(xmldbURL.isEmbedded()){
-            return new InMemoryOutputStream( xmldbURL );
+            return new InMemoryOutputStream(xmldbURL);
         } else {
-            return new XmlrpcOutputStream(threadGroup, xmldbURL );
+            return new XmlrpcOutputStream(threadGroup, xmldbURL, mediaTypeResolver);
         }
     }
 }

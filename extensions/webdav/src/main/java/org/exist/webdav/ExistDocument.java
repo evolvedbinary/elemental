@@ -86,7 +86,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class ExistDocument extends ExistResource {
 
-    private String mimeType;
+    private String mediaType;
     private long contentLength = 0;
     private boolean isXmlDocument = false;
 
@@ -137,7 +137,7 @@ public class ExistDocument extends ExistResource {
                 // Get meta data
                 creationTime = document.getCreated();
                 lastModified = document.getLastModified();
-                mimeType = document.getMimeType();
+                mediaType = document.getMediaType();
 
                 // Retrieve perssions
                 permissions = document.getPermissions();
@@ -159,8 +159,8 @@ public class ExistDocument extends ExistResource {
         isInitialized = true;
     }
 
-    public String getMimeType() {
-        return mimeType;
+    public String getMediaType() {
+        return mediaType;
     }
 
     public long getContentLength() {

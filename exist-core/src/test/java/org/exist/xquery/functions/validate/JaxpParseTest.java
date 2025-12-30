@@ -85,7 +85,7 @@ public class JaxpParseTest {
 
         // Switch off validation
         try (Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse_validate")) {
-            ExistXmldbEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
         try (Collection schemasCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse_validate")) {
@@ -93,7 +93,7 @@ public class JaxpParseTest {
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/parse_validate/" + testResource)) {
                     assertNotNull(is);
-                    ExistXmldbEmbeddedServer.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
+                    existEmbeddedServer.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
                 }
             }
         }

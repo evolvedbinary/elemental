@@ -60,6 +60,7 @@ import org.junit.*;
 import org.xmldb.api.base.*;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
+import xyz.elemental.mediatype.MediaType;
 
 import java.util.Iterator;
 import java.util.List;
@@ -114,7 +115,7 @@ public class CleanupTest {
         collection = service.createCollection("test");
         final Resource doc = collection.createResource("test-module.xql", BinaryResource.class);
         doc.setContent(TEST_MODULE);
-        ((EXistResource) doc).setMimeType("application/xquery");
+        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
         collection.storeResource(doc);
     }
 

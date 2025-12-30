@@ -49,8 +49,6 @@ import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.DatabaseConfigurationException;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
 import org.exist.xmldb.EXistCollection;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.XmldbURI;
@@ -60,13 +58,15 @@ import org.xmldb.api.base.*;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
+import xyz.elemental.mediatype.StorageType;
 
 import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -82,6 +82,7 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
     private Database database = null;
     private Collection root = null;
     private EXistXQueryService xpathQueryService = null;
+    private MediaTypeResolver mediaTypeResolver = null;
 
     public ExistXmldbEmbeddedServer() {
         this(false, false);
@@ -132,6 +133,7 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
     private void startDb() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         try {
             existEmbeddedServer.startDb();
+            this.mediaTypeResolver = existEmbeddedServer.getBrokerPool().getMediaTypeService().getMediaTypeResolver();
         } catch (final DatabaseConfigurationException | EXistException | IOException e) {
             throw new XMLDBException(ErrorCodes.INVALID_DATABASE, e);
         }
@@ -236,10 +238,10 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
         return newCollection;
     }
 
-    public static void storeResource(final Collection collection, final String documentName, final byte[] content)
+    public void storeResource(final Collection collection, final String documentName, final byte[] content)
             throws XMLDBException {
-        final MimeType mime = MimeTable.getInstance().getContentTypeFor(documentName);
-        final Class<? extends Resource> type = mime.isXMLType() ? XMLResource.class : BinaryResource.class;
+        final MediaType mediaType = mediaTypeResolver.fromFileName(documentName);
+        final Class<? extends Resource> type =  mediaType.getStorageType() == StorageType.XML ? XMLResource.class : BinaryResource.class;
         try (final Resource resource = collection.createResource(documentName, type)) {
             resource.setContent(content);
             collection.storeResource(resource);

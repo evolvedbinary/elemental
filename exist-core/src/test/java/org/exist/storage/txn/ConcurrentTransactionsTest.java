@@ -44,10 +44,10 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TransactionTestDSL;
 import org.exist.util.InputStreamSupplierInputSource;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -184,7 +184,8 @@ public class ConcurrentTransactionsTest {
             assertNotNull(test);
             broker.saveCollection(transaction, test);
 
-            broker.storeDocument(transaction, XmldbURI.create("hamlet.xml"), new InputStreamSupplierInputSource(SAMPLES::getHamletSample), MimeType.XML_TYPE, test);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create("hamlet.xml"), new InputStreamSupplierInputSource(SAMPLES::getHamletSample), xmlMediaType, test);
 
             transact.commit(transaction);
         }

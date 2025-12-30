@@ -42,7 +42,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.BeforeClass;
@@ -54,6 +53,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.Source;
 import java.io.IOException;
@@ -627,7 +627,8 @@ public class JournalXmlTest extends AbstractJournalTest<String> {
             final InputSource data, final String dbFilename) throws EXistException, PermissionDeniedException, IOException,
             SAXException, LockException {
 
-        broker.storeDocument(transaction, XmldbURI.create(dbFilename), data, MimeType.XML_TYPE, collection);
+        final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+        broker.storeDocument(transaction, XmldbURI.create(dbFilename), data, xmlMediaType, collection);
 
         assertNotNull(collection.getDocument(broker, XmldbURI.create(dbFilename)));
 

@@ -42,7 +42,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
@@ -51,6 +50,7 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -65,7 +65,8 @@ public class Util {
 
     public static XmldbURI storeQuery(final DBBroker broker, final Txn transaction, final InputSource querySource, final Collection collection, XmldbURI name) throws LockException, PermissionDeniedException, EXistException, IOException, SAXException {
         name = name.lastSegment();
-        broker.storeDocument(transaction, name, querySource, MimeType.XQUERY_TYPE, collection);
+        final MediaType xqueryMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
+        broker.storeDocument(transaction, name, querySource, xqueryMediaType, collection);
         return collection.getURI().append(name);
     }
 

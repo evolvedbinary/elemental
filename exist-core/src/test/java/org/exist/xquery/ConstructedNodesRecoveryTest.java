@@ -64,7 +64,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.Sequence;
@@ -80,6 +79,7 @@ import java.util.Properties;
 import javax.xml.transform.OutputKeys;
 
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -153,7 +153,8 @@ public class ConstructedNodesRecoveryTest {
             broker.saveCollection(transaction, root);
 
             //store test document
-            broker.storeDocument(transaction, XmldbURI.create(documentName), new StringInputSource(testDocument), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create(documentName), new StringInputSource(testDocument), xmlMediaType, root);
 
             //commit the transaction
             transact.commit(transaction);

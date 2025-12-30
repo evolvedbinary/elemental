@@ -72,7 +72,6 @@ import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.ExistSAXParserFactory;
-import org.exist.util.MimeType;
 import org.exist.util.io.ContentFile;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
@@ -99,6 +98,7 @@ import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
+import xyz.elemental.mediatype.MediaType;
 
 public class RemoteXMLResource
         extends AbstractRemoteResource
@@ -185,7 +185,7 @@ public class RemoteXMLResource
             final Optional<String> id,
             final Optional<String> type)
             throws XMLDBException {
-        super(parent, docId, MimeType.XML_TYPE.getName(), type);
+        super(parent, docId, MediaType.APPLICATION_XML, type);
         this.handle = handle;
         this.pos = pos;
         this.id = id;

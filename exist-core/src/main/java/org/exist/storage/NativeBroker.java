@@ -124,6 +124,7 @@ import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.security.Permission.DEFAULT_TEMPORARY_COLLECTION_PERM;
@@ -2307,8 +2308,18 @@ public class NativeBroker implements DBBroker {
     }
 
     @Override
+    public void storeDocument(final Txn transaction, final XmldbURI name, final InputSource source, final @Nullable MediaType mediaType, final Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        collection.storeDocument(transaction, this, name, source, mediaType);
+    }
+
+    @Override
     public void storeDocument(final Txn transaction, final XmldbURI name, final InputSource source, final @Nullable MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, final @Nullable XMLReader xmlReader, final Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
         collection.storeDocument(transaction, this, name, source, mimeType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final XmldbURI name, final InputSource source, final @Nullable MediaType mediaType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, final @Nullable XMLReader xmlReader, final Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        collection.storeDocument(transaction, this, name, source, mediaType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
     }
 
     @Override
@@ -2317,8 +2328,18 @@ public class NativeBroker implements DBBroker {
     }
 
     @Override
+    public void storeDocument(final Txn transaction, final XmldbURI name, final Node node, final @Nullable MediaType mediaType, final Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        collection.storeDocument(transaction, this, name, node, mediaType);
+    }
+
+    @Override
     public void storeDocument(final Txn transaction, final XmldbURI name, final Node node, final @Nullable MimeType mimeType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, final @Nullable XMLReader xmlReader, final Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
         collection.storeDocument(transaction, this, name, node, mimeType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final XmldbURI name, final Node node, final @Nullable MediaType mediaType, final @Nullable Date createdDate, final @Nullable Date lastModifiedDate, final @Nullable Permission permission, final @Nullable DocumentType documentType, final @Nullable XMLReader xmlReader, final Collection collection) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        collection.storeDocument(transaction, this, name, node, mediaType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
     }
 
     /**

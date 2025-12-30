@@ -75,6 +75,16 @@
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-impl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -155,6 +165,7 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
+                                <include>src/main/java/org/exist/xquery/modules/image/GetThumbnailsFunction.java</include>
                             </includes>
                         </licenseSet>
 
@@ -165,6 +176,7 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
+                                <exclude>src/main/java/org/exist/xquery/modules/image/GetThumbnailsFunction.java</exclude>
                             </excludes>
                         </licenseSet>
 

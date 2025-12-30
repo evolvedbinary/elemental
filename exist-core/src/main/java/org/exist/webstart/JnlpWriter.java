@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.webstart;
 
 import java.io.IOException;
@@ -38,6 +61,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.SystemProperties;
 import org.exist.util.FileUtils;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Class for writing JNLP file, jar files and image files.
@@ -46,8 +70,6 @@ import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
  */
 public class JnlpWriter {
 
-    public static final String JAR_MIME_TYPE = "application/x-java-archive";
-    public static final String PACK_MIME_TYPE = "application/x-java-pack200";
     public static final String ACCEPT_ENCODING = "accept-encoding";
     public static final String CONTENT_TYPE = "content-type";
     public static final String CONTENT_ENCODING = "content-encoding";
@@ -250,11 +272,11 @@ public class JnlpWriter {
 
         if (FileUtils.fileName(localFile).endsWith(".jar")) {
             //response.setHeader(CONTENT_ENCODING, JAR_MIME_TYPE);
-            response.setContentType(JAR_MIME_TYPE);
+            response.setContentType(MediaType.APPLICATION_JAVA_ARCHIVE);
 
         } else if (FileUtils.fileName(localFile).endsWith(".jar.pack.gz")) {
             response.setHeader(CONTENT_ENCODING, PACK200_GZIP_ENCODING);
-            response.setContentType(PACK_MIME_TYPE);
+            response.setContentType(MediaType.APPLICATION_PACK200);
         }
 
         // It is very improbable that a 64 bit jar is needed, but
@@ -294,12 +316,12 @@ public class JnlpWriter {
         }
     }
 
-    private String getImageMimeType(String filename) {
+private String getImageMimeType(String filename) {
         String type = switch (FilenameUtils.getExtension(filename)) {
-            case ".gif" -> "image/gif";
-            case ".png" -> "image/png";
-            case ".jpg", ".jpeg" -> "image/jpeg";
-            default -> "application/octet-stream";
+            case ".gif" -> MediaType.IMAGE_GIF;
+            case ".png" -> MediaType.IMAGE_PNG;
+            case ".jpg", ".jpeg" -> MediaType.IMAGE_JPEG;
+            default ->  MediaType.APPLICATION_OCTET_STREAM;
         };
         return type;
     }

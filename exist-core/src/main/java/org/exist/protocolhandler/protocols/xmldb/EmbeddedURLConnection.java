@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -34,6 +58,7 @@ import org.exist.protocolhandler.embedded.EmbeddedOutputStream;
 import org.exist.protocolhandler.xmldb.XmldbURL;
 import org.exist.protocolhandler.xmlrpc.XmlrpcInputStream;
 import org.exist.protocolhandler.xmlrpc.XmlrpcOutputStream;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 /**
  *  A URLConnection object manages the translation of a URL object into a
@@ -49,19 +74,22 @@ import org.exist.protocolhandler.xmlrpc.XmlrpcOutputStream;
 public class EmbeddedURLConnection extends URLConnection {
     private static final Logger LOG = LogManager.getLogger(EmbeddedURLConnection.class);
     private final ThreadGroup threadGroup;
+    private final MediaTypeResolver mediaTypeResolver;
 
     /**
      * Constructs a URL connection to the specified URL.
      *
      * @param threadGroup Thread group
      * @param url URL
-      */
-    protected EmbeddedURLConnection(final ThreadGroup threadGroup, final URL url) {
+     * @param mediaTypeResolver The Internet Media Type resolver.
+     */
+    protected EmbeddedURLConnection(final ThreadGroup threadGroup, final URL url, final MediaTypeResolver mediaTypeResolver) {
         super(url);
         if (LOG.isDebugEnabled()) {
             LOG.debug(url);
         }
         this.threadGroup = threadGroup;
+        this.mediaTypeResolver = mediaTypeResolver;
         setDoInput(true);
         setDoOutput(true);
     }
@@ -83,7 +111,7 @@ public class EmbeddedURLConnection extends URLConnection {
 
         final InputStream inputstream;
         if(xmldbURL.isEmbedded()){
-            inputstream = new EmbeddedInputStream( xmldbURL );
+            inputstream = new EmbeddedInputStream(xmldbURL);
         } else {
             inputstream = new XmlrpcInputStream(threadGroup, xmldbURL);
         }
@@ -101,9 +129,9 @@ public class EmbeddedURLConnection extends URLConnection {
 
         final OutputStream outputstream;
         if(xmldbURL.isEmbedded()){
-            outputstream = new EmbeddedOutputStream( xmldbURL );
+            outputstream = new EmbeddedOutputStream(xmldbURL);
         } else {
-            outputstream = new XmlrpcOutputStream(threadGroup, xmldbURL);
+            outputstream = new XmlrpcOutputStream(threadGroup, xmldbURL, mediaTypeResolver);
         }
         
         return outputstream;

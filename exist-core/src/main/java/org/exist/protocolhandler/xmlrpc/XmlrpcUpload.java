@@ -57,8 +57,8 @@ import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 
 import org.exist.protocolhandler.xmldb.XmldbURL;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -83,9 +83,10 @@ public class XmlrpcUpload {
      * 
      * @param xmldbURL URL pointing to location on the server.
      * @param is Document stream
+     * @param mediaTypeResolver The Internet Media Type resolver.
      * @throws IOException When something is wrong.
      */
-    public void stream(XmldbURL xmldbURL, InputStream is) throws IOException {
+    public void stream(final XmldbURL xmldbURL, final InputStream is, final MediaTypeResolver mediaTypeResolver) throws IOException {
         LOG.debug("Begin document upload");
         try {
             // Setup xmlrpc client
@@ -101,11 +102,9 @@ public class XmlrpcUpload {
             }
             client.setConfig(config);
 
-            String contentType=MimeType.BINARY_TYPE.getName();
-            final MimeType mime
-                    = MimeTable.getInstance().getContentTypeFor(xmldbURL.getDocumentName());
-            if (mime != null){
-                contentType = mime.getName();
+            MediaType mediaType = mediaTypeResolver.fromFileName(xmldbURL.getDocumentName());
+            if (mediaType == null) {
+                mediaType = mediaTypeResolver.forUnknown();
             }
             
             // Initialize xmlrpc parameters
@@ -130,7 +129,7 @@ public class XmlrpcUpload {
             params.add(handle);
             params.add(xmldbURL.getCollectionPath() );
             params.add(Boolean.TRUE);
-            params.add(contentType);
+            params.add(mediaType.getIdentifier());
             final Boolean result =(Boolean)client.execute("parseLocal", params);
             
             // Check XMLRPC result

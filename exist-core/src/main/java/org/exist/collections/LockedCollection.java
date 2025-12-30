@@ -66,6 +66,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -387,8 +388,18 @@ public class LockedCollection implements Collection {
     }
 
     @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable final MediaType mediaType) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        broker.storeDocument(transaction, name, source, mediaType, collection);
+    }
+
+    @Override
     public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable final MimeType mimeType, @Nullable final Date createdDate, @Nullable final Date lastModifiedDate, @Nullable final Permission permission, @Nullable final DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
         collection.storeDocument(transaction, broker, name, source, mimeType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final InputSource source, @Nullable final MediaType mediaType, @Nullable final Date createdDate, @Nullable final Date lastModifiedDate, @Nullable final Permission permission, @Nullable final DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        collection.storeDocument(transaction, broker, name, source, mediaType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
     }
 
     @Override
@@ -397,8 +408,18 @@ public class LockedCollection implements Collection {
     }
 
     @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable final MediaType mediaType) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        broker.storeDocument(transaction, name, node, mediaType, collection);
+    }
+
+    @Override
     public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable final MimeType mimeType, @Nullable final Date createdDate, @Nullable final Date lastModifiedDate, @Nullable final Permission permission, @Nullable final DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
         collection.storeDocument(transaction, broker, name, node, mimeType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
+    }
+
+    @Override
+    public void storeDocument(final Txn transaction, final DBBroker broker, final XmldbURI name, final Node node, @Nullable final MediaType mediaType, @Nullable final Date createdDate, @Nullable final Date lastModifiedDate, @Nullable final Permission permission, @Nullable final DocumentType documentType, @Nullable final XMLReader xmlReader) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
+        collection.storeDocument(transaction, broker, name, node, mediaType, createdDate, lastModifiedDate, permission, documentType, xmlReader);
     }
 
     @Deprecated

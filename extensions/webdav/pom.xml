@@ -75,6 +75,11 @@
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.exist-db.thirdparty.com.ettrema</groupId>
@@ -230,11 +235,18 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
+                                <include>src/test/java/org/exist/webdav/CDataIntergationTest.java</include>
+                                <include>src/test/java/org/exist/webdav/CopyTest.java</include>
+                                <include>src/test/java/org/exist/webdav/DeleteTest.java</include>
                                 <include>src/main/java/org/exist/webdav/ExistCollection.java</include>
                                 <include>src/main/java/org/exist/webdav/ExistDocument.java</include>
                                 <include>src/main/java/org/exist/webdav/ExistResourceFactory.java</include>
                                 <include>src/main/java/org/exist/webdav/MiltonCollection.java</include>
                                 <include>src/main/java/org/exist/webdav/MiltonDocument.java</include>
+                                <include>src/test/java/org/exist/webdav/RenameTest.java</include>
+                                <include>src/test/java/org/exist/webdav/ReplaceTest.java</include>
+                                <include>src/test/java/org/exist/webdav/SerializationTest.java</include>
+                                <include>src/test/java/org/exist/webdav/StoreAndRetrieveTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -248,11 +260,18 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
+                                <exclude>src/test/java/org/exist/webdav/CDataIntergationTest.java</exclude>
+                                <exclude>src/test/java/org/exist/webdav/CopyTest.java</exclude>
+                                <exclude>src/test/java/org/exist/webdav/DeleteTest.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/ExistCollection.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/ExistDocument.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/ExistResourceFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/MiltonCollection.java</exclude>
                                 <exclude>src/main/java/org/exist/webdav/MiltonDocument.java</exclude>
+                                <exclude>src/test/java/org/exist/webdav/RenameTest.java</exclude>
+                                <exclude>src/test/java/org/exist/webdav/ReplaceTest.java</exclude>
+                                <exclude>src/test/java/org/exist/webdav/SerializationTest.java</exclude>
+                                <exclude>src/test/java/org/exist/webdav/StoreAndRetrieveTest.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

@@ -37,10 +37,10 @@
     and then as a classpath resource in org/exist/util .
     ======================================================= 
 
-    $Id$
+    DEPRECATED - The new MediaTypeResolver API and associated config files should be used instead
 -->
 
-<mime-types xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="schema/mime-types.xsd">
+<mime-types>
 
     <!-- Mime types stored as XML -->
     <mime-type name="application/xml" type="xml">

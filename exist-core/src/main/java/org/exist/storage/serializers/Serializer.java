@@ -86,7 +86,6 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
-import org.exist.util.MimeType;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
 import org.exist.util.serializer.ReceiverToSAX;
@@ -108,6 +107,7 @@ import org.exist.xslt.TransformerFactoryAllocator;
 import org.w3c.dom.*;
 import org.xml.sax.*;
 import org.xml.sax.ext.LexicalHandler;
+import xyz.elemental.mediatype.MediaType;
 
 /**
  * Serializer base class, used to serialize a document or document fragment
@@ -1420,7 +1420,7 @@ public abstract class Serializer implements XMLReader {
                 // found <?xml-stylesheet?>
                 final String xsl = ((ProcessingInstruction) node).getData();
                 final String type = XMLUtil.parseValue(xsl, "type");
-                if (type != null && (type.equals(MimeType.XML_TYPE.getName()) || type.equals(MimeType.XSL_TYPE.getName()) || type.equals(MimeType.XSLT_TYPE.getName()))) {
+                if (type != null && (type.equals(MediaType.APPLICATION_XML) || type.equals(MediaType.APPLICATION_XSLT) || type.equals(MediaType.TEXT_XSL))) {
                     final String href = XMLUtil.parseValue(xsl, "href");
                     if (href == null) {
                         continue;

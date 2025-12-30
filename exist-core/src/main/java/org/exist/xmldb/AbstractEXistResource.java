@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -43,7 +67,7 @@ import java.util.Date;
  */
 public abstract class AbstractEXistResource extends AbstractLocal implements EXistResource {
     protected final XmldbURI docId;
-    private String mimeType = null;
+    private String mediaType = null;
     protected boolean isNewResource = false;
 
     protected Date datecreated = null;
@@ -53,33 +77,43 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
     public AbstractEXistResource(final Subject user, final BrokerPool pool, final LocalCollection parent, final XmldbURI docId, final String mimeType) {
         super(user, pool, parent);
         this.docId = docId.lastSegment();
-        this.mimeType = mimeType;
+        this.mediaType = mimeType;
     }
 
     @Override
-    public void setMimeType(final String mime) {
-        this.mimeType = mime;
+    public void setMimeType(final String mediaType) {
+        setMediaType(mediaType);
     }
 
     @Override
     public String getMimeType() throws XMLDBException {
-        return getMimeType(() -> read((document, broker, transaction) -> document.getMimeType()));
+        return getMediaType();
+    }
+
+    @Override
+    public void setMediaType(final String mediaType) {
+        this.mediaType = mediaType;
+    }
+
+    @Override
+    public String getMediaType() throws XMLDBException {
+        return getMediaType(() -> read((document, broker, transaction) -> document.getMediaType()));
     }
 
     /**
-     * Similar to {@link org.exist.xmldb.EXistResource#getMimeType()}
+     * Similar to {@link org.exist.xmldb.EXistResource#getMediaType()}
      * but useful for operations within the XML:DB Local API
      * that are already working within a transaction
      */
-    String getMimeType(final DBBroker broker, final Txn transaction) throws XMLDBException {
-        return getMimeType(() -> this.<String>read(broker, transaction).apply((document, broker1, transaction1) -> document.getMimeType()));
+    String getMediaType(final DBBroker broker, final Txn transaction) throws XMLDBException {
+        return getMediaType(() -> this.<String>read(broker, transaction).apply((document, broker1, transaction1) -> document.getMediaType()));
     }
 
-    private String getMimeType(final SupplierE<String, XMLDBException> mimeTypeRead) throws XMLDBException {
+    private String getMediaType(final SupplierE<String, XMLDBException> mediaTypeRead) throws XMLDBException {
         if (isNewResource) {
-            return mimeType;
+            return mediaType;
         } else {
-            return mimeTypeRead.get();
+            return mediaTypeRead.get();
         }
     }
 

@@ -59,7 +59,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.hamcrest.Matcher;
@@ -68,6 +67,7 @@ import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -534,6 +534,9 @@ public class CopyResourceTest {
     public void setup() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
         final BrokerPool pool = existWebServer.getBrokerPool();
 
+        final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+        final MediaType txtMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.TEXT_PLAIN);
+
         // create user1 resources
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         try (final DBBroker broker = pool.get(Optional.of(user1));
@@ -541,28 +544,28 @@ public class CopyResourceTest {
                 final Collection collection = broker.openCollection(TEST_COLLECTION_URI, LockMode.WRITE_LOCK)) {
 
             final String u1d1xml = "<empty1/>";
-            broker.storeDocument(transaction, USER1_DOC1, new StringInputSource(u1d1xml), MimeType.XML_TYPE, collection);
+            broker.storeDocument(transaction, USER1_DOC1, new StringInputSource(u1d1xml), xmlMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_DOC1), USER1_DOC1_MODE);
 
             final String u1d2xml = "<empty2/>";
-            broker.storeDocument(transaction, USER1_DOC2, new StringInputSource(u1d2xml), MimeType.XML_TYPE, collection);
+            broker.storeDocument(transaction, USER1_DOC2, new StringInputSource(u1d2xml), xmlMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_DOC2), USER1_DOC2_MODE);
 
             final String u1d3xml = "<empty3/>";
-            broker.storeDocument(transaction, USER1_DOC3, new StringInputSource(u1d3xml), MimeType.XML_TYPE, collection);
+            broker.storeDocument(transaction, USER1_DOC3, new StringInputSource(u1d3xml), xmlMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_DOC3), USER1_DOC3_MODE);
             chgrp(broker, transaction, TEST_COLLECTION_URI.append(USER1_DOC3), GROUP1_NAME);
 
             final String u1d1bin = "bin1";
-            broker.storeDocument(transaction, USER1_BIN_DOC1, new StringInputSource(u1d1bin.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            broker.storeDocument(transaction, USER1_BIN_DOC1, new StringInputSource(u1d1bin.getBytes(UTF_8)), txtMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_BIN_DOC1), USER1_BIN_DOC1_MODE);
 
             final String u1d2bin = "bin2";
-            broker.storeDocument(transaction, USER1_BIN_DOC2, new StringInputSource(u1d2bin.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            broker.storeDocument(transaction, USER1_BIN_DOC2, new StringInputSource(u1d2bin.getBytes(UTF_8)), txtMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_BIN_DOC2), USER1_BIN_DOC2_MODE);
 
             final String u1d3bin = "bin3";
-            broker.storeDocument(transaction, USER1_BIN_DOC3, new StringInputSource(u1d3bin.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            broker.storeDocument(transaction, USER1_BIN_DOC3, new StringInputSource(u1d3bin.getBytes(UTF_8)), txtMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER1_BIN_DOC3), USER1_BIN_DOC3_MODE);
             chgrp(broker, transaction, TEST_COLLECTION_URI.append(USER1_BIN_DOC3), GROUP1_NAME);
 
@@ -576,20 +579,20 @@ public class CopyResourceTest {
                 final Collection collection = broker.openCollection(TEST_COLLECTION_URI, LockMode.WRITE_LOCK)) {
 
             final String u2d2xml = "<empty2/>";
-            broker.storeDocument(transaction, USER2_DOC2, new StringInputSource(u2d2xml), MimeType.XML_TYPE, collection);
+            broker.storeDocument(transaction, USER2_DOC2, new StringInputSource(u2d2xml), xmlMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER2_DOC2), USER2_DOC2_MODE);
 
             final String u2d3xml = "<empty3/>";
-            broker.storeDocument(transaction, USER2_DOC3, new StringInputSource(u2d3xml), MimeType.XML_TYPE, collection);
+            broker.storeDocument(transaction, USER2_DOC3, new StringInputSource(u2d3xml), xmlMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER2_DOC3), USER2_DOC3_MODE);
             chgrp(broker, transaction, TEST_COLLECTION_URI.append(USER2_DOC3), GROUP1_NAME);
 
             final String u2d2bin = "bin2";
-            broker.storeDocument(transaction, USER2_BIN_DOC2, new StringInputSource(u2d2bin.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            broker.storeDocument(transaction, USER2_BIN_DOC2, new StringInputSource(u2d2bin.getBytes(UTF_8)), txtMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER2_BIN_DOC2), USER2_BIN_DOC2_MODE);
 
             final String u2d3bin = "bin3";
-            broker.storeDocument(transaction, USER2_BIN_DOC3, new StringInputSource(u2d3bin.getBytes(UTF_8)), MimeType.TEXT_TYPE, collection);
+            broker.storeDocument(transaction, USER2_BIN_DOC3, new StringInputSource(u2d3bin.getBytes(UTF_8)), txtMediaType, collection);
             chmod(broker, transaction, TEST_COLLECTION_URI.append(USER2_BIN_DOC3), USER2_BIN_DOC3_MODE);
             chgrp(broker, transaction, TEST_COLLECTION_URI.append(USER2_BIN_DOC3), GROUP1_NAME);
 

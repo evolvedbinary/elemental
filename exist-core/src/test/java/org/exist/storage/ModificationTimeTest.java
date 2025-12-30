@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -35,12 +59,14 @@ import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
 import static org.junit.Assert.*;
 
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.StorageType;
+import xyz.elemental.mediatype.impl.MediaTypeImpl;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -62,21 +88,21 @@ public class ModificationTimeTest {
     @Test
     public void check_if_modification_time_is_updated_binary() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
 
-        final String mimeType = "application/octet-stream";
+        final String mediaType = MediaType.APPLICATION_OCTET_STREAM;
         final String filename = "data.dat";
         final String data = "some data";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            BinaryDocument binaryDoc = storeBinary(broker, transaction, filename, data, mimeType);
+            BinaryDocument binaryDoc = storeBinary(broker, transaction, filename, data, mediaType);
             assertNotNull(binaryDoc);
 
             final long modificationTimeBefore = binaryDoc.getLastModified();
 
             Thread.sleep(1);
 
-            binaryDoc = storeBinary(broker, transaction, filename, data, mimeType);
+            binaryDoc = storeBinary(broker, transaction, filename, data, mediaType);
             assertNotNull(binaryDoc);
 
             final long modificationTimeAfter = binaryDoc.getLastModified();
@@ -151,7 +177,11 @@ public class ModificationTimeTest {
         broker.saveCollection(transaction, root);
         assertNotNull(root);
 
-        root.storeDocument(transaction, broker, XmldbURI.create(name), new StringInputSource(data.getBytes(UTF_8)), new MimeType(mimeType, MimeType.BINARY));
+        MediaType mediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(mimeType);
+        if (mediaType == null || mediaType.getStorageType() != StorageType.BINARY) {
+            mediaType = MediaTypeImpl.builder(mimeType, StorageType.BINARY).build();
+        }
+        root.storeDocument(transaction, broker, XmldbURI.create(name), new StringInputSource(data.getBytes(UTF_8)), mediaType);
         return (BinaryDocument) root.getDocument(broker, XmldbURI.create(name));
     }
 
@@ -160,7 +190,8 @@ public class ModificationTimeTest {
         broker.saveCollection(transaction, root);
         assertNotNull(root);
 
-        broker.storeDocument(transaction, XmldbURI.create(name), new StringInputSource(xml), MimeType.XML_TYPE, root);
+        final MediaType xmlMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+        broker.storeDocument(transaction, XmldbURI.create(name), new StringInputSource(xml), xmlMediaType, root);
     }
 
     private long getDocLastModified(final DBBroker broker, final Txn transaction, final String name) throws PermissionDeniedException {

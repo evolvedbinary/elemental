@@ -144,6 +144,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
 import org.xmldb.api.base.*;
+import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeResolver;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.xmldb.EXistXPathQueryService.BEGIN_PROTECTED_MAX_LOCKING_RETRIES;
@@ -587,7 +589,7 @@ public class RpcConnection implements RpcAPI {
                 final long resourceLength = document.getContentLength();
                 hash.put("content-length", (resourceLength > (long) Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) resourceLength);
                 hash.put("content-length-64bit", Long.toString(resourceLength));
-                hash.put("mime-type", document.getMimeType());
+                hash.put("mime-type", document.getMediaType());
                 hash.put("created", new Date(document.getCreated()));
                 hash.put("modified", new Date(document.getLastModified()));
                 if (document.getResourceType() == DocumentImpl.BINARY_FILE) {
@@ -1443,8 +1445,8 @@ public class RpcConnection implements RpcAPI {
 
                 final long startTime = System.currentTimeMillis();
 
-                final MimeType mime = lookupMimeType(mimeType, docUri.lastSegment());
-                broker.storeDocument(transaction, docUri.lastSegment(), source, mime, created, modified, null, null, null, collection);
+                final MediaType mediaType = lookupMimeType(broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver(), mimeType, docUri.lastSegment());
+                broker.storeDocument(transaction, docUri.lastSegment(), source, mediaType, created, modified, null, null, null, collection);
 
                 // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
                 collection.close();
@@ -1456,12 +1458,19 @@ public class RpcConnection implements RpcAPI {
         });
     }
 
-    private MimeType lookupMimeType(@Nullable final String mimeType, final XmldbURI fileName) {
-        final MimeTable mimeTable = MimeTable.getInstance();
-        if (mimeType == null) {
-            return Optional.ofNullable(mimeTable.getContentTypeFor(fileName)).orElse(MimeType.BINARY_TYPE);
+    private MediaType lookupMimeType(final MediaTypeResolver mediaTypeResolver, @Nullable final String strMimeType, @Nullable final XmldbURI fileName) {
+        MediaType mediaType = null;
+        if (strMimeType != null) {
+            mediaType = mediaTypeResolver.fromString(strMimeType);
+        } else if (fileName != null) {
+            mediaType = mediaTypeResolver.fromFileName(fileName.lastSegmentString());
         }
-        return Optional.ofNullable(mimeTable.getContentType(mimeType)).orElse(MimeType.BINARY_TYPE);
+
+        if (mediaType == null) {
+            mediaType = mediaTypeResolver.forUnknown();
+        }
+
+        return mediaType;
     }
 
     /**
@@ -1577,9 +1586,9 @@ public class RpcConnection implements RpcAPI {
 
                 // parse the source
                 try (final FileInputSource source = sourceSupplier.get()) {
-                    final MimeType mime = lookupMimeType(mimeType, docUri.lastSegment());
+                    final MediaType mediaType = lookupMimeType(broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver(), mimeType, docUri.lastSegment());
 
-                    broker.storeDocument(transaction, docUri.lastSegment(), source, mime, created, modified, null, null, null, collection);
+                    broker.storeDocument(transaction, docUri.lastSegment(), source, mediaType, created, modified, null, null, null, collection);
 
                     // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
                     collection.close();
@@ -1623,7 +1632,7 @@ public class RpcConnection implements RpcAPI {
                     LOG.debug("Storing binary resource to collection {}", collection.getURI());
                 }
 
-                broker.storeDocument(transaction, docUri.lastSegment(), new StringInputSource(data), MimeTable.getInstance().getContentType(mimeType), created, modified, null, null, null, collection);
+                broker.storeDocument(transaction, docUri.lastSegment(), new StringInputSource(data), lookupMimeType(broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver(), mimeType,  null), created, modified, null, null, null, collection);
 
                 // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
                 collection.close();
@@ -3769,7 +3778,7 @@ public class RpcConnection implements RpcAPI {
 
                 withDb((broker, transaction) -> {
                     final Restore restore = new Restore();
-                    restore.restore(broker, transaction, newAdminPassword, backupFile, listener, overwriteApps);
+                    restore.restore(broker, transaction, newAdminPassword, backupFile, listener, overwriteApps, broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver());
                     return null;
                 });
 

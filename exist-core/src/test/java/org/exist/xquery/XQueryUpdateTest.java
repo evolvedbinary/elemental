@@ -60,13 +60,13 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
-import org.exist.util.MimeType;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
 import org.xml.sax.SAXException;
+import xyz.elemental.mediatype.MediaType;
 
 import static org.junit.Assert.*;
 
@@ -528,7 +528,8 @@ public class XQueryUpdateTest {
             root = broker.getOrCreateCollection(transaction, TEST_COLLECTION);
             broker.saveCollection(transaction, root);
 
-            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(data), MimeType.XML_TYPE, root);
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+            broker.storeDocument(transaction, XmldbURI.create(docName), new StringInputSource(data), xmlMediaType, root);
             //TODO : unlock the collection here ?
 
             mgr.commit(transaction);

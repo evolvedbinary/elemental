@@ -63,7 +63,6 @@ import org.exist.storage.io.VariableByteOutput;
 import org.exist.storage.lock.EnsureContainerLocked;
 import org.exist.storage.lock.EnsureLocked;
 import org.exist.storage.txn.Txn;
-import org.exist.util.MimeType;
 import org.exist.util.XMLString;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
@@ -71,6 +70,7 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.NameTest;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.*;
+import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
@@ -145,7 +145,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     /**
      * The mimeType of the document
      */
-    protected String mimeType = MimeType.XML_TYPE.getName();
+    protected String mediaType = MediaType.APPLICATION_XML;
 
     /**
      * The creation time of this document
@@ -272,7 +272,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
      * @param childAddress the addresses of the child nodes
      * @param created the created time of the document
      * @param lastModified the last modified time of the document, or null to use the {@code created} time
-     * @param mimeType the media type of the document, or null for application/xml
+     * @param mediaType the media type of the document, or null for application/xml
      * @param docType the document type, or null
      *
      * @deprecated Use {@link DocumentImpl(BrokerPool, Collection, int, XmldbURI, Permission, int, long[], long, Long, String, XMLDeclarationImpl, DocumentType)}
@@ -281,9 +281,9 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     public DocumentImpl(final BrokerPool pool, @Nullable final Collection collection,
                         final int docId, final XmldbURI fileURI, final Permission permissions,
                         final int children, @Nullable final long[] childAddress,
-                        final long created, @Nullable final Long lastModified, @Nullable final String mimeType,
+                        final long created, @Nullable final Long lastModified, @Nullable final String mediaType,
                         @Nullable final DocumentType docType) {
-        this(null, pool, collection, docId, fileURI, permissions, children, childAddress, created, lastModified, mimeType, null, docType);
+        this(null, pool, collection, docId, fileURI, permissions, children, childAddress, created, lastModified, mediaType, null, docType);
     }
 
     /**
@@ -298,16 +298,16 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
      * @param childAddress the addresses of the child nodes
      * @param created the created time of the document
      * @param lastModified the last modified time of the document, or null to use the {@code created} time
-     * @param mimeType the media type of the document, or null for application/xml
+     * @param mediaType the media type of the document, or null for application/xml
      * @param xmlDecl the XML Declaration, or null
      * @param docType the document type, or null
      */
     public DocumentImpl(final BrokerPool pool, @Nullable final Collection collection,
             final int docId, final XmldbURI fileURI, final Permission permissions,
             final int children, @Nullable final long[] childAddress,
-            final long created, @Nullable final Long lastModified, @Nullable final String mimeType,
+            final long created, @Nullable final Long lastModified, @Nullable final String mediaType,
             @Nullable final XMLDeclarationImpl xmlDecl, @Nullable final DocumentType docType) {
-        this(null, pool, collection, docId, fileURI, permissions, children, childAddress, created, lastModified, mimeType, xmlDecl, docType);
+        this(null, pool, collection, docId, fileURI, permissions, children, childAddress, created, lastModified, mediaType, xmlDecl, docType);
     }
 
     /**
@@ -323,7 +323,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
      * @param childAddress the addresses of the child nodes
      * @param created the created time of the document
      * @param lastModified the last modified time of the document, or null to use the {@code created} time
-     * @param mimeType the media type of the document, or null for application/xml
+     * @param mediaType the media type of the document, or null for application/xml
      * @param docType the document type, or null
      *
      * @deprecated Use {@link DocumentImpl(Expression, BrokerPool, Collection, int ,XmldbURI, Permission, int, long[], long, Long, String, XMLDeclarationImpl, DocumentType)}
@@ -332,9 +332,9 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     public DocumentImpl(final Expression expression, final BrokerPool pool, @Nullable final Collection collection,
             final int docId, final XmldbURI fileURI, final Permission permissions,
             final int children, @Nullable final long[] childAddress,
-            final long created, @Nullable final Long lastModified, @Nullable final String mimeType,
+            final long created, @Nullable final Long lastModified, @Nullable final String mediaType,
             @Nullable final DocumentType docType) {
-        this(expression, pool, collection, docId, fileURI, permissions, children, childAddress, created, lastModified, mimeType, null, docType);
+        this(expression, pool, collection, docId, fileURI, permissions, children, childAddress, created, lastModified, mediaType, null, docType);
     }
 
     /**
@@ -350,14 +350,14 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
      * @param childAddress the addresses of the child nodes
      * @param created the created time of the document
      * @param lastModified the last modified time of the document, or null to use the {@code created} time
-     * @param mimeType the media type of the document, or null for application/xml
+     * @param mediaType the media type of the document, or null for application/xml
      * @param xmlDecl the XML Declaration, or null
      * @param docType the document type, or null
      */
     public DocumentImpl(final Expression expression, final BrokerPool pool, @Nullable final Collection collection,
             final int docId, final XmldbURI fileURI, final Permission permissions,
             final int children, @Nullable final long[] childAddress,
-            final long created, @Nullable final Long lastModified, @Nullable final String mimeType,
+            final long created, @Nullable final Long lastModified, @Nullable final String mediaType,
             @Nullable final XMLDeclarationImpl xmlDecl, @Nullable final DocumentType docType) {
         super(expression);
         this.pool = pool;
@@ -372,7 +372,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         this.childAddress = childAddress;
         this.created = created;
         this.lastModified = lastModified == null ? created : lastModified;
-        this.mimeType = mimeType == null ?  MimeType.XML_TYPE.getName() : mimeType;
+        this.mediaType = mediaType != null ? mediaType : MediaType.APPLICATION_XML;
         this.xmlDecl = xmlDecl;
         this.docType = docType;
 
@@ -489,12 +489,42 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         this.lastModified = lastModified;
     }
 
+    /**
+     * Get the Internet Media Type of the document.
+     *
+     * @return the Internet Media Type of the document.
+     *
+     * @deprecated Use {@link #getMediaType()} instead.
+     */
+    @Deprecated
     public String getMimeType() {
-        return mimeType;
+        return mediaType;
     }
 
+    /**
+     * Set the Internet Media Type of the document.
+     *
+     * @deprecated Use {@link #setMediaType(String)} instead.
+     */
+    @Deprecated
     public void setMimeType(final String mimeType) {
-        this.mimeType = mimeType;
+        this.mediaType = mimeType;
+    }
+
+    /**
+     * Get the Internet Media Type of the document.
+     *
+     * @return the Internet Media Type of the document.
+     */
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    /**
+     * Set the Internet Media Type of the document.
+     */
+    public void setMediaType(final String mediaType) {
+        this.mediaType = mediaType;
     }
 
     /**
@@ -683,7 +713,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
 
         this.created = other.created;
         this.lastModified = other.lastModified;
-        this.mimeType = other.mimeType;
+        this.mediaType = other.mediaType;
         this.docType = other.docType;
 
         final long timestamp = System.currentTimeMillis();
@@ -888,7 +918,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     void writeDocumentAttributes(final SymbolTable symbolTable, final VariableByteOutput ostream) throws IOException {
         ostream.writeLong(created);
         ostream.writeLong(lastModified);
-        ostream.writeInt(symbolTable.getMimeTypeId(mimeType));
+        ostream.writeInt(symbolTable.getMimeTypeId(mediaType));
         ostream.writeInt(pageCount);
         ostream.writeInt(userLock);
         if (xmlDecl != null) {

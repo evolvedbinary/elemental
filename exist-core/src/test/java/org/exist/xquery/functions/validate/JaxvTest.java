@@ -85,7 +85,7 @@ public class JaxvTest {
                 "</collection>";
 
         try (Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/personal")) {
-            ExistXmldbEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
         try (Collection collection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "personal")) {
@@ -93,7 +93,7 @@ public class JaxvTest {
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/personal/" + testResource)) {
                     assertNotNull(is);
-                    ExistXmldbEmbeddedServer.storeResource(collection, testResource, InputStreamUtil.readAll(is));
+                    existEmbeddedServer.storeResource(collection, testResource, InputStreamUtil.readAll(is));
                 }
             }
         }

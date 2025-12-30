@@ -90,6 +90,7 @@ import org.junit.Test;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
+import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -343,29 +344,31 @@ public class RESTServiceTest {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
+            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+
             try (final Collection col = broker.getOrCreateCollection(transaction, GET_METHOD_ENCODED_COLLECTION_URI)) {
-                broker.storeDocument(transaction, GET_METHOD_ENCODED_DOC_URI.lastSegment(), new StringInputSource(TEST_ENCODED_XML_DOC_CONTENT), MimeType.XML_TYPE, col);
+                broker.storeDocument(transaction, GET_METHOD_ENCODED_DOC_URI.lastSegment(), new StringInputSource(TEST_ENCODED_XML_DOC_CONTENT), xmlMediaType, col);
                 broker.saveCollection(transaction, col);
             }
 
             try (final Collection col = broker.getOrCreateCollection(transaction, DELETE_METHOD_ENCODED_COLLECTION_URI)) {
-                broker.storeDocument(transaction, DELETE_METHOD_ENCODED_DOC_URI.lastSegment(), new StringInputSource(TEST_ENCODED_XML_DOC_CONTENT), MimeType.XML_TYPE, col);
+                broker.storeDocument(transaction, DELETE_METHOD_ENCODED_DOC_URI.lastSegment(), new StringInputSource(TEST_ENCODED_XML_DOC_CONTENT), xmlMediaType, col);
                 broker.saveCollection(transaction, col);
             }
 
             try (final Collection col = broker.getOrCreateCollection(transaction, TEST_DOCTYPE_COLLECTION_URI)) {
-                broker.storeDocument(transaction, TEST_XML_DOC_WITH_DOCTYPE_URI, new StringInputSource(XML_WITH_DOCTYPE), MimeType.XML_TYPE, col);
+                broker.storeDocument(transaction, TEST_XML_DOC_WITH_DOCTYPE_URI, new StringInputSource(XML_WITH_DOCTYPE), xmlMediaType, col);
                 broker.saveCollection(transaction, col);
             }
 
             try (final Collection col = broker.getOrCreateCollection(transaction, TEST_XSLPI_COLLECTION_URI)) {
-                broker.storeDocument(transaction, TEST_XSLT_DOC_WITH_XSLPI_URI, new StringInputSource(XSLT_WITH_XSLPI), MimeType.XML_TYPE, col);
-                broker.storeDocument(transaction, TEST_XML_DOC_WITH_XSLPI_URI, new StringInputSource(XML_WITH_XSLPI), MimeType.XML_TYPE, col);
+                broker.storeDocument(transaction, TEST_XSLT_DOC_WITH_XSLPI_URI, new StringInputSource(XSLT_WITH_XSLPI), xmlMediaType, col);
+                broker.storeDocument(transaction, TEST_XML_DOC_WITH_XSLPI_URI, new StringInputSource(XML_WITH_XSLPI), xmlMediaType, col);
                 broker.saveCollection(transaction, col);
             }
 
             try (final Collection col = broker.getOrCreateCollection(transaction, TEST_XMLDECL_COLLECTION_URI)) {
-                broker.storeDocument(transaction, TEST_XML_DOC_WITH_XMLDECL_URI, new StringInputSource(XML_WITH_XMLDECL), MimeType.XML_TYPE, col);
+                broker.storeDocument(transaction, TEST_XML_DOC_WITH_XMLDECL_URI, new StringInputSource(XML_WITH_XMLDECL), xmlMediaType, col);
                 broker.saveCollection(transaction, col);
             }
 
@@ -467,7 +470,7 @@ public class RESTServiceTest {
     @Test
     public void xqueryGetFailWithNonEmptyPath() throws IOException {
         /* store the documents that we need for this test */
-        HttpResponse response = doPutWithAuth(getResourceUri(), "application/xml", XML_DATA);
+        HttpResponse response = doPutWithAuth(getResourceUri(), MediaType.APPLICATION_XML, XML_DATA);
 
         final String uri = getResourceUri() + "/some/path";    // should not be able to get this path
         response = doGet(uri);
@@ -497,13 +500,13 @@ public class RESTServiceTest {
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-        assertResponseMediaType("application/xml", response);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
         assertNotNull(readResponse(response.getEntity()));
     }
 
     @Test
     public void putFailAgainstCollection() throws IOException {
-        final HttpResponse response = doPutWithAuth(getCollectionUri(), "application/xml", XML_DATA);
+        final HttpResponse response = doPutWithAuth(getCollectionUri(), MediaType.APPLICATION_XML, XML_DATA);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
@@ -536,7 +539,7 @@ public class RESTServiceTest {
         doPut(TEST_XQUERY_WITH_PATH_AND_CONTENT, "requestwithcontent.xq", HttpStatus.CREATED_201);
 
         final String uri = getCollectionUriRedirected() + "/requestwithcontent.xq/a/b/c";
-        final HttpResponse response = doPutWithAuth(uri, "application/xml", "<data>test data</data>");
+        final HttpResponse response = doPutWithAuth(uri, MediaType.APPLICATION_XML, "<data>test data</data>");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
@@ -740,7 +743,7 @@ public class RESTServiceTest {
             final int resultStatusCode = response.getStatusLine()
                 .getStatusCode();
             assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-            assertResponseMediaType("application/xml", response);
+            assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
             //get the response of the query
             final String responseBody = readResponse(response.getEntity());
@@ -1059,7 +1062,7 @@ public class RESTServiceTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-        assertResponseMediaType("application/xml", response);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -1081,7 +1084,7 @@ public class RESTServiceTest {
         final String uri = getServerUri() + PUT_METHOD_ENCODED_DOC_URI.getCollectionPath();
         final String data = "<foobar/>";
 
-        HttpResponse response = doPutWithAuth(uri, "application/xml", data);
+        HttpResponse response = doPutWithAuth(uri, MediaType.APPLICATION_XML, data);
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.CREATED_201, resultStatusCode);
@@ -1142,7 +1145,7 @@ public class RESTServiceTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-        assertResponseMediaType("application/xml", response);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
         assertEquals("<!DOCTYPE bookmap PUBLIC \"-//OASIS//DTD DITA BookMap//EN\" \"bookmap.dtd\">\r\n" +
@@ -1155,7 +1158,7 @@ public class RESTServiceTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-        assertResponseMediaType("application/xml", response);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
         assertEquals("<bookmap id=\"bookmap-1\"/>\r\n", responseBody);
@@ -1167,7 +1170,7 @@ public class RESTServiceTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-        assertResponseMediaType("application/xml", response);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
         assertEquals(
@@ -1184,7 +1187,7 @@ public class RESTServiceTest {
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
 
         // NOTE(AR) At present the RESTServer will force XHTML with text/html mimetype and indenting if an xsl-pi is used... this should probably be improved in future!
-        assertResponseMediaType("text/html", response);
+        assertResponseMediaType(MediaType.TEXT_HTML, response);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -1273,7 +1276,7 @@ public class RESTServiceTest {
         assertNotNull(cached);
         assertEquals(cacheHeader, Boolean.valueOf(cached).booleanValue());
         if (wrap) {
-            assertResponseMediaType("application/xml", response);
+            assertResponseMediaType(MediaType.APPLICATION_XML, response);
         } else {
             assertResponseMediaType("text/text", response);
         }
@@ -1288,14 +1291,14 @@ public class RESTServiceTest {
 
     private void doPut(final String data, final String path, final int expectedResponseCode) throws IOException {
         final String uri = getCollectionUri() + '/' + path;
-        final HttpResponse response = doPutWithAuth(uri, "application/xquery", data);
+        final HttpResponse response = doPutWithAuth(uri, MediaType.APPLICATION_XQUERY, data);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, expectedResponseCode, resultStatusCode);
     }
 
     private int uploadData() throws IOException {
-        final HttpResponse response = doPutWithAuth(getResourceUri(), "application/xml", XML_DATA);
+        final HttpResponse response = doPutWithAuth(getResourceUri(), MediaType.APPLICATION_XML, XML_DATA);
         return response.getStatusLine().getStatusCode();
     }
 
@@ -1313,7 +1316,7 @@ public class RESTServiceTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
         assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
-        assertResponseMediaType("application/xml", response);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         assertNotNull(readResponse(response.getEntity()));
     }
