@@ -1416,6 +1416,7 @@
                                 <include>src/main/java/org/exist/xquery/value/GYearMonthValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/GYearValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/IntegerValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/MemoryNodeSet.java</include>
                                 <include>src/main/java/org/exist/xquery/value/QNameValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/SequenceType.java</include>
                                 <include>src/main/java/org/exist/xquery/value/StringValue.java</include>
@@ -2232,6 +2233,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/GYearValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/IntegerValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ItemComparator.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/MemoryNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/QNameValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceComparator.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceType.java</exclude>
