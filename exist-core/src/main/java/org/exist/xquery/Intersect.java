@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,10 +45,11 @@
  */
 package org.exist.xquery;
 
+import it.unimi.dsi.fastutil.objects.ObjectAVLTreeSet;
 import org.exist.xquery.value.*;
 
+import javax.annotation.Nullable;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
@@ -47,18 +72,29 @@ public class Intersect extends CombiningExpression {
             if (ls.isPersistentSet() && rs.isPersistentSet()) {
                 result = ls.toNodeSet().intersection(rs.toNodeSet());
             } else {
-                result = new ValueSequence(true);
-                final Set<Item> set = new TreeSet<>(new ItemComparator());
+                @Nullable Sequence values = null;
+                @Nullable Set<Item> set = null;
                 for (final SequenceIterator i = ls.unorderedIterator(); i.hasNext(); ) {
+                    if (set == null) {
+                        set = new ObjectAVLTreeSet<>(new ItemComparator(null));
+                    }
                     set.add(i.nextItem());
                 }
                 for (final SequenceIterator i = rs.unorderedIterator(); i.hasNext(); ) {
                     final Item next = i.nextItem();
-                    if (set.contains(next)) {
-                        result.add(next);
+                    if (set != null && set.contains(next)) {
+                        if (values == null) {
+                            values = new ValueSequence(true);
+                        }
+                        values.add(next);
                     }
                 }
-                result.removeDuplicates();
+                if (values != null) {
+                    values.removeDuplicates();
+                    result = values;
+                } else {
+                    result = Sequence.EMPTY_SEQUENCE;
+                }
             }
         }
 
