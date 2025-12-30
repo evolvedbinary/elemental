@@ -1445,6 +1445,7 @@
                                 <include>src/main/java/org/exist/xquery/value/TimeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/value/TimeValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
+                                <include>src/main/java/org/exist/xquery/value/ValueSequence.java</include>
                                 <include>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
@@ -2273,6 +2274,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/TimeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/TimeValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/ValueSequence.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
