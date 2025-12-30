@@ -27,9 +27,12 @@ import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
+import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -40,11 +43,10 @@ public class ImportFromPkgTest {
 
     private static Path getConfigFile() {
         final ClassLoader loader = ImportFromPkgTest.class.getClassLoader();
-        final char separator = System.getProperty("file.separator").charAt(0);
-        final String packagePath = ImportFromPkgTest.class.getPackage().getName().replace('.', separator);
+        final String packagePath = ImportFromPkgTest.class.getPackage().getName().replace('.', File.separatorChar);
 
         try {
-            return Paths.get(loader.getResource(packagePath + separator + "import-from-pkg-test.conf.xml").toURI());
+            return Paths.get(loader.getResource(packagePath + File.separatorChar + "import-from-pkg-test.conf.xml").toURI());
         } catch (final URISyntaxException e) {
             fail(e.getMessage());
             return null;
@@ -56,16 +58,18 @@ public class ImportFromPkgTest {
 
     @Test
     public void printPackages() throws XMLDBException {
-        //final String query = "import module namespace packages=\"http://exist-db.org/apps/existdb-packages\" at \"/db/apps/packageservice/modules/packages.xqm\";\n" +
-        //"packages:get-local-packages()";
-
         final String query = "xmldb:get-child-resources('/db/system/repo/functx-1.0.1/functx/')";
 
-        final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
+        final Set<String> expected = new HashSet<>();
+        expected.add("functx.xq");
+        expected.add("functx.xsl");
 
+        final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
         assertEquals(2, resultSet.getSize());
-        assertEquals("functx.xsl", resultSet.getResource(0).getContent().toString());
-        assertEquals("functx.xq", resultSet.getResource(1).getContent().toString());
+        final Set<String> actual = new HashSet<>();
+        actual.add(resultSet.getResource(0).getContent().toString());
+        actual.add(resultSet.getResource(1).getContent().toString());
+        assertEquals(expected, actual);
     }
 
     @Test
