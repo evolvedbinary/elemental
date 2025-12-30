@@ -353,14 +353,14 @@ public class CodePointString {
      * @return this
      */
     public CodePointString removeFirst(final int codePoint) {
-        int idx = -1;
-        for (int i = 0; i < codePoints.length; i++) {
-            if (codePoints[i] == codePoint) {
-                idx = i;
-                break;
-            }
-        }
+        final int idx = indexOf(codePoint);
+        return removeChar(idx);
+    }
 
+    /**
+     * Removes the codepoint at the specified index.
+     */
+    public CodePointString removeChar(final int idx) {
         if (idx > -1) {
             final int[] newCodePoints = new int[codePoints.length - 1];
 

@@ -331,6 +331,10 @@ public class FnFormatNumbers extends BasicFunction {
                         analyzePassiveChar(decimalFormat, c, capturePrefix, subPicture);
                     }
 
+                    if (state == AnalyzeState.INTEGER_PART) {
+                        subPicture.incrementIntegerPartExtent();
+                    }
+
                     break;  // end of INTEGER_PART
 
 
@@ -401,7 +405,7 @@ public class FnFormatNumbers extends BasicFunction {
                         subPicture.clearSuffix();
 
                         subPicture.incrementMaximumFractionalPartSize();
-                    }  else if (c == decimalFormat.patternSeparator) {
+                    } else if (c == decimalFormat.patternSeparator) {
                         capturePrefix = false;
                         subPicture.clearSuffix();
 
@@ -442,16 +446,54 @@ public class FnFormatNumbers extends BasicFunction {
                     break;  // end of FRACTIONAL_PART
 
 
-
                 case EXPONENT_PART:
+
                     if (c == decimalFormat.decimalSeparator
-                            || c == decimalFormat.exponentSeparator
                             || c == decimalFormat.groupingSeparator
                             || c == decimalFormat.digit) {
                         capturePrefix = false;
                         subPicture.clearSuffix();
 
                         throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture in $picture cannot have any active characters following the exponent-separator-sign");
+
+                    } else if (c == decimalFormat.exponentSeparator) {
+
+                        /*
+                        A character that matches the exponent-separator property is treated as an
+                        exponent-separator-sign if it is both preceded and followed within the
+                        sub-picture by an active character.
+                        */
+
+                        // we need to peek at the next char to determine if it is active
+                        final boolean nextIsActive;
+                        if (idx + 1 < pictureString.length()) {
+                            nextIsActive = isActiveChar(decimalFormat, pictureString.codePointAt(idx + 1));
+                        } else {
+                            nextIsActive = false;
+                        }
+
+                        if (isActiveChar(decimalFormat, prevChar) && nextIsActive) {
+                            // this is an exponent-separator-sign... but we already have one
+                            capturePrefix = false;
+                            subPicture.clearSuffix();
+
+                            throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture in $picture cannot have any active characters following the exponent-separator-sign");
+
+                        } else {
+                            // just another passive character
+
+                            /* passive character */
+                            analyzePassiveChar(decimalFormat, c, capturePrefix, subPicture);
+
+                            if (subPicture.hasPercent()) {
+                                throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a percent character as it already has an exponent separator sign.");
+                            }
+
+                            if (subPicture.hasPerMille()) {
+                                throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a per-mille character as it already has an exponent separator sign.");
+                            }
+                        }
+
 
                     }  else if (c == decimalFormat.patternSeparator) {
                         capturePrefix = false;
@@ -484,6 +526,14 @@ public class FnFormatNumbers extends BasicFunction {
                     } else {
                         /* passive character */
                         analyzePassiveChar(decimalFormat, c, capturePrefix, subPicture);
+
+                        if (subPicture.hasPercent()) {
+                            throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a percent character as it already has an exponent separator sign.");
+                        }
+
+                        if (subPicture.hasPerMille()) {
+                            throw new XPathException(this, ErrorCodes.FODF1310, "format-number() sub-picture cannot contain a per-mille character as it already has an exponent separator sign.");
+                        }
                     }
 
                     break;  // end of EXPONENT_PART
@@ -601,7 +651,7 @@ public class FnFormatNumbers extends BasicFunction {
             }
         }
 
-        adjustedNumber = new DecimalValue(this, adjustedNumber.convertTo(Type.DECIMAL).toJavaObject(BigDecimal.class).multiply(BigDecimal.ONE, MathContext.DECIMAL64)).round(new IntegerValue(this, subPicture.getMaximumFractionalPartSize())).abs();
+        adjustedNumber = new DecimalValue(this, adjustedNumber.convertTo(Type.DECIMAL).toJavaObject(BigDecimal.class).multiply(BigDecimal.ONE, MathContext.DECIMAL128)).round(new IntegerValue(this, subPicture.getMaximumFractionalPartSize())).abs();
 
         /* we can now start formatting for display */
 
@@ -706,17 +756,24 @@ public class FnFormatNumbers extends BasicFunction {
 
         // Rule 12 - strip decimal separator if unneeded
         if (!subPicture.hasDecimalSeparator() || fractLen == 0) {
-            formatted.removeFirst(decimalFormat.decimalSeparator);
+            // decimal separator must be the rightmost character in the string
+            final int rightMostIndex = formatted.length() - 1;
+            final int rightMost = formatted.codePointAt(rightMostIndex);
+            if (rightMost == decimalFormat.decimalSeparator) {
+                formatted.removeChar(rightMostIndex);
+            }
         }
 
         // Rule 13 - add exponent if exists
         final int minimumExponentSize = subPicture.getMinimumExponentSize();
         if (minimumExponentSize > 0) {
             formatted.append(decimalFormat.exponentSeparator);
-            if (exp < 0) {
-                formatted.append(decimalFormat.minusSign);
-            }
 
+            final boolean negativeExp = exp < 0;
+            if (negativeExp) {
+                // negative exponent, make positive
+                exp *= -1;
+            }
             final CodePointString expStr = new CodePointString(String.valueOf(exp));
 
             final int expPadLen = subPicture.getMinimumExponentSize() - expStr.length();
@@ -724,6 +781,10 @@ public class FnFormatNumbers extends BasicFunction {
                 expStr.leftPad(decimalFormat.zeroDigit, expPadLen);
             }
 
+            if (negativeExp) {
+                // restore the minus sign for the negative exponent in the output
+                formatted.append('-');
+            }
             formatted.append(expStr);
         }
 
@@ -739,6 +800,8 @@ public class FnFormatNumbers extends BasicFunction {
      * See https://www.w3.org/TR/xpath-functions-31/#analyzing-picture-string
      */
     private static class SubPicture {
+        private int integerPartStartIdx = 0;
+        private int integerPartLength = 0;
         private int[] integerPartGroupingPositions;
         private int minimumIntegerPartSize;
         private int scalingFactor;
@@ -758,6 +821,8 @@ public class FnFormatNumbers extends BasicFunction {
         public SubPicture copy() {
             final SubPicture copy = new SubPicture();
 
+            copy.integerPartStartIdx = integerPartStartIdx;
+            copy.integerPartLength = integerPartLength;
             copy.integerPartGroupingPositions = integerPartGroupingPositions == null ? null : Arrays.copyOf(integerPartGroupingPositions, integerPartGroupingPositions.length);
             copy.minimumIntegerPartSize = minimumIntegerPartSize;
             copy.scalingFactor = scalingFactor;
@@ -808,7 +873,7 @@ public class FnFormatNumbers extends BasicFunction {
          * @return the value of G if regular, or -1 if irregular
          */
         public int integerPartGroupingPositionsAreRegular() {
-            // There is an least one grouping-separator in the integer part of the sub-picture.
+            // There is at least one grouping-separator in the integer part of the sub-picture.
             if (integerPartGroupingPositions.length > 0) {
 
                 // There is a positive integer G (the grouping size) such that the position of every grouping-separator
@@ -834,29 +899,33 @@ public class FnFormatNumbers extends BasicFunction {
                     return -1;
                 }
 
-                // Every position in the integer part of the sub-picture that is a positive integer multiple of G is
-                // occupied by a grouping-separator.
-                final int largestGroupPosition = integerPartGroupingPositions[integerPartGroupingPositions.length - 1];
-                int m = 2;
-                for (int p = g; p <= largestGroupPosition; p = g * m++) {
+                // Check that every position in the integer part of the sub-picture that is a positive integer multiple
+                // of G is occupied by a grouping-separator.
+                // We can test this by determining if the leftmost group (the group to the left of the leftmost
+                // separator) is not larger than G.
 
-                    boolean isGroupSeparator = false;
-                    for (final int integerPartGroupingPosition : integerPartGroupingPositions) {
-                        if (integerPartGroupingPosition == p) {
-                            isGroupSeparator = true;
-                            break;
-                        }
-                    }
+                // Calculate total active characters: integerPartLength includes all characters (digits + separators),
+                // so we subtract the number of separators to get just the active characters.
+                final int totalActiveCharacters = integerPartLength - integerPartGroupingPositions.length;
 
-                    if (!isGroupSeparator) {
-                        return -1;
-                    }
+                // The leftmost separator is always at index 0, and its numberOfCharacters tells us how many active
+                // characters are to the right of it. Therefore, the leftmost group size is the remaining characters.
+                final int leftmostGroupSize = totalActiveCharacters - integerPartGroupingPositions[0];
+
+                // If the leftmost group is larger than G, it means that there should have been another separator
+                // within it (at position G from the right of the leftmost group), but there isn't... so it's irregular!
+                if (leftmostGroupSize > g) {
+                    return -1;
                 }
 
                 return g;
             }
 
             return -1;
+        }
+
+        public void incrementIntegerPartExtent() {
+            integerPartLength++;
         }
 
         public void incrementMinimumIntegerPartSize() {

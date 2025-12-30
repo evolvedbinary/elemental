@@ -106,6 +106,7 @@ options {
     protected Set<String> importedModules = new HashSet<>();
     protected Set<String> importedModuleFunctions = null;
     protected Set<QName> importedModuleVariables = null;
+    private boolean hasDefaultDecimalFormat = false;
 
     public XQueryTreeParser(XQueryContext context) {
         this(context, null);
@@ -494,6 +495,76 @@ throws PermissionDeniedException, EXistException, XPathException
                 } catch (XPathException xp) {
                     throw new XPathException(defc, ErrorCodes.XQST0038, "the value specified by a default collation declaration is not present in statically known collations.");
                 }
+            }
+        )
+        |
+        #(
+            DECIMAL_FORMAT_DECL
+            {
+                  final XQueryAST root = (XQueryAST) _t; // points to DECIMAL_FORMAT_DECL
+                  // first sibling is either DEFAULT_DECIMAL_FORMAT (default) or EQNAME (named)
+                  final XQueryAST dfName = (XQueryAST) root.getNextSibling();
+
+                  final QName qnDfName;
+                  if ("default".equals(dfName.getText())) {
+                      qnDfName = XQueryContext.UNNAMED_DECIMAL_FORMAT;
+                      if (hasDefaultDecimalFormat) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0111.getErrorCode(), "Query prolog cannot contain two default decimal format declarations.");
+                      } else {
+                          hasDefaultDecimalFormat = true;
+                      }
+                  } else {
+                      try {
+                          qnDfName = QName.parse(staticContext, dfName.getText(), null);
+                      } catch (final IllegalQNameException iqe) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + dfName.getText());
+                      }
+
+                      if (staticContext.getStaticDecimalFormat(qnDfName) != null) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0111.getErrorCode(), "Query prolog cannot contain two decimal format declarations with the same name: " + dfName.getText());
+                      }
+                  }
+
+                  // position current at the first property name for the decimal format
+                  XQueryAST current = (XQueryAST) dfName.getNextSibling();
+                  if ("default".equals(dfName.getText())) {
+                      current = (XQueryAST) current.getNextSibling();
+                  }
+
+                  final Map<String, String> dfProperties = new HashMap<>();
+
+                  while (current != null) {
+                      final XQueryAST pname = current;
+                      final XQueryAST pval  = (XQueryAST) current.getNextSibling();
+
+                      if (pval == null) {
+                        break;
+                      }
+
+                      final String pn = pname.getText();
+                      String pv = pval.getText();
+                      if (pv.length() >= 2 && (pv.startsWith("\"") || pv.startsWith("'"))) {
+                          pv = pv.substring(1, pv.length() - 1);
+                      }
+                      if (dfProperties.put(pn, pv) != null) {
+                          throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0114.getErrorCode(), "Decimal format: " + dfName.getText() + " defines the property: " + pn + " more than once.");
+                      }
+
+                      current = (XQueryAST) pval.getNextSibling();
+                  }
+
+                  final DecimalFormat df;
+                  try {
+                      df = DecimalFormat.fromProperties(dfProperties);
+                  } catch (final IllegalArgumentException ex) {
+                      throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0097.getErrorCode(), ex.getMessage() + " within the picture string of the decimal format: " + dfName.getText() + ".");
+                  }
+                  if (!df.checkDistinctCharacters()) {
+                      throw new XPathException(dfName.getLine(), dfName.getColumn(), ErrorCodes.W3CErrorCode.XQST0098.getErrorCode(), "Characters within the picture string of the decimal format: " + dfName.getText() + " are not distinct.");
+                  }
+
+                  staticContext.setStaticDecimalFormat(qnDfName, df);
+                  context.setStaticDecimalFormat(qnDfName, df);
             }
         )
         |

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -20,6 +44,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
+
+import java.util.Map;
 
 /**
  * Data class for a Decimal Format.
@@ -78,5 +104,136 @@ public class DecimalFormat {
         this.infinity = infinity;
         this.NaN = NaN;
         this.minusSign = minusSign;
+    }
+
+    /**
+     * Checks that the characters used in a picture string have distinct values.
+     *
+     * @return true if all the characters are distinct, false otherwise.
+     */
+    public boolean checkDistinctCharacters() {
+        final int[] characters = new int[] {
+            decimalSeparator,
+            exponentSeparator,
+            groupingSeparator,
+            percent,
+            perMille,
+            zeroDigit,
+            digit,
+            patternSeparator
+        };
+
+        for (int i = 0; i < characters.length; i++) {
+            final int c = characters[i];
+            for (int j = i + 1; j < characters.length; j++) {
+                final int o = characters[j];
+                if (c == o) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Constructs a Decimal Format from a map of decimal format properties.
+     *
+     * @param properties the properties for the decimal format.
+     *
+     * @return the Decimal Format.
+     *
+     * @throws IllegalArgumentException if any of the properties are invalid.
+     */
+    public static DecimalFormat fromProperties(final Map<String, String> properties) throws IllegalArgumentException {
+        int decimalSeparator = UNNAMED.decimalSeparator;
+        int exponentSeparator = UNNAMED.exponentSeparator;
+        int groupingSeparator = UNNAMED.groupingSeparator;
+        int percent = UNNAMED.percent;
+        int perMille = UNNAMED.perMille;
+        int zeroDigit = UNNAMED.zeroDigit;
+        int digit = UNNAMED.digit;
+        int patternSeparator = UNNAMED.patternSeparator;
+        String infinity = UNNAMED.infinity;
+        String NaN = UNNAMED.NaN;
+        int minusSign = UNNAMED.minusSign;
+
+        for (final Map.Entry<String, String> property : properties.entrySet()) {
+            final String value = property.getValue();
+            switch (property.getKey()) {
+                case "decimal-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("decimal-separator must be a single character");
+                    }
+                    decimalSeparator = value.charAt(0);
+                    break;
+
+                case "exponent-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("exponent-separator must be a single character");
+                    }
+                    exponentSeparator = value.charAt(0);
+                    break;
+
+                case "grouping-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("groupung-separator must be a single character");
+                    }
+                    groupingSeparator = value.charAt(0);
+                    break;
+
+                case "percent":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("percent must be a single character");
+                    }
+                    percent = value.charAt(0);
+                    break;
+
+                case "per-mille":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("per-mille must be a single character");
+                    }
+                    perMille = value.charAt(0);
+                    break;
+
+                case "zero-digit":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("zero-digit must be a single character");
+                    }
+                    zeroDigit = value.charAt(0);
+                    break;
+
+                case "digit":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("digit must be a single character");
+                    }
+                    digit = value.charAt(0);
+                    break;
+
+                case "pattern-separator":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("pattern-separator must be a single character");
+                    }
+                    patternSeparator = value.charAt(0);
+                    break;
+
+                case "infinity":
+                    infinity = value;
+                    break;
+
+                case "NaN":
+                    NaN = value;
+                    break;
+
+                case "minus-sign":
+                    if (value.length() != 1) {
+                        throw new IllegalArgumentException("minus-sign must be a single character");
+                    }
+                    minusSign = value.charAt(0);
+                    break;
+            }
+        }
+
+        return new DecimalFormat(decimalSeparator, exponentSeparator, groupingSeparator, percent, perMille, zeroDigit, digit, patternSeparator, infinity, NaN, minusSign);
     }
 }
