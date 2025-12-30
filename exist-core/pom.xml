@@ -976,6 +976,7 @@
                                 <include>src/main/java/org/exist/storage/NativeValueIndex.java</include>
                                 <include>src/main/java/org/exist/storage/NodePath.java</include>
                                 <include>src/test/java/org/exist/storage/NodePathTest.java</include>
+                                <include>src/main/java/org/exist/storage/NotificationService.java</include>
                                 <include>src/main/java/org/exist/storage/ProcessMonitor.java</include>
                                 <include>src/test/java/org/exist/storage/RecoverBinary2Test.java</include>
                                 <include>src/test/java/org/exist/storage/Recovery2Test.java</include>
@@ -1590,6 +1591,7 @@
                                 <exclude>src/main/java/org/exist/storage/NativeValueIndex.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/NodePath.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/NodePathTest.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/NotificationService.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/ProcessMonitor.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoverBinary2Test.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/RecoverBinaryTest.java</exclude>
