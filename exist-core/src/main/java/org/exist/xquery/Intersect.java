@@ -76,7 +76,7 @@ public class Intersect extends CombiningExpression {
                 @Nullable Set<Item> set = null;
                 for (final SequenceIterator i = ls.unorderedIterator(); i.hasNext(); ) {
                     if (set == null) {
-                        set = new ObjectAVLTreeSet<>(new ItemComparator(null));
+                        set = new ObjectAVLTreeSet<>(ItemComparator.WITHOUT_COLLATOR);
                     }
                     set.add(i.nextItem());
                 }
