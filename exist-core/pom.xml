@@ -802,6 +802,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/main/xjb/rest-api.xjb</include>
+                                <include>src/test/xquery/parenthesizedLocationStep.xml</include>
                                 <include>src/test/xquery/tail-recursion.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/numbers/format-numbers.xql</include>
@@ -917,6 +918,7 @@
                                 <include>src/main/java/org/exist/dom/persistent/DocumentSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/ElementImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/EmptyNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/LockToken.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeProxy.java</include>
@@ -979,6 +981,7 @@
                                 <include>src/main/java/org/exist/management/impl/JMXAgent.java</include>
                                 <include>src/main/java/org/exist/management/impl/SanityReport.java</include>
                                 <include>src/main/java/org/exist/numbering/DLN.java</include>
+                                <include>src/main/java/org/exist/numbering/DLNBase.java</include>
                                 <include>src/main/java/org/exist/numbering/DLNFactory.java</include>
                                 <include>src/test/java/org/exist/numbering/DLNStorageTest.java</include>
                                 <include>src/main/java/org/exist/numbering/NodeId.java</include>
@@ -1207,10 +1210,12 @@
                                 <include>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java</include>
                                 <include>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
+                                <include>src/main/java/org/exist/xquery/Except.java</include>
                                 <include>src/main/java/org/exist/xquery/ExternalModuleImpl.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Function.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
+                                <include>src/main/java/org/exist/xquery/Intersect.java</include>
                                 <include>src/test/java/org/exist/xquery/LexerTest.java</include>
                                 <include>src/main/java/org/exist/xquery/LocationStep.java</include>
                                 <include>src/main/java/org/exist/xquery/Module.java</include>
@@ -1219,6 +1224,7 @@
                                 <include>src/test/java/org/exist/xquery/NodeTypeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/Option.java</include>
+                                <include>src/main/java/org/exist/xquery/PathExpr.java</include>
                                 <include>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</include>
                                 <include>src/test/java/org/exist/xquery/RestBinariesTest.java</include>
                                 <include>src/test/java/org/exist/xquery/StoredModuleTest.java</include>
@@ -1296,6 +1302,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunInsertBefore.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunIRIToURI.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLang.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLast.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunMax.java</include>
@@ -1435,6 +1442,7 @@
                                 <include>src/main/java/org/exist/xquery/value/GYearMonthValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/GYearValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/IntegerValue.java</include>
+                                <include>src/main/java/org/exist/xquery/value/MemoryNodeSet.java</include>
                                 <include>src/main/java/org/exist/xquery/value/QNameValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/SequenceType.java</include>
                                 <include>src/main/java/org/exist/xquery/value/StringValue.java</include>
@@ -1442,6 +1450,7 @@
                                 <include>src/main/java/org/exist/xquery/value/TimeUtils.java</include>
                                 <include>src/main/java/org/exist/xquery/value/TimeValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/Type.java</include>
+                                <include>src/main/java/org/exist/xquery/value/ValueSequence.java</include>
                                 <include>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
@@ -1489,6 +1498,7 @@
                                 <exclude>src/test/xquery/instance-of.xqm</exclude>
                                 <exclude>src/test/xquery/operator-mapping.xqm</exclude>
                                 <exclude>src/test/xquery/order.xqm</exclude>
+                                <exclude>src/test/xquery/parenthesizedLocationStep.xml</exclude>
                                 <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/type-promotion.xqm</exclude>
@@ -1620,6 +1630,7 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/ElementImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/EmptyNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/LockToken.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeProxy.java</exclude>
@@ -1687,6 +1698,7 @@
                                 <exclude>src/main/java/org/exist/mediatype/MediaTypeService.java</exclude>
                                 <exclude>src/main/java/org/exist/mediatype/MediaTypeUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLN.java</exclude>
+                                <exclude>src/main/java/org/exist/numbering/DLNBase.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/DLNFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/numbering/DLNStorageTest.java</exclude>
                                 <exclude>src/main/java/org/exist/numbering/NodeId.java</exclude>
@@ -1994,6 +2006,7 @@
                                 <exclude>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/EmbeddedBinariesTest.java.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Except.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ExternalModuleImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Function.java</exclude>
@@ -2001,6 +2014,7 @@
                                 <exclude>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportModuleTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Intersect.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/JavaBinding.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/xquery/JavaBindingTest.conf.xml</exclude>
                                 <exclude>src/test/java/org/exist/xquery/JavaBindingTest.java</exclude>
@@ -2013,6 +2027,7 @@
                                 <exclude>src/test/java/org/exist/xquery/NodeTypeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Option.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/PathExpr.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PerformanceStatsImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/StoredModuleTest.java</exclude>
@@ -2094,6 +2109,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunInsertBefore.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunIRIToURI.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLang.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLast.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunMax.java</exclude>
@@ -2256,6 +2272,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/GYearValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/IntegerValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ItemComparator.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/MemoryNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/QNameValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceComparator.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceType.java</exclude>
@@ -2267,6 +2284,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/TimeUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/TimeValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/Type.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/value/ValueSequence.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>

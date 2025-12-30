@@ -819,6 +819,54 @@ public class XPathQueryTest {
 
         result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[2]", 1);
         assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<s>C</s>"));
+
+        String query = "declare variable $i := \n" +
+            "  <root>\n" +
+            "     <child/>\n" +
+            "     <child/>\n" +
+            "     <child>\n" +
+            "        <child2>\n" +
+            "           <child3>\n" +
+            "              <leaf/>\n" +
+            "           </child3>\n" +
+            "        </child2>\n" +
+            "     </child>\n" +
+            "  </root>;\n" +
+            "\n" +
+            "root($i)//following::node()";
+
+        result = service.query(query);
+        assertEquals(5, result.getSize());
+        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<child/>"));
+        assertThat(result.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<child><child2><child3><leaf/></child3></child2></child>"));
+        assertThat(result.getResource(2).getContent().toString(), CompareMatcher.isIdenticalTo("<child2><child3><leaf/></child3></child2>"));
+        assertThat(result.getResource(3).getContent().toString(), CompareMatcher.isIdenticalTo("<child3><leaf/></child3>"));
+        assertThat(result.getResource(4).getContent().toString(), CompareMatcher.isIdenticalTo("<leaf/>"));
+
+        query = "declare variable $i := \n" +
+            "  <root>\n" +
+            "     <child/>\n" +
+            "     <child/>\n" +
+            "     <child>\n" +
+            "        <child2>\n" +
+            "           <child3>\n" +
+            "              <leaf/>\n" +
+            "           </child3>\n" +
+            "        </child2>\n" +
+            "     </child>\n" +
+            "  </root>;\n" +
+            "\n" +
+            "root($i)//count(following::node())";
+
+        result = service.query(query);
+        assertEquals(7, result.getSize());
+        assertEquals("0", result.getResource(0).getContent());
+        assertEquals("5", result.getResource(1).getContent());
+        assertEquals("4", result.getResource(2).getContent());
+        assertEquals("0", result.getResource(3).getContent());
+        assertEquals("0", result.getResource(4).getContent());
+        assertEquals("0", result.getResource(5).getContent());
+        assertEquals("0", result.getResource(6).getContent());
     }
 
     @Test
@@ -1051,11 +1099,17 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.INDENT, "no");
 
 
-        String query = "let $t := <test>" + "<a> <s>A</s> 1 </a>"
-                + "<a> <s>Z</s> 2 </a>" + "<a> <s>B</s> 3 </a>"
-                + "<a> <s>Z</s> 4 </a>" + "<a> <s>C</s> 5 </a>"
-                + "<a> <s>Z</s> 6 </a>" + "</test>"
-                + "return $t//a[s='Z' and preceding-sibling::*[1]/s='B']";
+        String query = "let $t := " +
+            "<test>" +
+            "<a> <s>A</s> 1 </a>" +
+            "<a> <s>Z</s> 2 </a>" +
+            "<a> <s>B</s> 3 </a>" +
+            "<a> <s>Z</s> 4 </a>" +
+            "<a> <s>C</s> 5 </a>" +
+            "<a> <s>Z</s> 6 </a>" +
+            "</test>" +
+            "return " +
+            "$t//a[s = 'Z' and preceding-sibling::*[1]/s = 'B']";
         ResourceSet result = queryResource(service, "numbers.xml", query, 1);
         assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
 

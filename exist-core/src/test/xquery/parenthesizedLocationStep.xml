@@ -1,5 +1,29 @@
 <!--
 
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
     eXist-db Open Source Native XML Database
     Copyright (C) 2001 The eXist-db Authors
 
@@ -106,7 +130,7 @@
             ]]></code>
         <expected>test</expected>
     </test>
-    <test output="text" ignore="yes">
+    <test output="text">
         <task>[retrieval, qname] descendant step with parenthesized attribute node</task>
         <code><![CDATA[
             collection('/db/coll')//test/qname//(@att.qname)/string()
@@ -120,24 +144,13 @@
             ]]></code>
         <expected>test</expected>
     </test>
-    <test output="text" ignore="yes">
+    <test output="text">
         <task>[retrieval, path] descendant step with parenthesized attribute node</task>
         <code><![CDATA[
             collection('/db/coll')//test/path//(@att.path)/string()
             ]]></code>
         <expected>test</expected>
-    </test>    
-    <test output="xml" ignore="yes">
-        <task>[query, old FT index, qname, indirect] parenthesized element node</task>
-        <code><![CDATA[
-            let $a := collection('/db/coll')//test/(qname)
-            return $a[text:match-any(., 'test')]
-            ]]></code>
-        <expected>
-            <qname att.qname="test">this is a test document</qname>
-        </expected>
     </test>
-    
     <test output="xml">
         <task>[query, range index, qname, direct] parenthesized element node</task>
         <code><![CDATA[
@@ -229,14 +242,14 @@
             ]]></code>
         <expected>test</expected>
     </test>
-    <test output="text" ignore="yes">
+    <test output="text">
         <task>[query, range index, qname, direct] descendant step with parenthesized attribute node</task>
         <code><![CDATA[
             collection('/db/coll')//test/qname//(@att.qname)[matches(., 'test')]/string()
             ]]></code>
         <expected>test</expected>
     </test>
-    <test output="text" ignore="yes">
+    <test output="text">
         <task>[query, range index, qname, indirect] descendant step with parenthesized attribute node</task>
         <code><![CDATA[
             let $a := collection('/db/coll')//test/qname//(@att.qname)
@@ -325,7 +338,7 @@
             <term freq="1" docs="1" n="1">test</term>
         </expected>
     </test>
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[index, range index, qname] descendant step with parenthesized attribute node</task>
         <code><![CDATA[
             let $a := collection('/db/coll')//test/qname//(@att.qname)
@@ -345,7 +358,7 @@
             <term freq="1" docs="1" n="1">test</term>
         </expected>
     </test>    
-    <test output="xml" ignore="yes">
+    <test output="xml">
         <task>[index, range index, path] descendant step with parenthesized attribute node</task>
         <code><![CDATA[
             let $a := collection('/db/coll')//test/path//(@att.path)

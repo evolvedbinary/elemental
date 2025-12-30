@@ -48,11 +48,13 @@ import java.util.Comparator;
 @ThreadSafe
 public class AtomicValueComparator implements Comparator<AtomicValue> {
 
-    protected static final Logger LOG = LogManager.getLogger(RESTServer.class);
+    protected static final Logger LOG = LogManager.getLogger(AtomicValueComparator.class);
+
+    public static AtomicValueComparator WITHOUT_COLLATOR = new AtomicValueComparator();
 
     private final @Nullable Collator collator;
 
-    public AtomicValueComparator() {
+    private AtomicValueComparator() {
         this(null);
     }
 

@@ -83,7 +83,11 @@ public class SequenceComparator implements Comparator<Sequence> {
 
         for (int i = 0; i < o1Count; i++) {
             if (itemComparator == null) {
-                itemComparator = new ItemComparator(collator);
+                if (collator == null) {
+                    itemComparator = ItemComparator.WITHOUT_COLLATOR;
+                } else {
+                    itemComparator = new ItemComparator(collator);
+                }
             }
 
             final Item i1 = o1.itemAt(i);
