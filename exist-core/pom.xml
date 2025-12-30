@@ -889,6 +889,7 @@
                                 <include>src/main/java/org/exist/dom/persistent/DocumentSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/ElementImpl.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/EmptyNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/LockToken.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/Match.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
@@ -1589,6 +1590,7 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/DocumentTypeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/ElementImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/EmptyNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/LockToken.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/Match.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
