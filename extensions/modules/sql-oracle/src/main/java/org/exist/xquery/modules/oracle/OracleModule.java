@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,9 +51,9 @@ import org.exist.xquery.AbstractInternalModule;
 import org.exist.xquery.FunctionDef;
 
 /**
- * eXist Oracle Module Extension
+ * eXist-db Oracle Module Extension
  * 
- * An extension module for the eXist Native XML Database that allows execution of
+ * An extension module for the eXist-db Native XML Database that allows execution of
  * PL/SQL Stored Procedures within an Oracle RDBMS, returning an XML representation
  * of the result set. In particular, this module gives access to a <code>ResultSet</code>
  * returned in an <code>OracleType.CURSOR</code>, functionality which is not provided by
@@ -40,23 +64,40 @@ import org.exist.xquery.FunctionDef;
  * @author <a href="mailto:robert.walpole@metoffice.gov.uk">Robert Walpole</a>
  * @serial 2010-03-23
  * @version 1.0
- * 
- * @see org.exist.xquery.AbstractInternalModule#AbstractInternalModule(org.exist.xquery.FunctionDef[])
  */
 public class OracleModule extends AbstractInternalModule{
-	
+
+	/**
+	 * Namespace URI for the OracleModule functions.
+	 */
 	public final static String NAMESPACE_URI = "http://exist-db.org/xquery/oracle";
-	
+
+	/**
+	 * Namespace prefix for the OracleModule functions.
+	 */
 	public final static String PREFIX = "oracle";
+
+	/**
+	 * Date that the OracleModule was added to eXist-db.
+	 */
 	public final static String INCLUSION_DATE = "2010-03-23";
+
+	/**
+	 * Version of eXist-db that first had the OracleModule.
+	 */
 	public final static String RELEASED_IN_VERSION = "eXist-2.0";
 	
 	private final static FunctionDef[] functions = {
         new FunctionDef(ExecuteFunction.signatures[0], ExecuteFunction.class),
         new FunctionDef(ExecuteFunction.signatures[1], ExecuteFunction.class)
     };
-	
-	public OracleModule(Map<String, List<? extends Object>> parameters) {
+
+	/**
+	 * Default Constructor.
+	 *
+	 * @param parameters parameters for configuring the module.
+	 */
+	public OracleModule(final Map<String, List<? extends Object>> parameters) {
         super(functions, parameters);
     }
 
