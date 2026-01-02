@@ -1322,6 +1322,7 @@
                                 <include>src/test/java/org/exist/xquery/EntitiesTest.java</include>
                                 <include>src/main/java/org/exist/xquery/ErrorCodes.java</include>
                                 <include>src/main/java/org/exist/xquery/Except.java</include>
+                                <include>src/main/java/org/exist/xquery/ExtensionExpression.java</include>
                                 <include>src/main/java/org/exist/xquery/ExternalModuleImpl.java</include>
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Function.java</include>
@@ -1591,6 +1592,7 @@
                                 <include>src/main/java/org/exist/xquery/value/GYearValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/IntegerValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/MemoryNodeSet.java</include>
+                                <exclude>src/test/java/org/exist/xquery/value/PreorderedValueSequenceTest.java</exclude>
                                 <include>src/main/java/org/exist/xquery/value/QNameValue.java</include>
                                 <include>src/main/java/org/exist/xquery/value/SequenceType.java</include>
                                 <include>src/main/java/org/exist/xquery/value/StringValue.java</include>
@@ -2263,6 +2265,7 @@
                                 <exclude>src/test/java/org/exist/xquery/EntitiesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ErrorCodes.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Except.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/ExtensionExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ExternalModuleImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Function.java</exclude>
@@ -2574,6 +2577,7 @@
                                 <exclude>src/main/java/org/exist/xquery/value/IntegerValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/ItemComparator.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/MemoryNodeSet.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/value/PreorderedValueSequenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/QNameValue.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceComparator.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/SequenceType.java</exclude>

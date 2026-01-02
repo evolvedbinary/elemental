@@ -45,6 +45,7 @@
  */
 package org.exist.xquery;
 
+import jakarta.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.persistent.DocumentSet;
@@ -320,7 +321,8 @@ public class PathExpr extends AbstractExpression implements CompiledXQuery, Rewr
                             !Type.subTypeOf(result.getItemType(), Type.NODE)) {
                         gotAtomicResult = true;
                     }
-                    if (steps.size() > 1 && getLastExpression() instanceof Step) {
+
+                    if (steps.size() > 1 && expressionIsStep(getLastExpression())) {
                         // remove duplicate nodes if this is a path
                         // expression with more than one step
                         result.removeDuplicates();
@@ -363,6 +365,23 @@ public class PathExpr extends AbstractExpression implements CompiledXQuery, Rewr
             context.getProfiler().end(this, "", result);
         }
         return result;
+    }
+
+    private boolean expressionIsStep(final Expression expression) {
+        //return getLastExpression() instanceof Step;
+        if (expression instanceof Step) {
+            return true;
+        }
+
+        if (expression instanceof final ExtensionExpression extensionExpression) {
+            final int subExpressionCount = extensionExpression.getSubExpressionCount();
+            if (subExpressionCount > 0) {
+                final Expression lastExtensionSubExpression = extensionExpression.getSubExpression(subExpressionCount - 1);
+                return expressionIsStep(lastExtensionSubExpression);
+            }
+        }
+
+        return false;
     }
 
     @Override

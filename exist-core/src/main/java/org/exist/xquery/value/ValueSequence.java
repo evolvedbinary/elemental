@@ -213,18 +213,18 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public SequenceIterator iterate() {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         return new ValueSequenceIterator();
     }
 
     @Override
     public SequenceIterator unorderedIterator() {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         return new ValueSequenceIterator();
     }
 
     public SequenceIterator iterateInReverse() {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         return new ReverseValueSequenceIterator();
     }
 
@@ -238,13 +238,13 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public long getItemCountLong() {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         return size + 1;
     }
 
     @Override
     public Item itemAt(final int pos) {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         return values[pos];
     }
 
@@ -657,7 +657,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
     /* Methods of MemoryNodeSet */
     @Override
     public Sequence getAttributes(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence attributes = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -677,7 +677,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getDescendantAttributes(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence attributes = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -697,7 +697,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getChildren(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence children = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -717,7 +717,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getChildrenForParent(final NodeImpl parent) {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence children = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -739,7 +739,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getDescendants(final boolean includeSelf, final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence descendants = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -759,7 +759,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getAncestors(final boolean includeSelf, final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence ancestors = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -779,20 +779,44 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getParents(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
+        // This Set is used to ensure that the same parent is only added once to the result
+        @Nullable Set<NodeId> parentNodeIds = null;
+
         @Nullable ValueSequence parents = null;
+
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
             @Nullable final NodeImpl parent = (NodeImpl) node.selectParentNode();
 
-            if (parent != null && test.matches(parent)) {
-                if (parents == null) {
-                    parents = new ValueSequence(size + 1 - i);
-                    parents.setIsOrdered(true);
-                    parents.keepUnOrdered(keepUnOrdered);
-                }
+            if (parent != null) {
+                if (size == 0) {
+                    // There is only one node, so there can be only zero or one parent\
+                    if (test.matches(parent)) {
+                        if (parents == null) {
+                            parents = new ValueSequence(1);
+                            parents.setIsOrdered(true);
+                            parents.keepUnOrdered(keepUnOrdered);
+                        }
 
-                parents.add(parent);
+                        parents.add(parent);
+                    }
+                } else {
+                    // There are multiple nodes, so there could be zero or more parents
+                    if (parentNodeIds == null) {
+                        parentNodeIds = new ObjectOpenHashSet<>(size + 1 - i);
+                    }
+
+                    if (parentNodeIds.add(parent.getNodeId()) && test.matches(parent)) {
+                        if (parents == null) {
+                            parents = new ValueSequence(size + 1 - i);
+                            parents.setIsOrdered(true);
+                            parents.keepUnOrdered(keepUnOrdered);
+                        }
+
+                        parents.add(parent);
+                    }
+                }
             }
         }
 
@@ -805,7 +829,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getSelf(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence selves = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -829,7 +853,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getPrecedingSiblings(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence precedingSiblings = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -853,7 +877,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getPreceding(final NodeTest test, final int position) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence preceding = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -873,7 +897,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getFollowingSiblings(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence followingSiblings = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -896,7 +920,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence getFollowing(final NodeTest test, final int position) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence following = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -916,7 +940,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence selectDescendants(final MemoryNodeSet descendants) {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence nodes = null;
 
         for (int i = 0; i <= size; i++) {
@@ -942,7 +966,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public Sequence selectChildren(final MemoryNodeSet children) {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         @Nullable ValueSequence nodes = null;
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
@@ -1008,7 +1032,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public boolean matchSelf(final NodeTest test) {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
             if ((test.getType() == Type.NODE && node.getNodeType() == Node.ATTRIBUTE_NODE) ||
@@ -1021,7 +1045,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public boolean matchChildren(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
             if (node.matchChildren(test)) {
@@ -1033,7 +1057,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public boolean matchAttributes(final NodeTest test) {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
             if (node.matchAttributes(test)) {
@@ -1045,7 +1069,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public boolean matchDescendantAttributes(final NodeTest test) throws XPathException {
-        sortInDocumentOrder();
+//        removeDuplicateNodes();
         for (int i = 0; i <= size; i++) {
             final NodeImpl node = (NodeImpl) values[i];
             if (node.matchDescendantAttributes(test)) {
