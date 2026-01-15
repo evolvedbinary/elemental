@@ -314,6 +314,7 @@
                             <form>XML_STYLE</form>
                             <g>SLASHSTAR_STYLE</g>
                             <java>SLASHSTAR_STYLE</java>
+                            <ldif>SCRIPT_STYLE</ldif>
                             <plist>XML_STYLE</plist>
                             <types>SCRIPT_STYLE</types>
                             <xconf>XML_STYLE</xconf>

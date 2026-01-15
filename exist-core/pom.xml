@@ -854,6 +854,7 @@
                                 <include>src/test/java/org/exist/collections/triggers/XQueryTriggerSetUidTest.java</include>
                                 <include>src/test/java/org/exist/collections/triggers/XQueryTriggerTest.java</include>
                                 <include>src/main/java/org/exist/config/Configuration.java</include>
+                                <include>src/main/java/org/exist/config/ConfigurationDocumentTrigger.java</include>
                                 <include>src/main/java/org/exist/config/ConfigurationImpl.java</include>
                                 <include>src/main/java/org/exist/config/Configurator.java</include>
                                 <include>src/test/java/org/exist/config/TwoDatabasesTest.java</include>
@@ -974,10 +975,14 @@
                                 <include>src/main/java/org/exist/repo/ExistRepository.java</include>
                                 <include>src/main/java/org/exist/scheduler/UserXQueryJob.java</include>
                                 <include>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</include>
+                                <include>src/main/java/org/exist/security/AbstractRealm.java</include>
+                                <include>src/main/java/org/exist/security/AXSchemaType.java</include>
                                 <include>src/main/java/org/exist/security/EffectiveSubject.java</include>
+                                <include>src/main/java/org/exist/security/EXistSchemaType.java</include>
                                 <include>src/test/java/org/exist/security/FnDocSecurityTest.java</include>
                                 <include>src/main/java/org/exist/security/Permission.java</include>
                                 <include>src/main/java/org/exist/security/PermissionRequired.java</include>
+                                <include>src/main/java/org/exist/security/Principal.java</include>
                                 <include>src/test/java/org/exist/security/RestApiSecurityTest.java</include>
                                 <include>src/main/java/org/exist/security/SecurityManager.java</include>
                                 <include>src/main/java/org/exist/security/SimpleACLPermissionInternal.java</include>
@@ -986,7 +991,11 @@
                                 <include>src/test/java/org/exist/security/UnixStylePermissionTest.java</include>
                                 <include>src/test/java/org/exist/security/XqueryApiTest.java</include>
                                 <include>src/main/java/org/exist/security/internal/AccountImpl.java</include>
+                                <include>src/main/java/org/exist/security/internal/RealmImpl.java</include>
+                                <include>src/main/java/org/exist/security/internal/SecurityManagerImpl.java</include>
                                 <include>src/main/java/org/exist/security/internal/aider/UnixStylePermissionAider.java</include>
+                                <include>src/main/java/org/exist/security/management/AccountsManagement.java</include>
+                                <include>src/main/java/org/exist/security/management/GroupsManagement.java</include>
                                 <include>src/main/java/org/exist/source/Source.java</include>
                                 <include>src/main/java/org/exist/source/SourceFactory.java</include>
                                 <include>src/main/java/org/exist/source/URLSource.java</include>
@@ -1550,6 +1559,7 @@
                                 <exclude>src/test/java/org/exist/collections/triggers/XQueryTriggerSetUidTest.java</exclude>
                                 <exclude>src/test/java/org/exist/collections/triggers/XQueryTriggerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configuration.java</exclude>
+                                <exclude>src/main/java/org/exist/config/ConfigurationDocumentTrigger.java</exclude>
                                 <exclude>src/main/java/org/exist/config/ConfigurationImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/config/Configurator.java</exclude>
                                 <exclude>src/test/java/org/exist/config/TwoDatabasesTest.java</exclude>
@@ -1684,11 +1694,15 @@
                                 <exclude>src/main/java/org/exist/resolver/XercesXmlResolverAdapter.java</exclude>
                                 <exclude>src/main/java/org/exist/scheduler/UserXQueryJob.java</exclude>
                                 <exclude>src/main/java/org/exist/scheduler/impl/QuartzSchedulerImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/AbstractRealm.java</exclude>
+                                <exclude>src/main/java/org/exist/security/AXSchemaType.java</exclude>
                                 <exclude>src/main/java/org/exist/security/EffectiveSubject.java</exclude>
+                                <exclude>src/main/java/org/exist/security/EXistSchemaType.java</exclude>
                                 <exclude>src/test/java/org/exist/security/FnDocSecurityTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/Permission.java</exclude>
                                 <exclude>src/main/java/org/exist/security/PermissionRequired.java</exclude>
                                 <exclude>src/main/java/org/exist/security/PermissionRequiredCheck.java</exclude>
+                                <exclude>src/main/java/org/exist/security/Principal.java</exclude>
                                 <exclude>src/test/java/org/exist/security/RestApiSecurityTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SecurityManager.java</exclude>
                                 <exclude>src/main/java/org/exist/security/SimpleACLPermissionInternal.java</exclude>
@@ -1697,7 +1711,11 @@
                                 <exclude>src/test/java/org/exist/security/UnixStylePermissionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/security/XqueryApiTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/AccountImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/internal/RealmImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/internal/SecurityManagerImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/aider/UnixStylePermissionAider.java</exclude>
+                                <exclude>src/main/java/org/exist/security/management/AccountsManagement.java</exclude>
+                                <exclude>src/main/java/org/exist/security/management/GroupsManagement.java</exclude>
                                 <exclude>src/main/java/org/exist/source/Source.java</exclude>
                                 <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/source/URLSource.java</exclude>

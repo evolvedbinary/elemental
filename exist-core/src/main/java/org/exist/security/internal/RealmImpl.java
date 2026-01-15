@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,6 +48,8 @@ package org.exist.security.internal;
 import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -33,7 +59,7 @@ import org.exist.config.Reference;
 import org.exist.config.ReferenceImpl;
 import org.exist.security.AXSchemaType;
 import org.exist.security.AbstractAccount;
-import org.exist.security.AbstractPrincipal;
+import org.exist.security.AbstractGroup;
 import org.exist.security.AbstractRealm;
 import org.exist.security.Account;
 import org.exist.security.AuthenticationException;
@@ -48,6 +74,8 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
+
+import javax.annotation.Nullable;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -172,8 +200,9 @@ public class RealmImpl extends AbstractRealm {
         }
         
         usersByName.<PermissionDeniedException, EXistException>write2E(principalDb -> {
-            final AbstractAccount remove_account = (AbstractAccount)principalDb.get(account.getName());
-            if(remove_account == null){
+            @Nullable final Tuple2<PrincipalState, Optional<Account>> removeAccountEntry = principalDb.get(account.getName());
+            if (removeAccountEntry == null || removeAccountEntry._1 == PrincipalState.CREATING) {
+                // skip not existent or not yet persisted entries
                 throw new IllegalArgumentException("No such account exists!");
             }
 
@@ -184,26 +213,28 @@ public class RealmImpl extends AbstractRealm {
                 throw new PermissionDeniedException("The '" + account.getName() + "' account is required by the system for correct operation, and you cannot delete it! You may be able to disable it instead.");
             }
 
-            try(final DBBroker broker = getDatabase().getBroker()) {
+            try (final DBBroker broker = getDatabase().getBroker()) {
                 final Account user = broker.getCurrentSubject();
 
-                if(!(account.getName().equals(user.getName()) || user.hasDbaRole()) ) {
+                if (!(account.getName().equals(user.getName()) || user.hasDbaRole()) ) {
                     throw new PermissionDeniedException("You are not allowed to delete '" + account.getName() + "' user");
                 }
 
-                remove_account.setRemoved(true);
-                remove_account.setCollection(broker, collectionRemovedAccounts, XmldbURI.create(UUIDGenerator.getUUID()+".xml"));
+                final AbstractAccount removeAccount = (AbstractAccount) removeAccountEntry._2.get();
 
-                    try(final Txn txn = broker.continueOrBeginTransaction()) {
-                        collectionAccounts.removeXMLResource(txn, broker, XmldbURI.create( remove_account.getName() + ".xml"));
+                removeAccount.setRemoved(true);
+                removeAccount.setCollection(broker, collectionRemovedAccounts, XmldbURI.create(UUIDGenerator.getUUID()+".xml"));
+
+                    try (final Txn txn = broker.continueOrBeginTransaction()) {
+                        collectionAccounts.removeXMLResource(txn, broker, XmldbURI.create(removeAccount.getName() + ".xml"));
 
                         txn.commit();
                     } catch(final Exception e) {
                         LOG.warn(e.getMessage(), e);
                     }
 
-                getSecurityManager().registerAccount(remove_account);
-                principalDb.remove(remove_account.getName());
+                getSecurityManager().registerAccount(removeAccount);
+                principalDb.remove(removeAccount.getName());
             }
         });
         
@@ -217,8 +248,9 @@ public class RealmImpl extends AbstractRealm {
         }
         
         groupsByName.<PermissionDeniedException, EXistException>write2E(principalDb -> {
-            final AbstractPrincipal remove_group = (AbstractPrincipal)principalDb.get(group.getName());
-            if (remove_group == null) {
+            @Nullable final Tuple2<PrincipalState, Optional<Group>> removeGroupEntry = principalDb.get(group.getName());
+            if (removeGroupEntry == null || removeGroupEntry._1 == PrincipalState.CREATING) {
+                // skip not existent or not yet persisted entries
                 throw new IllegalArgumentException("Group does '" + group.getName() + "' not exist!");
             }
 
@@ -231,14 +263,20 @@ public class RealmImpl extends AbstractRealm {
             final DBBroker broker = getDatabase().getActiveBroker();
             final Subject subject = broker.getCurrentSubject();
 
-            ((Group)remove_group).assertCanModifyGroup(subject);
+            final Group removeGroup = removeGroupEntry._2.get();
+
+            removeGroup.assertCanModifyGroup(subject);
 
             // check that this is not an active primary group
             final Optional<String> isPrimaryGroupOf = usersByName.read(usersDb -> {
-                for(final Account account : usersDb.values()) {
-                    final Group accountPrimaryGroup = account.getDefaultGroup();
-                    if (accountPrimaryGroup != null && accountPrimaryGroup.getId() == remove_group.getId()) {
-                        return Optional.of(account.getName());
+                for (final Tuple2<PrincipalState, Optional<Account>> accountEntry : usersDb.values()) {
+                    // skip not yet persisted entries
+                    if (accountEntry._1 == PrincipalState.PERSISTENT) {
+                        final Account account = accountEntry._2.get();
+                        final Group accountPrimaryGroup = account.getDefaultGroup();
+                        if (accountPrimaryGroup != null && accountPrimaryGroup.getId() == removeGroup.getId()) {
+                            return Optional.of(account.getName());
+                        }
                     }
                 }
                 return Optional.empty();
@@ -247,19 +285,19 @@ public class RealmImpl extends AbstractRealm {
                 throw new PermissionDeniedException("Account '" + isPrimaryGroupOf.get() + "' still has '" + group.getName() + "' as their primary group!");
             }
 
-            remove_group.setRemoved(true);
-            remove_group.setCollection(broker, collectionRemovedGroups, XmldbURI.create(UUIDGenerator.getUUID() + ".xml"));
-            try(final Txn txn = broker.continueOrBeginTransaction()) {
+            ((AbstractGroup) removeGroup).setRemoved(true);
+            ((AbstractGroup) removeGroup).setCollection(broker, collectionRemovedGroups, XmldbURI.create(UUIDGenerator.getUUID() + ".xml"));
+            try (final Txn txn = broker.continueOrBeginTransaction()) {
 
-                collectionGroups.removeXMLResource(txn, broker, XmldbURI.create(remove_group.getName() + ".xml" ));
+                collectionGroups.removeXMLResource(txn, broker, XmldbURI.create(removeGroup.getName() + ".xml" ));
 
                 txn.commit();
             } catch (final Exception e) {
                 LOG.warn(e.getMessage(), e);
             }
 
-            getSecurityManager().registerGroup((Group)remove_group);
-            principalDb.remove(remove_group.getName());
+            getSecurityManager().registerGroup(removeGroup);
+            principalDb.remove(removeGroup.getName());
         });
         
         return true;
@@ -292,18 +330,24 @@ public class RealmImpl extends AbstractRealm {
     @Override
     public List<String> findUsernamesWhereUsernameStarts(final String prefix) {
         return usersByName.read(principalDb ->
-                principalDb.keySet()
-                        .stream()
-                        .filter(userName -> userName.startsWith(prefix))
-                        .collect(Collectors.toList())
+            principalDb.entrySet()
+                .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(Map.Entry::getKey)
+                .filter(userName -> userName.startsWith(prefix))
+                .collect(Collectors.toList())
         );
     }
     
     @Override
     public List<String> findGroupnamesWhereGroupnameStarts(final String prefix) {
         return groupsByName.read(principalDb -> 
-                principalDb.keySet()
+                principalDb.entrySet()
                 .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(Map.Entry::getKey)
                 .filter(groupName -> groupName.startsWith(prefix))
                 .collect(Collectors.toList())
         );
@@ -312,8 +356,11 @@ public class RealmImpl extends AbstractRealm {
     @Override
     public Collection<? extends String> findGroupnamesWhereGroupnameContains(final String fragment) {
         return groupsByName.read(principalDb -> 
-                principalDb.keySet()
+                principalDb.entrySet()
                 .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(Map.Entry::getKey)
                 .filter(groupName -> groupName.contains(fragment))
                 .collect(Collectors.toList())
         );
@@ -321,19 +368,36 @@ public class RealmImpl extends AbstractRealm {
 
     @Override
     public List<String> findAllGroupNames() {
-        return groupsByName.read(principalDb -> new ArrayList<>(principalDb.keySet()));
+        return groupsByName.read(principalDb ->
+            principalDb.entrySet()
+                .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList())
+        );
     }
     
     @Override
     public List<String> findAllUserNames() {
-        return usersByName.read(principalDb -> new ArrayList<>(principalDb.keySet()));
+        return usersByName.read(principalDb ->
+            principalDb.entrySet()
+                .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList())
+        );
     }
 
     @Override
     public List<String> findAllGroupMembers(final String groupName) {
         return usersByName.read(principalDb ->
-                principalDb.values()
+                principalDb.entrySet()
                 .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(entry -> entry.getValue()._2.get())
                 .filter(account -> account.hasGroup(groupName))
                 .map(Principal::getName)
                 .collect(Collectors.toList())
@@ -342,11 +406,40 @@ public class RealmImpl extends AbstractRealm {
 
     @Override
     public List<String> findUsernamesWhereNameStarts(final String startsWith) {
-        return Collections.emptyList();    //TODO at present exist users cannot have personal name details, used in LDAP realm
+        return usersByName.read(principalDb ->
+            principalDb.entrySet()
+                .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(entry -> entry.getValue()._2.get())
+                .filter(account -> {
+                    @Nullable final String fullName = account.getMetadataValue(AXSchemaType.FULLNAME);
+                    return fullName != null && fullName.startsWith(startsWith);
+                })
+                .map(Account::getName)
+                .collect(Collectors.toList())
+        );
     }
 
     @Override
     public List<String> findUsernamesWhereNamePartStarts(final String startsWith) {
-        return Collections.emptyList();    //TODO at present exist users cannot have personal name details, used in LDAP realm
+        return usersByName.read(principalDb ->
+            principalDb.entrySet()
+                .stream()
+                // skip not yet persisted entries
+                .filter(entry -> entry.getValue()._1 == PrincipalState.PERSISTENT)
+                .map(entry -> entry.getValue()._2.get())
+                .filter(account -> {
+                    @Nullable final String firstName = account.getMetadataValue(AXSchemaType.FIRSTNAME);
+                    if (firstName != null && firstName.startsWith(startsWith)) {
+                        return true;
+                    }
+
+                    @Nullable final String lastName = account.getMetadataValue(AXSchemaType.LASTNAME);
+                    return lastName != null && lastName.startsWith(startsWith);
+                })
+                .map(Account::getName)
+                .collect(Collectors.toList())
+        );
     }
 }
