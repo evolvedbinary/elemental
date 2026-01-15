@@ -1,0 +1,77 @@
+<!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<!--
+    Security config with:
+        * principal-pattern
+        * default-username that is unqualified and valid
+-->
+<security-manager xmlns="http://exist-db.org/Configuration" version="2.1">
+    <authentication-entry-point>/authentication/login</authentication-entry-point>
+    <realm id="LDAP" version="1.0" principals-are-case-insensitive="false">
+        <context>
+            <authentication>simple</authentication>
+            <use-ssl>false</use-ssl>
+            <url>ldap://localhost:389</url>
+            <domain>gb.myorg.com</domain>
+            <principal-pattern>uid={0},ou=Users,dc=gb,dc=myorg,dc=com</principal-pattern>
+            <search>
+                <base>dc=gb,dc=myorg,dc=com</base>
+                <default-username>user1</default-username>
+                <default-password>user1</default-password>
+                <account>
+                    <search-filter-prefix>objectClass=inetOrgPerson</search-filter-prefix>
+                    <search-attribute key="objectSid">uidNumber</search-attribute>
+                    <search-attribute key="name">uid</search-attribute>
+                    <search-attribute key="dn">uid</search-attribute>
+                    <search-attribute key="primaryGroupID">gidNumber</search-attribute>
+
+                    <metadata-search-attribute key="http://axschema.org/namePerson/first">givenName</metadata-search-attribute>
+                    <metadata-search-attribute key="http://axschema.org/namePerson/last">sn</metadata-search-attribute>
+                    <metadata-search-attribute key="http://axschema.org/namePerson">displayName</metadata-search-attribute>
+                    <metadata-search-attribute key="http://axschema.org/pref/language">preferredLanguage</metadata-search-attribute>
+                    <metadata-search-attribute key="http://axschema.org/contact/email">mail</metadata-search-attribute>
+                </account>
+
+                <group>
+                    <search-filter-prefix>objectClass=posixGroup</search-filter-prefix>
+                    <search-attribute key="objectSid">gidNumber</search-attribute>
+                    <search-attribute key="name">cn</search-attribute>
+                    <search-attribute key="member">memberUid</search-attribute>
+
+                    <metadata-search-attribute key="http://exist-db.org/security/description">description</metadata-search-attribute>
+
+                    <whitelist>
+                        <principal>group1</principal>
+                        <principal>group2</principal>
+                    </whitelist>
+                </group>
+            </search>
+
+            <transformation>
+                <add-group>ldap-users</add-group>
+                <!-- add-group-manager>default</add-group-manager -->
+            </transformation>
+
+        </context>
+    </realm>
+</security-manager>

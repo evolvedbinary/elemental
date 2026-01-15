@@ -1,0 +1,109 @@
+#
+# Elemental
+# Copyright (C) 2024, Evolved Binary Ltd
+#
+# admin@evolvedbinary.com
+# https://www.evolvedbinary.com | https://www.elemental.xyz
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; version 2.1.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+version: 1
+dn: dc=gb,dc=myorg,dc=com
+objectClass: domain
+objectClass: top
+dc: gb
+
+dn: ou=Users,dc=gb,dc=myorg,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Users
+
+dn: ou=Groups,dc=gb,dc=myorg,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Groups
+
+dn: cn=group1,ou=Groups,dc=gb,dc=myorg,dc=com
+objectClass: top
+objectClass: posixGroup
+cn: group1
+description: Group 1
+gidNumber: 10001
+memberUid: user1
+memberUid: user2
+
+dn: cn=group2,ou=Groups,dc=gb,dc=myorg,dc=com
+objectClass: top
+objectClass: posixGroup
+cn: group2
+description: Group 2
+gidNumber: 20001
+memberUid: user2
+
+dn: cn=group3,ou=Groups,dc=gb,dc=myorg,dc=com
+objectClass: top
+objectClass: posixGroup
+cn: group3
+description: Group 3
+gidNumber: 30001
+memberUid: user3
+
+dn: uid=user1,ou=Users,dc=gb,dc=myorg,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: User 1
+givenName: First name 1
+sn: Last name 1
+displayName: First Last 1
+preferredLanguage: en_GB
+mail: user1@mail.com
+homeDirectory: /home/user1
+uid: user1
+userPassword: user1
+uidNumber: 10001
+# primary group = group1
+gidNumber: 10001
+
+dn: uid=user2,ou=Users,dc=gb,dc=myorg,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: User 2
+givenName: First name 2
+sn: Last name 2
+displayName: First Last 2
+preferredLanguage: es
+mail: user2@mail.com
+homeDirectory: /home/user2
+uid: user2
+userPassword: user2
+uidNumber: 10002
+# primary group = group1
+gidNumber: 10001
+
+dn: uid=user3,ou=Users,dc=gb,dc=myorg,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: User 3
+givenName: First name 3
+sn: Last name 3
+displayName: First Last 3
+preferredLanguage: it
+mail: user3@mail.com
+homeDirectory: /home/user3
+uid: user3
+userPassword: user3
+uidNumber: 10003
+# primary group = group3
+gidNumber: 30001

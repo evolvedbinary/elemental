@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -35,18 +59,36 @@ import org.exist.config.annotation.ConfigurationFieldAsElement;
 @ConfigurationClass("search")
 public class LDAPSearchContext implements Configurable {
 
+    /**
+     * The LDAP base address to perform searches within.
+     */
     @ConfigurationFieldAsElement("base")
     protected String base = null;
 
+    /**
+     * The LDAP username to use to access
+     * the LDAP server when there is no particular
+     * user involved. Typically used for metadata queries
+     * such as findAllUserNames.
+     */
     @ConfigurationFieldAsElement("default-username")
     protected String defaultUsername = null;
 
+    /**
+     * The LDAP password to accompany the {@link #defaultUsername}.
+     */
     @ConfigurationFieldAsElement("default-password")
     protected String defaultPassword = null;
 
+    /**
+     * Configuration for accessing LDAP Account information.
+     */
     @ConfigurationFieldAsElement("account")
     protected LDAPSearchAccount searchAccount = null;
 
+    /**
+     * Configuration for accessing LDAP Group information.
+     */
     @ConfigurationFieldAsElement("group")
     protected LDAPSearchGroup searchGroup = null;
 
@@ -60,6 +102,14 @@ public class LDAPSearchContext implements Configurable {
         return base;
     }
 
+    /**
+     * Get the domain address from the LDAP base address.
+     *
+     * e.g. if the `base` is `ou=Users,dc=gb,dc=myorg,dc=com`
+     * this function will return `dc=gb,dc=myorg,dc=com`.
+     *
+     * @return the domain address.
+     */
     public String getAbsoluteBase() throws NamingException {
         if (getBase() != null) {
             int index;

@@ -48,6 +48,7 @@ package org.exist.security.realm.ldap;
 import java.text.MessageFormat;
 import java.util.Hashtable;
 import java.util.Map;
+import javax.annotation.Nullable;
 import javax.naming.Context;
 import javax.naming.NamingException;
 import javax.naming.ldap.InitialLdapContext;
@@ -61,27 +62,55 @@ import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
 
+import static org.exist.security.realm.ldap.LDAPUtils.formatUsername;
 import static org.exist.util.StringUtil.isNullOrEmptyOrWs;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
 @ConfigurationClass("context")
-public class LdapContextFactory implements Configurable {
+public class LDAPContextFactory implements Configurable {
 
-    private static final Logger LOG = LogManager.getLogger(LdapContextFactory.class);
+    private static final Logger LOG = LogManager.getLogger(LDAPContextFactory.class);
 
     private static final String SUN_CONNECTION_POOLING_PROPERTY = "com.sun.jndi.ldap.connect.pool";
 
     @ConfigurationFieldAsElement("authentication")
     protected String authentication = "simple";
 
+    /**
+     * When set to true, the LDAP environment property
+     * {@code com.sun.jndi.ldap.trace.ber} will be
+     * set, and dumps of incoming and outgoing LDAP ASN.1 BER
+     * packets will be written to Standard Error.
+     */
+    @ConfigurationFieldAsElement("trace-ber")
+    private final boolean traceBer = false;
+
+    /**
+     * When set to true, LDAPS will be used
+     * instead of LDAP to access the LDAP server.
+     */
     @ConfigurationFieldAsElement("use-ssl")
     private final boolean ssl = false;
 
+    /**
+     * If present, the described format is used for formatting unqualified usernames.
+     *
+     * For example, given:
+     * <pre>{@code
+     *      <principal-pattern>uid={0},ou=Users,dc=gb,dc=myorg,dc=com</principal-pattern>
+     *      <default-username>user1</default-username>
+     * }
+     *</pre>
+     *
+     * The default username when sent to the LDAP Server will be reformatted as: {@code uid=user1,ou=Users,dc=gb,dc=myorg,dc=com}.
+     *
+     * If the username is already fully-qualified, then this has no effect.
+     */
     @ConfigurationFieldAsElement("principal-pattern")
-    protected String principalPattern = null;
-    protected MessageFormat principalPatternFormat;
+    @Nullable protected String principalPattern = null;
+    @Nullable protected MessageFormat principalPatternFormat;
 
     @ConfigurationFieldAsElement("url")
     protected String url = null;
@@ -91,11 +120,11 @@ public class LdapContextFactory implements Configurable {
 
     protected String contextFactoryClassName = "com.sun.jndi.ldap.LdapCtxFactory";
 
-    protected String systemUsername = null;
-
-    protected String systemPassword = null;
-
-    private boolean usePooling = true;
+    /**
+     * When set to true LDAP connection pooling will be used.
+     */
+    @ConfigurationFieldAsElement("connection-pooling")
+    private boolean usePooling = false;
 
     private Configuration configuration = null;
 
@@ -105,15 +134,11 @@ public class LdapContextFactory implements Configurable {
     @ConfigurationFieldAsElement("transformation")
     private LDAPTransformationContext realmTransformation;
 
-    public LdapContextFactory(final Configuration config) {
+    public LDAPContextFactory(final Configuration config) {
         configuration = Configurator.configure(this, config);
         if (principalPattern != null) {
             principalPatternFormat = new MessageFormat(principalPattern);
         }
-    }
-
-    public LdapContext getSystemLdapContext() throws NamingException {
-        return getLdapContext(systemUsername, systemPassword);
     }
 
     public LdapContext getLdapContext(final String username, final String password) throws NamingException {
@@ -121,7 +146,6 @@ public class LdapContextFactory implements Configurable {
     }
 
     public LdapContext getLdapContext(String username, final String password, final Map<String, Object> additionalEnv) throws NamingException {
-
         if (url == null) {
             throw new IllegalStateException("An LDAP URL must be specified of the form ldap://<hostname>:<port>");
         }
@@ -130,9 +154,8 @@ public class LdapContextFactory implements Configurable {
             throw new IllegalStateException("Password for LDAP authentication may not be empty.");
         }
 
-        if (username != null && principalPattern != null) {
-            username = principalPatternFormat.format(new String[]{username});
-        }
+        // ensure the username is qualified if necessary
+        username = formatUsername(username, principalPatternFormat);
 
         final Hashtable<String, Object> env = new Hashtable<>();
 
@@ -152,14 +175,15 @@ public class LdapContextFactory implements Configurable {
         env.put(Context.INITIAL_CONTEXT_FACTORY, contextFactoryClassName);
         env.put(Context.PROVIDER_URL, url);
 
-        //Absolutely nessecary for working with Active Directory
+        //Absolutely necessary for working with Active Directory
         env.put("java.naming.ldap.attributes.binary", "objectSid");
 
         // the following is helpful in debugging errors
-        //env.put("com.sun.jndi.ldap.trace.ber", System.err);
+        if (traceBer) {
+            env.put("com.sun.jndi.ldap.trace.ber", System.err);
+        }
 
-        // Only pool connections for system contexts
-        if (usePooling && username != null && username.equals(systemUsername)) {
+        if (usePooling && username != null) {
             // Enable connection pooling
             env.put(SUN_CONNECTION_POOLING_PROPERTY, "true");
         }
