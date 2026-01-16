@@ -2242,6 +2242,9 @@
                                 <exclude>src/test/java/org/exist/xquery/PersistentDescendantOrSelfNodeKindTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/QueryPoolTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/RestBinariesTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/RunningXQueryRestTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/RunningXQueryTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/RunningXQueryXmlDbTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/SeqOpTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/SpecialNamesTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/StoredModuleTest.java</exclude>
@@ -2721,6 +2724,9 @@ The original license statement is also included below.]]></preamble>
                             <includes>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeService.java</include>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeUtil.java</include>
+                                <include>src/test/java/org/exist/xquery/RunningXQueryRestTest.java</include>
+                                <include>src/test/java/org/exist/xquery/RunningXQueryTest.java</include>
+                                <include>src/test/java/org/exist/xquery/RunningXQueryXmlDbTest.java</include>
                                 <include>src/main/resources/xyz/elemental/mediatype/media-type-aliases.xml</include>
                                 <include>src/main/resources/xyz/elemental/mediatype/media-type-mappings.xml</include>
                                 <include>src/main/resources/xyz/elemental/mediatype/mime.types</include>
