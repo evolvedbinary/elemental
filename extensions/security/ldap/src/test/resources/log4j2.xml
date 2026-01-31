@@ -164,7 +164,7 @@
         <Logger name="org.exist.jetty.JettyStart" additivity="false" level="warn">
             <AppenderRef ref="elemental.core"/>
         </Logger>
-        
+
         <Logger name="xquery.profiling" additivity="false" level="trace">
             <AppenderRef ref="elemental.profiling"/>
         </Logger>

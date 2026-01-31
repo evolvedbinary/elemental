@@ -43,58 +43,22 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.security;
+package org.exist.security.realm.ldap;
 
-import javax.annotation.Nullable;
+class SearchAttribute {
+    private final String name;
+    private final String value;
 
-/**
- *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
- */
-public enum AXSchemaType implements SchemaType {
-
-    ALIAS_USERNAME("http://axschema.org/namePerson/friendly", "Alias"),
-    FIRSTNAME("http://axschema.org/namePerson/first", "FirstName"),
-    LASTNAME("http://axschema.org/namePerson/last", "LastName"),
-    FULLNAME("http://axschema.org/namePerson", "FullName"),
-    EMAIL("http://axschema.org/contact/email", "Email"),
-    COUNTRY("http://axschema.org/contact/country/home", "Country"),
-    LANGUAGE("http://axschema.org/pref/language", "Language"),
-    TIMEZONE("http://axschema.org/pref/timezone", "Timezone");
-
-    private final String namespace;
-    private final String alias;
-
-    AXSchemaType(final String namespace, final String alias) {
-        this.namespace = namespace;
-        this.alias = alias;
-    }
-    
-    @Override
-    public String getNamespace() {
-        return namespace;
+    SearchAttribute(final String name, final String value) {
+        this.name = name;
+        this.value = value;
     }
 
-    @Override
-    public String getAlias() {
-        return alias;
-    }
-    
-    public static @Nullable AXSchemaType valueOfNamespace(final String namespace) {
-        for(final AXSchemaType axSchemaType : AXSchemaType.values()) {
-            if(axSchemaType.getNamespace().equals(namespace)) {
-                return axSchemaType;
-            }
-        }
-        return null;
+    public String getName() {
+        return name;
     }
 
-    public static @Nullable AXSchemaType valueOfAlias(final String alias) {
-        for(final AXSchemaType axSchemaType : AXSchemaType.values()) {
-            if(axSchemaType.getAlias().equals(alias)) {
-                return axSchemaType;
-            }
-        }
-        return null;
+    public String getValue() {
+        return value;
     }
 }

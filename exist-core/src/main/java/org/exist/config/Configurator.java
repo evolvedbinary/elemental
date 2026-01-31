@@ -66,6 +66,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -156,9 +157,15 @@ public class Configurator {
      *
      * @return The Getter method for the property or null
      */
-    public static Method searchForGetMethod(final Class<?> clazz, final String property) {
+    public static @Nullable Method searchForGetMethod(final Class<?> clazz, final String property) {
         try {
-            final String methodName = ("get" + property).toLowerCase();
+            String methodName = property;
+            if (!methodName.startsWith("get-") && !methodName.startsWith("get_")) {
+                methodName = "get" + methodName;
+            }
+            methodName = methodName.replace("-", "");
+            methodName = methodName.replace("_", "");
+
             for (final Method method : clazz.getMethods()) {
                 if (method.getName().equalsIgnoreCase(methodName)) {
                     return method;
@@ -178,9 +185,15 @@ public class Configurator {
      *
      * @return The Setter method for the field or null
      */
-    public static Method searchForSetMethod(final Class<?> clazz, final Field field) {
+    public static @Nullable Method searchForSetMethod(final Class<?> clazz, final Field field) {
         try {
-            final String methodName = ("set" + field.getName()).toLowerCase();
+            String methodName = field.getName();
+            if (!methodName.startsWith("set-") && !methodName.startsWith("set_")) {
+                methodName = "set" + methodName;
+            }
+            methodName = methodName.replace("-", "");
+            methodName = methodName.replace("_", "");
+
             for (final Method method : clazz.getMethods()) {
                 if (method.getName().equalsIgnoreCase(methodName)) {
                     return method;
@@ -200,9 +213,14 @@ public class Configurator {
      *
      * @return The Adder method for the property or null
      */
-    public static Method searchForAddMethod(final Class<?> clazz, final String property) {
+    public static @Nullable Method searchForAddMethod(final Class<?> clazz, final String property) {
         try {
-            final String methodName = ("add" + property).toLowerCase();
+            String methodName = property;
+            if (!methodName.startsWith("add-") && !methodName.startsWith("add_")) {
+                methodName = "add" + methodName;
+            }
+            methodName = methodName.replace("-", "");
+            methodName = methodName.replace("_", "");
             for (final Method method : clazz.getMethods()) {
                 if (method.getName().equalsIgnoreCase(methodName)
                         && method.getParameterTypes().length == 1
@@ -216,9 +234,15 @@ public class Configurator {
         return null;
     }
 
-    public static Method searchForInsertMethod(final Class<?> clazz, final String property) {
+    public static @Nullable Method searchForInsertMethod(final Class<?> clazz, final String property) {
         try {
-            final String methodName = ("insert" + property).toLowerCase();
+            String methodName = property;
+            if (!methodName.startsWith("insert-") && !methodName.startsWith("insert_")) {
+                methodName = "insert" + methodName;
+            }
+            methodName = methodName.replace("-", "");
+            methodName = methodName.replace("_", "");
+
             for (final Method method : clazz.getMethods()) {
                 if (method.getName().equalsIgnoreCase(methodName)
                         && method.getParameterTypes().length == 2

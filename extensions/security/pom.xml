@@ -70,7 +70,6 @@
     </scm>
 
     <modules>
-        <module>activedirectory</module>
         <module>iprange</module>
         <module>ldap</module>
     </modules>
