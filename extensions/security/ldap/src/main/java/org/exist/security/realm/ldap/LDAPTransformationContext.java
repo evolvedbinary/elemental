@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -32,14 +56,16 @@ import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
 
 /**
- * @author aretter
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>.
  */
 @ConfigurationClass("transformation")
 public class LDAPTransformationContext implements TransformationContext, Configurable {
 
     @ConfigurationFieldAsElement("add-group")
-    //protected List<String> addGroup = new ArrayList<String>();
-    protected String addGroup; //TODO convert to list
+    private List<String> additionalGroups = new ArrayList<>();
+
+    @ConfigurationFieldAsElement("add-group-manager")
+    private List<String> additionalGroupManagers = new ArrayList<>();
 
     private final Configuration configuration;
 
@@ -47,11 +73,32 @@ public class LDAPTransformationContext implements TransformationContext, Configu
         this.configuration = Configurator.configure(this, config);
     }
 
+    /**
+     * Add a additional group.
+     *
+     * @param group the group to add.
+     */
+    public void addGroup(final String group) {
+        additionalGroups.add(group);
+    }
+
+    /**
+     * Add an additional group manager.
+     *
+     * @param groupManager the group manager to add.
+     */
+    public void addGroupManager(final String groupManager) {
+        additionalGroupManagers.add(groupManager);
+    }
+
     @Override
     public List<String> getAdditionalGroups() {
-        final List<String> additionalGroups = new ArrayList<>();
-        additionalGroups.add(addGroup);
         return additionalGroups;
+    }
+
+    @Override
+    public List<String> getAdditionalGroupManagers() {
+        return additionalGroupManagers;
     }
 
     @Override

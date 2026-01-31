@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,12 +46,15 @@
 package org.exist.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Database;
@@ -48,6 +75,10 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.ConcurrentValueWrapper;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
+
+import javax.annotation.Nullable;
+
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -117,7 +148,7 @@ public abstract class AbstractRealm implements Realm, Configurable {
                         final GroupImpl group = new GroupImpl(r, conf);
 
                         getSecurityManager().registerGroup(group);
-                        principalDb.put(group.getName(), group);
+                        principalDb.put(group.getName(), Tuple(PrincipalState.PERSISTENT, Optional.of(group)));
 
                         //set collection
                         if(group.getId() > 0) {
@@ -181,7 +212,7 @@ public abstract class AbstractRealm implements Realm, Configurable {
                         }
 
                         getSecurityManager().registerAccount(account);
-                        principalDb.put(account.getName(), account);
+                        principalDb.put(account.getName(), Tuple(PrincipalState.PERSISTENT, Optional.of(account)));
 
                         //set collection
                         if(account.getId() > 0) {
@@ -252,34 +283,67 @@ public abstract class AbstractRealm implements Realm, Configurable {
         configuration.save();
     }
 
+    public final void registerAccountCreation(final String name) {
+        usersByName.write(principalDb -> {
+            @Nullable final Tuple2<PrincipalState, Optional<Account>> accountEntry = principalDb.get(name);
+            if (accountEntry != null) {
+                // if the account is already being created or already persisted then we don't need to do anything
+                return;
+            }
+
+            principalDb.put(name, Tuple(PrincipalState.CREATING, Optional.empty()));
+        });
+    }
+
     //Accounts management methods
     public final Account registerAccount(final Account account) {
         usersByName.write(principalDb -> {
-            if(principalDb.containsKey(account.getName())) {
-                throw new IllegalArgumentException("Account " + account.getName() + " exist.");
+            @Nullable final Tuple2<PrincipalState, Optional<Account>> accountEntry = principalDb.get(account.getName());
+            if (accountEntry != null && accountEntry._1 == PrincipalState.PERSISTENT) {
+                throw new IllegalArgumentException("The Account " + account.getName() + " already exists.");
             }
 
-            principalDb.put(account.getName(), account);
+            principalDb.put(account.getName(), Tuple(PrincipalState.PERSISTENT, Optional.of(account)));
         });
 
         return account;
     }
+
+    public final void registerGroupCreation(final String name) {
+        groupsByName.write(principalDb -> {
+            @Nullable final Tuple2<PrincipalState, Optional<Group>> accountEntry = principalDb.get(name);
+            if (accountEntry != null) {
+                // if the group is already being created or already persisted then we don't need to do anything
+                return;
+            }
+
+            principalDb.put(name, Tuple(PrincipalState.CREATING, Optional.empty()));
+        });
+    }
     
     public final Group registerGroup(final Group group) {
         groupsByName.write(principalDb -> {
-            if(principalDb.containsKey(group.getName())) {
-                throw new IllegalArgumentException("Group " + group.getName() + " already exists.");
+            @Nullable final Tuple2<PrincipalState, Optional<Group>> groupEntry = principalDb.get(group.getName());
+            if (groupEntry != null && groupEntry._1 == PrincipalState.PERSISTENT) {
+                throw new IllegalArgumentException("The Group " + group.getName() + " already exists.");
             }
 
-            principalDb.put(group.getName(), group);
+            principalDb.put(group.getName(), Tuple(PrincipalState.PERSISTENT, Optional.of(group)));
         });
         
         return group;   
     }
 
     @Override
-    public Account getAccount(final String name) {
-        return usersByName.read(principalDb -> principalDb.get(name));
+    public @Nullable Account getAccount(final String name) {
+        return usersByName.read(principalDb -> {
+            @Nullable final Tuple2<PrincipalState, Optional<Account>> principalEntry = principalDb.get(name);
+            if (principalEntry == null || principalEntry._1 != PrincipalState.PERSISTENT) {
+                // skip non-existent and not yet persisted entries
+                return null;
+            }
+            return principalEntry._2.get();
+        });
     }
 
     @Override
@@ -288,7 +352,7 @@ public abstract class AbstractRealm implements Realm, Configurable {
     }
 
     @Override
-    public final boolean hasAccount(final Account account) {
+    public boolean hasAccount(final Account account) {
         return hasAccountLocal(account);
     }
 
@@ -299,12 +363,33 @@ public abstract class AbstractRealm implements Realm, Configurable {
 
     @Override
     public boolean hasAccountLocal(final String accountName) {
-        return usersByName.read(principalDb -> principalDb.containsKey(accountName));
+        return usersByName.read(principalDb -> {
+            @Nullable final Tuple2<PrincipalState, Optional<Account>> principalEntry = principalDb.get(accountName);
+            // skip non-existent and not yet persisted entries
+            return principalEntry != null && principalEntry._1 == PrincipalState.PERSISTENT;
+        });
     }
 
     @Override
     public final java.util.Collection<Account> getAccounts() {
-        return usersByName.read(Map::values);
+        return usersByName.read(principalDb -> {
+            @Nullable List<Account> accounts = null;
+            for (final Tuple2<PrincipalState, Optional<Account>> principalEntry : principalDb.values()) {
+                // skip not yet persisted entries
+                if (principalEntry._1 == PrincipalState.PERSISTENT) {
+                    if (accounts == null) {
+                        accounts = new ArrayList<>();
+                    }
+                    accounts.add(principalEntry._2.get());
+                }
+            }
+
+            if (accounts == null) {
+                accounts = Collections.emptyList();
+            }
+
+            return accounts;
+        });
     }
 
     //Groups management methods
@@ -321,7 +406,11 @@ public abstract class AbstractRealm implements Realm, Configurable {
 
     @Override
     public boolean hasGroupLocal(final String groupName) {
-        return groupsByName.read(principalDb -> principalDb.containsKey(groupName));
+        return groupsByName.read(principalDb -> {
+            @Nullable final Tuple2<PrincipalState, Optional<Group>> principalEntry = principalDb.get(groupName);
+            // skip not yet persisted entries
+            return principalEntry != null && principalEntry._1 == PrincipalState.PERSISTENT;
+        });
     }
 
     @Override
@@ -330,13 +419,37 @@ public abstract class AbstractRealm implements Realm, Configurable {
     }
 
     @Override
-    public Group getGroup(final String name) {
-        return groupsByName.read(principalDb -> principalDb.get(name));
+    public @Nullable Group getGroup(final String name) {
+        return groupsByName.read(principalDb -> {
+            @Nullable final Tuple2<PrincipalState, Optional<Group>> principalEntry = principalDb.get(name);
+            if (principalEntry == null || principalEntry._1 != PrincipalState.PERSISTENT) {
+                // skip non-existent and not yet persisted entries
+                return null;
+            }
+            return principalEntry._2.get();
+        });
     }
 
     @Override
     public final java.util.Collection<Group> getGroups() {
-        return groupsByName.read(Map::values);
+        return groupsByName.read(principalDb -> {
+            @Nullable List<Group> groups = null;
+            for (final Tuple2<PrincipalState, Optional<Group>> principalEntry : principalDb.values()) {
+                // skip not yet persisted entries
+                if (principalEntry._1 == PrincipalState.PERSISTENT) {
+                    if (groups == null) {
+                        groups = new ArrayList<>();
+                    }
+                    groups.add(principalEntry._2.get());
+                }
+            }
+
+            if (groups == null) {
+                groups = Collections.emptyList();
+            }
+
+            return groups;
+        });
     }
 
     //collections related methods
@@ -476,7 +589,7 @@ public abstract class AbstractRealm implements Realm, Configurable {
     //configuration methods
     @Override
     public boolean isConfigured() {
-        return (configuration != null);
+        return configuration != null;
     }
 
     @Override
@@ -523,8 +636,24 @@ public abstract class AbstractRealm implements Realm, Configurable {
     public java.util.Collection<? extends String> findGroupnamesWhereGroupnameContains(final String fragment) {
         return Collections.emptyList();
     }
-    
-    protected static class PrincipalDbByName<V extends Principal> extends ConcurrentValueWrapper<Map<String, V>> {
+
+    protected enum PrincipalState {
+        CREATING,
+        PERSISTENT
+    }
+
+    /**
+     * Invariants:
+     *
+     * When PrincipalState == PrincipalState#CREATING
+     *  Optional is always empty.
+     *
+     * When PrincipalState == PrincipalState#PERSISTENT
+     *  Optional is always present.
+     *
+     * @param <V> The type of the Principal.
+     */
+    protected static class PrincipalDbByName<V extends Principal> extends ConcurrentValueWrapper<Map<String, Tuple2<PrincipalState, Optional<V>>>> {
         public PrincipalDbByName() {
             super(new HashMap<>(65));
         }

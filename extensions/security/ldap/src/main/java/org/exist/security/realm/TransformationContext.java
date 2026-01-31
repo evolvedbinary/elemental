@@ -24,8 +24,9 @@ package org.exist.security.realm;
 import java.util.List;
 
 /**
- * @author aretter
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>.
  */
 public interface TransformationContext {
     List<String> getAdditionalGroups();
+    List<String> getAdditionalGroupManagers();
 }

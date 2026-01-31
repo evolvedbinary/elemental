@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.jcip.annotations.ThreadSafe;
 import org.exist.scheduler.JobDescription;
 import org.exist.security.AbstractRealm;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +100,10 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.SimpleTrigger;
 
+import javax.annotation.Nullable;
+
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+
 /**
  * SecurityManager is responsible for managing users and groups.
  * 
@@ -117,7 +146,7 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     private static final String authenticationEntryPoint = "/authentication/login";
 
     private RealmImpl defaultRealm;
-    
+
     @ConfigurationFieldAsElement("realm")
     @ConfigurationFieldClassMask("org.exist.security.realm.%1$s.%2$sRealm")
     private List<Realm> realms = new ArrayList<>();
@@ -282,8 +311,8 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     }
 
     @Override
-    public Account getAccount(final String name) {
-        for(final Realm realm : realms) {
+    public @Nullable Account getAccount(final String name) {
+        for (final Realm realm : realms) {
             final Account account = realm.getAccount(name);
             if (account != null) {
                 return account;
@@ -297,7 +326,7 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     }
 
     @Override
-    public final Account getAccount(final int id) {
+    public @Nullable final Account getAccount(final int id) {
         return usersById.read(principalDb -> principalDb.get(id));
     }
 
@@ -317,10 +346,10 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     }
 
     @Override
-    public Group getGroup(final String name) {
-        for(final Realm realm : realms) {
+    public @Nullable Group getGroup(final String name) {
+        for (final Realm realm : realms) {
             final Group group = realm.getGroup(name);
-            if(group != null) {
+            if (group != null) {
                 return group;
             }
         }
@@ -328,7 +357,7 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     }
 
     @Override
-    public final Group getGroup(final int id) {
+    public @Nullable final Group getGroup(final int id) {
         return groupsById.read(principalDb -> principalDb.get(id));
     }
 
@@ -342,7 +371,7 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     @Override
     public boolean hasAccount(final String name) {
         for(final Realm realm : realms) {
-            if(realm.hasAccount(name)) {
+            if (realm.hasAccount(name)) {
                 return true;
             }
         }
@@ -518,16 +547,16 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
 
     @Override
     public Group addGroup(final DBBroker broker, final Group group) throws PermissionDeniedException, EXistException {
-        if(group.getRealmId() == null) {
-            throw new ConfigurationException("Group must have realm id.");
+        if (group.getRealmId() == null) {
+            throw new ConfigurationException("Group must have a Realm ID.");
         }
 
-        if(group.getName() == null || group.getName().isEmpty()) {
-            throw new ConfigurationException("Group must have name.");
+        if (group.getName() == null || group.getName().isEmpty()) {
+            throw new ConfigurationException("Group must have a name.");
         }
 
         final int id;
-        if(group.getId() != Group.UNDEFINED_ID) {
+        if (group.getId() != Group.UNDEFINED_ID) {
             id = group.getId();
         } else {
             id = groupsById.getNextPrincipalId();
@@ -537,14 +566,19 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
         if (registeredRealm.hasGroupLocal(group.getName())) {
             throw new ConfigurationException("The group '" + group.getName() + "' at realm '" + group.getRealmId() + "' already exists.");
         }
-        
-        final GroupImpl newGroup = new GroupImpl(broker, registeredRealm, id, group.getName(), group.getManagers());
-        for(final SchemaType metadataKey : group.getMetadataKeys()) {
-            final String metadataValue = group.getMetadataValue(metadataKey);
-            newGroup.setMetadataValue(metadataKey, metadataValue);
-        }
 
-        try(final ManagedLock<ReadWriteLock> lock = ManagedLock.acquire(groupLocks.getLock(newGroup), LockMode.WRITE_LOCK)) {
+        try (final ManagedLock<ReadWriteLock> lock = ManagedLock.acquire(groupLocks.getLock(id), LockMode.WRITE_LOCK)) {
+
+            // NOTE(AR) set a flag to indicate we are creating the Group, helps prevent a loop between the Realm and the Configurator classes
+            registeredRealm.registerGroupCreation(group.getName());
+
+            // NOTE(AR) create the new group object - Configurator will write an XML file into the database here
+            final GroupImpl newGroup = new GroupImpl(broker, registeredRealm, id, group.getName(), group.getManagers());
+            for(final SchemaType metadataKey : group.getMetadataKeys()) {
+                final String metadataValue = group.getMetadataValue(metadataKey);
+                newGroup.setMetadataValue(metadataKey, metadataValue);
+            }
+
             registerGroup(newGroup);
             registeredRealm.registerGroup(newGroup);
 
@@ -563,16 +597,16 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
     
     @Override 
     public final Account addAccount(final DBBroker broker, final Account account) throws  PermissionDeniedException, EXistException{
-        if(account.getRealmId() == null) {
-            throw new ConfigurationException("Account must have realm id.");
+        if (account.getRealmId() == null) {
+            throw new ConfigurationException("Account must have a Realm ID.");
         }
 
-        if(account.getName() == null || account.getName().isEmpty()) {
-            throw new ConfigurationException("Account must have name.");
+        if (account.getName() == null || account.getName().isEmpty()) {
+            throw new ConfigurationException("Account must have a name.");
         }
 
         final int id;
-        if(account.getId() != Account.UNDEFINED_ID) {
+        if (account.getId() != Account.UNDEFINED_ID) {
             id = account.getId();
         } else {
             id = usersById.getNextPrincipalId();
@@ -583,8 +617,13 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
             throw new ConfigurationException("The account '" + account.getName() + "' at realm '" + account.getRealmId() + "' already exists.");
         }
 
-        final AccountImpl newAccount = new AccountImpl(broker, registeredRealm, id, account);
-        try (final ManagedLock<ReadWriteLock> lock = ManagedLock.acquire(accountLocks.getLock(newAccount), LockMode.WRITE_LOCK)) {
+        try (final ManagedLock<ReadWriteLock> lock = ManagedLock.acquire(accountLocks.getLock(id), LockMode.WRITE_LOCK)) {
+            // NOTE(AR) set a flag to indicate we are creating the Account, helps prevent a loop between the Realm and the Configurator classes
+            registeredRealm.registerAccountCreation(account.getName());
+
+            // NOTE(AR) create the new account object - Configurator will write an XML file into the database here
+            final AccountImpl newAccount = new AccountImpl(broker, registeredRealm, id, account);
+
             registerAccount(newAccount);
             registeredRealm.registerAccount(newAccount);
 
@@ -898,6 +937,10 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
 
         public ReadWriteLock getLock(final T principal) {
             return lockStripes.get(principal.getId());
+        }
+
+        public ReadWriteLock getLock(final int principalId) {
+            return lockStripes.get(principalId);
         }
     }
 

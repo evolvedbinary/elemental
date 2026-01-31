@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +45,7 @@
  */
 package org.exist.security.realm.ldap;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,6 +57,10 @@ import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
 import org.exist.security.AXSchemaType;
+import org.exist.security.EXistSchemaType;
+import org.exist.security.SchemaType;
+
+import javax.annotation.Nullable;
 
 /**
  * @author aretter
@@ -68,16 +97,30 @@ public abstract class AbstractLDAPSearchPrincipal implements Configurable {
         return searchAttributes.get(ldapSearchAttributeKey.getKey());
     }
 
-    public String getMetadataSearchAttribute(final AXSchemaType axSchemaType) {
-        return metadataSearchAttributes.get(axSchemaType.getNamespace());
+    public String getMetadataSearchAttribute(final SchemaType schemaType) {
+        return metadataSearchAttributes.get(schemaType.getNamespace());
     }
 
-
-    public Set<AXSchemaType> getMetadataSearchAttributeKeys() {
-        final Set<AXSchemaType> metadataSearchAttributeKeys = new HashSet<>();
+    public Set<SchemaType> getMetadataSearchAttributeKeys() {
+        @Nullable Set<SchemaType> metadataSearchAttributeKeys = null;
         for (final String key : metadataSearchAttributes.keySet()) {
-            metadataSearchAttributeKeys.add(AXSchemaType.valueOfNamespace(key));
+            @Nullable SchemaType value = EXistSchemaType.valueOfNamespace(key);
+            if (value == null) {
+                value = AXSchemaType.valueOfNamespace(key);
+            }
+
+            if (value != null) {
+                if (metadataSearchAttributeKeys == null) {
+                    metadataSearchAttributeKeys = new HashSet<>(metadataSearchAttributes.size());
+                }
+                metadataSearchAttributeKeys.add(value);
+            }
         }
+
+        if (metadataSearchAttributeKeys == null) {
+            return Collections.emptySet();
+        }
+
         return metadataSearchAttributeKeys;
     }
 
@@ -97,34 +140,5 @@ public abstract class AbstractLDAPSearchPrincipal implements Configurable {
 
     public LDAPPrincipalWhiteList getWhiteList() {
         return whiteList;
-    }
-
-    public enum LDAPSearchAttributeKey {
-        NAME("name"),
-        DN("dn"),
-        MEMBER_OF("memberOf"),
-        MEMBER("member"),
-        PRIMARY_GROUP_TOKEN("primaryGroupToken"),
-        PRIMARY_GROUP_ID("primaryGroupID"),
-        OBJECT_SID("objectSid");
-
-        private final String key;
-
-        LDAPSearchAttributeKey(final String key) {
-            this.key = key;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public static LDAPSearchAttributeKey valueOfKey(final String key) {
-            for (final LDAPSearchAttributeKey ldapSearchAttributeKey : LDAPSearchAttributeKey.values()) {
-                if (ldapSearchAttributeKey.getKey().equals(key)) {
-                    return ldapSearchAttributeKey;
-                }
-            }
-            return null;
-        }
     }
 }

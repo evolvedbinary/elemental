@@ -56,6 +56,8 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
 
+import javax.annotation.Nullable;
+
 /**
  * SecurityManager is responsible for managing users and groups.
  * 
@@ -89,8 +91,16 @@ public interface SecurityManager extends Configurable {
 
    void registerGroup(Group group);
 
-   Account getAccount(int id);
+   @Nullable Account getAccount(int id);
 
+   /**
+    * Returns true if an account of this name
+    * is known to the Security Manager.
+    *
+    * @param name the account name
+    *
+    * @return true if an account with the provided name is known.
+    */
    boolean hasAccount(String name);
 
    Account addAccount(Account user) throws PermissionDeniedException, EXistException;
@@ -104,18 +114,35 @@ public interface SecurityManager extends Configurable {
 
    boolean updateGroup(Group group) throws PermissionDeniedException, EXistException;
 
-   Account getAccount(String name);
+   @Nullable Account getAccount(String name);
 
    Group addGroup(DBBroker broker, Group group) throws PermissionDeniedException, EXistException;
    
    @Deprecated
    void addGroup(DBBroker broker, String group) throws PermissionDeniedException, EXistException;
 
+   /**
+    * Returns true if a group of this name
+    * is known to the Security Manager.
+    *
+    * @param name the group name
+    *
+    * @return true if a group with the provided name is known.
+    */
    boolean hasGroup(String name);
+
+   /**
+    * Returns true if a group of this name
+    * is known to the Security Manager.
+    *
+    * @param group the group
+    *
+    * @return true if a group with the provided name is known.
+    */
    boolean hasGroup(Group group);
 
-   Group getGroup(String name);
-   Group getGroup(int gid);
+   @Nullable Group getGroup(String name);
+   @Nullable Group getGroup(int gid);
 
    boolean deleteGroup(String name) throws PermissionDeniedException, EXistException;
 

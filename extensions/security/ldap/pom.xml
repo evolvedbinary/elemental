@@ -69,7 +69,22 @@
         <tag>HEAD</tag>
     </scm>
 
+    <properties>
+        <apache.ds.version>2.0.0.AM27</apache.ds.version>
+    </properties>
+
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources-filtered</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+
         <plugins>
             <plugin>
                 <groupId>com.mycila</groupId>
@@ -85,7 +100,9 @@
                             <excludes>
                                 <exclude>ldap-realm.xsd</exclude>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/**</exclude>
+                                <exclude>src/main/java/**</exclude>
+                                <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/resources-filtered/conf.xml</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -103,8 +120,20 @@
                                 <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             </multi>
                             <includes>
+                                <include>ldap-realm.xsd</include>
                                 <include>pom.xml</include>
-                                <include>src/main/java/org/exist/security/realm/ldap/LdapContextFactory.java</include>
+                                <include>src/test/resources/log4j2.xml</include>
+                                <include>src/test/resources-filtered/conf.xml</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/AbstractLDAPSearchPrincipal.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPContextFactory.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPRealm.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPSearchAccount.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPSearchAttributeKey.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPSearchContext.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPSearchGroup.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPTransformationContext.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/LDAPUtils.java</include>
+                                <include>src/main/java/org/exist/security/realm/ldap/SearchAttribute.java</include>
                             </includes>
                         </licenseSet>
 
@@ -114,8 +143,19 @@
                             -->
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
+                                <exclude>ldap-realm.xsd</exclude>
                                 <exclude>pom.xml</exclude>
-                                <exclude>src/main/java/org/exist/security/realm/ldap/LdapContextFactory.java</exclude>
+                                <exclude>src/test/**</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/AbstractLDAPSearchPrincipal.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPContextFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPRealm.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPSearchAccount.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPSearchAttributeKey.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPSearchContext.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPSearchGroup.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPTransformationContext.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/LDAPUtils.java</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/ldap/SearchAttribute.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
@@ -142,12 +182,6 @@
         </dependency>
 
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.evolvedbinary.j8fu</groupId>
             <artifactId>j8fu</artifactId>
         </dependency>
@@ -159,8 +193,49 @@
 
         <!-- test dependencies -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-test-framework</artifactId>
+            <version>${apache.ds.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-server-annotations</artifactId>
+            <version>${apache.ds.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-protocol-ldap</artifactId>
+            <version>${apache.ds.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-core-annotations</artifactId>
+            <version>${apache.ds.version}</version>
             <scope>test</scope>
         </dependency>
 
