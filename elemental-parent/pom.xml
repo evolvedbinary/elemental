@@ -79,6 +79,8 @@
         <project.build.target>21</project.build.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <project.build.outputTimestamp>${maven.build.timestamp}</project.build.outputTimestamp>
+
         <contact.email>admin@evolvedbinary.com</contact.email>
         <copyright.string>${project.inceptionYear}, ${project.organization.name} Ltd</copyright.string>
 
@@ -236,7 +238,7 @@
                                 <Git-Commit-Abbrev>${build-commit-abbrev}</Git-Commit-Abbrev>
                                 <Git-Commit-Timestamp>${build-tstamp}</Git-Commit-Timestamp>
                                 <Build-Version>${build-version}</Build-Version>
-                                <Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
+                                <Build-Timestamp>${project.build.outputTimestamp}</Build-Timestamp>
                                 <Source-Repository>${project.scm.connection}</Source-Repository>
                                 <Description>${project.description}</Description>
                                 <Implementation-URL>${project.url}</Implementation-URL>
@@ -265,7 +267,7 @@
                                 <Git-Commit-Abbrev>${build-commit-abbrev}</Git-Commit-Abbrev>
                                 <Git-Commit-Timestamp>${build-tstamp}</Git-Commit-Timestamp>
                                 <Build-Version>${build-version}</Build-Version>
-                                <Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
+                                <Build-Timestamp>${project.build.outputTimestamp}</Build-Timestamp>
                                 <Source-Repository>${project.scm.connection}</Source-Repository>
                                 <Description>${project.description}</Description>
                                 <Implementation-URL>${project.url}</Implementation-URL>
@@ -290,7 +292,7 @@
                                 <Git-Commit-Abbrev>${build-commit-abbrev}</Git-Commit-Abbrev>
                                 <Git-Commit-Timestamp>${build-tstamp}</Git-Commit-Timestamp>
                                 <Build-Version>${build-version}</Build-Version>
-                                <Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
+                                <Build-Timestamp>${project.build.outputTimestamp}</Build-Timestamp>
                                 <Source-Repository>${project.scm.connection}</Source-Repository>
                                 <Description>${project.description}</Description>
                                 <Implementation-URL>${project.url}</Implementation-URL>
