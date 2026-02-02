@@ -127,7 +127,7 @@ COPY --chown=${ELEMENTAL_SERVER_SERVICE_ACCOUNT}:${ELEMENTAL_SERVER_SERVICE_GROU
 
 # Build-time metadata as defined at http://label-schema.org
 # and used by autobuilder @hooks/build
-LABEL org.label-schema.build-date=${maven.build.timestamp} \
+LABEL org.label-schema.build-date=${project.build.outputTimestamp} \
       org.label-schema.description="Elemental - NoSQL Database" \
       org.label-schema.name="elemental" \
       org.label-schema.schema-version="1.0" \
