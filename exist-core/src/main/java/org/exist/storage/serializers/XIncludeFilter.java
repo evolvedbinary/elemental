@@ -45,6 +45,7 @@
  */
 package org.exist.storage.serializers;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
@@ -58,19 +59,16 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.DBSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
-import org.exist.storage.XQueryPool;
 import com.evolvedbinary.j8fu.Either;
 import org.exist.util.XMLReaderPool;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.Constants;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.util.ExpressionDumper;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
@@ -326,7 +324,7 @@ public class XIncludeFilter implements Receiver {
         //String xpointer = null;
         //String docName = href;
 
-        Map<String, String> params = null;
+        final Map<String, String> params;
         DocumentImpl doc = null;
         org.exist.dom.memtree.DocumentImpl memtreeDoc = null;
         boolean xqueryDoc = false;
@@ -338,12 +336,13 @@ public class XIncludeFilter implements Receiver {
             }
 
             // extract possible parameters in the URI
-            params = null;
             final String paramStr = docUri.getQuery();
             if (paramStr != null) {
                 params = processParameters(paramStr);
                 // strip query part
                 docUri = XmldbURI.create(docUri.getRawCollectionPath());
+            } else {
+                params = null;
             }
 
             // if docName has no collection specified, assume
@@ -373,7 +372,10 @@ public class XIncludeFilter implements Receiver {
             if (doc != null && doc.getResourceType() == DocumentImpl.BINARY_FILE) {
                 xqueryDoc = MediaType.APPLICATION_XQUERY.equals(doc.getMediaType());
             }
+        } else {
+            params = null;
         }
+
         // The document could not be found: check if it points to an external resource
         if (docUri == null || (doc == null && !docUri.isAbsolute())) {
             try {
@@ -433,12 +435,8 @@ public class XIncludeFilter implements Receiver {
             }
         } else {
             // process the xpointer or the stored XQuery
-            Source source = null;
-            final XQueryPool pool = serializer.broker.getBrokerPool().getXQueryPool();
-            final XQuery xquery = serializer.broker.getBrokerPool().getXQueryService();
-            @Nullable CompiledXQuery compiled = null;
-            @Nullable XQueryContext context = null;
             try {
+                Source source = null;
                 if (xpointer == null) {
                     source = new DBSource(serializer.broker.getBrokerPool(), (BinaryDocument) doc, true);
                 } else {
@@ -446,66 +444,56 @@ public class XIncludeFilter implements Receiver {
                     source = new StringSource(xpointer);
                 }
 
-                compiled = pool.borrowCompiledXQuery(serializer.broker, source);
-                if (compiled == null) {
-                    context = new XQueryContext(serializer.broker.getBrokerPool());
-                } else {
-                    context = compiled.getContext();
-                    context.prepareForReuse();
-                }
-
-                if (namespaces != null) {
-                    context.declareNamespaces(namespaces);
-                }
-                context.declareNamespace("xinclude", Namespaces.XINCLUDE_NS);
-
-                //setup the http context if known
-                if (serializer.httpContext != null) {
-                    context.setHttpContext(serializer.httpContext);
-                }
-
-                if (xpointer != null) {
-                    if (doc != null) {
-                        context.setStaticallyKnownDocuments(new XmldbURI[]{doc.getURI()});
-                    } else if (docUri != null) {
-                        context.setStaticallyKnownDocuments(new XmldbURI[]{docUri});
+                final String xpointerCopy = xpointer;
+                final DocumentImpl docCopy = doc;
+                final XmldbURI docUriCopy = docUri;
+                final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                    if (namespaces != null) {
+                        xqueryContext.declareNamespaces(namespaces);
                     }
-                }
+                    xqueryContext.declareNamespace("xinclude", Namespaces.XINCLUDE_NS);
 
-                if (compiled == null) {
-                    try {
-                        compiled = xquery.compile(context, source, xpointer != null);
-                    } catch (final IOException e) {
-                        throw new SAXException("I/O error while reading query for xinclude: " + e.getMessage(), e);
+                    // Setup the HTTP context if known
+                    if (serializer.httpContext != null) {
+                        xqueryContext.setHttpContext(serializer.httpContext);
                     }
-                } else {
-                    compiled.getContext().updateContext(context);
-                    context.getWatchDog().reset();
-                }
-                LOG.info("xpointer query: {}", ExpressionDumper.dump((Expression) compiled));
 
-                //TODO: change these to putting the XmldbURI in, but we need to warn users!
-                if (document != null) {
-                    context.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
-                    context.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
-                }
-                // pass parameters as variables
-                if (params != null) {
-                    for (final Map.Entry<String, String> entry : params.entrySet()) {
-                        context.declareVariable(entry.getKey(), true, entry.getValue());
+                    if (xpointerCopy != null) {
+                        if (docCopy != null) {
+                            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ docCopy.getURI() });
+                        } else if (docUriCopy != null) {
+                            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ docUriCopy });
+                        }
                     }
-                }
+                };
+
+                final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+                    //TODO: change these to putting the XmldbURI in, but we need to warn users!
+                    if (document != null) {
+                        xqueryContext.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
+                        xqueryContext.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
+                    }
+
+                    // pass parameters as variables
+                    if (params != null) {
+                        for (final Map.Entry<String, String> entry : params.entrySet()) {
+                            xqueryContext.declareVariable(entry.getKey(), true, entry.getValue());
+                        }
+                    }
+                };
 
                 Sequence contextSeq = null;
                 if (memtreeDoc != null) {
                     contextSeq = memtreeDoc;
                 }
 
-                final Sequence seq = xquery.execute(serializer.broker, compiled, contextSeq);
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(serializer.broker, source, xpointer != null, true, contextSeq, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+
+                final Sequence seq = queryResult.result;
 
                 if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("xpointer found: {}", seq.getItemCount());
+                        LOG.debug("XPointer found: {}", seq.getItemCount());
                     }
 
                     NodeValue node;
@@ -521,16 +509,9 @@ public class XIncludeFilter implements Receiver {
                     }
                 }
 
-            } catch (final XPathException | PermissionDeniedException e) {
-                LOG.warn("xpointer error", e);
+            } catch (final XPathException | IOException | PermissionDeniedException e) {
+                LOG.warn("XPointer error: {}", e.getMessage(), e);
                 throw new SAXException("Error while processing XInclude expression: " + e.getMessage(), e);
-            } finally {
-                if (context != null) {
-                    context.runCleanupTasks();
-                }
-                if (compiled != null) {
-                    pool.returnCompiledXQuery(source, compiled);
-                }
             }
         }
         // restore settings

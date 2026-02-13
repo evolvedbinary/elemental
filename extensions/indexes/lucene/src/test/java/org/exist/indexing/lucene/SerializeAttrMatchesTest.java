@@ -56,6 +56,7 @@ import org.exist.dom.persistent.DefaultDocumentSet;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
@@ -66,7 +67,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
@@ -113,8 +114,7 @@ public class SerializeAttrMatchesTest {
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence seq = xquery.execute(broker, query, null);
+            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertEquals(1, seq.getItemCount());
 

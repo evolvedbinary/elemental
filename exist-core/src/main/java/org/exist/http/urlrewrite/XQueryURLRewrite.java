@@ -45,6 +45,7 @@
  */
 package org.exist.http.urlrewrite;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import jakarta.servlet.annotation.MultipartConfig;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
@@ -72,7 +73,6 @@ import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.LockException;
@@ -669,53 +669,24 @@ public class XQueryURLRewrite extends HttpServlet {
         if (sourceInfo == null) {
             return Sequence.EMPTY_SEQUENCE; // no controller found
         }
+        model.setSourceInfo(sourceInfo);
 
         final String basePath = staticRewrite == null ? "." : staticRewrite.getTarget();
 
-        final XQuery xquery = broker.getBrokerPool().getXQueryService();
-        final XQueryPool xqyPool = broker.getBrokerPool().getXQueryPool();
-
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            if (compiledCache) {
-                compiled = xqyPool.borrowCompiledXQuery(broker, sourceInfo.source);
-            }
-
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
             // Find correct module load path
-            context.setModuleLoadPath(sourceInfo.moduleLoadPath);
+            xqueryContext.setModuleLoadPath(sourceInfo.moduleLoadPath);
+        };
 
-            if (compiled == null) {
-                try {
-                    compiled = xquery.compile(context, sourceInfo.source);
-                } catch (final IOException e) {
-                    throw new ServletException("Failed to read query from " + query, e);
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+            declareVariables(xqueryContext, sourceInfo, staticRewrite, basePath, request, response);
+        };
 
-            declareVariables(context, sourceInfo, staticRewrite, basePath, request, response);
-
-            model.setSourceInfo(sourceInfo);
-
-            return xquery.execute(broker, compiled, null, outputProperties);
-
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null && compiledCache) {
-                xqyPool.returnCompiledXQuery(sourceInfo.source, compiled);
-            }
+        try {
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, sourceInfo.source, compiledCache, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+            return queryResult.result;
+        } catch (final IOException e) {
+            throw new XPathException("Unable to compile query source: " + e.getMessage(), e);
         }
     }
 

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,16 +47,18 @@ package org.exist.xquery.modules.xslfo;
 
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
-import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,7 +69,7 @@ public class ApacheFopTest {
     public static final ExistEmbeddedServer server = new ExistEmbeddedServer(true, true);
 
     @Test
-    public void simplePdf() throws EXistException, PermissionDeniedException, XPathException {
+    public void simplePdf() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String fopConfig =
                 "<fop version=\"1.0\">\n" +
                 "    <strict-configuration>true</strict-configuration>\n" +
@@ -85,7 +111,7 @@ public class ApacheFopTest {
                 "    </fo:page-sequence>\n" +
                 "</fo:root>";
 
-        final String xquery =
+        final String query =
                 "xquery version \"3.1\";\n" +
                 "\n" +
                 "import module namespace xslfo=\"http://exist-db.org/xquery/xslfo\";\n" +
@@ -97,13 +123,12 @@ public class ApacheFopTest {
                 "return $pdf";
 
         final BrokerPool pool = server.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
 
         try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xqueryService.execute(broker, xquery, null);
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item pdf = result.itemAt(0);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Item pdf = queryResult.result.itemAt(0);
             assertEquals(Type.BASE64_BINARY, pdf.getType());
         }
     }

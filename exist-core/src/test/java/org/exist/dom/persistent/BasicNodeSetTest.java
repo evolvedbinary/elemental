@@ -50,11 +50,21 @@ import org.exist.EXistException;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.lock.Lock;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xquery.AncestorSelector;
+import org.exist.xquery.ChildSelector;
+import org.exist.xquery.Constants;
+import org.exist.xquery.DescendantOrSelfSelector;
+import org.exist.xquery.DescendantSelector;
+import org.exist.xquery.NameTest;
+import org.exist.xquery.NodeSelector;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.exist.collections.Collection;
@@ -65,15 +75,6 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.AncestorSelector;
-import org.exist.xquery.ChildSelector;
-import org.exist.xquery.Constants;
-import org.exist.xquery.DescendantOrSelfSelector;
-import org.exist.xquery.DescendantSelector;
-import org.exist.xquery.NameTest;
-import org.exist.xquery.NodeSelector;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
@@ -173,7 +174,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void descendantSelector() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void descendantSelector() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence seq = executeQuery(broker, "//SCENE", 72, null);
             NameTest test = new NameTest(Type.ELEMENT, new QName("SPEAKER", ""));
@@ -185,7 +186,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectParentChild() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectParentChild() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         NameTest test = new NameTest(Type.ELEMENT, new QName("SPEAKER", ""));
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             NodeSet speakers = broker.getStructuralIndex().findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null);
@@ -199,7 +200,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectParentChild_2() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectParentChild_2() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         NameTest test = new NameTest(Type.ELEMENT, new QName("SPEAKER", ""));
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             NodeSet speakers = broker.getStructuralIndex().findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null);
@@ -211,7 +212,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectAncestorDescendant() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectAncestorDescendant() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         NameTest test = new NameTest(Type.ELEMENT, new QName("SPEAKER", ""));
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             NodeSet speakers = broker.getStructuralIndex().findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null);
@@ -223,7 +224,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectAncestorDescendant_2() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectAncestorDescendant_2() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence outerSet = executeQuery(broker, "//SCENE/TITLE[fn:contains(., 'closet')]/ancestor::SCENE", 1, null);
 
@@ -234,7 +235,7 @@ public class BasicNodeSetTest {
 
 
     @Test
-    public void getParents() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void getParents() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence largeSet = executeQuery(broker, "//SPEECH/LINE[fn:contains(., 'love')]/ancestor::SPEECH", 187, null);
 
@@ -244,7 +245,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectAncestors() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectAncestors() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         NameTest test = new NameTest(Type.ELEMENT, new QName("SCENE", ""));
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             NodeSet scenes = broker.getStructuralIndex().findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null);
@@ -290,7 +291,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void nodeProxy_getParents() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void nodeProxy_getParents() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence smallSet = executeQuery(broker, "//SPEECH/LINE[fn:contains(., 'perturbed spirit')]/ancestor::SPEECH", 1, null);
 
@@ -308,7 +309,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectFollowingSiblings() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectFollowingSiblings() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence largeSet = executeQuery(broker, "//SPEECH/LINE[fn:contains(., 'love')]/ancestor::SPEECH/SPEAKER", 187, null);
             NameTest test = new NameTest(Type.ELEMENT, new QName("LINE", ""));
@@ -320,7 +321,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void selectPrecedingSiblings() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void selectPrecedingSiblings() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         NameTest test = new NameTest(Type.ELEMENT, new QName("SPEAKER", ""));
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             NodeSet speakers = broker.getStructuralIndex().findElementsByTagName(ElementValue.ELEMENT, docs, test.getName(), null);
@@ -332,7 +333,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void extArrayNodeSet_selectParentChild_1() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void extArrayNodeSet_selectParentChild_1() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence nestedSet = executeQuery(broker, "//section[@n = ('1.1', '1.1.1')]", 2, null);
             NameTest test = new NameTest(Type.ELEMENT, new QName("para", ""));
@@ -344,7 +345,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void extArrayNodeSet_selectParentChild_2() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void extArrayNodeSet_selectParentChild_2() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence nestedSet = executeQuery(broker, "//section[@n = ('1.1', '1.1.2', '1.2')]", 3, null);
             NameTest test = new NameTest(Type.ELEMENT, new QName("para", ""));
@@ -356,7 +357,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void extArrayNodeSet_selectParentChild_3() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void extArrayNodeSet_selectParentChild_3() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence nestedSet = executeQuery(broker, "//section[@n = ('1.1', '1.1.1', '1.2')]", 3, null);
             NameTest test = new NameTest(Type.ELEMENT, new QName("para", ""));
@@ -368,7 +369,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void extArrayNodeSet_selectParentChild_4() throws XPathException, SAXException, PermissionDeniedException, EXistException {
+    public void extArrayNodeSet_selectParentChild_4() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             Sequence nestedSet = executeQuery(broker, "//para[@n = ('1.1.2.1')]", 1, null);
             NameTest test = new NameTest(Type.ELEMENT, new QName("section", ""));
@@ -380,7 +381,7 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void testOptimizations() throws XPathException, SAXException, PermissionDeniedException, EXistException, LockException {
+    public void testOptimizations() throws XPathException, SAXException, PermissionDeniedException, EXistException, LockException, IOException {
         try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             DocumentSet docs = root.allDocs(broker, new DefaultDocumentSet(), true);
 
@@ -448,85 +449,84 @@ public class BasicNodeSetTest {
     }
 
     @Test
-    public void virtualNodeSet_1() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_1() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//*/LINE", 9492, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_2() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_2() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//*/LINE/*", 61, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_3() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_3() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//*/LINE/text()", 9485, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_4() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_4() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SCENE/*/LINE", 9464, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_5() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_5() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SCENE/*[fn:contains(LINE, 'spirit')]", 30, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_6() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_6() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SCENE/*[fn:contains(LINE, 'the')]", 1313, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_7() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_7() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SCENE/*/LINE[fn:contains(., 'the')]", 3198, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_8() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_8() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SCENE[fn:contains(., 'spirit')]/ancestor::*", 16, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_9() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_9() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "for $s in //SCENE/*[fn:contains(LINE, 'the')] return fn:node-name($s)", 1313, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_10() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_10() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SPEECH[fn:contains(LINE, 'perturbed spirit')]/preceding-sibling::*", 65, null);
         }
     }
 
     @Test
-    public void virtualNodeSet_11() throws XPathException, SAXException, PermissionDeniedException, EXistException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
+    public void virtualNodeSet_11() throws XPathException, SAXException, PermissionDeniedException, EXistException, IOException {
+        try (final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()))) {
             executeQuery(broker, "//SPEECH[fn:contains(LINE, 'perturbed spirit')]/following-sibling::*", 1, null);
         }
     }
 
-    private static Sequence executeQuery(final DBBroker broker, final String query, final int expected, final String expectedResult) throws XPathException, SAXException, PermissionDeniedException {
-        final XQuery xquery = broker.getBrokerPool().getXQueryService();
-        final Sequence seq = xquery.execute(broker, query, null);
+    private static Sequence executeQuery(final DBBroker broker, final String query, final int expected, final String expectedResult) throws XPathException, SAXException, PermissionDeniedException, IOException {
+        final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
         assertEquals(expected, seq.getItemCount());
 
         if (expectedResult != null) {

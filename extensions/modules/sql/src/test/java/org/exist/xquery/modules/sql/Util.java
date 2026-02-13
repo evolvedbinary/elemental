@@ -54,58 +54,5 @@ import java.util.Properties;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class Util {
-    static Sequence executeQuery(final DBBroker broker, final CompiledXQuery compiledXQuery) throws PermissionDeniedException, XPathException {
-        final BrokerPool pool = broker.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        return xqueryService.execute(broker, compiledXQuery, null, new Properties());
-    }
 
-    static <T> T withCompiledQuery(final DBBroker broker, final Source source, final Function2E<CompiledXQuery, T, XPathException, PermissionDeniedException> op) throws XPathException, PermissionDeniedException, IOException {
-        final BrokerPool pool = broker.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        final XQueryPool xqueryPool = pool.getXQueryPool();
-        final CompiledXQuery compiledQuery = compileQuery(broker, xqueryService, xqueryPool, source);
-        try {
-            return op.apply(compiledQuery);
-        } finally {
-            if (compiledQuery != null) {
-                if (compiledQuery.getContext() != null) {
-                    compiledQuery.getContext().runCleanupTasks();
-                }
-                xqueryPool.returnCompiledXQuery(source, compiledQuery);
-            }
-        }
-    }
-
-    static CompiledXQuery compileQuery(final DBBroker broker, final XQuery xqueryService, final XQueryPool xqueryPool, final Source query) throws PermissionDeniedException, XPathException, IOException {
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            compiled = xqueryPool.borrowCompiledXQuery(broker, query);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            if (compiled == null) {
-                compiled = xqueryService.compile(context, query);
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
-
-            return compiled;
-
-        } catch (final PermissionDeniedException | XPathException | IOException e) {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                xqueryPool.returnCompiledXQuery(query, compiled);
-            }
-            throw e;
-        }
-    }
 }

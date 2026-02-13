@@ -259,7 +259,6 @@
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/MessageListFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</exclude>
-                                <exclude>src/test/java/org/exist/xquery/modules/mail/Util.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</exclude>
                             </excludes>
                         </licenseSet>
@@ -271,7 +270,6 @@
                             <header>${project.parent.relativePath}/../../exist-parent/FDB-backport-to-existdb-LGPL-21-ONLY-license.template.txt</header>
                             <includes>
                                 <include>src/test/java/org/exist/xquery/modules/mail/SendEmailIT.java</include>
-                                <include>src/test/java/org/exist/xquery/modules/mail/Util.java</include>
                                 <include>src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java</include>
                             </includes>
 

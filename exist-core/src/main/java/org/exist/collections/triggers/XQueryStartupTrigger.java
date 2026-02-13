@@ -47,6 +47,7 @@ package org.exist.collections.triggers;
 
 import java.util.*;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
@@ -63,10 +64,9 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import xyz.elemental.mediatype.MediaType;
 
 import static org.exist.util.StringUtil.endsWith;
@@ -266,49 +266,31 @@ public class XQueryStartupTrigger implements StartupTrigger {
      * @param broker eXist database broker
      * @param path path to query, formatted as xmldb:exist:///db/...
      */
-    private void executeQuery(DBBroker broker, String path) {
-
-        XQueryContext context = null;
+    private void executeQuery(final DBBroker broker, final String path) {
         try {
             // Get path to xquery
-            Source source = SourceFactory.getSource(broker, null, path, false);
+            final Source source = SourceFactory.getSource(broker, null, path, false);
 
             if (source == null) {
-                LOG.info("No XQuery found at '{}'", path);
+                LOG.warn("No XQuery found at '{}'", path);
 
             } else {
-                // Setup xquery service
-                XQuery service = broker.getBrokerPool().getXQueryService();
-                context = new XQueryContext(broker.getBrokerPool());
+                final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                    // Allow use of modules with relative paths
+                    final String moduleLoadPath = substringBeforeLast(path, "/");
+                    xqueryContext.setModuleLoadPath(moduleLoadPath);
+                };
 
-                // Allow use of modules with relative paths
-                String moduleLoadPath = substringBeforeLast(path, "/");
-                context.setModuleLoadPath(moduleLoadPath);
+                LOG.info("Executing XQuery Startup Trigger: {}", path);
 
-                // Compile query
-                CompiledXQuery compiledQuery = service.compile(context, source);
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, null, null);
 
-                LOG.info("Starting XQuery at '{}'", path);
-
-                // Finish preparation
-                context.prepareForExecution();
-
-                // Execute
-                Sequence result = service.execute(broker, compiledQuery, null);
-
-                // Log results
-                LOG.info("Result XQuery: '{}'", result.getStringValue());
-
+                LOG.info("Executed XQuery Startup Trigger: {} in {}", path, queryResult.executionTime);
             }
 
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             // Dirty, catch it all
             LOG.error("An error occurred during preparation/execution of the XQuery script {}: {}", path, t.getMessage(), t);
-
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
         }
     }
 

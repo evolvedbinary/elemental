@@ -58,6 +58,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
@@ -75,7 +76,7 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
     public final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
 
     @Test(expected = PermissionDeniedException.class)
-    public void cannotRemoveAllGroupsFromUserAsOwner() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException {
+    public void cannotRemoveAllGroupsFromUserAsOwner() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject owner = pool.getSecurityManager().authenticate(USER1_NAME, USER1_NAME);
         extractPermissionDenied(() -> {
@@ -86,7 +87,7 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
     }
 
     @Test(expected = PermissionDeniedException.class)
-    public void cannotRemoveAllGroupsFromUserAsDBA() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException {
+    public void cannotRemoveAllGroupsFromUserAsDBA() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject admin = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         extractPermissionDenied(() -> {
@@ -97,7 +98,7 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
     }
 
     @Before
-    public void setup() throws EXistException, PermissionDeniedException, XPathException {
+    public void setup() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final SecurityManager sm = pool.getSecurityManager();
 

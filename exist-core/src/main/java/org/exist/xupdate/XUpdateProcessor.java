@@ -51,9 +51,7 @@
  */
 package org.exist.xupdate;
 
-import antlr.RecognitionException;
-import antlr.TokenStreamException;
-import antlr.collections.AST;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectRBTreeMap;
 import org.apache.logging.log4j.LogManager;
@@ -63,15 +61,13 @@ import org.exist.Namespaces;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.NodeListImpl;
 import org.exist.dom.persistent.NodeSetHelper;
+import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
-import org.exist.xquery.AnalyzeContextInfo;
 import org.exist.xquery.Constants;
-import org.exist.xquery.PathExpr;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.parser.XQueryLexer;
-import org.exist.xquery.parser.XQueryParser;
-import org.exist.xquery.parser.XQueryTreeParser;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
@@ -98,7 +94,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 
 /**
@@ -755,65 +750,35 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 	}
 	
 	private Sequence processQuery(final String select) throws SAXException {
-        XQueryContext context = null;
+
         try {
-			context = new XQueryContext(broker.getBrokerPool());
-			context.setStaticallyKnownDocuments(documentSet);
+			final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+				xqueryContext.setStaticallyKnownDocuments(documentSet);
 
-            context.declareNamespace(XUPDATE_PREFIX, XUPDATE_NS);
-            if (namespaces != null) {
-                for (final Map.Entry<String, String> namespace : namespaces.entrySet()) {
-                    final String prefix = namespace.getKey();
-                    final String uri = namespace.getValue();
-                    // NOTE(AR) guard against declaring XUpdate as the default namespace prefix
-                    if (!(XMLConstants.DEFAULT_NS_PREFIX.equals(prefix) && XUPDATE_NS.equals(uri))) {
-                        context.declareNamespace(prefix, uri);
-                    }
-                }
-            }
+				xqueryContext.declareNamespace(XUPDATE_PREFIX, XUPDATE_NS);
+				if (namespaces != null) {
+					for (final Map.Entry<String, String> namespace : namespaces.entrySet()) {
+						final String prefix = namespace.getKey();
+						final String uri = namespace.getValue();
+						// NOTE(AR) guard against declaring XUpdate as the default namespace prefix
+						if (!(XMLConstants.DEFAULT_NS_PREFIX.equals(prefix) && XUPDATE_NS.equals(uri))) {
+							xqueryContext.declareNamespace(prefix, uri);
+						}
+					}
+				}
 
-			// TODO(pkaminsk2): why replicate XQuery.compile here?
-			final XQueryLexer lexer = new XQueryLexer(context, new StringReader(select));
-			final XQueryParser parser = new XQueryParser(lexer);
-			final XQueryTreeParser treeParser = new XQueryTreeParser(context);
-			parser.xpath();
-			if (parser.foundErrors()) {
-				throw new SAXException(parser.getErrorMessage());
-			}
+				if (variables != null) {
+					for (final Map.Entry<String, Object> variable : variables.entrySet()) {
+						xqueryContext.declareVariable(variable.getKey(), true, variable.getValue());
+					}
+				}
+			};
 
-			final AST ast = parser.getAST();
-			
-			if (LOG.isDebugEnabled()) {
-                LOG.debug("Generated AST: {}", ast.toStringTree());
-            }
-
-			final PathExpr expr = new PathExpr(context);
-			treeParser.xpath(ast, expr);
-			if (treeParser.foundErrors()) {
-				throw new SAXException(treeParser.getErrorMessage());
-			}
-
-            if (variables != null) {
-                for (final Map.Entry<String, Object> variable : variables.entrySet()) {
-                    context.declareVariable(variable.getKey(), true, variable.getValue());
-                }
-            }
-
-			expr.analyze(new AnalyzeContextInfo());
-			final Sequence seq = expr.eval(null, null);
-			return seq;
-
-		} catch (final RecognitionException | TokenStreamException e) {
-			LOG.warn("Error while creating variable", e);
+			final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(select), false, null, null, setupXqueryContextPreCompilation, null, null);
+			return queryResult.result;
+		} catch (final IOException | PermissionDeniedException | XPathException e) {
 			throw new SAXException(e);
-		} catch (final XPathException e) {
-			throw new SAXException(e);
-		} finally {
-            if (context != null) {
-				context.reset(false);
-				context.runCleanupTasks();
-			}
-        }
+		}
 	}
 
 	@Override

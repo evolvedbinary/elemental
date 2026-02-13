@@ -82,6 +82,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.evolvedbinary.j8fu</groupId>
+            <artifactId>j8fu</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- expath repo module -->
         <dependency>
             <groupId>org.expath.packaging</groupId>

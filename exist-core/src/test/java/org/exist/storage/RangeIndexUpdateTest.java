@@ -54,6 +54,7 @@ import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
@@ -61,7 +62,7 @@ import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 import org.exist.xupdate.Modification;
@@ -124,9 +125,8 @@ public class RangeIndexUpdateTest {
             checkIndex(broker, docs, ITEM_QNAME, new StringValue("Table892.25"), 1);
             checkIndex(broker, docs, ITEM_QNAME, new StringValue("Cabinet1525.00"), 1);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            final Sequence seq = xquery.execute(broker, "//item[. = 'Chair']", null);
+            final String query = "//item[. = 'Chair']";
+            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 

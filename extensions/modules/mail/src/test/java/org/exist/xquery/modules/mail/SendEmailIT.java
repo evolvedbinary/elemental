@@ -56,7 +56,7 @@ import org.exist.util.StringInputSource;
 import org.exist.util.UUIDGenerator;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -74,8 +74,6 @@ import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.util.IPUtil.nextFreePort;
-import static org.exist.xquery.modules.mail.Util.executeQuery;
-import static org.exist.xquery.modules.mail.Util.withCompiledQuery;
 import static org.junit.Assert.*;
 
 /**
@@ -587,15 +585,11 @@ public class SendEmailIT {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            // execute query
-            final Boolean sendResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return result.itemAt(0).toJavaObject(boolean.class);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             transaction.commit();
 
-            assertTrue(sendResult.booleanValue());
+            assertTrue(queryResult.result.itemAt(0).toJavaObject(boolean.class));
         }
 
         // check the SMTP server received the email
@@ -670,14 +664,9 @@ public class SendEmailIT {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute query
-            final Boolean sendResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                executeQuery(broker, compiledXQuery);
-                return true;
-            });
+            XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             transaction.commit();
-
-            assertTrue(sendResult.booleanValue());
         }
 
         // check the SMTP server received the email

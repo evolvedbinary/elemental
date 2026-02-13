@@ -52,6 +52,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.security.internal.aider.ACEAider;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -63,7 +64,7 @@ import org.exist.util.SyntaxException;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -159,8 +160,7 @@ public class FnDocSecurityTest {
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertNotNull(result);
             assertEquals(1, result.getItemCount());
@@ -181,8 +181,7 @@ public class FnDocSecurityTest {
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();
@@ -196,7 +195,7 @@ public class FnDocSecurityTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void cannotAccessDocumentInCollectionHierarchyWithDeniedExecute() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException {
+    public void cannotAccessDocumentInCollectionHierarchyWithDeniedExecute() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException, IOException {
 
         // as docTestUser1 user
         final String query = "fn:doc('" + TEST_DOC_URI_1 + "')";
@@ -207,8 +206,7 @@ public class FnDocSecurityTest {
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();
@@ -222,7 +220,7 @@ public class FnDocSecurityTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void cannotAccessDocumentInCollectionHierarchyWithDeniedReadAndExecuteAce() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException {
+    public void cannotAccessDocumentInCollectionHierarchyWithDeniedReadAndExecuteAce() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException, IOException {
 
         // as docTestUser1 user
         final String query = "fn:doc('" + TEST_DOC_URI_2 + "')";
@@ -233,8 +231,7 @@ public class FnDocSecurityTest {
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();

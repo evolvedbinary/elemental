@@ -48,6 +48,7 @@ package org.exist.validation.internal;
 import java.io.IOException;
 import java.util.*;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -56,12 +57,12 @@ import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.ClassLoaderSource;
+import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 
@@ -87,12 +88,10 @@ public class DatabaseResources {
     public final static String CATALOG    = "catalog";
     
     public final static String COLLECTION = "collection";
-    
-    /** Local reference to database  */
+
     private BrokerPool brokerPool = null;
-    
-    /** Local logger */
-    private final static Logger logger = LogManager.getLogger(DatabaseResources.class);
+
+    private static final Logger LOGGER = LogManager.getLogger(DatabaseResources.class);
     
     
     /**
@@ -112,7 +111,7 @@ public class DatabaseResources {
             }
             
         } catch (final XPathException ex) {
-            logger.error("xQuery issue.", ex);
+            LOGGER.error("XQuery issue.", ex);
             result=null;
         }
         
@@ -133,63 +132,58 @@ public class DatabaseResources {
             if(i.hasNext()){
                 result= i.nextItem().getStringValue();
 
-                logger.debug("Single query result: '{}'.", result);
+                LOGGER.debug("Single query result: '{}'.", result);
                 
             } else {
-                logger.debug("No query result.");
+                LOGGER.debug("No query result.");
             }
             
         } catch (final XPathException ex) {
-            logger.error("xQuery issue ", ex);
+            LOGGER.error("XQuery issue ", ex);
         }
         
         return result;
     }
     
     
-    public Sequence executeQuery(final String queryPath, final Map<String,String> params, final Subject user){
+    public @Nullable Sequence executeQuery(final String queryPath, final Map<String,String> params, final Subject user){
         @Nullable final String namespace = params.get(TARGETNAMESPACE);
         @Nullable final String publicId = params.get(PUBLICID);
         @Nullable final String catalogPath = params.get(CATALOG);
         @Nullable final String collection = params.get(COLLECTION);
         
-        if(logger.isDebugEnabled()) {
-            logger.debug("collection={} namespace={} publicId={} catalogPath={}", collection, namespace, publicId, catalogPath);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("collection={} namespace={} publicId={} catalogPath={}", collection, namespace, publicId, catalogPath);
         }
 
-        Sequence result= null;
-        final XQueryContext context = new XQueryContext(brokerPool);
-        try(final DBBroker broker = brokerPool.get(Optional.ofNullable(user))) {
+        try (final DBBroker broker = brokerPool.get(Optional.ofNullable(user))) {
 
-            final XQuery xquery = brokerPool.getXQueryService();
-            
-            if (collection != null){
-                context.declareVariable(new QName(COLLECTION, Namespaces.XQUERY_LOCAL_NS), true, collection);
-            }
-            
-            if (namespace != null){
-                context.declareVariable(new QName(TARGETNAMESPACE, Namespaces.XQUERY_LOCAL_NS), true, namespace);
-            }
-            
-            if (publicId != null){
-                context.declareVariable(new QName(PUBLICID, Namespaces.XQUERY_LOCAL_NS), true, publicId);
-            }
-            
-            if (catalogPath != null){
-                context.declareVariable(new QName(CATALOG, Namespaces.XQUERY_LOCAL_NS), true, catalogPath);
-            }
-            
-            CompiledXQuery compiled = xquery.compile(context, new ClassLoaderSource(queryPath) );
-            
-            result = xquery.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                if (collection != null) {
+                    xqueryContext.declareVariable(new QName(COLLECTION, Namespaces.XQUERY_LOCAL_NS), true, collection);
+                }
+
+                if (namespace != null) {
+                    xqueryContext.declareVariable(new QName(TARGETNAMESPACE, Namespaces.XQUERY_LOCAL_NS), true, namespace);
+                }
+
+                if (publicId != null) {
+                    xqueryContext.declareVariable(new QName(PUBLICID, Namespaces.XQUERY_LOCAL_NS), true, publicId);
+                }
+
+                if (catalogPath != null) {
+                    xqueryContext.declareVariable(new QName(CATALOG, Namespaces.XQUERY_LOCAL_NS), true, catalogPath);
+                }
+            };
+
+            final Source source = new ClassLoaderSource(queryPath);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, null, null);
+            return queryResult.result;
             
         } catch (final EXistException | XPathException | IOException | PermissionDeniedException ex) {
-            logger.error("Problem executing xquery", ex);
-            result= null;
-            context.runCleanupTasks();
-            
+            LOGGER.error("Problem executing XQuery: {}", ex.getMessage(), ex);
+            return null;
         }
-        return result;
     }
     
     
@@ -202,15 +196,15 @@ public class DatabaseResources {
      */
     public DatabaseResources(BrokerPool pool) {
         
-        logger.info("Initializing DatabaseResources");
+        LOGGER.info("Initializing DatabaseResources");
         this.brokerPool = pool;
         
     }
     
     public String findXSD(String collection, String targetNamespace, Subject user){
         
-        if(logger.isDebugEnabled()) {
-            logger.debug("Find schema with namespace '{}' in '{}'.", targetNamespace, collection);
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Find schema with namespace '{}' in '{}'.", targetNamespace, collection);
         }
         
         final Map<String,String> params = new HashMap<>();
@@ -224,8 +218,8 @@ public class DatabaseResources {
     
     public String findCatalogWithDTD(String collection, String publicId, Subject user){
         
-        if(logger.isDebugEnabled()) {
-            logger.debug("Find DTD with public '{}' in '{}'.", publicId, collection);
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Find DTD with public '{}' in '{}'.", publicId, collection);
         }
         
         final Map<String,String> params = new HashMap<>();

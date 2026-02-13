@@ -46,6 +46,7 @@
 package org.exist.repo;
 
 import com.evolvedbinary.j8fu.Either;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -715,67 +716,46 @@ public class Deployment {
     private Sequence runQuery(final DBBroker broker, final XmldbURI targetCollection, final Path tempDir,
             final String fileName, final String pkgName, final QueryPurpose purpose)
             throws PackageException, IOException, XPathException {
-        final Path xquery = tempDir.resolve(fileName);
-        if (!Files.isReadable(xquery)) {
+        final Path xqueryPath = tempDir.resolve(fileName);
+        if (!Files.isReadable(xqueryPath)) {
             LOG.warn("The XQuery resource specified in the {} was not found for EXPath Package: '{}'", purpose.getPurposeString(), pkgName);
             return Sequence.EMPTY_SEQUENCE;
         }
 
-        final Source source = new FileSource(xquery, false);
+        final Source source = new FileSource(xqueryPath, false);
 
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, source);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
             if (targetCollection != null) {
-                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
+                xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
             }
+
             if (QueryPurpose.PREINSTALL == purpose) {
                 // when running pre-setup scripts, base path should point to directory
                 // because the target collection does not yet exist
-                context.setModuleLoadPath(tempDir.toAbsolutePath().toString());
+                xqueryContext.setModuleLoadPath(tempDir.toAbsolutePath().toString());
             }
+        };
 
-            // Compile query
-            final XQuery xqueryService = broker.getBrokerPool().getXQueryService();
-            if (compiled == null) {
-                compiled = xqueryService.compile(context, source);
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+            xqueryContext.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
 
-            // Set variables
-            context.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
             final Optional<Path> home = broker.getConfiguration().getExistHome();
             if (home.isPresent()) {
-                context.declareVariable("home", true, home.get().toAbsolutePath().toString());
+                xqueryContext.declareVariable("home", true, home.get().toAbsolutePath().toString());
             }
+
             if (targetCollection != null) {
-                context.declareVariable("target", true, targetCollection.toString());
+                xqueryContext.declareVariable("target", true, targetCollection.toString());
             } else {
-                context.declareVariable("target", true, Sequence.EMPTY_SEQUENCE);
+                xqueryContext.declareVariable("target", true, Sequence.EMPTY_SEQUENCE);
             }
+        };
 
-            // Execute query
-            return xqueryService.execute(broker, compiled, null);
-
+        try {
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+            return queryResult.result;
         } catch (final PermissionDeniedException e) {
             throw new PackageException(e.getMessage(), e);
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(source, compiled);
-            }
         }
     }
 

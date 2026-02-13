@@ -51,6 +51,7 @@ import java.util.Optional;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
@@ -58,7 +59,7 @@ import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -102,9 +103,8 @@ public class ShutdownTest {
                     broker.storeDocument(transaction, XmldbURI.create(sampleName), new InputStreamSupplierInputSource(() -> SAMPLES.getShakespeareSample(sampleName)), xmlMediaType, test);
                 }
 
-                final XQuery xquery = pool.getXQueryService();
-                assertNotNull(xquery);
-                final Sequence result = xquery.execute(broker, "//SPEECH[contains(LINE, 'love')]", null);
+                final String query = "//SPEECH[contains(LINE, 'love')]";
+                final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
                 assertNotNull(result);
                 assertEquals(187, result.getItemCount());
 

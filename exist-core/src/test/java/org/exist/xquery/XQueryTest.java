@@ -45,6 +45,7 @@
  */
 package org.exist.xquery;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -53,14 +54,12 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.Item;
-import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.junit.*;
 import org.w3c.dom.Document;
@@ -79,7 +78,6 @@ import org.xmlunit.diff.Diff;
 import org.xmlunit.matchers.CompareMatcher;
 import xyz.elemental.mediatype.MediaType;
 
-import javax.annotation.Nullable;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import java.io.IOException;
@@ -1142,50 +1140,27 @@ public class XQueryTest {
         try (final DBBroker broker = brokerPool.getBroker()) {
             final org.exist.source.Source source = SourceFactory.getSource(broker, "/", "resource:org/exist/xquery/external-classpath-main-module.xq", false);
 
-            final XQuery xquery = brokerPool.getXQueryService();
-            final XQueryPool queryPool = brokerPool.getXQueryPool();
-
-            @Nullable CompiledXQuery compiled = null;
-            @Nullable XQueryContext context = null;
-            try {
-                compiled = queryPool.borrowCompiledXQuery(broker, source);
-                if (compiled == null) {
-                    context = new XQueryContext(brokerPool);
-                } else {
-                    context = compiled.getContext();
-                    context.prepareForReuse();
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.declareVariable(new QName("s"), true, new IntegerValue(timestamp));
+                } catch (final QName.IllegalQNameException e) {
+                    throw new XPathException(e.getMessage(), e);
                 }
+            };
 
-                context.declareVariable(new QName("s"), true, new IntegerValue(timestamp));
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, null, null);
 
-                if (compiled == null) {
-                    compiled = xquery.compile(context, source);
-                } else {
-                    compiled.getContext().updateContext(context);
-                    context.getWatchDog().reset();
-                }
+            assertEquals(1, queryResult.result.getItemCount());
+            final Item item = queryResult.result.itemAt(0);
+            assertTrue(Type.subTypeOf(item.getType(), Type.NODE));
 
-                final Sequence result = xquery.execute(broker, compiled, null, null);
-                assertEquals(1, result.getItemCount());
-                final Item item = result.itemAt(0);
-                assertTrue(Type.subTypeOf(item.getType(), Type.NODE));
-
-                final Source expected = Input.fromString("<echo>" + timestamp + "</echo>").build();
-                final Source actual = Input.fromNode((Node)item).build();
-                final Diff diff = DiffBuilder.compare(expected)
-                        .withTest(actual)
-                        .checkForSimilar()
-                        .build();
-                assertFalse(diff.toString(), diff.hasDifferences());
-
-            } finally {
-                if (context != null) {
-                    context.runCleanupTasks();
-                }
-                if (compiled != null) {
-                    queryPool.returnCompiledXQuery(source, compiled);
-                }
-            }
+            final Source expected = Input.fromString("<echo>" + timestamp + "</echo>").build();
+            final Source actual = Input.fromNode((Node)item).build();
+            final Diff diff = DiffBuilder.compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
+            assertFalse(diff.toString(), diff.hasDifferences());
         }
     }
 

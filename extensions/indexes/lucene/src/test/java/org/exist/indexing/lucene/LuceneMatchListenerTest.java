@@ -52,6 +52,7 @@ import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -63,7 +64,7 @@ import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.AfterClass;
@@ -194,37 +195,38 @@ public class LuceneMatchListenerTest {
         configureAndStore(CONF2, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ft:query(., 'mixed')]", null);
+            String query = "//para[ft:query(., 'mixed')]";
+            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> content.</para>"));
 
-            seq = xquery.execute(broker, "//para[ft:query(., '+nested +inner +elements')]", null);
+            query = "//para[ft:query(., '+nested +inner +elements')]";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> " + MATCH_START + "inner" + MATCH_END + "</note> " + MATCH_START + "elements" + MATCH_END + ".</para>"));
 
-            seq = xquery.execute(broker, "//para[ft:query(term, 'term')]", null);
+            query = "//para[ft:query(term, 'term')]";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
 
-            seq = xquery.execute(broker, "//para[ft:query(., '+double +match')]", null);
+            query = "//para[ft:query(., '+double +match')]";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para>"));
 
-            seq = xquery.execute(broker,
-                    "for $para in //para[ft:query(., '+double +match')] return\n" +
-                            "   <hit>{$para}</hit>", null);
+            query = "for $para in //para[ft:query(., '+double +match')] return <hit>{$para}</hit>";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
@@ -236,16 +238,16 @@ public class LuceneMatchListenerTest {
     public void matchInAncestor() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException, LockException, CollectionConfigurationException {
         configureAndStore(CONF1, XML);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ft:query(., 'mixed')]/hi", null);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            String query = "//para[ft:query(., 'mixed')]/hi";
+            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
             assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
 
-            seq = xquery.execute(broker, "//para[ft:query(., 'nested')]/note", null);
+            query = "//para[ft:query(., 'nested')]/note";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
@@ -257,16 +259,16 @@ public class LuceneMatchListenerTest {
     public void matchInDescendant() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException, LockException, CollectionConfigurationException {
         configureAndStore(CONF3, XML);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//hi[ft:query(., 'mixed')]/ancestor::para", null);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            String query = "//hi[ft:query(., 'mixed')]/ancestor::para";
+            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
             assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
 
-            seq = xquery.execute(broker, "//hi[ft:query(., 'nested')]/parent::note", null);
+            query = "//hi[ft:query(., 'nested')]/parent::note";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
@@ -279,34 +281,37 @@ public class LuceneMatchListenerTest {
         configureAndStore(CONF4, XML1);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//p[ft:query(., 'mixed')]", null);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            String query = "//p[ft:query(., 'mixed')]";
+            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             String result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<p>Paragraphs with <s>" + MATCH_START + "mix" + MATCH_END + "</s><s>ed</s> content are <s>danger</s>ous.</p>"));
 
-            seq = xquery.execute(broker, "//p[ft:query(., 'ignored')]", null);
+            query = "//p[ft:query(., 'ignored')]";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>highlighted</hi> text <note>and a note</note> to be " + MATCH_START + "ignored" + MATCH_END + ".</p>"));
 
-            seq = xquery.execute(broker, "//p[ft:query(., 'highlighted')]", null);
+            query = "//p[ft:query(., 'highlighted')]";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi> text <note>and a note</note> to be " + "ignored.</p>"));
 
-            seq = xquery.execute(broker, "//p[ft:query(., 'highlighted')]/hi", null);
+            query = "//p[ft:query(., 'highlighted')]/hi";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
             assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi>"));
             
-            seq = xquery.execute(broker, "//head[ft:query(., 'title')]", null);
+            query = "//head[ft:query(., 'title')]";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             result = queryResult2String(broker, seq);
@@ -319,12 +324,10 @@ public class LuceneMatchListenerTest {
         configureAndStore(CONF5, XML2);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            final String query =  "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            final String query = "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
                     "//tei:p[.//tei:w[ft:query(., <query><bool><term>дознајем</term></bool></query>)]] ! util:expand(.)";
-            final Sequence seq = xquery.execute(broker, query, null);
+            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
             final String result = queryResult2String(broker, seq, true);
@@ -363,7 +366,7 @@ public class LuceneMatchListenerTest {
     public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
 
     @BeforeClass
-    public static void startDB() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, TriggerException {
+    public static void startDB() throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));

@@ -59,7 +59,6 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.value.Sequence;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -174,18 +173,15 @@ public class ForwardReferenceTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final String xqSuiteXmlResult = withCompiledQuery(broker, testXquerySource, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                    final XQuerySerializer xquerySerializer = new XQuerySerializer(broker, new Properties(), writer);
-                    xquerySerializer.serialize(result);
-                    return writer.toString();
-                } catch (final SAXException e) {
-                    throw new XPathException((Expression) null, e);
-                }
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, testXquerySource, false, null, null, null, null, null);
 
-            assertNotNull(xqSuiteXmlResult);
+            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                final XQuerySerializer xquerySerializer = new XQuerySerializer(broker, new Properties(), writer);
+                xquerySerializer.serialize(queryResult.result);
+                assertNotNull(writer.toString());
+            } catch (final SAXException e) {
+                throw new XPathException((Expression) null, e);
+            }
 
             transaction.commit();
         }

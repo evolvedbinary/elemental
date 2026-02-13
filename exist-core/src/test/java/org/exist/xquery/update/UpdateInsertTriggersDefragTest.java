@@ -57,6 +57,7 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.StringInputSource;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -66,8 +67,6 @@ import xyz.elemental.mediatype.MediaType;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.exist.test.Util.executeQuery;
-import static org.exist.test.Util.withCompiledQuery;
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -111,11 +110,9 @@ public class UpdateInsertTriggersDefragTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            withCompiledQuery(broker, new StringSource(query), compiledQuery -> {
-                final Sequence results = executeQuery(broker, compiledQuery);
-                assertions.accept(results);
-                return null;
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+
+            assertions.accept(queryResult.result);
 
             transaction.commit();
         }

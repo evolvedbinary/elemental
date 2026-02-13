@@ -77,6 +77,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.j8fu</groupId>
+            <artifactId>j8fu</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
@@ -169,6 +175,7 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/test/java/org/expath/exist/HttpClientTest.java</include>
                                 <include>src/main/java/org/expath/httpclient/model/exist/EXistTreeBuilder.java</include>
                             </includes>
                         </licenseSet>
@@ -182,6 +189,7 @@
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/test/java/org/expath/exist/HttpClientTest.java</exclude>
                                 <exclude>src/main/java/org/expath/httpclient/model/exist/EXistTreeBuilder.java</exclude>
                             </excludes>
                         </licenseSet>

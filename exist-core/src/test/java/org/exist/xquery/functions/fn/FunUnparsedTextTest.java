@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,19 +43,19 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
@@ -40,6 +64,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,7 +82,7 @@ public class FunUnparsedTextTest {
     public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
 
     @Test
-    public void unparsedText_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void unparsedText_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String text = "hello, the time is: " + System.currentTimeMillis();
@@ -65,12 +90,13 @@ public class FunUnparsedTextTest {
         final String query = "fn:unparsed-text('" + textUri + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -80,7 +106,7 @@ public class FunUnparsedTextTest {
     }
 
     @Test
-    public void unparsedText_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void unparsedText_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String text = "hello, the time is: " + System.currentTimeMillis();
@@ -89,13 +115,18 @@ public class FunUnparsedTextTest {
         final String query = "fn:unparsed-text('" + textRelativeUri + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableTextResource(baseUri + textRelativeUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                    xqueryContext.addDynamicallyAvailableTextResource(baseUri + textRelativeUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e);
+                }
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -105,7 +136,7 @@ public class FunUnparsedTextTest {
     }
 
     @Test
-    public void unparsedTextAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void unparsedTextAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String text = "hello, the time is: " + System.currentTimeMillis();
@@ -113,12 +144,13 @@ public class FunUnparsedTextTest {
         final String query = "fn:unparsed-text-available('" + textUri + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -127,7 +159,7 @@ public class FunUnparsedTextTest {
     }
 
     @Test
-    public void unparsedTextAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void unparsedTextAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String text = "hello, the time is: " + System.currentTimeMillis();
@@ -136,13 +168,18 @@ public class FunUnparsedTextTest {
         final String query = "fn:unparsed-text-available('" + textRelativeUri + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableTextResource(baseUri + textRelativeUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                    xqueryContext.addDynamicallyAvailableTextResource(baseUri + textRelativeUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e);
+                }
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -151,7 +188,7 @@ public class FunUnparsedTextTest {
     }
 
     @Test(expected = XPathException.class)
-    public void unparsedTextLines_noDataStream() throws XPathException, EXistException, PermissionDeniedException {
+    public void unparsedTextLines_noDataStream() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String text = "hello, the time is: " + System.currentTimeMillis();
@@ -159,13 +196,12 @@ public class FunUnparsedTextTest {
         final String query = "fn:unparsed-text-lines('" + textUri + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableTextResource(textUri, UTF_8,
-                    (broker2, transaction, uri, charset) -> new InputStreamReader(null, charset));
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(null, charset));
+            };
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
         }
     }
 }
