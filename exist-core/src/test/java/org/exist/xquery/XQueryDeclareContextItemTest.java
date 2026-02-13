@@ -53,6 +53,7 @@ import org.exist.dom.QName;
 import org.exist.dom.memtree.ElementImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
@@ -97,7 +98,7 @@ public class XQueryDeclareContextItemTest {
     @BeforeClass
     public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final Collection root = broker.getOrCreateCollection(transaction,
@@ -115,11 +116,11 @@ public class XQueryDeclareContextItemTest {
     @AfterClass
     public static void cleanup() throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final Collection test = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
-            if(test != null) {
+            if (test != null) {
                 broker.removeCollection(transaction, test);
             }
 
@@ -128,17 +129,15 @@ public class XQueryDeclareContextItemTest {
     }
 
     @Test
-    public void declareContextItem() throws EXistException, PermissionDeniedException, XPathException {
+    public void declareContextItem() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                 "declare context item := 3; \n" +
                 ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, null);
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
@@ -148,92 +147,82 @@ public class XQueryDeclareContextItemTest {
      * See issue https://github.com/eXist-db/exist/issues/2156
      */
     @Test
-    public void declareContextItemIsDocument() throws EXistException, PermissionDeniedException, XPathException {
+    public void declareContextItemIsDocument() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                 "declare context item := document { <root><item>foo</item><item>baz</item></root> }; \n" +
                 "(/) instance of document-node()";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, null);
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals(true, result.effectiveBooleanValue());
         }
     }
 
     @Test
-    public void declareContextItemTyped() throws EXistException, PermissionDeniedException, XPathException {
+    public void declareContextItemTyped() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                         "declare context item as xs:integer := 3; \n" +
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, null);
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
     }
 
     @Test
-    public void declareContextItemExternal() throws EXistException, PermissionDeniedException, XPathException {
+    public void declareContextItemExternal() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                         "declare context item external; \n" +
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, new IntegerValue(3));
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, new IntegerValue(3), null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
     }
 
     @Test
-    public void declareContextItemExternalDefault() throws EXistException, PermissionDeniedException, XPathException {
+    public void declareContextItemExternalDefault() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                         "declare context item external := 3; \n" +
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, null);
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
     }
 
     @Test
-    public void declareContextItemExternalDefaultOverrides() throws EXistException, PermissionDeniedException, XPathException {
+    public void declareContextItemExternalDefaultOverrides() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                         "declare context item external := 3; \n" +
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, new IntegerValue(20));
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, new IntegerValue(20), null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals(24, (int)result.itemAt(0).toJavaObject(int.class));
         }
     }
 
     @Test
-    public void declareContextItemExternalElement() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void declareContextItemExternalElement() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                         "declare namespace env=\"http://www.w3.org/2003/05/soap-envelope\";\n" +
@@ -241,9 +230,7 @@ public class XQueryDeclareContextItemTest {
                         "<wrap>{.}</wrap>";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
+        try (final DBBroker broker = pool.getBroker()) {
             final MemTreeBuilder builder = new MemTreeBuilder();
             builder.startDocument();
             builder.startElement(new QName("Envelope", "http://www.w3.org/2003/05/soap-envelope"), null);
@@ -252,14 +239,14 @@ public class XQueryDeclareContextItemTest {
 
             final ElementImpl elem = (ElementImpl)builder.getDocument().getDocumentElement();
 
-            final Sequence result = xquery.execute(broker, query, elem);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, elem, null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals("<wrap><Envelope xmlns=\"http://www.w3.org/2003/05/soap-envelope\"/></wrap>", serialize(broker, (NodeValue)result.itemAt(0)));
         }
     }
 
     @Test
-    public void contextItemExternalDefaultElement() throws EXistException, SAXException, PermissionDeniedException, XPathException {
+    public void contextItemExternalDefaultElement() throws EXistException, SAXException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "xquery version \"3.0\";\n" +
                         "declare namespace sys=\"http://syslog\";\n" +
@@ -267,10 +254,8 @@ public class XQueryDeclareContextItemTest {
                         "<wrap>{.}</wrap>";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-
-        try(final DBBroker broker = pool.getBroker()) {
-            final Sequence result = xquery.execute(broker, query, null);
+        try (final DBBroker broker = pool.getBroker()) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, result.getItemCount());
             assertEquals("<wrap><log xmlns=\"http://syslog\">some-event</log></wrap>", serialize(broker, (NodeValue)result.itemAt(0)));
         }

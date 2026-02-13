@@ -49,6 +49,7 @@ import org.exist.EXistException;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
@@ -61,6 +62,7 @@ import org.xmldb.api.base.*;
 import org.xmldb.api.modules.CollectionManagementService;
 import xyz.elemental.mediatype.MediaType;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -161,12 +163,11 @@ public class CleanupTest {
     }
 
     @Test
-    public void resetStateOfInlineFunc() throws XMLDBException, EXistException, PermissionDeniedException, XPathException {
+    public void resetStateOfInlineFunc() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
-        final XQuery xquery = pool.getXQueryService();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             // execute query to get a function item
-            final Sequence result = xquery.execute(broker, TEST_INLINE, Sequence.EMPTY_SEQUENCE);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(TEST_INLINE), false, Sequence.EMPTY_SEQUENCE, null, null, null, null).result;
             assertEquals(result.getItemCount(), 1);
             final FunctionCall call = ((FunctionReference)result.itemAt(0)).getCall();
             // closure variables are set when function item is created, but should be cleared after query

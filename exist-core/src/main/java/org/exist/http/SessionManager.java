@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,7 +50,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,15 +65,15 @@ public class SessionManager {
     private static final long TIMEOUT = 120_000;  // ms (e.g. 2 minutes)
 
     private final AtomicInteger sessionIdCounter = new AtomicInteger();
-    private final Cache<Integer, QueryResult> cache;
+    private final Cache<Integer, QueryAndResult> cache;
 
-    private static class QueryResult {
+    private static class QueryAndResult {
         final String query;
-        final Sequence sequence;
+        final XQueryUtil.QueryResult result;
 
-        private QueryResult(final String query, final Sequence sequence) {
+        private QueryAndResult(final String query, final XQueryUtil.QueryResult result) {
             this.query = query;
-            this.sequence = sequence;
+            this.result = result;
         }
     }
 
@@ -62,24 +86,24 @@ public class SessionManager {
         cache = cacheBuilder.build();
     }
 
-    public int add(final String query, final Sequence sequence) {
+    public int add(final String query, final XQueryUtil.QueryResult result) {
         final int sessionId = sessionIdCounter.getAndIncrement();
-        cache.put(sessionId, new QueryResult(query, sequence));
+        cache.put(sessionId, new QueryAndResult(query, result));
         return sessionId;
     }
 
-    public Sequence get(final String query, final int sessionId) {
+    public XQueryUtil.QueryResult get(final String query, final int sessionId) {
         if (sessionId < 0 || sessionId >= sessionIdCounter.get()) {
             return null; // out of scope
         }
 
-        final QueryResult cached = cache.getIfPresent(sessionId);
+        final QueryAndResult cached = cache.getIfPresent(sessionId);
         if (cached == null) {
             return null;
         }
 
         if (cached.query.equals(query)) {
-            return cached.sequence;
+            return cached.result;
         } else {
             // wrong query
             return null;

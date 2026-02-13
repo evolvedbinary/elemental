@@ -32,7 +32,6 @@
  */
 package org.exist.xquery;
 
-import com.evolvedbinary.j8fu.function.Function2E;
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
@@ -42,14 +41,12 @@ import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.value.Sequence;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +60,6 @@ import xyz.elemental.mediatype.MediaType;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
@@ -126,10 +122,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -184,10 +177,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -231,10 +221,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -289,10 +276,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -334,10 +318,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -394,10 +375,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -429,10 +407,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -464,10 +439,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -521,10 +493,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -565,10 +534,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -612,10 +578,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -664,10 +627,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -717,10 +677,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -764,10 +721,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -810,15 +764,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element)contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element) queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -884,15 +835,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element)contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element)queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -964,15 +912,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element)contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element)queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -1023,15 +968,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element)contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element) queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -1091,15 +1033,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element)contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element) queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -1165,15 +1104,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element)contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element) queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -1241,15 +1177,12 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                final Sequence result = executeQuery(broker, compiledXQuery);
-                return Tuple(compiledXQuery.getContext(), result);
-            });
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
             // check that the result was correct
-            assertNotNull(contextAndResult._2);
-            assertEquals(1, contextAndResult._2.getItemCount());
-            final Element doc = (Element) contextAndResult._2.itemAt(0);
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            final Element doc = (Element) queryResult.result.itemAt(0);
             assertNotNull(doc);
 
             final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
@@ -1322,10 +1255,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -1393,10 +1323,7 @@ public class ImportModuleTest {
 
             // execute query
             try {
-                final Tuple2<XQueryContext, Sequence> contextAndResult = withCompiledQuery(broker, source, compiledXQuery -> {
-                    final Sequence result = executeQuery(broker, compiledXQuery);
-                    return Tuple(compiledXQuery.getContext(), result);
-                });
+                XQueryUtil.query(broker, source, false, null, null, null, null, null);
 
                 transaction.commit();
 
@@ -1420,61 +1347,6 @@ public class ImportModuleTest {
                 final MediaType xqueryMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
                 broker.storeDocument(transaction, moduleName, new StringInputSource(module._2.getBytes(UTF_8)), xqueryMediaType, collection);
             }
-        }
-    }
-
-    private Sequence executeQuery(final DBBroker broker, final CompiledXQuery compiledXQuery) throws PermissionDeniedException, XPathException {
-        final BrokerPool pool = broker.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        return xqueryService.execute(broker, compiledXQuery, null, new Properties());
-    }
-
-    private <T> T withCompiledQuery(final DBBroker broker, final Source source, final Function2E<CompiledXQuery, T, XPathException, PermissionDeniedException> op) throws XPathException, PermissionDeniedException, IOException {
-        final BrokerPool pool = broker.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        final XQueryPool xqueryPool = pool.getXQueryPool();
-        final CompiledXQuery compiledQuery = compileQuery(broker, xqueryService, xqueryPool, source);
-        try {
-            return op.apply(compiledQuery);
-        } finally {
-            if (compiledQuery != null) {
-                if (compiledQuery.getContext() != null) {
-                    compiledQuery.getContext().runCleanupTasks();
-                }
-                xqueryPool.returnCompiledXQuery(source, compiledQuery);
-            }
-        }
-    }
-
-    private CompiledXQuery compileQuery(final DBBroker broker, final XQuery xqueryService, final XQueryPool xqueryPool, final Source query) throws PermissionDeniedException, XPathException, IOException {
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            compiled = xqueryPool.borrowCompiledXQuery(broker, query);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            if (compiled == null) {
-                compiled = xqueryService.compile(context, query);
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
-
-            return compiled;
-
-        } catch (final PermissionDeniedException | XPathException | IOException e) {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                xqueryPool.returnCompiledXQuery(query, compiled);
-            }
-            throw e;
         }
     }
 }

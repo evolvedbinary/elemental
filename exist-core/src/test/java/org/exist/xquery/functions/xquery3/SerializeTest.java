@@ -24,6 +24,7 @@ import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.ManagedCollectionLock;
@@ -33,7 +34,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -76,7 +77,7 @@ public class SerializeTest {
         "     fn:serialize($doc, map { xs:QName(\"exist:add-exist-id\"): \"all\" })";
 
     @Test
-    public void serializeReference() throws XPathException, PermissionDeniedException, EXistException {
+    public void serializeReference() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final String expected = "<?pi?><elem xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" exist:id=\"2\" exist:source=\"" + DOC_WITH_PI_NAME.getCollectionPath() + "\" a=\"abc\"><!--comment--><b exist:id=\"2.3\">123</b></elem>";
         expectQueryString(SERIALIZE_WITH_EXIST_ID_ALL_QUERY, expected);
     }
@@ -107,7 +108,7 @@ public class SerializeTest {
         }
     }
 
-    private static void expectQueryNode(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException {
+    private static void expectQueryNode(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException, IOException {
         expectQuery(query, sequence -> {
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
@@ -128,7 +129,7 @@ public class SerializeTest {
         });
     }
 
-    private static void expectQueryString(final String query, final String expected) throws EXistException, XPathException, PermissionDeniedException {
+    private static void expectQueryString(final String query, final String expected) throws EXistException, XPathException, PermissionDeniedException, IOException {
         expectQuery(query, sequence -> {
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
@@ -141,13 +142,11 @@ public class SerializeTest {
         });
     }
 
-    private static void expectQuery(final String query, final Consumer<Sequence> resultConsumer) throws EXistException, XPathException, PermissionDeniedException {
+    private static void expectQuery(final String query, final Consumer<Sequence> resultConsumer) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = xquery.execute(broker, query, null);
-
-            resultConsumer.accept(sequence);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            resultConsumer.accept(result);
         }
     }
 }

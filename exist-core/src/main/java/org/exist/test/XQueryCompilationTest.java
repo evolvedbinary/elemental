@@ -24,14 +24,18 @@ package org.exist.test;
 import com.evolvedbinary.j8fu.Either;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
+
+import java.io.IOException;
 
 import static com.evolvedbinary.j8fu.Either.Left;
 import static com.evolvedbinary.j8fu.Either.Right;
@@ -58,12 +62,13 @@ public abstract class XQueryCompilationTest {
 
     protected static Either<XPathException, Sequence> executeQuery(final String string) throws EXistException, PermissionDeniedException {
         final BrokerPool pool = server.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
         try (final DBBroker broker = pool.getBroker()) {
             try {
-                return Right(xqueryService.execute(broker, string, null));
+                return Right(XQueryUtil.query(broker, new StringSource(string), false, null, null, null, null, null).result);
             } catch (final XPathException e) {
                 return Left(e);
+            } catch (final IOException e) {
+                return Left(new XPathException(e.getMessage(), e));
             }
         }
     }

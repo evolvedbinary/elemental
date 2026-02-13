@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,6 +50,7 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.serializer.json.JSONSerializer;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.*;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
@@ -59,6 +84,10 @@ public class XQuerySerializer {
 
     public void serialize(final Sequence sequence) throws SAXException, XPathException {
         serialize(sequence, 1, sequence.getItemCount(), false, false, 0, 0);
+    }
+
+    public void serialize(final XQueryUtil.QueryResult queryResult, final int start, final int howmany, final boolean wrap, final boolean typed) throws SAXException, XPathException {
+        serialize(queryResult.result, start, howmany, wrap, typed, queryResult.compilationTime, queryResult.executionTime);
     }
 
     public void serialize(final Sequence sequence, final int start, final int howmany, final boolean wrap, final boolean typed, final long compilationTime, final long executionTime) throws SAXException, XPathException {

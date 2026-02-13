@@ -45,6 +45,7 @@
  */
 package org.exist.xmldb;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -57,7 +58,6 @@ import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.LockedDocumentMap;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -65,12 +65,10 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.xmldb.function.LocalXmldbFunction;
 import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.ExternalModule;
-import org.exist.xquery.Variable;
-import org.exist.xquery.VariableDeclaration;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.Sequence;
@@ -78,6 +76,7 @@ import org.exist.xquery.value.SequenceIterator;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.*;
 import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.modules.XMLResource;
 
 import java.io.Writer;
@@ -92,8 +91,6 @@ import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.security.Permission;
 import com.evolvedbinary.j8fu.Either;
-
-import javax.annotation.Nullable;
 
 public class LocalXPathQueryService extends AbstractLocalService implements EXistXPathQueryService, EXistXQueryService {
 
@@ -228,7 +225,11 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             declareVariables(context);
 
             final XQuery xquery = brokerPool.getXQueryService();
-            result = xquery.execute(broker, expr, contextSet, properties);
+            result = xquery.execute(broker, expr, null, contextSet, properties, true);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Query took {} ms.", System.currentTimeMillis() - start);
+            }
+
         } catch (final Exception e) {
             // need to catch all runtime exceptions here to be able to release locked documents
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -253,7 +254,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 return true;
             });
         }
-        LOG.debug("query took {} ms.", System.currentTimeMillis() - start);
+
         if(result != null) {
             final Properties resourceSetProperties = new Properties(properties);
             resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
@@ -282,54 +283,36 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     private ResourceSet execute(final LocalXmldbFunction<Source> sourceOp) throws XMLDBException {
         return withDb((broker, transaction) -> {
 
-            final long start = System.currentTimeMillis();
-
             final Source source = sourceOp.apply(broker, transaction);
+            final XmldbURI[] docs = new XmldbURI[]{ XmldbURI.create(collection.getName(broker, transaction)) };
 
-            final XmldbURI[] docs = new XmldbURI[]{XmldbURI.create(collection.getName(broker, transaction))};
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.setStaticallyKnownDocuments(docs);
+                try {
+                    setupContext(source, xqueryContext);
+                } catch (final XMLDBException e) {
+                    throw new XPathException(e);
+                }
+            };
 
-            final XQuery xquery = brokerPool.getXQueryService();
-            final XQueryPool pool = brokerPool.getXQueryPool();
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = this::declareVariables;
 
-            @Nullable CompiledXQuery compiled = null;
-            @Nullable XQueryContext context = null;
+            final XQueryUtil.QueryResult queryResult;
             try {
-                compiled = pool.borrowCompiledXQuery(broker, source);
-                if (compiled == null) {
-                    context = new XQueryContext(broker.getBrokerPool());
-                } else {
-                    context = compiled.getContext();
-                    context.prepareForReuse();
+                queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Query took {} ms.", queryResult.executionTime);
                 }
-
-                context.setStaticallyKnownDocuments(docs);
-
-                setupContext(source, context);
-
-                if (compiled == null) {
-                    compiled = xquery.compile(context, source);
-                } else {
-                    compiled.getContext().updateContext(context);
-                    context.getWatchDog().reset();
+            } catch (final XPathException e) {
+                if (e.getCause() instanceof XMLDBException) {
+                    throw (XMLDBException) e.getCause();
                 }
-
-                declareVariables(context);
-
-                final Sequence result = xquery.execute(broker, compiled, null, properties);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("query took {} ms.", System.currentTimeMillis() - start);
-                }
-                final Properties resourceSetProperties = new Properties(properties);
-                resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
-                return result != null ? new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, result, null) : null;
-            } finally {
-                if (context != null) {
-                    context.runCleanupTasks();
-                }
-                if (compiled != null) {
-                    pool.returnCompiledXQuery(source, compiled);
-                }
+                throw e;
             }
+
+            final Properties resourceSetProperties = new Properties(properties);
+            resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+            return queryResult.result != null ? new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult.result, null) : null;
         });
     }
 

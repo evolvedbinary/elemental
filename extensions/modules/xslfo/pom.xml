@@ -82,6 +82,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.j8fu</groupId>
+            <artifactId>j8fu</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
         </dependency>
@@ -213,6 +219,7 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/main/java/org/exist/xquery/modules/xslfo/ApacheFopProcessorAdapter.java</include>
+                                <include>src/test/java/org/exist/xquery/modules/xslfo/ApacheFopTest.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/xslfo/RenderXXepProcessorAdapter.java</include>
                             </includes>
                         </licenseSet>
@@ -227,6 +234,7 @@
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/xslfo/ApacheFopProcessorAdapter.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/modules/xslfo/ApacheFopTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/xslfo/RenderXXepProcessorAdapter.java</exclude>
                             </excludes>
                         </licenseSet>

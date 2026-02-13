@@ -51,6 +51,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
@@ -59,7 +60,7 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
 import org.w3c.dom.Attr;
@@ -87,13 +88,12 @@ public class DLNStorageTest {
 
     @Test
     public void nodeStorage() throws Exception {
-        BrokerPool pool = BrokerPool.getInstance();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
+        final BrokerPool pool = BrokerPool.getInstance();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+
             // test element ids
-            Sequence seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test/para",
-                    null);
+            String query = "doc('/db/test/test_string.xml')/test/para";
+            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(3, seq.getItemCount());
             NodeProxy comment = (NodeProxy) seq.itemAt(0);
             assertEquals("1.1", comment.getNodeId().toString());
@@ -102,15 +102,15 @@ public class DLNStorageTest {
             comment = (NodeProxy) seq.itemAt(2);
             assertEquals("1.5", comment.getNodeId().toString());
 
-            seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test//a",
-                    null);
+            query = "doc('/db/test/test_string.xml')/test//a";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, seq.getItemCount());
             NodeProxy a = (NodeProxy) seq.itemAt(0);
             assertEquals("1.3.2", a.getNodeId().toString());
 
             // test attribute id
-            seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test//a/@href",
-                    null);
+            query = "doc('/db/test/test_string.xml')/test//a/@href";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, seq.getItemCount());
             NodeProxy href = (NodeProxy) seq.itemAt(0);
             StorageAddress.toString(href);
@@ -126,8 +126,8 @@ public class DLNStorageTest {
             assertEquals("#", href.getStringValue());
 
             // test text node
-            seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test//b/text()",
-                    null);
+            query = "doc('/db/test/test_string.xml')/test//b/text()";
+            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertEquals(1, seq.getItemCount());
             NodeProxy text = (NodeProxy) seq.itemAt(0);
             assertEquals("1.5.2.1", text.getNodeId().toString());

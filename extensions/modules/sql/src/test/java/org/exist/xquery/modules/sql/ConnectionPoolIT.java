@@ -32,7 +32,6 @@
  */
 package org.exist.xquery.modules.sql;
 
-import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.Source;
@@ -53,9 +52,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.exist.xquery.modules.sql.Util.executeQuery;
-import static org.exist.xquery.modules.sql.Util.withCompiledQuery;
+import static org.exist.xquery.XQueryUtil.executeQuery;
+import static org.exist.xquery.XQueryUtil.withCompiledQuery;
 import static org.junit.Assert.*;
 
 public class ConnectionPoolIT {

@@ -54,6 +54,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.collections.Collection;
 import org.exist.security.AuthenticationException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
@@ -64,7 +65,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
@@ -215,10 +216,10 @@ public class IndexerTest {
     private String store_and_retrieve_ws_mixed_content_value(final boolean preserve, final String typeXml, final String typeXquery) throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
 		store_preserve_ws_mixed_content_value(preserve, typeXml);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence result = xquery.execute(broker, typeXquery, null);
-            try(final StringBuilderWriter out = new StringBuilderWriter()) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+
+            final Sequence result = XQueryUtil.query(broker, new StringSource(typeXquery), false, null, null, null, null, null).result;
+            try (final StringBuilderWriter out = new StringBuilderWriter()) {
 				final Properties props = new Properties();
 				props.setProperty(OutputKeys.INDENT, "yes");
 				final SAXSerializer serializer = new SAXSerializer(out, props);

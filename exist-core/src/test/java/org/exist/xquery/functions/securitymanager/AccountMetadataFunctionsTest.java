@@ -26,6 +26,7 @@ import org.exist.security.AXSchemaType;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.RealmImpl;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -34,7 +35,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class AccountMetadataFunctionsTest {
      * See: <a href="https://github.com/eXist-db/exist/issues/5904">[BUG] Security Account Metadata is lost</a>
      */
     @Test
-    public void getAccountNameMetadataViaObject() throws PermissionDeniedException, EXistException, XPathException {
+    public void getAccountNameMetadataViaObject() throws PermissionDeniedException, EXistException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final SecurityManager sm = pool.getSecurityManager();
 
@@ -83,8 +84,7 @@ public class AccountMetadataFunctionsTest {
                 "sm:get-account-metadata('" + USER1_UID + "', xs:anyURI('http://axschema.org/namePerson'))";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = existWebServer.getBrokerPool().getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(result);
             assertEquals(USER1_NAME, result.itemAt(0).getStringValue());
         }
@@ -135,8 +135,7 @@ public class AccountMetadataFunctionsTest {
                 "sm:get-account-metadata('" + USER1_UID + "', xs:anyURI('http://axschema.org/namePerson'))";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = existWebServer.getBrokerPool().getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             assertNotNull(result);
             assertEquals(USER1_NAME, result.itemAt(0).getStringValue());
         }

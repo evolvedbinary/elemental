@@ -20,8 +20,8 @@
  */
 package org.exist.xquery.functions.securitymanager;
 
-import com.evolvedbinary.j8fu.function.Runnable3E;
 import com.evolvedbinary.j8fu.function.Runnable4E;
+import com.evolvedbinary.j8fu.function.Runnable5E;
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
@@ -32,6 +32,7 @@ import org.exist.security.*;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -39,7 +40,7 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 
 import javax.annotation.Nullable;
@@ -103,48 +104,45 @@ class SecurityManagerTestUtil {
         sm.deleteGroup(groupname);
     }
 
-    static Sequence xqueryAddUserAsGroupManager(final BrokerPool pool, final String username, final String groupname) throws EXistException, PermissionDeniedException, XPathException {
+    static Sequence xqueryAddUserAsGroupManager(final BrokerPool pool, final String username, final String groupname) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
             "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:add-group-manager('" + groupname + "', '" + username + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             return result;
         }
     }
 
-    static Sequence xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname) throws XPathException, PermissionDeniedException, EXistException {
+    static Sequence xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname) throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Optional<Subject> asUser = Optional.of(pool.getSecurityManager().getSystemSubject());
         return xqueryRemoveUserFromGroup(pool, username, groupname, asUser);
     }
 
-    static Sequence xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname, final Optional<Subject> asUser) throws EXistException, PermissionDeniedException, XPathException {
+    static Sequence xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname, final Optional<Subject> asUser) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:remove-group-member('" + groupname + "', '" + username + "')";
 
         try (final DBBroker broker = pool.get(asUser)) {
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             return result;
         }
     }
 
-    static Sequence xqueryRemoveGroup(final BrokerPool pool, final String groupname) throws EXistException, PermissionDeniedException, XPathException {
+    static Sequence xqueryRemoveGroup(final BrokerPool pool, final String groupname) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:remove-group('" + groupname + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             return result;
         }
     }
 
-    static void xqueryChangeMode(final BrokerPool pool, final Subject execAsUser, final XmldbURI uri, final String newMode) throws EXistException, PermissionDeniedException, XPathException {
+    static void xqueryChangeMode(final BrokerPool pool, final Subject execAsUser, final XmldbURI uri, final String newMode) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:chmod(xs:anyURI('" + uri.getRawCollectionPath() + "'), '" + newMode + "'),\n" +
@@ -152,8 +150,7 @@ class SecurityManagerTestUtil {
 
         try (final DBBroker broker = pool.get(Optional.of(execAsUser))) {
 
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertEquals(1, result.getItemCount());
             assertEquals(newMode, result.itemAt(0).getStringValue());
@@ -173,10 +170,10 @@ class SecurityManagerTestUtil {
         }
     }
 
-    static void extractPermissionDenied(final Runnable3E<XPathException, PermissionDeniedException, EXistException> runnable) throws XPathException, PermissionDeniedException, EXistException {
+    static void extractPermissionDenied(final Runnable4E<XPathException, PermissionDeniedException, EXistException, IOException> runnable) throws XPathException, PermissionDeniedException, EXistException, IOException {
         try {
             runnable.run();
-        } catch (final XPathException e) {
+        } catch (final XPathException | IOException e) {
             if (e.getCause() != null && e.getCause() instanceof PermissionDeniedException) {
                 throw (PermissionDeniedException)e.getCause();
             } else {
@@ -185,7 +182,7 @@ class SecurityManagerTestUtil {
         }
     }
 
-    static void extractPermissionDeniedWithAuth(final Runnable4E<XPathException, AuthenticationException, PermissionDeniedException, EXistException> runnable) throws XPathException, AuthenticationException, PermissionDeniedException, EXistException {
+    static void extractPermissionDeniedWithAuth(final Runnable5E<XPathException, AuthenticationException, PermissionDeniedException, EXistException, IOException> runnable) throws XPathException, AuthenticationException, PermissionDeniedException, EXistException, IOException {
         try {
             runnable.run();
         } catch (final XPathException e) {

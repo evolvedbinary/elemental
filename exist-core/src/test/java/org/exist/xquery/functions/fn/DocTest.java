@@ -46,11 +46,13 @@
 package org.exist.xquery.functions.fn;
 
 import com.evolvedbinary.j8fu.Either;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
@@ -177,7 +179,7 @@ public class DocTest {
     }
 
     @Test
-    public void doc_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void doc_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -185,12 +187,13 @@ public class DocTest {
         final String query = "fn:doc('" + docUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -209,7 +212,7 @@ public class DocTest {
     }
 
     @Test
-    public void doc_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void doc_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -218,13 +221,18 @@ public class DocTest {
         final String query = "fn:doc('" + docRelativeUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e.getMessage(), e);
+                }
+                xqueryContext.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -243,7 +251,7 @@ public class DocTest {
     }
 
     @Test
-    public void docAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void docAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -251,12 +259,13 @@ public class DocTest {
         final String query = "fn:doc-available('" + docUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
+
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -265,7 +274,7 @@ public class DocTest {
     }
 
     @Test
-    public void docAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void docAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -274,13 +283,17 @@ public class DocTest {
         final String query = "fn:doc-available('" + docRelativeUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e.getMessage(), e);
+                }
+                xqueryContext.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -289,16 +302,13 @@ public class DocTest {
     }
 
     @Test
-    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException {
+    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
         final String query = "('/db/test.xml', '/db/test/test.xml', '/db/non-existent.xml')[fn:doc-available(.)]";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(2, result.getItemCount());

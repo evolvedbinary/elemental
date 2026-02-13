@@ -55,6 +55,7 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
 import org.junit.*;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
@@ -74,21 +75,21 @@ public class GroupManagementFunctionRemoveGroupTest {
     public final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
 
     @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteDbaGroup() throws XPathException, PermissionDeniedException, EXistException {
+    public void cannotDeleteDbaGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDenied(() -> {
             xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.DBA_GROUP);
         });
     }
 
     @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteGuestGroup() throws XPathException, PermissionDeniedException, EXistException {
+    public void cannotDeleteGuestGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDenied(() -> {
             xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.GUEST_GROUP);
         });
     }
 
     @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteUnknownGroup() throws XPathException, PermissionDeniedException, EXistException {
+    public void cannotDeleteUnknownGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDenied(() -> {
             xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.UNKNOWN_GROUP);
         });

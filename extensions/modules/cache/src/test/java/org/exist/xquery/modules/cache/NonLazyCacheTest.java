@@ -47,6 +47,7 @@ package org.exist.xquery.modules.cache;
 
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -55,10 +56,12 @@ import org.exist.util.Configuration;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -82,7 +85,7 @@ public class NonLazyCacheTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void putOnNonLazilyCreatedCacheWithoutExplicitCreation() throws PermissionDeniedException, EXistException {
+    public void putOnNonLazilyCreatedCacheWithoutExplicitCreation() throws PermissionDeniedException, EXistException, IOException {
         // 1. check that the CacheModule was configured from the conf file correctly
         final Configuration configuration = existEmbeddedServer.getBrokerPool().getConfiguration();
         final Map<String, Map<String, List<Object>>> modulesParameters = (Map<String, Map<String, List<Object>>>) configuration.getProperty(XQueryContext.PROPERTY_MODULE_PARAMETERS);
@@ -101,16 +104,16 @@ public class NonLazyCacheTest {
         }
     }
 
-    private static Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException {
+    private static Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = brokerPool.getBroker();
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Sequence result = brokerPool.getXQueryService().execute(broker, query, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
 
             transaction.commit();
 
-            return result;
+            return queryResult.result;
         }
     }
 }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -31,6 +55,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
+import com.evolvedbinary.j8fu.function.BiConsumerE;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.evolvedbinary.j8fu.tuple.Tuple3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +75,6 @@ import org.exist.xquery.parser.XQueryLexer;
 import org.exist.xquery.parser.XQueryParser;
 import org.exist.xquery.parser.XQueryTreeParser;
 import org.exist.xquery.util.ExpressionDumper;
-import org.exist.xquery.util.HTTPUtils;
 import org.exist.xquery.value.Sequence;
 
 import javax.annotation.Nullable;
@@ -327,21 +352,15 @@ public class XQuery {
     }
 
     public Sequence execute(final DBBroker broker, final CompiledXQuery expression, final Sequence contextSequence) throws XPathException, PermissionDeniedException {
-    	return execute(broker, expression, contextSequence, null);
+    	return execute(broker, expression, null, contextSequence, null, true);
     }
-    
+
     public Sequence execute(final DBBroker broker, final CompiledXQuery expression, final Sequence contextSequence, final Properties outputProperties) throws XPathException, PermissionDeniedException {
-    	final XQueryContext context = expression.getContext();
-        final Sequence result = execute(broker, expression, contextSequence,  outputProperties, true);
-        
-        //TODO : move this elsewhere !
-        HTTPUtils.addLastModifiedHeader(result, context);
-    	
-        return result;
+        return execute(broker, expression, null, contextSequence,  outputProperties, true);
     }
     
     public Sequence execute(final DBBroker broker, final CompiledXQuery expression, final Sequence contextSequence, final boolean resetContext) throws XPathException, PermissionDeniedException {
-    	return execute(broker, expression, contextSequence, null, resetContext);
+    	return execute(broker, expression, null, contextSequence, null, resetContext);
     }
 
     public Sequence execute(final DBBroker broker, final CompiledXQuery expression, Sequence contextSequence, final Properties outputProperties, final boolean resetContext) throws XPathException, PermissionDeniedException {
@@ -477,6 +496,21 @@ public class XQuery {
         }
     }
 
+    /**
+     * Execute an XPath or XQuery.
+     *
+     * @param broker the database broker.
+     * @param expression the XPath or XQuery expression.
+     * @param contextSequence the context sequence to use when executing the query, or null if there is no context sequence.
+     *
+     * @return the result of the query.
+     *
+     * @throws XPathException if an error occurs during query execution.
+     * @throws PermissionDeniedException if the caller has insufficient access.
+     *
+     * @deprecated Use {@link XQueryUtil#query(DBBroker, Source, boolean, Sequence, Properties, ConsumerE, ConsumerE, BiConsumerE)} instead.
+     */
+    @Deprecated
     public Sequence execute(final DBBroker broker, final String expression, final Sequence contextSequence) throws XPathException, PermissionDeniedException {
         final XQueryContext context = new XQueryContext(broker.getBrokerPool());
         final CompiledXQuery compiled = compile(context, expression);
@@ -488,8 +522,24 @@ public class XQuery {
 //            context.runCleanupTasks();
 //        }
     }
-	
-    public Sequence execute(final DBBroker broker, File file, Sequence contextSequence) throws XPathException, IOException, PermissionDeniedException {
+
+    /**
+     * Execute an XPath or XQuery.
+     *
+     * @param broker the database broker.
+     * @param file the file containing the XPath or XQuery.
+     * @param contextSequence the context sequence to use when executing the query, or null if there is no context sequence.
+     *
+     * @return the result of the query.
+     *
+     * @throws XPathException if an error occurs during query execution.
+     * @throws IOException if an I/O error occurs.
+     * @throws PermissionDeniedException if the caller has insufficient access.
+     *
+     * @deprecated Use {@link XQueryUtil#query(DBBroker, Source, boolean, Sequence, Properties, ConsumerE, ConsumerE, BiConsumerE)} instead.
+     */
+    @Deprecated
+    public Sequence execute(final DBBroker broker, final File file, final Sequence contextSequence) throws XPathException, IOException, PermissionDeniedException {
         final XQueryContext context = new XQueryContext(broker.getBrokerPool());
         final CompiledXQuery compiled = compile(context, new FileSource(file.toPath(), true));
         return execute(broker, compiled, contextSequence);

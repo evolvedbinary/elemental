@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
@@ -71,14 +72,12 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.ManagedDocumentLock;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.Attr;
@@ -175,55 +174,32 @@ public abstract class Modification {
 	 * @throws XPathException if the XPath raises an error
 	 */
 	protected NodeList select(final DocumentSet docs) throws PermissionDeniedException, EXistException, XPathException {
-		final XQuery xquery = broker.getBrokerPool().getXQueryService();
-		final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
 		final Source source = new StringSource(selectStmt);
 
-        @Nullable CompiledXQuery compiled = null;
-		@Nullable XQueryContext context = null;
-        try {
-            compiled = pool.borrowCompiledXQuery(broker, source);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-            context.setStaticallyKnownDocuments(docs);
-            declareNamespaces(context);
+		final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+			xqueryContext.setStaticallyKnownDocuments(docs);
+			declareNamespaces(xqueryContext);
+			declareVariables(xqueryContext);
+		};
 
-            declareVariables(context);
+		final XQueryUtil.QueryResult queryResult;
+		try {
+			queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, null, null);
+		} catch (final IOException e) {
+			throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
+		}
 
-            if (compiled == null) {
-                try {
-                    compiled = xquery.compile(context, source);
-                } catch (final IOException e) {
-                    throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
+		final Sequence resultSeq = queryResult.result;
+		if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE))) {
+			throw new EXistException("select expression should evaluate to a node-set; got " +
+				Type.getTypeName(resultSeq.getItemType()));
+		}
 
-            final Sequence resultSeq = xquery.execute(broker, compiled, null);
-            if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE))) {
-                throw new EXistException("select expression should evaluate to a node-set; got " +
-                    Type.getTypeName(resultSeq.getItemType()));
-            }
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);
+		}
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);
-            }
-
-            return resultSeq.toNodeSet();
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                pool.returnCompiledXQuery(source, compiled);
-            }
-        }
+		return resultSeq.toNodeSet();
 	}
 
 	/**

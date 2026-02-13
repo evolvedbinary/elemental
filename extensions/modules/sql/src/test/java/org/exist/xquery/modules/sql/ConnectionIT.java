@@ -62,8 +62,8 @@ import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.exist.xquery.modules.sql.Util.executeQuery;
-import static org.exist.xquery.modules.sql.Util.withCompiledQuery;
+import static org.exist.xquery.XQueryUtil.executeQuery;
+import static org.exist.xquery.XQueryUtil.withCompiledQuery;
 import static org.junit.Assert.*;
 
 /**

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,14 +43,15 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
@@ -69,7 +94,7 @@ public class CollectionTest {
     }
 
     @Test
-    public void doc_dynamicallyAvailableCollection_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void doc_dynamicallyAvailableCollection_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -77,12 +102,12 @@ public class CollectionTest {
         final String query = "fn:collection('" + collectionUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableCollection(collectionUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableCollection(collectionUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());
@@ -101,7 +126,7 @@ public class CollectionTest {
     }
 
     @Test
-    public void doc_dynamicallyAvailableCollection_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void doc_dynamicallyAvailableCollection_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -110,13 +135,17 @@ public class CollectionTest {
         final String query = "fn:collection('" + collectionRelativeUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableCollection(baseUri + collectionRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e.getMessage(), e);
+                }
+                xqueryContext.addDynamicallyAvailableCollection(baseUri + collectionRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
+            final Sequence result = queryResult.result;
 
             assertFalse(result.isEmpty());
             assertEquals(1, result.getItemCount());

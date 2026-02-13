@@ -45,7 +45,6 @@
  */
 package org.exist.contentextraction.xquery;
 
-import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
@@ -60,7 +59,7 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import org.junit.*;
 import xyz.elemental.mediatype.MediaType;
 
@@ -68,9 +67,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 
-import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.exist.contentextraction.xquery.Util.executeQuery;
-import static org.exist.contentextraction.xquery.Util.withCompiledQuery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -133,17 +129,14 @@ public class ContentFunctionsTest {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final Tuple2<Integer, String> metadata = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
-                assertEquals(2, result.getItemCount());
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
 
-                return Tuple(result.itemAt(0).toJavaObject(int.class), result.itemAt(1).getStringValue());
-            });
+            assertEquals(2, queryResult.result.getItemCount());
 
             transaction.commit();
 
-            assertEquals(1, metadata._1.intValue());
-            assertEquals(MediaType.APPLICATION_PDF, metadata._2);
+            assertEquals(1, (int) queryResult.result.itemAt(0).toJavaObject(int.class));
+            assertEquals(MediaType.APPLICATION_PDF, queryResult.result.itemAt(1).getStringValue());
         }
     }
 
@@ -162,16 +155,13 @@ public class ContentFunctionsTest {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final String content = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
-                assertEquals(1, result.getItemCount());
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
 
-                return result.itemAt(0).getStringValue();
-            });
+            assertEquals(1, queryResult.result.getItemCount());
 
             transaction.commit();
 
-            assertEquals("Hello World", content);
+            assertEquals("Hello World", queryResult.result.itemAt(0).getStringValue());
         }
     }
 
@@ -191,17 +181,14 @@ public class ContentFunctionsTest {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final Tuple2<Integer, String> metadata = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
-                assertEquals(2, result.getItemCount());
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
 
-                return Tuple(result.itemAt(0).toJavaObject(int.class), result.itemAt(1).getStringValue());
-            });
+            assertEquals(2, queryResult.result.getItemCount());
 
             transaction.commit();
 
-            assertEquals(1, metadata._1.intValue());
-            assertEquals(MediaType.APPLICATION_PDF, metadata._2);
+            assertEquals(1, (int) queryResult.result.itemAt(0).toJavaObject(int.class));
+            assertEquals(MediaType.APPLICATION_PDF, queryResult.result.itemAt(1).getStringValue());
         }
     }
 }

@@ -48,16 +48,18 @@ package org.exist.security;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.EXistException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -150,13 +152,12 @@ public class XqueryApiTest extends AbstractApiSecurityTest {
     private Sequence executeQuery(final String uid, final String pwd, final String query) throws ApiException {
         try {
             final BrokerPool pool = server.getBrokerPool();
-            final XQuery xquery = pool.getXQueryService();
 
             final Subject user = pool.getSecurityManager().authenticate(uid, pwd);
             try (final DBBroker broker = pool.get(Optional.of(user))) {
-                return xquery.execute(broker, query, null);
+                return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
             }
-        } catch (final AuthenticationException | EXistException | PermissionDeniedException | XPathException e) {
+        } catch (final AuthenticationException | EXistException | IOException | PermissionDeniedException | XPathException e) {
             throw new ApiException(e.getMessage(), e);
         }
     }

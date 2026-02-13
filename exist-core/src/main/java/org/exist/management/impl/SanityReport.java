@@ -47,7 +47,6 @@ package org.exist.management.impl;
 
 import java.util.*;
 
-import javax.annotation.Nullable;
 import javax.management.*;
 
 import org.apache.logging.log4j.LogManager;
@@ -60,10 +59,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.ConsistencyCheckTask;
 import org.exist.storage.DBBroker;
 import org.exist.storage.SystemTask;
-import org.exist.storage.XQueryPool;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 
 public class SanityReport extends NotificationBroadcasterSupport implements SanityReportMXBean {
 
@@ -208,35 +204,7 @@ public class SanityReport extends NotificationBroadcasterSupport implements Sani
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getGuestSubject()))) {
 
             if (checkQueryEngine) {
-                final XQuery xquery = pool.getXQueryService();
-                final XQueryPool xqPool = pool.getXQueryPool();
-                @Nullable CompiledXQuery compiled = null;
-                @Nullable XQueryContext context = null;
-                try {
-                    compiled = xqPool.borrowCompiledXQuery(broker, TEST_XQUERY);
-                    if (compiled == null) {
-                        context = new XQueryContext(pool);
-                    } else {
-                        context = compiled.getContext();
-                        context.prepareForReuse();
-                    }
-
-                    if (compiled == null) {
-                        compiled = xquery.compile(context, TEST_XQUERY);
-                    } else {
-                        compiled.getContext().updateContext(context);
-                        context.getWatchDog().reset();
-                    }
-
-                    xquery.execute(broker, compiled, null);
-                } finally {
-                    if (context != null) {
-                        context.runCleanupTasks();
-                    }
-                    if (compiled != null) {
-                        xqPool.returnCompiledXQuery(TEST_XQUERY, compiled);
-                    }
-                }
+                XQueryUtil.query(broker, TEST_XQUERY, true, null, null, null, null, null);
             }
         } catch (final Exception e) {
             lastPingRespTime = -2;

@@ -50,6 +50,7 @@ import java.io.Reader;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+import org.exist.EXistException;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
@@ -164,11 +165,12 @@ public interface Source {
      * @param subject The subject
      * @param perm The requested permissions
      * @throws PermissionDeniedException if user has not sufficient rights
+     * @throws EXistException if an error occurs acessing the database
      *
      * @deprecated These security checks only apply to {@link DBSource} and should be done by the caller
      */
     @Deprecated
-    void validate(Subject subject, int perm) throws PermissionDeniedException;
+    void validate(Subject subject, int perm) throws PermissionDeniedException, EXistException;
 
     /**
      * Check if the source is an XQuery module. If it is, return a QName containing

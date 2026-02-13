@@ -49,11 +49,12 @@ import org.exist.EXistException;
 import org.exist.dom.memtree.ElementImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.internal.SecurityManagerImpl;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -62,6 +63,8 @@ import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
 
 import javax.xml.transform.Source;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -78,14 +81,13 @@ public class GetPermissionsTest {
      * See https://github.com/eXist-db/exist/issues/3231
      */
     @Test
-    public void getPermissionsNestedXml() throws EXistException, PermissionDeniedException, XPathException {
+    public void getPermissionsNestedXml() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query = "<outer><inner perm=\"{sm:get-permissions(xs:anyURI(\"/db\"))/sm:permission/@owner}\"/></outer>";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.getBroker()) {
 
-            final XQuery xquery = existEmbeddedServer.getBrokerPool().getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertEquals(1, result.getItemCount());
 

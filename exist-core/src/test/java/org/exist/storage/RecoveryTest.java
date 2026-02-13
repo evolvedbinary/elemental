@@ -55,6 +55,7 @@ import org.exist.collections.Collection;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.dom.DOMFile;
 import org.exist.storage.lock.Lock.LockMode;
@@ -67,7 +68,7 @@ import org.exist.util.*;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
@@ -208,9 +209,8 @@ public class RecoveryTest {
                     assertNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/'" + lastSampleName + " should not exist anymore", lockedDoc);
                 }
 
-                final XQuery xquery = pool.getXQueryService();
-                assertNotNull(xquery);
-                final Sequence seq = xquery.execute(broker, "//SPEECH[contains(LINE, 'king')]", null);
+                final String query = "//SPEECH[contains(LINE, 'king')]";
+                final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
                 assertNotNull(seq);
                 for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
                     final Item next = i.nextItem();

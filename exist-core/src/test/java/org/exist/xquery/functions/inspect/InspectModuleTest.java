@@ -50,6 +50,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.memtree.ElementImpl;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -59,7 +60,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
@@ -129,10 +130,9 @@ public class InspectModuleTest {
 
     @Ignore("https://github.com/eXist-db/exist/issues/1386")
     @Test
-    public void xqDoc_withAtSignInline() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_withAtSignInline() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final String query =
@@ -140,7 +140,7 @@ public class InspectModuleTest {
                     "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                     "/function[@name eq \"x:fun1\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertNotNull(result);
             assertEquals(1, result.getItemCount());
@@ -165,10 +165,9 @@ public class InspectModuleTest {
     }
 
     @Test
-    public void xqDoc_withParamsAndReturn() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_withParamsAndReturn() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try( final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final String query =
@@ -176,7 +175,7 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun2\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertNotNull(result);
             assertEquals(1, result.getItemCount());
@@ -203,9 +202,8 @@ public class InspectModuleTest {
     }
 
     @Test
-    public void xqDoc_multilineDesciption() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_multilineDesciption() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -214,7 +212,7 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun3\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertNotNull(result);
             assertEquals(1, result.getItemCount());
@@ -239,9 +237,8 @@ public class InspectModuleTest {
     }
 
     @Test
-    public void xqDoc_onAnnotatedFunction() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_onAnnotatedFunction() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -250,7 +247,7 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun4\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
 
             assertNotNull(result);
             assertEquals(1, result.getItemCount());
