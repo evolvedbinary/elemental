@@ -140,25 +140,27 @@ public class InspectModuleTest {
                     "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                     "/function[@name eq \"x:fun1\"]";
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("Some description.", descriptions.item(0).getFirstChild().getTextContent());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("Some description.", descriptions.item(0).getFirstChild().getTextContent());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(0, arguments.getLength());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(0, arguments.getLength());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("taxonomy[@type = \"reign\"]", returns.item(0).getFirstChild().getTextContent());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("taxonomy[@type = \"reign\"]", returns.item(0).getFirstChild().getTextContent());
+            }
 
             transaction.commit();
         }
@@ -175,27 +177,29 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun2\"]";
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("Some other description.", descriptions.item(0).getFirstChild().getNodeValue());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("Some other description.", descriptions.item(0).getFirstChild().getNodeValue());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(2, arguments.getLength());
-            assertEquals("first parameter", arguments.item(0).getFirstChild().getNodeValue());
-            assertEquals("second parameter", arguments.item(1).getFirstChild().getNodeValue());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(2, arguments.getLength());
+                assertEquals("first parameter", arguments.item(0).getFirstChild().getNodeValue());
+                assertEquals("second parameter", arguments.item(1).getFirstChild().getNodeValue());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("our result", returns.item(0).getFirstChild().getNodeValue());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("our result", returns.item(0).getFirstChild().getNodeValue());
+            }
 
             transaction.commit();
         }
@@ -212,25 +216,27 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun3\"]";
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("This is a multiline description and therefore\n spans multiple\n lines.", descriptions.item(0).getFirstChild().getNodeValue());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("This is a multiline description and therefore\n spans multiple\n lines.", descriptions.item(0).getFirstChild().getNodeValue());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(0, arguments.getLength());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(0, arguments.getLength());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+            }
 
             transaction.commit();
         }
@@ -247,31 +253,33 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun4\"]";
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("An annotated function.", descriptions.item(0).getFirstChild().getNodeValue());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("An annotated function.", descriptions.item(0).getFirstChild().getNodeValue());
 
-            final NodeList annotations = function.getElementsByTagName("annotation");
-            assertEquals(2, annotations.getLength());
-            assertEquals("public", ((Element)annotations.item(0)).getAttribute("name"));
-            assertEquals("x:path", ((Element)annotations.item(1)).getAttribute("name"));
-            assertEquals("/x/y/z", annotations.item(1).getFirstChild().getFirstChild().getNodeValue());
+                final NodeList annotations = function.getElementsByTagName("annotation");
+                assertEquals(2, annotations.getLength());
+                assertEquals("public", ((Element)annotations.item(0)).getAttribute("name"));
+                assertEquals("x:path", ((Element)annotations.item(1)).getAttribute("name"));
+                assertEquals("/x/y/z", annotations.item(1).getFirstChild().getFirstChild().getNodeValue());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(0, arguments.getLength());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(0, arguments.getLength());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+            }
 
             transaction.commit();
         }

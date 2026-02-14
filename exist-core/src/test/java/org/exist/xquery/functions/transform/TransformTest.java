@@ -239,9 +239,10 @@ public class TransformTest {
     @Test
     public void keys() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(LIST_OPS_XQUERY), false, null, null, null, null, null)) {
 
-            final Sequence sequence = XQueryUtil.query(broker, new StringSource(LIST_OPS_XQUERY), false, null, null, null, null, null).result;
+            final Sequence sequence = queryResult.result;
             assertNotNull(sequence);
 
             assertEquals(1, sequence.getItemCount());
@@ -263,8 +264,9 @@ public class TransformTest {
     @Test
     public void xslDocument() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = XQueryUtil.query(broker, new StringSource(DOCUMENT_XSLT_QUERY), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(DOCUMENT_XSLT_QUERY), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
@@ -327,8 +329,9 @@ public class TransformTest {
 
     private static void transform1(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = XQueryUtil.query(broker, new StringSource(getCountDescendantsXquery(collectionUri)), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(getCountDescendantsXquery(collectionUri)), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
@@ -379,8 +382,9 @@ public class TransformTest {
 
     private static void transform_twoNodesCountDescendants() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = XQueryUtil.query(broker, new StringSource(COUNT_DESCENDANTS_TWO_NODES_QUERY), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(COUNT_DESCENDANTS_TWO_NODES_QUERY), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());

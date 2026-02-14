@@ -182,24 +182,21 @@ public abstract class Modification {
 			declareVariables(xqueryContext);
 		};
 
-		final XQueryUtil.QueryResult queryResult;
-		try {
-			queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, null, null);
+		try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, null, null)) {
+			final Sequence resultSeq = queryResult.result;
+			if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE))) {
+				throw new EXistException("select expression should evaluate to a node-set; got " +
+					Type.getTypeName(resultSeq.getItemType()));
+			}
+
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);
+			}
+
+			return resultSeq.toNodeSet();
 		} catch (final IOException e) {
 			throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
 		}
-
-		final Sequence resultSeq = queryResult.result;
-		if (!(resultSeq.isEmpty() || Type.subTypeOf(resultSeq.getItemType(), Type.NODE))) {
-			throw new EXistException("select expression should evaluate to a node-set; got " +
-				Type.getTypeName(resultSeq.getItemType()));
-		}
-
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("found {} for select: {}", resultSeq.getItemCount(), selectStmt);
-		}
-
-		return resultSeq.toNodeSet();
 	}
 
 	/**

@@ -173,17 +173,17 @@ public class ForwardReferenceTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, testXquerySource, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, testXquerySource, false, null, null, null, null, null)) {
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    final XQuerySerializer xquerySerializer = new XQuerySerializer(broker, new Properties(), writer);
+                    xquerySerializer.serialize(queryResult.result);
+                    assertNotNull(writer.toString());
+                } catch (final SAXException e) {
+                    throw new XPathException((Expression) null, e);
+                }
 
-            try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-                final XQuerySerializer xquerySerializer = new XQuerySerializer(broker, new Properties(), writer);
-                xquerySerializer.serialize(queryResult.result);
-                assertNotNull(writer.toString());
-            } catch (final SAXException e) {
-                throw new XPathException((Expression) null, e);
+                transaction.commit();
             }
-
-            transaction.commit();
         }
     }
 }

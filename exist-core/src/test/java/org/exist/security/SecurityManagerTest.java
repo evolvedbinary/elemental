@@ -200,13 +200,17 @@ public class SecurityManagerTest {
 
     private boolean removedAccountExists(final DBBroker broker, final String username) throws XPathException, PermissionDeniedException, IOException {
         final String query = "declare namespace config='http://exist-db.org/Configuration'; collection('" + REMOVED_ACCOUNTS_URI + "')//config:account[config:name eq '" + username + "']";
-        final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-        return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
+            return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+        }
     }
 
     private boolean removedGroupExists(final DBBroker broker, final String groupName) throws XPathException, PermissionDeniedException, IOException {
         final String query = "declare namespace config='http://exist-db.org/Configuration'; collection('" + REMOVED_GROUPS_URI + "')//config:group[config:name eq '" + groupName + "']";
-        final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-        return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
+            return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+        }
     }
 }

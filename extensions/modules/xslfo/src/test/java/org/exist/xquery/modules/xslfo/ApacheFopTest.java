@@ -125,11 +125,12 @@ public class ApacheFopTest {
         final BrokerPool pool = server.getBrokerPool();
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Item pdf = queryResult.result.itemAt(0);
-            assertEquals(Type.BASE64_BINARY, pdf.getType());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Item pdf = queryResult.result.itemAt(0);
+                assertEquals(Type.BASE64_BINARY, pdf.getType());
+            }
         }
     }
 }

@@ -129,14 +129,15 @@ public class ContentFunctionsTest {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null)) {
 
-            assertEquals(2, queryResult.result.getItemCount());
+                assertEquals(2, queryResult.result.getItemCount());
 
-            transaction.commit();
+                transaction.commit();
 
-            assertEquals(1, (int) queryResult.result.itemAt(0).toJavaObject(int.class));
-            assertEquals(MediaType.APPLICATION_PDF, queryResult.result.itemAt(1).getStringValue());
+                assertEquals(1, (int) queryResult.result.itemAt(0).toJavaObject(int.class));
+                assertEquals(MediaType.APPLICATION_PDF, queryResult.result.itemAt(1).getStringValue());
+            }
         }
     }
 
@@ -155,13 +156,14 @@ public class ContentFunctionsTest {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null)) {
 
-            assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(1, queryResult.result.getItemCount());
 
-            transaction.commit();
+                transaction.commit();
 
-            assertEquals("Hello World", queryResult.result.itemAt(0).getStringValue());
+                assertEquals("Hello World", queryResult.result.itemAt(0).getStringValue());
+            }
         }
     }
 
@@ -181,14 +183,15 @@ public class ContentFunctionsTest {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null)) {
 
-            assertEquals(2, queryResult.result.getItemCount());
+                assertEquals(2, queryResult.result.getItemCount());
 
-            transaction.commit();
+                transaction.commit();
 
-            assertEquals(1, (int) queryResult.result.itemAt(0).toJavaObject(int.class));
-            assertEquals(MediaType.APPLICATION_PDF, queryResult.result.itemAt(1).getStringValue());
+                assertEquals(1, (int) queryResult.result.itemAt(0).toJavaObject(int.class));
+                assertEquals(MediaType.APPLICATION_PDF, queryResult.result.itemAt(1).getStringValue());
+            }
         }
     }
 }

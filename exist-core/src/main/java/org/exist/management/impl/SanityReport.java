@@ -204,7 +204,9 @@ public class SanityReport extends NotificationBroadcasterSupport implements Sani
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getGuestSubject()))) {
 
             if (checkQueryEngine) {
-                XQueryUtil.query(broker, TEST_XQUERY, true, null, null, null, null, null);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, TEST_XQUERY, true, null, null, null, null, null)) {
+                    // Query result is not used but must be closed
+                }
             }
         } catch (final Exception e) {
             lastPingRespTime = -2;

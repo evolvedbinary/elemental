@@ -80,9 +80,9 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject owner = pool.getSecurityManager().authenticate(USER1_NAME, USER1_NAME);
         extractPermissionDenied(() -> {
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(owner));
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(owner));
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(owner));
+            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(owner)).close();
+            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(owner)).close();
+            xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(owner)).close();
         });
     }
 
@@ -91,9 +91,9 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject admin = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         extractPermissionDenied(() -> {
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(admin));
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(admin));
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(admin));
+            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(admin)).close();
+            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(admin)).close();
+            xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(admin)).close();
         });
     }
 
@@ -109,11 +109,11 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
 
             final Group otherGroup1 = createGroup(broker, sm, OTHER_GROUP1_NAME);
             addUserToGroup(sm, user1, otherGroup1);
-            xqueryAddUserAsGroupManager(pool, USER1_NAME, OTHER_GROUP1_NAME);
+            xqueryAddUserAsGroupManager(pool, USER1_NAME, OTHER_GROUP1_NAME).close();
 
             final Group otherGroup2 = createGroup(broker, sm, OTHER_GROUP2_NAME);
             addUserToGroup(sm, user1, otherGroup2);
-            xqueryAddUserAsGroupManager(pool, USER1_NAME, OTHER_GROUP2_NAME);
+            xqueryAddUserAsGroupManager(pool, USER1_NAME, OTHER_GROUP2_NAME).close();
 
             transaction.commit();
         }

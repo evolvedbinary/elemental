@@ -1562,9 +1562,10 @@ public class PermissionsFunctionChownTest {
                 "sm:chown(xs:anyURI('" + uri.getRawCollectionPath() + "'), '" + newOwnerGroup + "'),\n" +
                 "sm:get-permissions(xs:anyURI('" + uri.getRawCollectionPath() + "'))/sm:permission/(string(@owner), string(@group))";
 
-        try (final DBBroker broker = pool.get(Optional.of(execAsUser))) {
+        try (final DBBroker broker = pool.get(Optional.of(execAsUser));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            final Sequence result = queryResult.result;
 
             assertEquals(2, result.getItemCount());
 
@@ -1593,9 +1594,10 @@ public class PermissionsFunctionChownTest {
                         "sm:chgrp(xs:anyURI('" + uri.getRawCollectionPath() + "'), '" + newGroup + "'),\n" +
                         "sm:get-permissions(xs:anyURI('" + uri.getRawCollectionPath() + "'))/sm:permission/string(@group)";
 
-        try (final DBBroker broker = pool.get(Optional.of(execAsUser))) {
+        try (final DBBroker broker = pool.get(Optional.of(execAsUser));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            final Sequence result = queryResult.result;
 
             assertEquals(1, result.getItemCount());
             assertEquals(expectedGroup, result.itemAt(0).getStringValue());

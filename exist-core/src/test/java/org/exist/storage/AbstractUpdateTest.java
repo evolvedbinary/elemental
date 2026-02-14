@@ -130,9 +130,11 @@ public abstract class AbstractUpdateTest {
             }
 
             final String query = "/products/product[last()]";
-            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                Item next = i.nextItem();
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                    final Item next = i.nextItem();
+                }
             }
         }
     }

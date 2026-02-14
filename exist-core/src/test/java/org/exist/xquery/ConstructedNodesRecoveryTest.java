@@ -261,13 +261,13 @@ public class ConstructedNodesRecoveryTest {
             
             //execute an xquery
 			final Source source = new StringSource(query);
-			final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+			try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+				final Sequence result = queryResult.result;
+				assertEquals(expectedResults.length, result.getItemCount());
 
-			final Sequence result = queryResult.result;
-	        assertEquals(expectedResults.length, result.getItemCount());
-	        
-	        for (int i = 0; i < result.getItemCount(); i++) {
-				assertEquals(expectedResults[i], (String)result.itemAt(i).getStringValue());
+				for (int i = 0; i < result.getItemCount(); i++) {
+					assertEquals(expectedResults[i], result.itemAt(i).getStringValue());
+				}
 			}
 	        
 	        //read the first test document

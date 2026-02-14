@@ -365,7 +365,9 @@ public class Deployment {
             try {
                 final Optional<ElementImpl> cleanup = findElement(repoXML, CLEANUP_ELEMENT);
                 if(cleanup.isPresent()) {
-                    runQuery(broker, null, packageDir, cleanup.get().getStringValue(), pkgName, QueryPurpose.UNDEPLOY);
+                    try (@Nullable final XQueryUtil.QueryResult queryResult = runQuery(broker, null, packageDir, cleanup.get().getStringValue(), pkgName, QueryPurpose.UNDEPLOY)) {
+                        // Query result is not used but must be closed
+                    }
                 }
 
                 final Optional<ElementImpl> target = findElement(repoXML, TARGET_COLL_ELEMENT);
@@ -404,8 +406,11 @@ public class Deployment {
             final Optional<String> setupPath = setup.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
 
             if (setupPath.isPresent()) {
-                runQuery(broker, null, packageDir, setupPath.get(), pkgName, QueryPurpose.SETUP);
-                return Optional.empty();
+                try (@Nullable final XQueryUtil.QueryResult queryResult = runQuery(broker, null, packageDir, setupPath.get(), pkgName, QueryPurpose.SETUP)) {
+                    // Query result is not used but must be closed
+
+                    return Optional.empty();
+                }
             } else {
                 // otherwise create the target collection
                 XmldbURI targetCollection = null;
@@ -473,7 +478,9 @@ public class Deployment {
                 final Optional<String> preSetupPath = preSetup.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
 
                 if(preSetupPath.isPresent()) {
-                    runQuery(broker, targetCollection, packageDir, preSetupPath.get(), pkgName, QueryPurpose.PREINSTALL);
+                    try (@Nullable final XQueryUtil.QueryResult queryResult = runQuery(broker, targetCollection, packageDir, preSetupPath.get(), pkgName, QueryPurpose.PREINSTALL)) {
+                        // Query result is not used but must be closed
+                    }
                 }
 
                 // create the group specified in the permissions element if needed
@@ -499,7 +506,9 @@ public class Deployment {
                 final Optional<String> postSetupPath = postSetup.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
 
                 if(postSetupPath.isPresent()) {
-                    runQuery(broker, targetCollection, packageDir, postSetupPath.get(), pkgName, QueryPurpose.POSTINSTALL);
+                    try (@Nullable final XQueryUtil.QueryResult queryResult = runQuery(broker, targetCollection, packageDir, postSetupPath.get(), pkgName, QueryPurpose.POSTINSTALL)) {
+                        // Query result is not used but must be closed
+                    }
                 }
 
                 // TODO: it should be safe to clean up the file system after a package
@@ -716,13 +725,13 @@ public class Deployment {
         }
     }
 
-    private Sequence runQuery(final DBBroker broker, final XmldbURI targetCollection, final Path tempDir,
+    private @Nullable XQueryUtil.QueryResult runQuery(final DBBroker broker, final XmldbURI targetCollection, final Path tempDir,
             final String fileName, final String pkgName, final QueryPurpose purpose)
             throws PackageException, IOException, XPathException {
         final Path xqueryPath = tempDir.resolve(fileName);
         if (!Files.isReadable(xqueryPath)) {
             LOG.warn("The XQuery resource specified in the {} was not found for EXPath Package: '{}'", purpose.getPurposeString(), pkgName);
-            return Sequence.EMPTY_SEQUENCE;
+            return null;
         }
 
         final Source source = new FileSource(xqueryPath, false);
@@ -755,8 +764,7 @@ public class Deployment {
         };
 
         try {
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
-            return queryResult.result;
+            return XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
         } catch (final PermissionDeniedException e) {
             throw new PackageException(e.getMessage(), e);
         }

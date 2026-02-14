@@ -650,7 +650,9 @@ public interface TransactionTestDSL {
 
                 final NodeSet nodeSet = new NewArrayNodeSet();
                 nodeSet.add(new NodeProxy(null, doc));
-                XQueryUtil.query(broker, new StringSource(xqueryUpdate), false, nodeSet, null, null, null, null);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(xqueryUpdate), false, nodeSet, null, null, null, null)) {
+                    // Query result is not used but must be closed
+                }
                 return null;
             };
         }
@@ -671,7 +673,9 @@ public interface TransactionTestDSL {
 
                 final NodeSet nodeSet = new NewArrayNodeSet();
                 nodeSet.add(new NodeProxy(null, doc));
-                XQueryUtil.query(broker, new StringSource(query), false, nodeSet, null, null, null, null);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, nodeSet, null, null, null, null)) {
+                    // Query result is not used but must be closed
+                }
                 return null;
             };
         }

@@ -110,11 +110,12 @@ public class UpdateInsertTriggersDefragTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            assertions.accept(queryResult.result);
+                assertions.accept(queryResult.result);
 
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 }

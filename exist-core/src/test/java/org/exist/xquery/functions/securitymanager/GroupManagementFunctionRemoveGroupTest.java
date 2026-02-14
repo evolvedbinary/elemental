@@ -77,21 +77,21 @@ public class GroupManagementFunctionRemoveGroupTest {
     @Test(expected = PermissionDeniedException.class)
     public void cannotDeleteDbaGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDenied(() -> {
-            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.DBA_GROUP);
+            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.DBA_GROUP).close();
         });
     }
 
     @Test(expected = PermissionDeniedException.class)
     public void cannotDeleteGuestGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDenied(() -> {
-            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.GUEST_GROUP);
+            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.GUEST_GROUP).close();
         });
     }
 
     @Test(expected = PermissionDeniedException.class)
     public void cannotDeleteUnknownGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDenied(() -> {
-            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.UNKNOWN_GROUP);
+            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.UNKNOWN_GROUP).close();
         });
     }
 

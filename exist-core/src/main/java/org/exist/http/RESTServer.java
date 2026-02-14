@@ -1386,24 +1386,25 @@ public class RESTServer {
             @Nullable final Item contextItem = extractContextItem(contextItemParam);
             final Sequence contextSequence = contextItem != null ? new ValueSequence(contextItem) : null;
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
-            // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+                // special header to indicate that the query is not returned from cache
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Found {} in {}ms.", queryResult.result.getItemCount(), queryResult.executionTime);
-            }
-
-            if (cache) {
-                final int sessionId = sessionManager.add(query, queryResult);
-                outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
-                if (!response.isCommitted()) {
-                    response.setIntHeader(SESSION_ID_HEADER, sessionId);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Found {} in {}ms.", queryResult.result.getItemCount(), queryResult.executionTime);
                 }
-            }
 
-            writeResults(response, broker, transaction, queryResult, howmany, start, typed, outputProperties, wrap);
+                if (cache) {
+                    final int sessionId = sessionManager.add(query, queryResult);
+                    outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
+                    if (!response.isCommitted()) {
+                        response.setIntHeader(SESSION_ID_HEADER, sessionId);
+                    }
+                }
+
+                writeResults(response, broker, transaction, queryResult, howmany, start, typed, outputProperties, wrap);
+            }
 
         } catch (final IOException e) {
             throw new BadRequestException(e.getMessage(), e);
@@ -1600,18 +1601,16 @@ public class RESTServer {
             HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
         };
 
-        final XQueryUtil.QueryResult queryResult;
-        try {
-            queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution);
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+
+            // Special header to indicate whether the compiled query is returned from the cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+
+            final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
+            writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, wrap);
         } catch (final IOException e) {
             throw new BadRequestException("Failed to read query from " + resource.getURI(), e);
         }
-
-        // Special header to indicate whether the compiled query is returned from the cache
-        response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
-
-        final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
-        writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, wrap);
     }
 
     /**
@@ -1661,17 +1660,15 @@ public class RESTServer {
         };
 
         // execute query
-        final XQueryUtil.QueryResult queryResult;
-        try {
-            queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution);
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+
+            writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, false);
         } catch (final IOException e) {
             throw new BadRequestException("Failed to read query from " + source.getURL(), e);
         }
-
-        // special header to indicate that the query is not returned from cache
-        response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
-
-        writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, false);
     }
 
     public void setCreatedAndLastModifiedHeaders(

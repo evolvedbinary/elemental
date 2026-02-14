@@ -126,9 +126,11 @@ public class RangeIndexUpdateTest {
             checkIndex(broker, docs, ITEM_QNAME, new StringValue("Cabinet1525.00"), 1);
 
             final String query = "//item[. = 'Chair']";
-            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             final XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);

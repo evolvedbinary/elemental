@@ -231,8 +231,8 @@ public class UserXQueryJob extends UserJob {
             }
         };
 
-        try {
-            XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+            // Query result is not used but must be closed
         } catch (final IOException e) {
             abort("Failed to read query from " + xqueryResource);
         }

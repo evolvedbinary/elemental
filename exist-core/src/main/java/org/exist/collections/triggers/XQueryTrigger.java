@@ -263,8 +263,7 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			declareExternalVariables(xqueryContext, TriggerPhase.BEFORE, event, src, dst, isCollection);
 		};
 
-		try {
-			final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreExecution, null, null);
+		try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreExecution, null, null)) {
 
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("Trigger fired for prepare in: {}", queryResult.executionTime);
@@ -296,8 +295,7 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 		};
 
 		long executionTime = -1;
-		try {
-			final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreExecution, null, null);
+		try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreExecution, null, null)) {
 			executionTime = queryResult.executionTime;
 		} catch (final XPathException | IOException | PermissionDeniedException e) {
 			LOG.error("Error during trigger finish", e);

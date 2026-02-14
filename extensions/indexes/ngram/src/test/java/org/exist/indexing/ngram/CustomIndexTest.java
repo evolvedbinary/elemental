@@ -136,14 +136,16 @@ public class CustomIndexTest {
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             	final Txn transaction = transact.beginTransaction()) {
-            
+
             checkIndex(broker, docs, "cha", 1);
             checkIndex(broker, docs, "le8", 1);
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);
@@ -224,9 +226,11 @@ public class CustomIndexTest {
             assertNotNull(xquery);
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);
@@ -340,9 +344,11 @@ public class CustomIndexTest {
             checkIndex(broker, docs, "le8", 1);
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);
@@ -400,9 +406,11 @@ public class CustomIndexTest {
             checkIndex(broker, docs, "le8", 1);
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);
@@ -452,9 +460,11 @@ public class CustomIndexTest {
             checkIndex(broker, docs, "le8", 1);
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);
@@ -489,19 +499,25 @@ public class CustomIndexTest {
             checkIndex(broker, docs, "le8", 1);
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "//section[ngram:contains(para, '123')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "//section[ngram:contains(para, '123')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             transact.commit(transaction);
         }
@@ -515,9 +531,11 @@ public class CustomIndexTest {
             final Txn transaction = transact.beginTransaction()) {
 
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             checkIndex(broker, docs, "cha", 1);
             checkIndex(broker, docs, "le8", 1);
@@ -530,9 +548,11 @@ public class CustomIndexTest {
             checkIndex(broker, docs, "cha", 0);
 
             query = "//item[ngram:contains(., 'cha')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
             transact.commit(transaction);
         }
@@ -543,24 +563,32 @@ public class CustomIndexTest {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query = "//item[ngram:contains(., 'cha')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "//section[ngram:contains(*, '123')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "//section[ngram:contains(para, '123')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "//*[ngram:contains(., '567')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
         }
     }
@@ -571,24 +599,32 @@ public class CustomIndexTest {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query = "util:index-key-occurrences(/test/item, 'cha', 'ngram-index')";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "util:index-key-occurrences(/test/item, 'le8', 'ngram-index')";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "util:index-key-documents(/test/item, 'le8', 'ngram-index')";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "util:index-key-documents(/test/item, 'le8', 'ngram-index')";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             String queryBody =
                 "declare function local:callback($key as item(), $data as xs:int+)\n" +
@@ -601,21 +637,23 @@ public class CustomIndexTest {
                     "\n";
 
             query = queryBody + "util:index-keys(/test/item, \'\', util:function(xs:QName(\'local:callback\'), 2), 1000, 'ngram-index')";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            //TODO : check cardinality
-            try (final StringBuilderWriter out = new StringBuilderWriter()) {
-                Properties props = new Properties();
-                props.setProperty(OutputKeys.INDENT, "yes");
-                SAXSerializer serializer = new SAXSerializer(out, props);
-                serializer.startDocument();
-                for (SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                    Item next = i.nextItem();
-                    next.toSAX(broker, serializer, props);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                //TODO : check cardinality
+                try (final StringBuilderWriter out = new StringBuilderWriter()) {
+                    Properties props = new Properties();
+                    props.setProperty(OutputKeys.INDENT, "yes");
+                    SAXSerializer serializer = new SAXSerializer(out, props);
+                    serializer.startDocument();
+                    for (SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                        Item next = i.nextItem();
+                        next.toSAX(broker, serializer, props);
+                    }
+                    serializer.endDocument();
                 }
-                serializer.endDocument();
+                //TODO : check content
             }
-            //TODO : check content
 
 
         }

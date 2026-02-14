@@ -95,13 +95,14 @@ public class FunUnparsedTextTest {
                 xqueryContext.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertEquals(Type.STRING, result.itemAt(0).getType());
-            assertEquals(text, result.itemAt(0).getStringValue());
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertEquals(Type.STRING, result.itemAt(0).getType());
+                assertEquals(text, result.itemAt(0).getStringValue());
+            }
         }
     }
 
@@ -125,13 +126,14 @@ public class FunUnparsedTextTest {
                 }
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertEquals(Type.STRING, result.itemAt(0).getType());
-            assertEquals(text, result.itemAt(0).getStringValue());
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertEquals(Type.STRING, result.itemAt(0).getType());
+                assertEquals(text, result.itemAt(0).getStringValue());
+            }
         }
     }
 
@@ -149,12 +151,13 @@ public class FunUnparsedTextTest {
                 xqueryContext.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8)), charset));
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+            }
         }
     }
 
@@ -178,12 +181,13 @@ public class FunUnparsedTextTest {
                 }
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+            }
         }
     }
 
@@ -200,8 +204,9 @@ public class FunUnparsedTextTest {
                 xqueryContext.addDynamicallyAvailableTextResource(textUri, UTF_8, (broker2, transaction, uri, charset) -> new InputStreamReader(null, charset));
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
+            }
         }
     }
 }

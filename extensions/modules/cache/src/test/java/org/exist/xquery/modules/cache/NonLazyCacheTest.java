@@ -57,7 +57,6 @@ import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryUtil;
-import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -96,15 +95,16 @@ public class NonLazyCacheTest {
 
         // 2. try and put on a cache that can't be lazing created (due to conf file setting)
         try {
-            executeQuery("cache:put('non-lazy-foo', 'bar', 'baz1')");
-            fail("Should not be able to lazily create a cache when lazy creation is disabled");
+            try (final XQueryUtil.QueryResult queryResult = executeQuery("cache:put('non-lazy-foo', 'bar', 'baz1')")) {
+                fail("Should not be able to lazily create a cache when lazy creation is disabled");
+            }
         } catch (final XPathException e) {
             final ErrorCodes.ErrorCode errorCode = e.getErrorCode();
             assertEquals("Expected lazy creation disabled error", CacheModule.CacheModuleErrorCode.LAZY_CREATION_DISABLED.getErrorCode(), errorCode);
         }
     }
 
-    private static Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    private static XQueryUtil.QueryResult executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = brokerPool.getBroker();
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
@@ -113,7 +113,7 @@ public class NonLazyCacheTest {
 
             transaction.commit();
 
-            return queryResult.result;
+            return queryResult;
         }
     }
 }

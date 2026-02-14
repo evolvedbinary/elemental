@@ -124,29 +124,31 @@ public class DatabaseResources {
      * @param   sequence  Result of query.
      * @return  String containing representation of 1st entry of sequence.
      */
-    public String getFirstResult(Sequence sequence){
+    public String getFirstResult(final Sequence sequence) {
         String result = null;
-        
-        try {
-            final SequenceIterator i = sequence.iterate();
-            if(i.hasNext()){
-                result= i.nextItem().getStringValue();
 
-                LOGGER.debug("Single query result: '{}'.", result);
-                
-            } else {
-                LOGGER.debug("No query result.");
+        if (sequence != null) {
+            try {
+                final SequenceIterator i = sequence.iterate();
+                if (i.hasNext()) {
+                    result = i.nextItem().getStringValue();
+
+                    LOGGER.debug("Single query result: '{}'.", result);
+
+                } else {
+                    LOGGER.debug("No query result.");
+                }
+
+            } catch (final XPathException ex) {
+                LOGGER.error("XQuery issue ", ex);
             }
-            
-        } catch (final XPathException ex) {
-            LOGGER.error("XQuery issue ", ex);
         }
         
         return result;
     }
     
     
-    public @Nullable Sequence executeQuery(final String queryPath, final Map<String,String> params, final Subject user){
+    public @Nullable XQueryUtil.QueryResult executeQuery(final String queryPath, final Map<String,String> params, final Subject user){
         @Nullable final String namespace = params.get(TARGETNAMESPACE);
         @Nullable final String publicId = params.get(PUBLICID);
         @Nullable final String catalogPath = params.get(CATALOG);
@@ -177,9 +179,8 @@ public class DatabaseResources {
             };
 
             final Source source = new ClassLoaderSource(queryPath);
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, null, null);
-            return queryResult.result;
-            
+            return XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, null, null);
+
         } catch (final EXistException | XPathException | IOException | PermissionDeniedException ex) {
             LOGGER.error("Problem executing XQuery: {}", ex.getMessage(), ex);
             return null;
@@ -211,9 +212,9 @@ public class DatabaseResources {
         params.put(COLLECTION, collection);
         params.put(TARGETNAMESPACE, targetNamespace);
         
-        final Sequence result = executeQuery(FIND_XSD, params, user );
-        
-        return getFirstResult(result);
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(FIND_XSD, params, user)) {
+            return getFirstResult(queryResult.result);
+        }
     }
     
     public String findCatalogWithDTD(String collection, String publicId, Subject user){
@@ -225,10 +226,10 @@ public class DatabaseResources {
         final Map<String,String> params = new HashMap<>();
         params.put(COLLECTION, collection);
         params.put(PUBLICID, publicId);
-        
-        final Sequence result = executeQuery(FIND_CATALOGS_WITH_DTD, params, user );
-        
-        return getFirstResult(result);
+
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(FIND_CATALOGS_WITH_DTD, params, user)) {
+            return getFirstResult(queryResult.result);
+        }
     }
     
 }

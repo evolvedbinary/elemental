@@ -106,23 +106,29 @@ public class XQueryUpdateTest {
             }
 
             query = "/products";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), 1);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
             query = "//product";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
 
             query = "//product[price > 0.0]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
@@ -147,34 +153,48 @@ public class XQueryUpdateTest {
             }
 
             query = "/products";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), 1);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
+            }
 
-                query = "//product";
-                seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
 
-                query = "//product[@name = 'n20']";
-                seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            query = "//product[@name = 'n20']";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(1, seq.getItemCount());
+            }
 
-                store(broker, "attribs.xml", "<test attr1='aaa' attr2='bbb'>ccc</test>");
-                query = "update insert attribute attr1 { 'eee' } into /test";
+            store(broker, "attribs.xml", "<test attr1='aaa' attr2='bbb'>ccc</test>");
+            query = "update insert attribute attr1 { 'eee' } into /test";
 
-                //testing duplicate attribute ...
-                XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            //testing duplicate attribute ...
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-                query = "doc('" + TEST_COLLECTION + "/attribs.xml')/test[@attr1 = 'eee']";
-                seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            query = "doc('" + TEST_COLLECTION + "/attribs.xml')/test[@attr1 = 'eee']";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(1, seq.getItemCount());
-                serializer.serialize((NodeValue) seq.itemAt(0));
-
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
         }
     }
@@ -193,11 +213,15 @@ public class XQueryUpdateTest {
                             "       </product>\n" +
                             "   into /products";
 
-            XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query =
                 "   declare variable $i external;\n" +
@@ -216,23 +240,29 @@ public class XQueryUpdateTest {
             }
 
             query = "/products";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), 1);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
             query = "//product";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            }
 
             query = "//product[price > 0.0]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
@@ -250,11 +280,15 @@ public class XQueryUpdateTest {
                             "       </product>\n" +
                             "   into /products";
 
-            XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query =
                 "   declare variable $i external;\n" +
@@ -273,23 +307,29 @@ public class XQueryUpdateTest {
             }
 
             query = "/products";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), 1);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
             query = "//product";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            }
 
             query = "//product[price > 0.0]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
@@ -306,48 +346,68 @@ public class XQueryUpdateTest {
             	"for $prod at $i in //product return\n" +
                 "	update value $prod/description\n" +
                 "	with 'Updated Description ' || $i";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "count(//product[starts-with(description, 'Updated')])";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, (int)seq.itemAt(0).toJavaObject(int.class));
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, (int)seq.itemAt(0).toJavaObject(int.class));
+            }
 
             for (int i = 1; i <= ITEMS_TO_APPEND; i++) {
                 query = "//product[description eq 'Updated Description " + i + "']";
-                seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-                assertEquals(1, seq.getItemCount());
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertEquals(1, seq.getItemCount());
+                }
             }
 
             query = "//product[stock cast as xs:double gt 400]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(459, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(459, seq.getItemCount());
+            }
 
             query = "//product[starts-with(stock, '401')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "/products";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "//product[@num cast as xs:integer eq 3]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query = "/products";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query =
                     "declare option exist:output-size-limit '-1';\n" +
                             "for $prod in //product return\n" +
                             "	update value $prod/stock\n" +
                             "	with (<local>10</local>,<external>1</external>)";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product/stock/external[. cast as xs:integer eq 1]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
@@ -362,11 +422,15 @@ public class XQueryUpdateTest {
         	String query =
         		"for $prod in //product return\n" +
         		"	update delete $prod\n";
-        	Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        	try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
         	query = "//product";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-        	assertEquals(seq.getItemCount(), 0);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 0);
+            }
 
         }
     }
@@ -382,20 +446,28 @@ public class XQueryUpdateTest {
             String query =
             	"for $prod in //product return\n" +
             	"	update rename $prod/description as 'desc'\n";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product/desc";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
             query =
             	"for $prod in //product return\n" +
             	"	update rename $prod/@num as 'count'\n";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product/@count";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
         }
     }
@@ -411,29 +483,41 @@ public class XQueryUpdateTest {
             String query =
             	"for $prod in //product return\n" +
             	"	update replace $prod/description with <desc>An updated description.</desc>\n";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product/desc";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
             query =
             	"for $prod in //product return\n" +
             	"	update replace $prod/@num with '1'\n";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product/@num";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
             query =
             	"for $prod in //product return\n" +
             	"	update replace $prod/desc/text() with 'A new update'\n";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
             query = "//product[starts-with(desc, 'A new')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
         }
     }
 
@@ -452,7 +536,9 @@ public class XQueryUpdateTest {
                     "   xs:int(/progress/@done)\n" +
                     ")";
 
-            XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
         }
     }
 
@@ -473,19 +559,23 @@ public class XQueryUpdateTest {
             }
 
             query = "/products";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(seq.getItemCount(), 1);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
             query = "//product";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
@@ -500,12 +590,15 @@ public class XQueryUpdateTest {
                 "let $attrib := <Value f='ATTRIB VALUE'/>/@* "+
                 "return update insert $attrib into $node";
 
-            XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
 			query = "doc('/db/insertAttribDoc.xml')/element()[@f eq 'ATTRIB VALUE']";
-			Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-
-			assertFalse(result.isEmpty());
+			try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
+                assertFalse(result.isEmpty());
+            }
         }
     }
 

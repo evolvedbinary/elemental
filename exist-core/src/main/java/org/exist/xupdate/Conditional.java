@@ -106,29 +106,26 @@ public class Conditional extends Modification {
             declareVariables(xqueryContext);
         };
 
-        final XQueryUtil.QueryResult queryResult;
-        try {
-            queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+            final Sequence seq = queryResult.result;
+            if (seq.effectiveBooleanValue()) {
+                long mods = 0;
+                for (final Modification modification : modifications) {
+                    mods += modification.process(transaction);
+                    broker.flush();
+                }
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{} modifications processed.", mods);
+                }
+
+                return mods;
+
+            } else {
+                return 0;
+            }
         } catch (final IOException e) {
             throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
-        }
-
-        final Sequence seq = queryResult.result;
-        if (seq.effectiveBooleanValue()) {
-            long mods = 0;
-            for (final Modification modification : modifications) {
-                mods += modification.process(transaction);
-                broker.flush();
-            }
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{} modifications processed.", mods);
-            }
-
-            return mods;
-
-        } else {
-            return 0;
         }
 	}
 

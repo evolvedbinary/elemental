@@ -83,8 +83,9 @@ public class AccountMetadataFunctionsTest {
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:get-account-metadata('" + USER1_UID + "', xs:anyURI('http://axschema.org/namePerson'))";
 
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertNotNull(result);
             assertEquals(USER1_NAME, result.itemAt(0).getStringValue());
         }
@@ -134,8 +135,9 @@ public class AccountMetadataFunctionsTest {
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:get-account-metadata('" + USER1_UID + "', xs:anyURI('http://axschema.org/namePerson'))";
 
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertNotNull(result);
             assertEquals(USER1_NAME, result.itemAt(0).getStringValue());
         }

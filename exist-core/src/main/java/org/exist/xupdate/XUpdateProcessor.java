@@ -514,29 +514,32 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 					if (select == null) {
 						throw new SAXException("value-of requires a select attribute");
 					}
-					final Sequence seq = processQuery(select);
-					if (LOG.isDebugEnabled()) {
-						LOG.debug("Found {} items for value-of", seq.getItemCount());
-					}
-					Item item;
-					try {
-						for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-							item = i.nextItem();
-							if (Type.subTypeOf(item.getType(), Type.NODE)) {
-								final Node node = NodeSetHelper.copyNode(doc, ((NodeValue) item).getNode());
-								final Element last = stack.peek();
-								if (last == null) {
-									contents.add(node);
-								} else {
-									last.appendChild(node);
-								}
-							} else {
-								final String value = item.getStringValue();
-								characters(value.toCharArray(), 0, value.length());
-							}
+
+					try (final XQueryUtil.QueryResult queryResult = processQuery(select)) {
+						final Sequence seq = queryResult.result;
+						if (LOG.isDebugEnabled()) {
+							LOG.debug("Found {} items for value-of", seq.getItemCount());
 						}
-					} catch (final XPathException e) {
-						throw new SAXException(e.getMessage(), e);
+
+						try {
+							for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+								final Item item = i.nextItem();
+								if (Type.subTypeOf(item.getType(), Type.NODE)) {
+									final Node node = NodeSetHelper.copyNode(doc, ((NodeValue) item).getNode());
+									final Element last = stack.peek();
+									if (last == null) {
+										contents.add(node);
+									} else {
+										last.appendChild(node);
+									}
+								} else {
+									final String value = item.getStringValue();
+									characters(value.toCharArray(), 0, value.length());
+								}
+							}
+						} catch (final XPathException e) {
+							throw new SAXException(e.getMessage(), e);
+						}
 					}
 					break;
 			}
@@ -737,19 +740,20 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
             LOG.debug("Creating variable {} as {}", name, select);
         }
 		
-		final Sequence result = processQuery(select);
-		
-		if (LOG.isDebugEnabled()) {
-            LOG.debug("Found {} for variable {}", result.getItemCount(), name);
-        }
+		try (final XQueryUtil.QueryResult queryResult = processQuery(select)) {
+			final Sequence result = queryResult.result;
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Found {} for variable {}", result.getItemCount(), name);
+			}
 
-        if (variables == null) {
-            variables = new Object2ObjectRBTreeMap<>();
-        }
-		variables.put(name, result);
+			if (variables == null) {
+				variables = new Object2ObjectRBTreeMap<>();
+			}
+			variables.put(name, result);
+		}
 	}
 	
-	private Sequence processQuery(final String select) throws SAXException {
+	private XQueryUtil.QueryResult processQuery(final String select) throws SAXException {
 
         try {
 			final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
@@ -774,8 +778,8 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 				}
 			};
 
-			final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(select), false, null, null, setupXqueryContextPreCompilation, null, null);
-			return queryResult.result;
+			return XQueryUtil.query(broker, new StringSource(select), false, null, null, setupXqueryContextPreCompilation, null, null);
+
 		} catch (final IOException | PermissionDeniedException | XPathException e) {
 			throw new SAXException(e);
 		}

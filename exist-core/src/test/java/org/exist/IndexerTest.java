@@ -216,9 +216,10 @@ public class IndexerTest {
     private String store_and_retrieve_ws_mixed_content_value(final boolean preserve, final String typeXml, final String typeXquery) throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
 		store_preserve_ws_mixed_content_value(preserve, typeXml);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(typeXquery), false, null, null, null, null, null)) {
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(typeXquery), false, null, null, null, null, null).result;
+            final Sequence result = queryResult.result;
             try (final StringBuilderWriter out = new StringBuilderWriter()) {
 				final Properties props = new Properties();
 				props.setProperty(OutputKeys.INDENT, "yes");

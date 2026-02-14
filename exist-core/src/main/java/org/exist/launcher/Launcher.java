@@ -707,15 +707,17 @@ public class Launcher extends Observable implements Observer {
             try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
                 final String query = "repo:list()";
-                final Sequence pkgs = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-                for (final SequenceIterator i = pkgs.iterate(); i.hasNext(); ) {
-                    final ExistRepository.Notification notification = new ExistRepository.Notification(ExistRepository.Action.INSTALL, i.nextItem().getStringValue());
-                    final Optional<ExistRepository> expathRepo = pool.getExpathRepo();
-                    if (expathRepo.isPresent()) {
-                        update(expathRepo.get(), notification);
-                        utilityPanel.update(expathRepo.get(), notification);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence pkgs = queryResult.result;
+                    for (final SequenceIterator i = pkgs.iterate(); i.hasNext(); ) {
+                        final ExistRepository.Notification notification = new ExistRepository.Notification(ExistRepository.Action.INSTALL, i.nextItem().getStringValue());
+                        final Optional<ExistRepository> expathRepo = pool.getExpathRepo();
+                        if (expathRepo.isPresent()) {
+                            update(expathRepo.get(), notification);
+                            utilityPanel.update(expathRepo.get(), notification);
+                        }
+                        expathRepo.orElseThrow(() -> new EXistException("EXPath repository is not available."));
                     }
-                    expathRepo.orElseThrow(() -> new EXistException("EXPath repository is not available."));
                 }
             }
         } catch (final EXistException | IOException | XPathException | PermissionDeniedException e) {

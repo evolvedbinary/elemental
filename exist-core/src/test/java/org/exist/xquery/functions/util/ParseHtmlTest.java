@@ -75,8 +75,9 @@ public class ParseHtmlTest {
     public void parseHtml() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query = "util:parse-html(\"<p>hello <img src='1.jpg'></p>\")";
 
-        try (final DBBroker broker = server.getBrokerPool().getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = server.getBrokerPool().getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertTrue(result.itemAt(0) instanceof DocumentImpl);
 

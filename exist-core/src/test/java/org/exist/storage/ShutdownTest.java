@@ -104,9 +104,11 @@ public class ShutdownTest {
                 }
 
                 final String query = "//SPEECH[contains(LINE, 'love')]";
-                final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-                assertNotNull(result);
-                assertEquals(187, result.getItemCount());
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence result = queryResult.result;
+                    assertNotNull(result);
+                    assertEquals(187, result.getItemCount());
+                }
 
                 transact.commit(transaction);
             }

@@ -165,9 +165,10 @@ public class CleanupTest {
     @Test
     public void resetStateOfInlineFunc() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(TEST_INLINE), false, Sequence.EMPTY_SEQUENCE, null, null, null, null)) {
             // execute query to get a function item
-            final Sequence result = XQueryUtil.query(broker, new StringSource(TEST_INLINE), false, Sequence.EMPTY_SEQUENCE, null, null, null, null).result;
+            final Sequence result = queryResult.result;
             assertEquals(result.getItemCount(), 1);
             final FunctionCall call = ((FunctionReference)result.itemAt(0)).getCall();
             // closure variables are set when function item is created, but should be cleared after query

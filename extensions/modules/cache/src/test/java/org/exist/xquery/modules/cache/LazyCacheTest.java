@@ -56,7 +56,6 @@ import org.exist.util.Configuration;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryUtil;
-import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -94,17 +93,19 @@ public class LazyCacheTest {
         assertEquals("true", enableLazyCreation.get(0).toString());
 
         // 2. try and put on a cache that can be lazing created (due to conf file setting)
-        Sequence result = executeQuery("cache:put('lazy-foo', 'bar', 'baz1')");
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        try (final XQueryUtil.QueryResult queryResult = executeQuery("cache:put('lazy-foo', 'bar', 'baz1')")) {
+            assertNotNull(queryResult.result);
+            assertTrue(queryResult.result.isEmpty());
+        }
 
-        result = executeQuery("cache:put('lazy-foo', 'bar', 'baz2')");
-        assertNotNull(result);
-        assertEquals(1, result.getItemCount());
-        assertEquals("baz1", result.itemAt(0).getStringValue());
+        try (final XQueryUtil.QueryResult queryResult = executeQuery("cache:put('lazy-foo', 'bar', 'baz2')")) {
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            assertEquals("baz1", queryResult.result.itemAt(0).getStringValue());
+        }
     }
 
-    private static Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    private static XQueryUtil.QueryResult executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = brokerPool.getBroker();
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
@@ -113,7 +114,7 @@ public class LazyCacheTest {
 
             transaction.commit();
 
-            return queryResult.result;
+            return queryResult;
         }
     }
 }

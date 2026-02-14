@@ -136,8 +136,9 @@ public class XQueryDeclareContextItemTest {
                 ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
@@ -154,8 +155,9 @@ public class XQueryDeclareContextItemTest {
                 "(/) instance of document-node()";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(true, result.effectiveBooleanValue());
         }
@@ -169,8 +171,9 @@ public class XQueryDeclareContextItemTest {
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
@@ -184,8 +187,9 @@ public class XQueryDeclareContextItemTest {
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, new IntegerValue(3), null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, new IntegerValue(3), null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
@@ -199,8 +203,9 @@ public class XQueryDeclareContextItemTest {
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
         }
@@ -214,8 +219,9 @@ public class XQueryDeclareContextItemTest {
                         ". + 4";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, new IntegerValue(20), null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, new IntegerValue(20), null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(24, (int)result.itemAt(0).toJavaObject(int.class));
         }
@@ -239,9 +245,11 @@ public class XQueryDeclareContextItemTest {
 
             final ElementImpl elem = (ElementImpl)builder.getDocument().getDocumentElement();
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, elem, null, null, null, null).result;
-            assertEquals(1, result.getItemCount());
-            assertEquals("<wrap><Envelope xmlns=\"http://www.w3.org/2003/05/soap-envelope\"/></wrap>", serialize(broker, (NodeValue)result.itemAt(0)));
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, elem, null, null, null, null)) {
+                final Sequence result = queryResult.result;
+                assertEquals(1, result.getItemCount());
+                assertEquals("<wrap><Envelope xmlns=\"http://www.w3.org/2003/05/soap-envelope\"/></wrap>", serialize(broker, (NodeValue) result.itemAt(0)));
+            }
         }
     }
 
@@ -254,8 +262,9 @@ public class XQueryDeclareContextItemTest {
                         "<wrap>{.}</wrap>";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals("<wrap><log xmlns=\"http://syslog\">some-event</log></wrap>", serialize(broker, (NodeValue)result.itemAt(0)));
         }

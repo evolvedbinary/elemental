@@ -53,7 +53,6 @@ import org.exist.storage.DBBroker;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
-import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -87,14 +86,15 @@ public class HttpClientTest {
                 "return\n" +
                 "    $str";
 
-        final Sequence result = executeQuery(query);
-        assertEquals(1, result.getItemCount());
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(query)) {
+            assertEquals(1, queryResult.result.getItemCount());
+        }
     }
 
-    private Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    private XQueryUtil.QueryResult executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = brokerPool.getBroker()) {
-            return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+             return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
         }
     }
 
