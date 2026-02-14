@@ -585,11 +585,12 @@ public class SendEmailIT {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
 
-            transaction.commit();
+                transaction.commit();
 
-            assertTrue(queryResult.result.itemAt(0).toJavaObject(boolean.class));
+                assertTrue(queryResult.result.itemAt(0).toJavaObject(boolean.class));
+            }
         }
 
         // check the SMTP server received the email
@@ -664,7 +665,9 @@ public class SendEmailIT {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute query
-            XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // query result not used, but must be closed
+            }
 
             transaction.commit();
         }

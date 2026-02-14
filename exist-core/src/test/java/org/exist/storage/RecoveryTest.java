@@ -210,11 +210,14 @@ public class RecoveryTest {
                 }
 
                 final String query = "//SPEECH[contains(LINE, 'king')]";
-                final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-                assertNotNull(seq);
-                for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                    final Item next = i.nextItem();
-                    final String value = serializer.serialize((NodeValue) next);
+
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertNotNull(seq);
+                    for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                        final Item next = i.nextItem();
+                        final String value = serializer.serialize((NodeValue) next);
+                    }
                 }
 
             } finally {

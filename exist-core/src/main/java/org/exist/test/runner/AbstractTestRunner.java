@@ -59,7 +59,6 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
-import org.exist.xquery.value.Sequence;
 import org.junit.runner.Runner;
 
 import java.io.IOException;
@@ -87,7 +86,7 @@ public abstract class AbstractTestRunner extends Runner {
         this.parallel = parallel;
     }
 
-    protected static Sequence executeQuery(final BrokerPool brokerPool, final Source source, final List<Function<XQueryContext, Tuple2<String, Object>>> externalVariableBindings) throws EXistException, PermissionDeniedException, XPathException, IOException, DatabaseConfigurationException {
+    protected static void executeQuery(final BrokerPool brokerPool, final Source source, final List<Function<XQueryContext, Tuple2<String, Object>>> externalVariableBindings) throws EXistException, PermissionDeniedException, XPathException, IOException, DatabaseConfigurationException {
 
         final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
             // Setup paths in the context
@@ -112,8 +111,10 @@ public abstract class AbstractTestRunner extends Runner {
 
         final SecurityManager securityManager = requireNonNull(brokerPool.getSecurityManager(), "securityManager is null");
 
-        try (final DBBroker broker = brokerPool.get(Optional.of(securityManager.getSystemSubject()))) {
-            return XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null).result;
+        try (final DBBroker broker = brokerPool.get(Optional.of(securityManager.getSystemSubject()));
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+
+            // Query result is not used but must be closed
         }
     }
 

@@ -128,8 +128,9 @@ public class EnforceIndexUseTest {
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            assertEquals(expectedSearchCount, queryResult.result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                assertEquals(expectedSearchCount, queryResult.result.getItemCount());
+            }
         }
     }
 

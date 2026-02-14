@@ -149,8 +149,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
 
             transaction.commit();
         }
@@ -166,8 +167,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
 
             transaction.commit();
         }
@@ -183,8 +185,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();
@@ -208,8 +211,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();
@@ -233,8 +237,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-                final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+                final Txn transaction = pool.getTransactionManager().beginTransaction();
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();

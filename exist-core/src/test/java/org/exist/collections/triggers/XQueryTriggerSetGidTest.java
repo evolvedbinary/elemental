@@ -201,15 +201,17 @@ public class XQueryTriggerSetGidTest {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
              final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryBeforeRealGroup), false, null, null, null, null, null);
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            assertEquals(GUEST_GROUP, queryResult.result.itemAt(0).getStringValue());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryBeforeRealGroup), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(GUEST_GROUP, queryResult.result.itemAt(0).getStringValue());
+            }
 
-            queryResult = XQueryUtil.query(broker, new StringSource(queryBeforeEffectiveGroup), false, null, null, null, null, null);
-            assertNotNull(queryResult.result);
-            assertEquals(2, queryResult.result.getItemCount());
-            assertEquals(DBA_GROUP + "," + GUEST_GROUP, queryResult.result.itemAt(0).getStringValue() + "," + queryResult.result.itemAt(1).getStringValue());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryBeforeEffectiveGroup), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(2, queryResult.result.getItemCount());
+                assertEquals(DBA_GROUP + "," + GUEST_GROUP, queryResult.result.itemAt(0).getStringValue() + "," + queryResult.result.itemAt(1).getStringValue());
+            }
 
             transaction.commit();
         }
@@ -225,15 +227,17 @@ public class XQueryTriggerSetGidTest {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
              final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryAfterRealGroup), false, null, null, null, null, null);
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            assertEquals(GUEST_GROUP, queryResult.result.itemAt(0).getStringValue());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryAfterRealGroup), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(GUEST_GROUP, queryResult.result.itemAt(0).getStringValue());
+            }
 
-            queryResult = XQueryUtil.query(broker, new StringSource(queryAfterEffectiveGroup), false, null, null, null, null, null);
-            assertNotNull(queryResult.result);
-            assertEquals(2, queryResult.result.getItemCount());
-            assertEquals(DBA_GROUP + "," + GUEST_GROUP, queryResult.result.itemAt(0).getStringValue() + "," + queryResult.result.itemAt(1).getStringValue());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryAfterEffectiveGroup), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(2, queryResult.result.getItemCount());
+                assertEquals(DBA_GROUP + "," + GUEST_GROUP, queryResult.result.itemAt(0).getStringValue() + "," + queryResult.result.itemAt(1).getStringValue());
+            }
 
             transaction.commit();
         }

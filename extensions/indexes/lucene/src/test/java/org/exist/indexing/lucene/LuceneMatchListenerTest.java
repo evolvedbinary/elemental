@@ -198,39 +198,49 @@ public class LuceneMatchListenerTest {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query = "//para[ft:query(., 'mixed')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> content.</para>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> content.</para>"));
+            }
 
             query = "//para[ft:query(., '+nested +inner +elements')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> " + MATCH_START + "inner" + MATCH_END + "</note> " + MATCH_START + "elements" + MATCH_END + ".</para>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> " + MATCH_START + "inner" + MATCH_END + "</note> " + MATCH_START + "elements" + MATCH_END + ".</para>"));
+            }
 
             query = "//para[ft:query(term, 'term')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            }
 
             query = "//para[ft:query(., '+double +match')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para>"));
+            }
 
             query = "for $para in //para[ft:query(., '+double +match')] return <hit>{$para}</hit>";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<hit><para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para></hit>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<hit><para>" + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " + MATCH_START + "match" + MATCH_END + "</para></hit>"));
+            }
         }
     }
 
@@ -240,18 +250,22 @@ public class LuceneMatchListenerTest {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query = "//para[ft:query(., 'mixed')]/hi";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq);
-            assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            }
 
             query = "//para[ft:query(., 'nested')]/note";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, hasXPath("count(//hi/exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, hasXPath("count(//hi/exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            }
         }
     }
 
@@ -261,18 +275,22 @@ public class LuceneMatchListenerTest {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query = "//hi[ft:query(., 'mixed')]/ancestor::para";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq);
-            assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, hasXPath("count(//exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            }
 
             query = "//hi[ft:query(., 'nested')]/parent::note";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, hasXPath("count(//hi/exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, hasXPath("count(//hi/exist:match)", equalTo("1")).withNamespaceContext(NS_CONTEXT));
+            }
         }
     }
 
@@ -283,39 +301,49 @@ public class LuceneMatchListenerTest {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query = "//p[ft:query(., 'mixed')]";
-            Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<p>Paragraphs with <s>" + MATCH_START + "mix" + MATCH_END + "</s><s>ed</s> content are <s>danger</s>ous.</p>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<p>Paragraphs with <s>" + MATCH_START + "mix" + MATCH_END + "</s><s>ed</s> content are <s>danger</s>ous.</p>"));
+            }
 
             query = "//p[ft:query(., 'ignored')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>highlighted</hi> text <note>and a note</note> to be " + MATCH_START + "ignored" + MATCH_END + ".</p>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>highlighted</hi> text <note>and a note</note> to be " + MATCH_START + "ignored" + MATCH_END + ".</p>"));
+            }
 
             query = "//p[ft:query(., 'highlighted')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi> text <note>and a note</note> to be " + "ignored.</p>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<p>A simple<note>sic</note> paragraph with <hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi> text <note>and a note</note> to be " + "ignored.</p>"));
+            }
 
             query = "//p[ft:query(., 'highlighted')]/hi";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "highlighted" + MATCH_END + "</hi>"));
+            }
             
             query = "//head[ft:query(., 'title')]";
-            seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq);
-            assertThat(result, CompareMatcher.isIdenticalTo("<head>The <b>" + MATCH_START + "title" + MATCH_END + "</b>of it</head>"));
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq);
+                assertThat(result, CompareMatcher.isIdenticalTo("<head>The <b>" + MATCH_START + "title" + MATCH_END + "</b>of it</head>"));
+            }
         }
     }
 
@@ -327,10 +355,13 @@ public class LuceneMatchListenerTest {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             final String query = "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
                     "//tei:p[.//tei:w[ft:query(., <query><bool><term>дознајем</term></bool></query>)]] ! util:expand(.)";
-            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            final String result = queryResult2String(broker, seq, true);
+            final String result;
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = qr.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, true);
+            }
 
             final String expected =
             "<p xmlns=\"http://www.tei-c.org/ns/1.0\">\n" +

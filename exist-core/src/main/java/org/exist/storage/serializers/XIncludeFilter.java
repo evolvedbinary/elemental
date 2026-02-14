@@ -487,25 +487,26 @@ public class XIncludeFilter implements Receiver {
                     contextSeq = memtreeDoc;
                 }
 
-                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(serializer.broker, source, xpointer != null, true, contextSeq, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(serializer.broker, source, xpointer != null, true, contextSeq, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
 
-                final Sequence seq = queryResult.result;
+                    final Sequence seq = queryResult.result;
 
-                if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("XPointer found: {}", seq.getItemCount());
-                    }
+                    if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("XPointer found: {}", seq.getItemCount());
+                        }
 
-                    NodeValue node;
-                    for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                        node = (NodeValue) i.nextItem();
-                        serializer.serializeToReceiver(node, false);
-                    }
-                } else {
-                    String val;
-                    for (int i = 0; i < seq.getItemCount(); i++) {
-                        val = seq.itemAt(i).getStringValue();
-                        characters(val);
+                        NodeValue node;
+                        for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                            node = (NodeValue) i.nextItem();
+                            serializer.serializeToReceiver(node, false);
+                        }
+                    } else {
+                        String val;
+                        for (int i = 0; i < seq.getItemCount(); i++) {
+                            val = seq.itemAt(i).getStringValue();
+                            characters(val);
+                        }
                     }
                 }
 

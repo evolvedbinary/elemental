@@ -1148,19 +1148,20 @@ public class XQueryTest {
                 }
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, null, null)) {
 
-            assertEquals(1, queryResult.result.getItemCount());
-            final Item item = queryResult.result.itemAt(0);
-            assertTrue(Type.subTypeOf(item.getType(), Type.NODE));
+                assertEquals(1, queryResult.result.getItemCount());
+                final Item item = queryResult.result.itemAt(0);
+                assertTrue(Type.subTypeOf(item.getType(), Type.NODE));
 
-            final Source expected = Input.fromString("<echo>" + timestamp + "</echo>").build();
-            final Source actual = Input.fromNode((Node)item).build();
-            final Diff diff = DiffBuilder.compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
-            assertFalse(diff.toString(), diff.hasDifferences());
+                final Source expected = Input.fromString("<echo>" + timestamp + "</echo>").build();
+                final Source actual = Input.fromNode((Node) item).build();
+                final Diff diff = DiffBuilder.compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
         }
     }
 

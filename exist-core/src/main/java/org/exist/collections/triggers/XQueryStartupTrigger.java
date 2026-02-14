@@ -283,9 +283,9 @@ public class XQueryStartupTrigger implements StartupTrigger {
 
                 LOG.info("Executing XQuery Startup Trigger: {}", path);
 
-                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, null, null);
-
-                LOG.info("Executed XQuery Startup Trigger: {} in {}", path, queryResult.executionTime);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                    LOG.info("Executed XQuery Startup Trigger: {} in {}", path, queryResult.executionTime);
+                }
             }
 
         } catch (final Throwable t) {

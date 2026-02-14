@@ -376,9 +376,10 @@ public class Indexer3Test {
         store_suppress_type(type, typeXml);
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
-                final StringBuilderWriter out = new StringBuilderWriter()) {
+                final StringBuilderWriter out = new StringBuilderWriter();
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(typeXquery), false, null, null, null, null, null)) {
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(typeXquery), false, null, null, null, null, null).result;
+            final Sequence result = queryResult.result;
             final Properties props = new Properties();
             props.setProperty(OutputKeys.INDENT, "no");
             final SAXSerializer serializer = new SAXSerializer(out, props);

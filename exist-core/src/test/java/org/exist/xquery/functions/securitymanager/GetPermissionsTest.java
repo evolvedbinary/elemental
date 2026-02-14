@@ -85,9 +85,10 @@ public class GetPermissionsTest {
         final String query = "<outer><inner perm=\"{sm:get-permissions(xs:anyURI(\"/db\"))/sm:permission/@owner}\"/></outer>";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.getBroker()) {
+        try (final DBBroker broker = pool.getBroker();
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            final Sequence result = queryResult.result;
 
             assertEquals(1, result.getItemCount());
 

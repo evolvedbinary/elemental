@@ -113,8 +113,9 @@ public class SerializeAttrMatchesTest {
         "return util:expand($hit, \"highlight-matches=both\")";
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence seq = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+            final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence seq = qr.result;
 
             assertEquals(1, seq.getItemCount());
 

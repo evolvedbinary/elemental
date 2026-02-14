@@ -102,15 +102,16 @@ public class ExecuteIT {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute the query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, null)) {
 
-            // check that the namespace of the result element is in the 'sql' namespace
-            assertEquals(1, queryResult.result.getItemCount());
-            assertTrue(queryResult.result.itemAt(0) instanceof Element);
-            assertEquals(Type.ELEMENT, queryResult.result.itemAt(0).getType());
-            final Element element = (ElementImpl) queryResult.result.itemAt(0);
-            assertEquals(namespace, element.getNamespaceURI());
-            assertEquals(prefix, element.getPrefix());
+                // check that the namespace of the result element is in the 'sql' namespace
+                assertEquals(1, queryResult.result.getItemCount());
+                assertTrue(queryResult.result.itemAt(0) instanceof Element);
+                assertEquals(Type.ELEMENT, queryResult.result.itemAt(0).getType());
+                final Element element = (ElementImpl) queryResult.result.itemAt(0);
+                assertEquals(namespace, element.getNamespaceURI());
+                assertEquals(prefix, element.getPrefix());
+            }
 
             transaction.commit();
         }

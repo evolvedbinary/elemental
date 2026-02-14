@@ -509,47 +509,48 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             final Properties outputProperties = new Properties();
             outputProperties.put("base-uri", collectionURI.toString());
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, null, setupXqueryContextPreExecution, setupXqueryContextPostExecution);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, null, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
-            // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+                // special header to indicate that the query is not returned from cache
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
-            final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
-            if (mediaType != null) {
-                if (!response.isCommitted()) {
-                    if (isTextContent(mediaType)) {
-                		response.setContentType(mediaType + "; charset=" + getFormEncoding());
-                        response.setCharacterEncoding(getFormEncoding());
-                    } else {
-                        response.setContentType(mediaType);
+                final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
+                if (mediaType != null) {
+                    if (!response.isCommitted()) {
+                        if (isTextContent(mediaType)) {
+                    		response.setContentType(mediaType + "; charset=" + getFormEncoding());
+                            response.setCharacterEncoding(getFormEncoding());
+                        } else {
+                            response.setContentType(mediaType);
+                        }
                     }
+
+                } else {
+    	            String contentType = this.contentType;
+    	            try {
+    	                contentType = getServletContext().getMimeType(path);
+    	                if (contentType == null) {
+                            contentType = this.contentType;
+                        }
+
+    	            } catch (final Throwable e) {
+    	                contentType = this.contentType;
+
+    	            } finally {
+    	                if (isTextContent(contentType)) {
+                            contentType += "; charset=" + getFormEncoding();
+                        }
+    	                response.setContentType(contentType);
+    	            }
                 }
-                
-            } else {
-	            String contentType = this.contentType;
-	            try {
-	                contentType = getServletContext().getMimeType(path);
-	                if (contentType == null) {
-                        contentType = this.contentType;
-                    }
-                    
-	            } catch (final Throwable e) {
-	                contentType = this.contentType;
-                    
-	            } finally {
-	                if (isTextContent(contentType)) {
-                        contentType += "; charset=" + getFormEncoding();
-                    }
-	                response.setContentType(contentType);
-	            }
-            }
-            
-            if (requestXqueryAttr != null && (XmldbURI.API_LOCAL.equals(collectionURI.getApiName())) ) {
-                request.setAttribute(requestXqueryAttr, queryResult.result);
-                
-            } else {
-                final XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
-                serializer.serialize(queryResult.result);
+
+                if (requestXqueryAttr != null && (XmldbURI.API_LOCAL.equals(collectionURI.getApiName())) ) {
+                    request.setAttribute(requestXqueryAttr, queryResult.result);
+
+                } else {
+                    final XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
+                    serializer.serialize(queryResult.result);
+                }
             }
             
 		} catch (final PermissionDeniedException e) {

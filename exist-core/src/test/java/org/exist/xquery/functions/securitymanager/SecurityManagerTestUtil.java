@@ -104,41 +104,38 @@ class SecurityManagerTestUtil {
         sm.deleteGroup(groupname);
     }
 
-    static Sequence xqueryAddUserAsGroupManager(final BrokerPool pool, final String username, final String groupname) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    static XQueryUtil.QueryResult xqueryAddUserAsGroupManager(final BrokerPool pool, final String username, final String groupname) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
             "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:add-group-manager('" + groupname + "', '" + username + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            return result;
+            return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
         }
     }
 
-    static Sequence xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname) throws XPathException, PermissionDeniedException, EXistException, IOException {
+    static XQueryUtil.QueryResult xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname) throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Optional<Subject> asUser = Optional.of(pool.getSecurityManager().getSystemSubject());
         return xqueryRemoveUserFromGroup(pool, username, groupname, asUser);
     }
 
-    static Sequence xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname, final Optional<Subject> asUser) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    static XQueryUtil.QueryResult xqueryRemoveUserFromGroup(final BrokerPool pool, final String username, final String groupname, final Optional<Subject> asUser) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:remove-group-member('" + groupname + "', '" + username + "')";
 
         try (final DBBroker broker = pool.get(asUser)) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            return result;
+            return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
         }
     }
 
-    static Sequence xqueryRemoveGroup(final BrokerPool pool, final String groupname) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    static XQueryUtil.QueryResult xqueryRemoveGroup(final BrokerPool pool, final String groupname) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query =
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +
                 "sm:remove-group('" + groupname + "')";
 
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
-            return result;
+            return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
         }
     }
 
@@ -148,9 +145,10 @@ class SecurityManagerTestUtil {
                 "sm:chmod(xs:anyURI('" + uri.getRawCollectionPath() + "'), '" + newMode + "'),\n" +
                 "sm:get-permissions(xs:anyURI('" + uri.getRawCollectionPath() + "'))/sm:permission/string(@mode)";
 
-        try (final DBBroker broker = pool.get(Optional.of(execAsUser))) {
+        try (final DBBroker broker = pool.get(Optional.of(execAsUser));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+            final Sequence result = queryResult.result;
 
             assertEquals(1, result.getItemCount());
             assertEquals(newMode, result.itemAt(0).getStringValue());

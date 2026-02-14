@@ -120,8 +120,8 @@ public class ImportModuleTest {
             storeModules(broker, transaction,"/db", Tuple("impl1.xqm", module));
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -175,8 +175,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -219,8 +219,8 @@ public class ImportModuleTest {
             storeModules(broker, transaction,"/db", Tuple("impl1.xqm", module));
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -274,8 +274,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -316,8 +316,8 @@ public class ImportModuleTest {
             storeModules(broker, transaction,"/db", Tuple("impl1.xqm", module));
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -373,8 +373,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -405,8 +405,8 @@ public class ImportModuleTest {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -437,8 +437,8 @@ public class ImportModuleTest {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -491,8 +491,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -532,8 +532,8 @@ public class ImportModuleTest {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -576,8 +576,8 @@ public class ImportModuleTest {
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -625,8 +625,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -675,8 +675,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -719,8 +719,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -763,26 +763,26 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString("<result><impl1>to impl1</impl1></result>").build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString("<result><impl1>to impl1</impl1></result>").build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -834,32 +834,32 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element)queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element)queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                                "<impl1>to impl1</impl1>" +
+                                "<impl2>to impl2</impl2>" +
+                                "<impl3>to impl3</impl3>" +
+                            "</result>"
+                ).build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                            "<impl1>to impl1</impl1>" +
-                            "<impl2>to impl2</impl2>" +
-                            "<impl3>to impl3</impl3>" +
-                        "</result>"
-            ).build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -911,32 +911,32 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element)queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element)queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                                "<impl1>to impl1</impl1>" +
+                                "<impl2>to impl2</impl2>" +
+                                "<impl3>to impl3</impl3>" +
+                            "</result>"
+                ).build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                            "<impl1>to impl1</impl1>" +
-                            "<impl2>to impl2</impl2>" +
-                            "<impl3>to impl3</impl3>" +
-                        "</result>"
-            ).build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -967,26 +967,26 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString("<result><impl1>impl1</impl1></result>").build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString("<result><impl1>impl1</impl1></result>").build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -1032,32 +1032,32 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                                "<impl1>impl1</impl1>" +
+                                "<impl2>impl2</impl2>" +
+                                "<impl3>impl3</impl3>" +
+                            "</result>"
+                ).build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                            "<impl1>impl1</impl1>" +
-                            "<impl2>impl2</impl2>" +
-                            "<impl3>impl3</impl3>" +
-                        "</result>"
-            ).build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -1103,32 +1103,32 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                                "<impl1>impl1</impl1>" +
+                                "<impl2>impl2</impl2>" +
+                                "<impl3>impl3</impl3>" +
+                            "</result>"
+                ).build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                            "<impl1>impl1</impl1>" +
-                            "<impl2>impl2</impl2>" +
-                            "<impl3>impl3</impl3>" +
-                        "</result>"
-            ).build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -1176,36 +1176,36 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
-
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                        "<function name=\"mod2:test\">" +
-                            "<variable name=\"mod2:var1\">mod2 var1</variable>" +
-                            "<function name=\"mod1:test\">" +
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                            "<function name=\"mod2:test\">" +
+                                "<variable name=\"mod2:var1\">mod2 var1</variable>" +
+                                "<function name=\"mod1:test\">" +
+                                    "<variable name=\"mod1:var1\">mod1 var1</variable>" +
+                                "</function>" +
                                 "<variable name=\"mod1:var1\">mod1 var1</variable>" +
-                            "</function>" +
-                            "<variable name=\"mod1:var1\">mod1 var1</variable>" +
-                       "</function>" +
-                    "</result>"
-            ).build();
+                           "</function>" +
+                        "</result>"
+                ).build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -1255,8 +1255,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -1316,30 +1316,30 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                          "<impl1>from main</impl1>" +
+                        "</result>"
+                ).build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                      "<impl1>from main</impl1>" +
-                    "</result>"
-            ).build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 
@@ -1399,8 +1399,8 @@ public class ImportModuleTest {
             );
 
             // execute query
-            try {
-                XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult qr = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // result not being used, just checking for errors
 
                 transaction.commit();
 
@@ -1470,30 +1470,30 @@ public class ImportModuleTest {
             );
 
             // execute query
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+                // check that the result was correct
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                final Element doc = (Element) queryResult.result.itemAt(0);
+                assertNotNull(doc);
 
-            // check that the result was correct
-            assertNotNull(queryResult.result);
-            assertEquals(1, queryResult.result.getItemCount());
-            final Element doc = (Element) queryResult.result.itemAt(0);
-            assertNotNull(doc);
+                final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
+                final javax.xml.transform.Source expected = Input.fromString(
+                        "<result>" +
+                          "<impl1>from main</impl1>" +
+                        "</result>"
+                ).build();
 
-            final javax.xml.transform.Source actual = Input.fromDocument(doc.getOwnerDocument()).build();
-            final javax.xml.transform.Source expected = Input.fromString(
-                    "<result>" +
-                      "<impl1>from main</impl1>" +
-                    "</result>"
-            ).build();
+                final Diff diff = DiffBuilder
+                        .compare(expected)
+                        .withTest(actual)
+                        .checkForSimilar()
+                        .build();
 
-            final Diff diff = DiffBuilder
-                    .compare(expected)
-                    .withTest(actual)
-                    .checkForSimilar()
-                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
 
-            assertFalse(diff.toString(), diff.hasDifferences());
-
-            transaction.commit();
+                transaction.commit();
+            }
         }
     }
 

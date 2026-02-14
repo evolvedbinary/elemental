@@ -112,8 +112,9 @@ public class PackageTriggerTest {
         // Install and deploy XAR
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
             final String query = "repo:install-and-deploy-from-db('/db/" + xarFile + "')";
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            Assert.assertEquals(1, queryResult.result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(1, queryResult.result.getItemCount());
+            }
         }
 
         // Store collection.xconf in newly created collection under /db/system/config
@@ -121,8 +122,9 @@ public class PackageTriggerTest {
             final String query = "xmldb:create-collection('/db/system/config/db','trigger-test'), " +
                     "xmldb:store('/db/system/config/db/trigger-test', '" + DEFAULT_COLLECTION_CONFIG_FILE + "', " +
                     "<collection xmlns=\"http://exist-db.org/collection-config/1.0\"><triggers><trigger class=\"org.exist.repo.ExampleTrigger\"/></triggers></collection>)";
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            Assert.assertEquals(2, queryResult.result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(2, queryResult.result.getItemCount());
+            }
         }
 
     }
@@ -136,22 +138,25 @@ public class PackageTriggerTest {
         // Create collection
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
             final String query = "xmldb:create-collection('/db','trigger-test')";
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            Assert.assertEquals(1, queryResult.result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(1, queryResult.result.getItemCount());
+            }
         }
 
         // Store document to fire trigger
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
             final String query = "xmldb:store('/db/trigger-test', 'test.xml', <a>b</a>)";
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            Assert.assertEquals(1, queryResult.result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(1, queryResult.result.getItemCount());
+            }
         }
 
         // Verify two documents are now in collection
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
             final String query = "xmldb:get-child-resources('/db/trigger-test')";
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
-            Assert.assertEquals("After trigger execution two documents should be in the collection.", 2, queryResult.result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals("After trigger execution two documents should be in the collection.", 2, queryResult.result.getItemCount());
+            }
         }
 
     }

@@ -139,29 +139,30 @@ public class IPRangeRealm extends AbstractRealm {
 
             // Execute xQuery
             final Properties outputProperties = new Properties();
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, QUERY, true, null, outputProperties, null, setupXqueryContextPreExecution, null);
-            final SequenceIterator i = queryResult.result.iterate();
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, QUERY, true, null, outputProperties, null, setupXqueryContextPreExecution, null)) {
+                final SequenceIterator i = queryResult.result.iterate();
 
-            // Get FIRST username when present
-            final String username = i.hasNext() ? i.nextItem().getStringValue() : "";
+                // Get FIRST username when present
+                final String username = i.hasNext() ? i.nextItem().getStringValue() : "";
 
-            if (i.hasNext()) {
-                LOG.warn("IP address {} matched multiple ipranges. Using first result only.", ipAddress);
-            }
-
-            if (!username.isEmpty()) {
-                final Account account = getSecurityManager().getAccount(username);
-                if (account != null) {
-                    LOG.info("IPRangeRealm trying {}", account.getName());
-                    return new SubjectAccreditedImpl((AbstractAccount) account, ipAddress);
-                } else {
-                    LOG.info("IPRangeRealm couldn't resolve account for {}", username);
+                if (i.hasNext()) {
+                    LOG.warn("IP address {} matched multiple ipranges. Using first result only.", ipAddress);
                 }
 
-            } else {
-                LOG.info("IPRangeRealm xquery found no matches");
+                if (!username.isEmpty()) {
+                    final Account account = getSecurityManager().getAccount(username);
+                    if (account != null) {
+                        LOG.info("IPRangeRealm trying {}", account.getName());
+                        return new SubjectAccreditedImpl((AbstractAccount) account, ipAddress);
+                    } else {
+                        LOG.info("IPRangeRealm couldn't resolve account for {}", username);
+                    }
+
+                } else {
+                    LOG.info("IPRangeRealm xquery found no matches");
+                }
+                return null;
             }
-            return null;
 
         } catch (final EXistException | IOException | XPathException | PermissionDeniedException e) {
             throw new AuthenticationException(AuthenticationException.UNNOWN_EXCEPTION, e.getMessage());

@@ -106,22 +106,23 @@ public class CollectionTest {
                 xqueryContext.addDynamicallyAvailableCollection(collectionUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0) instanceof Node);
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0) instanceof Node);
 
-            final Source expectedSource = Input.fromString(doc).build();
-            final Source actualSource = Input.fromNode((Node)result.itemAt(0)).build();
-            final Diff diff = DiffBuilder.compare(expectedSource)
-                    .withTest(actualSource)
-                    .checkForIdentical()
-                    .checkForSimilar()
-                    .build();
+                final Source expectedSource = Input.fromString(doc).build();
+                final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
+                final Diff diff = DiffBuilder.compare(expectedSource)
+                        .withTest(actualSource)
+                        .checkForIdentical()
+                        .checkForSimilar()
+                        .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
         }
     }
 
@@ -144,22 +145,23 @@ public class CollectionTest {
                 xqueryContext.addDynamicallyAvailableCollection(baseUri + collectionRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
             };
 
-            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null);
-            final Sequence result = queryResult.result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0) instanceof Node);
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0) instanceof Node);
 
-            final Source expectedSource = Input.fromString(doc).build();
-            final Source actualSource = Input.fromNode((Node)result.itemAt(0)).build();
-            final Diff diff = DiffBuilder.compare(expectedSource)
-                    .withTest(actualSource)
-                    .checkForIdentical()
-                    .checkForSimilar()
-                    .build();
+                final Source expectedSource = Input.fromString(doc).build();
+                final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
+                final Diff diff = DiffBuilder.compare(expectedSource)
+                        .withTest(actualSource)
+                        .checkForIdentical()
+                        .checkForSimilar()
+                        .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
         }
     }
 

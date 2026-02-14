@@ -45,7 +45,6 @@
  */
 package org.exist.repo;
 
-
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
@@ -55,7 +54,6 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.IntegerValue;
-import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.w3c.dom.Document;
@@ -81,19 +79,20 @@ public class ExampleModuleTest {
         final String query =
                 "declare namespace myjmod = \"https://my-organisation.com/exist-db/ns/app/my-java-module\";\n" +
                         "myjmod:hello-world()";
-        final Sequence result = executeQuery(query);
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(query)) {
 
-        assertTrue(result.hasOne());
+            assertTrue(queryResult.result.hasOne());
 
-        final Source inExpected = Input.fromString("<hello>World</hello>").build();
-        final Source inActual = Input.fromDocument((Document) result.itemAt(0)).build();
+            final Source inExpected = Input.fromString("<hello>World</hello>").build();
+            final Source inActual = Input.fromDocument((Document) queryResult.result.itemAt(0)).build();
 
-        final Diff diff = DiffBuilder.compare(inExpected)
+            final Diff diff = DiffBuilder.compare(inExpected)
                 .withTest(inActual)
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.toString(), diff.hasDifferences());
+        }
     }
 
     @Test
@@ -101,19 +100,20 @@ public class ExampleModuleTest {
         final String query =
                 "declare namespace myjmod = \"https://my-organisation.com/exist-db/ns/app/my-java-module\";\n" +
                         "myjmod:say-hello('Adam')";
-        final Sequence result = executeQuery(query);
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(query)) {
 
-        assertTrue(result.hasOne());
+            assertTrue(queryResult.result.hasOne());
 
-        final Source inExpected = Input.fromString("<hello>Adam</hello>").build();
-        final Source inActual = Input.fromDocument((Document) result.itemAt(0)).build();
+            final Source inExpected = Input.fromString("<hello>Adam</hello>").build();
+            final Source inActual = Input.fromDocument((Document) queryResult.result.itemAt(0)).build();
 
-        final Diff diff = DiffBuilder.compare(inExpected)
+            final Diff diff = DiffBuilder.compare(inExpected)
                 .withTest(inActual)
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.toString(), diff.hasDifferences());
+        }
     }
 
     @Test
@@ -121,19 +121,20 @@ public class ExampleModuleTest {
         final String query =
                 "declare namespace myjmod = \"https://my-organisation.com/exist-db/ns/app/my-java-module\";\n" +
                         "myjmod:say-hello(())";
-        final Sequence result = executeQuery(query);
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(query)) {
 
-        assertTrue(result.hasOne());
+            assertTrue(queryResult.result.hasOne());
 
-        final Source inExpected = Input.fromString("<hello>stranger</hello>").build();
-        final Source inActual = Input.fromDocument((Document) result.itemAt(0)).build();
+            final Source inExpected = Input.fromString("<hello>stranger</hello>").build();
+            final Source inActual = Input.fromDocument((Document) queryResult.result.itemAt(0)).build();
 
-        final Diff diff = DiffBuilder.compare(inExpected)
+            final Diff diff = DiffBuilder.compare(inExpected)
                 .withTest(inActual)
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.toString(), diff.hasDifferences());
+        }
     }
 
     @Test
@@ -141,18 +142,17 @@ public class ExampleModuleTest {
         final String query =
                 "declare namespace myjmod = \"https://my-organisation.com/exist-db/ns/app/my-java-module\";\n" +
                         "myjmod:add(xs:int(123), xs:int(456))";
-        final Sequence result = executeQuery(query);
-
-        assertTrue(result.hasOne());
-
-        assertEquals(579, ((IntegerValue)result.itemAt(0)).getInt());
+        try (final XQueryUtil.QueryResult queryResult = executeQuery(query)) {
+            assertTrue(queryResult.result.hasOne());
+            assertEquals(579, ((IntegerValue) queryResult.result.itemAt(0)).getInt());
+        }
     }
 
 
-    private Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
+    private XQueryUtil.QueryResult executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            return XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
         }
     }
 }

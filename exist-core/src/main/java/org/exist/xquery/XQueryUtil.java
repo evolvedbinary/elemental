@@ -81,19 +81,18 @@ public class XQueryUtil {
         final BrokerPool brokerPool = broker.getBrokerPool();
         final XQuery xquery = brokerPool.getXQueryService();
 
-        @Nullable XQueryPool xqueryPool = null;
+        @Nullable final XQueryPool xqueryPool;
         @Nullable CompiledXQuery compiledXquery = null;
+        if (cacheQuery) {
+            xqueryPool = brokerPool.getXQueryPool();
+            compiledXquery = xqueryPool.borrowCompiledXQuery(broker, source);
+        } else {
+            xqueryPool = null;
+        }
+
         @Nullable XQueryContext xqueryContext = null;
         try {
-            if (cacheQuery) {
-                xqueryPool = brokerPool.getXQueryPool();
-                compiledXquery = xqueryPool.borrowCompiledXQuery(broker, source);
-            } else {
-                xqueryPool = null;
-            }
-
             final long compilationTime;
-
             if (compiledXquery != null) {
                 xqueryContext = compiledXquery.getContext();
                 xqueryContext.prepareForReuse();
@@ -127,7 +126,7 @@ public class XQueryUtil {
             final Sequence result = xquery.execute(broker, compiledXquery, null, contextSequence, outputProperties, true);
             final long executionTime = System.currentTimeMillis() - executionStart;
 
-            final QueryResult queryResult = new XQueryUtil.QueryResult(compilationTime, executionTime, result);
+            final QueryResult queryResult = new XQueryUtil.QueryResult(source, xqueryPool, compiledXquery, xqueryContext, compilationTime, executionTime, result);
 
             if (postExecutionContext != null) {
                 postExecutionContext.accept(xqueryContext, queryResult);
@@ -135,7 +134,8 @@ public class XQueryUtil {
 
             return queryResult;
 
-        } finally {
+        } catch (final XPathException | PermissionDeniedException | IOException e) {
+            // Make sure to clean-up in case of an exception!
             if (xqueryContext != null) {
                 xqueryContext.runCleanupTasks();
             }
@@ -143,20 +143,46 @@ public class XQueryUtil {
             if (xqueryPool != null && compiledXquery != null) {
                 xqueryPool.returnCompiledXQuery(source, compiledXquery);
             }
+
+            throw e;
         }
     }
 
-    public static class QueryResult {
+    public static class QueryResult implements AutoCloseable {
+        /**
+         * Indicates that the query did not need to be compiled as a cached version was available.
+         */
         public static final int RETRIEVED_CACHED_COMPILED_QUERY = -1;
+
+        private final Source source;
+        private @Nullable final XQueryPool xqueryPool;
+        private @Nullable final CompiledXQuery compiledXquery;
+        private final XQueryContext xqueryContext;
 
         public final long compilationTime;
         public final long executionTime;
         public final Sequence result;
 
-        public QueryResult(final long compilationTime, final long executionTime, final Sequence result) {
+        public QueryResult(final Source source, @Nullable final XQueryPool xqueryPool, @Nullable final CompiledXQuery compiledXquery, final XQueryContext xqueryContext, final long compilationTime, final long executionTime, final Sequence result) {
+            this.source = source;
+            this.xqueryPool = xqueryPool;
+            this.compiledXquery = compiledXquery;
+            this.xqueryContext = xqueryContext;
+
             this.compilationTime = compilationTime;
             this.executionTime = executionTime;
             this.result = result;
+        }
+
+        @Override
+        public void close() {
+            // NOTE(AR) Only when the user has finished with the Query Result i.e. {@link #result}, can we then clean-up any associated resources.
+            xqueryContext.runCleanupTasks();
+
+            // Once we have cleaned-up if the query should be cached we return it to the query pool.
+            if (xqueryPool != null && compiledXquery != null) {
+                xqueryPool.returnCompiledXQuery(source, compiledXquery);
+            }
         }
     }
 

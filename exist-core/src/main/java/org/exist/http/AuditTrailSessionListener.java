@@ -150,10 +150,11 @@ public class AuditTrailSessionListener implements HttpSessionListener {
                         };
 
                         final Properties outputProperties = new Properties();
-                        final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null);
+                        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null)) {
 
-                        if (LOG.isTraceEnabled()) {
-                            LOG.trace("XQuery execution results: {} in {}ms.", queryResult.result.toString(), queryResult.executionTime);
+                            if (LOG.isTraceEnabled()) {
+                                LOG.trace("XQuery execution results: {} in {}ms.", queryResult.result.toString(), queryResult.executionTime);
+                            }
                         }
                     }
                 }

@@ -144,8 +144,9 @@ public class SerializeTest {
 
     private static void expectQuery(final String query, final Consumer<Sequence> resultConsumer) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence result = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             resultConsumer.accept(result);
         }
     }

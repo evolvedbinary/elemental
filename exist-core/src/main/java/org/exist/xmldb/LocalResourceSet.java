@@ -60,6 +60,7 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -76,12 +77,15 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
 
     private final List<Object> resources = new ArrayList<>();
     private final Properties outputProperties;
+    private final Runnable queryResultCloser;
 
-    public LocalResourceSet(final Subject user, final BrokerPool pool, final LocalCollection col, final Properties properties, final Sequence val, final String sortExpr) throws XMLDBException {
+    public LocalResourceSet(final Subject user, final BrokerPool pool, final LocalCollection col, final Properties properties, final XQueryUtil.QueryResult queryResult, final String sortExpr) throws XMLDBException {
         super(user, pool, col);
         this.outputProperties = properties;
+        this.queryResultCloser = queryResult::close;
 
-        if(val.isEmpty()) {
+        final Sequence val = queryResult.result;
+        if (val.isEmpty()) {
             return;
         }
 
@@ -122,16 +126,8 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
 
     @Override
     public void clear() throws XMLDBException {
-        //cleanup any binary values
-        resources.stream().filter((resource) -> (resource instanceof BinaryValue)).forEach((resource) -> {
-            try {
-                ((BinaryValue) resource).close();
-            } catch(final IOException ioe) {
-                LOG.warn("Unable to cleanup BinaryValue: {}", resource.hashCode(), ioe);
-            }
-        });
-
         resources.clear();
+        queryResultCloser.run();
     }
 
     @Override

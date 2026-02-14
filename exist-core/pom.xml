@@ -1108,7 +1108,8 @@
                                 <include>src/test/java/org/exist/storage/util/PauseFunction.java</include>
                                 <include>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</include>
                                 <include>src/main/java/org/exist/test/TransactionTestDSL.java</include>
-                                <include>src/test/java/org/exist/test/XQueryCompilationTest.java</include>
+                                <include>src/main/java/org/exist/test/XQueryAssertions.java</include>
+                                <include>src/main/java/org/exist/test/XQueryCompilationTest.java</include>
                                 <include>src/main/java/org/exist/test/runner/AbstractTestRunner.java</include>
                                 <include>src/main/java/org/exist/test/runner/ExtTestAssumptionFailedFunction.java</include>
                                 <include>src/main/java/org/exist/test/runner/ExtTestErrorFunction.java</include>
@@ -1223,6 +1224,7 @@
                                 <include>src/test/java/org/exist/xmlrpc/XmlRpcTest.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
+                                <include>src/test/java/org/exist/xquery/AbsolutePathTests.java</include>
                                 <include>src/main/java/org/exist/xquery/AbstractInternalModule.java</include>
                                 <include>src/main/java/org/exist/xquery/ArrowOperator.java</include>
                                 <include>src/test/java/org/exist/xquery/CardinalityTest.java</include>
@@ -1242,6 +1244,7 @@
                                 <include>src/test/java/org/exist/xquery/ForwardReferenceTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Function.java</include>
                                 <include>src/main/java/org/exist/xquery/FunctionFactory.java</include>
+                               <include>src/test/java/org/exist/xquery/FunctionTypeInElementContentTest.java</include>
                                 <include>src/main/java/org/exist/xquery/InlineFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/Intersect.java</include>
                                 <include>src/test/java/org/exist/xquery/LexerTest.java</include>
@@ -1922,7 +1925,8 @@
                                 <exclude>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</exclude>
                                 <exclude>src/main/java/org/exist/test/TransactionTestDSL.java</exclude>
                                 <exclude>src/test/java/org/exist/test/Util.java</exclude>
-                                <exclude>src/test/java/org/exist/test/XQueryCompilationTest.java</exclude>
+                                <exclude>src/main/java/org/exist/test/XQueryAssertions.java</exclude>
+                                <exclude>src/main/java/org/exist/test/XQueryCompilationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/AbstractTestRunner.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/ExtTestAssumptionFailedFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/test/runner/ExtTestErrorFunction.java</exclude>
@@ -2054,6 +2058,7 @@
                                 <exclude>src/test/java/org/exist/xmlrpc/XmlRpcTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/AbsolutePathTests.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/AbstractInternalModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/ArrowOperator.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ArrowOperatorTest.java</exclude>
@@ -2076,6 +2081,7 @@
                                 <exclude>src/test/java/org/exist/xquery/ForwardReferenceTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Function.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/FunctionFactory.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/FunctionTypeInElementContentTest.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportFromPkgTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ImportModuleTest.java</exclude>

@@ -249,8 +249,9 @@ public class FunTransformITTest {
 
     private static void expectQuery(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null).result;
+        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
