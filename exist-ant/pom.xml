@@ -106,7 +106,6 @@
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -184,7 +183,34 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/main/java/org/exist/ant/AbstractXMLDBTask.java</include>
+                                <include>src/main/java/org/exist/ant/AddGroupTask.java</include>
+                                <include>src/main/java/org/exist/ant/AddUserTask.java</include>
+                                <include>src/main/java/org/exist/ant/ChmodTask.java</include>
+                                <include>src/main/java/org/exist/ant/ChownTask.java</include>
+                                <include>src/test/java/org/exist/ant/FileTaskTest.java</include>
+                                <include>src/main/java/org/exist/ant/ListGroupsTask.java</include>
+                                <include>src/main/java/org/exist/ant/ListUsersTask.java</include>
+                                <include>src/main/java/org/exist/ant/LockResourceTask.java</include>
+                                <include>src/main/java/org/exist/ant/RemoveGroupTask.java</include>
+                                <include>src/main/java/org/exist/ant/RemoveUserTask.java</include>
+                                <include>src/main/java/org/exist/ant/RestoreTask.java</include>
+                                <include>src/test/java/org/exist/ant/ServerTaskTest.java</include>
+                                <include>src/main/java/org/exist/ant/UserPasswordTask.java</include>
+                                <include>src/main/java/org/exist/ant/UserTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBCopyTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBCreateTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBExistTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBExtractTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBListTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBMoveTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBRemoveTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBShutdownTask.java</include>
                                 <include>src/main/java/org/exist/ant/XMLDBStoreTask.java</include>
+                                <include>src/test/java/org/exist/ant/XmldbTaskTest.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBXPathTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBXQueryTask.java</include>
+                                <include>src/main/java/org/exist/ant/XMLDBXUpdateTask.java</include>
                             </includes>
                         </licenseSet>
 
@@ -202,7 +228,34 @@
                                 <exclude>xquery-license-style.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/main/java/org/exist/ant/AbstractXMLDBTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/AddGroupTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/AddUserTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/ChmodTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/ChownTask.java</exclude>
+                                <exclude>src/test/java/org/exist/ant/FileTaskTest.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/ListGroupsTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/ListUsersTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/LockResourceTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/RemoveGroupTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/RemoveUserTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/RestoreTask.java</exclude>
+                                <exclude>src/test/java/org/exist/ant/ServerTaskTest.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/UserPasswordTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/UserTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBCopyTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBCreateTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBExistTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBExtractTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBListTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBMoveTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBRemoveTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBShutdownTask.java</exclude>
                                 <exclude>src/main/java/org/exist/ant/XMLDBStoreTask.java</exclude>
+                                <exclude>src/test/java/org/exist/ant/XmldbTaskTest.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBXPathTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBXQueryTask.java</exclude>
+                                <exclude>src/main/java/org/exist/ant/XMLDBXUpdateTask.java</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

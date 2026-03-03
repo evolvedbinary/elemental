@@ -52,10 +52,10 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.concurrent.DBUtils;
 import org.junit.*;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XPathQueryService;
 
@@ -138,22 +138,20 @@ public class DbStore2Test {
     @Test
     public final void testWithAnyUriEnabled() throws XMLDBException {
         final Collection rootCol = existEmbeddedServerWithAnyURI.getRoot();
-        Collection testCol = rootCol.getChildCollection(TEST_COLLECTION);
-        if (testCol == null) {
-            testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION);
+        try (final Collection testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION)) {
             assertNotNull(testCol);
-        }
 
-        final XPathQueryService xpqs = testCol.getService(XPathQueryService.class);
-        final ResourceSet rs =
-                xpqs.query(
-                        "xmldb:store(\n" +
-                                "        '/db',\n" +
-                                "        'image.jpg',\n" +
-                                "        xs:anyURI('http://localhost:" + jettyPort + "/picture.jpg'),\n" +
-                                "        'image/png'\n" +
-                                "    )");
-        assertNotNull(rs);
+            final XPathQueryService xpqs = testCol.getService(XPathQueryService.class);
+            try (final EXistResourceSet rs = (EXistResourceSet) xpqs.query(
+                    "xmldb:store(\n" +
+                        "        '/db',\n" +
+                        "        'image.jpg',\n" +
+                        "        xs:anyURI('http://localhost:" + jettyPort + "/picture.jpg'),\n" +
+                        "        'image/png'\n" +
+                        "    )")) {
+                assertNotNull(rs);
+            }
+        }
     }
 
     @Test
@@ -167,21 +165,19 @@ public class DbStore2Test {
         }
 
         final Collection rootCol = existEmbeddedServerWithAnyURI.getRoot();
-        Collection testCol = rootCol.getChildCollection(TEST_COLLECTION);
-        if (testCol == null) {
-            testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION);
+        try (final Collection testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION)) {
             assertNotNull(testCol);
-        }
 
-        final XPathQueryService xpqs = testCol.getService(XPathQueryService.class);
-        final ResourceSet rs =
-                xpqs.query(
-                        "xmldb:store(\n" +
-                                "        '/db',\n" +
-                                "        'image.jpg',\n" +
-                                "        xs:anyURI('http://localhost:" + jettyPort + "/large-file.bin'),\n" +
-                                "        'image/png'\n" +
-                                "    )");
-        assertNotNull(rs);
+            final XPathQueryService xpqs = testCol.getService(XPathQueryService.class);
+            try (final EXistResourceSet rs = (EXistResourceSet) xpqs.query(
+                    "xmldb:store(\n" +
+                        "        '/db',\n" +
+                        "        'image.jpg',\n" +
+                        "        xs:anyURI('http://localhost:" + jettyPort + "/large-file.bin'),\n" +
+                        "        'image/png'\n" +
+                        "    )")) {
+                assertNotNull(rs);
+            }
+        }
     }
 }

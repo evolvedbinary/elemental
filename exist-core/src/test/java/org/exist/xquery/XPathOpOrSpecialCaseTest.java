@@ -48,6 +48,7 @@ package org.exist.xquery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import org.xmldb.api.base.Collection;
@@ -82,11 +83,14 @@ public class XPathOpOrSpecialCaseTest extends Assert {
 
 	@After
 	public void tearDown() throws Exception {
+		if (testCollection != null) {
+			testCollection.close();
+			testCollection = null;
+		}
 		final CollectionManagementService service =
 				existEmbeddedServer.getRoot().getService(
 						CollectionManagementService.class);
 		service.removeCollection("blah");
-		testCollection = null;
 	}
 
 	/**
@@ -95,15 +99,13 @@ public class XPathOpOrSpecialCaseTest extends Assert {
 	 * expect <code>org.exist.xquery.XPathException: exerr:ERROR cannot convert xs:boolean('false') to a node set</code>.
 	 */
 	@Test
-	public void verifyOpOrInPredicate() throws Exception
-	{
-		try
-		{
+	public void verifyOpOrInPredicate() throws Exception {
+		try {
 			storeXML(testCollection, "blah.xml", "<blah>No element content.</blah>");
-			existEmbeddedServer.executeQuery("/blah[a='A' or b='B']");
-		}
-		catch(final XMLDBException e)
-		{
+			try (final EXistResourceSet result = existEmbeddedServer.executeQuery("/blah[a='A' or b='B']")) {
+				// needed to close the result
+			}
+		} catch(final XMLDBException e) {
 			LOG.error(e.getMessage(), e);
 			throw e;
 		}
@@ -116,10 +118,11 @@ public class XPathOpOrSpecialCaseTest extends Assert {
      * @param content The XML content to be stored.
      * @throws XMLDBException See {@link XMLDBException}.
      */
-    private void storeXML(final Collection collection, final String documentName, final String content) throws XMLDBException 
+    private void storeXML(final Collection collection, final String documentName, final String content) throws XMLDBException
     {
-        final XMLResource doc = collection.createResource(documentName, XMLResource.class);
-        doc.setContent(content);
-        collection.storeResource(doc);
+        try (final XMLResource doc = collection.createResource(documentName, XMLResource.class)) {
+            doc.setContent(content);
+            collection.storeResource(doc);
+        }
     }
 }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -81,38 +105,46 @@ public class MoveCollectionTest {
          * /db/testMove/0/X/Y
          */
         EXistCollectionManagementService service = testCollection.getService(EXistCollectionManagementService.class);
-        final Collection zeroCollection = service.createCollection(ZERO_COLLECTION_NAME);
-        assertNotNull(zeroCollection);
+        try (final Collection zeroCollection = service.createCollection(ZERO_COLLECTION_NAME);
+             final Collection oneCollection = service.createCollection(ONE_COLLECTION_NAME)) {
+            assertNotNull(zeroCollection);
 
-        final Collection oneCollection = service.createCollection(ONE_COLLECTION_NAME);
-        assertNotNull(oneCollection);
+            assertNotNull(oneCollection);
 
-        service = zeroCollection.getService(EXistCollectionManagementService.class);
-        final Collection xCollection = service.createCollection(X_COLLECTION_NAME);
-        assertNotNull(xCollection);
+            service = zeroCollection.getService(EXistCollectionManagementService.class);
+            try (final Collection xCollection = service.createCollection(X_COLLECTION_NAME)) {
+                assertNotNull(xCollection);
 
-        service = xCollection.getService(EXistCollectionManagementService.class);
-        final Collection yCollection = service.createCollection(Y_COLLECTION_NAME);
-        assertNotNull(yCollection);
+                service = xCollection.getService(EXistCollectionManagementService.class);
+                try (final Collection yCollection = service.createCollection(Y_COLLECTION_NAME)) {
+                    assertNotNull(yCollection);
+                }
 
-        // move the collection /db/testMove/0/X to /db/testMove/1
-        service = zeroCollection.getService(EXistCollectionManagementService.class);
-        service.move(XmldbURI.create(X_COLLECTION_NAME), XmldbURI.create(oneCollection.getName()), null);
+                // move the collection /db/testMove/0/X to /db/testMove/1
+                service = zeroCollection.getService(EXistCollectionManagementService.class);
+                service.move(XmldbURI.create(X_COLLECTION_NAME), XmldbURI.create(oneCollection.getName()), null);
+            }
+        }
     }
 
     @Before
     public void setUp() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService service = root.getService(CollectionManagementService.class);
-        testCollection = service.createCollection(TEST_COLLECTION_NAME);
-        assertNotNull(testCollection);
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService service = root.getService(CollectionManagementService.class);
+            testCollection = service.createCollection(TEST_COLLECTION_NAME);
+            assertNotNull(testCollection);
+        }
     }
 
     @After
     public void tearDown() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService service = root.getService(CollectionManagementService.class);
-        service.removeCollection(TEST_COLLECTION_NAME);
-        testCollection = null;
+        if (testCollection != null) {
+            testCollection.close();
+            testCollection = null;
+        }
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService service = root.getService(CollectionManagementService.class);
+            service.removeCollection(TEST_COLLECTION_NAME);
+        }
     }
 }

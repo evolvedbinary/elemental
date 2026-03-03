@@ -508,11 +508,13 @@ public class EditPropertiesDialog extends javax.swing.JFrame {
                 }
 
                 if (desc.isCollection()) {
-                    final Collection coll = parent.getChildCollection(desc.getName().toString());
-                    getUserManagementService().setPermissions(coll, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    try (final Collection coll = parent.getChildCollection(desc.getName().toString())) {
+                        getUserManagementService().setPermissions(coll, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    }
                 } else {
-                    final Resource res = parent.getResource(desc.getName().toString());
-                    getUserManagementService().setPermissions(res, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    try (final Resource res = parent.getResource(desc.getName().toString())) {
+                        getUserManagementService().setPermissions(res, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    }
                 }
             }
 

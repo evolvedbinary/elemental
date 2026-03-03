@@ -65,9 +65,10 @@ public class ConcurrentResourceTest extends AbstractConcurrentTest {
 
 	@Before
 	public void setUp() throws Exception {
-		final Collection c1 = DBUtils.addCollection(getTestCollection(), "C1-C2");
-		assertNotNull(c1);
-		DBUtils.addXMLResource(c1, "R1.xml", ReplaceResourceAction.XML);
+		try (final Collection c1 = DBUtils.addCollection(getTestCollection(), "C1-C2")) {
+			assertNotNull(c1);
+			DBUtils.addXMLResource(c1, "R1.xml", ReplaceResourceAction.XML);
+		}
 	}
 
 	@Override

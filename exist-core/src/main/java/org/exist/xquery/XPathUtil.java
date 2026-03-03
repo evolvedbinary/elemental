@@ -685,7 +685,9 @@ public class XPathUtil {
             try {
                 final DBBroker broker = context.getBroker();
                 for (final ResourceIterator it = ((ResourceSet) obj).getIterator(); it.hasMoreResources();) {
-                    seq.add(getNode(broker, (XMLResource) it.nextResource(), expression));
+                    try (final XMLResource xres = (XMLResource) it.nextResource()) {
+                        seq.add(getNode(broker, xres, expression));
+                    }
                 }
             } catch (final XMLDBException xe) {
                 throw new XPathException(expression, "Failed to convert ResourceSet to node: " + xe.getMessage());
@@ -926,7 +928,7 @@ public class XPathUtil {
      * @return A NodeProxy for accessing the content represented by xres
      * @throws XPathException if an XMLDBException is encountered
      */
-    public static final NodeProxy getNode(DBBroker broker, XMLResource xres, final Expression expression) throws XPathException {
+    public static final NodeProxy getNode(final DBBroker broker, final XMLResource xres, final Expression expression) throws XPathException {
         if (xres instanceof LocalXMLResource lres) {
             try {
                 return lres.getNode();

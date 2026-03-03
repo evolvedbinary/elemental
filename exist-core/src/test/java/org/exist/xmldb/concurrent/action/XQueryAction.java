@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,13 +45,13 @@
  */
 package org.exist.xmldb.concurrent.action;
 
-import org.exist.xmldb.EXistXPathQueryService;
+import org.exist.xmldb.EXistResourceSet;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
+import org.xmldb.api.modules.XPathQueryService;
 
 /**
  * @author wolf
@@ -47,22 +71,25 @@ public class XQueryAction extends Action {
 	public boolean execute() throws XMLDBException {
 	    final long start = System.currentTimeMillis();
 	    
-		final Collection col = DatabaseManager.getCollection(collectionPath);
-		
-		final EXistXPathQueryService service = col.getService(EXistXPathQueryService.class);
-		
+		try (final Collection col = DatabaseManager.getCollection(collectionPath)) {
+
+			final XPathQueryService service = col.getService(XPathQueryService.class);
+
 //		service.beginProtected();
-		final ResourceSet result = service.query(xquery);
-		
-		final DefaultHandler handler = new DefaultHandler();
-		for (int i = 0; i < result.getSize(); i++) {
-			final XMLResource next = (XMLResource) result.getResource(i);
-			next.getContentAsSAX(handler);
-		}
+			try (final EXistResourceSet result = (EXistResourceSet) service.query(xquery)) {
+
+				final DefaultHandler handler = new DefaultHandler();
+				for (int i = 0; i < result.getSize(); i++) {
+					try (final XMLResource next = (XMLResource) result.getResource(i)) {
+						next.getContentAsSAX(handler);
+					}
+				}
 //		service.endProtected();
-		
-		runningTime += (System.currentTimeMillis() - start);
-		called++;
+			}
+
+			runningTime += (System.currentTimeMillis() - start);
+			called++;
+		}
 
 		return true;
 	}

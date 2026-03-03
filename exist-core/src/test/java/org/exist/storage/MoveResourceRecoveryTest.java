@@ -126,32 +126,35 @@ public class MoveResourceRecoveryTest {
         xmldbRead();
     }
 
-    private void store() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
+    private void store() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
 
-            final Collection test = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
-            assertNotNull(test);
-            broker.saveCollection(transaction, test);
+            try (final Collection test = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI)) {
+                assertNotNull(test);
+                broker.saveCollection(transaction, test);
 
-            final Collection test2 = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2);
-            assertNotNull(test2);
-            broker.saveCollection(transaction, test2);
 
-            final String sample;
-            try (final InputStream is = SAMPLES.getRomeoAndJulietSample()) {
-                sample = InputStreamUtil.readString(is, UTF_8);
+                try (final Collection test2 = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2)) {
+                    assertNotNull(test2);
+                    broker.saveCollection(transaction, test2);
+
+                    final String sample;
+                    try (final InputStream is = SAMPLES.getRomeoAndJulietSample()) {
+                        sample = InputStreamUtil.readString(is, UTF_8);
+                    }
+
+                    final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                    broker.storeDocument(transaction, TestConstants.TEST_XML_URI, new StringInputSource(sample), xmlMediaType, test2);
+
+                    final DocumentImpl doc = test2.getDocument(broker, TestConstants.TEST_XML_URI);
+                    assertNotNull(doc);
+                    broker.moveResource(transaction, doc, test, XmldbURI.create("new_test.xml"));
+                    broker.saveCollection(transaction, test);
+                }
             }
-
-            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
-            broker.storeDocument(transaction, TestConstants.TEST_XML_URI, new StringInputSource(sample), xmlMediaType, test2);
-
-            final DocumentImpl doc = test2.getDocument(broker, TestConstants.TEST_XML_URI);
-            assertNotNull(doc);
-            broker.moveResource(transaction, doc, test, XmldbURI.create("new_test.xml"));
-            broker.saveCollection(transaction, test);
 
             transact.commit(transaction);
         }
@@ -245,42 +248,40 @@ public class MoveResourceRecoveryTest {
         }
     }
 
-    private void xmldbStore() throws XMLDBException, URISyntaxException, IOException {
-        final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-        final EXistCollectionManagementService mgr = root.getService(EXistCollectionManagementService.class);
+    private void xmldbStore() throws XMLDBException, IOException {
+        try (final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "")) {
+            final EXistCollectionManagementService mgr = root.getService(EXistCollectionManagementService.class);
 
-        org.xmldb.api.base.Collection test = root.getChildCollection("test");
-        if (test == null) {
-            test = mgr.createCollection("test");
+            try (final org.xmldb.api.base.Collection test = mgr.createCollection("test");
+                final org.xmldb.api.base.Collection test2 = mgr.createCollection("test2")) {
+
+                final String sample;
+                try (final InputStream is = SAMPLES.getRomeoAndJulietSample()) {
+                    sample = InputStreamUtil.readString(is, UTF_8);
+                }
+
+                try (final Resource res = test2.createResource("test3.xml", XMLResource.class)) {
+                    res.setContent(sample);
+                    test2.storeResource(res);
+                }
+
+                mgr.moveResource(XmldbURI.create(XmldbURI.ROOT_COLLECTION + "/test2/test3.xml"),
+                    TestConstants.TEST_COLLECTION_URI, XmldbURI.create("new_test3.xml"));
+            }
         }
-
-        org.xmldb.api.base.Collection test2 = test.getChildCollection("test2");
-        if (test2 == null) {
-            test2 = mgr.createCollection("test2");
-        }
-
-        final String sample;
-        try (final InputStream is = SAMPLES.getRomeoAndJulietSample()) {
-            sample = InputStreamUtil.readString(is, UTF_8);
-        }
-
-        final Resource res = test2.createResource("test3.xml", XMLResource.class);
-        res.setContent(sample);
-        test2.storeResource(res);
-
-        mgr.moveResource(XmldbURI.create(XmldbURI.ROOT_COLLECTION +  "/test2/test3.xml"),
-                TestConstants.TEST_COLLECTION_URI, XmldbURI.create("new_test3.xml"));
     }
 
     private void xmldbRead() throws XMLDBException {
-        final org.xmldb.api.base.Collection test = DatabaseManager.getCollection(XmldbURI.LOCAL_DB +  "/test", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final Resource res = test.getResource("new_test3.xml");
-        assertNotNull("Document should not be null", res);
+        try (final org.xmldb.api.base.Collection test = DatabaseManager.getCollection(XmldbURI.LOCAL_DB +  "/test", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+             final Resource res = test.getResource("new_test3.xml")) {
+            assertNotNull("Document should not be null", res);
 
-        final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final EXistCollectionManagementService mgr = root.getService(EXistCollectionManagementService.class);
-        mgr.removeCollection(XmldbURI.create("test"));
-        mgr.removeCollection(XmldbURI.create("test2"));
+            try (final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+                final EXistCollectionManagementService mgr = root.getService(EXistCollectionManagementService.class);
+                mgr.removeCollection(XmldbURI.create("test"));
+                mgr.removeCollection(XmldbURI.create("test2"));
+            }
+        }
     }
 
     @After

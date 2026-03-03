@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -82,7 +106,7 @@ class InteractiveClientTest {
         client = new InteractiveClient(CommandlineOptions.parse(new String[0])) {
             @Override
             protected void connect() throws Exception {
-                current = collection;
+                setCollection(collection);
             }
         };
         client.frame = clientFrame;
@@ -98,7 +122,7 @@ class InteractiveClientTest {
     void getCollection() {
         replay(collection, mgtService, perm, resource, clientFrame, account, group);
         assertThat(client.getCollection()).isNull();
-        client.current = collection;
+        client.setCollection(collection);
         assertThat(client.getCollection()).isNotNull();
     }
 
@@ -110,7 +134,7 @@ class InteractiveClientTest {
 
     @Test
     void getResourcesWithConnection() throws XMLDBException {
-        client.current = collection;
+        client.setCollection(collection);
 
         recordResourceData(false);
         clientFrame.setResources(anyObject());
@@ -121,14 +145,14 @@ class InteractiveClientTest {
 
     @Test
     void getResourcesWithConnectionWithPermissions() throws XMLDBException {
-        client.current = collection;
+        client.setCollection(collection);
 
         collection.setProperty(PERMISSIONS, "true");
         recordResourceData(true);
         clientFrame.setResources(anyObject());
 
         replay(collection, mgtService, perm, resource, clientFrame, account, group);
-        client.properties.setProperty(PERMISSIONS, "true");
+        client.getProperties().setProperty(PERMISSIONS, "true");
         assertThatNoException().isThrownBy(client::getResources);
     }
 
@@ -185,28 +209,28 @@ class InteractiveClientTest {
 
     @Test
     void readQueryHistory(@TempDir Path tempDir) throws IOException {
-        client.queryHistoryFile = tempDir.resolve(".exist_query_history");
+        client.setQueryHistoryFile(tempDir.resolve(".exist_query_history"));
         replay(collection, mgtService, perm, resource, clientFrame, account, group);
         assertThatNoException().isThrownBy(client::readQueryHistory);
 
-        assertThat(client.queryHistory).isEmpty();
+        assertThat(client.getQueryHistory()).isEmpty();
         ArrayList<String> content = new ArrayList<>();
         content.add("<history>");
         content.add("<query>query one</query>");
         content.add("<query>query two</query>");
         content.add("</history>");
-        Files.write(client.queryHistoryFile, content);
+        Files.write(client.getQueryHistoryFile(), content);
         assertThatNoException().isThrownBy(client::readQueryHistory);
-        assertThat(client.queryHistory).containsExactly("query one", "query two");
+        assertThat(client.getQueryHistory()).containsExactly("query one", "query two");
     }
 
     @Test
     void writeQueryHistory(@TempDir Path tempDir) throws IOException {
         Path historyFile = tempDir.resolve(".exist_query_history");
-        client.console = LineReaderBuilder.builder().variable(LineReader.HISTORY_FILE, historyFile).build();
-        client.queryHistoryFile = historyFile;
+        client.setConsole(LineReaderBuilder.builder().variable(LineReader.HISTORY_FILE, historyFile).build());
+        client.setQueryHistoryFile(historyFile);
         for (int index = 0; index < 21; index++) {
-            client.queryHistory.add("query" + index);
+            client.getQueryHistory().add("query" + index);
         }
         replay(collection, mgtService, perm, resource, clientFrame, account, group);
 
@@ -280,7 +304,7 @@ class InteractiveClientTest {
 
             @Override
             protected void connect() throws Exception {
-                current = collection;
+                setCollection(collection);
             }
 
             @Override

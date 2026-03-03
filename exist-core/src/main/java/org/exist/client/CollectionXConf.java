@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,7 +46,9 @@
 package org.exist.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -49,20 +75,20 @@ import static org.xmldb.api.base.ResourceType.BINARY_RESOURCE;
  * @serial 2006-08-25
  * @version 1.2
  */
-public class CollectionXConf
-{
+public class CollectionXConf {
 
-    public final static String TYPE_QNAME = "qname";
-    public final static String TYPE_PATH = "path";
+    public static final String TYPE_QNAME = "qname";
+    public static final String TYPE_PATH = "path";
 
-    private InteractiveClient client = null;	//the client
-	private String path = null;				//path of the collection.xconf file
-	Collection collection = null;				//the configuration collection
-	Resource resConfig = null;					//the collection.xconf resource
-	
-	private LinkedHashMap<String, String> customNamespaces = null;		//custom namespaces
-	private RangeIndex[] rangeIndexes = null;			//range indexes model
-	private Trigger[] triggers = null;					//triggers model
+    private final InteractiveClient client;	//the client
+	private final String path;				//path of the collection.xconf file
+	private final boolean collectionExists;
+	private final boolean resourceExists;
+
+
+	private @Nullable LinkedHashMap<String, String> customNamespaces = null;		//custom namespaces
+	private @Nullable RangeIndex[] rangeIndexes = null;			//range indexes model
+	private @Nullable Trigger[] triggers = null;					//triggers model
 	
 	private boolean hasChanged = false;	//indicates if changes have been made to the current collection configuration
 	
@@ -70,60 +96,81 @@ public class CollectionXConf
 	/**
 	 * Constructor
 	 * 
-	 * @param CollectionName	The path of the collection to retreive the collection.xconf for
-	 * @param client	The interactive client
+	 * @param collectionName The path of the collection to retrieve the collection.xconf for
+	 * @param client The interactive client
 	 */
-	CollectionXConf(String CollectionName, InteractiveClient client) throws XMLDBException
-	{
+	CollectionXConf(final String collectionName, final InteractiveClient client) throws XMLDBException {
 		this.client = client;
 		
-		//get configuration collection for the named collection
-		//TODO : use XmldbURIs
-		path = CollectionConfigurationManager.CONFIG_COLLECTION + CollectionName;
-		collection = client.getCollection(path);
-		
-		if(collection == null) //if no config collection for this collection exists, just return
-			{return;}
-		
-		//get the resource from the db
-		for (String resource : collection.listResources()) {
-			if (resource.endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX)) {
-				resConfig = collection.getResource(resource);
-				if (BINARY_RESOURCE.equals(resConfig.getResourceType())) {
-					System.err.println("Found a possible Collection configuration document: " + resConfig.getId() + ", however it is a Binary document! A user may have stored the document as a Binary document by mistake. Skipping...");
-					continue;
+		// get configuration collection for the named collection
+		this.path = CollectionConfigurationManager.CONFIG_COLLECTION + collectionName;
+
+		try (final Collection collection = client.getCollection(path)) {
+
+			if (collection == null) {
+				// if no config collection for this collection exists, just return
+				this.collectionExists = false;
+				this.resourceExists = false;
+				return;
+			}
+			this.collectionExists = true;
+
+			// get the resource from the db
+			@Nullable Resource resConfig = null;
+			try {
+				for (final String resource : collection.listResources()) {
+					if (resource.endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX)) {
+						resConfig = collection.getResource(resource);
+						if (BINARY_RESOURCE.equals(resConfig.getResourceType())) {
+							System.err.println("Found a possible Collection configuration document: " + resConfig.getId() + ", however it is a Binary document! A user may have stored the document as a Binary document by mistake. Skipping...");
+							continue;
+						}
+						break;
+					}
 				}
-				break;
+
+				if (resConfig == null) {
+					// if, no config file exists for that collection
+					this.resourceExists = false;
+					return;
+				}
+				this.resourceExists = true;
+
+				// Parse the configuration file into a DOM
+				final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				@Nullable Document docConfig = null;
+				try {
+					final DocumentBuilder builder = factory.newDocumentBuilder();
+					try (final InputStream is = new UnsynchronizedByteArrayInputStream(resConfig.getContent().toString().getBytes())) {
+						docConfig = builder.parse(is);
+					}
+				} catch (final ParserConfigurationException | SAXException | IOException pce) {
+					System.err.println("Found a possible Collection configuration document: " + resConfig.getId() + ", however could not be parsed!" + pce.getMessage());
+				}
+
+				if (docConfig == null) {
+					// if, no config document could be parsed for that collection
+					return;
+				}
+
+				// Get the root of the collection.xconf
+				final Element xconf = docConfig.getDocumentElement();
+
+				// Read any custom namespaces from xconf
+				this.customNamespaces = getCustomNamespaces(xconf);
+
+				// Read Range Indexes from xconf
+				this.rangeIndexes = getRangeIndexes(xconf);
+
+				// Read Triggers from xconf
+				this.triggers = getTriggers(xconf);
+
+			} finally {
+				if (resConfig != null) {
+					resConfig.close();
+				}
 			}
 		}
-		
-		if(resConfig == null) //if, no config file exists for that collection
-			{return;}
-		
-		//Parse the configuration file into a DOM
-		final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		Document docConfig = null;
-		try
-		{
-			final DocumentBuilder builder = factory.newDocumentBuilder();
-			docConfig = builder.parse( new UnsynchronizedByteArrayInputStream(resConfig.getContent().toString().getBytes()) );
-		}
-		catch(final ParserConfigurationException | SAXException | IOException pce)
-		{
-			//TODO: do something here, throw exception?
-		}
-
-		//Get the root of the collection.xconf
-		final Element xconf = docConfig.getDocumentElement();
-		
-		//Read any custom namespaces from xconf
-		customNamespaces = getCustomNamespaces(xconf);
-		
-		//Read Range Indexes from xconf
-		rangeIndexes = getRangeIndexes(xconf);
-		
-		//read Triggers from xconf
-		triggers = getTriggers(xconf);
 	}
 	
 	/**
@@ -216,10 +263,10 @@ public class CollectionXConf
             {rangeIndexes[index].setType(type);}
         
         if(XPath != null)
-			{rangeIndexes[index].setXPath(XPath);}
+			{rangeIndexes[index].setXpath(XPath);}
 		
 		if(xsType != null)
-			{rangeIndexes[index].setxsType(xsType);}
+			{rangeIndexes[index].setXsType(xsType);}
 	}
 	
 	/**
@@ -527,38 +574,37 @@ public class CollectionXConf
 	 * 
 	 * @return true if the save succeeds, false otherwise
 	 */
-	public boolean Save()
-	{
-		try
-		{
-			//is there an existing config file?
-			if(resConfig == null)
-			{
-				//no
-				
-				//is there an existing configuration collection?
-				if(collection == null)
-				{
-					//no
-					client.process("mkcol " + path);
-					collection = client.getCollection(path);
-				}
-				
-				resConfig = collection.createResource(CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE, XMLResource.class);
-			}
-			
-			//set the content of the collection.xconf
-			resConfig.setContent(toXMLString());
-			
-			//store the collection.xconf
-			collection.storeResource(resConfig);
+	public boolean save() {
+		if (!collectionExists) {
+			client.process("mkcol " + path);
 		}
-		catch(final XMLDBException xmldbe)
-		{
+
+		try (final Collection collection = client.getCollection(path)) {
+			@Nullable Resource resConfig = null;
+			try {
+				if (resourceExists) {
+					resConfig = collection.getResource(CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE);
+				} else {
+					resConfig = collection.createResource(CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE, XMLResource.class);
+				}
+
+				// set the content of the collection.xconf
+				resConfig.setContent(toXMLString());
+
+				//s tore the collection.xconf
+				collection.storeResource(resConfig);
+
+			} finally {
+				if (resConfig != null) {
+					resConfig.close();
+				}
+			}
+
+			return true;
+
+		} catch (final XMLDBException e) {
 			return false;
 		}
-		
-		return true;
 	}
 	
 	/**
@@ -566,30 +612,28 @@ public class CollectionXConf
 	 */
 	protected class RangeIndex
 	{
-        private String type = TYPE_QNAME;
-        private String XPath = null;
-		private String xsType = null;
+        private String type;
+        private String xpath;
+		private String xsType;
 		
 		/**
 		 * Constructor
 		 *
 		 * @param type type of the index, either "qname" or "path"
-		 * @param XPath		The XPath to create a range index on
+		 * @param xpath		The XPath to create a range index on
 		 * @param xsType	The data type pointed to by the XPath as an xs:type 
 		 */
-		RangeIndex(String type, String XPath, String xsType)
-		{
+		RangeIndex(final String type, final String xpath, final String xsType) {
             this.type = type;
-            this.XPath = XPath;
+            this.xpath = xpath;
 			this.xsType = xsType;
 		}
 		
-		public String getXPath()
-		{
-			return(XPath);	
+		public String getXpath() {
+			return xpath;
 		}
 		
-		public String getxsType()
+		public String getXsType()
 		{
 			return(xsType);
 		}
@@ -598,30 +642,28 @@ public class CollectionXConf
             return type;
         }
 
-        public void setXPath(String XPath)
-		{
-			this.XPath = XPath;
+        public void setXpath(final String xpath) {
+			this.xpath = xpath;
 		}
 		
-		public void setxsType(String xsType)
-		{
+		public void setXsType(final String xsType) {
 			this.xsType = xsType;
 		}
 
-        public void setType(String type) {
+        public void setType(final String type) {
             this.type = type;
         }
         
         //produces a collection.xconf suitable string of XML describing the range index
-		protected String toXMLString()
-		{
+		protected String toXMLString() {
 			final StringBuilder range = new StringBuilder();
 
-            if (TYPE_PATH.equals(type))
-                {range.append("<create path=\"");}
-            else
-                {range.append("<create qname=\"");}
-            range.append(XPath);
+            if (TYPE_PATH.equals(type)) {
+				range.append("<create path=\"");
+			} else {
+				range.append("<create qname=\"");
+			}
+            range.append(xpath);
 			range.append("\" type=\"");
 			range.append(xsType);
 			range.append("\"/>");
@@ -633,10 +675,9 @@ public class CollectionXConf
 	/**
 	 * Represents a Trigger in the collection.xconf
 	 */
-	protected static class Trigger
-	{
+	protected static class Trigger {
 		private String triggerClass = null;
-		private Properties parameters = null;
+		private final Properties parameters;
 		
 		/**
 		 * Constructor
@@ -644,39 +685,32 @@ public class CollectionXConf
 		 * @param triggerClass				The fully qualified java class name of the trigger
 		 * @param parameters				Properties describing any name=value parameters for the trigger
 		 */
-		Trigger(final String triggerClass, final Properties parameters)
-		{
+		Trigger(final String triggerClass, final Properties parameters) {
 			this.triggerClass = triggerClass;
 			this.parameters = parameters;
 		}
 		
-		public String getTriggerClass()
-		{
+		public String getTriggerClass() {
 			return triggerClass;
 		}
 		
-		public void setTriggerClass(String triggerClass)
-		{
+		public void setTriggerClass(final String triggerClass) {
 			this.triggerClass = triggerClass;
 		}
 		
 		//produces a collection.xconf suitable string of XML describing the trigger
-		protected String toXMLString()
-		{
+		protected String toXMLString() {
 			final StringBuilder trigger = new StringBuilder();
 			
-			if(!"".equals(triggerClass))
-			{
+			if(!"".equals(triggerClass)) {
 			
 				trigger.append("<trigger class=\"");
 				trigger.append(triggerClass);
 				trigger.append("\">");
 				
 				//parameters if any
-				if(parameters != null)
-				{
-					if(parameters.size() > 0)
-					{
+				if(parameters != null) {
+					if(parameters.size() > 0) {
 						for (Object o : parameters.keySet()) {
 							final String name = (String) o;
 							final String value = parameters.getProperty(name);

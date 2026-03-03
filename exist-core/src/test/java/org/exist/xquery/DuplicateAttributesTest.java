@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,17 +49,16 @@ import com.googlecode.junittoolbox.ParallelRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
@@ -80,31 +103,31 @@ public class DuplicateAttributesTest {
      */
     @Test (expected=XMLDBException.class)
     public void appendStoredAttrFail() throws XMLDBException {
-        XQueryService xqs = testCollection.getService(XQueryService.class);
+        final XQueryService xqs = testCollection.getService(XQueryService.class);
         String query =
             "let $a := \n" +
             "<node attr=\"a\" b=\"c\">{doc(\"/db/test/stored1.xml\")//@attr}</node>" +
             "return $a";
-        xqs.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
 
     /**
      * Add attribute to element which has no conflicting attributes.
      */
     @Test
-    public void appendStoredAttrOK() {
-        try {
-            XQueryService xqs = testCollection.getService(XQueryService.class);
-            String query =
-                "let $a := \n" +
-                "<node attr=\"a\" b=\"c\">{doc(\"/db/test/stored2.xml\")//@attr2}</node>" +
-                "return $a";
-            ResourceSet result = xqs.query(query);
+    public void appendStoredAttrOK() throws XMLDBException {
+        final XQueryService xqs = testCollection.getService(XQueryService.class);
+        final String query =
+            "let $a := \n" +
+            "<node attr=\"a\" b=\"c\">{doc(\"/db/test/stored2.xml\")//@attr2}</node>" +
+            "return $a";
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
             assertEquals(1, result.getSize());
-            assertEquals("<node attr=\"a\" b=\"c\" attr2=\"ab\"/>", result.getResource(0).getContent());
-        } catch (XMLDBException e) {
-            LOG.error(e.getMessage(), e);
-            fail(e.getMessage());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("<node attr=\"a\" b=\"c\" attr2=\"ab\"/>", resource.getContent());
+            }
         }
     }
 
@@ -114,13 +137,15 @@ public class DuplicateAttributesTest {
      */
     @Test (expected=XMLDBException.class)
     public void appendConstrAttr() throws XMLDBException {
-        XQueryService xqs = testCollection.getService(XQueryService.class);
-        String query =
+        final XQueryService xqs = testCollection.getService(XQueryService.class);
+        final String query =
             "let $a := <root attr=\"ab\"/>" +
             "let $b := \n" +
             "   <node attr=\"a\" b=\"c\">{$a//@attr}</node>" +
             "return $a";
-        xqs.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
+            // needed to ensure that result is cloded
+        }
     }
 
     /**
@@ -129,11 +154,14 @@ public class DuplicateAttributesTest {
      */
     @Test (expected=XMLDBException.class)
     public void appendIdref() throws XMLDBException {
-        XQueryService xqs = testCollection.getService(XQueryService.class);
-        String query =
+        final XQueryService xqs = testCollection.getService(XQueryService.class);
+        final String query =
             "<results>{fn:idref(('id1', 'id2'), doc('/db/test/docdtd.xml')/IDS)}</results>";
-        ResourceSet result = xqs.query(query);
-        result.getResource(0).getContent();
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                resource.getContent();
+            }
+        }
     }
 
     @BeforeClass
@@ -142,21 +170,25 @@ public class DuplicateAttributesTest {
         testCollection = service.createCollection("test");
         assertNotNull(testCollection);
 
-        Resource resource = testCollection.createResource("stored1.xml", XMLResource.class);
-        resource.setContent(STORED_DOC1);
-        testCollection.storeResource(resource);
+        try (final Resource resource = testCollection.createResource("stored1.xml", XMLResource.class)) {
+            resource.setContent(STORED_DOC1);
+            testCollection.storeResource(resource);
+        }
 
-        resource = testCollection.createResource("stored2.xml", XMLResource.class);
-        resource.setContent(STORED_DOC2);
-        testCollection.storeResource(resource);
+        try (final Resource resource = testCollection.createResource("stored2.xml", XMLResource.class)) {
+            resource.setContent(STORED_DOC2);
+            testCollection.storeResource(resource);
+        }
 
-        resource = testCollection.createResource("docdtd.xml", XMLResource.class);
-        resource.setContent(DOC_WITH_DTD);
-        testCollection.storeResource(resource);
+        try (final Resource resource = testCollection.createResource("docdtd.xml", XMLResource.class)) {
+            resource.setContent(DOC_WITH_DTD);
+            testCollection.storeResource(resource);
+        }
     }
 
     @AfterClass
     public static void cleanup() throws XMLDBException {
+        testCollection.close();
         final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         service.removeCollection("test");
     }

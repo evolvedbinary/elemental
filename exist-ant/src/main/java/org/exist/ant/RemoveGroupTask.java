@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -34,12 +58,8 @@ public class RemoveGroupTask extends UserTask
 {
     private String name = null;
 
-    /* (non-Javadoc)
-     * @see org.apache.tools.ant.Task#execute()
-     */
-    public void execute() throws BuildException
-    {
-        super.execute();
+    @Override
+    public void executeUserTask() throws BuildException {
 
         if( name == null ) {
             throw( new BuildException( "You have to specify a name" ) );
@@ -48,10 +68,10 @@ public class RemoveGroupTask extends UserTask
         log( "Removing group " + name, Project.MSG_INFO );
 
         try {
-            final Group group = service.getGroup( name );
+            final Group group = getService().getGroup( name );
 
             if( group != null ) {
-                service.removeGroup( group );
+                getService().removeGroup( group );
             } else {
                 log( "Group " + name + " does not exist.", Project.MSG_INFO );
             }

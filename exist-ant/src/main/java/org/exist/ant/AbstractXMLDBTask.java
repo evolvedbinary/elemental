@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -37,6 +61,7 @@ import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
+import javax.annotation.Nullable;
 import java.util.StringTokenizer;
 
 
@@ -186,79 +211,67 @@ public abstract class AbstractXMLDBTask extends Task
     }
 
 
-    protected final Collection mkcol(final Collection rootCollection, final String baseURI, String path, final String relPath ) throws XMLDBException
-    {
-        CollectionManagementService mgtService;
-        Collection                  current   = rootCollection;
-        Collection                  collection;
-        String                      token;
+    protected final Collection mkcol(Collection collection, final String baseURI, String path, final String relPath) throws XMLDBException {
+        final StringTokenizer tokenizer = new StringTokenizer(relPath, "/");
 
-        ///TODO : use dedicated function in XmldbURI
-        final StringTokenizer             tokenizer = new StringTokenizer( relPath, "/" );
-
-        while( tokenizer.hasMoreTokens() ) {
-
-            token = tokenizer.nextToken();
-
-            if( path != null ) {
+        while (tokenizer.hasMoreTokens()) {
+            final String token = tokenizer.nextToken();
+            if (path != null) {
                 path = path + "/" + token;
             } else {
                 path = "/" + token;
             }
 
-            log( "Get collection " + baseURI + path, Project.MSG_DEBUG );
-            collection = DatabaseManager.getCollection( baseURI + path, user, password );
-
-            if( collection == null ) {
-                log( "Create collection management service for collection " + current.getName(), Project.MSG_DEBUG );
-                mgtService = current.getService( CollectionManagementService.class );
-                log( "Create child collection " + token, Project.MSG_DEBUG );
-                current = mgtService.createCollection( token );
-                log( "Created collection " + current.getName() + '.', Project.MSG_DEBUG );
-
-            } else {
-                current = collection;
+            Collection child = DatabaseManager.getCollection(baseURI + path, user, password);
+            if (child == null) {
+                final CollectionManagementService mgtService = collection.getService(CollectionManagementService.class);
+                log("Create child collection " + token, Project.MSG_DEBUG);
+                child = mgtService.createCollection(token);
+                log("Created collection " + child.getName() + '.', Project.MSG_DEBUG);
             }
+
+            try {
+                // close the parent collection
+                collection.close();
+            } catch (final XMLDBException e) {
+                // no-op
+            }
+
+            collection = child;
         }
-        return( current );
+
+        return collection;
     }
     
     
-    protected final void setPermissions(final Resource res ) throws BuildException
-    {
-    	Collection            base    = null;
-    	UserManagementService service = null;
-    	
-    	if( uri == null ) {
-            throw( new BuildException( "you have to specify an XMLDB collection URI" ) );
+    protected final void setPermissions(final Resource res) throws BuildException {
+    	if (uri == null) {
+            throw new BuildException( "you have to specify an XMLDB collection URI");
         }
 
-        try {
-            log( "Get base collection: " + uri, Project.MSG_DEBUG );
-            base = DatabaseManager.getCollection( uri, user, password );
+        log("Get base collection: " + uri, Project.MSG_DEBUG);
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
-            if( base == null ) {
+            if (base == null ) {
                 final String msg = "Collection " + uri + " could not be found.";
 
-                if( failonerror ) {
-                    throw( new BuildException( msg ) );
+                if (failonerror) {
+                    throw new BuildException(msg);
                 } else {
-                    log( msg, Project.MSG_ERR );
+                    log(msg, Project.MSG_ERR);
                 }
             } else {
-                service = base.getService( UserManagementService.class);
-                
-                setPermissions( res, service );
+                final UserManagementService service = base.getService(UserManagementService.class);
+                setPermissions(res, service);
             }
 
-        }
-        catch( final XMLDBException e ) {
+        } catch (final XMLDBException e) {
             final String msg = "XMLDB exception caught: " + e.getMessage();
 
-            if( failonerror ) {
-                throw( new BuildException( msg, e ) );
+            if (failonerror) {
+                throw new BuildException(msg, e);
             } else {
-                log( msg, e, Project.MSG_ERR );
+                log(msg, e, Project.MSG_ERR);
             }
         }
     }
@@ -283,7 +296,7 @@ public abstract class AbstractXMLDBTask extends Task
     }
     
     
-    protected final void setPermissions(final Resource res, final UserManagementService service ) throws BuildException
+    protected final void setPermissions(@Nullable final Resource res, final UserManagementService service ) throws BuildException
     {
     	 try {
     	 	if( permissions != null ) {

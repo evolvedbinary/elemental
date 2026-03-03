@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,7 +47,6 @@ package org.exist.xquery;
 
 import org.junit.Test;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XPathQueryService;
 
 import java.net.URISyntaxException;
 
@@ -53,23 +76,23 @@ public class ValueIndexByQNameTest extends ValueIndexTest {
 	@Override
 	public void strings() throws XMLDBException, URISyntaxException {
         configureCollection(config);
-        XPathQueryService service = storeXMLFileAndGetQueryService(ITEMS_FILENAME, ITEMS_FILE);
+        storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
 
         // queryResource(service, "items.xml", "//item[name > 'Racing Bicycle']", 4 );
 
-         queryResource(service, "items.xml", 
+         queryResourceV("items.xml",
         		"util:qname-index-lookup( xs:QName('name'), 'Racing Bicycle' ) / parent::item" , 1 );       
-         queryResource(service, "items.xml",
+         queryResourceV("items.xml",
         	"util:qname-index-lookup( xs:QName('itemno'), 3) / parent::item", 1);    
-        queryResource(service, "items.xml", 
+        queryResourceV("items.xml",
         		"declare namespace xx='http://test.com'; " +
         		"util:qname-index-lookup( xs:QName('xx:test'), 123, false() )", 1);
 
-//        queryResource(service, "items.xml", "//item[name &= 'Racing Bicycle']", 1);
-//        queryResource(service, "items.xml", "//item[mixed = 'uneven']", 1);
-		queryResource(service, "items.xml", 
+//        queryResource("items.xml", "//item[name &= 'Racing Bicycle']", 1);
+//        queryResource("items.xml", "//item[mixed = 'uneven']", 1);
+		queryResourceV("items.xml",
 			"util:qname-index-lookup( xs:QName('mixed'), 'external' )", 1);
-//		queryResource(service, "items.xml", "//item[fn:matches(mixed, 'un.*')]", 2);
+//		queryResource("items.xml", "//item[fn:matches(mixed, 'un.*')]", 2);
 	}
 
 	protected String getCollectionConfig() {

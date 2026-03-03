@@ -47,13 +47,14 @@ package org.exist.xquery.functions.xquery3;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
-import org.xmldb.api.base.ResourceSet;
 
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.junit.Test;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmlunit.matchers.CompareMatcher;
 
@@ -73,10 +74,13 @@ public class TryCatchTest {
         final String query1 = "xquery version '3.0';"
                 + "<a>{ try { 'b' + 7 } catch * { 'c' } }</a>";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-        final String r = (String) results.getResource(0).getContent();
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
 
-        assertEquals("<a>c</a>", r);
+                assertEquals("<a>c</a>", r);
+            }
+        }
     }
 
        @Test
@@ -84,11 +88,14 @@ public class TryCatchTest {
         final String query1 = "xquery version '3.0';"
                 + "for $i in (1,2,3,4) return <a>{ try { 'b' + $i } catch * { 'c' } }</a>";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-        assertEquals(4, results.getSize());
+       try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+           assertEquals(4, results.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertEquals("<a>c</a>", r);
+           try (final Resource resource = results.getResource(0)) {
+               final String r = (String) resource.getContent();
+               assertEquals("<a>c</a>", r);
+           }
+       }
     }
 
    @Test
@@ -96,22 +103,26 @@ public class TryCatchTest {
         final String query1 = "xquery version '3.0';"
                 + "<foo>{ for $i in (1,2,3,4) return <a>{ try { 'b' + $i } catch * { 'c' } }</a> }</foo>";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-        assertEquals(1, results.getSize());
+       try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+           assertEquals(1, results.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, CompareMatcher.isSimilarTo("<foo><a>c</a><a>c</a><a>c</a><a>c</a></foo>").ignoreWhitespace());
+           try (final Resource resource = results.getResource(0)) {
+               final String result = (String) resource.getContent();
+               assertThat(result, CompareMatcher.isSimilarTo("<foo><a>c</a><a>c</a><a>c</a><a>c</a></foo>").ignoreWhitespace());
+           }
+       }
     }
 
     @Test
     public void xQuery3_1() throws XMLDBException {
         final String query1 = "xquery version '1.0';"
                 + "try { a + 7 } catch * { 1 }";
-        try {
-            final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-            final String r = (String) results.getResource(0).getContent();
-            assertEquals("1", r);
-            fail("exception expected");
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("1", r);
+                fail("exception expected");
+            }
         } catch (final Throwable t) {
 
             final Throwable cause = t.getCause();
@@ -128,9 +139,12 @@ public class TryCatchTest {
         final String query = "xquery version '3.0';"
                 + "try { a + 7 } catch * { 1 }";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        final String r = (String) results.getResource(0).getContent();
-        assertEquals("1", r);
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("1", r);
+            }
+        }
     }
 
     @Test
@@ -140,14 +154,19 @@ public class TryCatchTest {
                 + "catch * "
                 + "{  $err:code, $err:description } ";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(2, results.getSize());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(2, results.getSize());
 
-        final String r1 = (String) results.getResource(0).getContent();
-        assertEquals(ErrorCodes.XPDY0002.getErrorQName().getStringValue(), r1);
+            try (final Resource resource = results.getResource(0)) {
+                final String r1 = (String) resource.getContent();
+                assertEquals(ErrorCodes.XPDY0002.getErrorQName().getStringValue(), r1);
+            }
 
-        final String r2 = (String) results.getResource(1).getContent();
-        assertEquals(ErrorCodes.XPDY0002.getDescription() + " Undefined context sequence for 'child::{}a'", r2);
+            try (final Resource resource = results.getResource(1)) {
+                final String r2 = (String) resource.getContent();
+                assertEquals(ErrorCodes.XPDY0002.getDescription() + " Undefined context sequence for 'child::{}a'", r2);
+            }
+        }
     }
 
     @Test
@@ -158,9 +177,12 @@ public class TryCatchTest {
                 + "catch err:XPDY0002 { 2 }"
                 + "catch err:XPDY0003 { 3 }";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        final String r = (String) results.getResource(0).getContent();
-        assertEquals("2", r);
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("2", r);
+            }
+        }
     }
 
     @Test(expected = XMLDBException.class)
@@ -171,9 +193,12 @@ public class TryCatchTest {
                 + "catch err:XPDY0002 { a }"
                 + "catch err:XPDY0003 { 3 }";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        final String r = (String) results.getResource(0).getContent();
-        assertEquals("2", r);
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("2", r);
+            }
+        }
     }
 
     @Test
@@ -184,9 +209,12 @@ public class TryCatchTest {
                 + "catch err:XPDY0002 { 2 }"
                 + "catch err:XPDY0004 | err:XPDY0005 { 45 }";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-        final String r = (String) results.getResource(0).getContent();
-        assertEquals("2", r);
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("2", r);
+            }
+        }
 
         final String query2 = "xquery version '3.0';"
                 + "try { a + 7 } "
@@ -194,9 +222,12 @@ public class TryCatchTest {
                 + "catch err:XPDY0002 { 2 }"
                 + "catch err:XPDY0004 | err:XPDY0005 { 45 }";
 
-        final ResourceSet results2 = existEmbeddedServer.executeQuery(query2);
-        final String r2 = (String) results2.getResource(0).getContent();
-        assertEquals("13", r2);
+        try (final EXistResourceSet results2 = existEmbeddedServer.executeQuery(query2)) {
+            try (final Resource resource = results2.getResource(0)) {
+                final String r2 = (String) resource.getContent();
+                assertEquals("13", r2);
+            }
+        }
     }
 
 
@@ -208,10 +239,13 @@ public class TryCatchTest {
                 + "} catch * "
                 + "{ $err:code }";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-        assertEquals(1, results.getSize());
-        final String r1 = (String) results.getResource(0).getContent();
-        assertEquals("err:FOER0000", r1);
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+            assertEquals(1, results.getSize());
+            try (final Resource resource = results.getResource(0)) {
+                final String r1 = (String) resource.getContent();
+                assertEquals("err:FOER0000", r1);
+            }
+        }
 
 
         final String query2 = "xquery version '3.0';"
@@ -220,10 +254,13 @@ public class TryCatchTest {
                 + "} catch * "
                 + "{ $err:code }";
 
-        final ResourceSet results2 = existEmbeddedServer.executeQuery(query2);
-        assertEquals(1, results2.getSize());
-        final String r2 = (String) results2.getResource(0).getContent();
-        assertEquals("err:FOER0000", r2);
+        try (final EXistResourceSet results2 = existEmbeddedServer.executeQuery(query2)) {
+            assertEquals(1, results2.getSize());
+            try (final Resource resource = results2.getResource(0)) {
+                final String r2 = (String) resource.getContent();
+                assertEquals("err:FOER0000", r2);
+            }
+        }
 
         
         final String query3 = "xquery version '3.0';"
@@ -232,13 +269,17 @@ public class TryCatchTest {
                 + "} catch * "
                 + "{ $err:code, $err:description }";
 
-        final ResourceSet results3 = existEmbeddedServer.executeQuery(query3);
-        assertEquals(2, results3.getSize());
-        final String r31 = (String) results3.getResource(0).getContent();
-        assertEquals("err:FOER0000", r31);
-        final String r32 = (String) results3.getResource(1).getContent();
-        assertEquals("TEST", r32);
-
+        try (final EXistResourceSet results3 = existEmbeddedServer.executeQuery(query3)) {
+            assertEquals(2, results3.getSize());
+            try (final Resource resource = results3.getResource(0)) {
+                final String r31 = (String) resource.getContent();
+                assertEquals("err:FOER0000", r31);
+            }
+            try (final Resource resource = results3.getResource(1)) {
+                final String r32 = (String) resource.getContent();
+                assertEquals("TEST", r32);
+            }
+        }
 
         final String query4 = "xquery version '3.0';"
                 + "try {"
@@ -246,13 +287,17 @@ public class TryCatchTest {
                 + "} catch *  "
                 + "{ $err:code, $err:description }";
 
-        final ResourceSet results4 = existEmbeddedServer.executeQuery(query4);
-        assertEquals(2, results4.getSize());
-        final String r41 = (String) results4.getResource(0).getContent();
-        assertEquals("err:FOER0000", r41);
-        final String r42 = (String) results4.getResource(1).getContent();
-        assertEquals("TEST", r42);
-
+        try (final EXistResourceSet results4 = existEmbeddedServer.executeQuery(query4)) {
+            assertEquals(2, results4.getSize());
+            try (final Resource resource = results4.getResource(0)) {
+                final String r41 = (String) resource.getContent();
+                assertEquals("err:FOER0000", r41);
+            }
+            try (final Resource resource = results4.getResource(1)) {
+                final String r42 = (String) resource.getContent();
+                assertEquals("TEST", r42);
+            }
+        }
 
         final String query5 = "xquery version '3.0';"
                 + "try {"
@@ -260,14 +305,21 @@ public class TryCatchTest {
                 + "} catch *  "
                 + "{ $err:code, $err:description, $err:value }";
 
-        final ResourceSet results5 = existEmbeddedServer.executeQuery(query5);
-        assertEquals(3, results5.getSize());
-        final String r51 = (String) results5.getResource(0).getContent();
-        assertEquals("err:FOER0000", r51);
-        final String r52 = (String) results5.getResource(1).getContent();
-        assertEquals("TEST", r52);
-        final String r53 = (String) results5.getResource(2).getContent();
-        assertEquals("<ab/>", r53);
+        try (final EXistResourceSet results5 = existEmbeddedServer.executeQuery(query5)) {
+            assertEquals(3, results5.getSize());
+            try (final Resource resource = results5.getResource(0)) {
+                final String r51 = (String) resource.getContent();
+                assertEquals("err:FOER0000", r51);
+            }
+            try (final Resource resource = results5.getResource(1)) {
+                final String r52 = (String) resource.getContent();
+                assertEquals("TEST", r52);
+            }
+            try (final Resource resource = results5.getResource(2)) {
+                final String r53 = (String) resource.getContent();
+                assertEquals("<ab/>", r53);
+            }
+        }
     }
 
     @Test
@@ -277,17 +329,24 @@ public class TryCatchTest {
                 + "catch *  "
                 + "{  $err:code, $err:description, empty($err:value) } ";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(3, results.getSize());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(3, results.getSize());
 
-        final String r1 = (String) results.getResource(0).getContent();
-        assertEquals(ErrorCodes.XPDY0002.getErrorQName().getStringValue(), r1);
+            try (final Resource resource = results.getResource(0)) {
+                final String r1 = (String) resource.getContent();
+                assertEquals(ErrorCodes.XPDY0002.getErrorQName().getStringValue(), r1);
+            }
 
-        final String r2 = (String) results.getResource(1).getContent();
-        assertEquals(ErrorCodes.XPDY0002.getDescription() + " Undefined context sequence for 'child::{}a'", r2);
+            try (final Resource resource = results.getResource(1)) {
+                final String r2 = (String) resource.getContent();
+                assertEquals(ErrorCodes.XPDY0002.getDescription() + " Undefined context sequence for 'child::{}a'", r2);
+            }
 
-        final String r3 = (String) results.getResource(2).getContent();
-        assertEquals("true", r3);
+            try (final Resource resource = results.getResource(2)) {
+                final String r3 = (String) resource.getContent();
+                assertEquals("true", r3);
+            }
+        }
     }
 
     @Test
@@ -300,10 +359,13 @@ public class TryCatchTest {
                 + "catch foo:ERRORNAME  { 'good' } "
                 + "catch *  { 'bad' } ";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query1);
-        assertEquals(1, results.getSize());
-        final String r1 = (String) results.getResource(0).getContent();
-        assertEquals("good", r1);
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query1)) {
+            assertEquals(1, results.getSize());
+            try (final Resource resource = results.getResource(0)) {
+                final String r1 = (String) resource.getContent();
+                assertEquals("good", r1);
+            }
+        }
 
 
         final String query2 = "xquery version '3.0';"
@@ -314,10 +376,13 @@ public class TryCatchTest {
                 + "catch foo:ERRORNAME { $err:code } "
                 + "catch *  { 'bad' } ";
 
-        final ResourceSet results2 = existEmbeddedServer.executeQuery(query2);
-        assertEquals(1, results2.getSize());
-        final String r2 = (String) results2.getResource(0).getContent();
-        assertEquals("foo:ERRORNAME", r2);
+        try (final EXistResourceSet results2 = existEmbeddedServer.executeQuery(query2)) {
+            assertEquals(1, results2.getSize());
+            try (final Resource resource = results2.getResource(0)) {
+                final String r2 = (String) resource.getContent();
+                assertEquals("foo:ERRORNAME", r2);
+            }
+        }
     }
 
     @Test
@@ -330,10 +395,13 @@ public class TryCatchTest {
                 + "catch foo:ERRORNAME { 'good' } "
                 + "catch * { 'wrong' } ";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
 
-        final String r1 = (String) results.getResource(0).getContent();
-        assertEquals("good", r1);
+            try (final Resource resource = results.getResource(0)) {
+                final String r1 = (String) resource.getContent();
+                assertEquals("good", r1);
+            }
+        }
     }
 }

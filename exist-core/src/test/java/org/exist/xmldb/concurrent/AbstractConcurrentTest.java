@@ -88,19 +88,18 @@ public abstract class AbstractConcurrentTest {
     public final void startupDb() throws Exception {
         final Collection rootCol = existXmldbEmbeddedServer.getRoot();
         assertNotNull(rootCol);
+
         final IndexQueryService idxConf = rootCol.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
-        testCol = rootCol.getChildCollection(getTestCollectionName());
-        if (testCol != null) {
-            CollectionManagementService mgr = DBUtils.getCollectionManagementService(rootCol);
-            mgr.removeCollection(getTestCollectionName());
-        }
+
         testCol = DBUtils.addCollection(rootCol, getTestCollectionName());
         assertNotNull(testCol);
     }
 
     @After
     public final void tearDownDb() throws XMLDBException {
+        testCol.close();
+
         final Collection rootCol = existXmldbEmbeddedServer.getRoot();
         DBUtils.removeCollection(rootCol, getTestCollectionName());
 

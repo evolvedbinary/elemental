@@ -54,11 +54,18 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xquery.value.FunctionReference;
 import org.exist.xquery.value.Sequence;
-import org.junit.*;
-import org.xmldb.api.base.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import xyz.elemental.mediatype.MediaType;
@@ -112,17 +119,18 @@ public class CleanupTest {
 
     @Before
     public void setup() throws XMLDBException {
-        final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         collection = service.createCollection("test");
-        final Resource doc = collection.createResource("test-module.xql", BinaryResource.class);
-        doc.setContent(TEST_MODULE);
-        ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
-        collection.storeResource(doc);
+        try (final Resource doc = collection.createResource("test-module.xql", BinaryResource.class)) {
+            doc.setContent(TEST_MODULE);
+            ((EXistResource) doc).setMediaType(MediaType.APPLICATION_XQUERY);
+            collection.storeResource(doc);
+        }
     }
 
     @After
     public void tearDown() throws XMLDBException {
+        collection.close();
         final CollectionManagementService service =
                 existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         service.removeCollection("test");
@@ -151,16 +159,19 @@ public class CleanupTest {
         var2.setContextDocSet(DocumentSet.EMPTY_DOCUMENT_SET);
 
         // execute query and check result
-        final ResourceSet result = service.execute(compiled);
-        assertEquals(result.getSize(), 1);
-        assertEquals(result.getResource(0).getContent(), "Hello world123");
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
+            assertEquals(result.getSize(), 1);
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(resource.getContent(), "Hello world123");
+            }
 
-        Sequence[] args = calledFunc.getCurrentArguments();
-        assertNull(args);
-        assertNull(calledFunc.getContextDocSet());
-        assertNull(calledBody.getContextDocSet());
-        assertNull(var1.getContextDocSet());
-        assertNull(var2.getContextDocSet());
+            final Sequence[] args = calledFunc.getCurrentArguments();
+            assertNull(args);
+            assertNull(calledFunc.getContextDocSet());
+            assertNull(calledBody.getContextDocSet());
+            assertNull(var1.getContextDocSet());
+            assertNull(var2.getContextDocSet());
+        }
     }
 
     @Test
@@ -189,12 +200,15 @@ public class CleanupTest {
         final Module module = modules[0];
         module.declareVariable(new QName("VAR", MODULE_NS, "t"), "TEST");
 
-        final ResourceSet result = service.execute(compiled);
-        assertEquals(result.getSize(), 2);
-        assertEquals(result.getResource(1).getContent(), "TEST");
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
+            assertEquals(result.getSize(), 2);
+            try (final Resource resource = result.getResource(1)) {
+                assertEquals(resource.getContent(), "TEST");
+            }
 
-        final Variable var = module.resolveVariable(new QName("VAR", MODULE_NS, "t"));
-        assertNull(var);
+            final Variable var = module.resolveVariable(new QName("VAR", MODULE_NS, "t"));
+            assertNull(var);
+        }
     }
 
     @Test
@@ -209,10 +223,12 @@ public class CleanupTest {
         final InternalFunctionCall root = (InternalFunctionCall) ((PathExpr) compiled).getFirst();
         final TestModule.TestFunction func = (TestModule.TestFunction) root.getFunction();
 
-        final ResourceSet result = service.execute(compiled);
-        assertEquals(result.getSize(), 1);
-        assertEquals(result.getResource(0).getContent(), "TEST");
-        assertFalse(func.dummyProperty);
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
+            assertEquals(result.getSize(), 1);
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(resource.getContent(), "TEST");
+            }
+            assertFalse(func.dummyProperty);
+        }
     }
-
 }

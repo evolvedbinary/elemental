@@ -46,8 +46,8 @@
 package org.exist.xquery.functions.transform;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import java.net.URISyntaxException;
@@ -100,8 +100,9 @@ public class TransformFromPkgTest {
 
         final String xquery = "transform:transform(" + xml + ", " + xslt + ", ())";
 
-        final ResourceSet result = existXmldbEmbeddedServer.executeQuery(xquery);
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery(xquery)){
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
+        }
     }
 }

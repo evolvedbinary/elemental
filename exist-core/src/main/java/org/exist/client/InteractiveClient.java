@@ -89,14 +89,7 @@ import org.exist.storage.ElementIndex;
 import org.exist.util.*;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
-import org.exist.xmldb.EXistCollectionManagementService;
-import org.exist.xmldb.DatabaseInstanceManager;
-import org.exist.xmldb.EXistResource;
-import org.exist.xmldb.ExtendedResource;
-import org.exist.xmldb.IndexQueryService;
-import org.exist.xmldb.UserManagementService;
-import org.exist.xmldb.EXistXPathQueryService;
-import org.exist.xmldb.XmldbURI;
+import org.exist.xmldb.*;
 import org.exist.xquery.Constants;
 import org.jline.reader.*;
 import org.jline.reader.impl.history.DefaultHistory;
@@ -109,9 +102,13 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Database;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.modules.BinaryResource;
+import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XUpdateQueryService;
 import se.softhouse.jargo.ArgumentException;
@@ -164,15 +161,15 @@ public class InteractiveClient {
     public static final String NO_AUTO_DEPLOY = "no-autodeploy";
 
     // values
-    protected static final String EDIT_CMD = "emacsclient -t $file";
-    protected static final Charset ENCODING_DEFAULT = StandardCharsets.UTF_8;
-    protected static final String URI_DEFAULT = "xmldb:exist://localhost:8080/exist/xmlrpc";
-    protected static final String SSL_ENABLE_DEFAULT = "FALSE";
-    protected static final String LOCAL_MODE_DEFAULT = "FALSE";
-    protected static final String NO_EMBED_MODE_DEFAULT = "FALSE";
-    protected static final String NO_AUTO_DEPLOY_DEFAULT = "FALSE";
-    protected static final String USER_DEFAULT = SecurityManager.DBA_USER;
-    protected static final String DRIVER_IMPL_CLASS = "org.exist.xmldb.DatabaseImpl";
+    private static final String EDIT_CMD = "emacsclient -t $file";
+    private static final Charset ENCODING_DEFAULT = StandardCharsets.UTF_8;
+    static final String URI_DEFAULT = "xmldb:exist://localhost:8080/exist/xmlrpc";
+    static final String SSL_ENABLE_DEFAULT = "FALSE";
+    static final String LOCAL_MODE_DEFAULT = "FALSE";
+    static final String NO_EMBED_MODE_DEFAULT = "FALSE";
+    private static final String NO_AUTO_DEPLOY_DEFAULT = "FALSE";
+    static final String USER_DEFAULT = SecurityManager.DBA_USER;
+    private static final String DRIVER_IMPL_CLASS = "org.exist.xmldb.DatabaseImpl";
 
     // Set properties
     private static final Properties DEFAULT_PROPERTIES = new Properties();
@@ -192,55 +189,52 @@ public class InteractiveClient {
         DEFAULT_PROPERTIES.setProperty(SSL_ENABLE, SSL_ENABLE_DEFAULT);
         DEFAULT_PROPERTIES.setProperty(NO_AUTO_DEPLOY, NO_AUTO_DEPLOY_DEFAULT);
     }
-    protected static final int[] COL_SIZES = new int[]{10, 10, 10, -1};
 
-    protected static String configuration = null;
+    private final TreeSet<String> completions = new TreeSet<>();
+    private final List<String> queryHistory = new LinkedList<>();
+    private final Properties properties = new Properties(DEFAULT_PROPERTIES);
+    private final Map<String, String> namespaceMappings = new HashMap<>();
 
-    protected final TreeSet<String> completions = new TreeSet<>();
-    protected final LinkedList<String> queryHistory = new LinkedList<>();
-    protected final Properties properties = new Properties(DEFAULT_PROPERTIES);
-    protected final Map<String, String> namespaceMappings = new HashMap<>();
+    private Path queryHistoryFile;
+    private Path historyFile;
 
-    protected Path queryHistoryFile;
-    protected Path historyFile;
+    private @Nullable LineReader console = null;
 
-    protected LineReader console = null;
+    private @Nullable Database database = null;
+    private @Nullable Collection current = null;
+    private int nextInSet = 1;
 
-    private Database database = null;
-    protected Collection current = null;
-    protected int nextInSet = 1;
-
-    protected String[] resources = null;
-    protected ResourceSet result = null;
+    private @Nullable String[] resources = null;
+    private @Nullable EXistResourceSet result = null;
 
     /**
      * number of files of a recursive store
      */
-    protected int filesCount = 0;
+    private int filesCount = 0;
 
     /**
      * total length of a recursive store
      */
-    protected long totalLength = 0;
+    private long totalLength = 0;
 
-    protected ClientFrame frame;
+    ClientFrame frame;
 
     //*************************************
 
     private final CommandlineOptions options;
-    protected XmldbURI path = XmldbURI.ROOT_COLLECTION_URI;
+    private XmldbURI path = XmldbURI.ROOT_COLLECTION_URI;
     private Optional<Writer> lazyTraceWriter = Optional.empty();
 
-    public InteractiveClient(CommandlineOptions options) {
+    private @Nullable MediaTypeResolver mediaTypeResolver = null;
+
+    public InteractiveClient(final CommandlineOptions options) {
         this.options = options;
     }
-
-    private MediaTypeResolver mediaTypeResolver = null;
 
     /**
      * Display help on commands
      */
-    protected void displayHelp() {
+    void displayHelp() {
         messageln("--- general commands ---");
         messageln("ls                   list collection contents");
         messageln("cd [collection|..]   change current collection");
@@ -322,7 +316,7 @@ public class InteractiveClient {
      *
      * @throws Exception Description of the Exception
      */
-    protected void connect() throws Exception {
+    void connect() throws Exception {
         consoleOut("Connecting to database...");
 
         final String uri = properties.getProperty(InteractiveClient.URI);
@@ -349,7 +343,8 @@ public class InteractiveClient {
         DatabaseManager.registerDatabase(database);
 
         final String collectionUri = uri + path;
-        current = DatabaseManager.getCollection(collectionUri, properties.getProperty(USER), properties.getProperty(PASSWORD));
+        final Collection collection = DatabaseManager.getCollection(collectionUri, properties.getProperty(USER), properties.getProperty(PASSWORD));
+        setCollection(collection);
         if (options.startGUI && frame != null) {
             frame.setStatus("connected to " + uri + " as user " + properties.getProperty(USER));
         }
@@ -366,8 +361,43 @@ public class InteractiveClient {
      *
      * @return the current collection
      */
-    protected Collection getCollection() {
+    @Nullable Collection getCollection() {
         return current;
+    }
+
+    void setCollection(final Collection collection) {
+        if (this.current != null) {
+            try {
+                this.current.close();
+            } catch (final XMLDBException e) {
+                // no-op
+            }
+        }
+        this.current = collection;
+    }
+
+    XmldbURI getPath() {
+        return path;
+    }
+
+    @Nullable LineReader getConsole() {
+        return console;
+    }
+
+    void setConsole(@Nullable final LineReader console) {
+        this.console = console;
+    }
+
+    List<String> getQueryHistory() {
+        return queryHistory;
+    }
+
+    Path getQueryHistoryFile() {
+        return queryHistoryFile;
+    }
+
+    void setQueryHistoryFile(final Path queryHistoryFile) {
+        this.queryHistoryFile = queryHistoryFile;
     }
 
     public Properties getProperties() {
@@ -375,15 +405,14 @@ public class InteractiveClient {
     }
 
     public void reloadCollection() throws XMLDBException {
-        current = DatabaseManager.getCollection(properties.getProperty(URI)
-                        + path, properties.getProperty(USER),
-                properties.getProperty(PASSWORD));
+        final Collection collection = getCollection(path);
+        setCollection(collection);
         getResources();
     }
 
-    protected void setProperties() throws XMLDBException {
+    private void setProperties() throws XMLDBException {
         for (Map.Entry<Object, Object> properry : properties.entrySet()) {
-            current.setProperty((String) properry.getKey(), (String) properry.getValue());
+            getCollection().setProperty((String) properry.getKey(), (String) properry.getValue());
         }
     }
 
@@ -400,14 +429,15 @@ public class InteractiveClient {
      *
      * @throws XMLDBException Description of the Exception
      */
-    protected void getResources() throws XMLDBException {
-        if (current == null) {
+    void getResources() throws XMLDBException {
+        if (getCollection() == null) {
             return;
         }
+
         setProperties();
-        final UserManagementService mgtService = current.getService(UserManagementService.class);
-        final List<String> childCollections = current.listChildCollections();
-        final List<String> childResources = current.listResources();
+        final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
+        final List<String> childCollections = getCollection().listChildCollections();
+        final List<String> childResources = getCollection().listResources();
 
         resources = new String[childCollections.size() + childResources.size()];
         //Collection child;
@@ -417,9 +447,9 @@ public class InteractiveClient {
 
         int i = 0;
         for (String collectionName : childCollections) {
-            perm = mgtService.getSubCollectionPermissions(current, collectionName);
+            perm = mgtService.getSubCollectionPermissions(getCollection(), collectionName);
 
-            final Instant created = mgtService.getSubCollectionCreationTime(current, collectionName);
+            final Instant created = mgtService.getSubCollectionCreationTime(getCollection(), collectionName);
 
             if ("true".equals(properties.getProperty(PERMISSIONS))) {
                 resources[i] = 'c' + perm.toString() + '\t' + getOwnerName(perm)
@@ -447,7 +477,7 @@ public class InteractiveClient {
             i++;
         }
         for (String resourceId : childResources) {
-            try (final Resource res = current.getResource(resourceId)) {
+            try (final Resource res = getCollection().getResource(resourceId)) {
                 perm = mgtService.getPermissions(res);
                 if (perm == null) {
                     errorln("no permissions found for resource " + resourceId);
@@ -491,7 +521,7 @@ public class InteractiveClient {
      *
      * @param str string containing the document.
      */
-    protected void more(final String str) {
+    private void more(final String str) {
         final LineNumberReader reader = new LineNumberReader(new StringReader(str));
         String line;
         // int count = 0;
@@ -523,7 +553,7 @@ public class InteractiveClient {
      * @param line the line entered
      * @return true if command != quit
      */
-    protected boolean process(final String line) {
+    boolean process(final String line) {
         if (options.startGUI) {
             frame.setPath(path);
         }
@@ -605,8 +635,7 @@ public class InteractiveClient {
                         properties.getProperty(USER),
                         properties.getProperty(PASSWORD));
                 if (temp != null) {
-                    current.close();
-                    current = temp;
+                    setCollection(temp);
                     newPath = collectionPath.toCollectionPathURI();
                     if (options.startGUI) {
                         frame.setPath(collectionPath.toCollectionPathURI());
@@ -657,25 +686,26 @@ public class InteractiveClient {
                     errorln("could not parse resource name into a valid URI: " + e.getMessage());
                     return false;
                 }
-                final Resource res = retrieve(resource);
-                // display document
-                if (res != null) {
-                    final String data;
-                    if (XML_RESOURCE.equals(res.getResourceType())) {
-                        data = (String) res.getContent();
-                    } else {
-                        data = new String((byte[]) res.getContent());
+                try (final Resource res = retrieve(resource)) {
+                    // display document
+                    if (res != null) {
+                        final String data;
+                        if (XML_RESOURCE.equals(res.getResourceType())) {
+                            data = (String) res.getContent();
+                        } else {
+                            data = new String((byte[]) res.getContent());
+                        }
+                        if (options.startGUI) {
+                            frame.setEditable(false);
+                            frame.display(data);
+                            frame.setEditable(true);
+                        } else {
+                            final String content = data;
+                            more(content);
+                        }
                     }
-                    if (options.startGUI) {
-                        frame.setEditable(false);
-                        frame.display(data);
-                        frame.setEditable(true);
-                    } else {
-                        final String content = data;
-                        more(content);
-                    }
+                    return true;
                 }
-                return true;
             } else if (args[0].equalsIgnoreCase("find")) {
                 // search
                 if (args.length < 2) {
@@ -749,11 +779,12 @@ public class InteractiveClient {
 
                     nextInSet = start + count + 1;
                     for (int i = start; i < start + count; i++) {
-                        final Resource r = result.getResource(i);
-                        if (options.startGUI) {
-                            frame.display((String) r.getContent());
-                        } else {
-                            more((String) r.getContent());
+                        try (final Resource r = result.getResource(i)) {
+                            if (options.startGUI) {
+                                frame.display((String) r.getContent());
+                            } else {
+                                more((String) r.getContent());
+                            }
                         }
                     }
                     messageln("displayed items " + (start + 1) + " to "
@@ -776,20 +807,17 @@ public class InteractiveClient {
                     errorln("could not parse collection name into a valid URI: " + e.getMessage());
                     return false;
                 }
-                final EXistCollectionManagementService mgtService = current.getService(EXistCollectionManagementService.class);
-                final Collection newCollection = mgtService.createCollection(collUri);
-                if (newCollection == null) {
-                    messageln("could not create collection.");
-                } else {
-                    messageln("created collection.");
+                final EXistCollectionManagementService mgtService = getCollection().getService(EXistCollectionManagementService.class);
+                try (final Collection newCollection = mgtService.createCollection(collUri)) {
+                    if (newCollection == null) {
+                        messageln("could not create collection.");
+                    } else {
+                        messageln("created collection.");
+                    }
                 }
 
                 // re-read current collection
-                current = DatabaseManager.getCollection(properties
-                        .getProperty(URI)
-                        + path, properties.getProperty(USER), properties
-                        .getProperty(PASSWORD));
-                getResources();
+                reloadCollection();
 
             } else if (args[0].equalsIgnoreCase("put")) {
                 // put a document or directory into the database
@@ -840,11 +868,7 @@ public class InteractiveClient {
                 remove(args[1]);
 
                 // re-read current collection
-                current = DatabaseManager.getCollection(properties
-                        .getProperty("uri")
-                        + path, properties.getProperty(USER), properties
-                        .getProperty(PASSWORD));
-                getResources();
+                reloadCollection();
 
             } else if (args[0].equalsIgnoreCase("rmcol")) {
                 // remove collection
@@ -861,11 +885,7 @@ public class InteractiveClient {
                 }
                 rmcol(collUri);
                 // re-read current collection
-                current = DatabaseManager.getCollection(properties
-                        .getProperty(URI)
-                        + path, properties.getProperty(USER), properties
-                        .getProperty(PASSWORD));
-                getResources();
+                reloadCollection();
             } else if (args[0].equalsIgnoreCase("adduser")) {
                 if (args.length < 2) {
                     consoleErr("Usage: adduser name");
@@ -876,7 +896,7 @@ public class InteractiveClient {
                     return true;
                 }
                 try {
-                    final UserManagementService mgtService = current.getService(UserManagementService.class);
+                    final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
 
                     String p1;
                     String p2;
@@ -912,7 +932,7 @@ public class InteractiveClient {
                     e.printStackTrace();
                 }
             } else if (args[0].equalsIgnoreCase("users")) {
-                final UserManagementService mgtService = current.getService(UserManagementService.class);
+                final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
                 final Account users[] = mgtService.getAccounts();
                 messageln("User\t\tGroups");
                 messageln("-----------------------------------------");
@@ -938,7 +958,7 @@ public class InteractiveClient {
                     return true;
                 }
                 try {
-                    final UserManagementService mgtService = current.getService(UserManagementService.class);
+                    final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
                     final Account user = mgtService.getAccount(args[1]);
                     if (user == null) {
                         messageln("no such user.");
@@ -970,30 +990,27 @@ public class InteractiveClient {
                 final Collection temp;
                 if (args.length == 3) {
                     consoleOut("trying collection: " + args[1]);
-                    temp = current.getChildCollection(args[1]);
+                    temp = getCollection().getChildCollection(args[1]);
                     if (temp == null) {
                         consoleOut(EOL + "trying resource: " + args[1]);
-                        final Resource r = current.getResource(args[1]);
-                        if (r != null) {
-                            final UserManagementService mgtService = current.getService(UserManagementService.class);
-                            mgtService.chmod(r, args[2]);
-                        } else {
-                            consoleErr("Resource " + args[1] + " not found.");
+                        try (final Resource r = getCollection().getResource(args[1])) {
+                            if (r != null) {
+                                final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
+                                mgtService.chmod(r, args[2]);
+                            } else {
+                                consoleErr("Resource " + args[1] + " not found.");
+                            }
                         }
                     } else {
                         final UserManagementService mgtService = temp.getService(UserManagementService.class);
                         mgtService.chmod(args[2]);
                     }
                 } else {
-                    final UserManagementService mgtService = current.getService(UserManagementService.class);
+                    final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
                     mgtService.chmod(args[1]);
                 }
                 // re-read current collection
-                current = DatabaseManager.getCollection(properties
-                        .getProperty(URI)
-                        + path, properties.getProperty(USER), properties
-                        .getProperty(PASSWORD));
-                getResources();
+                reloadCollection();
             } else if (args[0].equalsIgnoreCase("chown")) {
                 if (args.length < 3) {
                     consoleOut("Usage: chown username group [resource]");
@@ -1002,9 +1019,9 @@ public class InteractiveClient {
 
                 final Collection temp;
                 if (args.length == 4) {
-                    temp = current.getChildCollection(args[3]);
+                    temp = getCollection().getChildCollection(args[3]);
                 } else {
-                    temp = current;
+                    temp = getCollection();
                 }
                 if (temp != null) {
                     final UserManagementService mgtService = temp.getService(UserManagementService.class);
@@ -1018,17 +1035,18 @@ public class InteractiveClient {
                     getResources();
                     return true;
                 }
-                final Resource res = current.getResource(args[3]);
-                if (res != null) {
-                    final UserManagementService mgtService = current.getService(UserManagementService.class);
-                    final Account u = mgtService.getAccount(args[1]);
-                    if (u == null) {
-                        consoleOut("unknown user");
+                try (final Resource res = getCollection().getResource(args[3])) {
+                    if (res != null) {
+                        final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
+                        final Account u = mgtService.getAccount(args[1]);
+                        if (u == null) {
+                            consoleOut("unknown user");
+                            return true;
+                        }
+                        mgtService.chown(res, u, args[2]);
+                        getResources();
                         return true;
                     }
-                    mgtService.chown(res, u, args[2]);
-                    getResources();
-                    return true;
                 }
                 consoleErr("Resource " + args[3] + " not found.");
 
@@ -1037,23 +1055,24 @@ public class InteractiveClient {
                     messageln("Usage: lock resource");
                     return true;
                 }
-                final Resource res = current.getResource(args[1]);
-                if (res != null) {
-                    final UserManagementService mgtService = current.getService(UserManagementService.class);
-                    final Account user = mgtService.getAccount(properties.getProperty(USER, "guest"));
-                    if (args[0].equalsIgnoreCase("lock")) {
-                        mgtService.lockResource(res, user);
-                    } else {
-                        mgtService.unlockResource(res);
+                try (final Resource res = getCollection().getResource(args[1])) {
+                    if (res != null) {
+                        final UserManagementService mgtService = getCollection().getService(UserManagementService.class);
+                        final Account user = mgtService.getAccount(properties.getProperty(USER, "guest"));
+                        if (args[0].equalsIgnoreCase("lock")) {
+                            mgtService.lockResource(res, user);
+                        } else {
+                            mgtService.unlockResource(res);
+                        }
                     }
                 }
 
             } else if (args[0].equalsIgnoreCase("elements")) {
                 consoleOut("Element occurrences in collection "
-                        + current.getName());
+                        + getCollection().getName());
                 consoleOut("--------------------------------------------"
                                 + "-----------");
-                final IndexQueryService service = current.getService(IndexQueryService.class);
+                final IndexQueryService service = getCollection().getService(IndexQueryService.class);
                 final Occurrences[] elements = service.getIndexedElements(true);
                 for (Occurrences element : elements) {
                     consoleOut(formatString(element.getTerm().toString(),
@@ -1082,7 +1101,7 @@ public class InteractiveClient {
                 final String xupdate = "<xu:modifications version=\"1.0\" "
                         + "xmlns:xu=\"http://www.xmldb.org/xupdate\">"
                         + command.toString() + "</xu:modifications>";
-                final XUpdateQueryService service = current.getService(XUpdateQueryService.class);
+                final XUpdateQueryService service = getCollection().getService(XUpdateQueryService.class);
                 final long mods = service.update(xupdate);
                 consoleOut(mods + " modifications processed.");
 
@@ -1114,14 +1133,14 @@ public class InteractiveClient {
                         final String key = tok.nextToken();
                         final String val = tok.nextToken();
                         properties.setProperty(key, val);
-                        current.setProperty(key, val);
+                        getCollection().setProperty(key, val);
                         getResources();
                     } catch (final Exception e) {
                         consoleErr("Exception: " + e.getMessage());
                     }
                 }
             } else if (args[0].equalsIgnoreCase("shutdown")) {
-                final DatabaseInstanceManager mgr = current.getService(DatabaseInstanceManager.class);
+                final DatabaseInstanceManager mgr = getCollection().getService(DatabaseInstanceManager.class);
                 if (mgr == null) {
                     messageln("Service is not available");
                     return true;
@@ -1153,8 +1172,7 @@ public class InteractiveClient {
      * @param name
      */
     private void editResource(final XmldbURI name) {
-        try {
-            final Resource doc = retrieve(name, properties.getProperty(OutputKeys.INDENT, "yes")); //$NON-NLS-1$
+        try (final Resource doc = retrieve(name, properties.getProperty(OutputKeys.INDENT, "yes"))) {
             final DocumentView view = new DocumentView(this, name, doc, properties);
             view.setSize(new Dimension(640, 400));
             view.viewDocument();
@@ -1188,7 +1206,7 @@ public class InteractiveClient {
         }
     }
 
-    private ResourceSet find(String xpath) throws XMLDBException {
+    private EXistResourceSet find(String xpath) throws XMLDBException {
         if (xpath.substring(xpath.length() - EOL.length()).equals(EOL)) {
             xpath = xpath.substring(0, xpath.length() - EOL.length());
         }
@@ -1217,7 +1235,7 @@ public class InteractiveClient {
             consoleOut("Sort-by = " + sortBy);
         }
 
-        final EXistXPathQueryService service = current.getService(EXistXPathQueryService.class);
+        final EXistXPathQueryService service = getCollection().getService(EXistXPathQueryService.class);
         service.setProperty(OutputKeys.INDENT, properties.getProperty(INDENT));
         service.setProperty(OutputKeys.ENCODING, properties.getProperty(ENCODING));
 
@@ -1225,15 +1243,15 @@ public class InteractiveClient {
             service.setNamespace(mapping.getKey(), mapping.getValue());
         }
 
-        return (sortBy == null) ? service.query(xpath) : service.query(xpath, sortBy);
+        return sortBy == null ? (EXistResourceSet) service.query(xpath) : service.query(xpath, sortBy);
     }
 
-    protected final Resource retrieve(final XmldbURI resource) throws XMLDBException {
+    private final Resource retrieve(final XmldbURI resource) throws XMLDBException {
         return retrieve(resource, properties.getProperty(INDENT));
     }
 
-    protected final Resource retrieve(final XmldbURI resource, final String indent) throws XMLDBException {
-        final Resource res = current.getResource(resource.toString());
+    final Resource retrieve(final XmldbURI resource, final String indent) throws XMLDBException {
+        final Resource res = getCollection().getResource(resource.toString());
         if (res == null) {
             messageln("document not found.");
             return null;
@@ -1242,24 +1260,32 @@ public class InteractiveClient {
     }
 
     private void remove(final String pattern) throws XMLDBException {
-        final Collection collection = current;
+        final Collection collection = getCollection();
         if (pattern.startsWith("/")) {
             consoleErr("path pattern should be relative to current collection");
             return;
         }
-        final Resource[] resources;
-        final Resource res = collection.getResource(pattern);
-        if (res == null) {
-            resources = CollectionScanner.scan(collection, "", pattern);
-        } else {
-            resources = new Resource[1];
-            resources[0] = res;
-        }
-        for (Resource resource : resources) {
-            message("removing document " + resource.getId() + " ...");
-            final Collection parent = resource.getParentCollection();
-            parent.removeResource(resource);
-            messageln(DONE);
+        Resource[] resources = null;
+        try (final Resource res = collection.getResource(pattern)) {
+            if (res == null) {
+                resources = CollectionScanner.scan(collection, "", pattern);
+            } else {
+                resources = new Resource[1];
+                resources[0] = res;
+            }
+            for (final Resource resource : resources) {
+                message("removing document " + resource.getId() + " ...");
+                try (final Collection parent = resource.getParentCollection()) {
+                    parent.removeResource(resource);
+                    messageln(DONE);
+                }
+            }
+        } finally {
+            if (resources != null) {
+                for (final Resource resource : resources) {
+                    resource.close();
+                }
+            }
         }
     }
 
@@ -1269,7 +1295,7 @@ public class InteractiveClient {
             return;
         }
         final String commands = XMLUtil.readFile(file, UTF_8);
-        final XUpdateQueryService service = current.getService(XUpdateQueryService.class);
+        final XUpdateQueryService service = getCollection().getService(XUpdateQueryService.class);
         final long modifications;
         if (resource.isPresent()) {
             modifications = service.updateResource(resource.get(), commands);
@@ -1281,7 +1307,7 @@ public class InteractiveClient {
     }
 
     private void rmcol(final XmldbURI collection) throws XMLDBException {
-        final EXistCollectionManagementService mgtService = current.getService(EXistCollectionManagementService.class);
+        final EXistCollectionManagementService mgtService = getCollection().getService(EXistCollectionManagementService.class);
         message("removing collection " + collection + " ...");
         mgtService.removeCollection(collection);
         messageln(DONE);
@@ -1289,24 +1315,25 @@ public class InteractiveClient {
 
     private void copy(final XmldbURI source, XmldbURI destination) throws XMLDBException {
         try {
-            final EXistCollectionManagementService mgtService = current.getService(EXistCollectionManagementService.class);
+            final EXistCollectionManagementService mgtService = getCollection().getService(EXistCollectionManagementService.class);
             final XmldbURI destName = destination.lastSegment();
-            final Collection destCol = resolveCollection(destination);
+            final Collection destCol = getCollection(destination);
             if (destCol == null) {
                 if (destination.numSegments() == 1) {
-                    destination = XmldbURI.xmldbUriFor(current.getName());
+                    destination = XmldbURI.xmldbUriFor(getCollection().getName());
                 } else {
                     destination = destination.removeLastSegment();
                 }
             }
-            final Resource srcDoc = resolveResource(source);
-            if (srcDoc != null) {
-                final XmldbURI resourcePath = XmldbURI.xmldbUriFor(srcDoc.getParentCollection().getName()).append(srcDoc.getId());
-                messageln("Copying resource '" + resourcePath + "' to '" + destination + "'");
-                mgtService.copyResource(resourcePath, destination, destName);
-            } else {
-                messageln("Copying collection '" + source + "' to '" + destination + "'");
-                mgtService.copy(source, destination, destName);
+            try (final Resource srcDoc = getResource(source)) {
+                if (srcDoc != null) {
+                    final XmldbURI resourcePath = XmldbURI.xmldbUriFor(srcDoc.getParentCollection().getName()).append(srcDoc.getId());
+                    messageln("Copying resource '" + resourcePath + "' to '" + destination + "'");
+                    mgtService.copyResource(resourcePath, destination, destName);
+                } else {
+                    messageln("Copying collection '" + source + "' to '" + destination + "'");
+                    mgtService.copy(source, destination, destName);
+                }
             }
         } catch (final URISyntaxException e) {
             errorln("could not parse name into a valid URI: " + e.getMessage());
@@ -1314,8 +1341,8 @@ public class InteractiveClient {
     }
 
     private void reindex() throws XMLDBException {
-        final IndexQueryService service = current.getService(IndexQueryService.class);
-        message("reindexing collection " + current.getName());
+        final IndexQueryService service = getCollection().getService(IndexQueryService.class);
+        message("reindexing collection " + getCollection().getName());
         service.reindexCollection();
         messageln(DONE);
     }
@@ -1324,10 +1351,10 @@ public class InteractiveClient {
         final Path file = Paths.get(fileName).normalize();
         if (Files.isReadable(file)) {
             @Nullable final MediaType mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(file));
-            try (final BinaryResource resource = current.createResource(FileUtils.fileName(file), BinaryResource.class)) {
+            try (final BinaryResource resource = getCollection().createResource(FileUtils.fileName(file), BinaryResource.class)) {
                 resource.setContent(file);
                 ((EXistResource) resource).setMediaType(mediaType == null ? mediaTypeResolver.forUnknown().getIdentifier() : mediaType.getIdentifier());
-                current.storeResource(resource);
+                getCollection().storeResource(resource);
             }
         }
     }
@@ -1337,49 +1364,35 @@ public class InteractiveClient {
     }
 
     private synchronized boolean findRecursive(final Collection collection, final Path dir, final XmldbURI base) throws XMLDBException {
-        Collection c;
-        EXistCollectionManagementService mgtService;
-        //The XmldbURIs here aren't really used...
-        XmldbURI next;
-        @Nullable MediaType mediaType = null;
-
         try {
             final List<Path> files = FileUtils.list(dir);
             int i = 0;
             for (final Path file : files) {
-                next = base.append(FileUtils.fileName(file));
-                try {
-                    if (Files.isDirectory(file)) {
-                        messageln("entering directory " + file.toAbsolutePath());
-                        c = collection.getChildCollection(FileUtils.fileName(file));
-                        if (c == null) {
-                            mgtService = collection.getService(EXistCollectionManagementService.class);
-                            c = mgtService.createCollection(XmldbURI.xmldbUriFor(FileUtils.fileName(file)));
-                        }
-
-                        if (c instanceof Observable && options.verbose) {
+                final XmldbURI next = base.append(FileUtils.fileName(file));
+                if (Files.isDirectory(file)) {
+                    messageln("entering directory " + file.toAbsolutePath());
+                    try (final Collection child = getOrCreateChildCollection(collection, FileUtils.fileName(file))) {
+                        if (child instanceof Observable && options.verbose) {
                             final ProgressObserver observer = new ProgressObserver();
-                            ((Observable) c).addObserver(observer);
+                            ((Observable) child).addObserver(observer);
                         }
-                        findRecursive(c, file, next);
-                    } else {
-                        final long start1 = System.currentTimeMillis();
-                        mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(file));
-                        if (mediaType == null) {
-                            messageln("File " + FileUtils.fileName(file) + " has an unknown suffix. Cannot determine file type.");
-                            mediaType = mediaTypeResolver.forUnknown();
-                        }
-                        try (final Resource document = collection.createResource(FileUtils.fileName(file), toResourceTypeClass(mediaType))) {
-                            message("storing document " + FileUtils.fileName(file) + " (" + i + " of " + files.size() + ") " + "...");
-                            document.setContent(file);
-                            ((EXistResource) document).setMediaType(mediaType.getIdentifier());
-                            collection.storeResource(document);
-                            ++filesCount;
-                            messageln(" " + FileUtils.sizeQuietly(file) + " bytes in " + (System.currentTimeMillis() - start1) + "ms.");
-                        }
+                        findRecursive(child, file, next);
                     }
-                } catch (final URISyntaxException e) {
-                    errorln("uri syntax exception parsing " + file.toAbsolutePath() + ": " + e.getMessage());
+                } else {
+                    final long start1 = System.currentTimeMillis();
+                    @Nullable MediaType mediaType = mediaTypeResolver.fromFileName(FileUtils.fileName(file));
+                    if (mediaType == null) {
+                        messageln("File " + FileUtils.fileName(file) + " has an unknown suffix. Cannot determine file type.");
+                        mediaType = mediaTypeResolver.forUnknown();
+                    }
+                    try (final Resource document = collection.createResource(FileUtils.fileName(file), toResourceTypeClass(mediaType))) {
+                        message("storing document " + FileUtils.fileName(file) + " (" + i + " of " + files.size() + ") " + "...");
+                        document.setContent(file);
+                        ((EXistResource) document).setMediaType(mediaType.getIdentifier());
+                        collection.storeResource(document);
+                        ++filesCount;
+                        messageln(" " + FileUtils.sizeQuietly(file) + " bytes in " + (System.currentTimeMillis() - start1) + "ms.");
+                    }
                 }
                 i++;
             }
@@ -1387,6 +1400,16 @@ public class InteractiveClient {
         } catch (final IOException e) {
             throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e);
         }
+    }
+
+    private static Collection getOrCreateChildCollection(final Collection parentCollection, final String collectionName) throws XMLDBException {
+        @Nullable final Collection existingChild = parentCollection.getChildCollection(collectionName);
+        if (existingChild != null) {
+            return existingChild;
+        }
+
+        final EXistCollectionManagementService mgtService = parentCollection.getService(EXistCollectionManagementService.class);
+        return mgtService.createCollection(collectionName);
     }
 
     private static Class<? extends Resource> toResourceTypeClass(final MediaType mediaType) {
@@ -1400,13 +1423,13 @@ public class InteractiveClient {
      * @return TRUE if file or files in directory were all correctly stored.
      * @throws XMLDBException An error was detected.
      */
-    protected synchronized boolean parse(final Path file) throws XMLDBException {
+    private synchronized boolean parse(final Path file) throws XMLDBException {
         try {
             // String xml;
 
-            if (current instanceof Observable && options.verbose) {
+            if (getCollection() instanceof Observable && options.verbose) {
                 final ProgressObserver observer = new ProgressObserver();
-                ((Observable) current).addObserver(observer);
+                ((Observable) getCollection()).addObserver(observer);
             }
 
             List<Path> files = new ArrayList<>();
@@ -1416,7 +1439,7 @@ public class InteractiveClient {
                     if (options.reindexRecurse) {
                         filesCount = 0;
                         final long start = System.currentTimeMillis();
-                        final boolean result = findRecursive(current, file, path);
+                        final boolean result = findRecursive(getCollection(), file, path);
                         messageln("storing " + filesCount + " files took " + ((System.currentTimeMillis() - start) / 1000) + "sec.");
                         return result;
                     }
@@ -1448,11 +1471,11 @@ public class InteractiveClient {
                 if (mediaType == null) {
                     mediaType = mediaTypeResolver.forUnknown();
                 }
-                try (final Resource document = current.createResource(FileUtils.fileName(files.get(i)), toResourceTypeClass(mediaType))) {
+                try (final Resource document = getCollection().createResource(FileUtils.fileName(files.get(i)), toResourceTypeClass(mediaType))) {
                     message("storing document " + FileUtils.fileName(files.get(i)) + " (" + (i + 1) + " of " + files.size() + ") ...");
                     document.setContent(files.get(i));
                     ((EXistResource) document).setMediaType(mediaType.getIdentifier());
-                    current.storeResource(document);
+                    getCollection().storeResource(document);
                     messageln(DONE);
                     messageln("parsing " + FileUtils.sizeQuietly(files.get(i)) + " bytes took " + (System.currentTimeMillis() - start) + "ms." + EOL);
                     bytes += FileUtils.sizeQuietly(files.get(i));
@@ -1469,59 +1492,47 @@ public class InteractiveClient {
 
     private synchronized boolean findGZipRecursive(final Collection collection, final Path dir, final XmldbURI base) throws XMLDBException, IOException {
         final List<Path> files = FileUtils.list(dir);
-        Collection c;
-        EXistCollectionManagementService mgtService;
-        //The XmldbURIs here aren't really used...
-        XmldbURI next;
-        @Nullable MediaType mediaType = null;
         int i = 0;
         for (final Path file : files) {
             i++;
-            next = base.append(FileUtils.fileName(file));
-            try {
-                if (Files.isDirectory(file)) {
-                    messageln("entering directory " + file.toAbsolutePath().toString());
-                    c = collection.getChildCollection(FileUtils.fileName(file));
-                    if (c == null) {
-                        mgtService = collection.getService(EXistCollectionManagementService.class);
-                        c = mgtService.createCollection(XmldbURI.xmldbUriFor(FileUtils.fileName(file)));
-                    }
-                    if (c instanceof Observable && options.verbose) {
+            final XmldbURI next = base.append(FileUtils.fileName(file));
+            if (Files.isDirectory(file)) {
+                messageln("entering directory " + file.toAbsolutePath().toString());
+                try (final Collection child = getOrCreateChildCollection(collection, FileUtils.fileName(file))) {
+                    if (child instanceof Observable && options.verbose) {
                         final ProgressObserver observer = new ProgressObserver();
-                        ((Observable) c).addObserver(observer);
+                        ((Observable) child).addObserver(observer);
                     }
-                    findGZipRecursive(c, file, next);
-                } else {
-                    final long start1 = System.currentTimeMillis();
-                    final String compressedName = FileUtils.fileName(file);
-                    String localName = compressedName;
-                    final String[] cSuffix = {".gz", ".Z"};
-                    boolean isCompressed = false;
-                    for (final String suf : cSuffix) {
-                        if (localName.endsWith(suf)) {
-                            // Removing compressed prefix to validate
-                            localName = compressedName.substring(0, localName.length() - suf.length());
-                            isCompressed = true;
-                            break;
-                        }
-                    }
-                    mediaType = mediaTypeResolver.fromFileName(localName);
-                    if (mediaType == null) {
-                        messageln("File " + compressedName + " has an unknown suffix. Cannot determine file type.");
-                        mediaType = mediaTypeResolver.forUnknown();
-                    }
-                    try (final Resource document = collection.createResource(compressedName, toResourceTypeClass(mediaType))) {
-                        message("storing document " + compressedName + " (" + i + " of " + files.size() + ") " + "...");
-                        document.setContent(isCompressed ? new GZIPInputSource(file) : file);
-                        ((EXistResource) document).setMediaType(mediaType.getIdentifier());
-                        collection.storeResource(document);
-                        ++filesCount;
-                        messageln(" " + Files.size(file) + (isCompressed ? " compressed" : "") + " bytes in "
-                                + (System.currentTimeMillis() - start1) + "ms.");
+                    findGZipRecursive(child, file, next);
+                }
+            } else {
+                final long start1 = System.currentTimeMillis();
+                final String compressedName = FileUtils.fileName(file);
+                String localName = compressedName;
+                final String[] cSuffix = {".gz", ".Z"};
+                boolean isCompressed = false;
+                for (final String suf : cSuffix) {
+                    if (localName.endsWith(suf)) {
+                        // Removing compressed prefix to validate
+                        localName = compressedName.substring(0, localName.length() - suf.length());
+                        isCompressed = true;
+                        break;
                     }
                 }
-            } catch (final URISyntaxException e) {
-                errorln("uri syntax exception parsing " + file.toAbsolutePath().toString() + ": " + e.getMessage());
+                @Nullable MediaType mediaType = mediaTypeResolver.fromFileName(localName);
+                if (mediaType == null) {
+                    messageln("File " + compressedName + " has an unknown suffix. Cannot determine file type.");
+                    mediaType = mediaTypeResolver.forUnknown();
+                }
+                try (final Resource document = collection.createResource(compressedName, toResourceTypeClass(mediaType))) {
+                    message("storing document " + compressedName + " (" + i + " of " + files.size() + ") " + "...");
+                    document.setContent(isCompressed ? new GZIPInputSource(file) : file);
+                    ((EXistResource) document).setMediaType(mediaType.getIdentifier());
+                    collection.storeResource(document);
+                    ++filesCount;
+                    messageln(" " + Files.size(file) + (isCompressed ? " compressed" : "") + " bytes in "
+                            + (System.currentTimeMillis() - start1) + "ms.");
+                }
             }
         }
         return true;
@@ -1535,15 +1546,15 @@ public class InteractiveClient {
      * @throws XMLDBException in case of database error storing the resource
      * @throws IOException    in case of a read error
      */
-    protected synchronized boolean parseGZip(String fileName) throws XMLDBException, IOException {
+    private synchronized boolean parseGZip(String fileName) throws XMLDBException, IOException {
         //TODO : why is this test for ? Fileshould make it, shouldn't it ? -pb
         fileName = fileName.replace('/', java.io.File.separatorChar).replace('\\',
                 java.io.File.separatorChar);
         final Path file = Paths.get(fileName);
         // String xml;
-        if (current instanceof Observable && options.verbose) {
+        if (getCollection() instanceof Observable && options.verbose) {
             final ProgressObserver observer = new ProgressObserver();
-            ((Observable) current).addObserver(observer);
+            ((Observable) getCollection()).addObserver(observer);
         }
         final List<Path> files;
         if (Files.isReadable(file)) {
@@ -1552,7 +1563,7 @@ public class InteractiveClient {
                 if (options.reindexRecurse) {
                     filesCount = 0;
                     final long start = System.currentTimeMillis();
-                    final boolean result = findGZipRecursive(current, file, path);
+                    final boolean result = findGZipRecursive(getCollection(), file, path);
                     messageln("storing " + filesCount + " compressed files took "
                             + ((System.currentTimeMillis() - start) / 1000)
                             + "sec.");
@@ -1604,12 +1615,12 @@ public class InteractiveClient {
             if (mediaType == null) {
                 mediaType = mediaTypeResolver.forUnknown();
             }
-            try (final Resource document = current.createResource(compressedName, toResourceTypeClass(mediaType))) {
+            try (final Resource document = getCollection().createResource(compressedName, toResourceTypeClass(mediaType))) {
                 message("storing document " + compressedName + " (" + i
                         + " of " + Files.size(p) + ") ...");
                 document.setContent(isCompressed ? new GZIPInputSource(p) : p);
                 ((EXistResource) document).setMediaType(mediaType.getIdentifier());
-                current.storeResource(document);
+                getCollection().storeResource(document);
                 messageln(DONE);
                 messageln("parsing " + Files.size(p) + (isCompressed ? " compressed" : "") + " bytes took "
                         + (System.currentTimeMillis() - start) + "ms." + EOL);
@@ -1628,11 +1639,11 @@ public class InteractiveClient {
      * @return true if operation succeeded
      * @throws XMLDBException in case of error writing to the database
      */
-    protected synchronized boolean parseZip(final Path zipPath) throws XMLDBException {
+    private synchronized boolean parseZip(final Path zipPath) throws XMLDBException {
         try (final ZipFile zfile = new ZipFile(zipPath.toFile())) {
-            if (current instanceof Observable && options.verbose) {
+            if (getCollection() instanceof Observable && options.verbose) {
                 final ProgressObserver observer = new ProgressObserver();
-                ((Observable) current).addObserver(observer);
+                ((Observable) getCollection()).addObserver(observer);
             }
 
             final long start0 = System.currentTimeMillis();
@@ -1640,7 +1651,7 @@ public class InteractiveClient {
             final Enumeration<? extends ZipEntry> e = zfile.entries();
             int number = 0;
 
-            Collection base = current;
+            Collection base = getCollection();
             String baseStr = "";
             while (e.hasMoreElements()) {
                 number++;
@@ -1659,18 +1670,27 @@ public class InteractiveClient {
                             .append(pathSteps[i]);
                 }
                 if (!currStr.toString().equals(baseStr)) {
-                    base = current;
-                    for (int i = 0; i < pathSteps.length - 1; i++) {
-                        Collection c = base.getChildCollection(pathSteps[i]);
-                        if (c == null) {
-                            final EXistCollectionManagementService mgtService = base.getService(EXistCollectionManagementService.class);
-                            c = mgtService.createCollection(XmldbURI.xmldbUriFor(pathSteps[i]));
+                    base = getCollection();
+                    final List<Collection> createdChildren = new ArrayList<>(pathSteps.length - 1);
+                    try {
+                        for (int i = 0; i < pathSteps.length - 1; i++) {
+                            final Collection child = getOrCreateChildCollection(base, pathSteps[i]);
+                            createdChildren.add(child);
+                            base = child;
                         }
-                        base = c;
-                    }
-                    if (base instanceof Observable && options.verbose) {
-                        final ProgressObserver observer = new ProgressObserver();
-                        ((Observable) base).addObserver(observer);
+
+                        if (base instanceof Observable && options.verbose) {
+                            final ProgressObserver observer = new ProgressObserver();
+                            ((Observable) base).addObserver(observer);
+                        }
+                    } finally {
+                        for (final Collection createdChild : createdChildren) {
+                            try {
+                                createdChild.close();
+                            } catch (final XMLDBException ee) {
+                                // no-op
+                            }
+                        }
                     }
                     baseStr = currStr.toString();
                     messageln("entering directory " + baseStr);
@@ -1697,8 +1717,6 @@ public class InteractiveClient {
             }
             messageln("parsed " + bytes + " bytes in "
                     + (System.currentTimeMillis() - start0) + "ms.");
-        } catch (final URISyntaxException e) {
-            errorln("uri syntax exception parsing a ZIP entry from " + zipPath.toString() + ": " + e.getMessage());
         } catch (final IOException e) {
             errorln("could not parse ZIP file " + zipPath.toAbsolutePath() + ": " + e.getMessage());
         }
@@ -1713,8 +1731,8 @@ public class InteractiveClient {
      * @return true if the operation succeeded
      * @throws XMLDBException in case of an error uploading the resources
      */
-    protected synchronized boolean parse(final List<Path> files, final UploadDialog upload) throws XMLDBException {
-        final Collection uploadRootCollection = current;
+    synchronized boolean parse(final List<Path> files, final UploadDialog upload) throws XMLDBException {
+        final Collection uploadRootCollection = getCollection();
         if (!upload.isVisible()) {
             upload.setVisible(true);
         }
@@ -1767,29 +1785,23 @@ public class InteractiveClient {
 
         // Directory, create collection, and crawl it
         if (Files.isDirectory(file)) {
-            Collection c = null;
-            try {
-                c = collection.getChildCollection(filenameUri.toString());
-                if (c == null) {
-                    final EXistCollectionManagementService mgtService = collection.getService(EXistCollectionManagementService.class);
-                    c = mgtService.createCollection(filenameUri);
+            try (final Collection child = getOrCreateChildCollection(collection, filenameUri.toString())) {
+
+                // change displayed collection if it's OK
+                upload.setCurrentDir(file.toAbsolutePath().toString());
+                if (child instanceof Observable) {
+                    ((Observable) child).addObserver(upload.getObserver());
                 }
+                // maybe a depth or recurs flag could be added here
+                try (final Stream<Path> children = Files.list(file)) {
+                    children.forEach(childPath -> store(child, childPath, upload));
+                } catch (final IOException e) {
+                    upload.showMessage("Impossible to upload " + file.toAbsolutePath() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+
             } catch (final XMLDBException e) {
                 upload.showMessage("Impossible to create a collection " + file.toAbsolutePath() + ": " + e.getMessage());
-                e.printStackTrace();
-            }
-
-            // change displayed collection if it's OK
-            upload.setCurrentDir(file.toAbsolutePath().toString());
-            if (c instanceof Observable) {
-                ((Observable) c).addObserver(upload.getObserver());
-            }
-            // maybe a depth or recurs flag could be added here
-            final Collection childCollection = c;
-            try (final Stream<Path> children = Files.list(file)) {
-                children.forEach(child -> store(childCollection, child, upload));
-            } catch (final IOException e) {
-                upload.showMessage("Impossible to upload " + file.toAbsolutePath() + ": " + e.getMessage());
                 e.printStackTrace();
             }
 
@@ -1826,26 +1838,51 @@ public class InteractiveClient {
         }
     }
 
-
     private void mkcol(final XmldbURI collPath) throws XMLDBException {
         messageln("creating '" + collPath + "'");
         final XmldbURI[] segments = collPath.getPathSegments();
-        XmldbURI p = XmldbURI.ROOT_COLLECTION_URI;
-        for (int i = 1; i < segments.length; i++) {
-            p = p.append(segments[i]);
-            final Collection c = DatabaseManager.getCollection(properties.getProperty(URI) + p, properties.getProperty(USER), properties.getProperty(PASSWORD));
-            if (c == null) {
-                final EXistCollectionManagementService mgtService = current.getService(EXistCollectionManagementService.class);
-                current = mgtService.createCollection(segments[i]);
+        @Nullable XmldbURI path = null;
+        @Nullable Collection collection = null;
+        for (int i = 0; i < segments.length; i++) {
+            if (i == 0) {
+                path = XmldbURI.ROOT_COLLECTION_URI;
+                collection = getCollection(path.toString());
+
             } else {
-                current = c;
+                path = path.append(segments[i]);
+
+                // get or create the child collection
+                final String childName = segments[i].toString();
+                @Nullable Collection child = collection.getChildCollection(childName);
+                if (child == null) {
+                    final CollectionManagementService collectionManagementService = collection.getService(CollectionManagementService.class);
+                    child = collectionManagementService.createCollection(childName);
+                }
+
+                try {
+                    // close the parent collection
+                    collection.close();
+                } catch (final XMLDBException e) {
+                    // no-op
+                }
+
+                collection = child;
             }
         }
-        path = p;
+
+        if (collection != null) {
+            setCollection(collection);
+        }
+
+        this.path = collPath;
     }
 
-    protected Collection getCollection(final String path) throws XMLDBException {
+    Collection getCollection(final String path) throws XMLDBException {
         return DatabaseManager.getCollection(properties.getProperty(URI) + path, properties.getProperty(USER), properties.getProperty(PASSWORD));
+    }
+
+    private Collection getCollection(final XmldbURI path) throws XMLDBException {
+        return getCollection(path.toString());
     }
 
     private Properties loadClientProperties() {
@@ -1869,7 +1906,7 @@ public class InteractiveClient {
      * @param options CommandLineOptions
      * @param props   Client configuration
      */
-    protected void setPropertiesFromCommandLine(final CommandlineOptions options, final Properties props) {
+    private void setPropertiesFromCommandLine(final CommandlineOptions options, final Properties props) {
         options.options.forEach(properties::setProperty);
 
         options.username.ifPresent(username -> props.setProperty(USER, username));
@@ -1937,8 +1974,7 @@ public class InteractiveClient {
         }
 
         if (options.getDoc.isPresent()) {
-            try {
-                final Resource res = retrieve(options.getDoc.get());
+            try (final Resource res = retrieve(options.getDoc.get())) {
                 if (res != null) {
                     // String data;
                     if (XML_RESOURCE.equals(res.getResourceType())) {
@@ -2027,8 +2063,7 @@ public class InteractiveClient {
             }
 
             if (xpath != null) {
-                try {
-                    final ResourceSet result = find(xpath);
+                try (final EXistResourceSet result = find(xpath)) {
 
                     final int maxResults = options.howManyResults.filter(n -> n > 0).orElse((int) result.getSize());
                     if (options.outputFile.isPresent()) {
@@ -2038,21 +2073,23 @@ public class InteractiveClient {
                         ) {
 
                             for (int i = 0; i < maxResults && i < result.getSize(); i++) {
-                                final Resource res = result.getResource(i);
-                                if (res instanceof ExtendedResource) {
-                                    ((ExtendedResource) res).getContentIntoAStream(ps);
-                                } else {
-                                    ps.print(res.getContent().toString());
+                                try (final Resource res = result.getResource(i)) {
+                                    if (res instanceof ExtendedResource) {
+                                        ((ExtendedResource) res).getContentIntoAStream(ps);
+                                    } else {
+                                        ps.print(res.getContent().toString());
+                                    }
                                 }
                             }
                         }
                     } else {
                         for (int i = 0; i < maxResults && i < result.getSize(); i++) {
-                            final Resource res = result.getResource(i);
-                            if (res instanceof ExtendedResource) {
-                                ((ExtendedResource) res).getContentIntoAStream(System.out);
-                            } else {
-                                consoleOut(String.valueOf(res.getContent()));
+                            try (final Resource res = result.getResource(i)) {
+                                if (res instanceof ExtendedResource) {
+                                    ((ExtendedResource) res).getContentIntoAStream(System.out);
+                                } else {
+                                    consoleOut(String.valueOf(res.getContent()));
+                                }
                             }
                         }
                     }
@@ -2173,7 +2210,7 @@ public class InteractiveClient {
         // connect to the db
         connectToDatabase();
 
-        if (current == null) {
+        if (getCollection() == null) {
             if (options.startGUI && frame != null) {
                 frame.setStatus("Could not retrieve collection " + path);
             } else {
@@ -2299,7 +2336,7 @@ public class InteractiveClient {
         messageln(EOL + "type help or ? for help.");
 
         if (options.openQueryGUI) {
-            final QueryDialog qd = new QueryDialog(this, current, properties);
+            final QueryDialog qd = new QueryDialog(this, getCollection(), properties);
             qd.setLocation(100, 100);
             qd.setVisible(true);
         } else if (!options.startGUI) {
@@ -2356,7 +2393,7 @@ public class InteractiveClient {
     /**
      * Read Query History file.
      */
-    protected void readQueryHistory() {
+    void readQueryHistory() {
         if (!Files.isReadable(queryHistoryFile)) {
             return;
         }
@@ -2389,11 +2426,11 @@ public class InteractiveClient {
         }
     }
 
-    protected void addToHistory(final String query) {
+    void addToHistory(final String query) {
         queryHistory.add(query);
     }
 
-    protected void writeQueryHistory() {
+    void writeQueryHistory() {
         try {
             console.getHistory().save();
         } catch (final IOException e) {
@@ -2459,7 +2496,7 @@ public class InteractiveClient {
         messageln("quit.");
     }
 
-    protected final void shutdown(final boolean force) {
+    final void shutdown(final boolean force) {
         lazyTraceWriter.ifPresent(writer -> {
             try {
                 writer.write("</query-log>");
@@ -2469,7 +2506,7 @@ public class InteractiveClient {
         });
 
         try {
-            final DatabaseInstanceManager mgr = current.getService(DatabaseInstanceManager.class);
+            final DatabaseInstanceManager mgr = getCollection().getService(DatabaseInstanceManager.class);
             if (mgr == null) {
                 consoleErr("service is not available");
             } else if (mgr.isLocalInstance() || force) {
@@ -2560,22 +2597,15 @@ public class InteractiveClient {
         System.err.println(msg); //NOSONAR this has to go to the console
     }
 
-    private Collection resolveCollection(final XmldbURI path) throws XMLDBException {
-        return DatabaseManager.getCollection(
-                properties.getProperty(URI) + path,
-                properties.getProperty(USER),
-                properties.getProperty(PASSWORD));
-    }
-
-    private Resource resolveResource(final XmldbURI path) throws XMLDBException {
+    private Resource getResource(final XmldbURI path) throws XMLDBException {
         try {
             final XmldbURI collectionPath =
                     path.numSegments() == 1 ?
-                            XmldbURI.xmldbUriFor(current.getName()) : path.removeLastSegment();
+                            XmldbURI.xmldbUriFor(getCollection().getName()) : path.removeLastSegment();
 
             final XmldbURI resourceName = path.lastSegment();
 
-            final Collection collection = resolveCollection(collectionPath);
+            final Collection collection = getCollection(collectionPath);
 
             if (collection == null) {
                 messageln("Collection " + collectionPath + " not found.");

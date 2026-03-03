@@ -58,7 +58,6 @@ import org.junit.runners.Parameterized;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -149,32 +148,36 @@ public class SerializationTest {
 	@Test
 	public void wrappedNsTest1() throws XMLDBException {
 		final XQueryService service = testCollection.getService(XQueryService.class);
-		final ResourceSet result = service.query("declare namespace foo=\"http://foo.com\"; //foo:entry");
-		assertEquals(2, result.getSize());
+		try (final EXistResourceSet result = (EXistResourceSet) service.query("declare namespace foo=\"http://foo.com\"; //foo:entry")) {
+			assertEquals(2, result.getSize());
 
-		final Resource resource = result.getMembersAsResource();
-		assertXMLEquals(XML_EXPECTED1, resource);
+			try (final Resource resource = result.getMembersAsResource()) {
+				assertXMLEquals(XML_EXPECTED1, resource);
+			}
+		}
 	}
 
 	@Test
 	public void wrappedNsTest2() throws XMLDBException {
 		final XQueryService service = testCollection.getService(XQueryService.class);
-		final ResourceSet result = service.query(
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(
 				"declare variable $config := <config xmlns='urn:config'>123</config>; " +
 				"declare variable $serverConfig := <serverconfig xmlns='urn:config'>123</serverconfig>; " +
 				"<c:Site xmlns='urn:content' xmlns:c='urn:content'> " +
 				"{($config,$serverConfig)} " +
-				"</c:Site>");
-		assertEquals(1, result.getSize());
+				"</c:Site>")) {
+			assertEquals(1, result.getSize());
 
-		final Resource resource = result.getMembersAsResource();
-		assertXMLEquals(XML_EXPECTED2, resource);
+			try (final Resource resource = result.getMembersAsResource()) {
+				assertXMLEquals(XML_EXPECTED2, resource);
+			}
+		}
 	}
 
 	@Test
 	public void xqueryUpdateNsTest() throws XMLDBException {
 		final XQueryService service = testCollection.getService(XQueryService.class);
-		final ResourceSet result = service.query(
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(
 				"xquery version \"1.0\";" + EOL +
 				"declare namespace foo=\"http://foo.com\";" + EOL +
 				"let $in-memory :=" + EOL + XML + EOL +
@@ -186,28 +189,31 @@ public class SerializationTest {
 				"        $in-memory," + EOL +
 				"        $on-disk" + EOL +
 				"    )" + EOL
-		);
+		)) {
 
-		assertEquals(2, result.getSize());
+			assertEquals(2, result.getSize());
 
-		final Resource inMemoryResource = result.getResource(0);
-		assertXMLEquals(XML, inMemoryResource);
+			try (final Resource inMemoryResource = result.getResource(0)) {
+				assertXMLEquals(XML, inMemoryResource);
+			}
 
-		final Resource onDiskResource = result.getResource(1);
-		assertXMLEquals(XML_UPDATED_EXPECTED, onDiskResource);
+			try (final Resource onDiskResource = result.getResource(1)) {
+				assertXMLEquals(XML_UPDATED_EXPECTED, onDiskResource);
+			}
+		}
 	}
 
 	@Test
 	public void getDocTypeDefault() throws XMLDBException {
-		final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString());
-		assertEquals(XML_WITH_DOCTYPE, res.getContent());
+		try (final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString())) {
+			assertEquals(XML_WITH_DOCTYPE, res.getContent());
+		}
 	}
 
 	@Test
 	public void getDocTypeNo() throws XMLDBException {
 		final String prevOutputDocType = testCollection.getProperty(EXistOutputKeys.OUTPUT_DOCTYPE);
-		try {
-			final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString());
+		try (final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString())) {
 			testCollection.setProperty(EXistOutputKeys.OUTPUT_DOCTYPE, "no");
 			assertEquals("<bookmap id=\"bookmap-1\"/>", res.getContent());
 		} finally {
@@ -220,8 +226,7 @@ public class SerializationTest {
 	@Test
 	public void getDocTypeYes() throws XMLDBException {
 		final String prevOutputDocType = testCollection.getProperty(EXistOutputKeys.OUTPUT_DOCTYPE);
-		try {
-			final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString());
+		try (final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString())) {
 			testCollection.setProperty(EXistOutputKeys.OUTPUT_DOCTYPE, "yes");
 			assertEquals(XML_WITH_DOCTYPE, res.getContent());
 		} finally {
@@ -233,15 +238,15 @@ public class SerializationTest {
 
 	@Test
 	public void getXmlDeclDefault() throws XMLDBException {
-		final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString());
-		assertEquals(XML_WITH_XMLDECL, res.getContent());
+		try (final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString())) {
+			assertEquals(XML_WITH_XMLDECL, res.getContent());
+		}
 	}
 
 	@Test
 	public void getXmlDeclNo() throws XMLDBException {
 		final String prevOmitOriginalXmlDecl = testCollection.getProperty(EXistOutputKeys.OMIT_ORIGINAL_XML_DECLARATION);
-		try {
-			final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString());
+		try (final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString())) {
 			testCollection.setProperty(EXistOutputKeys.OMIT_ORIGINAL_XML_DECLARATION, "no");
 			assertEquals(XML_WITH_XMLDECL, res.getContent());
 		} finally {
@@ -254,8 +259,7 @@ public class SerializationTest {
 	@Test
 	public void getXmlDeclYes() throws XMLDBException {
 		final String prevOmitOriginalXmlDecl = testCollection.getProperty(EXistOutputKeys.OMIT_ORIGINAL_XML_DECLARATION);
-		try {
-			final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString());
+		try (final Resource res = testCollection.getResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString())) {
 			testCollection.setProperty(EXistOutputKeys.OMIT_ORIGINAL_XML_DECLARATION, "yes");
 			assertEquals("<bookmap id=\"bookmap-2\"/>", res.getContent());
 		} finally {
@@ -270,11 +274,13 @@ public class SerializationTest {
 		final String query = "array { \"value 1\", \"value 2\" }";
 
 		final XQueryService service = testCollection.getService(XQueryService.class);
-		final ResourceSet result = service.query(query);
-		assertEquals(1, result.getSize());
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+			assertEquals(1, result.getSize());
 
-		final Resource resource = result.getResource(0);
-		assertEquals("[ \"value 1\", \"value 2\" ]", resource.getContent());
+			try (final Resource resource = result.getResource(0)) {
+				assertEquals("[ \"value 1\", \"value 2\" ]", resource.getContent());
+			}
+		}
 	}
 
 	@Test
@@ -282,11 +288,13 @@ public class SerializationTest {
 		final String query = "map { \"prop1\" : \"value 1\", \"prop2\" : \"value 2\" }";
 
 		final XQueryService service = testCollection.getService(XQueryService.class);
-		final ResourceSet result = service.query(query);
-		assertEquals(1, result.getSize());
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+			assertEquals(1, result.getSize());
 
-		final Resource resource = result.getResource(0);
-		assertEquals("map {\"prop2\": \"value 2\", \"prop1\": \"value 1\"}", resource.getContent());
+			try (final Resource resource = result.getResource(0)) {
+				assertEquals("map {\"prop2\": \"value 2\", \"prop1\": \"value 1\"}", resource.getContent());
+			}
+		}
 	}
 
 	private static void assertXMLEquals(final String expected, final Resource actual) throws XMLDBException {
@@ -302,29 +310,37 @@ public class SerializationTest {
 
     @Before
 	public void setUp() throws XMLDBException {
-		final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService service = root.getService(CollectionManagementService.class);
-        testCollection = service.createCollection(TEST_COLLECTION_NAME);
-        assertNotNull(testCollection);
+		try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+			final CollectionManagementService service = root.getService(CollectionManagementService.class);
+			testCollection = service.createCollection(TEST_COLLECTION_NAME);
+			assertNotNull(testCollection);
 
-        final XMLResource res = testCollection.createResource(XML_DOC_NAME, XMLResource.class);
-        res.setContent(XML);
-        testCollection.storeResource(res);
+			try (final XMLResource res = testCollection.createResource(XML_DOC_NAME, XMLResource.class)) {
+				res.setContent(XML);
+				testCollection.storeResource(res);
+			}
 
-		final XMLResource res1 = testCollection.createResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString(), XMLResource.class);
-		res1.setContent(XML_WITH_DOCTYPE);
-		testCollection.storeResource(res1);
+			try (final XMLResource res1 = testCollection.createResource(TEST_XML_DOC_WITH_DOCTYPE_URI.lastSegmentString(), XMLResource.class)) {
+				res1.setContent(XML_WITH_DOCTYPE);
+				testCollection.storeResource(res1);
+			}
 
-		final XMLResource res2 = testCollection.createResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString(), XMLResource.class);
-		res2.setContent(XML_WITH_XMLDECL);
-		testCollection.storeResource(res2);
+			try (final XMLResource res2 = testCollection.createResource(TEST_XML_DOC_WITH_XMLDECL_URI.lastSegmentString(), XMLResource.class)) {
+				res2.setContent(XML_WITH_XMLDECL);
+				testCollection.storeResource(res2);
+			}
+		}
     }
 
     @After
     public void tearDown() throws XMLDBException {
-		final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-		final CollectionManagementService service = root.getService(CollectionManagementService.class);
-        service.removeCollection(TEST_COLLECTION_NAME);
+		testCollection.close();
+
+		try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+			final CollectionManagementService service = root.getService(CollectionManagementService.class);
+			service.removeCollection(TEST_COLLECTION_NAME);
+		}
+
         testCollection = null;
     }
 }

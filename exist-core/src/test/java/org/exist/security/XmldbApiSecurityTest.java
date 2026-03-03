@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -79,7 +103,7 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
         try {
             col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd);
             CollectionManagementService cms = col.getService(CollectionManagementService.class);
-            cms.createCollection(collectionName);
+            try (final Collection created = cms.createCollection(collectionName)) { }
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
         } finally {
@@ -164,48 +188,23 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
     
     @Override
     protected void chownRes(final String resourceUri, final String owner_uid, final String group_gid, final String uid, final String pwd) throws ApiException {
-        
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
-            
-            final Resource resource = col.getResource(getResourceName(resourceUri));
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
+             final Resource resource = col.getResource(getResourceName(resourceUri))) {
             final UserManagementService ums = col.getService(UserManagementService.class);
-            
             ums.chown(resource, ums.getAccount(owner_uid), group_gid);
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
     
     @Override
     protected void chmodRes(final String resourceUri, final String mode, final String uid, final String pwd) throws ApiException {
-        
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
-            
-            final Resource resource = col.getResource(getResourceName(resourceUri));
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
+             final Resource resource = col.getResource(getResourceName(resourceUri))) {
             final UserManagementService ums = col.getService(UserManagementService.class);
             ums.chmod(resource, mode);
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
 
@@ -251,30 +250,17 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
 
     @Override
     protected String getXmlResourceContent(final String resourceUri, final String uid, final String pwd) throws ApiException {
-        
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
-            final Resource resource = col.getResource(getResourceName(resourceUri));
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
+             final Resource resource = col.getResource(getResourceName(resourceUri))) {
             return (String)resource.getContent();
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
 
     @Override
     protected void removeAccount(final String account_uid, final String uid, final String pwd) throws ApiException {
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd);
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd);) {
             final UserManagementService ums = col.getService(UserManagementService.class);
 
             final Account acct = ums.getAccount(account_uid);
@@ -283,22 +269,12 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
             }
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
     
     @Override
     protected void removeGroup(String group_uid, String uid, String pwd) throws ApiException {
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd);
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd)) {
             final UserManagementService ums = col.getService(UserManagementService.class);
 
             final Group grp = ums.getGroup(group_uid);
@@ -307,22 +283,12 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
             }
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
 
     @Override
     protected void createAccount(String account_uid, String account_pwd, String group_uid, String uid, String pwd) throws ApiException {
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd);
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd)) {
             final UserManagementService ums = col.getService(UserManagementService.class);
 
             final Group group = ums.getGroup(group_uid);
@@ -333,78 +299,40 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
             
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
     
     @Override
     protected void createGroup(String group_uid, String uid, String pwd) throws ApiException {
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd);
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + "/db", uid, pwd)) {
             final UserManagementService ums = col.getService(UserManagementService.class);
 
             Group group = new GroupAider("exist", group_uid);
             ums.addGroup(group);
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
 
     @Override
     protected void createXmlResource(String resourceUri, String content, String uid, String pwd) throws ApiException {
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
-            Resource resource = col.createResource(getResourceName(resourceUri), XMLResource.class);
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
+             final Resource resource = col.createResource(getResourceName(resourceUri), XMLResource.class)) {
             resource.setContent(content);
             col.storeResource(resource);
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
     
     @Override
     protected void createBinResource(String resourceUri, byte[] content, String uid, String pwd) throws ApiException {
-        Collection col = null;
-        try {
-            col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
-            Resource resource = col.createResource(getResourceName(resourceUri), BinaryResource.class);
+        try (final Collection col = DatabaseManager.getCollection(getBaseUri() + getCollectionUri(resourceUri), uid, pwd);
+             final Resource resource = col.createResource(getResourceName(resourceUri), BinaryResource.class)) {
             resource.setContent(content);
             col.storeResource(resource);
         } catch(final XMLDBException xmldbe) {
             throw new ApiException(xmldbe);
-        } finally {
-            if(col != null) {
-                try {
-                    col.close();
-                } catch (final XMLDBException xmldbe) {
-                    throw new ApiException(xmldbe);
-                }
-            }
         }
     }
 }

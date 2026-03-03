@@ -48,13 +48,14 @@ package org.exist.xquery;
 import org.exist.TestUtils;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -101,9 +102,12 @@ public class VariablesTest {
                 "import module namespace mod1 = \"http://mod1\" at \"xmldb:exist:///db/variables-test/mod1.xqm\";\n" +
                 "$mod1:PUBLICATIONS(\"open-graph\")";
 
-        final ResourceSet rs = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, rs.getSize());
-        assertEquals(XML_RESOURCE, rs.getResource(0).getResourceType());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(XML_RESOURCE, resource.getResourceType());
+            }
+        }
     }
 
     private static Collection createCollection(final String collectionName) throws XMLDBException {
@@ -111,7 +115,7 @@ public class VariablesTest {
         final CollectionManagementService cmService = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         if (collection == null) {
             //cmService.removeCollection(collectionName);
-            cmService.createCollection(collectionName);
+            try (final Collection created = cmService.createCollection(collectionName)) { }
         }
 
         collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + collectionName, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
@@ -120,10 +124,11 @@ public class VariablesTest {
     }
 
     private static void writeModule(final Collection collection, final String modulename, final String module) throws XMLDBException {
-        final BinaryResource res = collection.createResource(modulename, BinaryResource.class);
-        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
-        res.setContent(module.getBytes());
-        collection.storeResource(res);
+        try (final BinaryResource res = collection.createResource(modulename, BinaryResource.class)) {
+            ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
+            res.setContent(module.getBytes());
+            collection.storeResource(res);
+        }
         collection.close();
     }
 }

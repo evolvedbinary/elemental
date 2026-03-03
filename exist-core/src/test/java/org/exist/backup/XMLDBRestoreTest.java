@@ -221,12 +221,13 @@ public class XMLDBRestoreTest {
         assertEquals(0, listener.warnings.size());
         assertEquals(0, listener.errors.size());
 
-        final Collection collection = DatabaseManager.getCollection(rootUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final EXistUserManagementService userManagementService = collection.getService(EXistUserManagementService.class);
-        final Account account = userManagementService.getAccount(username);
-        assertNotNull(account);
-        assertEquals(SecurityManager.UNKNOWN_GROUP, account.getPrimaryGroup());
-        assertArrayEquals(new String[]{SecurityManager.UNKNOWN_GROUP}, account.getGroups());
+        try (final Collection collection = DatabaseManager.getCollection(rootUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final EXistUserManagementService userManagementService = collection.getService(EXistUserManagementService.class);
+            final Account account = userManagementService.getAccount(username);
+            assertNotNull(account);
+            assertEquals(SecurityManager.UNKNOWN_GROUP, account.getPrimaryGroup());
+            assertArrayEquals(new String[]{SecurityManager.UNKNOWN_GROUP}, account.getGroups());
+        }
     }
 
     @Test
@@ -242,12 +243,13 @@ public class XMLDBRestoreTest {
         assertEquals(0, listener.warnings.size());
         assertEquals(0, listener.errors.size());
 
-        final Collection collection = DatabaseManager.getCollection(rootUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final EXistUserManagementService userManagementService = collection.getService(EXistUserManagementService.class);
-        final Account account = userManagementService.getAccount(username);
-        assertNotNull(account);
-        assertEquals(SecurityManager.UNKNOWN_GROUP, account.getPrimaryGroup());
-        assertArrayEquals(new String[]{SecurityManager.UNKNOWN_GROUP}, account.getGroups());
+        try (final Collection collection = DatabaseManager.getCollection(rootUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final EXistUserManagementService userManagementService = collection.getService(EXistUserManagementService.class);
+            final Account account = userManagementService.getAccount(username);
+            assertNotNull(account);
+            assertEquals(SecurityManager.UNKNOWN_GROUP, account.getPrimaryGroup());
+            assertArrayEquals(new String[]{SecurityManager.UNKNOWN_GROUP}, account.getGroups());
+        }
     }
 
     /**
@@ -309,34 +311,38 @@ public class XMLDBRestoreTest {
         assertEquals(0, listener.warnings.size());
         assertEquals(0, listener.errors.size());
 
-        final Collection collection = DatabaseManager.getCollection(rootUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final EXistUserManagementService userManagementService = collection.getService(EXistUserManagementService.class);
-        final Account account = userManagementService.getAccount(username);
-        assertNotNull(account);
-        assertEquals(primaryGroup, account.getPrimaryGroup());
-        assertArrayEquals(new String[]{primaryGroup, group1, group2, group3}, account.getGroups());
+        try (final Collection collection = DatabaseManager.getCollection(rootUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final EXistUserManagementService userManagementService = collection.getService(EXistUserManagementService.class);
+            final Account account = userManagementService.getAccount(username);
+            assertNotNull(account);
+            assertEquals(primaryGroup, account.getPrimaryGroup());
+            assertArrayEquals(new String[]{primaryGroup, group1, group2, group3}, account.getGroups());
+        }
     }
 
     private static void restoreBackup(final XmldbURI uri, final Path backup, @Nullable final String backupPassword, final RestoreServiceTaskListener listener) throws XMLDBException {
-        final Collection collection = DatabaseManager.getCollection(uri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final EXistRestoreService restoreService = collection.getService(EXistRestoreService.class);
-        restoreService.restore(backup.normalize().toAbsolutePath().toString(), backupPassword, listener, false);
+        try (final Collection collection = DatabaseManager.getCollection(uri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final EXistRestoreService restoreService = collection.getService(EXistRestoreService.class);
+            restoreService.restore(backup.normalize().toAbsolutePath().toString(), backupPassword, listener, false);
+        }
     }
 
     private void checkMediaType(final XmldbURI collectionUri, final DocInfo backupDocInfo) throws XMLDBException {
-        final Collection collection = DatabaseManager.getCollection(XmldbURI.create(getBaseUri()).append(collectionUri).toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final Resource resource = collection.getResource(backupDocInfo.name);
-        if (backupDocInfo.storageType == StorageType.XML) {
-            assertTrue(resource instanceof XMLResource);
-        } else {
-            assertTrue(resource instanceof BinaryResource);
-        }
-        if (backupDocInfo.mediaType != null) {
-            assertEquals(backupDocInfo.mediaType, ((EXistResource) resource).getMediaType());
-        } else if (backupDocInfo.storageType == StorageType.XML) {
-            assertEquals(MediaType.APPLICATION_XML, ((EXistResource) resource).getMediaType());
-        } else {
-            assertEquals(MediaType.APPLICATION_OCTET_STREAM, ((EXistResource) resource).getMediaType());
+        try (final Collection collection = DatabaseManager.getCollection(XmldbURI.create(getBaseUri()).append(collectionUri).toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            try (final Resource resource = collection.getResource(backupDocInfo.name)) {
+                if (backupDocInfo.storageType == StorageType.XML) {
+                    assertTrue(resource instanceof XMLResource);
+                } else {
+                    assertTrue(resource instanceof BinaryResource);
+                }
+                if (backupDocInfo.mediaType != null) {
+                    assertEquals(backupDocInfo.mediaType, ((EXistResource) resource).getMediaType());
+                } else if (backupDocInfo.storageType == StorageType.XML) {
+                    assertEquals(MediaType.APPLICATION_XML, ((EXistResource) resource).getMediaType());
+                } else {
+                    assertEquals(MediaType.APPLICATION_OCTET_STREAM, ((EXistResource) resource).getMediaType());
+                }
+            }
         }
     }
 

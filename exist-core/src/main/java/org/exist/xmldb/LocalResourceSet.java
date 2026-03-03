@@ -71,12 +71,13 @@ import org.xmldb.api.base.ResourceIterator;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
-public class LocalResourceSet extends AbstractLocal implements ResourceSet {
+public class LocalResourceSet extends AbstractLocal implements ResourceSet, EXistResourceSet {
 
-    private final static Logger LOG = LogManager.getLogger(LocalResourceSet.class);
+    private static final Logger LOG = LogManager.getLogger(LocalResourceSet.class);
 
     private final List<Object> resources = new ArrayList<>();
     private final Properties outputProperties;
+    private boolean closed;
     private final Runnable queryResultCloser;
 
     public LocalResourceSet(final Subject user, final BrokerPool pool, final LocalCollection col, final Properties properties, final XQueryUtil.QueryResult queryResult, final String sortExpr) throws XMLDBException {
@@ -253,6 +254,21 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
     @Override
     public void removeResource(final long pos) throws XMLDBException {
         resources.remove(pos);
+    }
+
+    public final boolean isClosed() {
+        return closed;
+    }
+
+    @Override
+    public void close() throws XMLDBException {
+        if (!isClosed()) {
+            try {
+                clear();
+            } finally {
+                closed = true;
+            }
+        }
     }
 
     class NewResourceIterator implements ResourceIterator {

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,6 +46,7 @@
 package org.exist.xquery.functions.xmldb;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.concurrent.DBUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -45,22 +70,21 @@ public class DbStoreTest {
     @Test
     public final void simpleTest() throws XMLDBException {
         final Collection rootCol = existEmbeddedServer.getRoot();
-        Collection testCol = rootCol.getChildCollection(TEST_COLLECTION);
-        if (testCol == null) {
-            testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION);
+        try (final Collection testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION)) {
             assertNotNull(testCol);
-        }
 
-        final XPathQueryService xpqs = testCol.getService(XPathQueryService.class);
-        assertThrows(XMLDBException.class, () -> xpqs.query(
-                "xmldb:store(\n" +
+            final XPathQueryService xpqs = testCol.getService(XPathQueryService.class);
+            assertThrows(XMLDBException.class, () -> {
+                try (final EXistResourceSet result = (EXistResourceSet) xpqs.query(
+                    "xmldb:store(\n" +
                         "        '/db',\n" +
                         "        'image.jpg',\n" +
                         "        xs:anyURI('https://www.example.com/image.jpg'),\n" +
                         "        'image/png'\n" +
-                        "    )"));
-
-
+                        "    )")) {
+                    // needed to ensure that result is closed
+                }
+            });
+        }
     }
-
 }

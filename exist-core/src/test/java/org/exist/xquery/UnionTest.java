@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,6 +46,7 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -29,13 +54,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
-
-    
 
 /**
  *
@@ -91,9 +113,9 @@ public class UnionTest {
     @Test
     public void unionInPredicate_withoutIndex() throws XMLDBException {
          final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
-         final ResourceSet result = service.queryResource(PUBMED_DOC_NAME, XQUERY);
-         
-         assertEquals(1, result.getSize());
+         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(PUBMED_DOC_NAME, XQUERY)) {
+             assertEquals(1, result.getSize());
+         }
     }
     
     @Test
@@ -101,9 +123,9 @@ public class UnionTest {
         storeCollectionConfig();
         
         final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
-        final ResourceSet result = service.queryResource(PUBMED_DOC_NAME, XQUERY);
-         
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(PUBMED_DOC_NAME, XQUERY)) {
+            assertEquals(1, result.getSize());
+        }
     }
 
     @Test
@@ -111,16 +133,17 @@ public class UnionTest {
         final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
         final String xquery = "doc('" + testCollection.getName() + "/" + PUBMED_DOC_NAME + "')//Language | <a/> | <b/>";
 
-        final ResourceSet results = service.query(xquery);
-        assertEquals(3, results.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xquery)) {
+            assertEquals(3, result.getSize());
+        }
     }
     
     private void storeCollectionConfig() throws XMLDBException {
-        
-        final Collection colConfig = getOrCreateCollection("/db/system/config/db/" + TEST_COLLECTION_NAME);
-        final XMLResource docConfig = colConfig.createResource(DEFAULT_COLLECTION_CONFIG_FILE, XMLResource.class);
-        docConfig.setContent(INDEX_CONFIG);
-        colConfig.storeResource(docConfig);
+        try (final Collection colConfig = getOrCreateCollection("/db/system/config/db/" + TEST_COLLECTION_NAME);
+             final XMLResource docConfig = colConfig.createResource(DEFAULT_COLLECTION_CONFIG_FILE, XMLResource.class)) {
+            docConfig.setContent(INDEX_CONFIG);
+            colConfig.storeResource(docConfig);
+        }
     }
     
     private Collection getOrCreateCollection(final String collectionPath) throws XMLDBException {
@@ -128,7 +151,6 @@ public class UnionTest {
     }
     
     private Collection getOrCreateCollection(final Collection currentCollection, final String collectionPath) throws XMLDBException {
-       
         final int offset = collectionPath.indexOf("/") > -1 ? collectionPath.indexOf("/") : collectionPath.length();
         final String colName = collectionPath.substring(0, offset);
         
@@ -142,52 +164,59 @@ public class UnionTest {
             child = service.createCollection(colName);
         }
         
-        if(collectionPath.indexOf("/") == -1) {
+        if (collectionPath.indexOf("/") == -1) {
             return child;
         } else {
             final String subPath = collectionPath.substring(collectionPath.indexOf("/") + 1);
-            return getOrCreateCollection(child, subPath);
+            try {
+                return getOrCreateCollection(child, subPath);
+            } finally {
+                child.close();
+            }
         }
     }
     
     private XQueryService storeXMLStringAndGetQueryService(String documentName, String content) throws XMLDBException {
-       final XMLResource doc = testCollection.createResource(documentName, XMLResource.class);
-       doc.setContent(content);
-       testCollection.storeResource(doc);
-       final XQueryService service = testCollection.getService(XQueryService.class);
-       return service;
+       try (final XMLResource doc = testCollection.createResource(documentName, XMLResource.class)) {
+           doc.setContent(content);
+           testCollection.storeResource(doc);
+       }
+       return testCollection.getService(XQueryService.class);
     }
     
     @Before
     public void clearCollectionConfig() throws XMLDBException {
-        final Collection colDb = testCollection.getParentCollection();
-        
-        final Collection colSystem = colDb.getChildCollection("system");
-        if(colSystem == null) {
-            return;
-        }
-        
-        final Collection colConfig = colSystem.getChildCollection("config");
-        if(colConfig == null) {
-            return;
-        }
-        
-        final Collection colConfigDb = colConfig.getChildCollection("db");
-        if(colConfigDb == null) {
-            return;
-        }
-        
-        boolean foundPubmedConfig = false;
-        for(final String configCol : colConfigDb.listChildCollections()) {
-            if(configCol.equals(TEST_COLLECTION_NAME)) {
-                foundPubmedConfig = true;
-                break;
+        try (final Collection colDb = testCollection.getParentCollection();
+             final Collection colSystem = colDb.getChildCollection("system")) {
+
+            if (colSystem == null) {
+                return;
             }
-        }
-        
-        if(foundPubmedConfig) {
-            final CollectionManagementService service = colConfigDb.getService(CollectionManagementService.class);
-            service.removeCollection(TEST_COLLECTION_NAME);
+
+            try (final Collection colConfig = colSystem.getChildCollection("config")) {
+                if (colConfig == null) {
+                    return;
+                }
+
+                try (final Collection colConfigDb = colConfig.getChildCollection("db")) {
+                    if (colConfigDb == null) {
+                        return;
+                    }
+
+                    boolean foundPubmedConfig = false;
+                    for (final String configCol : colConfigDb.listChildCollections()) {
+                        if (configCol.equals(TEST_COLLECTION_NAME)) {
+                            foundPubmedConfig = true;
+                            break;
+                        }
+                    }
+
+                    if (foundPubmedConfig) {
+                        final CollectionManagementService service = colConfigDb.getService(CollectionManagementService.class);
+                        service.removeCollection(TEST_COLLECTION_NAME);
+                    }
+                }
+            }
         }
     }
 
@@ -200,6 +229,7 @@ public class UnionTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        testCollection.close();
         final CollectionManagementService service =
                 existEmbeddedServer.getRoot().getService(
                         CollectionManagementService.class);

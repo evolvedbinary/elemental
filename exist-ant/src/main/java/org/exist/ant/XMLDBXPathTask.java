@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,10 +50,10 @@ import org.apache.tools.ant.Project;
 import org.apache.tools.ant.PropertyHelper;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
+import org.exist.xmldb.EXistResourceSet;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ResourceIterator;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
@@ -84,9 +108,8 @@ public class XMLDBXPathTask extends AbstractXMLDBTask {
 
         registerDatabase();
 
-        try {
-            log("Get base collection: " + uri, Project.MSG_DEBUG);
-            final Collection base = DatabaseManager.getCollection(uri, user, password);
+        log("Get base collection: " + uri, Project.MSG_DEBUG);
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
             if (base == null) {
                 final String msg = "Collection " + uri + " could not be found.";
@@ -109,42 +132,50 @@ public class XMLDBXPathTask extends AbstractXMLDBTask {
                     service.setNamespace("ns", namespace);
                 }
 
-                final ResourceSet results;
-                if (resource != null) {
-                    log("Query resource: " + resource, Project.MSG_DEBUG);
-                    results = service.queryResource(resource, query);
-                } else {
-                    log("Query collection", Project.MSG_DEBUG);
-                    results = service.query(query);
-                }
-                log("Found " + results.getSize() + " results", Project.MSG_INFO);
-
-                if ((destDir != null) && (results != null)) {
-                    log("write results to directory " + destDir.getAbsolutePath(), Project.MSG_INFO);
-                    final ResourceIterator iter = results.getIterator();
-
-                    log("Writing results to directory " + destDir.getAbsolutePath(), Project.MSG_DEBUG);
-
-                    while (iter.hasMoreResources()) {
-                        final XMLResource res = (XMLResource) iter.nextResource();
-                        log("Writing resource " + res.getId(), Project.MSG_DEBUG);
-                        writeResource(res, destDir);
-                    }
-
-                } else if (outputproperty != null) {
-
-                    if (count) {
-                        getProject().setNewProperty(outputproperty, String.valueOf(results.getSize()));
+                EXistResourceSet results = null;
+                try {
+                    if (resource != null) {
+                        log("Query resource: " + resource, Project.MSG_DEBUG);
+                        results = (EXistResourceSet) service.queryResource(resource, query);
                     } else {
+                        log("Query collection", Project.MSG_DEBUG);
+                        results = (EXistResourceSet) service.query(query);
+                    }
+                    log("Found " + results.getSize() + " results", Project.MSG_INFO);
+
+                    if ((destDir != null) && (results != null)) {
+                        log("write results to directory " + destDir.getAbsolutePath(), Project.MSG_INFO);
                         final ResourceIterator iter = results.getIterator();
-                        final StringBuilder result = new StringBuilder();
+
+                        log("Writing results to directory " + destDir.getAbsolutePath(), Project.MSG_DEBUG);
 
                         while (iter.hasMoreResources()) {
-                            final XMLResource res = (XMLResource) iter.nextResource();
-                            result.append(res.getContent().toString());
-                            result.append("\n");
+                            try (final XMLResource res = (XMLResource) iter.nextResource()) {
+                                log("Writing resource " + res.getId(), Project.MSG_DEBUG);
+                                writeResource(res, destDir);
+                            }
                         }
-                        getProject().setNewProperty(outputproperty, result.toString());
+
+                    } else if (outputproperty != null) {
+
+                        if (count) {
+                            getProject().setNewProperty(outputproperty, String.valueOf(results.getSize()));
+                        } else {
+                            final ResourceIterator iter = results.getIterator();
+                            final StringBuilder result = new StringBuilder();
+
+                            while (iter.hasMoreResources()) {
+                                try (final XMLResource res = (XMLResource) iter.nextResource()) {
+                                    result.append(res.getContent().toString());
+                                    result.append("\n");
+                                }
+                            }
+                            getProject().setNewProperty(outputproperty, result.toString());
+                        }
+                    }
+                } finally {
+                    if (results != null) {
+                        results.close();
                     }
                 }
             }

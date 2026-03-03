@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -114,29 +138,34 @@ public class XMLDBBackupTest {
         restore(backupFile, XmldbURI.create(getBaseUri()).append("/db"));
 
         // check restore has restored the collection
-        final Collection testCollection = DatabaseManager.getCollection(collectionUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = DatabaseManager.getCollection(collectionUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            assertNotNull(testCollection);
 
-        final Resource doc1 = testCollection.getResource(DOC1_NAME);
-        assertNotNull(doc1);
+            try (final Resource doc1 = testCollection.getResource(DOC1_NAME)) {
+                assertNotNull(doc1);
 
-        // NOTE(AR) that org.exist.backup.Backup calls defaultOutputProperties.setProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-        // NOTE(AR) that org.exist.backup.SystemExport also calls defaultOutputProperties.setProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-        // TODO(AR) consider whether the backup/export should be injecting a XML Declaration that was not previously present, or should default to EXistOutputKeys.OMIT_ORIGINAL_XML_DECLARATION
-        final Source expected = Input.fromString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + doc1Content).build();
 
-        final Source actual = Input.fromString(doc1.getContent().toString()).build();
-        final Diff diff = DiffBuilder.compare(expected)
-                .withTest(actual)
-                .checkForIdentical()
-                .build();
-        assertFalse(diff.toString(), diff.hasDifferences());
+                // NOTE(AR) that org.exist.backup.Backup calls defaultOutputProperties.setProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                // NOTE(AR) that org.exist.backup.SystemExport also calls defaultOutputProperties.setProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                // TODO(AR) consider whether the backup/export should be injecting a XML Declaration that was not previously present, or should default to EXistOutputKeys.OMIT_ORIGINAL_XML_DECLARATION
+                final Source expected = Input.fromString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + doc1Content).build();
 
-        final Resource binDoc1 = testCollection.getResource(BIN_DOC1_NAME);
-        assertEquals(binDoc1Content, new String((byte[])binDoc1.getContent(), UTF_8));
+                final Source actual = Input.fromString(doc1.getContent().toString()).build();
+                final Diff diff = DiffBuilder.compare(expected)
+                    .withTest(actual)
+                    .checkForIdentical()
+                    .build();
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
 
-        final Resource binDoc2 = testCollection.getResource(BIN_DOC2_NAME);
-        assertEquals(binDoc2Content, new String((byte[])binDoc2.getContent(), UTF_8));
+            try (final Resource binDoc1 = testCollection.getResource(BIN_DOC1_NAME)) {
+                assertEquals(binDoc1Content, new String((byte[]) binDoc1.getContent(), UTF_8));
+            }
+
+            try (final Resource binDoc2 = testCollection.getResource(BIN_DOC2_NAME)) {
+                assertEquals(binDoc2Content, new String((byte[]) binDoc2.getContent(), UTF_8));
+            }
+        }
     }
 
     private Path backup(final String filename, final XmldbURI collectionUri) throws IOException, XMLDBException, SAXException {
@@ -151,36 +180,43 @@ public class XMLDBBackupTest {
     }
 
     private void restore(final Path backupFile, final XmldbURI collectionUri) throws XMLDBException, SAXException, URISyntaxException, ParserConfigurationException, IOException {
-        final Collection collection = DatabaseManager.getCollection(collectionUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final EXistRestoreService restoreService = collection.getService(EXistRestoreService.class);
-        final TestRestoreListener listener = new TestRestoreListener();
-        restoreService.restore(backupFile.normalize().toAbsolutePath().toString(), null, listener, false);
+        try (final Collection collection = DatabaseManager.getCollection(collectionUri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final EXistRestoreService restoreService = collection.getService(EXistRestoreService.class);
+            final TestRestoreListener listener = new TestRestoreListener();
+            restoreService.restore(backupFile.normalize().toAbsolutePath().toString(), null, listener, false);
+        }
     }
 
     private void deleteCollection(final XmldbURI collectionUri) throws XMLDBException {
-        final Collection parent = DatabaseManager.getCollection(collectionUri.removeLastSegment().toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService colService = parent.getService(CollectionManagementService.class);
-        colService.removeCollection(collectionUri.lastSegment().toString());
+        try (final Collection parent = DatabaseManager.getCollection(collectionUri.removeLastSegment().toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService colService = parent.getService(CollectionManagementService.class);
+            colService.removeCollection(collectionUri.lastSegment().toString());
+        }
     }
 
     @Before
     public void before() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService colService = root.getService(CollectionManagementService.class);
-        final Collection testCollection = colService.createCollection(COLLECTION_NAME);
-        assertNotNull(testCollection);
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService colService = root.getService(CollectionManagementService.class);
+            try (final Collection testCollection = colService.createCollection(COLLECTION_NAME)) {
+                assertNotNull(testCollection);
 
-        final Resource doc1 = testCollection.createResource(DOC1_NAME, XMLResource.class);
-        doc1.setContent(doc1Content);
-        testCollection.storeResource(doc1);
+                try (final Resource doc1 = testCollection.createResource(DOC1_NAME, XMLResource.class)) {
+                    doc1.setContent(doc1Content);
+                    testCollection.storeResource(doc1);
+                }
 
-        final Resource binDoc1 = testCollection.createResource(BIN_DOC1_NAME, BinaryResource.class);
-        binDoc1.setContent(binDoc1Content);
-        testCollection.storeResource(binDoc1);
+                try (final Resource binDoc1 = testCollection.createResource(BIN_DOC1_NAME, BinaryResource.class)) {
+                    binDoc1.setContent(binDoc1Content);
+                    testCollection.storeResource(binDoc1);
+                }
 
-        final Resource binDoc2 = testCollection.createResource(BIN_DOC2_NAME, BinaryResource.class);
-        binDoc2.setContent(binDoc2Content);
-        testCollection.storeResource(binDoc2);
+                try (final Resource binDoc2 = testCollection.createResource(BIN_DOC2_NAME, BinaryResource.class)) {
+                    binDoc2.setContent(binDoc2Content);
+                    testCollection.storeResource(binDoc2);
+                }
+            }
+        }
     }
 
     private static class TestRestoreListener extends AbstractRestoreServiceTaskListener {

@@ -57,6 +57,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.ExistSAXParserFactory;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
@@ -77,7 +78,6 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmlunit.builder.DiffBuilder;
@@ -129,53 +129,57 @@ public class DocTest {
 
     @After
     public void tearDown() throws XMLDBException {
+        if (test != null) {
+            test.close();
+            test = null;
+        }
         final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         //Creates the 'test' collection
         cms.removeCollection("test");
-        test = null;
 
         existEmbeddedServer.getRoot().removeResource(existEmbeddedServer.getRoot().getResource("test.xml"));
     }
     
     private void storeResource(final Collection col, final String fileName, final Class<? extends Resource> type, final String mimeType, final String content) throws XMLDBException {
-    	Resource res = col.createResource(fileName, type);
-    	res.setContent(content);
-    	
-    	if (mimeType != null) {
-            ((EXistResource) res).setMediaType(mimeType);
-        }
-        
-    	col.storeResource(res);
+    	try (final Resource res = col.createResource(fileName, type)) {
+    	    res.setContent(content);
+
+    	    if (mimeType != null) {
+                ((EXistResource) res).setMediaType(mimeType);
+            }
+
+    	    col.storeResource(res);
+    	}
     }
 
     @Test
     public void testURIResolveWithEval() throws XMLDBException {
         String query = "util:eval(xs:anyURI('/db/test/test.xq'), false(), ())";
-        ResourceSet result = existEmbeddedServer.executeQuery(query);
-
-        LocalXMLResource res = (LocalXMLResource)result.getResource(0);
-        assertNotNull(res);
-        Node n = res.getContentAsDOM();
-        assertTrue(n instanceof Document);
-        assertEquals("y", ((Document) n).getDocumentElement().getLocalName());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            LocalXMLResource res = (LocalXMLResource) result.getResource(0);
+            assertNotNull(res);
+            Node n = res.getContentAsDOM();
+            assertTrue(n instanceof Document);
+            assertEquals("y", ((Document) n).getDocumentElement().getLocalName());
+        }
 
         query = "util:eval(xs:anyURI('/db/test/test1.xq'), false(), ())";
-        result = existEmbeddedServer.executeQuery(query);
-
-        res = (LocalXMLResource)result.getResource(0);
-        assertNotNull(res);
-        n = res.getContentAsDOM();
-        assertTrue(n instanceof Document);
-        assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            XMLResource res = (LocalXMLResource) result.getResource(0);
+            assertNotNull(res);
+            Node n = res.getContentAsDOM();
+            assertTrue(n instanceof Document);
+            assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        }
 
         query = "util:eval(xs:anyURI('/db/test/test2.xq'), false(), ())";
-        result = existEmbeddedServer.executeQuery(query);
-
-        res = (LocalXMLResource)result.getResource(0);
-        assertNotNull(res);
-        n = res.getContentAsDOM();
-        assertTrue(n instanceof Document);
-        assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            XMLResource res = (LocalXMLResource) result.getResource(0);
+            assertNotNull(res);
+            Node n = res.getContentAsDOM();
+            assertTrue(n instanceof Document);
+            assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        }
     }
 
     @Test

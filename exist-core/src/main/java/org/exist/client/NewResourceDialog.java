@@ -314,7 +314,8 @@ public class NewResourceDialog extends JFrame {
                 resType = BinaryResource.class;
             }
 
-            try (final Collection collection = client.current; final Resource resource = collection.createResource(resName, resType)) {
+            final Collection collection = client.getCollection();
+            try (final Resource resource = collection.createResource(resName, resType)) {
                 resource.setContent(resourceContent);
                 ((EXistResource) resource).setMediaType(resourceType.getMimeType());
                 collection.storeResource(resource);

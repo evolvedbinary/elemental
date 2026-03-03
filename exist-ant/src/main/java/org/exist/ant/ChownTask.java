@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -39,25 +63,24 @@ public class ChownTask extends UserTask
     private String group    = null;
     private String resource = null;
 
-    /* (non-Javadoc)
-     * @see org.apache.tools.ant.Task#execute()
-     */
-    public void execute() throws BuildException
-    {
-        super.execute();
+    @Override
+    public void executeUserTask() throws BuildException {
 
         if( ( name == null ) || ( group == null ) ) {
             throw( new BuildException( "Must specify user and group" ) );
         }
 
         try {
-            final Account usr = service.getAccount( name );
+            final Account usr = getService().getAccount( name );
 
             if( resource != null ) {
-                final Resource res = base.getResource( resource );
-                service.chown( res, usr, group );
+                try (final Resource res = getBase().getResource( resource )) {
+                    if (res != null) {
+                        getService().chown(res, usr, group);
+                    }
+                }
             } else {
-                service.chown( usr, group );
+                getService().chown( usr, group );
             }
 
         }

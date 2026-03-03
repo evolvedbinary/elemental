@@ -136,11 +136,12 @@ public class ServerShutdown {
             if (!uri.endsWith(XmldbURI.ROOT_COLLECTION)) {
                 uri = uri + XmldbURI.ROOT_COLLECTION;
             }
-            final Collection root = DatabaseManager.getCollection(uri, user, passwd);
-            final DatabaseInstanceManager manager = root.getService(DatabaseInstanceManager.class);
-            System.out.println("Shutting down database instance at ");
-            System.out.println('\t' + uri);
-            manager.shutdown();
+            try (final Collection root = DatabaseManager.getCollection(uri, user, passwd)) {
+                final DatabaseInstanceManager manager = root.getService(DatabaseInstanceManager.class);
+                System.out.println("Shutting down database instance at ");
+                System.out.println('\t' + uri);
+                manager.shutdown();
+            }
 
         } catch (final XMLDBException e) {
             System.err.println("ERROR: " + e.getMessage());

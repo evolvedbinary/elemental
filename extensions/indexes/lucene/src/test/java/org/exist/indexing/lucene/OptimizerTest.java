@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,12 +49,12 @@ import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
 import org.exist.xquery.FunctionFactory;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -43,6 +67,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.exist.samples.Samples.SAMPLES;
+import static org.junit.Assert.assertNotNull;
 
 /**
  *
@@ -143,7 +168,7 @@ public class OptimizerTest {
         execute("//SPEECH[(ft:query(LINE, 'juliet') and ft:query(LINE, 'romeo')) or SPEAKER='HAMLET']", true, MSG_OPT_ERROR, r);
     }
 
-    private long execute(String query, boolean optimize) throws XMLDBException {
+    private long execute(String query, final boolean optimize) throws XMLDBException {
         XQueryService service = testCollection.getService(XQueryService.class);
         if (optimize) {
             query = OPTIMIZE + query;
@@ -151,19 +176,22 @@ public class OptimizerTest {
             query = NO_OPTIMIZE + query;
         }
         query = NAMESPACES + query;
-        ResourceSet result = service.query(query);
-        return result.getSize();
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            return result.getSize();
+        }
     }
 
-    private void execute(String query, boolean optimize, String message, long expected) throws XMLDBException {
-        XQueryService service = testCollection.getService(XQueryService.class);
+    private void execute(String query, final boolean optimize, final String message, final long expected) throws XMLDBException {
+        final XQueryService service = testCollection.getService(XQueryService.class);
         if (optimize) {
             query = NAMESPACES + OPTIMIZE + query;
         } else {
             query = NAMESPACES + NO_OPTIMIZE + query;
         }
-        ResourceSet result = service.query(query);
-        assertEquals(message, expected, result.getSize());
+
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(message, expected, result.getSize());
+        }
     }
 
     @ClassRule
@@ -178,21 +206,27 @@ public class OptimizerTest {
     public static void initDatabase() throws XMLDBException, IOException {
         CollectionManagementService service = server.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection("test");
-        Assert.assertNotNull(testCollection);
+        assertNotNull(testCollection);
 
-        IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
+        final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
-        XMLResource resource = testCollection.createResource("test.xml", XMLResource.class);
-        resource.setContent(XML);
-        testCollection.storeResource(resource);
-
-        for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
-            resource = testCollection.createResource(sampleName, XMLResource.class);
-            try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
-                resource.setContent(InputStreamUtil.readString(is, UTF_8));
-            }
+        try (final XMLResource resource = testCollection.createResource("test.xml", XMLResource.class)) {
+            resource.setContent(XML);
             testCollection.storeResource(resource);
         }
+
+        for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
+            try (final XMLResource resource = testCollection.createResource(sampleName, XMLResource.class);
+                 final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
+                resource.setContent(InputStreamUtil.readString(is, UTF_8));
+                testCollection.storeResource(resource);
+            }
+        }
+    }
+
+    @BeforeClass
+    public static void tearDown() throws XMLDBException {
+        testCollection.close();
     }
 }

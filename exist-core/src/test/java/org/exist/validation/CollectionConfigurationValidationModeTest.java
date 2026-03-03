@@ -48,11 +48,12 @@ package org.exist.validation;
 import com.evolvedbinary.j8fu.function.RunnableE;
 import org.exist.test.ExistXmldbEmbeddedServer;
 
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.modules.CollectionManagementService;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -80,33 +81,45 @@ public class CollectionConfigurationValidationModeTest {
 
     @AfterClass
     public static void tearDownClass() throws Exception {
-        existEmbeddedServer.executeQuery("validation:clear-grammar-cache()");
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+            // needed to close the resource set
+        }
     }
 
     @Before
     public void setUp() throws Exception {
-        existEmbeddedServer.executeQuery("validation:clear-grammar-cache()");
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+            // needed to close the resource set
+        }
     }
 
     private void createCollection(final String collection) throws XMLDBException {
         final CollectionManagementService cmservice = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
-        Collection testCollection = cmservice.createCollection(collection);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = cmservice.createCollection(collection)) {
+            assertNotNull(testCollection);
+        }
 
-        testCollection = cmservice.createCollection("/db/system/config" + collection);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = cmservice.createCollection("/db/system/config" + collection)) {
+            assertNotNull(testCollection);
+        }
     }
 
     private void storeCollectionXconf(final String collection, final String document) throws XMLDBException {
-        final ResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + DEFAULT_COLLECTION_CONFIG_FILE + "\", " + document + ")");
-        final String r = (String) result.getResource(0).getContent();
-        assertEquals("Store xconf", collection + "/" + DEFAULT_COLLECTION_CONFIG_FILE, r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + DEFAULT_COLLECTION_CONFIG_FILE + "\", " + document + ")")) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("Store xconf", collection + "/" + DEFAULT_COLLECTION_CONFIG_FILE, r);
+            }
+        }
     }
 
     private void storeDocument(final String collection, final String name, final String document) throws XMLDBException {
-        final ResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + name + "\", " + document + ")");
-        final String r = (String) result.getResource(0).getContent();
-        assertEquals("Store doc", collection + "/" + name, r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + name + "\", " + document + ")")) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("Store doc", collection + "/" + name, r);
+            }
+        }
     }
 
     @Test

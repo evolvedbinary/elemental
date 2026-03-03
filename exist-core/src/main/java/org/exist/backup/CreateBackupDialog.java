@@ -55,6 +55,7 @@ import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.MediaTypeResolver;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
@@ -189,9 +190,7 @@ public class CreateBackupDialog extends JPanel {
 
     private Vector<String> getAllCollections() {
         final Vector<String> list = new Vector<>();
-
-        try {
-            final Collection root = DatabaseManager.getCollection(uri + XmldbURI.ROOT_COLLECTION, user, passwd);
+        try (final Collection root = DatabaseManager.getCollection(uri + XmldbURI.ROOT_COLLECTION, user, passwd)) {
             getAllCollections(root, list);
         } catch (final XMLDBException e) {
             e.printStackTrace();
@@ -202,25 +201,37 @@ public class CreateBackupDialog extends JPanel {
 
     private void getAllCollections(final Collection collection, final Vector<String> collections) throws XMLDBException {
         collections.add(collection.getName());
-        Collection child = null;
         for (final String childCollection : collection.listChildCollections()) {
+            @Nullable Collection child = null;
             try {
-                child = collection.getChildCollection(childCollection);
-            } catch (final XMLDBException xmldbe) {
-                if (xmldbe.getCause() instanceof PermissionDeniedException) {
+                try {
+                    child = collection.getChildCollection(childCollection);
+                } catch (final XMLDBException xmldbe) {
+                    if (xmldbe.getCause() instanceof PermissionDeniedException) {
+                        continue;
+                    } else {
+                        throw xmldbe;
+                    }
+                } catch (final Exception npe) {
+                    System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
                     continue;
-                } else {
-                    throw xmldbe;
                 }
-            } catch (final Exception npe) {
-                System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
-                continue;
-            }
-            try {
-                getAllCollections(child, collections);
-            } catch (final Exception ee) {
-                System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
-                continue;
+
+                try {
+                    getAllCollections(child, collections);
+                } catch (final Exception ee) {
+                    System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
+                    continue;
+                }
+            } finally {
+                if (child != null) {
+                    try {
+                        child.close();
+                    } catch (final XMLDBException e) {
+                        System.out.println("Unable to close collection: " + child.getName() + ". " + e.getMessage());
+
+                    }
+                }
             }
         }
     }

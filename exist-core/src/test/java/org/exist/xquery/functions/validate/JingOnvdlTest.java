@@ -46,6 +46,7 @@
 package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,8 +54,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
-import org.xmldb.api.base.ResourceSet;
-
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -100,19 +100,29 @@ public class JingOnvdlTest {
     @Before
     public void setUp() throws XMLDBException {
         final String query = "xmldb:create-collection('xmldb:exist:///db','validate-test')";
-		existEmbeddedServer.executeQuery(query);
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            // needed to ensure that result is closed
+        }
 
         final String query1 = "xmldb:store('/db/validate-test', 'test.nvdl'," + NVDL_DATA1 + ")";
-        existEmbeddedServer.executeQuery(query1);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query1)) {
+            // needed to ensure that result is closed
+        }
 
         final String query2 = "xmldb:store('/db/validate-test', 'Book.rng'," + RNG_DATA1 + ")";
-        existEmbeddedServer.executeQuery(query2);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query2)) {
+            // needed to ensure that result is closed
+        }
 
         final String data1 = "xmldb:store('/db/validate-test', 'valid.xml'," + XML_DATA1 + ")";
-        existEmbeddedServer.executeQuery(data1);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(data1)) {
+            // needed to ensure that result is closed
+        }
 
         final String data2 = "xmldb:store('/db/validate-test', 'invalid.xml'," + XML_DATA2 + ")";
-        existEmbeddedServer.executeQuery(data2);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(data2)) {
+            // needed to ensure that result is closed
+        }
     }
 
     @Test
@@ -172,17 +182,22 @@ public class JingOnvdlTest {
                 "xs:anyURI('xmldb:exist:///db/validate-test/valid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/validate-test/test.nvdl') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "true",
-                results.getResource(0).getContent().toString());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
+            try (final Resource resource = results.getResource(0)) {
+                assertEquals(query, "true",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
+            try (final Resource resource = results.getResource(0)) {
+                final String result = (String) resource.getContent();
+                assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+            }
+        }
     }
 }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -68,8 +92,7 @@ public class XMLDBExtractTask extends AbstractXMLDBTask {
         } else {
             registerDatabase();
 
-            try {
-                final Collection base = DatabaseManager.getCollection(uri, user, password);
+            try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
                 if (base == null) {
                     throw (new BuildException("Collection " + uri + " could not be found."));
@@ -79,18 +102,19 @@ public class XMLDBExtractTask extends AbstractXMLDBTask {
 
                     // extraction of a single resource
                     log("Extracting resource: " + resource + " to " + destFile.toAbsolutePath().toString(), Project.MSG_INFO);
-                    final Resource res = base.getResource(resource);
+                    try (final Resource res = base.getResource(resource)) {
 
-                    if (res == null) {
-                        final String msg = "Resource " + resource + " not found.";
+                        if (res == null) {
+                            final String msg = "Resource " + resource + " not found.";
 
-                        if (failonerror) {
-                            throw (new BuildException(msg));
+                            if (failonerror) {
+                                throw (new BuildException(msg));
+                            } else {
+                                log(msg, Project.MSG_ERR);
+                            }
                         } else {
-                            log(msg, Project.MSG_ERR);
+                            writeResource(res, destFile);
                         }
-                    } else {
-                        writeResource(res, destFile);
                     }
 
                 } else {
@@ -145,17 +169,17 @@ public class XMLDBExtractTask extends AbstractXMLDBTask {
             }
 
             for (final String resource : resources) {
-                final Resource res = base.getResource(resource);
-                log("Extracting resource: " + res.getId(), Project.MSG_DEBUG);
+                try (final Resource res = base.getResource(resource)) {
+                    log("Extracting resource: " + res.getId(), Project.MSG_DEBUG);
 
-                if (Files.notExists(dir) && createdirectories) {
-                    Files.createDirectories(dir);
+                    if (Files.notExists(dir) && createdirectories) {
+                        Files.createDirectories(dir);
+                    }
+
+                    if (Files.exists(dir)) {
+                        writeResource(res, dir);
+                    }
                 }
-
-                if (Files.exists(dir)) {
-                    writeResource(res, dir);
-                }
-
             }
         }
     }
@@ -173,28 +197,29 @@ public class XMLDBExtractTask extends AbstractXMLDBTask {
         final List<String> childCols = base.listChildCollections();
         if (!childCols.isEmpty()) {
             for (final String childCol : childCols) {
-                final Collection col = base.getChildCollection(childCol);
+                try (final Collection col = base.getChildCollection(childCol)) {
 
-                if (col != null) {
-                    log("Extracting collection: " + col.getName(), Project.MSG_DEBUG);
-                    Path dir = destDir;
-                    final String subdir;
+                    if (col != null) {
+                        log("Extracting collection: " + col.getName(), Project.MSG_DEBUG);
+                        Path dir = destDir;
+                        final String subdir;
 
-                    if (path != null) {
-                        dir = destDir.resolve(path).resolve(childCol);
-                        subdir = path + File.separator + childCol;
-                    } else {
-                        subdir = childCol;
-                    }
+                        if (path != null) {
+                            dir = destDir.resolve(path).resolve(childCol);
+                            subdir = path + File.separator + childCol;
+                        } else {
+                            subdir = childCol;
+                        }
 
-                    if (Files.notExists(dir) && createdirectories) {
-                        Files.createDirectories(dir);
-                    }
+                        if (Files.notExists(dir) && createdirectories) {
+                            Files.createDirectories(dir);
+                        }
 
-                    extractResources(col, subdir);
+                        extractResources(col, subdir);
 
-                    if (subcollections) {
-                        extractSubCollections(col, subdir);
+                        if (subcollections) {
+                            extractSubCollections(col, subdir);
+                        }
                     }
                 }
             }

@@ -101,8 +101,8 @@
                                 <exclude>ldap-realm.xsd</exclude>
                                 <exclude>pom.xml</exclude>
                                 <exclude>src/main/java/**</exclude>
-                                <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
+                                <exclude>src/test/resources/log4j2.xml</exclude>
                             </excludes>
                         </licenseSet>
 
@@ -122,8 +122,8 @@
                             <includes>
                                 <include>ldap-realm.xsd</include>
                                 <include>pom.xml</include>
-                                <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
+                                <include>src/test/resources/log4j2.xml</include>
                                 <include>src/main/java/org/exist/security/realm/ldap/AbstractLDAPSearchPrincipal.java</include>
                                 <include>src/main/java/org/exist/security/realm/ldap/LDAPContextFactory.java</include>
                                 <include>src/main/java/org/exist/security/realm/ldap/LDAPRealm.java</include>

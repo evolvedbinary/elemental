@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -56,19 +80,23 @@ public class BinaryResourceUpdateTest  {
     @Test
     public void updateBinary() throws XMLDBException, URISyntaxException {
         for (int i = 0; i < REPEAT; i++) {
-            BinaryResource binaryResource = testCollection.createResource("test1.xml", BinaryResource.class);
-            binaryResource.setContent(Paths.get(binFile.toURI()));
-            testCollection.storeResource(binaryResource);
+            try (final BinaryResource binaryResource = testCollection.createResource("test1.xml", BinaryResource.class)) {
+                binaryResource.setContent(Paths.get(binFile.toURI()));
+                testCollection.storeResource(binaryResource);
+            }
 
-            Resource resource = testCollection.getResource("test1.xml");
-            assertNotNull(resource);
+            try (final Resource resource = testCollection.getResource("test1.xml")) {
+                assertNotNull(resource);
+            }
 
-            XMLResource xmlResource = testCollection.createResource("test2.xml", XMLResource.class);
-            xmlResource.setContent(Paths.get(xmlFile.toURI()));
-            testCollection.storeResource(xmlResource);
+            try (final XMLResource xmlResource = testCollection.createResource("test2.xml", XMLResource.class)) {
+                xmlResource.setContent(Paths.get(xmlFile.toURI()));
+                testCollection.storeResource(xmlResource);
+            }
 
-            resource = testCollection.getResource("test2.xml");
-            assertNotNull(resource);
+            try (final Resource resource = testCollection.getResource("test2.xml")) {
+                assertNotNull(resource);
+            }
         }
         
     }
@@ -77,20 +105,23 @@ public class BinaryResourceUpdateTest  {
     @Test
     public void updateBinary_windows() throws XMLDBException, URISyntaxException {
         for (int i = 0; i < REPEAT; i++) {
-            BinaryResource binaryResource = testCollection.createResource("test.xml", BinaryResource.class);
-            binaryResource.setContent(Paths.get(binFile.toURI()));
-            testCollection.storeResource(binaryResource);
+            try (final BinaryResource binaryResource = testCollection.createResource("test.xml", BinaryResource.class)) {
+                binaryResource.setContent(Paths.get(binFile.toURI()));
+                testCollection.storeResource(binaryResource);
+            }
 
-            Resource resource = testCollection.getResource("test.xml");
-            assertNotNull(resource);
+            try (final Resource resource = testCollection.getResource("test.xml")) {
+                assertNotNull(resource);
+            }
 
-            XMLResource xmlResource = testCollection.createResource("test.xml", XMLResource.class);
-            xmlResource.setContent(Paths.get(xmlFile.toURI()));
-            testCollection.storeResource(xmlResource);
+            try (final XMLResource xmlResource = testCollection.createResource("test.xml", XMLResource.class)) {
+                xmlResource.setContent(Paths.get(xmlFile.toURI()));
+                testCollection.storeResource(xmlResource);
+            }
 
-            resource = testCollection.getResource("test.xml");
-            assertNotNull(resource);
-            
+            try (final Resource resource = testCollection.getResource("test.xml")) {
+                assertNotNull(resource);
+            }
         }
     }
 
@@ -108,8 +139,11 @@ public class BinaryResourceUpdateTest  {
     @After
     public void tearDown() throws XMLDBException {
         //delete the test collection
-        final CollectionManagementService service = testCollection.getParentCollection().getService(CollectionManagementService.class);
-        service.removeCollection(TEST_COLLECTION);
+        try (final Collection parent = testCollection.getParentCollection()) {
+            final CollectionManagementService service = parent.getService(CollectionManagementService.class);
+            testCollection.close();
+            service.removeCollection(TEST_COLLECTION);
+        }
         binFile = null;
         xmlFile = null;
     }

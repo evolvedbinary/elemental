@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,17 +43,16 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.dom.memtree;
 
 import com.googlecode.junittoolbox.ParallelParameterized;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmlunit.builder.DiffBuilder;
@@ -46,7 +69,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
 /**
- * https://github.com/eXist-db/exist/issues/1682#issuecomment-402108184
+ * <a href="https://github.com/eXist-db/exist/issues/1682#issuecomment-402108184">https://github.com/eXist-db/exist/issues/1682#issuecomment-402108184</a>
  */
 @RunWith(ParallelParameterized.class)
 public class DocumentBuilderReceiverIntegrationTest {
@@ -76,24 +99,26 @@ public class DocumentBuilderReceiverIntegrationTest {
 
     @Test
     public void mergeDocuments() throws XMLDBException {
-        final ResourceSet result = existEmbeddedServer.executeQuery(query);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
 
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        final Resource resource = result.getResource(0);
-        assertNotNull(resource);
-        assertEquals(XML_RESOURCE, resource.getResourceType());
+            try (final Resource resource = result.getResource(0)) {
+                assertNotNull(resource);
+                assertEquals(XML_RESOURCE, resource.getResourceType());
 
-        final Source expectedSource = Input.fromString(expectedResult).build();
-        final Source actualSource = Input.fromNode(((XMLResource)resource).getContentAsDOM()).build();
+                final Source expectedSource = Input.fromString(expectedResult).build();
+                final Source actualSource = Input.fromNode(((XMLResource) resource).getContentAsDOM()).build();
 
-        final Diff diff = DiffBuilder.compare(expectedSource)
-                .withTest(actualSource)
-                .checkForSimilar()
-                .ignoreWhitespace()
-                .build();
+                final Diff diff = DiffBuilder.compare(expectedSource)
+                    .withTest(actualSource)
+                    .checkForSimilar()
+                    .ignoreWhitespace()
+                    .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 }

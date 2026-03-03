@@ -135,15 +135,17 @@ public class MoveCollectionRecoveryTest {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
 
-            final Collection src = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
-            assertNotNull(src);
-            broker.saveCollection(transaction, src);
+            try (final Collection src = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI)) {
+                assertNotNull(src);
+                broker.saveCollection(transaction, src);
 
-            final Collection dst = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2);
-            assertNotNull(dst);
-            broker.saveCollection(transaction, dst);
+                try (final Collection dst = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2)) {
+                    assertNotNull(dst);
+                    broker.saveCollection(transaction, dst);
 
-            broker.moveCollection(transaction, src, dst, src.getURI().lastSegment());
+                    broker.moveCollection(transaction, src, dst, src.getURI().lastSegment());
+                }
+            }
 
             fail("expect PermissionDeniedException: Cannot move collection '/db/test' to it child collection '/db/test/test2'");
 
@@ -157,27 +159,31 @@ public class MoveCollectionRecoveryTest {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
 
-            final Collection root = broker.getOrCreateCollection(transaction,	TestConstants.TEST_COLLECTION_URI);
-            assertNotNull(root);
-            broker.saveCollection(transaction, root);
-
-            final Collection test = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2);
-            assertNotNull(test);
-            broker.saveCollection(transaction, test);
-
-            final String sample;
-            try (final InputStream is = SAMPLES.getBiblioSample()) {
-                assertNotNull(is);
-                sample = InputStreamUtil.readString(is, UTF_8);
+            try (final Collection root = broker.getOrCreateCollection(transaction,	TestConstants.TEST_COLLECTION_URI)) {
+                assertNotNull(root);
+                broker.saveCollection(transaction, root);
             }
 
-            final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
-            broker.storeDocument(transaction, TestConstants.TEST_XML_URI, new StringInputSource(sample), xmlMediaType, test);
+            try (final Collection test = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2)) {
+                assertNotNull(test);
+                broker.saveCollection(transaction, test);
 
-            final Collection dest = broker.getOrCreateCollection(transaction, TestConstants.DESTINATION_COLLECTION_URI);
-            assertNotNull(dest);
-            broker.saveCollection(transaction, dest);
-            broker.moveCollection(transaction, test, dest, XmldbURI.create("test3"));
+
+                final String sample;
+                try (final InputStream is = SAMPLES.getBiblioSample()) {
+                    assertNotNull(is);
+                    sample = InputStreamUtil.readString(is, UTF_8);
+                }
+
+                final MediaType xmlMediaType = pool.getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XML);
+                broker.storeDocument(transaction, TestConstants.TEST_XML_URI, new StringInputSource(sample), xmlMediaType, test);
+
+                try (final Collection dest = broker.getOrCreateCollection(transaction, TestConstants.DESTINATION_COLLECTION_URI)) {
+                    assertNotNull(dest);
+                    broker.saveCollection(transaction, dest);
+                    broker.moveCollection(transaction, test, dest, XmldbURI.create("test3"));
+                }
+            }
 
             transact.commit(transaction);
         }
@@ -190,7 +196,7 @@ public class MoveCollectionRecoveryTest {
 
             try(final LockedDocument lockedDoc =  broker.getXMLResource(TestConstants.DESTINATION_COLLECTION_URI.append("test3").append(TestConstants.TEST_XML_URI), LockMode.READ_LOCK)) {
                 assertNotNull("Document should not be null", lockedDoc);
-                String data = serializer.serialize(lockedDoc.getDocument());
+                final String data = serializer.serialize(lockedDoc.getDocument());
                 assertNotNull(data);
             } finally {
                 broker.returnSerializer(serializer);
@@ -252,48 +258,45 @@ public class MoveCollectionRecoveryTest {
     }
 
     private void xmldbStore() throws XMLDBException, IOException {
-        final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-        assertNotNull(root);
-        final EXistCollectionManagementService rootMgr = root.getService(EXistCollectionManagementService.class);
-        assertNotNull(rootMgr);
+        try (final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "")) {
+            assertNotNull(root);
+            final EXistCollectionManagementService rootMgr = root.getService(EXistCollectionManagementService.class);
+            assertNotNull(rootMgr);
 
-        org.xmldb.api.base.Collection test = root.getChildCollection("test");
-        if (test == null) {
-            test = rootMgr.createCollection("test");
+            try (final org.xmldb.api.base.Collection test = rootMgr.createCollection("test")) {
+
+                final EXistCollectionManagementService testMgr = test.getService(EXistCollectionManagementService.class);
+                try (final org.xmldb.api.base.Collection test2 = testMgr.createCollection("test2")) {
+                    assertNotNull(test2);
+
+                    final String sample;
+                    try (final InputStream is = SAMPLES.getBiblioSample()) {
+                        assertNotNull(is);
+                        sample = InputStreamUtil.readString(is, UTF_8);
+                    }
+
+                    try (final Resource res = test2.createResource("test_xmldb.xml", XMLResource.class)) {
+                        assertNotNull(res);
+                        res.setContent(sample);
+                        test2.storeResource(res);
+                    }
+
+                    try (final org.xmldb.api.base.Collection dest = rootMgr.createCollection(TestConstants.DESTINATION_COLLECTION_URI3.lastSegment().toString())) {
+                        assertNotNull(dest);
+                        rootMgr.move(TestConstants.TEST_COLLECTION_URI2, TestConstants.DESTINATION_COLLECTION_URI3, XmldbURI.create("test3"));
+                    }
+                }
+            }
         }
-        assertNotNull(test);
-
-        org.xmldb.api.base.Collection test2 = test.getChildCollection("test2");
-        if (test2 == null) {
-            EXistCollectionManagementService testMgr = test.getService(EXistCollectionManagementService.class);
-            test2 = testMgr.createCollection("test2");
-        }
-        assertNotNull(test2);
-
-        final String sample;
-        try (final InputStream is = SAMPLES.getBiblioSample()) {
-            assertNotNull(is);
-            sample = InputStreamUtil.readString(is, UTF_8);
-        }
-        final Resource res = test2.createResource("test_xmldb.xml", XMLResource.class);
-        assertNotNull(res);
-        res.setContent(sample);
-        test2.storeResource(res);
-
-        org.xmldb.api.base.Collection dest = root.getChildCollection(TestConstants.DESTINATION_COLLECTION_URI3.lastSegment().toString());
-        if (dest == null) {
-            dest = rootMgr.createCollection(TestConstants.DESTINATION_COLLECTION_URI3.lastSegment().toString());
-        }
-        assertNotNull(dest);
-
-        rootMgr.move(TestConstants.TEST_COLLECTION_URI2, TestConstants.DESTINATION_COLLECTION_URI3, XmldbURI.create("test3"));
     }
 
     private void xmldbRead() throws XMLDBException {
-        final org.xmldb.api.base.Collection test = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TestConstants.DESTINATION_COLLECTION_URI3.lastSegment().toString() + "/test3", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        assertNotNull(test);
-        final Resource res = test.getResource("test_xmldb.xml");
-        assertNotNull("Document should not be null", res);
+        try (final org.xmldb.api.base.Collection test = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TestConstants.DESTINATION_COLLECTION_URI3.lastSegment().toString() + "/test3", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            assertNotNull(test);
+            try (final Resource res = test.getResource("test_xmldb.xml")) {
+                assertNotNull("Document should not be null", res);
+            }
+        }
     }
 
     @After

@@ -46,12 +46,16 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistWebServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
@@ -68,7 +72,7 @@ import static org.xmldb.api.base.ResourceType.BINARY_RESOURCE;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @RunWith(Parameterized.class)
-public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resource, XMLDBException> {
+public class XmldbBinariesTest extends AbstractBinariesTest<EXistResourceSet, Resource, XMLDBException> {
 
     @ClassRule
     public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
@@ -94,7 +98,7 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
 
     @Override
     protected void storeBinaryFile(final XmldbURI filePath, byte[] content) throws Exception {
-        try (Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
+        try (final Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
 
             final XmldbURI collectionNames[] = filePath.removeLastSegment().getPathSegments();
 
@@ -103,20 +107,21 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
                 Collection current = colRoot;
                 for (int i = 1; i < collectionNames.length; i++) {
                     final Collection child = getOrCreateCollection(current, collectionNames[i].toString());
-                    cols.push(child);
+                    cols.addFirst(child);
                     current = child;
                 }
 
                 final String fileName = filePath.lastSegment().toString();
-                final Resource resource = current.createResource(fileName, BinaryResource.class);
-                resource.setContent(content);
-                current.storeResource(resource);
+                try (final Resource resource = current.createResource(fileName, BinaryResource.class)) {
+                    resource.setContent(content);
+                    current.storeResource(resource);
+                }
 
             } finally {
                 while (!cols.isEmpty()) {
                     try {
-                        cols.pop().close();
-                    } catch (XMLDBException e) {
+                        cols.removeFirst().close();
+                    } catch (final XMLDBException e) {
 
                     }
                 }
@@ -135,9 +140,9 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
 
     @Override
     protected void removeCollection(final XmldbURI collectionUri) throws Exception {
-        try (Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
+        try (final Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
 
-            try (Collection colTest = colRoot.getChildCollection("test")) {
+            try (final Collection colTest = colRoot.getChildCollection("test")) {
                 final CollectionManagementService cms = colTest.getService(CollectionManagementService.class);
 
                 final String testCollectionName = collectionUri.lastSegment().toString();
@@ -147,13 +152,13 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
     }
 
     @Override
-    protected QueryResultAccessor<ResourceSet, XMLDBException> executeXQuery(final String query) {
+    protected QueryResultAccessor<EXistResourceSet, XMLDBException> executeXQuery(final String query) {
         return consumer -> {
             try (Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
                 final XQueryService xqueryService = colRoot.getService(XQueryService.class);
 
                 final CompiledExpression compiledExpression = xqueryService.compile(query);
-                final ResourceSet results = xqueryService.execute(compiledExpression);
+                final EXistResourceSet results = (EXistResourceSet) xqueryService.execute(compiledExpression);
 
 
                 try {
@@ -170,12 +175,12 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
     }
 
     @Override
-    protected long size(final ResourceSet results) throws XMLDBException {
+    protected long size(final EXistResourceSet results) throws XMLDBException {
         return results.getSize();
     }
 
     @Override
-    protected Resource item(final ResourceSet results, final int index) throws XMLDBException {
+    protected Resource item(final EXistResourceSet results, final int index) throws XMLDBException {
         return results.getResource(index);
     }
 

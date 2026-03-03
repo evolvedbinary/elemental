@@ -50,6 +50,7 @@ import java.io.InputStream;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -61,7 +62,7 @@ import static org.exist.samples.Samples.SAMPLES;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -84,11 +85,11 @@ public class JaxvTest {
                 "<validation mode=\"no\"/>" +
                 "</collection>";
 
-        try (Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/personal")) {
+        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/personal")) {
             existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
-        try (Collection collection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "personal")) {
+        try (final Collection collection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "personal")) {
 
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/personal/" + testResource)) {
@@ -105,10 +106,13 @@ public class JaxvTest {
                 "doc('/db/personal/personal-valid.xml'), " +
                 "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "true",
-                results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "true",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -117,10 +121,13 @@ public class JaxvTest {
             "doc('/db/personal/personal-invalid.xml'), " +
             "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "false",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "false",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -129,11 +136,14 @@ public class JaxvTest {
                 "doc('/db/personal/personal-valid.xml'), " +
                 "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo("valid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String content = (String) resource.getContent();
+                assertThat(content, hasXPath("//status/text()", equalTo("valid")));
+            }
+        }
     }
 
     @Test
@@ -142,11 +152,14 @@ public class JaxvTest {
                 "doc('/db/personal/personal-invalid.xml'), " +
                 "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo("invalid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String content = (String) resource.getContent();
+                assertThat(content, hasXPath("//status/text()", equalTo("invalid")));
+            }
+        }
     }
 
     @Test
@@ -155,10 +168,13 @@ public class JaxvTest {
             "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
             "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "true",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "true",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -167,10 +183,13 @@ public class JaxvTest {
             "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
             "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "false",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "false",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -179,11 +198,14 @@ public class JaxvTest {
                 "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo("valid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String content = (String) resource.getContent();
+                assertThat(content, hasXPath("//status/text()", equalTo("valid")));
+            }
+        }
     }
 
     @Test
@@ -192,11 +214,14 @@ public class JaxvTest {
                 "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo("invalid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String content = (String) resource.getContent();
+                assertThat(content, hasXPath("//status/text()", equalTo("invalid")));
+            }
+        }
     }
 
     @Test
@@ -205,10 +230,13 @@ public class JaxvTest {
             "doc('/db/personal/personal-valid.xml'), " +
             "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "true",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "true",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -217,10 +245,13 @@ public class JaxvTest {
             "doc('/db/personal/personal-invalid.xml'), " +
             "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "false",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "false",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -229,11 +260,14 @@ public class JaxvTest {
             "doc('/db/personal/personal-valid.xml'), " +
             "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertThat(r, hasXPath("//status/text()", equalTo("valid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertThat(r, hasXPath("//status/text()", equalTo("valid")));
+            }
+        }
     }
 
     @Test
@@ -242,11 +276,14 @@ public class JaxvTest {
             "doc('/db/personal/personal-invalid.xml'), " +
             "xs:anyURI('xmldb:exist:///db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertThat(r, hasXPath("//status/text()", equalTo("invalid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertThat(r, hasXPath("//status/text()", equalTo("invalid")));
+            }
+        }
     }
 
     @Test
@@ -255,10 +292,13 @@ public class JaxvTest {
             "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
             "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "true",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "true",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -267,10 +307,13 @@ public class JaxvTest {
             "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
             "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "false",
-            results.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals(query, "false",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -279,11 +322,14 @@ public class JaxvTest {
             "xs:anyURI('xmldb:exist:///db/personal/personal-valid.xml'), " +
             "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertThat(r, hasXPath("//status/text()", equalTo("valid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertThat(r, hasXPath("//status/text()", equalTo("valid")));
+            }
+        }
     }
 
     @Test
@@ -292,10 +338,13 @@ public class JaxvTest {
             "xs:anyURI('xmldb:exist:///db/personal/personal-invalid.xml'), " +
             "doc('/db/personal/personal.xsd') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertThat(r, hasXPath("//status/text()", equalTo("invalid")));
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertThat(r, hasXPath("//status/text()", equalTo("invalid")));
+            }
+        }
     }
 }
