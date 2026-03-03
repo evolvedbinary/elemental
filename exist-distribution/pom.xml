@@ -772,9 +772,9 @@
                                 <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
                                 <unzip src="${dashboard-xar-path}" dest="${expath.pkg.dir}-dashboard-staging/">
                                     <patternset>
-                                        <exclude name="resources/images/existdb.png" />
-                                        <exclude name="resources/images/existdb-web.svg" />
-                                        <exclude name="resources/images/x.svg" />
+                                        <exclude name="resources/images/existdb.png"/>
+                                        <exclude name="resources/images/existdb-web.svg"/>
+                                        <exclude name="resources/images/x.svg"/>
                                     </patternset>
                                 </unzip>
                             </target>
@@ -828,9 +828,9 @@
                                 <pathconvert property="monex-xar-path" refid="monex-fileset" />
                                 <unzip src="${monex-xar-path}" dest="${expath.pkg.dir}-monex-staging/">
                                     <patternset>
-                                        <exclude name="resources/img/exist_icon_16x16.ico" />
-                                        <exclude name="resources/img/existdb-logo.png" />
-                                        <exclude name="resources/img/powered-by-whiteglass.svg" />
+                                        <exclude name="resources/img/exist_icon_16x16.ico"/>
+                                        <exclude name="resources/img/existdb-logo.png"/>
+                                        <exclude name="resources/img/powered-by-whiteglass.svg"/>
                                     </patternset>
                                 </unzip>
                             </target>
@@ -917,7 +917,7 @@
                             <goal>copy</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory />  <!-- NOTE: this must be empty -->
+                            <outputDirectory/>  <!-- NOTE: this must be empty -->
                             <resources>
                                 <resource>
                                     <workOnFullPath>true</workOnFullPath>
@@ -976,7 +976,7 @@
                         </goals>
                         <configuration>
                             <assembleDirectory>${assemble.dir}</assembleDirectory>
-                            <programs />
+                            <programs/>
                             <configurationDirectory>etc</configurationDirectory>
                             <copyConfigurationDirectory>true</copyConfigurationDirectory>
                             <logsDirectory>logs</logsDirectory>

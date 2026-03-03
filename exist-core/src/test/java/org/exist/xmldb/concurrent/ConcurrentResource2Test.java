@@ -81,8 +81,9 @@ public class ConcurrentResource2Test extends AbstractConcurrentTest {
 
     @Before
     public void setUp() throws Exception {
-        Collection c1 = DBUtils.addCollection(getTestCollection(), "C1-C2");
-        assertNotNull(c1);
+        try (final Collection c1 = DBUtils.addCollection(getTestCollection(), "C1-C2")) {
+            assertNotNull(c1);
+        }
     }
 
     @Override

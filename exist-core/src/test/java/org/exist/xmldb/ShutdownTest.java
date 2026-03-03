@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -26,8 +50,6 @@ import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.concurrent.DBUtils;
 import org.junit.*;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import java.io.IOException;
@@ -35,7 +57,6 @@ import java.io.InputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.exist.samples.Samples.SAMPLES;
 
 /**
@@ -75,28 +96,26 @@ public class ShutdownTest {
     @Before
     public void setUp() throws XMLDBException, IOException {
         final Collection rootCol = existXmldbEmbeddedServer.getRoot();
-        Collection testCol = rootCol.getChildCollection("C1");
-        if(testCol == null) {
-            testCol = DBUtils.addCollection(rootCol, "C1");
-            assertNotNull(testCol);
-        }
+        try (final Collection testCol = DBUtils.addCollection(rootCol, "C1")) {
 
-        try (final InputStream is = SAMPLES.getBiblioSample()) {
-			DBUtils.addXMLResource(rootCol, "biblio.rdf", InputStreamUtil.readString(is, UTF_8));
+			try (final InputStream is = SAMPLES.getBiblioSample()) {
+				DBUtils.addXMLResource(rootCol, "biblio.rdf", InputStreamUtil.readString(is, UTF_8));
+			}
+
+			// store the data files
+			final String xml =
+				"<data now=\"" + System.currentTimeMillis() + "\" count=\"1\">" + XML + "</data>";
+			DBUtils.addXMLResource(testCol, "R1.xml", xml);
 		}
-
-        // store the data files
-        final String xml =
-                "<data now=\"" + System.currentTimeMillis() + "\" count=\"1\">" + XML + "</data>";
-        DBUtils.addXMLResource(testCol, "R1.xml", xml);
     }
 
     @After
     public void tearDown() throws Exception {
-        Collection rootCol = existXmldbEmbeddedServer.getRoot();
+        final Collection rootCol = existXmldbEmbeddedServer.getRoot();
         DBUtils.removeCollection(rootCol, "C1");
-        Resource res = rootCol.getResource("biblio.rdf");
-        rootCol.removeResource(res);
+        try (final EXistResource res = (EXistResource) rootCol.getResource("biblio.rdf")) {
+			rootCol.removeResource(res);
+		}
     }
 
 	@Test
@@ -106,17 +125,23 @@ public class ShutdownTest {
 			final Collection rootCol = existXmldbEmbeddedServer.getRoot();
 
 			// after restarting the db, we first try a bunch of queries
-			final Collection testCol = rootCol.getChildCollection("C1");
+			try (final Collection testCol = rootCol.getChildCollection("C1")) {
 
-			ResourceSet result = DBUtils.query(testCol, TEST_QUERY1);
-			assertEquals(1, result.getSize());
-			assertEquals("+49 69 888478", result.getResource(0).getContent());
+				try (final EXistResourceSet result = DBUtils.query(testCol, TEST_QUERY1)) {
+					assertEquals(1, result.getSize());
+					try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+						assertEquals("+49 69 888478", resource.getContent());
+					}
+				}
 
-			result = DBUtils.query(testCol, TEST_QUERY2);
-			assertEquals(1, result.getSize());
+				try (final EXistResourceSet result = DBUtils.query(testCol, TEST_QUERY2)) {
+					assertEquals(1, result.getSize());
+				}
 
-			result = DBUtils.query(testCol, TEST_QUERY3);
-			assertEquals(1, result.getSize());
+				try (final EXistResourceSet result = DBUtils.query(testCol, TEST_QUERY3)) {
+					assertEquals(1, result.getSize());
+				}
+			}
 		}
 	}
 }

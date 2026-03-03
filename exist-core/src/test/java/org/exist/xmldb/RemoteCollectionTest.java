@@ -56,7 +56,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.Service;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
@@ -75,6 +74,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.*;
@@ -112,7 +112,8 @@ public class RemoteCollectionTest extends RemoteDBTest {
 
     @Test
     public void isRemoteCollection() throws XMLDBException {
-        assertTrue(getCollection().isRemoteCollection());
+        final RemoteCollection collection = getCollection();
+        assertTrue(collection.isRemoteCollection());
     }
 
     @Test
@@ -123,125 +124,136 @@ public class RemoteCollectionTest extends RemoteDBTest {
     @Test
     public void createXmlResourceFromString() throws XMLDBException {
         final Collection collection = getCollection();
+
         final String resourceName = "testresource.xml";
-        final Resource resource = collection.createResource(resourceName, XMLResource.RESOURCE_TYPE);
-        assertNotNull(resource);
-        assertEquals(collection, resource.getParentCollection());
-
         final String xml = "<?xml version='1.0'?><xml>" + System.currentTimeMillis() + "</xml>";
-        resource.setContent(xml);
-        collection.storeResource(resource);
 
-        final Resource retrievedResource = collection.getResource(resourceName);
-        assertNotNull(retrievedResource);
-        assertEquals(XMLResource.RESOURCE_TYPE, retrievedResource.getResourceType());
-        assertTrue(retrievedResource instanceof XMLResource);
-        final String result = (String) retrievedResource.getContent();
-        assertNotNull(result);
+        try (final EXistResource resource = (EXistResource) collection.createResource(resourceName, "XMLResource")) {
+            assertNotNull(resource);
+            assertEquals(collection, resource.getParentCollection());
+            resource.setContent(xml);
+            collection.storeResource(resource);
+        }
 
-        final Source expected = Input.fromString(xml).build();
-        final Source actual = Input.fromString(result).build();
+        try (final EXistResource retrievedResource = (EXistResource) collection.getResource(resourceName)) {
+            assertNotNull(retrievedResource);
+            assertEquals(XMLResource.RESOURCE_TYPE, retrievedResource.getResourceType());
+            assertTrue(retrievedResource instanceof XMLResource);
+            final String result = (String) retrievedResource.getContent();
+            assertNotNull(result);
 
-        final Diff diff = DiffBuilder.compare(expected)
+            final Source expected = Input.fromString(xml).build();
+            final Source actual = Input.fromString(result).build();
+
+            final Diff diff = DiffBuilder.compare(expected)
                 .withTest(actual)
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.toString(), diff.hasDifferences());
+        }
     }
 
     @Test
     public void createBinaryResourceFromString() throws XMLDBException {
         final Collection collection = getCollection();
+
         final String resourceName = "testresource.bin";
-        final Resource resource = collection.createResource(resourceName, BinaryResource.RESOURCE_TYPE);
-        assertNotNull(resource);
-        assertEquals(collection, resource.getParentCollection());
-
         final String bin = "binary data: " + System.currentTimeMillis();
-        resource.setContent(bin);
-        collection.storeResource(resource);
 
-        final Resource retrievedResource = collection.getResource(resourceName);
-        assertNotNull(retrievedResource);
-        assertEquals(BinaryResource.RESOURCE_TYPE, retrievedResource.getResourceType());
-        assertTrue(retrievedResource instanceof BinaryResource);
-        final byte[] result = (byte[]) retrievedResource.getContent();
-        assertNotNull(result);
-        assertEquals(bin, new String(result, UTF_8));
+        try (final EXistResource resource = (EXistResource) collection.createResource(resourceName, "BinaryResource")) {
+            assertNotNull(resource);
+            assertEquals(collection, resource.getParentCollection());
+            resource.setContent(bin);
+            collection.storeResource(resource);
+        }
+
+        try (final EXistResource retrievedResource = (EXistResource) collection.getResource(resourceName)) {
+            assertNotNull(retrievedResource);
+            assertEquals(BinaryResource.RESOURCE_TYPE, retrievedResource.getResourceType());
+            assertTrue(retrievedResource instanceof BinaryResource);
+            final byte[] result = (byte[]) retrievedResource.getContent();
+            assertNotNull(result);
+            assertEquals(bin, new String(result, UTF_8));
+        }
 	}
 
 	@Test
     public void createEmptyBinaryResource() throws XMLDBException, IOException {
         final Collection collection = getCollection();
+
         final String resourceName = "empty.dtd";
-        final Resource resource = collection.createResource(resourceName, BinaryResource.RESOURCE_TYPE);
-        ((EXistResource) resource).setMediaType(MediaType.APPLICATION_XML_DTD);
-
         final byte[] bin = new byte[0];
-        try (final InputStream is = new UnsynchronizedByteArrayInputStream(bin)) {
-            final InputSource inputSource = new InputSource();
-            inputSource.setByteStream(is);
-            inputSource.setSystemId("empty.dtd");
 
-            resource.setContent(inputSource);
-            collection.storeResource(resource);
+        try (final EXistResource resource = (EXistResource) collection.createResource(resourceName, "BinaryResource")) {
+            resource.setMediaType(MediaType.APPLICATION_XML_DTD);
+
+            try (final InputStream is = new UnsynchronizedByteArrayInputStream(bin)) {
+                final InputSource inputSource = new InputSource();
+                inputSource.setByteStream(is);
+                inputSource.setSystemId("empty.dtd");
+
+                resource.setContent(inputSource);
+                collection.storeResource(resource);
+            }
         }
 
-        final Resource retrievedResource = collection.getResource(resourceName);
-        assertNotNull(retrievedResource);
-        assertEquals(BinaryResource.RESOURCE_TYPE, retrievedResource.getResourceType());
-        assertTrue(retrievedResource instanceof BinaryResource);
-        final byte[] result = (byte[]) retrievedResource.getContent();
-        assertNotNull(result);
-        assertArrayEquals(bin, result);
+        try (final EXistResource retrievedResource = (EXistResource) collection.getResource(resourceName)) {
+            assertNotNull(retrievedResource);
+            assertEquals(BinaryResource.RESOURCE_TYPE, retrievedResource.getResourceType());
+            assertTrue(retrievedResource instanceof BinaryResource);
+            final byte[] result = (byte[]) retrievedResource.getContent();
+            assertNotNull(result);
+            assertArrayEquals(bin, result);
+        }
     }
 
 
     @Test /* issue 1874 */
     public void createXMLFileResource() throws XMLDBException, IOException {
-        Collection collection = getCollection();
-        final Resource resource = collection.createResource("testresource", "XMLResource");
-        assertNotNull(resource);
-        assertEquals(collection, resource.getParentCollection());
+        final Collection collection = getCollection();
+        try (final EXistResource resource = (EXistResource) collection.createResource("testresource", "XMLResource")) {
+            assertNotNull(resource);
+            assertEquals(collection, resource.getParentCollection());
 
-        final String sometxt = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        final Path path = Files.createTempFile("test-createXMLFileResource", ".xml");
-        final StringBuilder sb = new StringBuilder();
-        sb.append("<?xml version='1.0'?><xml>");
-        for (int i = 0; i < 5000; i++) {
-            sb.append("<element>").append(sometxt).append("</element>");
+            final String sometxt = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+            final Path path = Files.createTempFile("test-createXMLFileResource", ".xml");
+            final StringBuilder sb = new StringBuilder();
+            sb.append("<?xml version='1.0'?><xml>");
+            for (int i = 0; i < 5000; i++) {
+                sb.append("<element>").append(sometxt).append("</element>");
+            }
+            sb.append("</xml>");
+            Files.copy(new UnsynchronizedByteArrayInputStream(sb.toString().getBytes()), path, StandardCopyOption.REPLACE_EXISTING);
+            resource.setContent(path);
+            collection.storeResource(resource);
         }
-        sb.append("</xml>");
-        Files.copy(new UnsynchronizedByteArrayInputStream(sb.toString().getBytes()), path, StandardCopyOption.REPLACE_EXISTING);
-        resource.setContent(path);
-        collection.storeResource(resource);
     }
 
     @Test
 	public void getNonExistentResource() throws XMLDBException {
-        Collection collection = getCollection();
-        Resource resource = collection.getResource("unknown.xml");
-        assertNull(resource);
+        final Collection collection = getCollection();
+        try (final EXistResource resource = (EXistResource) collection.getResource("unknown.xml")) {
+            assertNull(resource);
+        }
 	}
 
     @Test
 	public void listResources() throws XMLDBException {
-        ArrayList<String> xmlNames = new ArrayList<>();
+        final List<String> xmlNames = new ArrayList<>();
         xmlNames.add("xml1");
         xmlNames.add("xml2");
         xmlNames.add("xml3");
         createResources(xmlNames, "XMLResource");
 
-        ArrayList<String> binaryNames = new ArrayList<>();
+        final List<String> binaryNames = new ArrayList<>();
         binaryNames.add("b1");
         binaryNames.add("b2");
         createResources(binaryNames, "BinaryResource");
 
-        String[] actualContents = getCollection().listResources();
-        for (int i = 0; i < actualContents.length; i++) {
-            xmlNames.remove(actualContents[i]);
-            binaryNames.remove(actualContents[i]);
+        for (final String resource : getCollection().listResources()) {
+            xmlNames.remove(resource);
+            binaryNames.remove(resource);
         }
         assertEquals(0, xmlNames.size());
         assertEquals(0, binaryNames.size());
@@ -253,30 +265,37 @@ public class RemoteCollectionTest extends RemoteDBTest {
 	 */
     @Test
 	public void parent() throws XMLDBException {
-        Collection c = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "");
-        assertNull(c.getChildCollection("b"));
+        final String parentName;
+        try (final Collection c = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
+            assertNull(c.getChildCollection("b"));
+            parentName = c.getName() + "/" + System.currentTimeMillis();
+        }
 
-        String parentName = c.getName() + "/" + System.currentTimeMillis();
-        String colName = parentName + "/a";
-        c = DatabaseManager.getCollection(getUri() + parentName, "admin", "");
-        assertNull(c);
+
+        final String colName = parentName + "/a";
+        try (final Collection c = DatabaseManager.getCollection(getUri() + parentName, "admin", "")) {
+            assertNull(c);
+        }
 
         // following fails for XmlDb 20051203
-        c = DatabaseManager.getCollection(getUri() + colName, "admin", "");
-        assertNull(c);
+        try (final Collection c = DatabaseManager.getCollection(getUri() + colName, "admin", "")) {
+            assertNull(c);
+        }
 	}
 
 	@Test  /* issue 2743 */
-    public void getLoadRemoteResourceContentBiggerThan16MB() throws XMLDBException, SAXException {
+    public void getLoadRemoteResourceContentBiggerThan16MB() throws XMLDBException, SAXException, IOException {
         Collection collection = getCollection();
-        final RemoteXMLResource resource = (RemoteXMLResource)collection.createResource("testresource", "XMLResource");
-        prepareContent(resource);
-        collection.storeResource(resource);
-        // load stored content
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        resource.getContentIntoAStream(outputStream);
-        // compare size
-        assertEquals(16777229, outputStream.size());
+        try (final RemoteXMLResource resource = (RemoteXMLResource)collection.createResource("testresource", "XMLResource")) {
+            prepareContent(resource);
+            collection.storeResource(resource);
+            // load stored content
+            try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                resource.getContentIntoAStream(outputStream);
+                // compare size
+                assertEquals(16777229, outputStream.size());
+            }
+        }
     }
 
     @Test
@@ -290,7 +309,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
     private void prepareContent(RemoteXMLResource resource) throws XMLDBException, SAXException {
         final char[] buffer = new char[16 * 1024 * 1024];
         Arrays.fill(buffer, (char) 'x');
-        ContentHandler content = resource.setContentAsSAX();
+        final ContentHandler content = resource.setContentAsSAX();
         content.startDocument();
         content.startElement("", "root", "root", new AttributesImpl());
         // writing 16 mb to resource
@@ -299,15 +318,17 @@ public class RemoteCollectionTest extends RemoteDBTest {
         content.endDocument();
     }
 
-    private void createResources(ArrayList<String> names, String type) throws XMLDBException {
-        for (String name : names) {
-            Resource res = getCollection().createResource(name, type);
-            if(type.equals("XMLResource")) {
-                res.setContent(XML_CONTENT);
-            } else {
-                res.setContent(BINARY_CONTENT);
+    private void createResources(final List<String> names, final String type) throws XMLDBException {
+        final Collection collection = getCollection();
+        for (final String name : names) {
+            try (final EXistResource res = (EXistResource) collection.createResource(name, type)) {
+                if (res instanceof XMLResource) {
+                    res.setContent(XML_CONTENT);
+                } else if (res instanceof BinaryResource) {
+                    res.setContent(BINARY_CONTENT);
+                }
+                collection.storeResource(res);
             }
-            getCollection().storeResource(res);
         }
     }
 }

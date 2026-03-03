@@ -52,11 +52,14 @@ import java.nio.file.Path;
 
 import org.exist.source.Source;
 import org.exist.source.StringSource;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.xml.sax.InputSource;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
-import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -134,40 +137,42 @@ public class DBUtils {
         if (file == null || !Files.exists(file)) {
             throw new IllegalArgumentException("File does not exist: " + file);
         }
-        final XMLResource res = (XMLResource) col.createResource(
-                resourceId, "XMLResource");
-        res.setContent(file);
-        col.storeResource(res);
+
+        try (final EXistResource res = (EXistResource) col.createResource(resourceId, "XMLResource")) {
+            res.setContent(file);
+            col.storeResource(res);
+        }
     }
 
     public static void addXMLResource(final Collection col, final String resourceId, final String contents)
             throws XMLDBException {
-        final XMLResource res = (XMLResource) col.createResource(
-                resourceId, "XMLResource");
-        res.setContent(contents);
-        col.storeResource(res);
+        try (final EXistResource res = (EXistResource) col.createResource(resourceId, "XMLResource")) {
+            res.setContent(contents);
+            col.storeResource(res);
+        }
     }
 
 
     public static void addXMLResource(final Collection col, final String resourceId, final InputSource source) throws XMLDBException {
-        final XMLResource res = (XMLResource) col.createResource(resourceId, "XMLResource");
-        res.setContent(source);
-        col.storeResource(res);
+        try (final EXistResource res = (EXistResource) col.createResource(resourceId, "XMLResource")) {
+            res.setContent(source);
+            col.storeResource(res);
+        }
     }
 
-    public static ResourceSet query(final Collection collection, final String xpath)
+    public static EXistResourceSet query(final Collection collection, final String xpath)
             throws XMLDBException {
         final XPathQueryService service = getQueryService(collection);
-        return service.query(xpath);
+        return (EXistResourceSet) service.query(xpath);
     }
 
-    public static ResourceSet queryResource(final Collection collection, final String resource, final String xpath)
+    public static EXistResourceSet queryResource(final Collection collection, final String resource, final String xpath)
             throws XMLDBException {
         final XPathQueryService service = getQueryService(collection);
-        return service.queryResource(resource, xpath);
+        return (EXistResourceSet) service.queryResource(resource, xpath);
     }
 
-    public static ResourceSet xquery(final Collection collection, final String xquery)
+    public static EXistResourceSet xquery(final Collection collection, final String xquery)
             throws XMLDBException {
         final EXistXQueryService service = getXQueryService(collection);
         final Source source = new StringSource(xquery);

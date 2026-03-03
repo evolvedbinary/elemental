@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,9 +48,9 @@ package org.exist.ant;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.condition.Condition;
+import org.exist.xmldb.EXistResource;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 
@@ -50,9 +74,8 @@ public class XMLDBExistTask extends AbstractXMLDBTask implements Condition
 
         registerDatabase();
 
-        try {
-            log( "Checking collection: " + uri, Project.MSG_INFO );
-            final Collection base = DatabaseManager.getCollection( uri, user, password );
+        log( "Checking collection: " + uri, Project.MSG_INFO );
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
             if( base != null ) {
                 log( "Base collection found", Project.MSG_DEBUG );
@@ -61,11 +84,12 @@ public class XMLDBExistTask extends AbstractXMLDBTask implements Condition
 
             if( ( base != null ) && ( resource != null ) ) {
                 log( "Checking resource: " + resource, Project.MSG_INFO );
-                final Resource res = base.getResource( resource );
+                try (final EXistResource res = (EXistResource) base.getResource( resource )) {
 
-                if( res == null ) {
-                    log( "Resource not found", Project.MSG_DEBUG );
-                    exist = false;
+                    if (res == null) {
+                        log("Resource not found", Project.MSG_DEBUG);
+                        exist = false;
+                    }
                 }
             }
 

@@ -51,16 +51,31 @@ import org.exist.xmldb.XmldbURI;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Dialog for viewing and editing Indexes in the Admin Client 
@@ -140,21 +155,16 @@ class IndexDialog extends JFrame {
 		grid.setConstraints(label, c);
 		getContentPane().add(label);
 		
-		//get the collections but not system collections
-		final ArrayList alCollections = new ArrayList();
-        try
-        {
-            final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
-            final ArrayList alAllCollections = getCollections(root, new ArrayList());
-            for (Object alAllCollection : alAllCollections) {
-                //TODO : use XmldbURIs !
-                if (alAllCollection.toString().contains(CollectionConfigurationManager.CONFIG_COLLECTION)) {
-                    alCollections.add(alAllCollection);
+		// get the collections but not system collections
+		final List<PrettyXmldbURI> alCollections = new ArrayList<>();
+        try (final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION)) {
+            final List<PrettyXmldbURI> collectionUris = ClientFrame.getCollections(root, new ArrayList<>());
+            for (final PrettyXmldbURI collectionUri : collectionUris) {
+                if (collectionUri.toString().contains(CollectionConfigurationManager.CONFIG_COLLECTION)) {
+                    alCollections.add(collectionUri);
                 }
             }
-        }
-        catch (final XMLDBException e)
-        {
+        } catch (final XMLDBException e) {
             //showErrorMessage(e.getMessage(), e);
             return;
         }
@@ -283,7 +293,7 @@ class IndexDialog extends JFrame {
             if(doSave)
 			{
 				//save the collection.xconf changes
-				if(cx.Save())
+				if(cx.save())
 				{
 					//save ok, reindex?
 					final int result = JOptionPane.showConfirmDialog(getContentPane(), "Your changes have been saved, but will not take effect until the collection is reindexed!\n Would you like to reindex " + cmbCollections.getSelectedItem() + " and sub-collections now?", "Reindex", JOptionPane.YES_NO_OPTION);
@@ -294,13 +304,15 @@ class IndexDialog extends JFrame {
 						final Runnable reindexThread = () -> {
                             try
                             {
-                                IndexQueryService service = (IndexQueryService)client.current.getService("IndexQueryService", "1.0");
+                                IndexQueryService service = (IndexQueryService)client.getCollection().getService("IndexQueryService", "1.0");
 
-                                ArrayList subCollections = getCollections(client.getCollection((String)cmbCollections.getSelectedItem()), new ArrayList());
+								try (final Collection collection = client.getCollection((String)cmbCollections.getSelectedItem())) {
+									final List<PrettyXmldbURI> subCollections = ClientFrame.getCollections(collection, new ArrayList<>());
 
-                                for (Object subCollection : subCollections) {
-                                    service.reindexCollection(((ResourceDescriptor) subCollection).getName());
-                                }
+									for (final PrettyXmldbURI subCollection : subCollections) {
+										service.reindexCollection(subCollection.getTargetURI());
+									}
+								}
 
                                 //reindex done
                                 JOptionPane.showMessageDialog(getContentPane(), "Reindex Complete");
@@ -321,21 +333,6 @@ class IndexDialog extends JFrame {
 			}
 		}
 	}
-	
-	
-	//THIS IS A COPY FROM ClientFrame
-	//TODO: share this code between the two classes
-	private ArrayList getCollections(Collection root, ArrayList collectionsList) throws XMLDBException
-    {
-        collectionsList.add(new PrettyXmldbURI(XmldbURI.create(root.getName())));
-        final String[] childCollections= root.listChildCollections();
-        Collection child;
-		for (String childCollection : childCollections) {
-			child = root.getChildCollection(childCollection);
-			getCollections(child, collectionsList);
-		}
-        return collectionsList;
-    }
 
 	private void actionAddRangeIndex()
 	{
@@ -495,9 +492,9 @@ class IndexDialog extends JFrame {
                 case 0 :
                     return cx.getRangeIndex(rowIndex).getType();
                 case 1 :	/* XPath */
-					return cx.getRangeIndex(rowIndex).getXPath();
+					return cx.getRangeIndex(rowIndex).getXpath();
 				case 2 :	/* xsType */
-					return cx.getRangeIndex(rowIndex).getxsType();
+					return cx.getRangeIndex(rowIndex).getXsType();
 				default :
 					return null;
 			}

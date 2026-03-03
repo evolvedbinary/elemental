@@ -53,6 +53,7 @@ import org.exist.TestUtils;
 import org.exist.test.ExistWebServer;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.DatabaseImpl;
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -60,9 +61,7 @@ import org.junit.rules.TemporaryFolder;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XMLResource;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
@@ -123,23 +122,17 @@ public class CDataIntergationTest {
         DatabaseManager.registerDatabase(database);
 
         // store document
-        Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        try {
-            final Resource resource = root.createResource(docName, XMLResource.RESOURCE_TYPE);
+        try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+             final EXistResource resource = (EXistResource) root.createResource(docName, "XMLResource")) {
             resource.setContent(cdata_xml);
             root.storeResource(resource);
-        } finally {
-            root.close();
         }
 
         // retrieve document
-        root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        try {
-            final Resource resource = root.getResource(docName);
+        try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+             final EXistResource resource = (EXistResource) root.getResource(docName)) {
             assertNotNull(resource);
             assertEquals(cdata_xml, resource.getContent().toString());
-        } finally {
-            root.close();
         }
     }
 }

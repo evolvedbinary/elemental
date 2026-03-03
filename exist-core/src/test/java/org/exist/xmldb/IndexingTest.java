@@ -123,59 +123,55 @@ public class IndexingTest {
     @Test
     public void irregularilyStructured()
             throws XMLDBException, ParserConfigurationException, SAXException,
-            IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+            IOException {
 
         irregularilyStructured(true);
     }
 
     private void irregularilyStructured(boolean getContentAsDOM)
-            throws XMLDBException, ParserConfigurationException, SAXException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        Database database = null;
-        final String testName = "IrregularilyStructured";
+            throws XMLDBException, ParserConfigurationException, SAXException, IOException {
         startTime = System.currentTimeMillis();
 
-        Collection coll =
-                DatabaseManager.getCollection(baseURI, username, password);
-        XMLResource resource =
-                (XMLResource) coll.createResource(
-                        name,
-                        XMLResource.RESOURCE_TYPE);
+        try (final Collection coll = DatabaseManager.getCollection(baseURI, username, password);
+             final EXistResource resource = (EXistResource) coll.createResource(name, XMLResource.RESOURCE_TYPE)) {
 
-        Document doc =
-                DocumentBuilderFactory
-                        .newInstance()
-                        .newDocumentBuilder()
-                        .newDocument();
-        effectiveSiblingCount = populate(doc);
-        resource.setContentAsDOM(doc);
-        coll.storeResource(resource);
-        coll.close();
-
-        coll = DatabaseManager.getCollection(baseURI, username, password);
-        resource = (XMLResource) coll.getResource(name);
-
-        Node n;
-        if (getContentAsDOM) {
-            n = resource.getContentAsDOM();
-        } else {
-            String s = (String) resource.getContent();
-            byte[] bytes = s.getBytes(UTF_8);
-            UnsynchronizedByteArrayInputStream bais = new UnsynchronizedByteArrayInputStream(bytes);
-            DocumentBuilder db =
-                    DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            n = db.parse(bais);
+            Document doc =
+                    DocumentBuilderFactory
+                            .newInstance()
+                            .newDocumentBuilder()
+                            .newDocument();
+            effectiveSiblingCount = populate(doc);
+            ((XMLResource) resource).setContentAsDOM(doc);
+            coll.storeResource(resource);
         }
 
-        Element documentElement = null;
-        if (n instanceof Element) {
-            documentElement = (Element) n;
-        } else if (n instanceof Document) {
-            documentElement = ((Document) n).getDocumentElement();
+        try (final Collection coll = DatabaseManager.getCollection(baseURI, username, password);
+             final EXistResource resource = (EXistResource) coll.getResource(name)) {
+
+            Node n;
+            if (getContentAsDOM) {
+                n = ((XMLResource) resource).getContentAsDOM();
+            } else {
+                String s = (String) resource.getContent();
+                byte[] bytes = s.getBytes(UTF_8);
+                try (final UnsynchronizedByteArrayInputStream bais = new UnsynchronizedByteArrayInputStream(bytes)) {
+                    DocumentBuilder db =
+                            DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                    n = db.parse(bais);
+                }
+            }
+
+            Element documentElement = null;
+            if (n instanceof Element) {
+                documentElement = (Element) n;
+            } else if (n instanceof Document) {
+                documentElement = ((Document) n).getDocumentElement();
+            }
+
+            assertions(documentElement);
+
+            coll.removeResource(resource);
         }
-
-        assertions(documentElement);
-
-        coll.removeResource(resource);
     }
 
     /**

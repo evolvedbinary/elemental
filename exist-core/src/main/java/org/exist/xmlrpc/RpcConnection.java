@@ -143,7 +143,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.MediaTypeResolver;
 

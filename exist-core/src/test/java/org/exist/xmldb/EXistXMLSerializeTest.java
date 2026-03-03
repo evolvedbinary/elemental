@@ -83,6 +83,7 @@ import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
+import org.exist.xmldb.EXistResource;
 import org.xmldb.api.modules.XMLResource;
 
 /**
@@ -116,12 +117,13 @@ public class EXistXMLSerializeTest {
     @Before
     public void setUp() throws Exception {
         CollectionManagementService service = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
-        Collection testCollection = service.createCollection(TEST_COLLECTION);
-        UserManagementService ums = (UserManagementService) testCollection.getService("UserManagementService", "1.0");
-        // change ownership to guest
-        Account guest = ums.getAccount(GUEST_DB_USER);
-        ums.chown(guest, guest.getPrimaryGroup());
-        ums.chmod("rwxr-xr-x");
+        try (final Collection testCollection = service.createCollection(TEST_COLLECTION)) {
+            UserManagementService ums = (UserManagementService) testCollection.getService("UserManagementService", "1.0");
+            // change ownership to guest
+            Account guest = ums.getAccount(GUEST_DB_USER);
+            ums.chown(guest, guest.getPrimaryGroup());
+            ums.chmod("rwxr-xr-x");
+        }
     }
 
     @After
@@ -133,120 +135,143 @@ public class EXistXMLSerializeTest {
 
     @Test
     public void serialize1() throws TransformerException, XMLDBException, ParserConfigurationException, SAXException, IOException, URISyntaxException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        XMLResource resource = (XMLResource) testCollection.createResource(null, "XMLResource");
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            final String resourceId;
+            try (final EXistResource resource = (EXistResource) testCollection.createResource(null, XMLResource.RESOURCE_TYPE)) {
 
-        Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).
-                        newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
+                Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).
+                                newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
 
-        resource.setContentAsDOM(doc);
-        testCollection.storeResource(resource);
+                ((XMLResource) resource).setContentAsDOM(doc);
+                testCollection.storeResource(resource);
+                resourceId = resource.getId();
+            }
 
-        resource = (XMLResource)testCollection.getResource(resource.getId());
-        assertNotNull(resource);
-        Node node = resource.getContentAsDOM( );
-        node = node.getOwnerDocument();
+            try (final EXistResource resource = (EXistResource) testCollection.getResource(resourceId)) {
+                assertNotNull(resource);
+                Node node = ((XMLResource) resource).getContentAsDOM( );
+                node = node.getOwnerDocument();
 
-        //Attempting serialization
-        DOMSource source = new DOMSource(node);
-        try (final UnsynchronizedByteArrayOutputStream out = new UnsynchronizedByteArrayOutputStream()) {
-            StreamResult result = new StreamResult(out);
+                //Attempting serialization
+                DOMSource source = new DOMSource(node);
+                try (final UnsynchronizedByteArrayOutputStream out = new UnsynchronizedByteArrayOutputStream()) {
+                    StreamResult result = new StreamResult(out);
 
-            Transformer xformer = TransformerFactory.newInstance().newTransformer();
-            xformer.transform(source, result);
+                    Transformer xformer = TransformerFactory.newInstance().newTransformer();
+                    xformer.transform(source, result);
+                }
+            }
         }
     }
 
     @Test
     public void serialize2() throws ParserConfigurationException, SAXException, IOException, XMLDBException, URISyntaxException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
-        XMLResource resource = (XMLResource) testCollection.createResource(null, "XMLResource");
-        resource.setContentAsDOM(doc);
-        testCollection.storeResource(resource);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
+            final String resourceId;
+            try (final EXistResource resource = (EXistResource) testCollection.createResource(null, XMLResource.RESOURCE_TYPE)) {
+                ((XMLResource) resource).setContentAsDOM(doc);
+                testCollection.storeResource(resource);
+                resourceId = resource.getId();
+            }
 
-        resource = (XMLResource)testCollection.getResource(resource.getId());
-        assertNotNull(resource);
-        Node node = resource.getContentAsDOM();
+            try (final EXistResource resource = (EXistResource) testCollection.getResource(resourceId)) {
+                assertNotNull(resource);
+                Node node = ((XMLResource) resource).getContentAsDOM();
 
-        OutputFormat format = new OutputFormat( );
-        format.setLineWidth(0);
-        format.setIndent(5);
-        format.setPreserveSpace(true);
-        try (final UnsynchronizedByteArrayOutputStream out = new UnsynchronizedByteArrayOutputStream()) {
-            XMLSerializer serializer = new XMLSerializer(out, format);
+                OutputFormat format = new OutputFormat( );
+                format.setLineWidth(0);
+                format.setIndent(5);
+                format.setPreserveSpace(true);
+                try (final UnsynchronizedByteArrayOutputStream out = new UnsynchronizedByteArrayOutputStream()) {
+                    XMLSerializer serializer = new XMLSerializer(out, format);
 
-            if (node instanceof Document) {
-                serializer.serialize((Document) node);
-            } else if (node instanceof Element) {
-                serializer.serialize((Element) node);
-            } else {
-                fail("Can't serialize node type: " + node);
+                    if (node instanceof Document) {
+                        serializer.serialize((Document) node);
+                    } else if (node instanceof Element) {
+                        serializer.serialize((Element) node);
+                    } else {
+                        fail("Can't serialize node type: " + node);
+                    }
+                }
             }
         }
     }
 
     @Test
     public void serialize3() throws ParserConfigurationException, SAXException, IOException, XMLDBException, TransformerException, URISyntaxException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
-        XMLResource resource = (XMLResource) testCollection.createResource(null, "XMLResource");
-        resource.setContentAsDOM(doc);
-        testCollection.storeResource(resource);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
+            final String resourceId;
+            try (final EXistResource resource = (EXistResource) testCollection.createResource(null, XMLResource.RESOURCE_TYPE)) {
+                ((XMLResource) resource).setContentAsDOM(doc);
+                testCollection.storeResource(resource);
+                resourceId = resource.getId();
+            }
 
-        resource = (XMLResource)testCollection.getResource(resource.getId());
-        assertNotNull(resource);
-        Node node = resource.getContentAsDOM();
+            try (final EXistResource resource = (EXistResource) testCollection.getResource(resourceId)) {
+                assertNotNull(resource);
+                Node node = ((XMLResource) resource).getContentAsDOM();
 
-        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-            Properties outputProperties = new Properties();
-            outputProperties.setProperty("indent", "yes");
-            DOMSerializer serializer = new DOMSerializer(writer, outputProperties);
-            serializer.serialize(node);
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    Properties outputProperties = new Properties();
+                    outputProperties.setProperty("indent", "yes");
+                    DOMSerializer serializer = new DOMSerializer(writer, outputProperties);
+                    serializer.serialize(node);
+                }
+            }
         }
     }
 
     @Test
     public void serialize4() throws ParserConfigurationException, SAXException, IOException, XMLDBException, URISyntaxException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
-        Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
-        XMLResource resource = (XMLResource) testCollection.createResource(null, "XMLResource");
-        resource.setContentAsDOM(doc);
+            Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
+            final String resourceId;
+            try (final EXistResource resource = (EXistResource) testCollection.createResource(null, XMLResource.RESOURCE_TYPE)) {
+                ((XMLResource) resource).setContentAsDOM(doc);
 
-        testCollection.storeResource(resource);
+                testCollection.storeResource(resource);
+                resourceId = resource.getId();
+            }
 
-        resource = (XMLResource)testCollection.getResource(resource.getId());
-        assertNotNull(resource);
-        @SuppressWarnings("unused")
-                Node node = resource.getContentAsDOM();
-        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-            Properties outputProperties = new Properties();
-            outputProperties.setProperty("indent", "yes");
-            SAXSerializer serializer = new SAXSerializer(writer, outputProperties);
-            resource.getContentAsSAX(serializer);
+            try (final EXistResource resource = (EXistResource) testCollection.getResource(resourceId)) {
+                assertNotNull(resource);
+                @SuppressWarnings("unused")
+                        Node node = ((XMLResource) resource).getContentAsDOM();
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    Properties outputProperties = new Properties();
+                    outputProperties.setProperty("indent", "yes");
+                    SAXSerializer serializer = new SAXSerializer(writer, outputProperties);
+                    ((XMLResource) resource).getContentAsSAX(serializer);
+                }
+            }
         }
     }
 
     @Test
     public void serialize5() throws XMLDBException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        XMLResource resource = (XMLResource) testCollection.createResource("test.xml", "XMLResource");
-        resource.setContent(XML_DATA);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            try (final EXistResource resource = (EXistResource) testCollection.createResource("test.xml", XMLResource.RESOURCE_TYPE)) {
+                resource.setContent(XML_DATA);
 
-        testCollection.storeResource(resource);
+                testCollection.storeResource(resource);
 
-        XMLResource style = (XMLResource) testCollection.createResource("test.xsl", "XMLResource");
-        style.setContent(XSL_DATA);
-        testCollection.storeResource(style);
+                try (final EXistResource style = (EXistResource) testCollection.createResource("test.xsl", XMLResource.RESOURCE_TYPE)) {
+                    style.setContent(XSL_DATA);
+                    testCollection.storeResource(style);
+                }
 
-        Properties outputProperties = new Properties();
-        outputProperties.setProperty("indent", "yes");
-        testCollection.setProperty("stylesheet", "test.xsl");
-        testCollection.setProperty("stylesheet-param.testparam", "TEST");
-        try (final StringBuilderWriter writer = new StringBuilderWriter()) {
-            SAXSerializer serializer = new SAXSerializer(writer, outputProperties);
-            resource.getContentAsSAX(serializer);
+                Properties outputProperties = new Properties();
+                outputProperties.setProperty("indent", "yes");
+                testCollection.setProperty("stylesheet", "test.xsl");
+                testCollection.setProperty("stylesheet-param.testparam", "TEST");
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    SAXSerializer serializer = new SAXSerializer(writer, outputProperties);
+                    ((XMLResource) resource).getContentAsSAX(serializer);
+                }
+            }
         }
     }
 }

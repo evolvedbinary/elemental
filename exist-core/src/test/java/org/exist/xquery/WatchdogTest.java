@@ -21,12 +21,13 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.modules.BinaryResource;
 
 import static org.junit.Assert.*;
 
@@ -52,8 +53,8 @@ public class WatchdogTest {
             "};";
 
         try (final Collection dbCollection = existEmbeddedServer.getRoot();
-        final Collection watchdogTestCollection = existEmbeddedServer.createCollection(dbCollection, "watchdog-test")) {
-            final Resource nodesModule = watchdogTestCollection.createResource("nodes.xqm", "BinaryResource");
+             final Collection watchdogTestCollection = existEmbeddedServer.createCollection(dbCollection, "watchdog-test");
+             final EXistResource nodesModule = (EXistResource) watchdogTestCollection.createResource("nodes.xqm", BinaryResource.RESOURCE_TYPE)) {
             nodesModule.setContent(queryModule);
             watchdogTestCollection.storeResource(nodesModule);
         }

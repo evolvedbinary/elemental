@@ -45,6 +45,7 @@
  */
 package org.exist.xmldb;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.w3c.dom.Document;
@@ -54,6 +55,7 @@ import org.w3c.dom.NodeList;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
+import org.exist.xmldb.EXistResource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 
@@ -83,60 +85,71 @@ public class RemoteDOMTest extends RemoteDBTest {
 		rootColl = DatabaseManager.getCollection(getBaseURI(), "admin", "");
 		assertNotNull(rootColl);
 
-		XMLResource r = (XMLResource)rootColl.createResource(name, XMLResource.RESOURCE_TYPE);
-		r.setContent("<?xml-stylesheet type=\"text/xsl\" href=\"test.xsl\"?><!-- Root Comment --><properties><property key=\"type\">Table</property></properties>");
-		rootColl.storeResource(r);
+		try (final EXistResource r = (EXistResource) rootColl.createResource(name, XMLResource.RESOURCE_TYPE)) {
+			r.setContent("<?xml-stylesheet type=\"text/xsl\" href=\"test.xsl\"?><!-- Root Comment --><properties><property key=\"type\">Table</property></properties>");
+			rootColl.storeResource(r);
+		}
 	}
-	
+
+	@After
+	public void tearDown() throws XMLDBException {
+		if (rootColl != null) {
+			rootColl.close();
+			rootColl = null;
+		}
+	}
+
 	/** test Update of an existing document through DOM */
 	@Test
 	public void domUpdate() throws XMLDBException {
-		XMLResource index = (XMLResource) rootColl.getResource(name);
-		String content = (String) index.getContent();
 		Document doc=null;
 		Element root=null;
 		NodeList nl=null;
-		Node n = index.getContentAsDOM();
-		if (n instanceof Document) {
-			doc=(Document)n;
-			root=doc.getDocumentElement();
-		}
-		else if (n instanceof Element) {
-			doc = n.getOwnerDocument();
-			root=(Element)n;
-		}
-		else {
-			fail("RemoteXMLResource unable to return a Document either an Element");
+		try (final EXistResource index = (EXistResource) rootColl.getResource(name)) {
+			String content = (String) ((XMLResource) index).getContent();
+			Node n = ((XMLResource) index).getContentAsDOM();
+			if (n instanceof Document) {
+				doc=(Document)n;
+				root=doc.getDocumentElement();
+			}
+			else if (n instanceof Element) {
+				doc = n.getOwnerDocument();
+				root=(Element)n;
+			}
+			else {
+				fail("RemoteXMLResource unable to return a Document either an Element");
+			}
+
+			nl = doc.getChildNodes();
+			for (int i = 0; i < nl.getLength(); i++) {
+				nl.item(i).getNodeName();
+			}
+
+
+			Element schemaNode = doc.createElement("schema");
+			schemaNode.setAttribute("targetNamespace", "targetNamespace");
+			schemaNode.setAttribute("resourceName", "filename");
+
+			root.appendChild(schemaNode);
+			((XMLResource) index).setContentAsDOM(doc);
+			rootColl.storeResource(index);
 		}
 
-		nl = doc.getChildNodes();
-		for (int i = 0; i < nl.getLength(); i++) {
-			nl.item(i).getNodeName();
-		}
-
-
-		Element schemaNode = doc.createElement("schema");
-		schemaNode.setAttribute("targetNamespace", "targetNamespace");
-		schemaNode.setAttribute("resourceName", "filename");
-
-		root.appendChild(schemaNode);
-		index.setContentAsDOM(doc);
-		rootColl.storeResource(index);
-
-		index = (XMLResource) rootColl.getResource(name);
-		content = (String) index.getContent();
-		n = index.getContentAsDOM();
-		if (n instanceof Document) {
-			doc=(Document)n;
-			root=doc.getDocumentElement();
-		}
-		else if (n instanceof Element) {
-			doc = n.getOwnerDocument();
-			root=(Element)n;
-		}
-		nl = root.getChildNodes();
-		for (int i = 0; i < nl.getLength(); i++) {
-			nl.item(i).getNodeName();
+		try (final EXistResource index = (EXistResource) rootColl.getResource(name)) {
+			String content = (String) ((XMLResource) index).getContent();
+			Node n = ((XMLResource) index).getContentAsDOM();
+			if (n instanceof Document) {
+				doc=(Document)n;
+				root=doc.getDocumentElement();
+			}
+			else if (n instanceof Element) {
+				doc = n.getOwnerDocument();
+				root=(Element)n;
+			}
+			nl = root.getChildNodes();
+			for (int i = 0; i < nl.getLength(); i++) {
+				nl.item(i).getNodeName();
+			}
 		}
 	}
 }

@@ -306,8 +306,9 @@ public class Main {
                 uri += XmldbURI.ROOT_COLLECTION;
             }
 
-            final Collection root = DatabaseManager.getCollection(uri, properties.getProperty(USER_PROP, DEFAULT_USER), optionDbaPass.orElse(optionPass));
-            shutdown(root);
+            try (final Collection root = DatabaseManager.getCollection(uri, properties.getProperty(USER_PROP, DEFAULT_USER), optionDbaPass.orElse(optionPass))) {
+                shutdown(root);
+            }
         } catch (final Exception e) {
             reportError(e);
         }
@@ -318,8 +319,7 @@ public class Main {
             final Optional<String> dbaPassword, final Path f, final XmldbURI uri, final boolean rebuildRepo,
             final boolean quiet, final boolean overwriteApps) {
         final AggregatingConsoleRestoreServiceTaskListener listener = new AggregatingConsoleRestoreServiceTaskListener(quiet);
-        try {
-            final Collection collection = DatabaseManager.getCollection(uri.toString(), username, password);
+        try (final Collection collection = DatabaseManager.getCollection(uri.toString(), username, password)) {
             final EXistRestoreService service = (EXistRestoreService) collection.getService("RestoreService", "1.0");
             service.restore(f.toAbsolutePath().toString(), dbaPassword.orElse(null), listener, overwriteApps);
 
@@ -334,8 +334,7 @@ public class Main {
         if (rebuildRepo) {
             System.out.println("Rebuilding application repository ...");
             System.out.println("URI: " + uri);
-            try {
-                final Collection root = DatabaseManager.getCollection(uri.toString(), username, dbaPassword.orElse(password));
+            try (final Collection root = DatabaseManager.getCollection(uri.toString(), username, dbaPassword.orElse(password))) {
                 if (root != null) {
                     ClientFrame.repairRepository(root);
                     System.out.println("Application repository rebuilt successfully.");
@@ -411,8 +410,7 @@ public class Main {
 
         final Callable<Void> callable = () -> {
 
-            try {
-                final Collection collection = DatabaseManager.getCollection(uri.toString(), username, password);
+            try (final Collection collection = DatabaseManager.getCollection(uri.toString(), username, password)) {
                 final EXistRestoreService service = (EXistRestoreService) collection.getService("RestoreService", "1.0");
                 service.restore(f.toAbsolutePath().toString(), dbaPassword.orElse(null), listener, overwriteApps);
 
@@ -421,8 +419,7 @@ public class Main {
                 if (JOptionPane.showConfirmDialog(null, "Would you like to rebuild the application repository?\nThis is only necessary if application packages were restored.", "Rebuild App Repository?",
                         JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                     System.out.println("Rebuilding application repository ...");
-                    try {
-                        final Collection root = DatabaseManager.getCollection(uri.toString(), username, dbaPassword.orElse(password));
+                    try (final Collection root = DatabaseManager.getCollection(uri.toString(), username, dbaPassword.orElse(password))) {
                         ClientFrame.repairRepository(root);
                         listener.info("Application repository rebuilt successfully.");
                     } catch (final XMLDBException e) {

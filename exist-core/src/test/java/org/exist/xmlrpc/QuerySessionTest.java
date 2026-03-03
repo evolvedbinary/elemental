@@ -49,14 +49,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.TestDataGenerator;
 import org.exist.TestUtils;
-import org.exist.storage.ReindexRecoveryTest;
 import org.exist.test.ExistWebServer;
-import org.junit.*;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
@@ -129,32 +133,35 @@ public class QuerySessionTest {
 
     private final static int DOC_COUNT = 100;
 
-    private Random random = new Random();
+    private final Random random = new Random();
 
     @Test
     public void manualRelease() throws XMLDBException {
-        Collection test = DatabaseManager.getCollection(getBaseUri() + "/db/rpctest", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        XQueryService service = (XQueryService) test.getService("XQueryService", "1.0");
-        ResourceSet result = service.query("//chapter[@xml:id eq 'chapter1']");
-        assertTrue(result.getSize() > 0);
+        try (final Collection test = DatabaseManager.getCollection(getBaseUri() + "/db/rpctest", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
 
-        if (!"local".equals(apiName)) {
-            // clear should release the query result on the server
-            result.clear();
+            final XQueryService service = (XQueryService) test.getService("XQueryService", "1.0");
+            try (final EXistResourceSet result = (EXistResourceSet) service.query("//chapter[@xml:id eq 'chapter1']")) {
+                assertTrue(result.getSize() > 0);
 
-            // As the result has been cleared already, we should get an exception below
-            try {
-                result.getMembersAsResource();
-                fail("Expected XMLDBException from calling Resource#getMembersAsResource() after ResourceSet#clear() when using the Remote XML:DB API");
-            } catch (final XMLDBException e) {
-                assertEquals("Failed to invoke method retrieveAllFirstChunk in class org.exist.xmlrpc.RpcConnection: result set unknown or timed out", e.getMessage());
+                if (!"local".equals(apiName)) {
+                    // clear should release the query result on the server
+                    result.clear();
+
+                    // As the result has been cleared already, we should get an exception below
+                    try {
+                        result.getMembersAsResource();
+                        fail("Expected XMLDBException from calling Resource#getMembersAsResource() after ResourceSet#clear() when using the Remote XML:DB API");
+                    } catch (final XMLDBException e) {
+                        assertEquals("Failed to invoke method retrieveAllFirstChunk in class org.exist.xmlrpc.RpcConnection: result set unknown or timed out", e.getMessage());
+                    }
+                }
             }
         }
     }
 
     @Test
     public void runTasks() {
-        ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
+        final ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
         for (int i = 0; i < 100; i++) {
             executor.submit(new QueryTask(QUERY));
         }
@@ -163,10 +170,10 @@ public class QuerySessionTest {
 		boolean terminated = false;
 		try {
 			terminated = executor.awaitTermination(60 * 60, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
+		} catch (final InterruptedException e) {
 		    Thread.currentThread().interrupt();
 		}
-		Assert.assertTrue(terminated);
+		assertTrue(terminated);
     }
 
     private class QueryTask implements Runnable {
@@ -180,12 +187,14 @@ public class QuerySessionTest {
         @Override
         public void run() {
             try {
-                final Collection test = DatabaseManager.getCollection(getBaseUri() + "/db/rpctest", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-                final XQueryService service = (XQueryService) test.getService("XQueryService", "1.0");
-                final int n = random.nextInt(DOC_COUNT) + 1;
-                service.declareVariable("n", "chapter" + n);
-                final ResourceSet result = service.query(query);
-                assertEquals(1, result.getSize());
+                try (final Collection test = DatabaseManager.getCollection(getBaseUri() + "/db/rpctest", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+                    final XQueryService service = (XQueryService) test.getService("XQueryService", "1.0");
+                    final int n = random.nextInt(DOC_COUNT) + 1;
+                    service.declareVariable("n", "chapter" + n);
+                    try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+                        assertEquals(1, result.getSize());
+                    }
+                }
             } catch (final XMLDBException e) {
                 LOG.error(e.getMessage(), e);
                 fail(e.getMessage());
@@ -197,24 +206,27 @@ public class QuerySessionTest {
     public void storeTestData() throws XMLDBException, SAXException {
         if (!storedTestData) {
             // NOTE(AR) we only need to store the test data once!
-            final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+            try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
 
-            final CollectionManagementService mgmt = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
-            final Collection test = mgmt.createCollection("rpctest");
+                final CollectionManagementService mgmt = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+                try (final Collection test = mgmt.createCollection("rpctest")) {
 
-            final TestDataGenerator generator = new TestDataGenerator("xdb", DOC_COUNT);
-            try {
-                final Path[] files = generator.generate(test, generateXQ);
-                for (int i = 0; i < files.length; i++) {
-                    final Resource resource = test.createResource(files[i].getFileName().toString(), "XMLResource");
-                    resource.setContent(files[i].toFile());
-                    test.storeResource(resource);
+                    final TestDataGenerator generator = new TestDataGenerator("xdb", DOC_COUNT);
+                    try {
+                        final Path[] files = generator.generate(test, generateXQ);
+                        for (int i = 0; i < files.length; i++) {
+                            try (final EXistResource resource = (EXistResource) test.createResource(files[i].getFileName().toString(), "XMLResource")) {
+                                resource.setContent(files[i].toFile());
+                                test.storeResource(resource);
+                            }
+                        }
+                    } finally {
+                        generator.releaseAll();
+                    }
                 }
-            } finally {
-                generator.releaseAll();
-            }
 
-            storedTestData = true;
+                storedTestData = true;
+            }
         }
     }
 }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -30,6 +54,8 @@ import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.BrokerPool;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistRestoreService;
 import org.exist.xmldb.NullRestoreServiceTaskListener;
 import org.exist.xmldb.UserManagementService;
@@ -38,8 +64,6 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -117,60 +141,70 @@ public class BackupRestoreSecurityPrincipalsTest {
         final SecurityManagerImpl sm = (SecurityManagerImpl) BrokerPool.getInstance().getSecurityManager();
 
         //check the current user accounts
-        ResourceSet result = xqs.query(accountQuery);
-        assertUser(RealmImpl.ADMIN_ACCOUNT_ID, SecurityManager.DBA_USER, ((XMLResource) result.getResource(0)).getContentAsDOM());
-        assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER, ((XMLResource) result.getResource(1)).getContentAsDOM());
-        assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 1, "frank", ((XMLResource) result.getResource(2)).getContentAsDOM());
-        assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 2, "jack", ((XMLResource) result.getResource(3)).getContentAsDOM());
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(accountQuery)) {
+            assertUser(RealmImpl.ADMIN_ACCOUNT_ID, SecurityManager.DBA_USER, ((XMLResource) result.getResource(0)).getContentAsDOM());
+            assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER, ((XMLResource) result.getResource(1)).getContentAsDOM());
+            assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 1, "frank", ((XMLResource) result.getResource(2)).getContentAsDOM());
+            assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 2, "jack", ((XMLResource) result.getResource(3)).getContentAsDOM());
+        }
 
         //check the last user id
         assertEquals(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 2, sm.getLastAccountId()); //last account id should be that of 'jack'
 
-        //create a test collection and give everyone access
-        final CollectionManagementService cms = (CollectionManagementService)server.getRoot().getService("CollectionManagementService", "1.0");
-        final Collection test = cms.createCollection("test");
-        final UserManagementService testUms = (UserManagementService)test.getService("UserManagementService", "1.0");
-        testUms.chmod("rwxrwxrwx");
-
-        //create and store a new document as 'frank'
-        final Collection frankTest = DatabaseManager.getCollection("xmldb:exist:///db/test", FRANK_USER, FRANK_USER);
         final String FRANKS_DOCUMENT = "franks-document.xml";
-        final Resource frankDoc = frankTest.createResource(FRANKS_DOCUMENT, XMLResource.RESOURCE_TYPE);
-        frankDoc.setContent("<hello>frank</hello>");
-        frankTest.storeResource(frankDoc);
-
-        //create and store a new document as 'jack'
-        final Collection jackTest = DatabaseManager.getCollection("xmldb:exist:///db/test", JACK_USER, JACK_USER);
         final String JACKS_DOCUMENT = "jacks-document.xml";
-        final Resource jackDoc = jackTest.createResource(JACKS_DOCUMENT, XMLResource.RESOURCE_TYPE);
-        jackDoc.setContent("<hello>jack</hello>");
-        jackTest.storeResource(jackDoc);
-
-        //restore the database backup
-        final EXistRestoreService service = (EXistRestoreService)server.getRoot().getService("RestoreService", "1.0");
-        service.restore(backupFile.normalize().toAbsolutePath().toString(), null, new NullRestoreServiceTaskListener(), false);
 
 
-        //check the current user accounts after the restore
-        result = xqs.query(accountQuery);
-        assertUser(RealmImpl.ADMIN_ACCOUNT_ID, SecurityManager.DBA_USER, ((XMLResource) result.getResource(0)).getContentAsDOM());
-        assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER, ((XMLResource) result.getResource(1)).getContentAsDOM());
-        assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 1, FRANK_USER, ((XMLResource) result.getResource(2)).getContentAsDOM());
-        assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 2, JACK_USER, ((XMLResource) result.getResource(3)).getContentAsDOM());
-        assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 3, JOE_USER, ((XMLResource) result.getResource(4)).getContentAsDOM());
+        //create a test collection and give everyone access
+        final CollectionManagementService cms = (CollectionManagementService) server.getRoot().getService("CollectionManagementService", "1.0");
+        try (final Collection test = cms.createCollection("test")) {
+            final UserManagementService testUms = (UserManagementService) test.getService("UserManagementService", "1.0");
+            testUms.chmod("rwxrwxrwx");
 
-        //check the last user id after the restore
-        assertEquals(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 3, sm.getLastAccountId()); //last account id should be that of 'joe'
+            //create and store a new document as 'frank'
+            try (final Collection frankTest = DatabaseManager.getCollection("xmldb:exist:///db/test", FRANK_USER, FRANK_USER)) {
+                try (final EXistResource frankDoc = (EXistResource) frankTest.createResource(FRANKS_DOCUMENT, "XMLResource")) {
+                    frankDoc.setContent("<hello>frank</hello>");
+                    frankTest.storeResource(frankDoc);
+                }
+            }
 
-        //check the owner of frank's document after restore
-        final Resource fDoc = test.getResource(FRANKS_DOCUMENT);
-        final Permission franksDocPermissions = testUms.getPermissions(fDoc);
-        assertEquals(FRANK_USER, franksDocPermissions.getOwner().getName());
+            //create and store a new document as 'jack'
+            try (final Collection jackTest = DatabaseManager.getCollection("xmldb:exist:///db/test", JACK_USER, JACK_USER)) {
+                try (final EXistResource jackDoc = (EXistResource) jackTest.createResource(JACKS_DOCUMENT, "XMLResource")) {
+                    jackDoc.setContent("<hello>jack</hello>");
+                    jackTest.storeResource(jackDoc);
+                }
+            }
 
-        //check the owner of jack's document after restore
-        final Resource jDoc = test.getResource(JACKS_DOCUMENT);
-        final Permission jacksDocPermissions = testUms.getPermissions(jDoc);
-        assertEquals(JACK_USER, jacksDocPermissions.getOwner().getName());
+            //restore the database backup
+            final EXistRestoreService service = (EXistRestoreService) server.getRoot().getService("RestoreService", "1.0");
+            service.restore(backupFile.normalize().toAbsolutePath().toString(), null, new NullRestoreServiceTaskListener(), false);
+
+            //check the current user accounts after the restore
+            try (final EXistResourceSet result = (EXistResourceSet) xqs.query(accountQuery)) {
+                assertUser(RealmImpl.ADMIN_ACCOUNT_ID, SecurityManager.DBA_USER, ((XMLResource) result.getResource(0)).getContentAsDOM());
+                assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER, ((XMLResource) result.getResource(1)).getContentAsDOM());
+                assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 1, FRANK_USER, ((XMLResource) result.getResource(2)).getContentAsDOM());
+                assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 2, JACK_USER, ((XMLResource) result.getResource(3)).getContentAsDOM());
+                assertUser(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 3, JOE_USER, ((XMLResource) result.getResource(4)).getContentAsDOM());
+            }
+
+            //check the last user id after the restore
+            assertEquals(SecurityManagerImpl.INITIAL_LAST_ACCOUNT_ID + 3, sm.getLastAccountId()); //last account id should be that of 'joe'
+
+            //check the owner of frank's document after restore
+            try (final EXistResource fDoc = (EXistResource) test.getResource(FRANKS_DOCUMENT)) {
+                final Permission franksDocPermissions = testUms.getPermissions(fDoc);
+                assertEquals(FRANK_USER, franksDocPermissions.getOwner().getName());
+            }
+
+            //check the owner of jack's document after restore
+            try (final EXistResource jDoc = (EXistResource) test.getResource(JACKS_DOCUMENT)) {
+                final Permission jacksDocPermissions = testUms.getPermissions(jDoc);
+                assertEquals(JACK_USER, jacksDocPermissions.getOwner().getName());
+            }
+        }
     }
 
     /**

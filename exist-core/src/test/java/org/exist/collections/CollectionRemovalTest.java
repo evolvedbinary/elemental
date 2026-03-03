@@ -64,6 +64,7 @@ import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
@@ -74,7 +75,6 @@ import static org.junit.Assert.*;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import xyz.elemental.mediatype.MediaType;
@@ -187,11 +187,13 @@ public class CollectionRemovalTest {
         }
         final EXistXPathQueryService service = (EXistXPathQueryService)
                 testCollection.getService("XQueryService", "1.0");
-        ResourceSet result = service.query(QUERY1);
-        assertEquals(expected, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(QUERY1)) {
+            assertEquals(expected, result.getSize());
+        }
 
-        result = service.query(QUERY2);
-        assertEquals(expected, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(QUERY2)) {
+            assertEquals(expected, result.getSize());
+        }
     }
 
     @BeforeClass

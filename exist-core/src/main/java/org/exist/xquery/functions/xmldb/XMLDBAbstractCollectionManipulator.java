@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -43,6 +67,8 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
+
+import javax.annotation.Nullable;
 
 import static org.exist.xquery.XPathException.execAndAddErrorIfMissing;
 
@@ -118,65 +144,66 @@ public abstract class XMLDBAbstractCollectionManipulator extends BasicFunction {
             throw new XPathException(this, "Expected a collection as the argument " + (paramNumber + 1) + ".");
         }
 
-        final boolean collectionNeedsClose = false;
-
-        Collection collection = null;
-        final Item item = args[paramNumber].itemAt(0);
-        if (Type.subTypeOf(item.getType(), Type.NODE)) {
-            final NodeValue node = (NodeValue) item;
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Found node");
-            }
-            if (node.getImplementationType() == NodeValue.PERSISTENT_NODE) {
-                final org.exist.collections.Collection internalCol = ((NodeProxy) node).getOwnerDocument().getCollection();
+        @Nullable Collection collection = null;
+        try {
+            final Item item = args[paramNumber].itemAt(0);
+            if (Type.subTypeOf(item.getType(), Type.NODE)) {
+                final NodeValue node = (NodeValue) item;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Found node");
                 }
-                try {
-                    //TODO: use xmldbURI
-                    collection = getLocalCollection(this, context, internalCol.getURI().toString());
+
+                if (node.getImplementationType() == NodeValue.PERSISTENT_NODE) {
+                    final org.exist.collections.Collection internalCol = ((NodeProxy) node).getOwnerDocument().getCollection();
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Loaded collection {}", collection.getName());
+                        LOGGER.debug("Found node");
                     }
-                } catch (final XMLDBException e) {
-                    throw new XPathException(this, "Failed to access collection: " + internalCol.getURI(), e);
-                }
-            } else {
-                return Sequence.EMPTY_SEQUENCE;
-            }
-        }
 
-        if (collection == null) {
-            //Otherwise, just extract the name as a string:
-            final String collectionURI = args[paramNumber].getStringValue();
-            if (collectionURI != null) {
-                try {
-                    collection = getCollection(this, context, collectionURI, Optional.empty(), Optional.empty());
-                } catch (final XMLDBException xe) {
-                    if (errorIfAbsent) {
-                        throw new XPathException(this, "Could not locate collection: " + collectionURI, xe);
+                    try {
+                        //TODO: use xmldbURI
+                        collection = getLocalCollection(this, context, internalCol.getURI().toString());
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Loaded collection {}", collection.getName());
+                        }
+                    } catch (final XMLDBException e) {
+                        throw new XPathException(this, "Failed to access collection: " + internalCol.getURI(), e);
                     }
-                    collection = null;
+
+                } else {
+                    return Sequence.EMPTY_SEQUENCE;
                 }
             }
-            if (collection == null && errorIfAbsent) {
-                throw new XPathException(this, "Unable to find collection: " + collectionURI);
-            }
-        }
 
-        Sequence s = Sequence.EMPTY_SEQUENCE;
-        try {
-            s = evalWithCollection(collection, args, contextSequence);
+            if (collection == null) {
+                // Otherwise, just extract the name as a string:
+                final String collectionURI = args[paramNumber].getStringValue();
+                if (collectionURI != null) {
+
+                    try {
+                        collection = getCollection(this, context, collectionURI, Optional.empty(), Optional.empty());
+                    } catch (final XMLDBException xe) {
+                        if (errorIfAbsent) {
+                            throw new XPathException(this, "Could not locate collection: " + collectionURI, xe);
+                        }
+                    }
+                }
+
+                if (collection == null && errorIfAbsent) {
+                    throw new XPathException(this, "Unable to find collection: " + collectionURI);
+                }
+            }
+
+            return evalWithCollection(collection, args, contextSequence);
+
         } finally {
-            if (collectionNeedsClose && collection != null) {
+            if (collection != null) {
                 try {
                     collection.close();
-                } catch (final Exception e) {
+                } catch (final XMLDBException e) {
                     throw new XPathException(this, "Unable to close collection", e);
                 }
             }
         }
-        return s;
     }
 
     abstract protected Sequence evalWithCollection(final Collection c, final Sequence[] args, final Sequence contextSequence) throws XPathException;

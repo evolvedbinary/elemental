@@ -47,6 +47,8 @@ package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -60,7 +62,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -83,29 +84,17 @@ public class JingRelaxNgTest {
                 "    <validation mode='no'/>" +
                 "</collection>";
 
-        Collection conf = null;
-        try {
-            conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/personal");
+        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/personal")) {
             existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
-        } finally {
-            if(conf != null) {
-                conf.close();
-            }
         }
 
-        Collection collection = null;
-        try {
-            collection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "personal");
+        try (final Collection collection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "personal")) {
 
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/personal/" + testResource)) {
                     assertNotNull(is);
                     existEmbeddedServer.storeResource(collection, testResource, InputStreamUtil.readAll(is));
                 }
-            }
-        } finally {
-            if(collection != null) {
-                collection.close();
             }
         }
     }
@@ -115,10 +104,13 @@ public class JingRelaxNgTest {
         final String query = "validation:jing( " +
                 "doc('/db/personal/personal-valid.xml'), " +
                 "doc('/db/personal/personal.rng') )";
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        assertEquals(query, "true",
-                results.getResource(0).getContent().toString());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
+            try (final EXistResource resource = (EXistResource) results.getResource(0)) {
+                assertEquals(query, "true",
+                    resource.getContent().toString());
+            }
+        }
     }
     
     @Test
@@ -185,10 +177,13 @@ public class JingRelaxNgTest {
 
     private void executeAndEvaluate(final String query, final String expectedValue)
             throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+            try (final EXistResource resource = (EXistResource) results.getResource(0)) {
+                final String result = (String) resource.getContent();
+                assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+            }
+        }
     }
 }

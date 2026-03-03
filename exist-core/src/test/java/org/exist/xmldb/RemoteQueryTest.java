@@ -60,8 +60,6 @@ import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.CompiledExpression;
 import org.xmldb.api.base.Database;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -82,15 +80,17 @@ public class RemoteQueryTest extends RemoteDBTest {
 		String query = "//SPEECH[SPEAKER = 'HAMLET']";
 		XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
 		service.setProperty("highlight-matches", "none");
-		CompiledExpression compiled = service.compile(query);
-		ResourceSet result = service.execute(compiled);
+		final CompiledExpression compiled = service.compile(query);
+		try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
 
-		assertEquals(result.getSize(), 359);
+            assertEquals(result.getSize(), 359);
 
-		for (int i = 0; i < result.getSize(); i++) {
-			XMLResource r = (XMLResource) result.getResource(i);
-			Node node = r.getContentAsDOM().getFirstChild();
-		}
+            for (int i = 0; i < result.getSize(); i++) {
+                try (final EXistResource r = (EXistResource) result.getResource(i)) {
+                    final Node node = ((XMLResource) r).getContentAsDOM().getFirstChild();
+                }
+            }
+        }
 	}
 
 	@Test
@@ -105,59 +105,62 @@ public class RemoteQueryTest extends RemoteDBTest {
         service.declareVariable("tm:imported-external-string", "imported-string-value");
         service.declareVariable("tm-query:local-external-string", "local-string-value");
 
-        CompiledExpression compiled = service.compile(query);
-        ResourceSet result = service.execute(compiled);
+        final CompiledExpression compiled = service.compile(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
 
-        assertEquals(result.getSize(), 2);
+            assertEquals(result.getSize(), 2);
 
-        for (int i = 0; i < result.getSize(); i++) {
-            XMLResource r = (XMLResource) result.getResource(i);
+            for (int i = 0; i < result.getSize(); i++) {
+                try (final EXistResource r = (EXistResource) result.getResource(i)) {
+                    // needed to ensure that r is closed
+                }
+            }
         }
 	}
 
 	@Before
 	public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, URISyntaxException, IOException {
         // initialize driver
-        Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
-        Database database = (Database) cl.newInstance();
+        final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
+        final Database database = (Database) cl.newInstance();
         database.setProperty("create-database", "true");
         DatabaseManager.registerDatabase(database);
 
-        Collection root =
-            DatabaseManager.getCollection(
-                    getUri() + XmldbURI.ROOT_COLLECTION,
-                    "admin",
-                    null);
-        CollectionManagementService service =
-            (CollectionManagementService) root.getService(
-                    "CollectionManagementService",
-            "1.0");
-        testCollection = service.createCollection("test");
-        assertNotNull(testCollection);
+        try (final Collection root = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", null)) {
+            final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
 
-        Resource xr = testCollection.createResource("hamlet.xml", "XMLResource");
-        try (final InputStream is = SAMPLES.getHamletSample()) {
-            xr.setContent(InputStreamUtil.readString(is, UTF_8));
-            testCollection.storeResource(xr);
+            testCollection = service.createCollection("test");
+            assertNotNull(testCollection);
+
+            try (final EXistResource xr = (EXistResource) testCollection.createResource("hamlet.xml", "XMLResource");
+                 final InputStream is = SAMPLES.getHamletSample()) {
+                xr.setContent(InputStreamUtil.readString(is, UTF_8));
+                testCollection.storeResource(xr);
+            }
+
+            xmlrpcCollection = service.createCollection("xmlrpc");
+            assertNotNull(xmlrpcCollection);
+
+            try (final EXistResource br = (EXistResource) xmlrpcCollection.createResource(TestConstants.TEST_MODULE_URI.toString(), "BinaryResource")) {
+                br.setMediaType(MediaType.APPLICATION_XQUERY);
+                br.setContent(XmlRpcTest.MODULE_DATA);
+                xmlrpcCollection.storeResource(br);
+            }
         }
-
-        xmlrpcCollection = service.createCollection("xmlrpc");
-        assertNotNull(xmlrpcCollection);
-
-        Resource br = xmlrpcCollection.createResource(TestConstants.TEST_MODULE_URI.toString(), "BinaryResource");
-        ((EXistResource) br).setMediaType(MediaType.APPLICATION_XQUERY);
-        br.setContent(XmlRpcTest.MODULE_DATA);
-        xmlrpcCollection.storeResource(br);
 	}
 
 	@After
 	public void tearDown() throws Exception {
+        xmlrpcCollection.close();
+        testCollection.close();
+
         if (!((EXistCollection) testCollection).isRemoteCollection()) {
             DatabaseInstanceManager dim =
                 (DatabaseInstanceManager) testCollection.getService(
                         "DatabaseInstanceManager", "1.0");
             dim.shutdown();
         }
+
         testCollection = null;
         xmlrpcCollection = null;
 	}

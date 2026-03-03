@@ -55,6 +55,8 @@ import org.apache.tools.ant.DirectoryScanner;
 import org.exist.dom.QName;
 import org.exist.util.FileUtils;
 import org.exist.xmldb.EXistResource;
+import org.xmldb.api.modules.BinaryResource;
+import org.xmldb.api.modules.XMLResource;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.XPathException;
@@ -221,16 +223,17 @@ public class XMLDBLoadFromPattern extends XMLDBAbstractCollectionManipulator {
                 }
 
                 //TODO  : these probably need to be encoded and checked for right mime type
-                final String type = mediaType.getStorageType() == StorageType.XML ? "XMLResource" : "BinaryResource";
-                final Resource resource = col.createResource(FileUtils.fileName(file), type);
-                resource.setContent(file.toFile());
+                final String type = mediaType.getStorageType() == StorageType.XML ? XMLResource.RESOURCE_TYPE : BinaryResource.RESOURCE_TYPE;
+                try (final EXistResource resource = (EXistResource) col.createResource(FileUtils.fileName(file), type)) {
+                    resource.setContent(file.toFile());
 
-                ((EXistResource) resource).setMediaType(mediaType.getIdentifier());
+                    resource.setMediaType(mediaType.getIdentifier());
 
-                col.storeResource(resource);
+                    col.storeResource(resource);
 
-                //TODO : use dedicated function in XmldbURI
-                stored.add(new StringValue(this, col.getName() + "/" + resource.getId()));
+                    //TODO : use dedicated function in XmldbURI
+                    stored.add(new StringValue(this, col.getName() + "/" + resource.getId()));
+                }
             } catch (final XMLDBException e) {
                 logger.error("Could not store file {}: {}", file.toAbsolutePath(), e.getMessage());
             }

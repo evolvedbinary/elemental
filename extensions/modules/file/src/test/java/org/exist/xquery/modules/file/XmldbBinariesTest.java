@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,12 +46,17 @@
 package org.exist.xquery.modules.file;
 
 import org.exist.test.ExistWebServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
@@ -43,7 +72,7 @@ import static org.exist.TestUtils.ADMIN_DB_USER;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 @RunWith(Parameterized.class)
-public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resource, XMLDBException> {
+public class XmldbBinariesTest extends AbstractBinariesTest<EXistResourceSet, Resource, XMLDBException> {
 
     @ClassRule
     public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
@@ -85,15 +114,16 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
                 }
 
                 final String fileName = filePath.lastSegment().toString();
-                final Resource resource = current.createResource(fileName, BinaryResource.RESOURCE_TYPE);
-                resource.setContent(content);
-                current.storeResource(resource);
+                try (final EXistResource resource = (EXistResource) current.createResource(fileName, BinaryResource.RESOURCE_TYPE)) {
+                    resource.setContent(content);
+                    current.storeResource(resource);
+                }
 
             } finally {
                 while(!cols.isEmpty()) {
                     try {
                         cols.pop().close();
-                    } catch(XMLDBException e) {
+                    } catch(final XMLDBException e) {
 
                     }
                 }
@@ -139,7 +169,7 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
     }
 
     @Override
-    protected QueryResultAccessor<ResourceSet, XMLDBException> executeXQuery(final String query) throws Exception {
+    protected QueryResultAccessor<EXistResourceSet, XMLDBException> executeXQuery(final String query) throws Exception {
         return consumer -> {
             Collection colRoot = null;
             try {
@@ -147,7 +177,7 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
                 final XQueryService xqueryService = (XQueryService)colRoot.getService("XQueryService", "1.0");
 
                 final CompiledExpression compiledExpression = xqueryService.compile(query);
-                final ResourceSet results = xqueryService.execute(compiledExpression);
+                final EXistResourceSet results = (EXistResourceSet) xqueryService.execute(compiledExpression);
 
 
                     try {
@@ -166,12 +196,12 @@ public class XmldbBinariesTest extends AbstractBinariesTest<ResourceSet, Resourc
     }
 
     @Override
-    protected long size(final ResourceSet results) throws XMLDBException {
+    protected long size(final EXistResourceSet results) throws XMLDBException {
         return results.getSize();
     }
 
     @Override
-    protected Resource item(final ResourceSet results, final int index) throws XMLDBException {
+    protected Resource item(final EXistResourceSet results, final int index) throws XMLDBException {
         return results.getResource(index);
     }
 

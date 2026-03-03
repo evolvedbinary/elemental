@@ -51,11 +51,17 @@ import org.exist.source.StringSource;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.xmldb.EXistCollection;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.rules.ExternalResource;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.Database;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -199,52 +205,55 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
     }
 
 
-    public ResourceSet executeQuery(final String query) throws XMLDBException {
-       return xpathQueryService.execute(new StringSource(query));
+    public EXistResourceSet executeQuery(final String query) throws XMLDBException {
+       return (EXistResourceSet) xpathQueryService.execute(new StringSource(query));
     }
 
-    public ResourceSet executeQuery(final String query, final Map<String, Object> externalVariables)
+    public EXistResourceSet executeQuery(final String query, final Map<String, Object> externalVariables)
             throws XMLDBException {
         for (final Map.Entry<String, Object> externalVariable : externalVariables.entrySet()) {
             xpathQueryService.declareVariable(externalVariable.getKey(), externalVariable.getValue());
         }
         final CompiledExpression compiledQuery = xpathQueryService.compile(query);
-        final ResourceSet result = xpathQueryService.execute(compiledQuery);
+        final EXistResourceSet result = (EXistResourceSet) xpathQueryService.execute(compiledQuery);
         xpathQueryService.clearVariables();
         return result;
     }
 
     public String executeOneValue(final String query) throws XMLDBException {
-        final ResourceSet results = executeQuery(query);
-        assertEquals(1, results.getSize());
-        return results.getResource(0).getContent().toString();
+        try (final EXistResourceSet results = executeQuery(query)) {
+            assertEquals(1, results.getSize());
+            return results.getResource(0).getContent().toString();
+        }
     }
 
     public Collection createCollection(final Collection collection, final String collectionName) throws XMLDBException {
         final CollectionManagementService collectionManagementService =
                 (CollectionManagementService) collection.getService("CollectionManagementService", "1.0");
-        Collection newCollection = collection.getChildCollection(collectionName);
-        if (newCollection == null) {
-            collectionManagementService.createCollection(collectionName);
+        try (final Collection existing = collection.getChildCollection(collectionName)) {
+            if (existing == null) {
+                try (final Collection created = collectionManagementService.createCollection(collectionName)) {
+                    // no-op
+                }
+            }
         }
 
         final XmldbURI uri = XmldbURI.LOCAL_DB_URI.resolveCollectionPath(((EXistCollection) collection).getPathURI().append(collectionName));
         if (asGuest) {
-            newCollection = DatabaseManager.getCollection(uri.toString(), TestUtils.GUEST_DB_USER, TestUtils.GUEST_DB_PWD);
+            return DatabaseManager.getCollection(uri.toString(), TestUtils.GUEST_DB_USER, TestUtils.GUEST_DB_PWD);
         } else {
-            newCollection = DatabaseManager.getCollection(uri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+            return DatabaseManager.getCollection(uri.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         }
-
-        return newCollection;
     }
 
     public void storeResource(final Collection collection, final String documentName, final byte[] content)
             throws XMLDBException {
         final MediaType mediaType = mediaTypeResolver.fromFileName(documentName);
         final String type = mediaType.getStorageType() == StorageType.XML ? XMLResource.RESOURCE_TYPE : BinaryResource.RESOURCE_TYPE;
-        final Resource resource = collection.createResource(documentName, type);
-        resource.setContent(content);
-        collection.storeResource(resource);
+        try (final EXistResource resource = (EXistResource) collection.createResource(documentName, type)) {
+            resource.setContent(content);
+            collection.storeResource(resource);
+        }
     }
 
     public static String getXMLResource(final Collection collection, final String resource) throws XMLDBException {

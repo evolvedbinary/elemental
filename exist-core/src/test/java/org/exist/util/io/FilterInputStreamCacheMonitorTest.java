@@ -49,6 +49,7 @@ import net.jpountz.xxhash.XXHash64;
 import net.jpountz.xxhash.XXHashFactory;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.ExtendedResource;
 import org.exist.xmldb.LocalBinaryResource;
 import org.exist.xmldb.LocalXMLResource;
@@ -65,9 +66,7 @@ import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 
@@ -101,12 +100,11 @@ public class FilterInputStreamCacheMonitorTest {
         final byte[] iconBytes = Files.readAllBytes(icon);
         EXPECTED_ICON_HASH = XXHASH64.hash(iconBytes, 0, iconBytes.length, XXHASH64_SEED);
 
-        final Collection testCollection = existXmldbEmbeddedServer.createCollection(existXmldbEmbeddedServer.getRoot(), TEST_COLLECTION_NAME);
-        try (final EXistResource resource = (EXistResource) testCollection.createResource("icon.png", BinaryResource.RESOURCE_TYPE)) {
+        try (final Collection testCollection = existXmldbEmbeddedServer.createCollection(existXmldbEmbeddedServer.getRoot(), TEST_COLLECTION_NAME);
+                final EXistResource resource = (EXistResource) testCollection.createResource("icon.png", "BinaryResource")) {
             resource.setContent(icon);
             testCollection.storeResource(resource);
         }
-        testCollection.close();
     }
 
     @AfterClass
@@ -123,9 +121,7 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "." +  EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery("util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')");
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery("util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')")) {
 
             assertEquals(1, resourceSet.getSize());
 
@@ -149,8 +145,6 @@ public class FilterInputStreamCacheMonitorTest {
             activeCount = monitor.getActive().size();
             assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        } finally {
-            resourceSet.clear();
         }
 
         // final assert no active binaries as we just cleared the resource-set
@@ -166,12 +160,10 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
                     "let $embedded := <logo><image>{util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')}</image></logo>\n" +
-                    "return\n" +
-                    "xmldb:store('/db/" + TEST_COLLECTION_NAME + "', 'icon.xml', $embedded)");
+                            "return\n" +
+                            "xmldb:store('/db/" + TEST_COLLECTION_NAME + "', 'icon.xml', $embedded)")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource) resourceSet.getResource(0)) {
@@ -182,11 +174,9 @@ public class FilterInputStreamCacheMonitorTest {
                 assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
             }
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }
@@ -199,14 +189,12 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "." + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
                     "let $bin := util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')\n" +
                     "let $embedded := <logo><image>{$bin}</image></logo>\n" +
                     "let $embedded-2 := <other>{$bin}</other>\n" +
                     "return\n" +
-                    "xmldb:store('/db/" + TEST_COLLECTION_NAME + "', 'icon.xml', $embedded)");
+                    "xmldb:store('/db/" + TEST_COLLECTION_NAME + "', 'icon.xml', $embedded)")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource) resourceSet.getResource(0)) {
@@ -217,11 +205,9 @@ public class FilterInputStreamCacheMonitorTest {
                 assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
             }
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }
@@ -234,9 +220,7 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-           resourceSet = existXmldbEmbeddedServer.executeQuery("<logo><image>{util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')}</image></logo>");
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery("<logo><image>{util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')}</image></logo>")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource) resourceSet.getResource(0)) {
@@ -258,11 +242,9 @@ public class FilterInputStreamCacheMonitorTest {
                 assertEquals(EXPECTED_ICON_HASH, retrievedIconHash);
             }
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }
@@ -275,12 +257,10 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "." + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
                     "let $bin := util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')\n" +
                     "return\n" +
-                    "(<logo><image>{$bin}</image></logo>, <other>{$bin}</other>)");
+                    "(<logo><image>{$bin}</image></logo>, <other>{$bin}</other>)")) {
 
 
             assertEquals(2, resourceSet.getSize());
@@ -321,11 +301,9 @@ public class FilterInputStreamCacheMonitorTest {
                 assertEquals(EXPECTED_ICON_HASH, retrievedIconHash);
             }
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }
@@ -338,10 +316,8 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery(
-                    "map { 'key1': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png') }");
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+                    "map { 'key1': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png') }")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource) resourceSet.getResource(0)) {
@@ -367,11 +343,9 @@ public class FilterInputStreamCacheMonitorTest {
             activeCount = monitor.getActive().size();
             assertEquals(1, activeCount);
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }
@@ -384,10 +358,8 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery(
-                    "map { 'key1': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png'), 'key2': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png') }");
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+                    "map { 'key1': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png'), 'key2': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png') }")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource)resourceSet.getResource(0)) {
@@ -413,11 +385,9 @@ public class FilterInputStreamCacheMonitorTest {
             activeCount = monitor.getActive().size();
             assertEquals(2, activeCount);
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }
@@ -430,12 +400,10 @@ public class FilterInputStreamCacheMonitorTest {
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        ResourceSet resourceSet = null;
-        try {
-            resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
                     "let $bin := util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')\n" +
                     "return\n" +
-                    "map { 'key1': $bin, 'key2': map { 'key3': $bin } }");
+                    "map { 'key1': $bin, 'key2': map { 'key3': $bin } }")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource)resourceSet.getResource(0)) {
@@ -472,11 +440,9 @@ public class FilterInputStreamCacheMonitorTest {
             activeCount = monitor.getActive().size();
             assertEquals(1, activeCount);
 
-        } finally {
-            resourceSet.clear();
         }
 
-        // final assert no active binaries as we just cleared the resource-set
+        // final assert no active binaries as we just cleared the resource-set in the try-with-resources
         activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should again have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
     }

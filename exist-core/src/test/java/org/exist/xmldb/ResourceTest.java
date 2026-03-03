@@ -78,11 +78,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.*;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceIterator;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
@@ -111,282 +108,278 @@ public class ResourceTest {
 
     @Test
     public void readNonExistingResource() throws XMLDBException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
-        Resource nonExistent = testCollection.getResource("12345.xml");
-        assertNull(nonExistent);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
+            try (final EXistResource nonExistent = (EXistResource) testCollection.getResource("12345.xml")) {
+                assertNull(nonExistent);
+            }
+        }
     }
 
     @Test
-    public void readResource() throws XMLDBException, IOException {
-        final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
-        final String[] resources = testCollection.listResources();
-        assertEquals(resources.length, testCollection.getResourceCount());
+    public void readResource() throws XMLDBException {
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
+            final String[] resources = testCollection.listResources();
+            assertEquals(resources.length, testCollection.getResourceCount());
 
-        final XMLResource doc = (XMLResource) testCollection.getResource(resources[0]);
-        assertNotNull(doc);
+            try (final EXistResource doc = (EXistResource) testCollection.getResource(resources[0])) {
+                assertNotNull(doc);
 
-        try(final StringBuilderWriter sout = new StringBuilderWriter()) {
-            final Properties outputProperties = new Properties();
-            outputProperties.put(OutputKeys.METHOD, "xml");
-            outputProperties.put(OutputKeys.ENCODING, "ISO-8859-1");
-            outputProperties.put(OutputKeys.INDENT, "yes");
-            outputProperties.put(OutputKeys.OMIT_XML_DECLARATION, "no");
+                try (final StringBuilderWriter sout = new StringBuilderWriter()) {
+                    final Properties outputProperties = new Properties();
+                    outputProperties.put(OutputKeys.METHOD, "xml");
+                    outputProperties.put(OutputKeys.ENCODING, "ISO-8859-1");
+                    outputProperties.put(OutputKeys.INDENT, "yes");
+                    outputProperties.put(OutputKeys.OMIT_XML_DECLARATION, "no");
 
-            final ContentHandler xmlout = new SAXSerializer(sout, outputProperties);
-            doc.getContentAsSAX(xmlout);
+                    final ContentHandler xmlout = new SAXSerializer(sout, outputProperties);
+                    ((XMLResource) doc).getContentAsSAX(xmlout);
+                }
+            }
         }
     }
 
     @Test
     public void testRecursiveSerailization() throws XMLDBException {
         final String xmlDoc1 = "<test><title>Title</title>"
-                + "<import href=\"recurseSer2.xml\"></import>"
-                + "<para>Paragraph2</para>"
-                + "</test>";
+            + "<import href=\"recurseSer2.xml\"></import>"
+            + "<para>Paragraph2</para>"
+            + "</test>";
         final String xmlDoc2 = "<test2><title>Title2</title></test2>";
 
         final String doc1Name = "recurseSer1.xml";
         final String doc2Name = "recurseSer2.xml";
-        final XMLResource resource1 = addResource(doc1Name, xmlDoc1);
-        final XMLResource resource2 = addResource(doc2Name, xmlDoc2);
+        try (final EXistResource resource1 = (EXistResource) addResource(doc1Name, xmlDoc1);
+             final EXistResource resource2 = (EXistResource) addResource(doc2Name, xmlDoc2);
+             final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
-        final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
+            assertNotNull(testCollection);
 
-        try(final StringBuilderWriter sout = new StringBuilderWriter()) {
-            final Properties outputProperties = new Properties();
-            outputProperties.put(OutputKeys.METHOD, "xml");
-            outputProperties.put(OutputKeys.ENCODING, "UTF-8");
-            outputProperties.put(OutputKeys.INDENT, "no");
-            outputProperties.put(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            try (final StringBuilderWriter sout = new StringBuilderWriter()) {
+                final Properties outputProperties = new Properties();
+                outputProperties.put(OutputKeys.METHOD, "xml");
+                outputProperties.put(OutputKeys.ENCODING, "UTF-8");
+                outputProperties.put(OutputKeys.INDENT, "no");
+                outputProperties.put(OutputKeys.OMIT_XML_DECLARATION, "yes");
 
-            final ContentHandler importHandler = new ImportingContentHandler(sout, outputProperties);
-            resource1.getContentAsSAX(importHandler);
+                final ContentHandler importHandler = new ImportingContentHandler(sout, outputProperties);
+                ((XMLResource) resource1).getContentAsSAX(importHandler);
 
-            final String result = sout.toString();
-            assertEquals(
+                final String result = sout.toString();
+                assertEquals(
                     "<test>" +
-                    "<title>Title</title>" +
-                    "<test2>" +
-                    "<title>Title2</title>" +
-                    "</test2>" +
-                    "<para>Paragraph2</para>" +
-                    "</test>"
-            , result.trim());
+                        "<title>Title</title>" +
+                        "<test2>" +
+                        "<title>Title2</title>" +
+                        "</test2>" +
+                        "<para>Paragraph2</para>" +
+                        "</test>"
+                    , result.trim());
+            }
         }
     }
 
     @Test
     public void readDOM() throws XMLDBException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
 
-        XMLResource doc = (XMLResource) testCollection.getResource("r_and_j.xml");
-        assertNotNull(doc);
-        Node n = doc.getContentAsDOM();
-        Element elem=null;
-        if (n instanceof Element) {
-            elem = (Element)n;
-        } else if (n instanceof Document) {
-            elem = ((Document)n).getDocumentElement();
-        }
-        assertNotNull(elem);
-        assertEquals(elem.getNodeName(), "PLAY");
-        NodeList children = elem.getChildNodes();
-        Node node;
-        for(int i = 0; i < children.getLength(); i++) {
-            node = children.item(i);
-            assertNotNull(node);
-            node = node.getFirstChild();
-            while(node != null) {
-                node = node.getNextSibling();
+            try (final EXistResource doc = (EXistResource) testCollection.getResource("r_and_j.xml")) {
+                assertNotNull(doc);
+                Node n = ((XMLResource) doc).getContentAsDOM();
+                Element elem = null;
+                if (n instanceof Element) {
+                    elem = (Element) n;
+                } else if (n instanceof Document) {
+                    elem = ((Document) n).getDocumentElement();
+                }
+                assertNotNull(elem);
+                assertEquals(elem.getNodeName(), "PLAY");
+                NodeList children = elem.getChildNodes();
+                Node node;
+                for (int i = 0; i < children.getLength(); i++) {
+                    node = children.item(i);
+                    assertNotNull(node);
+                    node = node.getFirstChild();
+                    while (node != null) {
+                        node = node.getNextSibling();
+                    }
+                }
             }
         }
     }
 
     @Test
     public void setContentAsSAX() throws SAXException, ParserConfigurationException, XMLDBException, IOException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
 
-        XMLResource doc =
-                (XMLResource) testCollection.createResource("test.xml", "XMLResource");
-        String xml =
-                "<test><title>Title</title>"
+            try (final EXistResource doc = (EXistResource) testCollection.createResource("test.xml", "XMLResource")) {
+                String xml =
+                    "<test><title>Title</title>"
                         + "<para>Paragraph1</para>"
                         + "<para>Paragraph2</para>"
                         + "</test>";
-        ContentHandler handler = doc.setContentAsSAX();
-        SAXParserFactory saxFactory = ExistSAXParserFactory.getSAXParserFactory();
-        saxFactory.setNamespaceAware(true);
-        saxFactory.setValidating(false);
-        SAXParser sax = saxFactory.newSAXParser();
-        XMLReader reader = sax.getXMLReader();
-        reader.setContentHandler(handler);
-        reader.parse(new InputSource(new StringReader(xml)));
-        testCollection.storeResource(doc);
+                ContentHandler handler = ((XMLResource) doc).setContentAsSAX();
+                SAXParserFactory saxFactory = ExistSAXParserFactory.getSAXParserFactory();
+                saxFactory.setNamespaceAware(true);
+                saxFactory.setValidating(false);
+                SAXParser sax = saxFactory.newSAXParser();
+                XMLReader reader = sax.getXMLReader();
+                reader.setContentHandler(handler);
+                reader.parse(new InputSource(new StringReader(xml)));
+                testCollection.storeResource(doc);
+            }
+        }
     }
 
     @Test
     public void setContentAsDOM() throws XMLDBException, ParserConfigurationException, SAXException, IOException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
 
-        XMLResource doc = (XMLResource) testCollection.createResource("dom.xml", "XMLResource");
-        String xml =
-                "<test><title>Title</title>"
+            try (final EXistResource doc = (EXistResource) testCollection.createResource("dom.xml", "XMLResource")) {
+                String xml =
+                    "<test><title>Title</title>"
                         + "<para>Paragraph1</para>"
                         + "<para>Paragraph2</para>"
                         + "</test>";
-        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = docFactory.newDocumentBuilder();
-        Document dom = builder.parse(new InputSource(new StringReader(xml)));
-        doc.setContentAsDOM(dom.getDocumentElement());
-        testCollection.storeResource(doc);
+                DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = docFactory.newDocumentBuilder();
+                Document dom = builder.parse(new InputSource(new StringReader(xml)));
+                ((XMLResource) doc).setContentAsDOM(dom.getDocumentElement());
+                testCollection.storeResource(doc);
+            }
+        }
     }
     
     @Test
     public void setContentAsSourceXml() throws XMLDBException {
-        final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
 
-        final XMLResource doc = (XMLResource) testCollection.createResource("source.xml", "XMLResource");
-        final String xml =
-                "<test><title>Title1</title>"
+            try (final EXistResource doc = (EXistResource) testCollection.createResource("source.xml", "XMLResource")) {
+                final String xml =
+                    "<test><title>Title1</title>"
                         + "<para>Paragraph3</para>"
                         + "<para>Paragraph4</para>"
                         + "</test>";
-        
 
-        doc.setContent(new StringInputSource(xml));
-        testCollection.storeResource(doc);
-        
-        final XMLResource newDoc = (XMLResource) testCollection.getResource("source.xml");
-        final String newDocXml = (String) newDoc.getContent();
-        assertThat(newDocXml, hasXPath("/test/title/text()", equalTo("Title1")));
-        assertThat(newDocXml, hasXPath("count(/test/para)", equalTo("2")));
-        assertThat(newDocXml, hasXPath("/test/para[1]/text()", equalTo("Paragraph3")));
-        assertThat(newDocXml, hasXPath("/test/para[2]/text()", equalTo("Paragraph4")));
+
+                doc.setContent(new StringInputSource(xml));
+                testCollection.storeResource(doc);
+            }
+
+            try (final EXistResource newDoc = (EXistResource) testCollection.getResource("source.xml")) {
+                final String newDocXml = (String) newDoc.getContent();
+                assertThat(newDocXml, hasXPath("/test/title/text()", equalTo("Title1")));
+                assertThat(newDocXml, hasXPath("count(/test/para)", equalTo("2")));
+                assertThat(newDocXml, hasXPath("/test/para[1]/text()", equalTo("Paragraph3")));
+                assertThat(newDocXml, hasXPath("/test/para[2]/text()", equalTo("Paragraph4")));
+            }
+        }
     }
 
     @Test
     public void setContentAsSourceBinary() throws XMLDBException {
-        final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        assertNotNull(testCollection);
-
-        final BinaryResource doc = (BinaryResource) testCollection.createResource("source.bin", "BinaryResource");
         final byte[] bin = "Stuff And Things".getBytes(UTF_8);
 
-        doc.setContent(new StringInputSource(bin));
-        testCollection.storeResource(doc);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
 
-        final BinaryResource newDoc = (BinaryResource) testCollection.getResource("source.bin");
-        final byte[] newDocBin = (byte[]) newDoc.getContent();
+            try (final EXistResource doc = (EXistResource) testCollection.createResource("source.bin", "BinaryResource")) {
+                doc.setContent(new StringInputSource(bin));
+                testCollection.storeResource(doc);
+            }
 
-        assertArrayEquals(bin, newDocBin);
+            try (final EXistResource newDoc = (EXistResource) testCollection.getResource("source.bin")) {
+                final byte[] newDocBin = (byte[]) newDoc.getContent();
+                assertArrayEquals(bin, newDocBin);
+            }
+        }
     }
 
     @Test
     public void queryRemoveResource() throws XMLDBException {
-        Resource resource = null;
-        
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-                    assertNotNull(testCollection);
-        String resourceName = "QueryTestPerson.xml";
-        String id = "test." + System.currentTimeMillis();
-        String content = "<?xml version='1.0'?><person id=\"" + id + "\"><name>Jason</name></person>";
-        resource = testCollection.createResource(resourceName, "XMLResource");
-        resource.setContent(content);
-        testCollection.storeResource(resource);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            assertNotNull(testCollection);
+            String resourceName = "QueryTestPerson.xml";
+            String id = "test." + System.currentTimeMillis();
+            String content = "<?xml version='1.0'?><person id=\"" + id + "\"><name>Jason</name></person>";
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
-        ResourceSet rs = service.query("/person[@id='" + id + "']");
+            try (final EXistResource resource = (EXistResource) testCollection.createResource(resourceName, "XMLResource")) {
+                resource.setContent(content);
+                testCollection.storeResource(resource);
+            }
 
-        for (ResourceIterator iterator = rs.getIterator(); iterator.hasMoreResources();) {
-            Resource r = iterator.nextResource();
-            testCollection.removeResource(r);
-            resource = null;
+            final XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
+            try (final EXistResourceSet rs = (EXistResourceSet) service.query("/person[@id='" + id + "']")) {
+
+                for (final ResourceIterator iterator = rs.getIterator(); iterator.hasMoreResources(); ) {
+                    try (final EXistResource r = (EXistResource) iterator.nextResource()) {
+                        testCollection.removeResource(r);
+                    }
+                }
+            }
         }
     }
 
     @Test
     public void addRemove() throws XMLDBException {
-
         final String resourceID = "addremove.xml";
 
-        XMLResource created = addResource(resourceID, xmlForTest());
-        assertNotNull(created);
+        try (final EXistResource created = addResource(resourceID, xmlForTest())) {
+            assertNotNull(created);
+        }
+
         // need to test documents xml structure
 
-        XMLResource located = resourceForId(resourceID);
-        assertNotNull(located);
-        //assertEquals((String) created.getContent(), (String) located.getContent());
+        try (final EXistResource located = resourceForId(resourceID)) {
+            assertNotNull(located);
+            //assertEquals((String) created.getContent(), (String) located.getContent());
+        }
 
         removeDocument(resourceID);
-        XMLResource locatedAfterRemove = resourceForId(resourceID);
-        assertNull(locatedAfterRemove);
+        try (final EXistResource locatedAfterRemove = resourceForId(resourceID)) {
+            assertNull(locatedAfterRemove);
+        }
     }
 
     @Test
     public void addRemoveAddWithIds() throws XMLDBException {
-
         final String resourceID = "removeWithIds;1.xml";
-
-        addResource(resourceID, "<foo1 xml:id='f'/>");
+        try (final EXistResource resource = addResource(resourceID, "<foo1 xml:id='f'/>")) {
+            // needed to ensure that resource is closed
+        }
         removeDocument(resourceID);
-        addResource(resourceID, "<foo xml:id='f'/>");
+        try (final EXistResource resource = addResource(resourceID, "<foo xml:id='f'/>")) {
+            // needed to ensure that resource is closed
+        }
     }
 
-    private void removeDocument(String id) throws XMLDBException {
-
-        XMLResource resource = resourceForId(id);
-
-        if (null != resource) {
-            Collection collection = null;
-
-            try {
-                collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-                collection.removeResource(resource);
-            } finally {
-                closeCollection(collection);
+    private void removeDocument(final String id) throws XMLDBException {
+        try (final EXistResource resource = resourceForId(id)) {
+            if (resource != null) {
+                try (final Collection collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+                    collection.removeResource(resource);
+                }
             }
         }
     }
 
-    private XMLResource addResource(String id, String content) throws XMLDBException {
-        Collection collection = null;
-        XMLResource result = null;
-
-        try {
-            collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-            result = (XMLResource) collection.createResource(id, XMLResource.RESOURCE_TYPE);
+    private EXistResource addResource(final String id, final String content) throws XMLDBException {
+        try (final Collection collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            final EXistResource result = (EXistResource) collection.createResource(id, "XMLResource");
             result.setContent(content);
             collection.storeResource(result);
-        } finally {
-            closeCollection(collection);
+            return result;
         }
-        return result;
     }
 
-    private XMLResource resourceForId(String id) throws XMLDBException {
-        Collection collection = null;
-        XMLResource result = null;
-
-        try {
-            collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-            result = (XMLResource) collection.getResource(id);
-        } finally {
-            closeCollection(collection);
-        }
-
-        return result;
-    }
-
-    private void closeCollection(Collection collection) throws XMLDBException {
-        if(null != collection) {
-            collection.close();
+    private EXistResource resourceForId(final String id) throws XMLDBException {
+        try (final Collection collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            return (EXistResource) collection.getResource(id);
         }
     }
 
@@ -400,29 +393,32 @@ public class ResourceTest {
     @Before
     public void setUp() throws XMLDBException, IOException {
         //create a test collection
-        final CollectionManagementService cms = (CollectionManagementService)existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
-        final Collection testCollection = cms.createCollection(TEST_COLLECTION);
-        final UserManagementService ums = (UserManagementService) testCollection.getService("UserManagementService", "1.0");
-        // change ownership to guest
-        final Account guest = ums.getAccount(GUEST_DB_USER);
-        ums.chown(guest, guest.getPrimaryGroup());
-        ums.chmod("rwxr-xr-x");
+        final CollectionManagementService cms = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
+        try (final Collection testCollection = cms.createCollection(TEST_COLLECTION)) {
+            final UserManagementService ums = (UserManagementService) testCollection.getService("UserManagementService", "1.0");
+            // change ownership to guest
+            final Account guest = ums.getAccount(GUEST_DB_USER);
+            ums.chown(guest, guest.getPrimaryGroup());
+            ums.chmod("rwxr-xr-x");
+        }
 
         //store sample files as guest
-        final Collection testCollectionAsGuest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
-            final XMLResource res = (XMLResource) testCollectionAsGuest.createResource(sampleName, "XMLResource");
-            try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
-                res.setContent(InputStreamUtil.readString(is, UTF_8));
+        try (final Collection testCollectionAsGuest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
+                try (final EXistResource res = (EXistResource) testCollectionAsGuest.createResource(sampleName, "XMLResource")) {
+                    try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
+                        res.setContent(InputStreamUtil.readString(is, UTF_8));
+                    }
+                    testCollectionAsGuest.storeResource(res);
+                }
             }
-            testCollectionAsGuest.storeResource(res);
         }
     }
 
     @After
     public void tearDown() throws XMLDBException {
         //delete the test collection
-        CollectionManagementService cms = (CollectionManagementService)existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
+        final CollectionManagementService cms = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
         cms.removeCollection(TEST_COLLECTION);
     }
 
@@ -458,9 +454,8 @@ public class ResourceTest {
         }
 
         private void importDoc(final String href) throws SAXException {
-            try {
-                final XMLResource resource = resourceForId(href);
-                resource.getContentAsSAX(new ImportingContentHandler(writer, outputProperties));
+            try (final EXistResource resource = resourceForId(href)) {
+                ((XMLResource) resource).getContentAsSAX(new ImportingContentHandler(writer, outputProperties));
             } catch (final XMLDBException e) {
                 throw new SAXException(e);
             }

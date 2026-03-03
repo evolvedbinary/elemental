@@ -46,10 +46,16 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistWebServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -58,19 +64,25 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xmldb.api.base.Collection;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.Database;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 import org.xmldb.api.modules.XQueryService;
 import org.xmlunit.matchers.CompareMatcher;
 
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -252,22 +264,21 @@ public class XPathQueryTest {
     @Before
     public void setUp() throws Exception {
         // initialize driver
-        Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
-        Database database = (Database) cl.newInstance();
+        final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
+        final Database database = (Database) cl.newInstance();
         database.setProperty("create-database", "true");
         DatabaseManager.registerDatabase(database);
 
-        Collection root =
-                DatabaseManager.getCollection(
-                getBaseUri(),
-                "admin",
-                "");
-        CollectionManagementService service =
-                (CollectionManagementService) root.getService(
-                "CollectionManagementService",
-                "1.0");
-        testCollection = service.createCollection("test");
-        assertNotNull(testCollection);
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri(), "admin", "")) {
+            final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+            testCollection = service.createCollection("test");
+            assertNotNull(testCollection);
+        }
+    }
+
+    @After
+    public void teadDown() throws XMLDBException {
+        testCollection.close();
     }
 
     @Test
@@ -278,15 +289,15 @@ public class XPathQueryTest {
 
         service.setNamespace("t", "http://test");
 
-        queryResource(service, docName, "/t:test", 1); //make sure all is well!
+        queryResourceV(service, docName, "/t:test", 1); //make sure all is well!
 
-        queryResource(service, docName, "/*", 1);
-        queryResource(service, docName, "/t:*", 1);
-        queryResource(service, docName, "/*:test", 1);
+        queryResourceV(service, docName, "/*", 1);
+        queryResourceV(service, docName, "/t:*", 1);
+        queryResourceV(service, docName, "/*:test", 1);
 
-        queryResource(service, docName, "/child::*", 1);
-        queryResource(service, docName, "/child::t:*", 1);
-        queryResource(service, docName, "/child::*:test", 1);
+        queryResourceV(service, docName, "/child::*", 1);
+        queryResourceV(service, docName, "/child::t:*", 1);
+        queryResourceV(service, docName, "/child::*:test", 1);
     }
 
     @Test
@@ -297,8 +308,8 @@ public class XPathQueryTest {
         //Invalid path expression left operand (not a node set).
         String message = "";
         try {
-            queryAndAssert(service, "('a', 'b', 'c')/position()", -1, null);
-        } catch (XMLDBException e) {
+            queryAndAssertV(service, "('a', 'b', 'c')/position()", -1, null);
+        } catch (final XMLDBException e) {
             message = e.getMessage();
         }
         assertTrue("Exception wanted: " + message, message.indexOf("XPTY0019") > -1);
@@ -306,8 +317,8 @@ public class XPathQueryTest {
         //Undefined context sequence
         message = "";
         try {
-            queryAndAssert(service, "for $a in (<a/>, <b/>, doh, <c/>) return $a", -1, null);
-        } catch (XMLDBException e) {
+            queryAndAssertV(service, "for $a in (<a/>, <b/>, doh, <c/>) return $a", -1, null);
+        } catch (final XMLDBException e) {
             message = e.getMessage();
         }
         assertTrue("Exception wanted: " + message, message.indexOf("XPDY0002") > -1);
@@ -315,25 +326,25 @@ public class XPathQueryTest {
         message = "";
         try {
             //"1 to 2" is resolved as a (1, 2), i.e. a sequence of *integers* which is *not* a singleton
-            queryAndAssert(service, "let $a := (1, 2, 3) for $b in $a[1 to 2] return $b", -1, null);
-        } catch (XMLDBException e) {
+            queryAndAssertV(service, "let $a := (1, 2, 3) for $b in $a[1 to 2] return $b", -1, null);
+        } catch (final XMLDBException e) {
             message = e.getMessage();
         }
         //No effective boolean value for such a kind of sequence !
         assertTrue("Exception wanted: " + message, message.indexOf("FORG0006") >-1);
 
-        queryAndAssert(service, "let $a := ('a', 'b', 'c') return $a[2 to 2]", 1, null);
-        queryAndAssert(service, "let $a := ('a', 'b', 'c') return $a[(2 to 2)]", 1, null);
-        queryAndAssert(service, "let $x := <a min='1' max='10'/> return ($x/@min to $x/@max)", 10, null);
-        queryAndAssert(service, "(1,2,3)[xs:decimal(.)]", 3, null);
-        queryAndAssert(service, "(1,2,3)[. lt 3]", 2, null);
-        queryAndAssert(service, "(0, 1, 2)[if(. eq 1) then 0 else position()]", 2, null);
-        queryAndAssert(service, "(1, 2, 3)[if(1) then 1 else last()]", 1, null);
-        queryAndAssert(service, "(1, 2, 3)[if(1) then 1 else position()]", 1, null);
-        queryAndAssert(service, "()/position()", 0, null);
-        queryAndAssert(service, "(0, 1, 2)[if(. eq 1) then 2 else 3]", 2, null);
-        queryAndAssert(service, "(0, 1, 2)[remove((1, 'a string'), 2)]", 1, null);
-        queryAndAssert(service, "let $page-ix := (1,3) return ($page-ix[1] to $page-ix[2])", 3, null);
+        queryAndAssertV(service, "let $a := ('a', 'b', 'c') return $a[2 to 2]", 1, null);
+        queryAndAssertV(service, "let $a := ('a', 'b', 'c') return $a[(2 to 2)]", 1, null);
+        queryAndAssertV(service, "let $x := <a min='1' max='10'/> return ($x/@min to $x/@max)", 10, null);
+        queryAndAssertV(service, "(1,2,3)[xs:decimal(.)]", 3, null);
+        queryAndAssertV(service, "(1,2,3)[. lt 3]", 2, null);
+        queryAndAssertV(service, "(0, 1, 2)[if(. eq 1) then 0 else position()]", 2, null);
+        queryAndAssertV(service, "(1, 2, 3)[if(1) then 1 else last()]", 1, null);
+        queryAndAssertV(service, "(1, 2, 3)[if(1) then 1 else position()]", 1, null);
+        queryAndAssertV(service, "()/position()", 0, null);
+        queryAndAssertV(service, "(0, 1, 2)[if(. eq 1) then 2 else 3]", 2, null);
+        queryAndAssertV(service, "(0, 1, 2)[remove((1, 'a string'), 2)]", 1, null);
+        queryAndAssertV(service, "let $page-ix := (1,3) return ($page-ix[1] to $page-ix[2])", 3, null);
     }
 
     /** test simple queries involving attributes */
@@ -345,18 +356,21 @@ public class XPathQueryTest {
                 testDocument, numbers);
 
         String query = "/test/item[ @id='1' ]";
-        ResourceSet result = service.queryResource(testDocument, query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(testDocument, query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
 
-        XMLResource resource = (XMLResource)result.getResource(0);
-        Node node = resource.getContentAsDOM();
-        if (node.getNodeType() == Node.DOCUMENT_NODE)
-            node = node.getFirstChild();
-        assertEquals("XPath: " + query, "item", node.getNodeName());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                Node node = ((XMLResource) resource).getContentAsDOM();
+                if (node.getNodeType() == Node.DOCUMENT_NODE)
+                    node = node.getFirstChild();
+                assertEquals("XPath: " + query, "item", node.getNodeName());
+            }
+        }
 
         query = "/test/item [ @type='alphanum' ]";
-        result = service.queryResource(testDocument, query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(testDocument, query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
     }
 
     @Test
@@ -364,18 +378,22 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
-        ResourceSet result = service.queryResource("numbers.xml", "/*/item");
-        assertEquals("XPath: /*/item", 4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/*/item")) {
+            assertEquals("XPath: /*/item", 4, result.getSize());
+        }
 
-        result = service.queryResource("numbers.xml", "/test/*");
-        assertEquals("XPath: /test/*", 4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/test/*")) {
+            assertEquals("XPath: /test/*", 4, result.getSize());
+        }
 
-        result = service.queryResource("numbers.xml", "/test/descendant-or-self::*");
-        assertEquals("XPath: /test/descendant-or-self::*", 13, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/test/descendant-or-self::*")) {
+            assertEquals("XPath: /test/descendant-or-self::*", 13, result.getSize());
+        }
 
-        result = service.queryResource("numbers.xml", "/*/*");
-        //Strange !!! Should be 8
-        assertEquals("XPath: /*/*", 4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/*/*")) {
+            //Strange !!! Should be 8
+            assertEquals("XPath: /*/*", 4, result.getSize());
+        }
     }
 
     @Test
@@ -385,36 +403,44 @@ public class XPathQueryTest {
         service.setNamespace("t", "http://www.foo.com");
 
         String query = "// t:title/text() [ . != 'aaaa' ]";
-        ResourceSet result = service.queryResource( "namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize() );
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/t:test/*:section[contains(., 'comment')]";
-        result = service.queryResource("namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/t:test/t:*[contains(., 'comment')]";
-        result = service.queryResource("namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/t:test/t:section[contains(., 'comment')]";
-        result = service.queryResource("namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/t:test/t:section/*[contains(., 'comment')]";
-        result = service.queryResource("namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/ * / * [ t:title ]";
-        result = service.queryResource( "namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize() );
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/ t:test / t:section [ t:title ]";
-        result = service.queryResource( "namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize() );
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query = "/ t:test / t:section";
-        result = service.queryResource( "namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize() );
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
     }
 
     @Test
@@ -424,12 +450,14 @@ public class XPathQueryTest {
         service.setNamespace("t", "http://www.foo.com");
 
         String query =  "/ * [ ./ * / t:title ]";
-        ResourceSet result = service.queryResource( "namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
 
         query =  "/ * [ * / t:title ]";
-        result = service.queryResource( "namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
     }
 
     @Test
@@ -439,28 +467,36 @@ public class XPathQueryTest {
         service.setNamespace("t", "http://www.foo.com");
 
         final String query =  "// * [ . = 'Test Document' ]";
-        final ResourceSet result = service.queryResource("namespaces.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+        }
     }
 
     @Test
     public void root() throws XMLDBException {
         storeXMLStringAndGetQueryService("nested2.xml", nested2);
         final XQueryService service = storeXMLStringAndGetQueryService("numbers.xml", numbers);
+
         String query = "let $doc := <a><b/></a> return root($doc)";
-        ResourceSet result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
-        final XMLResource resource = (XMLResource)result.getResource(0);
-        Node node = resource.getContentAsDOM();
-        //Oh dear ! Don't tell me that *I* have written this :'( -pb
-        if (node.getNodeType() == Node.DOCUMENT_NODE) {
-            node = node.getFirstChild();
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                Node node = ((XMLResource) resource).getContentAsDOM();
+                //Oh dear ! Don't tell me that *I* have written this :'( -pb
+                if (node.getNodeType() == Node.DOCUMENT_NODE) {
+                    node = node.getFirstChild();
+                }
+                assertEquals("XPath: " + query, "a", node.getNodeName());
+            }
         }
-        assertEquals("XPath: " + query, "a", node.getNodeName());
 
         query = "let $c := (<a/>,<b/>,<c/>,<d/>,<e/>) return count($c/root())";
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("5", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("5", resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -469,11 +505,15 @@ public class XPathQueryTest {
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
 
         final String query = "(<a/>,<b/>)/name()";
-        final ResourceSet result = service.queryResource("nested2.xml", query);
-
-        assertEquals("XPath: " + query, 2, result.getSize());
-        assertEquals("a", result.getResource(0).getContent().toString());
-        assertEquals("b", result.getResource(1).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("nested2.xml", query)) {
+            assertEquals("XPath: " + query, 2, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("a", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("b", resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -481,27 +521,41 @@ public class XPathQueryTest {
         XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
 
-        queryResource(service, "nested2.xml", "(<a/>, <b/>, <c/>)/parent::*", 0);
-        queryResource(service, "nested2.xml", "/RootElement//ChildB/parent::*", 1);
-        queryResource(service, "nested2.xml", "/RootElement//ChildB/parent::*/ChildB", 1);
-        queryResource(service, "nested2.xml", "/RootElement/ChildA/parent::*/ChildA/ChildB", 1);
+        queryResourceV(service, "nested2.xml", "(<a/>, <b/>, <c/>)/parent::*", 0);
+        queryResourceV(service, "nested2.xml", "/RootElement//ChildB/parent::*", 1);
+        queryResourceV(service, "nested2.xml", "/RootElement//ChildB/parent::*/ChildB", 1);
+        queryResourceV(service, "nested2.xml", "/RootElement/ChildA/parent::*/ChildA/ChildB", 1);
 
-        service =
-                storeXMLStringAndGetQueryService("numbers2.xml", numbers2);
+        service = storeXMLStringAndGetQueryService("numbers2.xml", numbers2);
         service.setNamespace("n", "http://numbers.org");
-        queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::*[@id = '3']", 1);
-        queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::n:item[@id = '3']", 1);
-        queryResource(service, "numbers2.xml", "//n:price/parent::n:item[@id = '3']", 1);
-        ResourceSet result =
-                queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::n:*/string(@id)", 1);
-        assertEquals("3", result.getResource(0).getContent().toString());
-        result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::*:item/string(@id)", 1);
-        assertEquals("3", result.getResource(0).getContent().toString());
-        result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/../string(@id)", 1);
-        assertEquals("3", result.getResource(0).getContent().toString());
-        result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::n:item/string(@id)", 1);
-        assertEquals("3", result.getResource(0).getContent().toString());
-        queryResource(service, "numbers2.xml",
+        queryResourceV(service, "numbers2.xml", "//n:price[. = 18.4]/parent::*[@id = '3']", 1);
+        queryResourceV(service, "numbers2.xml", "//n:price[. = 18.4]/parent::n:item[@id = '3']", 1);
+        queryResourceV(service, "numbers2.xml", "//n:price/parent::n:item[@id = '3']", 1);
+
+        try (final EXistResourceSet result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::n:*/string(@id)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("3", resource.getContent().toString());
+            }
+        }
+
+        try (final EXistResourceSet result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::*:item/string(@id)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("3", resource.getContent().toString());
+            }
+        }
+
+        try (final EXistResourceSet result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/../string(@id)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("3", resource.getContent().toString());
+            }
+        }
+
+        try (final EXistResourceSet result = queryResource(service, "numbers2.xml", "//n:price[. = 18.4]/parent::n:item/string(@id)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("3", resource.getContent().toString());
+            }
+        }
+        queryResourceV(service, "numbers2.xml",
             "for $price in //n:price where $price/parent::*[@id = '3']/n:stock = '5' return $price", 1);
     }
 
@@ -510,18 +564,19 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
         storeXMLStringAndGetQueryService("numbers.xml", numbers);
-        queryResource(service, "nested2.xml", "/RootElement/descendant::*/parent::ChildA", 1);
-        queryResource(service, "nested2.xml", "/RootElement/descendant::*[self::ChildB]/parent::RootElement", 0);
-        queryResource(service, "nested2.xml", "/RootElement/descendant::*[self::ChildA]/parent::RootElement", 1);
-        queryResource(service, "nested2.xml", "let $a := ('', 'b', '', '') for $b in $a[.] return <blah>{$b}</blah>", 1);
+        queryResourceV(service, "nested2.xml", "/RootElement/descendant::*/parent::ChildA", 1);
+        queryResourceV(service, "nested2.xml", "/RootElement/descendant::*[self::ChildB]/parent::RootElement", 0);
+        queryResourceV(service, "nested2.xml", "/RootElement/descendant::*[self::ChildA]/parent::RootElement", 1);
+        queryResourceV(service, "nested2.xml", "let $a := ('', 'b', '', '') for $b in $a[.] return <blah>{$b}</blah>", 1);
 
         final String query = "let $doc := <root><page><a>a</a><b>b</b></page></root>" +
                 "return " +
                 "for $element in $doc/page/* " +
                 "return " +
                 "if($element[self::a] or $element[self::b]) then (<found/>) else (<notfound/>)";
-        final ResourceSet result = service.queryResource("numbers.xml", query);
-        assertEquals(2, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals(2, result.getSize());
+        }
     }
 
     @Test
@@ -529,26 +584,26 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("self.xml", self);
 
-        queryResource(service, "self.xml", "/test-self/self::document-node()", 0);
-        queryResource(service, "self.xml", "/test-self/self::node()", 1);
-        queryResource(service, "self.xml", "/test-self/self::attribute()", 0);
-        queryResource(service, "self.xml", "/test-self/self::element()", 1);
-        queryResource(service, "self.xml", "/test-self/self::comment()", 0);
-        queryResource(service, "self.xml", "/test-self/self::processing-instruction()", 0);
-        queryResource(service, "self.xml", "/test-self/self::text()", 0);
-        queryResource(service, "self.xml", "/test-self/self::namespace-node()", 0);
+        queryResourceV(service, "self.xml", "/test-self/self::document-node()", 0);
+        queryResourceV(service, "self.xml", "/test-self/self::node()", 1);
+        queryResourceV(service, "self.xml", "/test-self/self::attribute()", 0);
+        queryResourceV(service, "self.xml", "/test-self/self::element()", 1);
+        queryResourceV(service, "self.xml", "/test-self/self::comment()", 0);
+        queryResourceV(service, "self.xml", "/test-self/self::processing-instruction()", 0);
+        queryResourceV(service, "self.xml", "/test-self/self::text()", 0);
+        queryResourceV(service, "self.xml", "/test-self/self::namespace-node()", 0);
 
-        queryResource(service, "self.xml", "/test-self/*[not(self::a)]", 1);
-        queryResource(service, "self.xml", "/test-self/*[self::a]", 1);
+        queryResourceV(service, "self.xml", "/test-self/*[not(self::a)]", 1);
+        queryResourceV(service, "self.xml", "/test-self/*[self::a]", 1);
 
-        queryResource(service, "self.xml", "/self::document-node()", 1);
-        queryResource(service, "self.xml", "/self::node()", 1);
-        queryResource(service, "self.xml", "/self::attribute()", 0);
-        queryResource(service, "self.xml", "/self::element()", 0);
-        queryResource(service, "self.xml", "/self::comment()", 0);
-        queryResource(service, "self.xml", "/self::processing-instruction()", 0);
-        queryResource(service, "self.xml", "/self::text()", 0);
-        queryResource(service, "self.xml", "/self::namespace-node()", 0);
+        queryResourceV(service, "self.xml", "/self::document-node()", 1);
+        queryResourceV(service, "self.xml", "/self::node()", 1);
+        queryResourceV(service, "self.xml", "/self::attribute()", 0);
+        queryResourceV(service, "self.xml", "/self::element()", 0);
+        queryResourceV(service, "self.xml", "/self::comment()", 0);
+        queryResourceV(service, "self.xml", "/self::processing-instruction()", 0);
+        queryResourceV(service, "self.xml", "/self::text()", 0);
+        queryResourceV(service, "self.xml", "/self::namespace-node()", 0);
     }
 
     @Test
@@ -557,17 +612,17 @@ public class XPathQueryTest {
                 storeXMLStringAndGetQueryService("nested3.xml", nested3);
 
         // test ancestor axis with positional predicate
-        queryResource(service, "nested3.xml", "//a[ancestor::a[2]/t = '1']", 1);
-        queryResource(service, "nested3.xml", "//a[ancestor::*[2]/t = '1']", 1);
-        queryResource(service, "nested3.xml", "//a[ancestor::a[1]/t = '2']", 1);
-        queryResource(service, "nested3.xml", "//a[ancestor::*[1]/t = '2']", 1);
-        queryResource(service, "nested3.xml", "//a[ancestor-or-self::*[3]/t = '1']", 1);
-        queryResource(service, "nested3.xml", "//a[ancestor-or-self::a[3]/t = '1']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor::a[2]/t = '1']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor::*[2]/t = '1']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor::a[1]/t = '2']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor::*[1]/t = '2']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor-or-self::*[3]/t = '1']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor-or-self::a[3]/t = '1']", 1);
         // Following test fails
 //            queryResource(service, "nested3.xml", "//a[ancestor-or-self::*[2]/t = '2']", 1);
-        queryResource(service, "nested3.xml", "//a[ancestor-or-self::a[2]/t = '2']", 1);
-        queryResource(service, "nested3.xml", "//a[t = '3'][ancestor-or-self::a[3]/t = '1']", 1);
-        queryResource(service, "nested3.xml", "//a[t = '3'][ancestor-or-self::*[3]/t = '1']", 1);
+        queryResourceV(service, "nested3.xml", "//a[ancestor-or-self::a[2]/t = '2']", 1);
+        queryResourceV(service, "nested3.xml", "//a[t = '3'][ancestor-or-self::a[3]/t = '1']", 1);
+        queryResourceV(service, "nested3.xml", "//a[t = '3'][ancestor-or-self::*[3]/t = '1']", 1);
     }
 
     @Test
@@ -575,12 +630,12 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
 
-        queryResource(service, "nested2.xml", "//ChildB/ancestor::*[1]/self::ChildA", 1);
-        queryResource(service, "nested2.xml", "//ChildB/ancestor::*[2]/self::RootElement", 1);
-        queryResource(service, "nested2.xml", "//ChildB/ancestor::*[position() = 1]/self::ChildA", 1);
-        queryResource(service, "nested2.xml", "//ChildB/ancestor::*[position() = 2]/self::RootElement", 1);
-        queryResource(service, "nested2.xml", "//ChildB/ancestor::*[position() = 2]/self::RootElement", 1);
-        queryResource(service, "nested2.xml", "(<a/>, <b/>, <c/>)/ancestor::*", 0);
+        queryResourceV(service, "nested2.xml", "//ChildB/ancestor::*[1]/self::ChildA", 1);
+        queryResourceV(service, "nested2.xml", "//ChildB/ancestor::*[2]/self::RootElement", 1);
+        queryResourceV(service, "nested2.xml", "//ChildB/ancestor::*[position() = 1]/self::ChildA", 1);
+        queryResourceV(service, "nested2.xml", "//ChildB/ancestor::*[position() = 2]/self::RootElement", 1);
+        queryResourceV(service, "nested2.xml", "//ChildB/ancestor::*[position() = 2]/self::RootElement", 1);
+        queryResourceV(service, "nested2.xml", "(<a/>, <b/>, <c/>)/ancestor::*", 0);
     }
 
     @Test
@@ -590,61 +645,95 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet result = queryResource(service, "siblings.xml", "//a[preceding-sibling::*[1]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>4</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[preceding-sibling::*[1]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>4</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a[preceding-sibling::a[1]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>4</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[preceding-sibling::a[1]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>4</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a[preceding-sibling::*[2]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>C</s> <n>5</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[preceding-sibling::*[2]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>C</s> <n>5</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a[preceding-sibling::a[2]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>C</s> <n>5</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[preceding-sibling::a[2]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>C</s> <n>5</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/test/preceding-sibling::node()", 2);
-        assertEquals("<!-- 1 -->", result.getResource(0).getContent().toString());
-        assertEquals("<!-- 2 -->", result.getResource(1).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/test/preceding-sibling::node()", 2)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        queryResource(service, "siblings.xml", "/node()[1]/preceding-sibling::node()", 0);
+        queryResourceV(service, "siblings.xml", "/node()[1]/preceding-sibling::node()", 0);
 
-        result = queryResource(service, "siblings.xml", "/node()[2]/preceding-sibling::node()", 1);
-        assertEquals("<!-- 1 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/node()[2]/preceding-sibling::node()", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/node()[3]/preceding-sibling::node()", 2);
-        assertEquals("<!-- 1 -->", result.getResource(0).getContent().toString());
-        assertEquals("<!-- 2 -->", result.getResource(1).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/node()[3]/preceding-sibling::node()", 2)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        queryResource(service, "siblings.xml", "/comment()[1]/preceding-sibling::comment()", 0);
+        queryResourceV(service, "siblings.xml", "/comment()[1]/preceding-sibling::comment()", 0);
 
-        result = queryResource(service, "siblings.xml", "/comment()[2]/preceding-sibling::comment()[1]", 1);
-        assertEquals("<!-- 1 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/comment()[2]/preceding-sibling::comment()[1]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/comment()[3]/preceding-sibling::comment()[1]", 1);
-        assertEquals("<!-- 2 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/comment()[3]/preceding-sibling::comment()[1]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/comment()[3]/preceding-sibling::comment()[2]", 1);
-        assertEquals("<!-- 1 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/comment()[3]/preceding-sibling::comment()[2]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+        }
 
         service = storeXMLStringAndGetQueryService("siblings_attr.xml", siblings_attr);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings_attr.xml", "/a/@bb/preceding-sibling::*", 0);
+        queryResourceV(service, "siblings_attr.xml", "/a/@bb/preceding-sibling::*", 0);
 
         service = storeXMLStringAndGetQueryService("siblings_named1.xml", siblings_named1);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings_named1.xml", "//y[@n eq '2']/preceding-sibling::*:y", 1);
-        queryResource(service, "siblings_named1.xml", "//y[@n eq '2']/preceding-sibling::y", 1);
+        queryResourceV(service, "siblings_named1.xml", "//y[@n eq '2']/preceding-sibling::*:y", 1);
+        queryResourceV(service, "siblings_named1.xml", "//y[@n eq '2']/preceding-sibling::y", 1);
 
         service = storeXMLStringAndGetQueryService("siblings_named2.xml", siblings_named2);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings_named2.xml", "//y[@n eq '2']/preceding-sibling::*:y", 1);
-        queryResource(service, "siblings_named2.xml", "//y[@n eq '2']/preceding-sibling::y", 1);
+        queryResourceV(service, "siblings_named2.xml", "//y[@n eq '2']/preceding-sibling::*:y", 1);
+        queryResourceV(service, "siblings_named2.xml", "//y[@n eq '2']/preceding-sibling::y", 1);
     }
 
     @Test
@@ -653,56 +742,89 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet rs = service.query("(<a/>, <b/>, <c/>)/preceding-sibling::*");
-        assertEquals(0, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("(<a/>, <b/>, <c/>)/preceding-sibling::*")) {
+            assertEquals(0, result.getSize());
+        }
 
-        rs = service.query("let $doc := <doc><div id='1'/><div id='2'><div id='3'/></div><div id='4'/><div id='5'><div id='6'/></div></doc> " +
-                "return $doc/div/preceding-sibling::div");
-        assertEquals(3, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := <doc><div id='1'/><div id='2'><div id='3'/></div><div id='4'/><div id='5'><div id='6'/></div></doc> " +
+                "return $doc/div/preceding-sibling::div")) {
+            assertEquals(3, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<div id='1'/>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<div id='2'><div id='3'/></div>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<div id='4'/>"));
+            }
+        }
 
-        assertThat(rs.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='1'/>"));
-        assertThat(rs.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='2'><div id='3'/></div>"));
-        assertThat(rs.getResource(2).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='4'/>"));
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[1]/preceding-sibling::node()")) {
+            assertEquals(0, result.getSize());
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[1]/preceding-sibling::node()");
-        assertEquals(0, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[2]/preceding-sibling::node()")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[2]/preceding-sibling::node()");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 1 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[3]/preceding-sibling::node()")) {
+            assertEquals(2, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[3]/preceding-sibling::node()");
-        assertEquals(2, rs.getSize());
-        assertEquals("<!-- 1 -->", rs.getResource(0).getContent().toString());
-        assertEquals("<!-- 2 -->", rs.getResource(1).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/preceding-sibling::comment()")) {
+            assertEquals(0, result.getSize());
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/preceding-sibling::comment()");
-        assertEquals(0, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[2]/preceding-sibling::comment()[1]")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[2]/preceding-sibling::comment()[1]");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 1 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[3]/preceding-sibling::comment()[1]")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[3]/preceding-sibling::comment()[1]");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 2 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[3]/preceding-sibling::comment()[2]")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 1 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[3]/preceding-sibling::comment()[2]");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 1 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $elem := <a b='c' bb='cc'/> return $elem/@bb/preceding-sibling::*")) {
+            assertEquals(0, result.getSize());
+        }
 
-        rs = service.query("let $elem := <a b='c' bb='cc'/> return $elem/@bb/preceding-sibling::*");
-        assertEquals(0, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/preceding-sibling::*:y")) {
+            assertEquals(1, result.getSize());
+        }
 
-        rs = service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/preceding-sibling::*:y");
-        assertEquals(1, rs.getSize());
-        rs = service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/preceding-sibling::y");
-        assertEquals(1, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/preceding-sibling::y")) {
+            assertEquals(1, result.getSize());
+        }
 
-        rs = service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/preceding-sibling::*:y");
-        assertEquals(1, rs.getSize());
-        rs = service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/preceding-sibling::y");
-        assertEquals(1, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/preceding-sibling::*:y")) {
+            assertEquals(1, result.getSize());
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/preceding-sibling::y")) {
+            assertEquals(1, result.getSize());
+        }
     }
 
     @Test
@@ -711,53 +833,82 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet result = queryResource(service, "siblings.xml", "//a[following-sibling::*[1]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>2</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[following-sibling::*[1]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>2</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a[following-sibling::a[1]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>2</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[following-sibling::a[1]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>Z</s> <n>2</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a[following-sibling::*[2]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>A</s> <n>1</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[following-sibling::*[2]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>A</s> <n>1</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a[following-sibling::a[2]/s = 'B']", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>A</s> <n>1</n> </a>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a[following-sibling::a[2]/s = 'B']", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a> <s>A</s> <n>1</n> </a>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/test/following-sibling::node()", 1);
-        assertEquals("<!-- 3 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/test/following-sibling::node()", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 3 -->", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/node()[1]/following-sibling::node()", 3);
-        assertEquals("<!-- 2 -->", result.getResource(0).getContent().toString());
-        final Node testElem = ((XMLResource)result.getResource(1)).getContentAsDOM();
-        assertTrue(testElem instanceof Element);
-        assertEquals("test", testElem.getNodeName());
-        assertEquals("<!-- 3 -->", result.getResource(2).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/node()[1]/following-sibling::node()", 3)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+            try (final EXistResource er = (EXistResource) result.getResource(1)) {
+                final XMLResource resource = (XMLResource) er;
+                final Node testElem = resource.getContentAsDOM();
+                assertTrue(testElem instanceof Element);
+                assertEquals("test", testElem.getNodeName());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertEquals("<!-- 3 -->", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/comment()[1]/following-sibling::comment()[1]", 1);
-        assertEquals("<!-- 2 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/comment()[1]/following-sibling::comment()[1]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "/comment()[1]/following-sibling::comment()[2]", 1);
-        assertEquals("<!-- 3 -->", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "/comment()[1]/following-sibling::comment()[2]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 3 -->", resource.getContent().toString());
+            }
+        }
 
         service = storeXMLStringAndGetQueryService("siblings_attr.xml", siblings_attr);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings_attr.xml", "/a/@b/following-sibling::*", 0);
+        queryResourceV(service, "siblings_attr.xml", "/a/@b/following-sibling::*", 0);
 
         service = storeXMLStringAndGetQueryService("siblings_named1.xml", siblings_named1);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings_named1.xml", "//y[@n eq '2']/following-sibling::*:y", 1);
-        queryResource(service, "siblings_named1.xml", "//y[@n eq '2']/following-sibling::y", 1);
+        queryResourceV(service, "siblings_named1.xml", "//y[@n eq '2']/following-sibling::*:y", 1);
+        queryResourceV(service, "siblings_named1.xml", "//y[@n eq '2']/following-sibling::y", 1);
 
         service = storeXMLStringAndGetQueryService("siblings_named2.xml", siblings_named2);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings_named2.xml", "//y[@n eq '2']/following-sibling::*:y", 1);
-        queryResource(service, "siblings_named2.xml", "//y[@n eq '2']/following-sibling::y", 1);
+        queryResourceV(service, "siblings_named2.xml", "//y[@n eq '2']/following-sibling::*:y", 1);
+        queryResourceV(service, "siblings_named2.xml", "//y[@n eq '2']/following-sibling::y", 1);
     }
 
     @Test
@@ -766,44 +917,71 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet rs = service.query("(<a/>, <b/>, <c/>)/following-sibling::*");
-        assertEquals(0, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("(<a/>, <b/>, <c/>)/following-sibling::*")) {
+            assertEquals(0, result.getSize());
+        }
 
-        rs = service.query("let $doc := <doc><div id='1'><div id='2'/></div><div id='3'/></doc> " +
-                "return $doc/div[1]/following-sibling::div");
-        assertEquals(1, rs.getSize());
-        assertThat(rs.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<div id='3'/>"));
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := <doc><div id='1'><div id='2'/></div><div id='3'/></doc> " +
+                "return $doc/div[1]/following-sibling::div")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<div id='3'/>"));
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/test/following-sibling::node()");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 3 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/test/following-sibling::node()")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 3 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[1]/following-sibling::node()");
-        assertEquals(3, rs.getSize());
-        assertEquals("<!-- 2 -->", rs.getResource(0).getContent().toString());
-        assertThat(rs.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<test/>"));
-        assertEquals("<!-- 3 -->", rs.getResource(2).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/node()[1]/following-sibling::node()")) {
+            assertEquals(3, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<test/>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertEquals("<!-- 3 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/following-sibling::comment()[1]");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 2 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/following-sibling::comment()[1]")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 2 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/following-sibling::comment()[2]");
-        assertEquals(1, rs.getSize());
-        assertEquals("<!-- 3 -->", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <!-- 1 -->,<!-- 2 -->,<test/>,<!-- 3 --> } return $doc/comment()[1]/following-sibling::comment()[2]")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<!-- 3 -->", resource.getContent().toString());
+            }
+        }
 
-        rs = service.query("let $elem := <a b='c' bb='cc'/> return $elem/@b/following-sibling::*");
-        assertEquals(0, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $elem := <a b='c' bb='cc'/> return $elem/@b/following-sibling::*")) {
+            assertEquals(0, result.getSize());
+        }
 
-        rs = service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/following-sibling::*:y");
-        assertEquals(1, rs.getSize());
-        rs = service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/following-sibling::y");
-        assertEquals(1, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/following-sibling::*:y")) {
+            assertEquals(1, result.getSize());
+        }
 
-        rs = service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/following-sibling::*:y");
-        assertEquals(1, rs.getSize());
-        rs = service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/following-sibling::y");
-        assertEquals(1, rs.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <x><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></x> } return $doc //y[@n eq '2']/following-sibling::y")) {
+            assertEquals(1, result.getSize());
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/following-sibling::*:y")) {
+            assertEquals(1, result.getSize());
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document { <y><y n=\"1\"/><y n=\"2\"/><y n=\"3\"/></y> } return $doc //y[@n eq '2']/following-sibling::y")) {
+            assertEquals(1, result.getSize());
+        }
     }
 
     @Test
@@ -813,13 +991,19 @@ public class XPathQueryTest {
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
 
-        queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s", 3);
-        queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::n", 4);
-        ResourceSet result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[1]", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<s>Z</s>"));
+        queryResourceV(service, "siblings.xml", "//a/s[. = 'B']/following::s", 3);
+        queryResourceV(service, "siblings.xml", "//a/s[. = 'B']/following::n", 4);
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[1]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<s>Z</s>"));
+            }
+        }
 
-        result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[2]", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<s>C</s>"));
+        try (final EXistResourceSet result = queryResource(service, "siblings.xml", "//a/s[. = 'B']/following::s[2]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<s>C</s>"));
+            }
+        }
 
         String query = "declare variable $i := \n" +
             "  <root>\n" +
@@ -836,13 +1020,24 @@ public class XPathQueryTest {
             "\n" +
             "root($i)//following::node()";
 
-        result = service.query(query);
-        assertEquals(5, result.getSize());
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<child/>"));
-        assertThat(result.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<child><child2><child3><leaf/></child3></child2></child>"));
-        assertThat(result.getResource(2).getContent().toString(), CompareMatcher.isIdenticalTo("<child2><child3><leaf/></child3></child2>"));
-        assertThat(result.getResource(3).getContent().toString(), CompareMatcher.isIdenticalTo("<child3><leaf/></child3>"));
-        assertThat(result.getResource(4).getContent().toString(), CompareMatcher.isIdenticalTo("<leaf/>"));
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(5, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<child/>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<child><child2><child3><leaf/></child3></child2></child>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<child2><child3><leaf/></child3></child2>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(3)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<child3><leaf/></child3>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(4)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<leaf/>"));
+            }
+        }
 
         query = "declare variable $i := \n" +
             "  <root>\n" +
@@ -859,15 +1054,30 @@ public class XPathQueryTest {
             "\n" +
             "root($i)//count(following::node())";
 
-        result = service.query(query);
-        assertEquals(7, result.getSize());
-        assertEquals("0", result.getResource(0).getContent());
-        assertEquals("5", result.getResource(1).getContent());
-        assertEquals("4", result.getResource(2).getContent());
-        assertEquals("0", result.getResource(3).getContent());
-        assertEquals("0", result.getResource(4).getContent());
-        assertEquals("0", result.getResource(5).getContent());
-        assertEquals("0", result.getResource(6).getContent());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(7, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("0", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("5", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertEquals("4", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(3)) {
+                assertEquals("0", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(4)) {
+                assertEquals("0", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(5)) {
+                assertEquals("0", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(6)) {
+                assertEquals("0", resource.getContent());
+            }
+        }
     }
 
     @Test
@@ -876,87 +1086,104 @@ public class XPathQueryTest {
                 storeXMLStringAndGetQueryService("siblings.xml", siblings);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
-        queryResource(service, "siblings.xml", "//a/s[. = 'B']/preceding::s", 2);
-        queryResource(service, "siblings.xml", "//a/s[. = 'C']/preceding::s", 4);
-        queryResource(service, "siblings.xml", "//a/n[. = '3']/preceding::s", 3);
+        queryResourceV(service, "siblings.xml", "//a/s[. = 'B']/preceding::s", 2);
+        queryResourceV(service, "siblings.xml", "//a/s[. = 'C']/preceding::s", 4);
+        queryResourceV(service, "siblings.xml", "//a/n[. = '3']/preceding::s", 3);
     }
 
     @Test
     public void position() throws XMLDBException, IOException, SAXException {
-
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
-        queryResource(service, "numbers.xml", "//item[position() = 3]", 1);
-        queryResource(service, "numbers.xml", "//item[position() < 3]", 2);
-        queryResource(service, "numbers.xml", "//item[position() <= 3]", 3);
-        queryResource(service, "numbers.xml", "//item[position() > 3]", 1);
-        queryResource(service, "numbers.xml", "//item[position() >= 3]", 2);
-        queryResource(service, "numbers.xml", "//item[position() eq 3]", 1);
-        queryResource(service, "numbers.xml", "//item[position() lt 3]", 2);
-        queryResource(service, "numbers.xml", "//item[position() le 3]", 3);
-        queryResource(service, "numbers.xml", "//item[position() gt 3]", 1);
-        queryResource(service, "numbers.xml", "//item[position() ge 3]", 2);
+        queryResourceV(service, "numbers.xml", "//item[position() = 3]", 1);
+        queryResourceV(service, "numbers.xml", "//item[position() < 3]", 2);
+        queryResourceV(service, "numbers.xml", "//item[position() <= 3]", 3);
+        queryResourceV(service, "numbers.xml", "//item[position() > 3]", 1);
+        queryResourceV(service, "numbers.xml", "//item[position() >= 3]", 2);
+        queryResourceV(service, "numbers.xml", "//item[position() eq 3]", 1);
+        queryResourceV(service, "numbers.xml", "//item[position() lt 3]", 2);
+        queryResourceV(service, "numbers.xml", "//item[position() le 3]", 3);
+        queryResourceV(service, "numbers.xml", "//item[position() gt 3]", 1);
+        queryResourceV(service, "numbers.xml", "//item[position() ge 3]", 2);
 
-        queryResource(service, "numbers.xml", "//item[last() - 1]", 1);
-        queryResource(service, "numbers.xml", "//item[count(('a','b')) - 1]", 1);
+        queryResourceV(service, "numbers.xml", "//item[last() - 1]", 1);
+        queryResourceV(service, "numbers.xml", "//item[count(('a','b')) - 1]", 1);
 
         String query = "for $a in (<a/>, <b/>, <c/>) return $a/position()";
-        ResourceSet  result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 3, result.getSize());
-        XMLResource resource = (XMLResource)result.getResource(0);
-        assertEquals("XPath: " + query, "1", resource.getContent().toString());
-        resource = (XMLResource)result.getResource(1);
-        assertEquals("XPath: " + query, "1", resource.getContent().toString());
-        resource = (XMLResource)result.getResource(2);
-        assertEquals("XPath: " + query, "1", resource.getContent().toString());
-            
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 3, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("XPath: " + query, "1", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("XPath: " + query, "1", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertEquals("XPath: " + query, "1", resource.getContent().toString());
+            }
+        }
 
         query = "declare variable $doc { <root>" +
                 "<a>1</a><a>2</a><a>3</a><a>4</a><a>5</a><a>6</a><a>7</a>" +
                 "</root> }; " +
                 "(for $x in $doc/a return $x)[position() mod 3 = 2]";
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 2, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 2, result.getSize());
+        }
 
         query = "declare variable $doc { <root>" +
                 "<a>1</a><a>2</a><a>3</a><a>4</a><a>5</a><a>6</a><a>7</a>" +
                 "</root> }; " +
                 "for $x in $doc/a return $x[position() mod 3 = 2]";
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 0, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 0, result.getSize());
+        }
 
         query = "declare variable $doc { <root>" +
                 "<a>1</a><a>2</a><a>3</a><a>4</a><a>5</a><a>6</a><a>7</a>" +
                 "</root> }; " +
                 "for $x in $doc/a[position() mod 3 = 2] return $x";
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 2, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 2, result.getSize());
+        }
 
 
         query = "let $test := <test><a> a </a><a>a</a></test>" +
                 "return distinct-values($test/a/normalize-space(.))";
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
-        resource = (XMLResource)result.getResource(0);
-        assertEquals("XPath: " + query, "a", resource.getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("XPath: " + query, "a", resource.getContent().toString());
+            }
+        }
 
         query = "let $doc := document {<a><b n='1'/><b n='2'/></a>} " +
             "return $doc//b/(if (@n = '1') then position() else ())";
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
-        assertEquals("1", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("1", resource.getContent().toString());
+            }
+        }
+
         //Try a second time to see if the position is reset
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
-        assertEquals("1", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("1", resource.getContent().toString());
+            }
+        }
 
         query = "let $doc := document {<a><b/></a>} " +
         "return $doc/a[1] [b[1]]";
         service.setProperty(OutputKeys.INDENT, "no");
-        result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 1, result.getSize());
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><b/></a>"));
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a><b/></a>"));
+            }
+        }
 
         //TODO : make this work ! It currently returns some content
         //query = "let $doc := document {<a><b><c>1</c></b><b><c>a</c></b></a>} " +
@@ -976,12 +1203,15 @@ public class XPathQueryTest {
             storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         final String query = "<a><b>test1</b><b>test2</b></a>/b/last()";
-        final ResourceSet  result = service.queryResource("numbers.xml", query);
-        assertEquals("XPath: " + query, 2, result.getSize());
-        XMLResource resource = (XMLResource)result.getResource(0);
-        assertEquals("XPath: " + query, "2", resource.getContent().toString());
-        resource = (XMLResource)result.getResource(1);
-        assertEquals("XPath: " + query, "2", resource.getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals("XPath: " + query, 2, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("XPath: " + query, "2", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("XPath: " + query, "2", resource.getContent().toString());
+            }
+        }
     }
 
 
@@ -990,26 +1220,38 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
-        ResourceSet result = queryResource(service, "numbers.xml", "sum(/test/item/price)", 1);
-        assertEquals("96.94", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "sum(/test/item/price)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("96.94", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "round(sum(/test/item/price))", 1);
-        assertEquals("97", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "round(sum(/test/item/price))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("97", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "floor(sum(/test/item/stock))", 1);
-        assertEquals( "86", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "floor(sum(/test/item/stock))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("86", resource.getContent().toString());
+            }
+        }
 
-        queryResource(service, "numbers.xml", "/test/item[round(price + 3) > 60]", 1);
+        queryResourceV(service, "numbers.xml", "/test/item[round(price + 3) > 60]", 1);
 
-        result = queryResource(service, "numbers.xml", "min(( 123456789123456789123456789, " +
-                "123456789123456789123456789123456789123456789 ))", 1);
-        assertEquals("minimum of big integers",
-                "123456789123456789123456789",
-                result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "min(( 123456789123456789123456789, " +
+                "123456789123456789123456789123456789123456789 ))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("minimum of big integers",
+                    "123456789123456789123456789",
+                    resource.getContent().toString());
+            }
+        }
 
         String message = "";
         try {
-            queryResource(service, "numbers.xml", "empty(() + (1, 2))", 1);
+            queryResourceV(service, "numbers.xml", "empty(() + (1, 2))", 1);
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
@@ -1022,21 +1264,23 @@ public class XPathQueryTest {
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         String query = "xs:untypedAtomic(\"--12-05:00\") cast as xs:gMonth";
-        ResourceSet  result = service.queryResource("numbers.xml", query);
-        XMLResource resource = (XMLResource)result.getResource(0);
-        assertEquals("XPath: " + query, "--12-05:00", resource.getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query);
+             final EXistResource resource = (EXistResource) result.getResource(0)) {
+            assertEquals("XPath: " + query, "--12-05:00", resource.getContent().toString());
+        }
 
         query = "(xs:dateTime(\"0001-01-01T01:01:01Z\") + xs:yearMonthDuration(\"-P20Y07M\"))";
-        result = service.queryResource("numbers.xml", query);
-        resource = (XMLResource)result.getResource(0);
-        assertEquals("XPath: " + query, "-0021-06-01T01:01:01Z", resource.getContent().toString());
-    }    
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query);
+             final EXistResource resource = (EXistResource) result.getResource(0)) {
+            assertEquals("XPath: " + query, "-0021-06-01T01:01:01Z", resource.getContent().toString());
+        }
+    }
     
     @Test
     public void generalComparison() throws XMLDBException {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("dates.xml", date);
-        queryResource(service, "dates.xml", "/timestamp[@date = xs:date('2006-04-29+02:00')]", 1);
+        queryResourceV(service, "dates.xml", "/timestamp[@date = xs:date('2006-04-29+02:00')]", 1);
     }
     
     @Test
@@ -1052,37 +1296,66 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
         service.setProperty(OutputKeys.INDENT, "no");
-        ResourceSet result = queryResource(service, "numbers.xml", "/test/item[2]/price/text()", 1);
-        assertEquals("7.4", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "/test/item[2]/price/text()", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("7.4", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "/test/item[5]", 0);
+        queryResourceV(service, "numbers.xml", "/test/item[5]", 0);
 
-        result = queryResource(service, "numbers.xml", "/test/item[@id='4'][1]/price[1]/text()", 1);
-        assertEquals("65.54",
-                result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "/test/item[@id='4'][1]/price[1]/text()", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("65.54",
+                    resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "for $i in //item return " +
-                "<item>{$i/price, $i/stock}</item>", 4);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<item><price>5.6</price><stock>22</stock></item>"));
-        assertThat(result.getResource(3).getContent().toString(), CompareMatcher.isIdenticalTo("<item><price>65.54</price><stock>16</stock></item>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "for $i in //item return " +
+                "<item>{$i/price, $i/stock}</item>", 4)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<item><price>5.6</price><stock>22</stock></item>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(3)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<item><price>65.54</price><stock>16</stock></item>"));
+            }
+        }
 
         // test positional predicates
-        result = queryResource(service, "numbers.xml", "/test/node()[2]", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<item id='2'><price>7.4</price><stock>43</stock></item>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "/test/node()[2]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<item id='2'><price>7.4</price><stock>43</stock></item>"));
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "/test/element()[2]", 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<item id='2'><price>7.4</price><stock>43</stock></item>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "/test/element()[2]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<item id='2'><price>7.4</price><stock>43</stock></item>"));
+            }
+        }
 
         // positional predicate on sequence of atomic values
-        result = queryResource(service, "numbers.xml", "('test', 'pass')[2]", 1);
-        assertEquals("pass", result.getResource(0).getContent().toString());
-        result = queryResource(service, "numbers.xml", "let $credentials := ('test', 'pass') let $user := $credentials[1] return $user", 1);
-        assertEquals("test", result.getResource(0).getContent().toString());
-        result = queryResource(service, "numbers.xml", "let $credentials := ('test', 'pass') let $user := $credentials[2] return $user", 1);
-        assertEquals("pass", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "('test', 'pass')[2]", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("pass", resource.getContent().toString());
+            }
+        }
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "let $credentials := ('test', 'pass') let $user := $credentials[1] return $user", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("test", resource.getContent().toString());
+            }
+        }
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "let $credentials := ('test', 'pass') let $user := $credentials[2] return $user", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("pass", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "let $els := <els><el>text1</el><el>text2</el></els> return $els/el[xs:string(.) eq 'text1'] ", 1);
-        assertEquals("<el>text1</el>", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "let $els := <els><el>text1</el><el>text2</el></els> return $els/el[xs:string(.) eq 'text1'] ", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("<el>text1</el>", resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -1111,59 +1384,85 @@ public class XPathQueryTest {
             "</test>" +
             "return " +
             "$t//a[s = 'Z' and preceding-sibling::*[1]/s = 'B']";
-        ResourceSet result = queryResource(service, "numbers.xml", query, 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
+            }
+        }
 
         query = "let $t := <test>" + "<a> <s>A</s> 1 </a>"
                 + "<a> <s>Z</s> 2 </a>" + "<a> <s>B</s> 3 </a>"
                 + "<a> <s>Z</s> 4 </a>" + "<a> <s>C</s> 5 </a>"
                 + "<a> <s>Z</s> 6 </a>" + "</test>"
                 + "return $t//a[s='Z' and ./preceding-sibling::*[1]/s='B']";
-        result = queryResource(service, "numbers.xml", query, 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a><s>Z</s> 4 </a>"));
+            }
+        }
 
         query = "let $doc := <doc><rec n='1'><a>first</a><b>second</b></rec>" +
                 "<rec n='2'><a>first</a><b>third</b></rec></doc> " +
                 "return $doc//rec[fn:not(b = 'second') and (./a = 'first')]";
-        result = queryResource(service, "numbers.xml", query, 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<rec n=\"2\"><a>first</a><b>third</b></rec>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<rec n=\"2\"><a>first</a><b>third</b></rec>"));
+            }
+        }
 
         query = "let $doc := <doc><a b='c' d='e'/></doc> " +
                 "return $doc/a[$doc/a/@b or $doc/a/@d]";
-        result = queryResource(service, "numbers.xml", query, 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a b=\"c\" d=\"e\"/>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a b=\"c\" d=\"e\"/>"));
+            }
+        }
 
         query = "let $x := <a><b><x/><x/></b><b><x/></b></a>" +
             "return $x//b[count(x) = 2]";
-        result = queryResource(service, "numbers.xml", query, 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<b><x/><x/></b>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<b><x/><x/></b>"));
+            }
+        }
 
 
         //Boolean evaluation for "." (atomic sequence)
         query = "(1,2,3)[xs:decimal(.)]";
-        result = queryResource(service, "numbers.xml", query, 3);
+        queryResourceV(service, "numbers.xml", query, 3);
 
         query = "(1,2,3)[number()]";
-        result = queryResource(service, "numbers.xml", query, 3);
+        queryResourceV(service, "numbers.xml", query, 3);
 
-        query = " 	let $c := (<a/>,<b/>), $i := 1 return $c[$i]";
-        result = queryResource(service, "numbers.xml", query, 1);
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<a/>"));
+        query = "let $c := (<a/>,<b/>), $i := 1 return $c[$i]";
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a/>"));
+            }
+        }
 
         query = "(1,2,3)[position() = last()]";
-        result = queryResource(service, "numbers.xml", query, 1);
-        assertEquals("3", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("3", resource.getContent().toString());
+            }
+        }
 
         query = "(1,2,3)[max(.)]";
-        result = queryResource(service, "numbers.xml", query, 3);
+        queryResourceV(service, "numbers.xml", query, 3);
 
         query = "(1,2,3)[max(.[. gt 1])]";
-        result = queryResource(service, "numbers.xml", query, 2);
-        assertEquals("2", result.getResource(0).getContent().toString());
-        assertEquals("3", result.getResource(1).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 2)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("2", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("3", resource.getContent().toString());
+            }
+        }
 
         query = "(1,2,3)[.]";
-        result = queryResource(service, "numbers.xml", query, 3);
+        queryResourceV(service, "numbers.xml", query, 3);
 
         query = "declare function local:f ($n) { " +
             "$n " +
@@ -1188,12 +1487,23 @@ public class XPathQueryTest {
             "} ; " +
             " " +
             "local:f(1),local:g(1), local:h(1), local:j(1), local:k(1) ";
-        result = queryResource(service, "numbers.xml", query, 5);
-        assertEquals("1", result.getResource(0).getContent().toString());
-        assertEquals("Fine", result.getResource(1).getContent().toString());
-        assertEquals("OK", result.getResource(2).getContent().toString());
-        assertEquals("Fine", result.getResource(3).getContent().toString());
-        assertEquals("Fine", result.getResource(4).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 5)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("1", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("Fine", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertEquals("OK", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(3)) {
+                assertEquals("Fine", resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(4)) {
+                assertEquals("Fine", resource.getContent().toString());
+            }
+        }
 
         //The collection doesn't exist : let's see how the query behaves with empty sequences
         query = "let $checkDate := xs:date(adjust-date-to-timezone(current-date(), ())) " +
@@ -1202,118 +1512,141 @@ public class XPathQueryTest {
         "$collection//Lease/Events/Type/Event[(When/Date<=$checkDate or " +
         "When/EstimateDate<=$checkDate) and not(Status='Complete')] " +
         "return $x";
-        result = queryResource(service, "numbers.xml", query, 0);
+        queryResourceV(service, "numbers.xml", query, 0);
 
         query = "let $res := <test><element name='A'/><element name='B'/></test> " +
             "return " +
             "for $name in ('A', 'B') return " +
             "$res/element[@name=$name][1]";
-        result = queryResource(service, "numbers.xml", query, 2);
-
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<element name='A'/>"));
-        assertThat(result.getResource(1).getContent().toString(), CompareMatcher.isIdenticalTo("<element name='B'/>"));
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", query, 2)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<element name='A'/>"));
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<element name='B'/>"));
+            }
+        }
     }
 
 
     /**
-     * @see http://sourceforge.net/tracker/index.php?func=detail&aid=1460610&group_id=17691&atid=117691
+     * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1460610&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1460610&group_id=17691&atid=117691</a>
      */
     @Test
     public void predicates_bug1460610() throws XMLDBException {
         final String xQuery = "(1, 2, 3)[ . lt 3]";
         
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-        
-        assertEquals("SFBUG 1460610 nr of results", 2, rs.getSize());
-        assertEquals("SFBUG 1460610 1st result", "1",
-                rs.getResource(0).getContent().toString());
-        assertEquals("SFBUG 1460610 2nd result", "2",
-                rs.getResource(1).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+
+            assertEquals("SFBUG 1460610 nr of results", 2, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("SFBUG 1460610 1st result", "1",
+                    resource.getContent().toString());
+            }
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("SFBUG 1460610 2nd result", "2",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     /**
-     * @see http://sourceforge.net/tracker/index.php?func=detail&aid=1537355&group_id=17691&atid=117691
+     * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1537355&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1537355&group_id=17691&atid=117691</a>
      */
     @Test
     public void predicates_bug1537355() throws XMLDBException {
         final String xQuery = "let $one := 1 return (1, 2, 3)[$one + 1]";
         
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-        
-        assertEquals("SFBUG 1537355 nr of results", 1, rs.getSize());
-        assertEquals("SFBUG 1537355 result", "2",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("SFBUG 1537355 nr of results", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("SFBUG 1537355 result", "2",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     /**
-     * @see http://sourceforge.net/tracker/index.php?func=detail&aid=1533053&group_id=17691&atid=117691
+     * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1533053&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1533053&group_id=17691&atid=117691</a>
      */
     @Test
     public void nestedPredicates_bug1533053() throws XMLDBException, IOException, SAXException {
+        final XQueryService service = getQueryService();
+
         String xQuery = "let $doc := <objects>" +
     	    "<detail><class/><source><dynamic>false</dynamic></source></detail>" +
     	    "<detail><class/><source><dynamic>true</dynamic></source></detail>" +
     	    "</objects> " +
     	    "let $matches := $doc/detail[source[dynamic='false'] or class] " +
     	    "return count($matches) eq 2";
-    
-	    XQueryService service = getQueryService();
-	    ResourceSet rs = service.query(xQuery);
-	    
-	    assertEquals(1, rs.getSize());
-	    assertEquals("true", rs.getResource(0).getContent().toString());
+        
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("true", resource.getContent().toString());
+            }
+        }
 
 	    xQuery = "let $xml := <test><element>" +
 	    	"<complexType><attribute name=\"design\" fixed=\"1\"/></complexType>" +
         	"</element></test> " +
         	"return $xml//element[complexType/attribute[@name eq \"design\"]/@fixed eq \"1\"]";
 
-	    service = getQueryService();
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        service.setProperty(OutputKeys.INDENT, "no");	    
-	    rs = service.query(xQuery);
+        service.setProperty(OutputKeys.INDENT, "no");
 
-	    assertEquals(1, rs.getSize());
-        assertThat(rs.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<element><complexType><attribute name=\"design\" fixed=\"1\"/></complexType></element>"));
-
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<element><complexType><attribute name=\"design\" fixed=\"1\"/></complexType></element>"));
+            }
+        }
     }
 
     
     /**
-     * @see http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691
+     * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691</a>
      */
     @Test
     public void predicate_bug1488303() throws XMLDBException {
-        XQueryService service = getQueryService();
-        ResourceSet rs=null;
+        final XQueryService service = getQueryService();
         
         // test one
         final String xQuery1 = "let $q := <q><t>eXist</t></q> return $q//t";
-        rs = service.query(xQuery1);
-        assertEquals("nr of results", 1, rs.getSize());
-        assertEquals("result", "<t>eXist</t>",
-                rs.getResource(0).getContent().toString());
-        
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery1)) {
+            assertEquals("nr of results", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("result", "<t>eXist</t>",
+                    resource.getContent().toString());
+            }
+        }
+
         // test two
         final String xQuery2 = "let $q := <q><t>eXist</t></q> return ($q//t)[1]";
-        rs = service.query(xQuery2);
-        assertEquals("nr of results", 1, rs.getSize());
-        assertEquals("result", "<t>eXist</t>",
-                rs.getResource(0).getContent().toString());
-        
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery2)) {
+            assertEquals("nr of results", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("result", "<t>eXist</t>",
+                    resource.getContent().toString());
+            }
+        }
+
         // This one fails http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691
         final String xQuery3 = "let $q := <q><t>eXist</t></q> return $q//t[1]";
-        rs = service.query(xQuery3);
-        assertEquals("SFBUG 1488303 nr of results", 1, rs.getSize());
-        assertEquals("SFBUG 1488303 result", "<t>eXist</t>",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery3)) {
+            assertEquals("SFBUG 1488303 nr of results", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("SFBUG 1488303 result", "<t>eXist</t>",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     
     /**
-     * @see http://sourceforge.net/tracker/index.php?func=detail&aid=1460791&group_id=17691&atid=117691
+     * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1460791&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1460791&group_id=17691&atid=117691</a>
      */
     @Test
     public void descendantOrSelf_bug1460791() throws XMLDBException {
@@ -1321,22 +1654,27 @@ public class XPathQueryTest {
                 +"return ( <one>{$test//z}</one>, <two>{$test/descendant-or-self::node()/child::z}</two> )";
         
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-        
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+
 //        System.out.println("BUG1460791/1" + rs.getResource(0).getContent().toString() );
 //        System.out.println("BUG1460791/2" + rs.getResource(1).getContent().toString() );
-        
-        assertEquals("SFBUG 1460791 nr of results", 2, rs.getSize());
-        
-        assertEquals("SFBUG 1460791 result part 1", "<one><z>zzz</z></one>",
-                rs.getResource(0).getContent().toString());
-        
-        assertEquals("SFBUG 1460791 result part 2", "<two><z>zzz</z></two>",
-                rs.getResource(1).getContent().toString());
+
+            assertEquals("SFBUG 1460791 nr of results", 2, result.getSize());
+
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("SFBUG 1460791 result part 1", "<one><z>zzz</z></one>",
+                    resource.getContent().toString());
+            }
+
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("SFBUG 1460791 result part 2", "<two><z>zzz</z></two>",
+                    resource.getContent().toString());
+            }
+        }
     }
     
     /**
-     * @see http://sourceforge.net/tracker/index.php?func=detail&aid=1462120&group_id=17691&atid=1176
+     * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1462120&group_id=17691&atid=1176">http://sourceforge.net/tracker/index.php?func=detail&aid=1462120&group_id=17691&atid=1176</a>
      */
     @Test
     public void xpath_bug1462120() throws XMLDBException {
@@ -1349,18 +1687,25 @@ public class XPathQueryTest {
                 +"<br/>,$m/Unit[string(data(@name)) eq string(data($one/@aaa))] )";
         
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-        
-        assertEquals("SFBUG 1462120 nr of results", 3, rs.getSize());
-        
-        assertEquals("SFBUG 1462120 result part 1", "<Unit name=\"g\" size=\"1\"/>",
-                rs.getResource(0).getContent().toString());
-        
-        assertEquals("SFBUG 1462120 result part 2", "<br/>",
-                rs.getResource(1).getContent().toString());
-        
-        assertEquals("SFBUG 1462120 result part 3", "<Unit name=\"g\" size=\"1\"/>",
-                rs.getResource(2).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+
+            assertEquals("SFBUG 1462120 nr of results", 3, result.getSize());
+
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("SFBUG 1462120 result part 1", "<Unit name=\"g\" size=\"1\"/>",
+                    resource.getContent().toString());
+            }
+
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                assertEquals("SFBUG 1462120 result part 2", "<br/>",
+                    resource.getContent().toString());
+            }
+
+            try (final EXistResource resource = (EXistResource) result.getResource(2)) {
+                assertEquals("SFBUG 1462120 result part 3", "<Unit name=\"g\" size=\"1\"/>",
+                    resource.getContent().toString());
+            }
+        }
     }
     
     
@@ -1368,18 +1713,21 @@ public class XPathQueryTest {
      * In Predicate.java, the contextSet and the outerSequence.toNodeSet()
      * documents are different so that no match can occur.
      *
-     * @see http://wiki.exist-db.org/space/XQueryBugs
+     * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
     @Test
     public void predicate_bug_wiki_1() throws XMLDBException {
         final String xQuery = "let $dum := <dummy><el>1</el><el>2</el></dummy> return $dum/el[2]";
         
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-        
-        assertEquals("Predicate bug wiki_1", 1, rs.getSize());
-        assertEquals("Predicate bug wiki_1", "<el>2</el>",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+
+            assertEquals("Predicate bug wiki_1", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("Predicate bug wiki_1", "<el>2</el>",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -1388,14 +1736,17 @@ public class XPathQueryTest {
             "doc('/db/test/predicates.xml')//elem1/elem2[ string-length( ./elem3 ) > 0][1]/elem3/text()";
         final XQueryService service =
             storeXMLStringAndGetQueryService("predicates.xml", predicates);
-        final ResourceSet rs = service.query(xQuery);
-        assertEquals("testPredicateBUGAndrzej", 1, rs.getSize());
-        assertEquals("testPredicateBUGAndrzej", "val1", rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("testPredicateBUGAndrzej", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("testPredicateBUGAndrzej", "val1", resource.getContent().toString());
+            }
+        }
     }
 
     /**
      * removing Self: makes the query work OK
-     * @see http://wiki.exist-db.org/space/XQueryBugs
+     * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
     @Test
     public void cardinalitySelf_bug_wiki_2() throws XMLDBException {
@@ -1403,18 +1754,19 @@ public class XPathQueryTest {
                 + "for $h in $test/works/employee[2] return fn:name($h/self::employee)";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-
-        assertEquals("CardinalitySelfBUG bug wiki_2", 1, rs.getSize());
-        assertEquals("CardinalitySelfBUG bug wiki_2", "employee",
-                rs.getResource(0).getContent().toString());
-        
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("CardinalitySelfBUG bug wiki_2", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("CardinalitySelfBUG bug wiki_2", "employee",
+                    resource.getContent().toString());
+            }
+        }
     }
     
     /**
      * Problem in VirtualNodeSet which return 2 attributes because it 
      * computes every level
-     * @see http://wiki.exist-db.org/space/XQueryBugs
+     * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
     @Test
     public void virtualNodeset_bug_wiki_3() throws XMLDBException {
@@ -1423,17 +1775,20 @@ public class XPathQueryTest {
                 + "/descendant::*/attribute::id return <a>{$node}</a>";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-            
-        assertEquals("VirtualNodesetBUG_wiki_3", 1, rs.getSize());
-        assertEquals("VirtualNodesetBUG_wiki_3", "<a id=\"cool\"/>",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+
+            assertEquals("VirtualNodesetBUG_wiki_3", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("VirtualNodesetBUG_wiki_3", "<a id=\"cool\"/>",
+                    resource.getContent().toString());
+            }
+        }
     } 
     
     /**
      * Problem in VirtualNodeSet because it computes the wrong level
      *
-     * @see http://wiki.exist-db.org/space/XQueryBugs
+     * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
     @Test
     public void virtualNodeset_bug_wiki_4() throws XMLDBException {
@@ -1443,17 +1798,19 @@ public class XPathQueryTest {
                 + "return <a>{$node}</a>";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-
-        assertEquals("VirtualNodesetBUG_wiki_4", 1, rs.getSize());
-        assertEquals("VirtualNodesetBUG_wiki_4", "<a><b id=\"cool\"/></a>",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("VirtualNodesetBUG_wiki_4", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("VirtualNodesetBUG_wiki_4", "<a><b id=\"cool\"/></a>",
+                    resource.getContent().toString());
+            }
+        }
     } 
     
     /**
      * Problem in VirtualNodeSet because it computes the wrong level
      *
-     * @see http://wiki.exist-db.org/space/XQueryBugs
+     * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
     @Test
     public void virtualNodeset_bug_wiki_5() throws XMLDBException {
@@ -1462,11 +1819,13 @@ public class XPathQueryTest {
                 + "</c>)/descendant-or-self::*/descendant::b return <a>{$node}</a>";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-
-        assertEquals("VirtualNodesetBUG_wiki_5", 1, rs.getSize());
-        assertEquals("VirtualNodesetBUG_wiki_5", "<a><b id=\"cool\"/></a>",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("VirtualNodesetBUG_wiki_5", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("VirtualNodesetBUG_wiki_5", "<a><b id=\"cool\"/></a>",
+                    resource.getContent().toString());
+            }
+        }
     } 
     
     // It seems that the document builder receives events that are irrelevant.
@@ -1478,11 +1837,13 @@ public class XPathQueryTest {
                 + "<wrapper><string id=\"{local:test()}\"/></wrapper>";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-
-        assertEquals("testDocumentBuilderBUG_wiki_6", 1, rs.getSize());
-        assertEquals("testDocumentBuilderBUG_wiki_6", "<wrapper><string id=\"id\"/></wrapper>",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("testDocumentBuilderBUG_wiki_6", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("testDocumentBuilderBUG_wiki_6", "<wrapper><string id=\"id\"/></wrapper>",
+                    resource.getContent().toString());
+            }
+        }
     }
     
     @Test
@@ -1490,11 +1851,13 @@ public class XPathQueryTest {
         final String xQuery = "let $number := 2, $list := (\"a\", \"b\", \"c\") return $list[xs:int($number * 2) - 1]";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-
-        assertEquals("testCalculationInPredicate_wiki_7", 1, rs.getSize());
-        assertEquals("testCalculationInPredicate_wiki_7", "c",
-                rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("testCalculationInPredicate_wiki_7", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("testCalculationInPredicate_wiki_7", "c",
+                    resource.getContent().toString());
+            }
+        }
      }
      
      /**
@@ -1509,11 +1872,13 @@ public class XPathQueryTest {
                  + "for $x in $a where $x/@id eq \"id\" return $x";
 
         final XQueryService service = getQueryService();
-        final ResourceSet rs = service.query(xQuery);
-
-        assertEquals("testComputationBug_wiki_8", 1, rs.getSize());
-        assertEquals("testComputationBug_wiki_8", "<node1 id=\"id\"><node1>1</node1><node2>2</node2></node1>",
-            rs.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
+            assertEquals("testComputationBug_wiki_8", 1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("testComputationBug_wiki_8", "<node1 id=\"id\"><node1>1</node1><node2>2</node2></node1>",
+                    resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -1521,14 +1886,20 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
-        ResourceSet result = queryResource(service, "strings.xml", "substring(/test/string[1], 1, 5)", 1);
-        assertEquals("Hello", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml", "substring(/test/string[1], 1, 5)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("Hello", resource.getContent().toString());
+            }
+        }
 
-        queryResource(service, "strings.xml", "/test/string[starts-with(string(.), 'Hello')]", 2);
+        queryResourceV(service, "strings.xml", "/test/string[starts-with(string(.), 'Hello')]", 2);
 
-        result = queryResource(service, "strings.xml", "count(/test/item/price)", 1,
-                "Query should return an empty set (wrong document)");
-        assertEquals("0", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml", "count(/test/item/price)", 1,
+                "Query should return an empty set (wrong document)")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("0", resource.getContent().toString());
+            }
+        };
     }
 
     @Test
@@ -1537,10 +1908,10 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("quotes.xml", quotes);
 
-        queryResource(service, "quotes.xml", "/test[title = '&quot;Hello&quot;']", 1);
+        queryResourceV(service, "quotes.xml", "/test[title = '&quot;Hello&quot;']", 1);
 
         service.declareVariable("content", "&quot;Hello&quot;");
-        queryResource(service, "quotes.xml", "declare variable $content as xs:string external; /test[title = $content]", 1);
+        queryResourceV(service, "quotes.xml", "declare variable $content as xs:string external; /test[title = $content]", 1);
     }
 
     @Test
@@ -1549,62 +1920,107 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
-        ResourceSet result = queryResource(service, "numbers.xml", "boolean(1.0)", 1);
-        assertEquals("boolean value of 1.0 should be true", "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(1.0)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of 1.0 should be true", "true", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(0.0)", 1);
-        assertEquals("boolean value of 0.0 should be false", "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(0.0)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of 0.0 should be false", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(xs:double(0.0))", 1);
-        assertEquals("boolean value of double 0.0 should be false", "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:double(0.0))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of double 0.0 should be false", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(xs:double(1.0))", 1);
-        assertEquals("boolean value of double 1.0 should be true", "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:double(1.0))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of double 1.0 should be true", "true", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(xs:float(1.0))", 1);
-        assertEquals("boolean value of float 1.0 should be true", "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:float(1.0))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of float 1.0 should be true", "true", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(xs:float(0.0))", 1);
-        assertEquals("boolean value of float 0.0 should be false", "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:float(0.0))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of float 0.0 should be false", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(xs:integer(0))", 1);
-        assertEquals("boolean value of integer 0 should be false", "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:integer(0))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of integer 0 should be false", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(xs:integer(1))", 1);
-        assertEquals("boolean value of integer 1 should be true", "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:integer(1))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of integer 1 should be true", "true", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "'true' cast as xs:boolean", 1);
-        assertEquals("boolean value of 'true' cast to xs:boolean should be true",
-                "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "'true' cast as xs:boolean", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of 'true' cast to xs:boolean should be true",
+                    "true", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "'false' cast as xs:boolean", 1);
-        assertEquals("boolean value of 'false' cast to xs:boolean should be false",
-                "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "'false' cast as xs:boolean", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of 'false' cast to xs:boolean should be false",
+                    "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean('Hello')", 1);
-        assertEquals("boolean value of string 'Hello' should be true", "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean('Hello')", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of string 'Hello' should be true", "true", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean('')", 1);
-        assertEquals("boolean value of empty string should be false", "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean('')", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of empty string should be false", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(())", 1);
-        assertEquals("boolean value of empty sequence should be false", "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(())", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of empty sequence should be false", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryResource(service, "numbers.xml", "boolean(('Hello'))", 1);
-        assertEquals("boolean value of sequence with non-empty string should be true",
-                "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(('Hello'))", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of sequence with non-empty string should be true",
+                    "true", resource.getContent().toString());
+            }
+        }
 
 //			result = queryResource(service, "numbers.xml", "boolean((0.0, 0.0))", 1);
 //			assertEquals("boolean value of sequence with two elements should be true", "true",
 //					result.getResource(0).getContent());
 
-        result = queryResource(service, "numbers.xml", "boolean(//item[@id = '1']/price)", 1);
-        assertEquals("boolean value of 5.6 should be true", "true",
-                result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(//item[@id = '1']/price)", 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("boolean value of 5.6 should be true", "true",
+                    resource.getContent().toString());
+            }
+        }
 
         String message = "";
         try {
-            queryResource(service, "numbers.xml", "boolean(current-time())", 1);
+            queryResourceV(service, "numbers.xml", "boolean(current-time())", 1);
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
@@ -1617,39 +2033,44 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
-        queryResource(service, "strings.xml", "/test/string[not(@value)]", 2);
+        queryResourceV(service, "strings.xml", "/test/string[not(@value)]", 2);
 
-        ResourceSet result = queryResource(service, "strings.xml",	"not(/test/abcd)", 1);
-        Resource r = result.getResource(0);
-        assertEquals("true", r.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml",	"not(/test/abcd)", 1);
+             final EXistResource r = (EXistResource) result.getResource(0)) {
+            assertEquals("true", r.getContent().toString());
+        }
 
-        result = queryResource(service, "strings.xml",	"not(/test)", 1);
-        r = result.getResource(0);
-        assertEquals("false", r.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml",	"not(/test)", 1);
+             final EXistResource r = (EXistResource) result.getResource(0)) {
+            assertEquals("false", r.getContent().toString());
+        }
 
-        result = queryResource(service, "strings.xml", "/test/string[not(@id)]", 3);
-        r = result.getResource(0);
-        assertEquals("<string>Hello World!</string>", r.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml", "/test/string[not(@id)]", 3);
+             final EXistResource r = (EXistResource) result.getResource(0)) {
+            assertEquals("<string>Hello World!</string>", r.getContent().toString());
+        }
 
         // test with non-existing items
-        queryResource(service, "strings.xml", "/blah[not(blah)]", 0);
-        queryResource(service, "strings.xml", "//*[string][not(@value)]", 1);
-        queryResource(service, "strings.xml", "//*[string][not(@blah)]", 1);
-        queryResource(service, "strings.xml", "//*[blah][not(@blah)]", 0);
+        queryResourceV(service, "strings.xml", "/blah[not(blah)]", 0);
+        queryResourceV(service, "strings.xml", "//*[string][not(@value)]", 1);
+        queryResourceV(service, "strings.xml", "//*[string][not(@blah)]", 1);
+        queryResourceV(service, "strings.xml", "//*[blah][not(@blah)]", 0);
     }
 
     @Test
     public void logicalOr() throws XMLDBException, IOException, SAXException {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
-            
-        ResourceSet results = queryResource(service, "strings.xml",	"<test>{() or ()}</test>", 1);
-        Resource result = results.getResource(0);
-        assertThat(result.getContent().toString(), CompareMatcher.isIdenticalTo("<test>false</test>"));
 
-        results = queryResource(service, "strings.xml",	"() or ()", 1);
-        result = results.getResource(0);
-        assertEquals("false", result.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml",	"<test>{() or ()}</test>", 1);
+             final EXistResource resource = (EXistResource) result.getResource(0)) {
+            assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<test>false</test>"));
+        }
+
+        try (final EXistResourceSet result = queryResource(service, "strings.xml",	"() or ()", 1);
+             final EXistResource resource = (EXistResource) result.getResource(0)) {
+            assertEquals("false", resource.getContent().toString());
+        }
     } 
     
     @Test
@@ -1657,13 +2078,15 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
-        ResourceSet results = queryResource(service, "strings.xml",	"<test>{() and ()}</test>", 1);
-        Resource result = results.getResource(0);
-        assertThat(result.getContent().toString(), CompareMatcher.isIdenticalTo("<test>false</test>"));
+        try (final EXistResourceSet result = queryResource(service, "strings.xml",	"<test>{() and ()}</test>", 1);
+             final EXistResource resource = (EXistResource) result.getResource(0)) {
+            assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<test>false</test>"));
+        }
 
-        results = queryResource(service, "strings.xml",	"() and ()", 1);
-        result = results.getResource(0);
-        assertEquals("false", result.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "strings.xml",	"() and ()", 1);
+             final EXistResource resource = (EXistResource) result.getResource(0)) {
+            assertEquals("false", resource.getContent().toString());
+        }
     }     
     
     @Test
@@ -1671,25 +2094,27 @@ public class XPathQueryTest {
         final XQueryService service =
                 storeXMLStringAndGetQueryService("ids.xml", ids);
 
-        queryResource(service, "ids.xml", "//a/id(@ref)", 1);
-        queryResource(service, "ids.xml", "/test/id(//a/@ref)", 1);
+        queryResourceV(service, "ids.xml", "//a/id(@ref)", 1);
+        queryResourceV(service, "ids.xml", "/test/id(//a/@ref)", 1);
 
-        ResourceSet result = queryResource(service, "ids.xml", "//a/id(@ref)/name", 1);
-        Resource r = result.getResource(0);
-        assertEquals("<name>one</name>", r.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "ids.xml", "//a/id(@ref)/name", 1);
+             final EXistResource r = (EXistResource) result.getResource(0)) {
+            assertEquals("<name>one</name>", r.getContent().toString());
+        }
 
-        result = queryResource(service, "ids.xml", "//d/id(@ref)/name", 1);
-        r = result.getResource(0);
-        assertEquals("<name>two</name>", r.getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, "ids.xml", "//d/id(@ref)/name", 1);
+             final EXistResource r = (EXistResource) result.getResource(0)) {
+            assertEquals("<name>two</name>", r.getContent().toString());
+        }
 
         String update = "update insert <t xml:id=\"id3\">Hello</t> into /test";
-        queryResource(service, "ids.xml", update, 0);
+        queryResourceV(service, "ids.xml", update, 0);
 
-        queryResource(service, "ids.xml", "/test/id('id3')", 1);
+        queryResourceV(service, "ids.xml", "/test/id('id3')", 1);
 
         update = "update value //t/@xml:id with 'id4'";
-        queryResource(service, "ids.xml", update, 0);
-        queryResource(service, "ids.xml", "id('id4', /test)", 1);
+        queryResourceV(service, "ids.xml", update, 0);
+        queryResourceV(service, "ids.xml", "id('id4', /test)", 1);
     }
 
     @Ignore("Not yet supported in eXist")
@@ -1697,30 +2122,37 @@ public class XPathQueryTest {
     public void ids_memtree() throws XMLDBException {
         final XQueryService service = getQueryService();
 
-        ResourceSet result = service.query("document { " + ids_content + " }//a/id(@ref)");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document { " + ids_content + " }//a/id(@ref)")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query("document { " + ids_content + " }/test/id(//a/@ref)");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document { " + ids_content + " }/test/id(//a/@ref)")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query("document { " + ids_content + " }//a/id(@ref)/name");
-        assertEquals(1, result.getSize());
-        Resource r = result.getResource(0);
-        assertEquals("<name>one</name>", r.getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document { " + ids_content + " }//a/id(@ref)/name")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource r = (EXistResource) result.getResource(0)) {
+                assertEquals("<name>one</name>", r.getContent().toString());
+            }
+        }
 
-        result = service.query("document { " + ids_content + " }//d/id(@ref)/name");
-        r = result.getResource(0);
-        assertEquals("<name>two</name>", r.getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document { " + ids_content + " }//d/id(@ref)/name");
+             final EXistResource r = (EXistResource) result.getResource(0)) {
+            assertEquals("<name>two</name>", r.getContent().toString());
+        }
     }
     
     @Test
     public void idsOnEmptyCollection() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(getBaseUri(), "admin", "");
-        final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
-		final Collection emptyCollection = service.createCollection("empty");
-        final XQueryService queryService = (XQueryService) emptyCollection.getService("XPathQueryService", "1.0");
- 	  	queryAndAssert(queryService, "/*", 0, null);
- 	  	queryAndAssert(queryService, "/id('foo')", 0, null);
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri(), "admin", "")) {
+            final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+            try (final Collection emptyCollection = service.createCollection("empty")) {
+                final XQueryService queryService = (XQueryService) emptyCollection.getService("XQueryService", "1.0");
+                queryAndAssert(queryService, "/*", 0, null);
+                queryAndAssert(queryService, "/id('foo')", 0, null);
+            }
+        }
     }
     
     @Test
@@ -1728,10 +2160,10 @@ public class XPathQueryTest {
        final XQueryService service =
           storeXMLStringAndGetQueryService("ids.xml", ids);
   
-       queryResource(service, "ids.xml", "/idref('id2')", 1);
-       queryResource(service, "ids.xml", "/idref('id1')", 2);
-       queryResource(service, "ids.xml", "/idref(('id2', 'id1'))", 3);
-       queryResource(service, "ids.xml", "<results>{/idref('id2')}</results>", 1);
+       queryResourceV(service, "ids.xml", "/idref('id2')", 1);
+       queryResourceV(service, "ids.xml", "/idref('id1')", 2);
+       queryResourceV(service, "ids.xml", "/idref(('id2', 'id1'))", 3);
+       queryResourceV(service, "ids.xml", "<results>{/idref('id2')}</results>", 1);
     }
 
     @Ignore("Not yet supported in eXist")
@@ -1739,86 +2171,86 @@ public class XPathQueryTest {
     public void idRefs_memtree() throws XMLDBException {
         final XQueryService service = getQueryService();
 
-        ResourceSet result = service.query("document {" + ids_content + "}/idref('id2')");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document {" + ids_content + "}/idref('id2')")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query("document {" + ids_content + "}/idref('id1')");
-        assertEquals(2, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document {" + ids_content + "}/idref('id1')")) {
+            assertEquals(2, result.getSize());
+        }
 
-        result = service.query("document {" + ids_content + "}/idref(('id2', 'id1'))");
-        assertEquals(3, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("document {" + ids_content + "}/idref(('id2', 'id1'))")) {
+            assertEquals(3, result.getSize());
+        }
 
-        result = service.query("let $doc := document {" + ids_content + "} return <results>{$doc/idref('id2')}</results>");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("let $doc := document {" + ids_content + "} return <results>{$doc/idref('id2')}</results>")) {
+            assertEquals(1, result.getSize());
+        }
     }
     
     @Test
     public void externalVars() throws XMLDBException {
-        XQueryService service =
-            storeXMLStringAndGetQueryService("strings.xml", strings);
+        final XQueryService service1 = storeXMLStringAndGetQueryService("strings.xml", strings);
 
         String query =
             "declare variable $x external;" +
             "$x";
-        CompiledExpression expr = service.compile(query);
+        final CompiledExpression expr1 = service1.compile(query);
         //Do not declare the variable...
-        boolean exceptionThrown = false;
-        try {
-            service.execute(expr);
-        } catch (XMLDBException e) {
-            exceptionThrown = true;
-        }
-        assertTrue("Expected XPTY0002", exceptionThrown);
+        assertThrows("Expected XPTY0002", XMLDBException.class, () -> {
+            try (final EXistResourceSet result = (EXistResourceSet) service1.execute(expr1)) {
+                // needed to ensure that reesult is closed
+            }
+        });
 
         query =
             "declare variable $local:string external;" +
             "/test/string[. = $local:string]";
-        expr = service.compile(query);
-        service.declareVariable("local:string", "Hello");
+        final CompiledExpression expr2 = service1.compile(query);
+        service1.declareVariable("local:string", "Hello");
 
-        ResourceSet result = service.execute(expr);
-
-        final XMLResource r = (XMLResource) result.getResource(0);
-        Node node = r.getContentAsDOM();
-        if (node.getNodeType() == Node.DOCUMENT_NODE) {
-            node = node.getFirstChild();
+        try (final EXistResourceSet result = (EXistResourceSet) service1.execute(expr2);
+             final EXistResource r = (EXistResource)  result.getResource(0)) {
+            Node node = ((XMLResource) r).getContentAsDOM();
+            if (node.getNodeType() == Node.DOCUMENT_NODE) {
+                node = node.getFirstChild();
+            }
+            assertEquals("string", node.getNodeName());
         }
-        assertEquals("string", node.getNodeName());
-
 
         //Instanciate a new service to prevent variable reuse
         //TODO : consider auto-reset ?
-        service = storeXMLStringAndGetQueryService("strings.xml", strings);
+        final XQueryService service2 = storeXMLStringAndGetQueryService("strings.xml", strings);
 
         query =
             "declare variable $local:string as xs:string external;" +
             "$local:string";
-        expr = service.compile(query);
+        final CompiledExpression expr3 = service2.compile(query);
         //TODO : we should virtually pass any kind of value
-        service.declareVariable("local:string", new Integer(1));
+        service2.declareVariable("local:string", Integer.valueOf(1));
 
         String message = "";
         try {
-            service.execute(expr);
+            service2.execute(expr3);
         } catch (XMLDBException e) {
             //e.printStackTrace();
             message = e.getMessage();
         }
         assertTrue(message.indexOf("XPTY0004") > -1);
 
-        service = storeXMLStringAndGetQueryService("strings.xml", strings);
+        final XQueryService service3 = storeXMLStringAndGetQueryService("strings.xml", strings);
 
         query =
             "declare variable $x as xs:integer external; " +
             "$x";
-        expr = service.compile(query);
+        final CompiledExpression expr4 = service3.compile(query);
         //TODO : we should virtually pass any kind of value
-        service.declareVariable("x", "1");
+        service3.declareVariable("x", "1");
 
         message = "";
         try {
-            service.execute(expr);
-        } catch (XMLDBException e) {
+            service3.execute(expr4);
+        } catch (final XMLDBException e) {
             //e.printStackTrace();
             message = e.getMessage();
         }
@@ -1835,30 +2267,32 @@ public class XPathQueryTest {
         final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
         final CompiledExpression expr = service.compile("declare variable $local:node external; $local:node//string");
         service.declareVariable("local:node", doc.getDocumentElement());
-        final ResourceSet result = service.execute(expr);
-        assertEquals(3, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(expr)) {
+            assertEquals(3, result.getSize());
+        }
     }
 
     @Test
     public void queryResource() throws XMLDBException {
-        XMLResource doc =
-                (XMLResource) testCollection.createResource("strings.xml", "XMLResource");
-        doc.setContent(strings);
-        testCollection.storeResource(doc);
-            
-        doc = (XMLResource) testCollection.createResource("strings2.xml", "XMLResource");
-        doc.setContent(strings);
-        testCollection.storeResource(doc);
+        try (final EXistResource doc = (EXistResource) testCollection.createResource("strings.xml", XMLResource.RESOURCE_TYPE)) {
+            doc.setContent(strings);
+            testCollection.storeResource(doc);
+        }
 
-        final XPathQueryService query =
-                (XPathQueryService) testCollection.getService(
-                "XPathQueryService",
-                "1.0");
-        ResourceSet result = query.queryResource("strings2.xml", "/test/string[. = 'Hello World!']");
-        assertEquals(1, result.getSize());
+        try (final EXistResource doc = (EXistResource) testCollection.createResource("strings2.xml", XMLResource.RESOURCE_TYPE)) {
+            doc.setContent(strings);
+            testCollection.storeResource(doc);
+        }
 
-        result = query.query("/test/string[. = 'Hello World!']");
-        assertEquals(2, result.getSize());
+        final XPathQueryService query = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
+
+        try (final EXistResourceSet result = (EXistResourceSet) query.queryResource("strings2.xml", "/test/string[. = 'Hello World!']")) {
+            assertEquals(1, result.getSize());
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/string[. = 'Hello World!']")) {
+            assertEquals(2, result.getSize());
+        }
     }
     
     /**
@@ -1868,8 +2302,7 @@ public class XPathQueryTest {
      */
     @Test
     public void ancestor() throws XMLDBException {
-        final XQueryService service =
-                storeXMLStringAndGetQueryService("numbers.xml", numbers);
+        final XQueryService service = storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         final String query =
                 "let $all_items := /test/item " +
@@ -1881,87 +2314,103 @@ public class XPathQueryTest {
                 "		return 'foo'" +
                 "return $all_items";
 
-        final ResourceSet result = service.queryResource("numbers.xml", query );
-        assertEquals(4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
+            assertEquals(4, result.getSize());
+        }
     }
 
     @Test
     public void namespaces() throws XMLDBException {
-        final XQueryService service =
-                storeXMLStringAndGetQueryService("namespaces.xml", namespaces);
+        final XQueryService service = storeXMLStringAndGetQueryService("namespaces.xml", namespaces);
 
         service.setNamespace("t", "http://www.foo.com");
         service.setNamespace("c", "http://www.other.com");
-        ResourceSet result =
-                service.queryResource("namespaces.xml", "//t:section");
-        assertEquals(1, result.getSize());
 
-        result =
-                service.queryResource("namespaces.xml", "/t:test//c:comment");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", "//t:section")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.queryResource("namespaces.xml", "//c:*");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", "/t:test//c:comment")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.queryResource("namespaces.xml", "//*:comment");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", "//c:*")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.queryResource("namespaces.xml", "namespace-uri(//t:test)");
-        assertEquals(1, result.getSize());
-        assertEquals("http://www.foo.com", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", "//*:comment")) {
+            assertEquals(1, result.getSize());
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", "namespace-uri(//t:test)")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("http://www.foo.com", resource.getContent().toString());
+            }
+        }
     }
 
     @Test
     public void preserveSpace() throws XMLDBException, IOException, SAXException {
-        final XQueryService service =
-                storeXMLStringAndGetQueryService("whitespace.xml", ws);
+        final XQueryService service = storeXMLStringAndGetQueryService("whitespace.xml", ws);
 
-        final ResourceSet result =
-                service.queryResource("whitespace.xml", "//text");
-        assertEquals(2, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("whitespace.xml", "//text")) {
+            assertEquals(2, result.getSize());
 
-        String item = result.getResource(0).getContent().toString();
-        assertThat(item, CompareMatcher.isIdenticalTo("<text> </text>"));
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String item = resource.getContent().toString();
+                assertThat(item, CompareMatcher.isIdenticalTo("<text> </text>"));
+            }
 
-        item = result.getResource(1).getContent().toString();
-        assertThat(item, CompareMatcher.isIdenticalTo("<text xml:space=\"default\"> </text>"));
+            try (final EXistResource resource = (EXistResource) result.getResource(1)) {
+                final String item = resource.getContent().toString();
+                assertThat(item, CompareMatcher.isIdenticalTo("<text xml:space=\"default\"> </text>"));
+            }
+        }
     }
     
     @Test
     public void nestedElements() throws XMLDBException {
-        final XQueryService service =
-                storeXMLStringAndGetQueryService("nested.xml", nested);
+        final XQueryService service = storeXMLStringAndGetQueryService("nested.xml", nested);
 
-        final ResourceSet result = service.queryResource("nested.xml", "//c");
-        assertEquals(3, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("nested.xml", "//c")) {
+            assertEquals(3, result.getSize());
+        }
     }
     
     @Test
     public void staticVariables() throws XMLDBException {
-        final XMLResource doc =
-                (XMLResource) testCollection.createResource(
-                "numbers.xml", "XMLResource" );
-        doc.setContent(numbers);
-        testCollection.storeResource(doc);
-        XPathQueryService service =
-                (XPathQueryService) testCollection.getService(
-                "XPathQueryService",
-                "1.0");
+        final XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
 
-        final EXistXPathQueryService service2 = (EXistXPathQueryService) service;
-        service2.declareVariable("name", "MONTAGUE");
-        ResourceSet result = service.query("declare variable $name as xs:string external; //SPEECH[SPEAKER = $name]");
-        assertEquals(0, result.getSize());
-        service2.declareVariable("name", "43");
-        result = service2.query(doc, "declare variable $name as xs:string external; //item[stock = $name]");
-        assertEquals(1, result.getSize());
-        result = service2.query("declare variable $name as xs:string external; $name");
-        assertEquals(1, result.getSize());
-        service2.clearVariables();
-        result = service2.query( doc, "//item[stock = 43]");
-        assertEquals(1, result.getSize());
-        result = service2.query(doc, "//item");
-        assertEquals(4, result.getSize());
+        try (final EXistResource doc = (EXistResource) testCollection.createResource("numbers.xml", XMLResource.RESOURCE_TYPE)) {
+            doc.setContent(numbers);
+            testCollection.storeResource(doc);
+
+            final EXistXPathQueryService service2 = (EXistXPathQueryService) service;
+            service2.declareVariable("name", "MONTAGUE");
+            try (final EXistResourceSet result = (EXistResourceSet) service.query("declare variable $name as xs:string external; //SPEECH[SPEAKER = $name]")) {
+                assertEquals(0, result.getSize());
+            }
+
+            service2.declareVariable("name", "43");
+            try (final EXistResourceSet result = service2.query((XMLResource) doc, "declare variable $name as xs:string external; //item[stock = $name]")) {
+                assertEquals(1, result.getSize());
+            }
+
+            try (final EXistResourceSet result = (EXistResourceSet) service2.query("declare variable $name as xs:string external; $name")) {
+                assertEquals(1, result.getSize());
+            }
+
+            service2.clearVariables();
+
+            try (final EXistResourceSet result = service2.query((XMLResource) doc, "//item[stock = 43]")) {
+                assertEquals(1, result.getSize());
+            }
+
+            try (final EXistResourceSet result = service2.query((XMLResource) doc, "//item")) {
+                assertEquals(4, result.getSize());
+            }
+        }
     }
 
     @Test
@@ -1971,50 +2420,61 @@ public class XPathQueryTest {
 //					"XPathQueryService",
 //					"1.0");
 //			ResourceSet result = service.query("//SPEECH[LINE &= 'marriage']");
-        final XQueryService service =
-                storeXMLStringAndGetQueryService("numbers.xml", numbers);
-        final ResourceSet result = service.query("//item/price");
+        final XQueryService service = storeXMLStringAndGetQueryService("numbers.xml", numbers);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query("//item/price");
+             final EXistResource r = (EXistResource) result.getMembersAsResource()) {
+            final Object rawContent = r.getContent();
+            final String content;
+            if (rawContent instanceof File) {
+                final Path p = ((File) rawContent).toPath();
+                content = new String(Files.readAllBytes(p), UTF_8);
+            } else {
+                content = (String) r.getContent();
+            }
 
-        final Resource r = result.getMembersAsResource();
-        final Object rawContent = r.getContent();
-        String content = null;
-        if(rawContent instanceof File) {
-            final Path p = ((File) rawContent).toPath();
-            content = new String(Files.readAllBytes(p), UTF_8);
-        } else {
-            content = (String)r.getContent();
+            final Pattern p = Pattern.compile(".*(<price>.*){4}", Pattern.DOTALL);
+            final Matcher m = p.matcher(content);
+            assertTrue("get whole document numbers.xml", m.matches());
         }
-
-        final Pattern p = Pattern.compile(".*(<price>.*){4}", Pattern.DOTALL);
-        final Matcher m = p.matcher(content);
-        assertTrue("get whole document numbers.xml", m.matches());
     }
 
     @Test
     public void satisfies() throws XMLDBException {
         final XQueryService service = getQueryService();
 
-        ResourceSet result = queryAndAssert(service,
+        try (final EXistResourceSet result = queryAndAssert(service,
                 "every $foo in (1,2,3) satisfies" +
                 "   let $bar := 'baz'" +
                 "       return false() ",
-                1,  "");
-        assertEquals("satisfies + FLWR expression allways false 1", "false", result.getResource(0).getContent().toString());
+                1,  "")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("satisfies + FLWR expression allways false 1", "false", resource.getContent().toString());
+            }
+        }
 
-        result = queryAndAssert(service,
+        try (final EXistResourceSet result = queryAndAssert(service,
                 "declare function local:foo() { false() };" +
                 "   every $bar in (1,2,3) satisfies" +
                 "   local:foo()",
-                1,  "");
-        assertEquals("satisfies + FLWR expression allways false 2", "false", result.getResource(0).getContent().toString());
+                1,  "")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("satisfies + FLWR expression allways false 2", "false", resource.getContent().toString());
+            }
+        }
 
         String query = "every $x in () satisfies false()";
-        result = queryAndAssert(service, query, 1,  "");
-        assertEquals(query, "true", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1,  "")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(query, "true", resource.getContent().toString());
+            }
+        }
 
         query = "some $x in () satisfies true()";
-        result = queryAndAssert(service, query, 1,  "");
-        assertEquals(query, "false", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1,  "")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(query, "false", resource.getContent().toString());
+            }
+        }
     }
     
     @Test
@@ -2022,13 +2482,13 @@ public class XPathQueryTest {
         final XQueryService service = getQueryService();
 
         String query = "()  intersect ()";
-        queryAndAssert(service, query, 0, "");
+        queryAndAssertV(service, query, 0, "");
 
         query = "()  intersect  (1)";
-        queryAndAssert(service, query, 0, "");
+        queryAndAssertV(service, query, 0, "");
 
         query = "(1)  intersect  ()";
-        queryAndAssert(service, query, 0, "");
+        queryAndAssertV(service, query, 0, "");
     }
     
     @Test
@@ -2036,12 +2496,12 @@ public class XPathQueryTest {
         final XQueryService service = getQueryService();
 
         String query = "()  union ()";
-        queryAndAssert( service, query, 0, "");
+        queryAndAssertV( service, query, 0, "");
 
         String message = "";
         try {
             query = "()  union  (1)";
-            queryAndAssert( service, query, 0, "");
+            queryAndAssertV( service, query, 0, "");
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
@@ -2050,19 +2510,19 @@ public class XPathQueryTest {
         message = "";
         try {
             query = "(1)  union  ()";
-            queryAndAssert(service, query, 0, "");
+            queryAndAssertV(service, query, 0, "");
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
         assertTrue(message.indexOf("XPTY0004") > -1);
 
         query = "<a/>  union ()";
-        queryAndAssert(service, query, 1, "");
+        queryAndAssertV(service, query, 1, "");
         query = "()  union <a/>";
-        queryAndAssert(service, query, 1, "");
+        queryAndAssertV(service, query, 1, "");
         //Not the same nodes
         query = "<a/> union <a/>";
-        queryAndAssert(service, query, 2, "");
+        queryAndAssertV(service, query, 2, "");
     }
 
     @Test
@@ -2070,35 +2530,35 @@ public class XPathQueryTest {
         final XQueryService service = getQueryService();
 
         String query = "()  except ()";
-        queryAndAssert(service, query, 0, "");
+        queryAndAssertV(service, query, 0, "");
 
         query = "()  except  (1)";
-        queryAndAssert(service, query, 0, "");
+        queryAndAssertV(service, query, 0, "");
 
         String message = "";
         try {
             query = "(1)  except  ()";
-            queryAndAssert(service, query, 0, "");
+            queryAndAssertV(service, query, 0, "");
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
         assertTrue(message.indexOf("XPTY0004") > -1);
 
         query = "<a/>  except ()";
-        queryAndAssert(service, query, 1, "");
+        queryAndAssertV(service, query, 1, "");
         query = "()  except <a/>";
-        queryAndAssert(service, query, 0, "");
+        queryAndAssertV(service, query, 0, "");
         //Not the same nodes
         query = "<a/> except <a/>";
-        queryAndAssert(service, query, 1, "");
+        queryAndAssertV(service, query, 1, "");
     }
 
     @Test
     public void convertToBoolean() throws XMLDBException {
         final XQueryService service = getQueryService();
-        
 
-        ResourceSet result = queryAndAssert(
+
+        try (final EXistResourceSet result = queryAndAssert(
                 service,
                 "let $doc := <element attribute=''/>" + "return ("
                 + "  <true>{boolean(($doc,2,3))}</true> ,"
@@ -2111,22 +2571,25 @@ public class XPathQueryTest {
                 + "  <false>{boolean('')}</false> ,"
                 + "  <false>{boolean(number(0))}</false> ,"
                 + "  <false>{boolean(number('NaN'))}</false>" + ")",
-                10, "");
+                10, "")) {
 
-        for (int i = 0; i < 10; i++) {
-            if(i < 5) {
-                assertEquals("true " + (i + 1), "<true>true</true>", result
-                    .getResource(i).getContent().toString());
-            } else {
-                assertEquals("false " + (i + 1), "<false>false</false>", result
-                    .getResource(i).getContent().toString());
+            for (int i = 0; i < 10; i++) {
+                try (final EXistResource resource = (EXistResource) result.getResource(i)) {
+                    if (i < 5) {
+                        assertEquals("true " + (i + 1), "<true>true</true>",
+                            resource.getContent().toString());
+                    } else {
+                        assertEquals("false " + (i + 1), "<false>false</false>",
+                            resource.getContent().toString());
+                    }
+                }
             }
         }
         
         boolean exceptionThrown = false;
         String message = "";
         try {
-            queryAndAssert(service,
+            queryAndAssertV(service,
                     "let $doc := <element attribute=''/>"
                     + " return boolean( (1,2,$doc) )", 1, "");
         } catch (XMLDBException e) {
@@ -2179,12 +2642,14 @@ public class XPathQueryTest {
         final XQueryService service = storeXMLStringAndGetQueryService(
                 "xpointer.xml", xpointerElementName);
 
-        ResourceSet result = service.queryResource("xpointer.xml",
-                "/test/.[local-name()='xpointer']");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("xpointer.xml",
+                "/test/.[local-name()='xpointer']")) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.queryResource("xpointer.xml", "/test/xpointer");
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("xpointer.xml", "/test/xpointer")) {
+            assertEquals(1, result.getSize());
+        }
     }
 
     @Test
@@ -2199,11 +2664,14 @@ public class XPathQueryTest {
                 "   element {ex:elementName()} { 'b' }\n" +
                 "}</test>";
 
-        final EXistXQueryService service = (EXistXQueryService)getQueryService();
+        final EXistXQueryService service = (EXistXQueryService) getQueryService();
         service.setProperty(OutputKeys.INDENT, "no");
-        final ResourceSet result = service.query(query);
-        assertEquals(1, result.getSize());
-        assertThat(result.getResource(0).getContent().toString(), CompareMatcher.isIdenticalTo("<test><test:name xmlns:test=\"http://test.org\">a</test:name><test:name xmlns:test=\"http://test.org\">b</test:name></test>"));
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<test><test:name xmlns:test=\"http://test.org\">a</test:name><test:name xmlns:test=\"http://test.org\">b</test:name></test>"));
+            }
+        }
     }
 
     @Test
@@ -2212,17 +2680,26 @@ public class XPathQueryTest {
         
         // Test cases by MIKA
         final String validQuery = "substring(\"MK-1234\", 4,1)";
-        ResourceSet result = queryAndAssert( service, validQuery, 1, validQuery);
-        assertEquals("1", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, validQuery, 1, validQuery)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("1", resource.getContent().toString());
+            }
+        }
 
         String invalidQuery = "substring(\"MK-1234\", 4,4)";
-        result = queryAndAssert( service, invalidQuery, 1, invalidQuery);
-        assertEquals("1234", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, invalidQuery, 1, invalidQuery)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("1234", resource.getContent().toString());
+            }
+        }
 
         // Test case by Toar
         final String toarQuery="let $num := \"2003.123\" \n return substring($num, 1, 7)";
-        result = queryAndAssert( service, toarQuery, 1, toarQuery);
-        assertEquals("2003.12", result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, toarQuery, 1, toarQuery)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals("2003.12", resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -2233,16 +2710,22 @@ public class XPathQueryTest {
                 storeXMLStringAndGetQueryService(docName, cdata_xml);
 
         String query = "/elem1";
-        ResourceSet result = queryResource(service, docName, query, 1);
-        final String expected = "<elem1>" + cdata_content.replace("<", "&lt;").replace(">", "&gt;") + "</elem1>";
-        assertEquals(expected, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, docName, query, 1)) {
+            final String expected = "<elem1>" + cdata_content.replace("<", "&lt;").replace(">", "&gt;") + "</elem1>";
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(expected, resource.getContent().toString());
+            }
+        }
 
         query =
                 "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";\n" +
                 "declare option output:cdata-section-elements \"elem1\";\n" +
                 "/elem1\n";
-        result = queryResource(service, docName, query, 1);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, docName, query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
 
         query =
                 "fn:serialize(doc(\"/db/test/" + docName + "\"),\n" +
@@ -2250,8 +2733,11 @@ public class XPathQueryTest {
                     "    <output:method value=\"xml\"/>\n" +
                     "    <output:cdata-section-elements value=\"elem1\"/>\n" +
                     "</output:serialization-parameters>)";
-        result = queryResource(service, docName, query, 1);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, docName, query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
 
         query =
                 "fn:serialize(doc(\"/db/test/" + docName + "\"),\n" +
@@ -2259,8 +2745,11 @@ public class XPathQueryTest {
                         "    \"method\": \"xml\",\n" +
                         "    \"cdata-section-elements\": xs:QName(\"elem1\")\n" +
                         "})";
-        result = queryResource(service, docName, query, 1);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryResource(service, docName, query, 1)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -2271,17 +2760,23 @@ public class XPathQueryTest {
 
         final XQueryService service = getQueryService();
 
-        String query = "doc(\"" + tempFile.toUri().toString() + "\")";
-        ResourceSet result = queryAndAssert(service, query, 1, null);
-        final String expected = "<elem1>" + cdata_content.replace("<", "&lt;").replace(">", "&gt;") + "</elem1>";
-        assertEquals(expected, result.getResource(0).getContent().toString());
+        String query = "doc(\"" + tempFile.toUri() + "\")";
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            final String expected = "<elem1>" + cdata_content.replace("<", "&lt;").replace(">", "&gt;") + "</elem1>";
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(expected, resource.getContent().toString());
+            }
+        }
 
         query =
                 "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";\n" +
                 "declare option output:cdata-section-elements \"elem1\";\n" +
                 "doc(\"" + tempFile.toUri().toString() + "\")\n";
-        result = queryAndAssert(service, query, 1, null);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
 
         query =
                 "fn:serialize(doc(\"" + tempFile.toUri().toString() + "\"),\n" +
@@ -2289,8 +2784,11 @@ public class XPathQueryTest {
                         "    <output:method value=\"xml\"/>\n" +
                         "    <output:cdata-section-elements value=\"elem1\"/>\n" +
                         "</output:serialization-parameters>)";
-        result = queryAndAssert(service, query, 1, null);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
 
         query =
                 "fn:serialize(doc(\"" + tempFile.toUri().toString() + "\"),\n" +
@@ -2298,8 +2796,11 @@ public class XPathQueryTest {
                         "    \"method\": \"xml\",\n" +
                         "    \"cdata-section-elements\": xs:QName(\"elem1\")\n" +
                         "})";
-        result = queryAndAssert(service, query, 1, null);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
     }
 
     @Test
@@ -2310,9 +2811,12 @@ public class XPathQueryTest {
                 "document {\n" +
                     cdata_xml + "\n" +
                 "}";
-        ResourceSet result = queryAndAssert(service, query, 1, null);
-        final String expected = "<elem1>" + cdata_content.replace("<", "&lt;").replace(">", "&gt;") + "</elem1>";
-        assertEquals(expected, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            final String expected = "<elem1>" + cdata_content.replace("<", "&lt;").replace(">", "&gt;") + "</elem1>";
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(expected, resource.getContent().toString());
+            }
+        }
 
         query =
                 "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";\n" +
@@ -2320,8 +2824,11 @@ public class XPathQueryTest {
                 "document {\n" +
                     cdata_xml + "\n" +
                 "}";
-        result = queryAndAssert(service, query, 1, null);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
 
         query =
                 "fn:serialize(document {" + cdata_xml + "},\n" +
@@ -2329,8 +2836,11 @@ public class XPathQueryTest {
                         "    <output:method value=\"xml\"/>\n" +
                         "    <output:cdata-section-elements value=\"elem1\"/>\n" +
                         "</output:serialization-parameters>)";
-        result = queryAndAssert(service, query, 1, null);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
 
         query =
                 "fn:serialize(document {" + cdata_xml + "},\n" +
@@ -2338,8 +2848,21 @@ public class XPathQueryTest {
                         "    \"method\": \"xml\",\n" +
                         "    \"cdata-section-elements\": xs:QName(\"elem1\")\n" +
                         "})";
-        result = queryAndAssert(service, query, 1, null);
-        assertEquals(cdata_xml, result.getResource(0).getContent().toString());
+        try (final EXistResourceSet result = queryAndAssert(service, query, 1, null)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(cdata_xml, resource.getContent().toString());
+            }
+        }
+    }
+
+
+    /**
+     * Helper that performs an XQuery and does JUnit assertion on result size.
+     *
+     * @see #queryResourceV(XQueryService, String, String, int, String)
+     */
+    private void queryResourceV(final XQueryService service, final String resource, final String query, final int expected) throws XMLDBException {
+        queryResourceV(service, resource, query, expected, null);
     }
 
     /**
@@ -2347,9 +2870,19 @@ public class XPathQueryTest {
      *
      * @see #queryResource(XQueryService, String, String, int, String)
      */
-    private ResourceSet queryResource(final XQueryService service, final String resource,
-                                      final String query, final int expected) throws XMLDBException {
+    private EXistResourceSet queryResource(final XQueryService service, final String resource, final String query, final int expected) throws XMLDBException {
         return queryResource(service, resource, query, expected, null);
+    }
+
+    /**
+     * Helper that performs an XQuery and does JUnit assertion on result size.
+     *
+     * @see #queryResource(XQueryService, String, String, int, String)
+     */
+    private void queryResourceV(final XQueryService service, final String resource, final String query, final int expected, @Nullable final String message) throws XMLDBException {
+        try (final EXistResourceSet result = queryResource(service, resource, query, expected, message)) {
+            // needed to ensure that result is closed
+        }
     }
 
     /**
@@ -2364,9 +2897,8 @@ public class XPathQueryTest {
      * @return a ResourceSet, allowing to do more assertions if necessary.
      * @throws XMLDBException
      */
-    private ResourceSet queryResource(final XQueryService service, final String resource,
-                                      final String query, final int expected, final String message) throws XMLDBException {
-        final ResourceSet result = service.queryResource(resource, query);
+    private EXistResourceSet queryResource(final XQueryService service, final String resource, final String query, final int expected, @Nullable final String message) throws XMLDBException {
+        final EXistResourceSet result = (EXistResourceSet) service.queryResource(resource, query);
         if(message == null) {
             assertEquals(query, expected, result.getSize());
         } else {
@@ -2375,10 +2907,15 @@ public class XPathQueryTest {
         return result;
     }
 
+    private void queryAndAssertV(final XQueryService service, final String query, final int expected, @Nullable final String message) throws XMLDBException {
+        try (final EXistResourceSet result = queryAndAssert(service, query, expected, message)) {
+            // needed to ensure that result is closed
+        }
+    }
+    
     /** For queries without associated data */
-    private ResourceSet queryAndAssert(final XQueryService service, final String query,
-                                       final int expected, final String message) throws XMLDBException {
-        final ResourceSet result = service.query(query);
+    private EXistResourceSet queryAndAssert(final XQueryService service, final String query, final int expected, @Nullable final String message) throws XMLDBException {
+        final EXistResourceSet result = (EXistResourceSet) service.query(query);
         if(message == null) {
             assertEquals(expected, result.getSize());
         } else {
@@ -2400,17 +2937,11 @@ public class XPathQueryTest {
      * @return the XQuery Service
      * @throws XMLDBException
      */
-    private XQueryService storeXMLStringAndGetQueryService(final String documentName,
-                                                           final String content) throws XMLDBException {
-        final XMLResource doc =
-            (XMLResource) testCollection.createResource(
-                documentName, "XMLResource" );
-        doc.setContent(content);
-        testCollection.storeResource(doc);
-        final XQueryService service =
-            (XQueryService) testCollection.getService(
-                "XPathQueryService",
-                "1.0");
-        return service;
+    private XQueryService storeXMLStringAndGetQueryService(final String documentName, final String content) throws XMLDBException {
+        try (final EXistResource doc = (EXistResource) testCollection.createResource(documentName, XMLResource.RESOURCE_TYPE)) {
+            doc.setContent(content);
+            testCollection.storeResource(doc);
+        }
+        return getQueryService();
     }
 }

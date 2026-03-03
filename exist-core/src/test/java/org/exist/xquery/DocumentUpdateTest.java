@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,12 +46,13 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
@@ -125,11 +150,17 @@ public class DocumentUpdateTest {
                 "(: without the output on the next line, it works :) " +
                 "xs:string($link) " +
             ")";
-        XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
-        ResourceSet r = service.query(query);
-        assertEquals(r.getSize(), 2);
-        assertEquals(r.getResource(0).getContent().toString(), "123");
-        assertEquals(r.getResource(1).getContent().toString(), "123");
+
+        final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+        try (final EXistResourceSet r = (EXistResourceSet) service.query(query)) {
+            assertEquals(r.getSize(), 2);
+            try (final EXistResource resource = (EXistResource) r.getResource(0)) {
+                assertEquals(resource.getContent().toString(), "123");
+            }
+            try (final EXistResource resource = (EXistResource) r.getResource(1)) {
+                assertEquals(resource.getContent().toString(), "123");
+            }
+        }
     }
 
     @Test
@@ -151,16 +182,19 @@ public class DocumentUpdateTest {
 
     }
     
-    private String execQuery(String query) throws XMLDBException {
-    	XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
-    	ResourceSet result = service.query(query);
-    	assertEquals(result.getSize(), 1);
-    	return result.getResource(0).getContent().toString();
+    private String execQuery(final String query) throws XMLDBException {
+    	final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+    	try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(result.getSize(), 1);
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                return resource.getContent().toString();
+            }
+        }
     }
 
     @Before
     public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
-        CollectionManagementService service =
+        final CollectionManagementService service =
             (CollectionManagementService) existEmbeddedServer.getRoot().getService(
                 "CollectionManagementService",
                 "1.0");
@@ -170,7 +204,8 @@ public class DocumentUpdateTest {
 
     @After
     public void tearDown() throws XMLDBException {
-        CollectionManagementService service =
+        testCollection.close();
+        final CollectionManagementService service =
             (CollectionManagementService) existEmbeddedServer.getRoot().getService(
                 "CollectionManagementService",
                 "1.0");

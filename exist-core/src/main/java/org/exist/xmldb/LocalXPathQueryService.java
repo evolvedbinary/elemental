@@ -73,7 +73,8 @@ import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.w3c.dom.Node;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.modules.XMLResource;
@@ -138,17 +139,17 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     @Override
-    public ResourceSet query(final String query) throws XMLDBException {
+    public EXistResourceSet query(final String query) throws XMLDBException {
         return query(query, null);
     }
 
     @Override
-    public ResourceSet query(final XMLResource res, final String query) throws XMLDBException {
+    public EXistResourceSet query(final XMLResource res, final String query) throws XMLDBException {
         return query(res, query, null);
     }
 
     @Override
-    public ResourceSet query(final String query, final String sortBy) throws XMLDBException {
+    public EXistResourceSet query(final String query, final String sortBy) throws XMLDBException {
         return withDb((broker, transaction) -> {
             final XmldbURI[] docs = new XmldbURI[] { XmldbURI.create(collection.getName(broker, transaction)) };
             return doQuery(broker, transaction, query, docs, null, sortBy);
@@ -156,7 +157,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     @Override
-    public ResourceSet query(final XMLResource res, final String query, final String sortBy) throws XMLDBException {
+    public EXistResourceSet query(final XMLResource res, final String query, final String sortBy) throws XMLDBException {
         final Node n = ((LocalXMLResource) res).root;
 
         return withDb((broker, transaction) -> {
@@ -179,7 +180,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         });
     }
 
-    private ResourceSet doQuery(final DBBroker broker, final Txn transaction, final String query, final XmldbURI[] docs, final Sequence contextSet, final String sortExpr) throws XMLDBException {
+    private EXistResourceSet doQuery(final DBBroker broker, final Txn transaction, final String query, final XmldbURI[] docs, final Sequence contextSet, final String sortExpr) throws XMLDBException {
         final Either<XPathException, CompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
         if(maybeExpr.isLeft()) {
             final XPathException e = maybeExpr.left().get();
@@ -190,13 +191,13 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     @Override
-    public ResourceSet execute(final CompiledExpression expression) throws XMLDBException {
+    public EXistResourceSet execute(final CompiledExpression expression) throws XMLDBException {
     return withDb((broker, transaction) ->
         execute(broker, transaction, null, null, expression, null));
     }
 
     @Override
-    public ResourceSet execute(final XMLResource res, final CompiledExpression expression) throws XMLDBException {
+    public EXistResourceSet execute(final XMLResource res, final CompiledExpression expression) throws XMLDBException {
         return withDb((broker, transaction) -> {
             final NodeProxy node = ((LocalXMLResource) res).getNode(broker, transaction);
             if (node == null) {
@@ -212,7 +213,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         });
     }
 
-    private ResourceSet execute(final DBBroker broker, final Txn transaction, XmldbURI[] docs, final Sequence contextSet, final CompiledExpression expression, final String sortExpr) throws XMLDBException {
+    private EXistResourceSet execute(final DBBroker broker, final Txn transaction, XmldbURI[] docs, final Sequence contextSet, final CompiledExpression expression, final String sortExpr) throws XMLDBException {
         final CompiledXQuery expr = (CompiledXQuery) expression;
         final XQueryContext context = expr.getContext();
 
@@ -246,7 +247,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
 
             // NOTE(AR) LocalResourceSet takes ownership of QueryResult sequence! So it is responsible to call `QueryResult#close()` when it is finished with it
-            final ResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, sortExpr);
+            final EXistResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, sortExpr);
             queryResultOwnershipTransferred = true;
             return resourceSet;
 
@@ -267,12 +268,12 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     @Override
-    public ResourceSet execute(final Source source) throws XMLDBException {
+    public EXistResourceSet execute(final Source source) throws XMLDBException {
         return execute((broker, transaction) -> source);
     }
 	
     @Override
-    public ResourceSet executeStoredQuery(final String uri) throws XMLDBException {
+    public EXistResourceSet executeStoredQuery(final String uri) throws XMLDBException {
         return execute((broker, transaction) -> {
             final DocumentImpl resource = broker.getResource(new XmldbURI(uri), Permission.READ | Permission.EXECUTE);
             if (resource == null) {
@@ -282,7 +283,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         });
     }
 
-    private ResourceSet execute(final LocalXmldbFunction<Source> sourceOp) throws XMLDBException {
+    private EXistResourceSet execute(final LocalXmldbFunction<Source> sourceOp) throws XMLDBException {
         return withDb((broker, transaction) -> {
 
             final Source source = sourceOp.apply(broker, transaction);
@@ -316,7 +317,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
 
                 // NOTE(AR) LocalResourceSet takes ownership of QueryResult sequence! So it is responsible to call `QueryResult#close()` when it is finished with it
-                final ResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, null);
+                final EXistResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, null);
                 queryResultOwnershipTransferred = true;
                 return resourceSet;
 
@@ -380,7 +381,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     @Override
-    public ResourceSet queryResource(final String resource, final String query) throws XMLDBException {
+    public EXistResourceSet queryResource(final String resource, final String query) throws XMLDBException {
     	return withDb((broker, transaction) -> {
             final LocalXMLResource res = (LocalXMLResource) collection.getResource(broker, transaction, resource);
             if (res == null) {

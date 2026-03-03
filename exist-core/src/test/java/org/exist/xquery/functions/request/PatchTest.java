@@ -82,16 +82,16 @@ public class PatchTest extends RESTTest {
     private final static String XML_FILENAME = "test-patch.xml";
 
     private static Collection root;
-    private static XMLResource xml;
-    private static BinaryResource bin;
+    private static EXistResource xml;
+    private static EXistResource bin;
 
     @BeforeClass
     public static void beforeClass() throws XMLDBException {
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
         UserManagementService ums = (UserManagementService)root.getService("UserManagementService", "1.0");
 
-        bin = (BinaryResource)root.createResource(XQUERY_FILENAME, BinaryResource.RESOURCE_TYPE);
-        ((EXistResource) bin).setMediaType(MediaType.APPLICATION_XQUERY);
+        bin = (EXistResource) root.createResource(XQUERY_FILENAME, BinaryResource.RESOURCE_TYPE);
+        bin.setMediaType(MediaType.APPLICATION_XQUERY);
         bin.setContent("xquery version \"3.1\";" +
                 "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";" +
                 "declare option output:method \"xml\";" +
@@ -101,7 +101,7 @@ public class PatchTest extends RESTTest {
         root.storeResource(bin);
         ums.chmod(bin, 0777);
 
-        xml = (XMLResource)root.createResource(XML_FILENAME, XMLResource.RESOURCE_TYPE);
+        xml = (EXistResource) root.createResource(XML_FILENAME, XMLResource.RESOURCE_TYPE);
         xml.setContent("<root/>");
         root.storeResource(xml);
         ums.chmod(xml, 0777);
@@ -109,8 +109,23 @@ public class PatchTest extends RESTTest {
 
     @AfterClass
     public static void afterClass() throws XMLDBException {
-        root.removeResource(bin);
-        root.removeResource(xml);
+        try {
+            root.removeResource(bin);
+            root.removeResource(xml);
+        } finally {
+            if (bin != null) {
+                bin.close();
+                bin = null;
+            }
+            if (xml != null) {
+                xml.close();
+                xml = null;
+            }
+            if (root != null) {
+                root.close();
+                root = null;
+            }
+        }
     }
 
     @Test

@@ -47,9 +47,10 @@ package org.exist.dom.memtree;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import static org.junit.Assert.assertEquals;
@@ -71,12 +72,12 @@ public class MemtreeInXQueryTest {
                 "}\n" +
                 "return count($doc//processing-instruction()/@*)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-
-        assertEquals(1, result.getSize());
-        assertEquals(0, Integer.parseInt(result.getResource(0).getContent().toString()));
-
-        result.clear();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(0, Integer.parseInt(resource.getContent().toString()));
+            }
+        }
     }
 
     @Test
@@ -87,12 +88,12 @@ public class MemtreeInXQueryTest {
                 "}\n" +
                 "return count($doc//processing-instruction()/node())";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-
-        assertEquals(1, result.getSize());
-        assertEquals(0, Integer.parseInt(result.getResource(0).getContent().toString()));
-
-        result.clear();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(0, Integer.parseInt(resource.getContent().toString()));
+            }
+        }
     }
 
     @Test
@@ -103,12 +104,12 @@ public class MemtreeInXQueryTest {
                 "}\n" +
                 "return count($doc//processing-instruction()//@*)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-
-        assertEquals(1, result.getSize());
-        assertEquals(0, Integer.parseInt(result.getResource(0).getContent().toString()));
-
-        result.clear();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(0, Integer.parseInt(resource.getContent().toString()));
+            }
+        }
     }
 
     @Test
@@ -120,12 +121,12 @@ public class MemtreeInXQueryTest {
                 "} return\n" +
                 "    count($doc/a/@x/@y)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-
-        assertEquals(1, result.getSize());
-        assertEquals(0, Integer.parseInt(result.getResource(0).getContent().toString()));
-
-        result.clear();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(0, Integer.parseInt(resource.getContent().toString()));
+            }
+        }
     }
 
     @Test
@@ -137,11 +138,11 @@ public class MemtreeInXQueryTest {
                 "} return\n" +
                 "    count($doc/a/@x/node())";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-
-        assertEquals(1, result.getSize());
-        assertEquals(0, Integer.parseInt(result.getResource(0).getContent().toString()));
-
-        result.clear();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(0, Integer.parseInt(resource.getContent().toString()));
+            }
+        }
     }
 }

@@ -929,7 +929,7 @@ public class XPathUtil {
      * @return A NodeProxy for accessing the content represented by xres
      * @throws XPathException if an XMLDBException is encountered
      */
-    public static final NodeProxy getNode(DBBroker broker, XMLResource xres, final Expression expression) throws XPathException {
+    public static final NodeProxy getNode(final DBBroker broker, final XMLResource xres, final Expression expression) throws XPathException {
         if (xres instanceof LocalXMLResource) {
             final LocalXMLResource lres = (LocalXMLResource) xres;
             try {

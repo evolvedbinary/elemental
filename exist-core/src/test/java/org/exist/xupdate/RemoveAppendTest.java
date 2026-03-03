@@ -57,6 +57,8 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.DBUtils;
 import org.junit.*;
@@ -65,7 +67,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XPathQueryService;
@@ -94,32 +95,36 @@ public class RemoveAppendTest {
     @Ignore
     @Test
     public void testRemoveAppend() throws Exception {
-        XUpdateQueryService service = (XUpdateQueryService)
+        final XUpdateQueryService service = (XUpdateQueryService)
             testCol.getService("XUpdateQueryService", "1.0");
-        XPathQueryService query = (XPathQueryService)
+        final XPathQueryService query = (XPathQueryService)
             testCol.getService("XPathQueryService", "1.0");
         for (int i = 1; i < 1000; i++) {
             int which = rand.nextInt(ITEM_COUNT) + 1;
             insert(service, which);
             remove(service, which);
             
-            ResourceSet result = query.query("/test/item[@id='" + which + "']");
-            assertEquals(result.getSize(), 1);
-            result.getResource(0).getContent();
+            try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/item[@id='" + which + "']")) {
+                assertEquals(result.getSize(), 1);
+                try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                    resource.getContent();
+                }
+            }
         }
     }
     
     @Test
     public void appendRemove() throws XMLDBException, IOException {
-        XUpdateQueryService service = (XUpdateQueryService)
+        final XUpdateQueryService service = (XUpdateQueryService)
         testCol.getService("XUpdateQueryService", "1.0");
-        XPathQueryService query = (XPathQueryService)
+        final XPathQueryService query = (XPathQueryService)
             testCol.getService("XPathQueryService", "1.0");
         for (int i = 1; i <= 100; i++) {
             append(service, i);
-            
-            ResourceSet result = query.query("/test/item[@id='" + i + "']");
-            assertEquals(result.getSize(), 1);
+
+            try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/item[@id='" + i + "']")) {
+                assertEquals(result.getSize(), 1);
+            }
         }
         
         for (int i = 100; i > 10; i--) {
@@ -129,8 +134,10 @@ public class RemoveAppendTest {
                 "</xu:modifications>";
             long mods = service.update(xu);
             assertEquals(mods, 1);
-            
-            ResourceSet result = query.query("/test/item/e0");
+
+            try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/item/e0")) {
+                // needed to ensure that result is closed
+            }
         }
     }
     
@@ -176,7 +183,7 @@ public class RemoveAppendTest {
         rootCol = existXmldbEmbeddedServer.getRoot();
         
         testCol = rootCol.getChildCollection(XmldbURI.ROOT_COLLECTION + "/test");
-        if(testCol != null) {
+        if (testCol != null) {
             CollectionManagementService mgr = DBUtils.getCollectionManagementService(rootCol);
             mgr.removeCollection(XmldbURI.ROOT_COLLECTION + "/test");
         }
@@ -188,7 +195,9 @@ public class RemoveAppendTest {
     }
     
     @After
-    public void tearDown() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    public void tearDown() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException, XMLDBException {
+        testCol.close();
+
         TestUtils.cleanupDB();
     }
     

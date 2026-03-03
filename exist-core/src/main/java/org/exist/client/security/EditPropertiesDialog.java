@@ -64,9 +64,9 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.ACEAider;
 import org.exist.security.internal.aider.SimpleACLPermissionAider;
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.UserManagementService;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
@@ -509,11 +509,13 @@ public class EditPropertiesDialog extends javax.swing.JFrame {
                 }
 
                 if (desc.isCollection()) {
-                    final Collection coll = parent.getChildCollection(desc.getName().toString());
-                    getUserManagementService().setPermissions(coll, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    try (final Collection coll = parent.getChildCollection(desc.getName().toString())) {
+                        getUserManagementService().setPermissions(coll, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    }
                 } else {
-                    final Resource res = parent.getResource(desc.getName().toString());
-                    getUserManagementService().setPermissions(res, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    try (final EXistResource res = (EXistResource) parent.getResource(desc.getName().toString())) {
+                        getUserManagementService().setPermissions(res, newOwner, newGroup, updatedPermission.getMode(), dlgAces);
+                    }
                 }
             }
 

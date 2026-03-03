@@ -94,18 +94,24 @@ public class GetParameterTest extends RESTTest {
     @BeforeClass
     public static void beforeClass() throws XMLDBException {
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
-        BinaryResource res = (BinaryResource)root.createResource(XQUERY_FILENAME, "BinaryResource");
-        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
-        res.setContent(XQUERY);
-        root.storeResource(res);
-        UserManagementService ums = (UserManagementService)root.getService("UserManagementService", "1.0");
-        ums.chmod(res, 0777);
+        try (final EXistResource res = (EXistResource) root.createResource(XQUERY_FILENAME, BinaryResource.RESOURCE_TYPE)) {
+            res.setMediaType(MediaType.APPLICATION_XQUERY);
+            res.setContent(XQUERY);
+            root.storeResource(res);
+            UserManagementService ums = (UserManagementService)root.getService("UserManagementService", "1.0");
+            ums.chmod(res, 0777);
+        }
     }
 
     @AfterClass
     public static void afterClass() throws XMLDBException {
-        BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME);
-        root.removeResource(res);
+        try (final EXistResource res = (EXistResource) root.getResource(XQUERY_FILENAME)) {
+            root.removeResource(res);
+        }
+        if (root != null) {
+            root.close();
+            root = null;
+        }
     }
 
     @Test

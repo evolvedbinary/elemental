@@ -316,12 +316,12 @@ public class NewResourceDialog extends JFrame {
             final String resName = URIUtils.urlEncodeUtf8((isNullOrEmpty(filename) ? DEFAULT_FILENAME : filename) + "." + resourceType.getFileExtension());
             final String resType = resourceType == ResourceType.XML_DOCUMENT ? XMLResource.RESOURCE_TYPE : BinaryResource.RESOURCE_TYPE;
             
-            final Collection collection = client.current;
-            
-            final Resource resource = collection.createResource(resName, resType);
-            resource.setContent(resourceContent);
-            ((EXistResource)resource).setMediaType(resourceType.getMimeType());
-            collection.storeResource(resource);
+            final Collection collection = client.getCollection();
+            try (final EXistResource resource = (EXistResource) collection.createResource(resName, resType)) {
+                resource.setContent(resourceContent);
+                resource.setMediaType(resourceType.getMimeType());
+                collection.storeResource(resource);
+            }
             collection.close();
             client.reloadCollection();
         } catch(final XMLDBException xmldbe) {

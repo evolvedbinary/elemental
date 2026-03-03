@@ -51,11 +51,14 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.xmldb.api.base.*;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
+
+import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -102,24 +105,26 @@ public class TreeLevelOrderTest {
         store(DOC1, DOC1_NAME);
 
         // read document back from database
-        final Node doc = load(DOC1_NAME);
-        assertNotNull(doc);
-        assertTrue(doc instanceof Document);
+        try (final EXistResourceSet result = load(DOC1_NAME)) {
+            final Node doc = ((XMLResource) result.getIterator().nextResource()).getContentAsDOM();
+            assertNotNull(doc);
+            assertTrue(doc instanceof Document);
 
-        //get node using DOM
-        String strTo = null;
+            //get node using DOM
+            String strTo = null;
 
-        final Element elem = ((Document) doc).getDocumentElement();
-        final NodeList elemChildNodes = elem.getChildNodes();
-        for (int r = 0; r < elemChildNodes.getLength(); r++) {
-            if (elemChildNodes.item(r).getLocalName().equals("to")) {
-                final Node to = elemChildNodes.item(r);
-                strTo = to.getTextContent();
-                break;
+            final Element elem = ((Document) doc).getDocumentElement();
+            final NodeList elemChildNodes = elem.getChildNodes();
+            for (int r = 0; r < elemChildNodes.getLength(); r++) {
+                if (elemChildNodes.item(r).getLocalName().equals("to")) {
+                    final Node to = elemChildNodes.item(r);
+                    strTo = to.getTextContent();
+                    break;
+                }
             }
-        }
 
-        assertNotNull(strTo);
+            assertNotNull(strTo);
+        }
     }
 
     /**
@@ -149,7 +154,7 @@ public class TreeLevelOrderTest {
      *
      * @param document the document to load
      */
-    private Node load(final String document) throws XMLDBException {
+    private @Nullable EXistResourceSet load(final String document) throws XMLDBException {
         final StringBuilder query = new StringBuilder();
         query.append("declare variable $document as xs:string external;");
         query.append("let $survey := doc(string-join(('" + XmldbURI.ROOT_COLLECTION + "', $document), '/'))");
@@ -158,10 +163,6 @@ public class TreeLevelOrderTest {
         final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("document", document);
-        final ResourceSet set = service.execute(cQuery);
-        if (set != null && set.getSize() > 0) {
-            return ((XMLResource) set.getIterator().nextResource()).getContentAsDOM();
-        }
-        return null;
+        return (EXistResourceSet) service.execute(cQuery);
     }
 }

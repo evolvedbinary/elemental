@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -81,48 +105,58 @@ public class XQDocTask extends AbstractXMLDBTask {
                 path = uri.substring(p + 3);
 
             Collection root = null;
-            if (createCollection)
-            {
-                root = DatabaseManager.getCollection(baseURI + XmldbURI.ROOT_COLLECTION, user, password);
-                root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION, path);
-            } else
-                root = DatabaseManager.getCollection(uri, user, password);
+            try {
+                if (createCollection) {
+                    root = DatabaseManager.getCollection(baseURI + XmldbURI.ROOT_COLLECTION, user, password);
+                    root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION, path);
+                } else {
+                    root = DatabaseManager.getCollection(uri, user, password);
+                }
 
-            EXistXQueryService service = (EXistXQueryService) root.getService("XQueryService", "1.0");
-            Source source = new StringSource(XQUERY);
-            service.declareVariable("collection", root.getName());
-            service.declareVariable("uri", "");
-            if (moduleURI != null) {
-                service.declareVariable("uri", moduleURI);
-                service.declareVariable("data", "");
-                service.execute(source);
-            } else {
-                for(FileSet fileSet: fileSets) {
-                    DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
-                    scanner.scan();
-                    String[] files = scanner.getIncludedFiles();
-                    log("Found " + files.length + " files to upload.\n");
+                EXistXQueryService service = (EXistXQueryService) root.getService("XQueryService", "1.0");
+                Source source = new StringSource(XQUERY);
+                service.declareVariable("collection", root.getName());
+                service.declareVariable("uri", "");
+                if (moduleURI != null) {
+                    service.declareVariable("uri", moduleURI);
+                    service.declareVariable("data", "");
+                    service.execute(source);
+                } else {
+                    for (FileSet fileSet : fileSets) {
+                        DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
+                        scanner.scan();
+                        String[] files = scanner.getIncludedFiles();
+                        log("Found " + files.length + " files to upload.\n");
 
-                    Path baseDir=scanner.getBasedir().toPath();
-                    for (String s : files) {
-                        Path file = baseDir.resolve(s);
-                        log("Storing " + s + " ...\n");
-                        byte[] data = read(file);
-                        try {
-                            service.declareVariable("name", FileUtils.fileName(file));
-                            service.declareVariable("data", data);
-                            service.execute(source);
-                        } catch (XMLDBException e) {
-                            String msg = "XMLDB exception caught: " + e.getMessage();
-                            if (failonerror)
-                                throw new BuildException(msg, e);
-                            else
-                                log(msg, e, Project.MSG_ERR);
+                        Path baseDir = scanner.getBasedir().toPath();
+                        for (String s : files) {
+                            Path file = baseDir.resolve(s);
+                            log("Storing " + s + " ...\n");
+                            byte[] data = read(file);
+                            try {
+                                service.declareVariable("name", FileUtils.fileName(file));
+                                service.declareVariable("data", data);
+                                service.execute(source);
+                            } catch (XMLDBException e) {
+                                String msg = "XMLDB exception caught: " + e.getMessage();
+                                if (failonerror)
+                                    throw new BuildException(msg, e);
+                                else
+                                    log(msg, e, Project.MSG_ERR);
+                            }
                         }
                     }
                 }
+            } finally {
+                if (root != null) {
+                    try {
+                        root.close();
+                    } catch (final XMLDBException e) {
+                        // no-op
+                    }
+                }
             }
-        } catch (XMLDBException e) {
+        } catch (final XMLDBException e) {
             String msg="XMLDB exception caught: " + e.getMessage();
             if(failonerror)
                 throw new BuildException(msg,e);
