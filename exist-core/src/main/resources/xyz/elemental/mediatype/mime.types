@@ -45,6 +45,7 @@ application/schematron+xml                           sch
 application/tei+xml                                  odd tei teicorpus
 application/vnd.xmi+xml                              xmi
 application/xml                                      fo nvdl rng stx xml xsd xsl
+application/xml-external-parsed-entity               ent
 application/xquery                                   xq xql xqm xquery xqws xqy
 application/xquery+xml                               xqx
 application/zstd                                     zst

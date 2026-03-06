@@ -37,6 +37,7 @@
 package xyz.elemental.mediatype.impl;
 
 import com.sun.activation.registries.MimeTypeEntry;
+import io.lacuna.bifurcan.IEntry;
 import io.lacuna.bifurcan.IList;
 import io.lacuna.bifurcan.LinearMap;
 import jakarta.activation.MimetypesFileTypeMap;
@@ -44,6 +45,7 @@ import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeAlias;
 import xyz.elemental.mediatype.MediaTypeResolver;
 import xyz.elemental.mediatype.StorageType;
 
@@ -70,15 +72,17 @@ public class MediaTypeResolverImpl implements MediaTypeResolver {
 
     private final io.lacuna.bifurcan.IMap<String, MediaType> extensionsIndex;
     private final io.lacuna.bifurcan.IMap<String, MediaType> identifiersIndex;
+    private final io.lacuna.bifurcan.IMap<String, MediaTypeAlias> aliasIdentifiersIndex;
 
     private final MediaType defaultMediaType;
 
-    public MediaTypeResolverImpl(final ApplicationMimetypesFileTypeMap fileTypeMap, final MediaTypeMapper mediaTypeMapper) {
+    public MediaTypeResolverImpl(final ApplicationMimetypesFileTypeMap fileTypeMap, final MediaTypeAliaser mediaTypeAliaser, final MediaTypeMapper mediaTypeMapper) {
         final IList<Set<Map.Entry<String, MimeTypeEntry>>> allEntries = fileTypeMap.getAllEntries();
         if (allEntries == null) {
             LOG.warn("Could not load file type maps. No mime types are known to the system!");
             this.extensionsIndex = io.lacuna.bifurcan.Map.empty();
             this.identifiersIndex = io.lacuna.bifurcan.Map.empty();
+            this.aliasIdentifiersIndex = io.lacuna.bifurcan.Map.empty();
             this.defaultMediaType = null;
             return;
         }
@@ -119,9 +123,27 @@ public class MediaTypeResolverImpl implements MediaTypeResolver {
 
         this.extensionsIndex = mutExtensionsIndex.mapValues((k, v) -> v.build()).forked();
         this.identifiersIndex = mutIdentifiersIndex.mapValues((k, v) -> v.build()).forked();
-
         assert(!extensionsIndex.isLinear());
         assert(!identifiersIndex.isLinear());
+
+        final LinearMap<String, MediaTypeAliasImpl.Builder> mutAliasIdentifiersIndex = new LinearMap<>((int) mediaTypeAliaser.aliases.size());
+        for (final IEntry<String, String> alias : mediaTypeAliaser.aliases.entries()) {
+            final String aliasIdentifier = alias.key();
+            final String aliasTo = alias.value();
+            @Nullable final MediaType aliasTarget = identifiersIndex.get(aliasTo, null);
+            if (aliasTarget == null) {
+                LOG.warn("No Media Type definition found for alias: {}. Alias will be ignored!", aliasIdentifier);
+                continue;
+            }
+
+            final MediaTypeAliasImpl.Builder mediaTypeAliasBuilder = MediaTypeAliasImpl.builder(aliasIdentifier)
+                    .of(aliasTarget);
+
+            mutAliasIdentifiersIndex.put(aliasIdentifier, mediaTypeAliasBuilder);
+        }
+
+        this.aliasIdentifiersIndex = mutAliasIdentifiersIndex.mapValues((k, v) -> v.build()).forked();
+        assert(!aliasIdentifiersIndex.isLinear());
 
         this.defaultMediaType = identifiersIndex.get(APPLICATION_OCTET_STREAM)
                 .orElseGet(() ->  MediaTypeImpl.Builder.forMediaType(APPLICATION_OCTET_STREAM, StorageType.BINARY).build());
@@ -167,12 +189,21 @@ public class MediaTypeResolverImpl implements MediaTypeResolver {
     }
 
     @Override
-    public @Nullable MediaType fromString(@Nullable final String mediaType) {
+    public @Nullable MediaType fromString(@Nullable String mediaType) {
         if (mediaType == null) {
             return null;
         }
 
-        return identifiersIndex.get(mediaType.toLowerCase(), null);
+        mediaType = mediaType.toLowerCase();
+
+        // 1. try and resolve any alias first
+        @Nullable final MediaType aliasTarget = aliasIdentifiersIndex.get(mediaType, null);
+        if (aliasTarget != null) {
+            return aliasTarget;
+        }
+
+        // 2. if it is not an alias, then resolve the media type itself
+        return identifiersIndex.get(mediaType, null);
     }
 
     @Override
