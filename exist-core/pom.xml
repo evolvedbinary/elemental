@@ -1371,6 +1371,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/IdFunctionTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/securitymanager/PermissionsFunction.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChmodTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChownTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/system/GetRunningXQueriesTest.java</include>
@@ -2184,6 +2185,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupManagementFunctionRemoveGroupTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/GroupMembershipFunctionRemoveGroupMemberTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/IdFunctionTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/securitymanager/PermissionsFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChmodTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/PermissionsFunctionChownTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/securitymanager/SecurityManagerTestUtil.java</exclude>
