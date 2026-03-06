@@ -115,6 +115,7 @@ public class MediaTypeImpl implements MediaType {
          *
          * @param identifier the Media Type identifier
          * @param storageType the database storage that should be used for resources of this Media Type
+         * @return a Media Type builder
          */
         static Builder forMediaType(final String identifier, final StorageType storageType) {
             return new Builder(identifier, storageType);
