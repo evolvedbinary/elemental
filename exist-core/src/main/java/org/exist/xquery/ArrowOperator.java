@@ -253,5 +253,11 @@ public class ArrowOperator extends AbstractExpression {
         @Override
         public void dump(final ExpressionDumper dumper) {
         }
+
+        @Override
+        public void resetState(final boolean postOptimization) {
+            super.resetState(postOptimization);
+            this.sequence = null;
+        }
     }
 }
