@@ -45,7 +45,6 @@
  */
 package org.exist.xquery;
 
-import java.util.ArrayDeque;
 import java.util.List;
 
 import org.exist.dom.QName;
@@ -59,13 +58,13 @@ import org.exist.xquery.value.Type;
  * An XQuery 3.0 inline function expression.
  *
  * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class InlineFunction extends AbstractExpression {
 
     public static final QName INLINE_FUNCTION_QNAME = QName.EMPTY_QNAME;
 
     private final UserDefinedFunction function;
-    private final ArrayDeque<FunctionCall> calls = new ArrayDeque<>();
 
     private AnalyzeContextInfo cachedContextInfo;
 
@@ -102,10 +101,6 @@ public class InlineFunction extends AbstractExpression {
         call.setLocation(function.getLine(), function.getColumn());
         call.analyze(new AnalyzeContextInfo(cachedContextInfo));
 
-        // push the created function call to the stack so we can clear
-        // it after execution
-        calls.push(call);
-
         return new FunctionReference(this, call);
     }
 
@@ -117,7 +112,11 @@ public class InlineFunction extends AbstractExpression {
     @Override
     public void resetState(final boolean postOptimization) {
         super.resetState(postOptimization);
-        calls.clear();
+
+        if (!postOptimization) {
+            function.setClosureVariables(null);
+        }
+
         function.resetState(postOptimization);
     }
 }
