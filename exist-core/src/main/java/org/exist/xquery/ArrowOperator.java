@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -37,6 +61,7 @@ import java.util.List;
  * Implements the XQuery 3.1 arrow operator.
  *
  * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ArrowOperator extends AbstractExpression {
 
@@ -110,27 +135,28 @@ public class ArrowOperator extends AbstractExpression {
         }
         contextSequence = leftExpr.eval(contextSequence, null);
 
-        final FunctionReference functionReference;
-        if (functionCall != null) {
-            // Call by name
-            functionReference = new FunctionReference(this, functionCall);
-
-        } else {
-            // Call by expression
-            final Sequence funcSeq = functionSpecExpr.eval(contextSequence, contextItem);
-            if (funcSeq.getCardinality() != Cardinality.EXACTLY_ONE) {
-                throw new XPathException(this, ErrorCodes.XPTY0004, "Expected exactly one function item, got " + funcSeq.getItemCount() + ". Expression: " + ExpressionDumper.dump(functionSpecExpr));
-            }
-
-            final Item item0 = funcSeq.itemAt(0);
-            if (!Type.subTypeOf(item0.getType(), Type.FUNCTION)) {
-                throw new XPathException(this, ErrorCodes.XPTY0004, "Type error: expected function, got " + Type.getTypeName(item0.getType()));
-            }
-
-            functionReference = (FunctionReference) item0;
-        }
-
+        @Nullable FunctionReference functionReference = null;
         try {
+            if (functionCall != null) {
+                // Prepare call by name
+                functionReference = new FunctionReference(this, functionCall);
+
+            } else {
+                // Prepare call by expression
+                final Sequence funcSeq = functionSpecExpr.eval(contextSequence, contextItem);
+                if (funcSeq.getCardinality() != Cardinality.EXACTLY_ONE) {
+                    throw new XPathException(this, ErrorCodes.XPTY0004, "Expected exactly one function item, got " + funcSeq.getItemCount() + ". Expression: " + ExpressionDumper.dump(functionSpecExpr));
+                }
+
+                final Item item0 = funcSeq.itemAt(0);
+                if (!Type.subTypeOf(item0.getType(), Type.FUNCTION)) {
+                    throw new XPathException(this, ErrorCodes.XPTY0004, "Type error: expected function, got " + Type.getTypeName(item0.getType()));
+                }
+
+                functionReference = (FunctionReference) item0;
+            }
+
+            // Make the call
             final List<Expression> fparams = new ArrayList<>(functionParameters.size() + 1);
             fparams.add(new ContextParam(context, contextSequence));
             fparams.addAll(functionParameters);
@@ -143,7 +169,9 @@ public class ArrowOperator extends AbstractExpression {
             return functionReference.eval(null);
 
         } finally {
-            functionReference.close();
+            if (functionReference != null) {
+                functionReference.close();
+            }
         }
     }
 
