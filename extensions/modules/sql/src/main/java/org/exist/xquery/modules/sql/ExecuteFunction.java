@@ -429,8 +429,9 @@ public class ExecuteFunction extends BasicFunction {
                                 //get the content
                                 if (rsmd.getColumnType(i + 1) == Types.SQLXML) {
                                     //parse sqlxml value
+                                    @Nullable SQLXML sqlXml = null;
                                     try {
-                                        final SQLXML sqlXml = rs.getSQLXML(i + 1);
+                                        sqlXml = rs.getSQLXML(i + 1);
 
                                         if (rs.wasNull()) {
                                             // Add a null indicator attribute if the value was SQL Null
@@ -456,7 +457,12 @@ public class ExecuteFunction extends BasicFunction {
                                         }
                                     } catch (final Exception e) {
                                         throw new XPathException(this, "Could not parse column of type SQLXML: " + e.getMessage(), e);
+                                    } finally {
+                                        if (sqlXml != null) {
+                                            sqlXml.free();
+                                        }
                                     }
+
                                 } else {
                                     //otherwise assume string value
                                     final String colValue = rs.getString(i + 1);
