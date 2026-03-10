@@ -200,6 +200,7 @@ public class Lookup extends AbstractExpression {
         }
 
         if (keyExpression != null) {
+            keys = null;
             keyExpression.resetState(postOptimization);
         }
     }
