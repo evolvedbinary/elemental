@@ -469,7 +469,7 @@ public class Eval extends BasicFunction {
                 compiled.getContext().prepareForReuse();
             }
 
-            Sequence sequence = xqueryService.execute(broker, compiled, exprContext, outputProperties, false);
+            Sequence sequence = xqueryService.execute(broker, compiled, exprContext, outputProperties, true);
             ValueSequence newSeq = new ValueSequence();
             newSeq.keepUnOrdered(unordered);
             boolean hasSupplements = false;
@@ -496,10 +496,9 @@ public class Eval extends BasicFunction {
                 if (compiled.getContext() != null) {
                     compiled.getContext().runCleanupTasks();
                 }
+
                 if (cache) {
                     pool.returnCompiledXQuery(querySource, compiled);
-                } else {
-                    compiled.reset();
                 }
             }
         }

@@ -1554,15 +1554,17 @@ public class XQueryContext implements BinaryValueManager, Context {
             watchdog.reset();
         }
 
-        /*
-            NOTE: we use `modules` (and not `allModules`) here so as to only reset
-            the modules of this module.
-            The inner call to `module.reset` will be called on sub-modules
-            which in-turn will reset their modules, and so on.
-         */
-        for (final Module[] modules : modules.values()) {
-            for (final Module module : modules) {
-                module.reset(this, keepGlobals);
+        if (!isShared) {
+            /*
+                NOTE: we use `modules` (and not `allModules`) here so as to only reset
+                the modules of this module.
+                The inner call to `module.reset` will be called on sub-modules
+                which in-turn will reset their modules, and so on.
+            */
+            for (final Module[] modules : modules.values()) {
+                for (final Module module : modules) {
+                    module.reset(this, keepGlobals);
+                }
             }
         }
 
@@ -1576,7 +1578,9 @@ public class XQueryContext implements BinaryValueManager, Context {
 
         clearUpdateListeners();
 
-        profiler.reset();
+        if (!isShared) {
+            profiler.reset();
+        }
 
         if (!keepGlobals) {
             httpContext = null;
