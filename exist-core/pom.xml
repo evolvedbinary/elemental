@@ -1192,10 +1192,12 @@
                                 <include>src/main/java/org/exist/xquery/Intersect.java</include>
                                 <include>src/test/java/org/exist/xquery/LexerTest.java</include>
                                 <include>src/main/java/org/exist/xquery/LocationStep.java</include>
+                                <include>src/main/java/org/exist/xquery/Lookup.java</include>
                                 <include>src/main/java/org/exist/xquery/Module.java</include>
                                 <include>src/main/java/org/exist/xquery/NamedFunctionReference.java</include>
                                 <include>src/main/java/org/exist/xquery/NameTest.java</include>
                                 <include>src/test/java/org/exist/xquery/NodeTypeTest.java</include>
+                                <include>src/main/java/org/exist/xquery/OpNumeric.java</include>
                                 <include>src/main/java/org/exist/xquery/Optimizer.java</include>
                                 <include>src/main/java/org/exist/xquery/Option.java</include>
                                 <include>src/main/java/org/exist/xquery/PathExpr.java</include>
@@ -1981,11 +1983,13 @@
                                 <exclude>src/test/java/org/exist/xquery/JavaBindingTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/LexerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/LocationStep.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/Lookup.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Materializable.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Module.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NamedFunctionReference.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/NameTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/NodeTypeTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/OpNumeric.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Optimizer.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Option.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/PathExpr.java</exclude>
