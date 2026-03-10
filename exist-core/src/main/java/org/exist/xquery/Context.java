@@ -83,6 +83,12 @@ public interface Context {
 
     XQueryContext getRootContext();
 
+    /**
+     * Create a new context ("Inner Context") that will share some state with this context.
+     * After calling this {@link #setShared(boolean)} should be set to true.
+     *
+     * @return an inner context.
+     */
     XQueryContext copyContext();
 
     /**
@@ -338,6 +344,13 @@ public interface Context {
      */
     boolean lockDocumentsOnLoad();
 
+    /**
+     * When set as true, it indicates that this Context (often known as the Inner Context)
+     * shares some state with another Context (often known as the Outer Context).
+     * This should be set to true after any call to {@link #copyContext()}.
+     *
+     * @param shared set to true if this context shares state with another context, false otherwise.
+     */
     void setShared(boolean shared);
 
     boolean isShared();
