@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,7 +49,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import org.exist.dom.persistent.NodeSet;
 import org.exist.storage.DBBroker;
 import org.exist.xquery.Constants.ArithmeticOperator;
 import org.exist.xquery.util.ExpressionDumper;
@@ -38,14 +61,13 @@ import org.exist.xquery.value.Type;
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 
 /**
- * numeric operation on two operands by +, -, *, div, mod etc..
+ * numeric operation on two operands by +, -, *, div, mod etc.
  *
  */
 public class OpNumeric extends BinaryOp {
 
     protected final ArithmeticOperator operator;
     protected int returnType = Type.ANY_ATOMIC_TYPE;
-    protected NodeSet temp = null;
     protected DBBroker broker;
 
     public OpNumeric(final XQueryContext context, final ArithmeticOperator operator) {
