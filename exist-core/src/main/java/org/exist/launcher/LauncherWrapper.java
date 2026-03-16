@@ -49,17 +49,22 @@ import org.exist.start.CompatibleJavaVersionCheck;
 import org.exist.start.StartException;
 import org.exist.util.ConfigurationHelper;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.launcher.ConfigurationUtility.*;
 
 /**
@@ -76,7 +81,7 @@ public class LauncherWrapper {
     private final static String LAUNCHER = org.exist.launcher.Launcher.class.getName();
     private final static String OS = System.getProperty("os.name").toLowerCase();
 
-    public final static void main(final String[] args) {
+    public static void main(final String[] args) {
         try {
             CompatibleJavaVersionCheck.checkForCompatibleJavaVersion();
         } catch (final StartException e) {
@@ -127,7 +132,7 @@ public class LauncherWrapper {
         args.add(getClassPath());
 
         // call exist main with our new command
-        args.add("org.exist.start.Main");
+        args.add("org.codehaus.mojo.appassembler.booter.AppassemblerBooter");
         args.add(command);
 
         try {
@@ -138,8 +143,30 @@ public class LauncherWrapper {
     }
 
     private String getClassPath() {
+        final List<String> classPathEntries = new ArrayList<>();
+
+        final String baseDir = System.getProperty("basedir");
+        classPathEntries.add(baseDir + File.separatorChar + "etc");
+
         // if we are booted using appassembler-booter, then we should use `app.class.path`
-        return System.getProperty("app.class.path", System.getProperty("java.class.path"));
+        final String currentClassPath = System.getProperty("app.class.path", System.getProperty("java.class.path"));
+
+        final String[] currentClassPathEntries = currentClassPath.split(";");
+        final Pattern ptnAppAssemblerClassPath = Pattern.compile("^.+((((appassembler-((booter)|(model)))|(plexus-utils)|(stax-api))-.+)|(stax-.+-dev))\\.jar$");
+        @Nullable Matcher mtcAppAssemblerClassPath = null;
+        for (final String currentClassPathEntry : currentClassPathEntries) {
+            if (mtcAppAssemblerClassPath == null) {
+                mtcAppAssemblerClassPath = ptnAppAssemblerClassPath.matcher(currentClassPathEntry);
+            } else {
+                mtcAppAssemblerClassPath.reset(currentClassPathEntry);
+            }
+
+            if (mtcAppAssemblerClassPath.matches()) {
+                classPathEntries.add(currentClassPathEntry);
+            }
+        }
+
+        return String.join(File.pathSeparator, classPathEntries);
     }
 
     private void run(final List<String> args) throws IOException {
@@ -225,7 +252,7 @@ public class LauncherWrapper {
                 final String os = key.substring((LAUNCHER_PROPERTY_VMOPTIONS + '.').length()).toLowerCase();
                 if (OS.contains(os)) {
                     final String value = launcherProperties.getProperty(key);
-                    Arrays.stream(value.split("\\s+")).forEach(args::add);
+                    args.addAll(Arrays.asList(value.split("\\s+")));
                 }
             }
         }
