@@ -41,6 +41,7 @@
     
     <storage type="XML">
         <media-type match="full">application/xml</media-type>
+        <media-type match="full">chemical/x-cml</media-type>
         <media-type match="full">text/xml</media-type>
         <media-type match="starts-with">application/vnd.oasis.opendocument.</media-type>
         <media-type match="starts-with">application/vnd.openxmlformats-</media-type>
