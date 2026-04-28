@@ -90,7 +90,7 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolveDocxExtension() {
-        assertAllResolveFromFileName("something.docx", MediaType.APPLICATION_OPENXML_WORDPROCESSING, new String[] {"docx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.docx", MediaType.APPLICATION_OPENXML_WORDPROCESSING, new String[] {"docx"}, StorageType.BINARY);
     }
 
     @Test
@@ -170,17 +170,17 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolveOdtExtension() {
-        assertAllResolveFromFileName("something.odt", MediaType.APPLICATION_OPENDOCUMENT_TEXT, new String[] {"odt"}, StorageType.XML);
+        assertAllResolveFromFileName("something.odt", MediaType.APPLICATION_OPENDOCUMENT_TEXT, new String[] {"odt"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveOdpExtension() {
-        assertAllResolveFromFileName("something.odp", MediaType.APPLICATION_OPENDOCUMENT_PRESENTATION, new String[] {"odp"}, StorageType.XML);
+        assertAllResolveFromFileName("something.odp", MediaType.APPLICATION_OPENDOCUMENT_PRESENTATION, new String[] {"odp"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveOdsExtension() {
-        assertAllResolveFromFileName("something.ods", MediaType.APPLICATION_OPENDOCUMENT_SPREADSHEET, new String[] {"ods"}, StorageType.XML);
+        assertAllResolveFromFileName("something.ods", MediaType.APPLICATION_OPENDOCUMENT_SPREADSHEET, new String[] {"ods"}, StorageType.BINARY);
     }
 
     @Test
@@ -195,7 +195,7 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolvePptxExtension() {
-        assertAllResolveFromFileName("something.pptx", MediaType.APPLICATION_OPENXML_PRESENTATION, new String[] {"pptx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.pptx", MediaType.APPLICATION_OPENXML_PRESENTATION, new String[] {"pptx"}, StorageType.BINARY);
     }
 
     @Test
@@ -240,7 +240,7 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolveXlsxExtension() {
-        assertAllResolveFromFileName("something.xlsx", MediaType.APPLICATION_OPENXML_SPREADSHEET, new String[] {"xlsx"}, StorageType.XML);
+        assertAllResolveFromFileName("something.xlsx", MediaType.APPLICATION_OPENXML_SPREADSHEET, new String[] {"xlsx"}, StorageType.BINARY);
     }
 
     @Test
@@ -265,7 +265,7 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolveDocxIdentifier() {
-        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_WORDPROCESSING, new String[] {"docx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_WORDPROCESSING, new String[] {"docx"}, StorageType.BINARY);
     }
 
     @Test
@@ -335,17 +335,17 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolveOdtIdentifier() {
-        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_TEXT, new String[] {"odt"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_TEXT, new String[] {"odt"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveOdpIdentifier() {
-        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_PRESENTATION, new String[] {"odp"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_PRESENTATION, new String[] {"odp"}, StorageType.BINARY);
     }
 
     @Test
     public void allResolveOdsIdentifier() {
-        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_SPREADSHEET, new String[] {"ods"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENDOCUMENT_SPREADSHEET, new String[] {"ods"}, StorageType.BINARY);
     }
 
     @Test
@@ -360,7 +360,7 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolvePptxIdentifier() {
-        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_PRESENTATION, new String[] {"pptx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_PRESENTATION, new String[] {"pptx"}, StorageType.BINARY);
     }
 
     @Test
@@ -400,7 +400,7 @@ public class MediaTypeResolverImplTest {
 
     @Test
     public void allResolveXlsxIdentifier() {
-        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_SPREADSHEET, new String[] {"xlsx"}, StorageType.XML);
+        assertAllResolveFromIdentifier(MediaType.APPLICATION_OPENXML_SPREADSHEET, new String[] {"xlsx"}, StorageType.BINARY);
     }
 
     @Test
