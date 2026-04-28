@@ -411,8 +411,8 @@ public class XQuery {
 
                 // support for XQuery 3.0 - declare context item :=
                 if(contextSequence == null) {
-                    if(context.getContextItemDeclartion() != null) {
-                        contextSequence = context.getContextItemDeclartion().eval(null, null);
+                    if(context.getContextItemDeclaration() != null) {
+                        contextSequence = context.getContextItemDeclaration().eval(null, null);
                     }
                 }
 

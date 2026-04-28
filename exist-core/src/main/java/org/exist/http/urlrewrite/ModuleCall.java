@@ -115,7 +115,7 @@ public class ModuleCall extends URLRewrite {
     @Override
     public void doRewrite(final HttpServletRequest request, final HttpServletResponse response) throws ServletException {
         try {
-            final ContextItemDeclaration cid = call.getContext().getContextItemDeclartion();
+            final ContextItemDeclaration cid = call.getContext().getContextItemDeclaration();
             final Sequence contextSequence;
             if (cid != null) {
                 contextSequence = cid.eval(null, null);

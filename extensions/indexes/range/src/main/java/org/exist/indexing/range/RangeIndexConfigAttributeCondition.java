@@ -47,7 +47,6 @@ package org.exist.indexing.range;
 
 import org.exist.dom.QName;
 import org.exist.dom.persistent.ElementImpl;
-import org.exist.dom.persistent.NodeImpl;
 import org.exist.storage.ElementValue;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
@@ -456,7 +455,7 @@ public class RangeIndexConfigAttributeCondition extends RangeIndexConfigConditio
         } else if (expr instanceof VariableReference || expr instanceof Function) {
             try {
                 final Sequence contextSequence;
-                final ContextItemDeclaration cid = expr.getContext().getContextItemDeclartion();
+                final ContextItemDeclaration cid = expr.getContext().getContextItemDeclaration();
                 if(cid != null) {
                     contextSequence = cid.eval(null, null);
                 } else {
