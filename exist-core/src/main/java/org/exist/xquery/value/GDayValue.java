@@ -202,6 +202,8 @@ public class GDayValue extends AbstractDateTimeValue {
      * 3 bytes where: [0 (Day), 1-2 (Timezone)]
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
@@ -231,6 +233,8 @@ public class GDayValue extends AbstractDateTimeValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the GDayValue.
+     *
+     * @throws XPathException if an error occurs constructing a GDayValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws XPathException {
         final int day = buf.get();

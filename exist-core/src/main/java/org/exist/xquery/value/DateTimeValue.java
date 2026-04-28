@@ -237,6 +237,8 @@ public class DateTimeValue extends AbstractDateTimeValue {
      * 13 bytes where: [0-3 (Year), 4 (Month), 5 (Day), 6 (Hour), 7 (Minute), 8 (Second), 9-10 (Milliseconds), 11-12 (Timezone)]
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
@@ -279,6 +281,8 @@ public class DateTimeValue extends AbstractDateTimeValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the DateTimeValue.
+     *
+     * @throws XPathException if an error occurs constructing a DateTimeValue.
      */
     public static AtomicValue deserialize(final @Nullable Expression expression, final ByteBuffer buf) throws XPathException {
         return deserialize(expression, buf, DateTimeValue::new);
@@ -289,8 +293,11 @@ public class DateTimeValue extends AbstractDateTimeValue {
      *
      * @param expression the expression that creates the DateTimeValue object.
      * @param buf the ByteBuffer to deserialize from.
+     * @param cstr a function that constructs a subclass of DateTimeValue.
      *
      * @return the DateTimeValue.
+     *
+     * @throws XPathException if an error occurs constructing a DateTimeValue.
      */
     protected static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf, final BiFunctionE<Expression, XMLGregorianCalendar, AtomicValue, XPathException> cstr) throws XPathException {
         final int year = ByteConversion.byteToIntH(buf);

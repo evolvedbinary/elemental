@@ -284,9 +284,7 @@ public class AnyURIValue extends AtomicValue {
 //		}
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#getType()
-     */
+    @Override
     public int getType() {
         return Type.ANY_URI;
     }
@@ -296,16 +294,15 @@ public class AnyURIValue extends AtomicValue {
         return uri;
     }
 
+    @Override
     public boolean effectiveBooleanValue() throws XPathException {
         // If its operand is a singleton value of type xs:string, xs:anyURI, xs:untypedAtomic,
         //or a type derived from one of these, fn:boolean returns false if the operand value has zero length; otherwise it returns true.
         return !uri.isEmpty();
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Sequence#convertTo(int)
-     */
-    public AtomicValue convertTo(int requiredType) throws XPathException {
+    @Override
+    public AtomicValue convertTo(final int requiredType) throws XPathException {
         switch (requiredType) {
             case Type.ITEM:
             case Type.ATOMIC:
@@ -362,9 +359,7 @@ public class AnyURIValue extends AtomicValue {
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#compareTo(org.exist.xquery.value.AtomicValue)
-     */
+    @Override
     public int compareTo(Collator collator, AtomicValue other) throws XPathException {
         if (other.getType() == Type.ANY_URI) {
             final String otherURI = other.getStringValue();
@@ -374,23 +369,17 @@ public class AnyURIValue extends AtomicValue {
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#max(org.exist.xquery.value.AtomicValue)
-     */
+    @Override
     public AtomicValue max(Collator collator, AtomicValue other) throws XPathException {
         throw new XPathException(getExpression(), "max is not supported for values of type xs:anyURI");
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.AtomicValue#min(org.exist.xquery.value.AtomicValue)
-     */
+    @Override
     public AtomicValue min(Collator collator, AtomicValue other) throws XPathException {
         throw new XPathException(getExpression(), "min is not supported for values of type xs:anyURI");
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Item#conversionPreference(java.lang.Class)
-     */
+    @Override
     public int conversionPreference(Class<?> javaClass) {
         if (javaClass.isAssignableFrom(AnyURIValue.class)) {
             return 0;
@@ -413,9 +402,6 @@ public class AnyURIValue extends AtomicValue {
         return Integer.MAX_VALUE;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.value.Item#toJavaObject(java.lang.Class)
-     */
     @Override
     public <T> T toJavaObject(final Class<T> target) throws XPathException {
         Throwable throwable = null;
@@ -508,6 +494,8 @@ public class AnyURIValue extends AtomicValue {
      * Serializes to a byte array.
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream()) {
@@ -520,6 +508,8 @@ public class AnyURIValue extends AtomicValue {
      * Serializes to a ByteBuffer.
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
@@ -533,6 +523,9 @@ public class AnyURIValue extends AtomicValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the AnyURIValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing an AnyURIValue.
      */
     public static AnyURIValue deserialize(@Nullable Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);

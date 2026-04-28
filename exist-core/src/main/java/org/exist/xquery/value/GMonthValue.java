@@ -246,6 +246,8 @@ public class GMonthValue extends AbstractDateTimeValue {
      * 3 bytes where: [0 (Month), 1-2 (Timezone)]
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
@@ -275,6 +277,8 @@ public class GMonthValue extends AbstractDateTimeValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the GMonthValue.
+     *
+     * @throws XPathException if an error occurs constructing a GMonthValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws XPathException {
         final int month = buf.get();

@@ -205,6 +205,14 @@ public class DateValue extends AbstractDateTimeValue {
         ByteConversion.shortToByteH((short) (timezone == DatatypeConstants.FIELD_UNDEFINED ? Short.MAX_VALUE : timezone), buf);
     }
 
+    /**
+     * Deserializes a DateValue that has been bit-packed into a ByteBuffer.
+     *
+     * @param expression the expression that creates the DateValue object.
+     * @param buf the serialized value.
+     *
+     * @return the DateValue
+     */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) {
         final int year = ByteConversion.byteToIntH(buf);
         final int month = buf.get();
@@ -243,6 +251,9 @@ public class DateValue extends AbstractDateTimeValue {
 
     /**
      * Deserializes a DateValue that has been bit-packed into a long (64 bits)
+     *
+     * @param expression the expression that creates the DateValue object.
+     * @param l the long value.
      *
      * @return the DateValue
      */

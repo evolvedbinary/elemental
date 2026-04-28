@@ -440,6 +440,8 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     /**
      * Set the Internet Media Type of the document.
      *
+     * @param mimeType the mime type.
+     *
      * @deprecated Use {@link #setMediaType(String)} instead.
      */
     @Deprecated
@@ -458,6 +460,8 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
 
     /**
      * Set the Internet Media Type of the document.
+     *
+     * @param mediaType the Internet Media Type.
      */
     public void setMediaType(final String mediaType) {
         this.mediaType = mediaType;

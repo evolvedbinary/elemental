@@ -35,6 +35,8 @@ public interface VariableByteOutput {
      * Write a byte to the output.
      *
      * @param b the byte to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void write(final int b) throws IOException;
 
@@ -42,6 +44,8 @@ public interface VariableByteOutput {
      * Write a byte to the output.
      *
      * @param b the byte to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeByte(final byte b) throws IOException;
 
@@ -49,6 +53,8 @@ public interface VariableByteOutput {
      * Write bytes to the output.
      *
      * @param buf the bytes to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void write(final byte[] buf) throws IOException;
 
@@ -58,6 +64,8 @@ public interface VariableByteOutput {
      * @param buf the bytes to write.
      * @param off the offset to read the bytes from.
      * @param len the length of bytes to read.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void write(final byte[] buf, final int off, final int len) throws IOException;
 
@@ -72,7 +80,9 @@ public interface VariableByteOutput {
      *  128 and 16383, 2 bytes
      *  16384 and {@link Short#MAX_VALUE}, 3 bytes
      *
-     *  @param s the short to write.
+     * @param s the short to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeShort(int s) throws IOException;
 
@@ -82,6 +92,8 @@ public interface VariableByteOutput {
      * Requires 2 bytes.
      *
      * @param s the short to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeFixedShort(final short s) throws IOException;
 
@@ -98,7 +110,9 @@ public interface VariableByteOutput {
      *  2097152 and 268435455, is 4 bytes
      *  268435456 and {@link Integer#MAX_VALUE}, 5 bytes
      *
-     *  @param i the integer to write.
+     * @param i the integer to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeInt(int i) throws IOException;
 
@@ -108,6 +122,8 @@ public interface VariableByteOutput {
      * Requires 4 bytes.
      *
      * @param i the integer to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeFixedInt(final int i) throws IOException;
 
@@ -130,6 +146,8 @@ public interface VariableByteOutput {
      *  9223372036854775808 and {@link Long#MAX_VALUE}, 10 bytes
      *
      * @param l the long to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeLong(long l) throws IOException;
 
@@ -139,6 +157,8 @@ public interface VariableByteOutput {
      * Requires 8 bytes.
      *
      * @param l the long to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeFixedLong(final long l) throws IOException;
 
@@ -149,7 +169,9 @@ public interface VariableByteOutput {
      *  VBE int - data length
      *  byte[] - data
      *
-     * @param bi the big integer to write
+     * @param bi the big integer to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeBigInteger(final BigInteger bi) throws IOException;
 
@@ -160,7 +182,9 @@ public interface VariableByteOutput {
      *  int - data length
      *  byte[] - data
      *
-     * @param bi the big integer to write
+     * @param bi the big integer to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeFixedBigInteger(final BigInteger bi) throws IOException;
 
@@ -174,6 +198,8 @@ public interface VariableByteOutput {
      *  byte[] - data
      *
      * @param bd the big decimal to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeBigDecimal(final BigDecimal bd) throws IOException;
 
@@ -187,6 +213,8 @@ public interface VariableByteOutput {
      *  byte[] - data
      *
      * @param bd the big decimal to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeFixedBigDecimal(final BigDecimal bd) throws IOException;
 
@@ -194,6 +222,8 @@ public interface VariableByteOutput {
      * Write a string as UTF-8 encoded bytes to the output.
      *
      * @param s the string to write.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void writeUTF(final String s) throws IOException;
 }
