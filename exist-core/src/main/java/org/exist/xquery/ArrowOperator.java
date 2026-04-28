@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,6 +53,7 @@ import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -37,14 +62,15 @@ import java.util.function.Supplier;
  * Implements the XQuery 3.1 arrow operator.
  *
  * @author wolf
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ArrowOperator extends AbstractExpression {
 
-    private QName qname = null;
+    private @Nullable QName functionName = null;
     private Expression leftExpr;
-    private FunctionCall fcall = null;
-    private Expression funcSpec = null;
-    private List<Expression> parameters;
+    @Nullable FunctionCall functionCall = null;
+    private @Nullable Expression functionSpecExpr = null;
+    private List<Expression> functionParameters;
     private AnalyzeContextInfo cachedContextInfo;
 
     public ArrowOperator(final XQueryContext context, final Expression leftExpr) throws
@@ -53,38 +79,53 @@ public class ArrowOperator extends AbstractExpression {
         this.leftExpr = leftExpr;
     }
 
-    public void setArrowFunction(final String fname, final List<Expression> params) throws XPathException {
+    /**
+     * Set the XPath/XQuery function to be called by name.
+     *
+     * @param functionName       the fully qualified name of the function to call.
+     * @param functionParameters the parameters for the function.
+     * @throws XPathException if the fully qualified name is invalid.
+     */
+    public void setArrowFunction(final String functionName, final List<Expression> functionParameters) throws XPathException {
         try {
-            this.qname = QName.parse(context, fname, context.getDefaultFunctionNamespace());
-            this.parameters = params;
+            this.functionName = QName.parse(context, functionName, context.getDefaultFunctionNamespace());
+            this.functionParameters = functionParameters;
             // defer resolving the function to analyze to make sure all functions are known
         } catch (final IllegalQNameException e) {
-            throw new XPathException(this, ErrorCodes.XPST0081, "No namespace defined for prefix " + fname);
+            throw new XPathException(this, ErrorCodes.XPST0081, "No namespace defined for prefix " + functionName);
         }
     }
 
-    public void setArrowFunction(final PathExpr funcSpec, final List<Expression> params) {
-        this.funcSpec = funcSpec.simplify();
-        this.parameters = params;
+    /**
+     * Set the XPath/XQuery function to be called by XPath expression.
+     *
+     * @param functionSpecExpr   the expr that specifies the function to call.
+     * @param functionParameters the parameters for the function.
+     */
+    public void setArrowFunction(final PathExpr functionSpecExpr, final List<Expression> functionParameters) {
+        this.functionSpecExpr = functionSpecExpr.simplify();
+        this.functionParameters = functionParameters;
     }
 
     @Override
     public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
-        if(getContext().getXQueryVersion() < 31) {
-            throw new XPathException(this,
-                ErrorCodes.EXXQDY0003,
-                "arrow operator is not available before XQuery 3.1");
+        if (getContext().getXQueryVersion() < 31) {
+            throw new XPathException(this, ErrorCodes.EXXQDY0003, "The Arrow Operator is not available before XQuery 3.1");
         }
-        if (qname != null) {
-            fcall = NamedFunctionReference.lookupFunction(this, context, qname, parameters.size() + 1);
+
+        if (functionName != null) {
+            functionCall = NamedFunctionReference.lookupFunction(this, context, functionName, functionParameters.size() + 1);
         }
+
         this.cachedContextInfo = contextInfo;
         leftExpr.analyze(contextInfo);
-        if (fcall != null) {
-            fcall.analyze(contextInfo);
+
+        if (functionCall != null) {
+            functionCall.analyze(contextInfo);
         }
-        if (funcSpec != null) {
-            funcSpec.analyze(contextInfo);
+
+        if (functionSpecExpr != null) {
+            functionSpecExpr.analyze(contextInfo);
         }
     }
 
@@ -95,107 +136,128 @@ public class ArrowOperator extends AbstractExpression {
         }
         contextSequence = leftExpr.eval(contextSequence, null);
 
-        final FunctionReference fref;
-        if (fcall != null) {
-            fref = new FunctionReference(this, fcall);
-        } else {
-            final Sequence funcSeq = funcSpec.eval(contextSequence, contextItem);
-            if (funcSeq.getCardinality() != Cardinality.EXACTLY_ONE)
-            {throw new XPathException(this, ErrorCodes.XPTY0004,
-                    "Expected exactly one item for the function to be called, got " + funcSeq.getItemCount() +
-                            ". Expression: " + ExpressionDumper.dump(funcSpec));}
-            final Item item0 = funcSeq.itemAt(0);
-            if (!Type.subTypeOf(item0.getType(), Type.FUNCTION_REFERENCE)) {
-                throw new XPathException(this, ErrorCodes.XPTY0004,
-                    "Type error: expected function, got " + Type.getTypeName(item0.getType()));
-            }
-            fref = (FunctionReference)item0;
-        }
+        @Nullable FunctionReference functionReference = null;
         try {
-            final List<Expression> fparams = new ArrayList<>(parameters.size() + 1);
-            fparams.add(new ContextParam(context, contextSequence));
-            fparams.addAll(parameters);
+            if (functionCall != null) {
+                // Prepare call by name
+                functionReference = new FunctionReference(this, functionCall);
 
-            fref.setArguments(fparams);
+            } else {
+                // Prepare call by expression
+                final Sequence funcSeq = functionSpecExpr.eval(contextSequence, contextItem);
+                if (funcSeq.getCardinality() != Cardinality.EXACTLY_ONE) {
+                    throw new XPathException(this, ErrorCodes.XPTY0004, "Expected exactly one function item, got " + funcSeq.getItemCount() + ". Expression: " + ExpressionDumper.dump(functionSpecExpr));
+                }
+
+                final Item item0 = funcSeq.itemAt(0);
+                if (!Type.subTypeOf(item0.getType(), Type.FUNCTION_REFERENCE)) {
+                    throw new XPathException(this, ErrorCodes.XPTY0004, "Type error: expected function, got " + Type.getTypeName(item0.getType()));
+                }
+
+                functionReference = (FunctionReference) item0;
+            }
+
+            // Make the call
+            final List<Expression> fparams = new ArrayList<>(functionParameters.size() + 1);
+            fparams.add(new ContextParam(context, contextSequence));
+            fparams.addAll(functionParameters);
+
+            functionReference.setArguments(fparams);
             // need to create a new AnalyzeContextInfo to avoid memory leak
             // cachedContextInfo will stay in memory
-            fref.analyze(new AnalyzeContextInfo(cachedContextInfo));
+            functionReference.analyze(new AnalyzeContextInfo(cachedContextInfo));
             // Evaluate the function
-            return fref.eval(null);
+            return functionReference.eval(null);
+
         } finally {
-            fref.close();
+            if (functionReference != null) {
+                functionReference.close();
+            }
         }
     }
 
     @Override
     public int returnsType() {
-        return fcall == null ? Type.ITEM : fcall.returnsType();
+        return functionCall == null ? Type.ITEM : functionCall.returnsType();
     }
 
     @Override
     public Cardinality getCardinality() {
-        return fcall == null ? super.getCardinality() : fcall.getCardinality();
+        return functionCall == null ? super.getCardinality() : functionCall.getCardinality();
     }
 
     @Override
     public void dump(final ExpressionDumper dumper) {
         leftExpr.dump(dumper);
         dumper.display(" => ");
-        if (fcall != null) {
-            dumper.display(fcall.getFunction().getName()).display('(');
+
+        if (functionCall != null) {
+            dumper.display(functionCall.getFunction().getName()).display('(');
         } else {
-            funcSpec.dump(dumper);
+            functionSpecExpr.dump(dumper);
         }
-        for (int i = 0; i < parameters.size(); i++) {
+
+        for (int i = 0; i < functionParameters.size(); i++) {
             if (i > 0) {
                 dumper.display(", ");
-                parameters.get(i).dump(dumper);
+                functionParameters.get(i).dump(dumper);
             }
         }
         dumper.display(')');
     }
 
     @Override
-    public void resetState(boolean postOptimization) {
+    public void resetState(final boolean postOptimization) {
         super.resetState(postOptimization);
         leftExpr.resetState(postOptimization);
-        if (fcall != null) {
-            fcall.resetState(postOptimization);
+
+        if (functionCall != null) {
+            functionCall.resetState(postOptimization);
         }
-        if (funcSpec != null) {
-            funcSpec.resetState(postOptimization);
+
+        if (functionSpecExpr != null) {
+            functionSpecExpr.resetState(postOptimization);
         }
-        for (Expression param: parameters) {
+
+        for (final Expression param : functionParameters) {
             param.resetState(postOptimization);
         }
     }
 
-    private class ContextParam extends Function.Placeholder {
+    static class ContextParam extends Function.Placeholder {
+        @Nullable
+        Sequence sequence;
 
-        private Sequence sequence;
-
-        ContextParam(XQueryContext context, Sequence sequence) {
+        ContextParam(final XQueryContext context, @Nullable final Sequence sequence) {
             super(context);
             this.sequence = sequence;
         }
 
         @Override
-        public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
+        public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
         }
 
         @Override
-        public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
+        public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
             return sequence;
         }
 
         @Override
         public int returnsType() {
+            if (sequence == null) {
+                return Type.ITEM;
+            }
             return sequence.getItemType();
         }
 
         @Override
-        public void dump(ExpressionDumper dumper) {
+        public void dump(final ExpressionDumper dumper) {
+        }
 
+        @Override
+        public void resetState(final boolean postOptimization) {
+            super.resetState(postOptimization);
+            this.sequence = null;
         }
     }
 }
