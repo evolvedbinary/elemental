@@ -55,6 +55,16 @@
     </xs:annotation>
     <xs:complexType>
       <xs:sequence>
+        <xs:element name="context-item" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Context Item for the XQuery</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="sx:value"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="properties" minOccurs="0">
           <xs:annotation>
             <xs:documentation>Properties to pass to the Serializer.</xs:documentation>

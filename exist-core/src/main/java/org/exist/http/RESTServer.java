@@ -335,14 +335,26 @@ public class RESTServer {
                 query = getParameter(request, Query);
             }
         }
-        final String _var = getParameter(request, Variables);
-        ElementImpl variables = null;
+
+        @Nullable final String _contextItem = getParameter(request, Context_Item);
+        @Nullable ElementImpl contextItemParam = null;
         try {
-            if (_var != null) {
-                variables = parseXML(broker.getBrokerPool(), _var);
+            if (_contextItem != null) {
+                contextItemParam = parseXML(broker.getBrokerPool(), _contextItem);
             }
         } catch (final SAXException e) {
-            final XPathException x = new XPathException(variables != null ? variables.getExpression() : null, e.toString());
+            final XPathException x = new XPathException(contextItemParam != null ? contextItemParam.getExpression() : null, e.toString());
+            writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, UTF_8.name(), query, path, x);
+        }
+
+        @Nullable final String _var = getParameter(request, Variables);
+        @Nullable ElementImpl variablesParam = null;
+        try {
+            if (_var != null) {
+                variablesParam = parseXML(broker.getBrokerPool(), _var);
+            }
+        } catch (final SAXException e) {
+            final XPathException x = new XPathException(variablesParam != null ? variablesParam.getExpression() : null, e.toString());
             writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, UTF_8.name(), query, path, x);
         }
 
@@ -417,7 +429,7 @@ public class RESTServer {
         if (query != null) {
             // query parameter specified, search method does all the rest of the work
             try {
-                search(broker, transaction, query, path, null, variables, howmany, start, typed, outputProperties,
+                search(broker, transaction, query, path, null, contextItemParam, variablesParam, howmany, start, typed, outputProperties,
                         wrap, cache, request, response);
 
             } catch (final XPathException e) {
@@ -762,7 +774,8 @@ public class RESTServer {
             int howmany = 10;
             int start = 1;
             boolean typed = false;
-            ElementImpl variables = null;
+            @Nullable ElementImpl contextItemParam = null;
+            @Nullable ElementImpl variablesParam = null;
             boolean enclose = true;
             boolean cache = false;
             String query = null;
@@ -847,8 +860,11 @@ public class RESTServer {
                                     }
                                     query = buf.toString();
 
+                                } else if (Context_Item.xmlKey().equals(child.getLocalName())) {
+                                    contextItemParam = (ElementImpl) child;
+
                                 } else if (Variables.xmlKey().equals(child.getLocalName())) {
-                                    variables = (ElementImpl) child;
+                                    variablesParam = (ElementImpl) child;
 
                                 } else if (Properties.xmlKey().equals(child.getLocalName())) {
                                     Node node = child.getFirstChild();
@@ -877,7 +893,7 @@ public class RESTServer {
                     if (query != null) {
 
                         try {
-                            search(broker, transaction, query, path, null, variables,
+                            search(broker, transaction, query, path, null, contextItemParam, variablesParam,
                                     howmany, start, typed, outputProperties,
                                     enclose, cache, request, response);
                         } catch (final XPathException e) {
@@ -1273,7 +1289,8 @@ public class RESTServer {
      * @param query the XQuery
      * @param path the path of the request
      * @param namespaces any XQuery namespace bindings
-     * @param variables any XQuery variable bindings
+     * @param contextItemParam optional XQuery Context Item
+     * @param variablesParam any XQuery variable bindings
      * @param howmany the number of items in the results to return
      * @param start the start position in the results to return
      * @param typed whether the result nodes should be typed
@@ -1289,7 +1306,8 @@ public class RESTServer {
      */
     protected void search(final DBBroker broker, final Txn transaction, final String query,
         final String path, @Nullable final List<Namespace> namespaces,
-        @Nullable final ElementImpl variables, final int howmany,
+        @Nullable final ElementImpl contextItemParam,
+        @Nullable final ElementImpl variablesParam, final int howmany,
         final int start, final boolean typed,
         final Properties outputProperties, final boolean wrap,
         final boolean cache, final HttpServletRequest request,
@@ -1362,10 +1380,13 @@ public class RESTServer {
                 compilationTime = 0;
             }
 
-            declareVariables(context, variables, request, response);
+            declareVariables(context, variablesParam, request, response);
+
+            @Nullable final Item contextItem = extractContextItem(contextItemParam);
+            final Sequence contextSequence = contextItem != null ? new ValueSequence(contextItem) : null;
 
             final long executeStart = System.currentTimeMillis();
-            final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
+            final Sequence resultSequence = xquery.execute(broker, compiled, contextSequence, outputProperties);
             final long executionTime = System.currentTimeMillis() - executeStart;
 
             if (LOG.isDebugEnabled()) {
@@ -1405,15 +1426,42 @@ public class RESTServer {
     }
 
     /**
+     * Extract the Context Item from the Element parameter.
+     *
+     * @param contextItem a parameter specifying the Context Item for the XQuery, or null
+     *
+     * @throws XPathException if an error occurs extracting the Context Item.
+     */
+    private @Nullable Item extractContextItem(@Nullable final ElementImpl contextItem) throws XPathException {
+        if (contextItem == null) {
+            return null;
+        }
+
+        @Nullable final NodeImpl value = contextItem.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.VALUE_ELEMENT_QNAME));
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return Marshaller.demarshallValue(null, (ElementImpl) value);
+        } catch (final XMLStreamException xe) {
+            throw new XPathException((Expression) null, xe.toString());
+        }
+    }
+
+    /**
      * Pass the request, response and session objects to the XQuery context.
      *
-     * @param context
-     * @param request
-     * @param response
-     * @throws XPathException
+     * @param context the context for the XQuery
+     * @param variables variable bindings for the XQuery, or null
+     * @param request the HTTP request
+     * @param response the HTTP response
+     *
+     * @throws XPathException if an error occurs declaring variables
      */
     private HttpRequestWrapper declareVariables(final XQueryContext context,
-        final ElementImpl variables, final HttpServletRequest request,
+        @Nullable final ElementImpl variables,
+        final HttpServletRequest request,
         final HttpServletResponse response) throws XPathException {
 
         final HttpRequestWrapper reqw = new HttpRequestWrapper(request, formEncoding, containerEncoding);
@@ -1491,7 +1539,7 @@ public class RESTServer {
             }
 
             // get serialized sequence
-            final NodeImpl value = variable.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
+            @Nullable final NodeImpl value = variable.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
             final Sequence sequence;
             try {
                 sequence = value == null ? Sequence.EMPTY_SEQUENCE : Marshaller.demarshall(context, value);

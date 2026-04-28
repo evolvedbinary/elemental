@@ -25,7 +25,7 @@ package org.exist.http;
  * Enumeration of each Parameter
  * used by the RESTServer
  * 
- * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 enum RESTServerParameter {
         
@@ -76,11 +76,27 @@ enum RESTServerParameter {
      *  encoding? = string
      *  method? = string>
      *      (exist:text,
+     *      exist:context-item?,
      *      exist:variables?,
      *      exist:properties?)
      * </exist:query>
      */
     Query,
+
+    /**
+     * Can be used in either the Query String of a GET request
+     * or in the body of a POST request to specify a value
+     * for the XQuery Context item.
+     *
+     * Contexts: GET, POST
+     *
+     * The value of this prarameter, is an XML element with the format
+     *
+     * <exist:context-item>
+     *     (sx:value)
+     * </exist:context-item>
+     */
+    Context_Item,
 
     /**
      * Can be used in either the Query String of a GET request
