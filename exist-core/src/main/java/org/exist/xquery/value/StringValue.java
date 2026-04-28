@@ -856,6 +856,8 @@ public class StringValue extends AtomicValue {
      *  byte[...] the string as UTF-8
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(6)) {
@@ -874,6 +876,8 @@ public class StringValue extends AtomicValue {
      *  byte[...] the string as UTF-8
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
@@ -888,6 +892,9 @@ public class StringValue extends AtomicValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the StringValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a StringValue.
      */
     public static StringValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         return deserialize(expression, buf, false);
@@ -901,6 +908,9 @@ public class StringValue extends AtomicValue {
      * @param expand if entities need to be expanded
      *
      * @return the StringValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a StringValue.
      */
     public static StringValue deserialize(@Nullable final Expression expression, final ByteBuffer buf, final boolean expand) throws IOException, XPathException {
         return deserialize(expression, buf, null, expand);
@@ -914,6 +924,9 @@ public class StringValue extends AtomicValue {
      * @param checkType an XDM type to check that matches against the deserialized StringValue type.
      *
      * @return the StringValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a StringValue.
      */
     public static StringValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType) throws IOException, XPathException {
         return deserialize(expression, buf, checkType, false);
@@ -928,6 +941,9 @@ public class StringValue extends AtomicValue {
      * @param expand if entities need to be expanded
      *
      * @return the StringValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a StringValue.
      */
     public static StringValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType, final boolean expand) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);

@@ -305,6 +305,8 @@ public class QNameValue extends AtomicValue {
      * Serializes to a byte array.
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream()) {
@@ -317,6 +319,8 @@ public class QNameValue extends AtomicValue {
      * Serializes to a ByteBuffer.
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
@@ -330,6 +334,9 @@ public class QNameValue extends AtomicValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the AnyURIValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a QNameValue.
      */
     public static QNameValue deserialize(@Nullable Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);

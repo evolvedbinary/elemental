@@ -325,7 +325,10 @@ public class DayTimeDurationValue extends OrderedDurationValue {
      *  byte[...] VBE BigDecimal encoded seconds
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
+    @Override
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(37)) {
 
@@ -350,7 +353,10 @@ public class DayTimeDurationValue extends OrderedDurationValue {
      *  byte[...] VBE BigDecimal encoded seconds
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
+    @Override
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
 
@@ -369,6 +375,9 @@ public class DayTimeDurationValue extends OrderedDurationValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the DayTimeDurationValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a DayTimeDurationValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);

@@ -359,6 +359,10 @@ public class CodePointString {
 
     /**
      * Removes the codepoint at the specified index.
+     *
+     * @param idx the index within the codepoint string of the codepoint to remove.
+     *
+     * @return this.
      */
     public CodePointString removeChar(final int idx) {
         if (idx > -1) {
