@@ -45,6 +45,7 @@
  */
 package org.exist.xquery.modules.oracle;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -67,7 +68,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
