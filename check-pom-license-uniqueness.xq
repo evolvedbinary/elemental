@@ -31,9 +31,18 @@ declare namespace pom = "http://maven.apache.org/POM/4.0.0";
 declare option output:omit-xml-declaration "yes";
 
 
-(: Must be set externally with the URI to the pom.xml file :)
-declare variable $pom-file-uri as xs:string external;
+(: Must be set externally with the file-system path to the pom.xml file :)
+declare variable $pom-file-path as xs:string external;
 
+declare %private function local:path-to-uri($path as xs:string) as xs:string {
+    if (starts-with($path, "/"))
+    then
+        "file://" || $path
+    else
+        "file:///" || replace($path, "\\", "/")
+};
+
+let $pom-file-uri := local:path-to-uri($pom-file-path)
 let $pom := doc($pom-file-uri)
 return
 (

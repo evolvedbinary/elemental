@@ -182,7 +182,7 @@ if [ "${TARGET}" == "format-poms" ]; then
     echo "OK"
 
     echo -n "Checking for duplicate license entries in ${pom} ... "
-    CMD="java -cp ${SAXON} net.sf.saxon.Query -q:check-pom-license-uniqueness.xq pom-file-uri=file:${pom}"
+    CMD="java -cp ${SAXON} net.sf.saxon.Query -q:check-pom-license-uniqueness.xq pom-file-path=${pom}"
     $CMD
     echo "OK"
 
