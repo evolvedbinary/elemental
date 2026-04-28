@@ -122,18 +122,16 @@ public class ExtCollection extends BasicFunction {
     }
 
     private Sequence getDefaultCollectionItems() throws XPathException {
-        final Sequence docs = new ValueSequence();
-        addAll(context.getStaticallyKnownDocuments(), docs);
+        final DocumentSet staticallyKnownDocuments = context.getStaticallyKnownDocuments();
+        final Sequence items = new ValueSequence(staticallyKnownDocuments.getDocumentCount());
+        addAll(staticallyKnownDocuments, items);
+
         final Sequence dynamicCollection = context.getDynamicallyAvailableCollection("");
         if (dynamicCollection != null) {
-            final Sequence result = new ValueSequence();
-            result.addAll(docs);
-            result.addAll(dynamicCollection);
-            return result;
-
-        } else {
-            return docs;
+            items.addAll(dynamicCollection);
         }
+
+        return items;
     }
 
     private Sequence getCollectionUriItems(final URI collectionUri) throws XPathException {
@@ -142,7 +140,7 @@ public class ExtCollection extends BasicFunction {
             return dynamicCollection;
 
         } else {
-            final MutableDocumentSet ndocs = new DefaultDocumentSet();
+            @Nullable MutableDocumentSet docs = null;
             final XmldbURI uri = XmldbURI.create(collectionUri);
             try (@Nullable final Collection coll = context.getBroker().openCollection(uri, Lock.LockMode.READ_LOCK)) {
                 if (coll == null) {
@@ -150,11 +148,11 @@ public class ExtCollection extends BasicFunction {
                         throw new XPathException(this, ErrorCodes.FODC0002, "Can not access collection '" + uri + "'");
                     }
                 } else {
+                    docs = new DefaultDocumentSet();
                     if (context.inProtectedMode()) {
-                        context.getProtectedDocs().getDocsByCollection(coll, ndocs);
+                        context.getProtectedDocs().getDocsByCollection(coll, docs);
                     } else {
-                        coll.allDocs(context.getBroker(), ndocs,
-                                includeSubCollections, context.getProtectedDocs());
+                        coll.allDocs(context.getBroker(), docs, includeSubCollections, context.getProtectedDocs());
                     }
                 }
             } catch (final PermissionDeniedException e) {
@@ -163,9 +161,12 @@ public class ExtCollection extends BasicFunction {
                 throw new XPathException(this, ErrorCodes.FODC0002, e.getMessage(), new StringValue(collectionUri.toString()), e);
             }
 
-            // add the docs to the items
-            final Sequence items = new ValueSequence(ndocs.getDocumentCount());
-            addAll(ndocs, items);
+            if (docs == null || docs.getDocumentCount() == 0) {
+                return Sequence.EMPTY_SEQUENCE;
+            }
+
+            final Sequence items = new ValueSequence(docs.getDocumentCount());
+            addAll(docs, items);
             return items;
         }
     }
