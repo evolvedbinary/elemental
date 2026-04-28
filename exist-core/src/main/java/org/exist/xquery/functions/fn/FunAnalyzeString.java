@@ -45,9 +45,16 @@
  */
 package org.exist.xquery.functions.fn;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.cglib.proxy.Callback;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 import net.sf.saxon.Configuration;
 import net.sf.saxon.om.Item;
 import net.sf.saxon.regex.RegexIterator;
@@ -71,6 +78,25 @@ import javax.xml.XMLConstants;
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class FunAnalyzeString extends BasicFunction {
+
+    /**
+     * Implements a cglib MethodInterceptor to implement the `characters`
+     * method of Saxon 9's net.sf.saxon.regex.RegexIterator$MatchHandler
+     * and Saxon 12's net.sf.saxon.regex.RegexMatchHandler
+     */
+    private static final MethodInterceptor CHARACTERS_INTERCEPTOR = (final Object obj, final Method method, final Object[] args, final MethodProxy proxy) -> {
+        if ("characters".equals(method.getName())) {
+            final MemTreeBuilder builder = ((AbstractSaxonRegexMatchHandler) obj).builder;
+            builder.characters(args[0].toString());
+            return null;
+        }
+        return proxy.invokeSuper(obj, args);
+    };
+
+    @SuppressWarnings("unchecked")
+    private static final Class<? extends AbstractSaxonRegexMatchHandler> SAXON_MATCH_HANDLER_CLASS = createSaxonMatchHandlerClass();
+    private static final Constructor<? extends AbstractSaxonRegexMatchHandler> SAXON_MATCH_HANDLER_CLASS_CONSTRUCTOR = getSaxonMatchHandlerClassConstructor(SAXON_MATCH_HANDLER_CLASS);
+    private static final Method SAXON_PROCESS_MATCHING_SUBSTRING_FN = getSaxonProcessMatchingSubstringFunction();
 
     private final static QName fnAnalyzeString = new QName("analyze-string", FnModule.NAMESPACE_URI);
 
@@ -189,26 +215,107 @@ public class FunAnalyzeString extends BasicFunction {
     
     private void match(final MemTreeBuilder builder, final RegexIterator regexIterator) throws net.sf.saxon.trans.XPathException {
         builder.startElement(QN_MATCH, null);
-        regexIterator.processMatchingSubstring(new RegexIterator.MatchHandler() {
-            @Override
-            public void characters(final CharSequence s) {
-                builder.characters(s);
-            }
 
-            @Override
-            public void onGroupStart(final int groupNumber) throws net.sf.saxon.trans.XPathException {
-                final AttributesImpl attributes = new AttributesImpl();
-                attributes.addAttribute("", QN_NR.getLocalPart(), QN_NR.getLocalPart(), "int", Integer.toString(groupNumber));
-
-                builder.startElement(QN_GROUP, attributes);
+        try {
+            Enhancer.registerCallbacks(SAXON_MATCH_HANDLER_CLASS, new Callback[]{ CHARACTERS_INTERCEPTOR });
+            try {
+                final AbstractSaxonRegexMatchHandler matchHandler = SAXON_MATCH_HANDLER_CLASS_CONSTRUCTOR.newInstance(builder);
+                SAXON_PROCESS_MATCHING_SUBSTRING_FN.invoke(regexIterator, matchHandler);
+            } finally {
+                Enhancer.registerCallbacks(SAXON_MATCH_HANDLER_CLASS, null);
             }
+        } catch (final InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new net.sf.saxon.trans.XPathException("Unable to dynamically invoke net.sf.saxon.regex.RegexIterator#processMatchingSubstring: " + e.getMessage(), e);
+        }
 
-            @Override
-            public void onGroupEnd(final int groupNumber) throws net.sf.saxon.trans.XPathException {
-                builder.endElement();
-            }
-        });
         builder.endElement();
+    }
+
+    private static Method getSaxonProcessMatchingSubstringFunction() {
+        final String saxonVersion = net.sf.saxon.Version.getProductVersion();
+        try {
+            final Class<?> matchHandlerInterfaceClazz;
+            if (saxonVersion.startsWith("12.")) {
+                matchHandlerInterfaceClazz = getSaxon12MatchHandlerInterfaceClass();
+            } else {
+                matchHandlerInterfaceClazz = getSaxon9MatchHandlerInterfaceClass();
+            }
+
+            return RegexIterator.class.getMethod("processMatchingSubstring", matchHandlerInterfaceClazz);
+
+        } catch (final ClassNotFoundException | NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to dynamically access Saxon RegexIterator#processMatchingSubstring method: " + e.getMessage(), e);
+        }
+    }
+
+    private static Constructor<? extends AbstractSaxonRegexMatchHandler> getSaxonMatchHandlerClassConstructor(final Class<? extends AbstractSaxonRegexMatchHandler> saxonMatchHandlerClass) {
+        try {
+            return saxonMatchHandlerClass.getDeclaredConstructor(MemTreeBuilder.class);
+        } catch (final NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to get constructor of dynamic Saxon Match Handler class: " + e.getMessage(), e);
+        }
+    }
+
+    private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxonMatchHandlerClass() {
+        final String saxonVersion = net.sf.saxon.Version.getProductVersion();
+        try {
+            if (saxonVersion.startsWith("12.")) {
+                return createSaxon12MatchHandlerClass();
+            } else {
+                return createSaxon9MatchHandlerClass();
+            }
+        } catch (final ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to dynamically create Saxon Match Handler class: " + e.getMessage(), e);
+        }
+    }
+
+    private static Class<?> getSaxon12MatchHandlerInterfaceClass() throws ClassNotFoundException {
+        return Class.forName("net.sf.saxon.regex.RegexMatchHandler");
+    }
+
+    private static Class<?> getSaxon9MatchHandlerInterfaceClass() throws ClassNotFoundException {
+        return Class.forName("net.sf.saxon.regex.RegexIterator$MatchHandler");
+    }
+
+    private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxon12MatchHandlerClass() throws ClassNotFoundException {
+        final Class<?> matchHandlerInterfaceClazz = getSaxon12MatchHandlerInterfaceClass();
+        return createSaxonMatchHandlerClass(matchHandlerInterfaceClazz);
+    }
+
+    private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxon9MatchHandlerClass() throws ClassNotFoundException {
+        final Class<?> matchHandlerInterfaceClazz = getSaxon9MatchHandlerInterfaceClass();
+        return createSaxonMatchHandlerClass(matchHandlerInterfaceClazz);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxonMatchHandlerClass(final Class<?> saxonMatchHandlerInterface) {
+        final Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(AbstractSaxonRegexMatchHandler.class);
+        enhancer.setInterfaces(new Class[]{saxonMatchHandlerInterface});
+        enhancer.setCallbackType(MethodInterceptor.class);
+        return (Class<? extends AbstractSaxonRegexMatchHandler>) enhancer.createClass();
+    }
+
+    /**
+     * Implements the common methods of Saxon 9's net.sf.saxon.regex.RegexIterator$MatchHandler
+     * and Saxon 12's net.sf.saxon.regex.RegexMatchHandler
+     */
+    private static abstract class AbstractSaxonRegexMatchHandler {
+        private final MemTreeBuilder builder;
+
+        public AbstractSaxonRegexMatchHandler(final MemTreeBuilder builder) {
+            this.builder = builder;
+        }
+
+        public void onGroupStart(final int groupNumber) {
+            final AttributesImpl attributes = new AttributesImpl();
+            attributes.addAttribute("", QN_NR.getLocalPart(), QN_NR.getLocalPart(), "int", Integer.toString(groupNumber));
+            builder.startElement(QN_GROUP, attributes);
+        }
+
+        public void onGroupEnd(final int groupNumber) {
+            builder.endElement();
+        }
     }
 
     private void nonMatch(final MemTreeBuilder builder, final Item item) {
