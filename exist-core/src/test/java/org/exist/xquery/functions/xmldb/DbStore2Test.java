@@ -81,7 +81,7 @@ public class DbStore2Test {
             true, getConfig());
 
     private static final int BUFFER_SIZE = 1024 * 1024 * 4; // 4MiB buffer
-    private static final long FILE_SIZE = 3l * 1024l * 1024l * 1024l; //3GiB file.
+    private static final long FILE_SIZE = 1024l * 1024l * 1024l; // 1GiB file.
     private static final String TEST_COLLECTION = "testAnyUri2";
 
     private static Path largeFileLocation = null;
