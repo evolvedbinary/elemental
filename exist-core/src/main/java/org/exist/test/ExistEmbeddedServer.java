@@ -94,7 +94,7 @@ public class ExistEmbeddedServer extends ExternalResource {
         this(instanceName, configFile, configProperties, false, false);
     }
 
-    public ExistEmbeddedServer(@Nullable final String instanceName, @Nullable final Path configFile, @Nullable final Properties configProperties, @Nullable final boolean disableAutoDeploy, @Nullable final boolean useTemporaryStorage) {
+    public ExistEmbeddedServer(@Nullable final String instanceName, @Nullable final Path configFile, @Nullable final Properties configProperties, final boolean disableAutoDeploy, final boolean useTemporaryStorage) {
         this.instanceName = Optional.ofNullable(instanceName);
         this.configFile = Optional.ofNullable(configFile);
         this.configProperties = Optional.ofNullable(configProperties);

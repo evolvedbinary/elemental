@@ -147,7 +147,7 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
 
                     consumer2E.accept(results);
                 } finally {
-                    //TODO(AR) performing #runCleanupTasks causes the stream to be closed, so if we do so before we are finished with the results, serialization fails.
+                    // NOTE(AR) performing #runCleanupTasks causes the stream to be closed, so if we do so before we are finished with the results, serialization fails.
                     if (fContext != null) {
                         fContext.runCleanupTasks();
                     }

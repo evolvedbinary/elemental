@@ -1481,7 +1481,7 @@ public class RESTServer {
         final ResponseWrapper respw = new HttpResponseWrapper(response);
         context.setHttpContext(new XQueryContext.HttpContext(reqw, respw));
 
-        //enable EXQuery Request Module (if present)
+        // enable EXQuery Request Module (if present)
         try {
             if(xqueryContextExqueryRequestAttribute != null && cstrHttpServletRequestAdapter != null) {
                 final HttpRequest exqueryRequestAdapter = cstrHttpServletRequestAdapter.apply(request, () -> (String)context.getBroker().getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY));
@@ -2073,10 +2073,10 @@ public class RESTServer {
             serializer.setOutput(writer, defaultProperties);
 
             serializer.startDocument();
-            serializer.startPrefixMapping("exist", Namespaces.EXIST_NS);
+            serializer.startPrefixMapping(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
 
             if (wrap) {
-                serializer.startElement(Namespaces.EXIST_NS, "result", "exist:result", null);
+                serializer.startElement(Namespaces.EXIST_NS, "result", Namespaces.EXIST_NS_PREFIX + ":result", null);
             }
 
             final AttributesImpl attrs = new AttributesImpl();
@@ -2096,8 +2096,7 @@ public class RESTServer {
 
             addPermissionAttributes(attrs, collection.getPermissionsNoLock());
 
-            serializer.startElement(Namespaces.EXIST_NS, "collection",
-                    "exist:collection", attrs);
+            serializer.startElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection", attrs);
 
             for (final Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext();) {
                 final XmldbURI child = i.next();
@@ -2120,8 +2119,8 @@ public class RESTServer {
                     }
 
                     addPermissionAttributes(attrs, childCollection.getPermissionsNoLock());
-                    serializer.startElement(Namespaces.EXIST_NS, "collection", "exist:collection", attrs);
-                    serializer.endElement(Namespaces.EXIST_NS, "collection", "exist:collection");
+                    serializer.startElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection", attrs);
+                    serializer.endElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection");
                 }
             }
 
@@ -2158,15 +2157,15 @@ public class RESTServer {
                     }
 
                     addPermissionAttributes(attrs, doc.getPermissions());
-                    serializer.startElement(Namespaces.EXIST_NS, "resource", "exist:resource", attrs);
-                    serializer.endElement(Namespaces.EXIST_NS, "resource", "exist:resource");
+                    serializer.startElement(Namespaces.EXIST_NS, "resource", Namespaces.EXIST_NS_PREFIX + ":resource", attrs);
+                    serializer.endElement(Namespaces.EXIST_NS, "resource", Namespaces.EXIST_NS_PREFIX + ":resource");
                 }
             }
 
-            serializer.endElement(Namespaces.EXIST_NS, "collection", "exist:collection");
+            serializer.endElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection");
 
             if (wrap) {
-                serializer.endElement(Namespaces.EXIST_NS, "result", "exist:result");
+                serializer.endElement(Namespaces.EXIST_NS, "result", Namespaces.EXIST_NS_PREFIX + ":result");
             }
 
             serializer.endDocument();

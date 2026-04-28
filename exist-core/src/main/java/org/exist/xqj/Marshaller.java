@@ -100,15 +100,13 @@ public class Marshaller {
     public final static String NAMESPACE = "http://exist-db.org/xquery/types/serialized";
     public final static String PREFIX = "sx";
 
-    
     private final static Properties DEFAULT_OUTPUT_PROPERTIES = new Properties();
 
     private final static String VALUE_ELEMENT = "value";
-    private final static String VALUE_ELEMENT_QNAME = PREFIX + ":value";
-    private final static QName VALUE_QNAME = new QName(VALUE_ELEMENT,  NAMESPACE, PREFIX);
+    private final static String VALUE_ELEMENT_PREFIXED_NAME = PREFIX + ":value";
     
     private final static String SEQ_ELEMENT = "sequence";
-    private final static String SEQ_ELEMENT_QNAME = PREFIX + ":sequence";
+    private final static String SEQ_ELEMENT_PREFIXED_NAME = PREFIX + ":sequence";
     
     private final static String ATTR_TYPE = "type";
     private final static String ATTR_ITEM_TYPE = "item-type";
@@ -116,6 +114,7 @@ public class Marshaller {
     private final static String ATTR_NAME = "name";
 
     public final static QName SEQUENCE_ELEMENT_QNAME = new QName(SEQ_ELEMENT, NAMESPACE, PREFIX);
+    public final static QName VALUE_ELEMENT_QNAME = new QName(VALUE_ELEMENT,  NAMESPACE, PREFIX);
     public final static QName ENTRY_ELEMENT_QNAME = new QName("entry", NAMESPACE, PREFIX);
     public final static QName KEY_ELEMENT_QNAME = new QName("key", NAMESPACE, PREFIX);
     
@@ -133,11 +132,11 @@ public class Marshaller {
             throws XPathException, SAXException {
         final AttributesImpl attrs = new AttributesImpl();
         attrs.addAttribute("", ATTR_ITEM_TYPE, ATTR_ITEM_TYPE, "CDATA", Type.getTypeName(seq.getItemType()));
-        handler.startElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_QNAME, attrs);
+        handler.startElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_PREFIXED_NAME, attrs);
         for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
             marshallItem(broker, i.nextItem(), handler);
         }
-        handler.endElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_QNAME);
+        handler.endElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_PREFIXED_NAME);
     }
     
     
@@ -157,12 +156,12 @@ public class Marshaller {
             final ContentHandler handler) throws XPathException, SAXException {
         final AttributesImpl attrs = new AttributesImpl();
         attrs.addAttribute("", ATTR_ITEM_TYPE, ATTR_ITEM_TYPE, "CDATA", Type.getTypeName(seq.getItemType()));
-        handler.startElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_QNAME, attrs);
+        handler.startElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_PREFIXED_NAME, attrs);
         for (int i = start; i < howmany && i < seq.getItemCount(); i++ ) {
         	
             marshallItem(broker, seq.itemAt(i), handler);
         }
-        handler.endElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_QNAME);
+        handler.endElement(NAMESPACE, SEQ_ELEMENT, SEQ_ELEMENT_PREFIXED_NAME);
     }
 
     /**
@@ -202,15 +201,15 @@ public class Marshaller {
         }
         attrs.addAttribute("", ATTR_TYPE, ATTR_TYPE, "CDATA", Type.getTypeName(type));
         if (Type.subTypeOf(item.getType(), Type.NODE)) {
-            handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME, attrs);
+            handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_PREFIXED_NAME, attrs);
             final NodeValue nv = (NodeValue) item;
             nv.toSAX(broker, handler, outputProperties);
-            handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME);
+            handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_PREFIXED_NAME);
         } else {
-            handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME, attrs);
+            handler.startElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_PREFIXED_NAME, attrs);
             final String value = item.getStringValue();
             handler.characters(value.toCharArray(), 0, value.length());
-            handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_QNAME);
+            handler.endElement(NAMESPACE, VALUE_ELEMENT, VALUE_ELEMENT_PREFIXED_NAME);
         }
     }
 
@@ -246,11 +245,13 @@ public class Marshaller {
         while (event != XMLStreamConstants.START_ELEMENT) {
             event = parser.next();
         }
+
         if (!NAMESPACE.equals(parser.getNamespaceURI())) {
             throw new XMLStreamException("Root element is not in the correct namespace. Expected: " + NAMESPACE);
         }
+
         if (!SEQ_ELEMENT.equals(parser.getLocalName())) {
-            throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_QNAME);
+            throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_PREFIXED_NAME);
         }
         final ValueSequence result = new ValueSequence();
         while ((event = parser.next()) != XMLStreamConstants.END_DOCUMENT) {
@@ -280,12 +281,15 @@ public class Marshaller {
                         result.add(item);
                     }
                     break;
+
                 case XMLStreamConstants.END_ELEMENT :
-                    if (NAMESPACE.equals(parser.getNamespaceURI()) && SEQ_ELEMENT.equals(parser.getLocalName()))
-                        {return result;}
+                    if (NAMESPACE.equals(parser.getNamespaceURI()) && SEQ_ELEMENT.equals(parser.getLocalName())) {
+                        return result;
+                    }
                     break;
             }
         }
+
         return result;
     }
 
@@ -299,7 +303,7 @@ public class Marshaller {
             throw new XMLStreamException("Sequence element is not in the correct namespace. Expected: " + NAMESPACE);
         }
         if (!SEQ_ELEMENT.equals(node.getLocalName())) {
-            throw new XMLStreamException("Element should be a " + SEQ_ELEMENT_QNAME);
+            throw new XMLStreamException("Element should be a " + SEQ_ELEMENT_PREFIXED_NAME);
         }
 
         return demarshallValues(context, node);
@@ -308,7 +312,8 @@ public class Marshaller {
     private static Sequence demarshallValues(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
         final ValueSequence result = new ValueSequence();
         final InMemoryNodeSet sxValues = new InMemoryNodeSet();
-        node.selectChildren(new NameTest(Type.ELEMENT, VALUE_QNAME), sxValues);
+        node.selectChildren(new NameTest(Type.ELEMENT, VALUE_ELEMENT_QNAME), sxValues);
+
         for (final SequenceIterator itSxValue = sxValues.iterate(); itSxValue.hasNext();) {
             final ElementImpl sxValue = (ElementImpl) itSxValue.nextItem();
             final Item item = demarshallValue(context, sxValue);
