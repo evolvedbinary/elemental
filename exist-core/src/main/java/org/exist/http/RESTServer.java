@@ -349,6 +349,17 @@ public class RESTServer {
             writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, DEFAULT_ENCODING, query, path, x);
         }
 
+        @Nullable final String _defaultCollection = getParameter(request, Default_Collection);
+        @Nullable ElementImpl defaultCollectionParam = null;
+        try {
+            if (_defaultCollection != null) {
+                defaultCollectionParam = parseXML(broker.getBrokerPool(), _defaultCollection);
+            }
+        } catch (final SAXException e) {
+            final XPathException x = new XPathException(defaultCollectionParam != null ? defaultCollectionParam.getExpression() : null, e.toString());
+            writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, DEFAULT_ENCODING, query, path, x);
+        }
+
         @Nullable final String _var = getParameter(request, Variables);
         @Nullable ElementImpl variablesParam = null;
         try {
@@ -447,7 +458,7 @@ public class RESTServer {
         if (query != null) {
             // query parameter specified, search method does all the rest of the work
             try {
-                search(broker, transaction, query, path, null, contextItemParam, variablesParam, howmany, start, typed, outputProperties,
+                search(broker, transaction, query, path, null, contextItemParam, defaultCollectionParam, variablesParam, howmany, start, typed, outputProperties,
                         wrap, cache, request, response);
 
             } catch (final XPathException e) {
@@ -798,6 +809,7 @@ public class RESTServer {
             int start = 1;
             boolean typed = false;
             @Nullable ElementImpl contextItemParam = null;
+            @Nullable ElementImpl defaultCollectionParam = null;
             @Nullable ElementImpl variablesParam = null;
             boolean enclose = true;
             boolean cache = false;
@@ -886,6 +898,9 @@ public class RESTServer {
                                 } else if (Context_Item.xmlKey().equals(child.getLocalName())) {
                                     contextItemParam = (ElementImpl) child;
 
+                                } else if (Default_Collection.xmlKey().equals(child.getLocalName())) {
+                                    defaultCollectionParam = (ElementImpl) child;
+
                                 } else if (Variables.xmlKey().equals(child.getLocalName())) {
                                     variablesParam = (ElementImpl) child;
 
@@ -916,7 +931,7 @@ public class RESTServer {
                     if (query != null) {
 
                         try {
-                            search(broker, transaction, query, path, null, contextItemParam, variablesParam,
+                            search(broker, transaction, query, path, null, contextItemParam, defaultCollectionParam, variablesParam,
                                     howmany, start, typed, outputProperties,
                                     enclose, cache, request, response);
                         } catch (final XPathException e) {
@@ -1313,6 +1328,7 @@ public class RESTServer {
      * @param path the path of the request
      * @param namespaces any XQuery namespace bindings
      * @param contextItemParam optional XQuery Context Item
+     * @param defaultCollectionParam optional XQuery Default Collection
      * @param variablesParam any XQuery variable bindings
      * @param howmany the number of items in the results to return
      * @param start the start position in the results to return
@@ -1330,6 +1346,7 @@ public class RESTServer {
     protected void search(final DBBroker broker, final Txn transaction, final String query,
         final String path, @Nullable final List<Namespace> namespaces,
         @Nullable final ElementImpl contextItemParam,
+        @Nullable final ElementImpl defaultCollectionParam,
         @Nullable final ElementImpl variablesParam, final int howmany,
         final int start, final boolean typed,
         final Properties outputProperties, final boolean wrap,
@@ -1403,6 +1420,7 @@ public class RESTServer {
                 compilationTime = 0;
             }
 
+            setupDefaultCollection(context, defaultCollectionParam);
             declareVariables(context, variablesParam, request, response);
 
             @Nullable final Item contextItem = extractContextItem(contextItemParam);
@@ -1467,6 +1485,26 @@ public class RESTServer {
 
         try {
             return Marshaller.demarshallValue(null, (ElementImpl) value);
+        } catch (final XMLStreamException xe) {
+            throw new XPathException((Expression) null, xe.toString());
+        }
+    }
+
+    private void setupDefaultCollection(final XQueryContext context, @Nullable final ElementImpl defaultCollectionParam) throws XPathException {
+        if (defaultCollectionParam == null) {
+            return;
+        }
+
+        @Nullable final NodeImpl value = defaultCollectionParam.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
+        if (value == null) {
+            return;
+        }
+
+        try {
+            @Nullable final Sequence sequence = Marshaller.demarshall(context, value);
+            if (sequence != null) {
+                context.addDynamicallyAvailableCollection("", (broker, txn, uri) -> sequence);
+            }
         } catch (final XMLStreamException xe) {
             throw new XPathException((Expression) null, xe.toString());
         }

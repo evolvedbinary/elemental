@@ -77,6 +77,7 @@ enum RESTServerParameter {
      *  method? = string>
      *      (exist:text,
      *      exist:context-item?,
+     *      exist:default-collection?
      *      exist:variables?,
      *      exist:properties?)
      * </exist:query>
@@ -97,6 +98,21 @@ enum RESTServerParameter {
      * </exist:context-item>
      */
     Context_Item,
+
+    /**
+     * Can be used in either the Query String of a GET request
+     * or in the body of a POST request to specify the values
+     * for the Default Collection of the XQuery Dynamic Context.
+     *
+     * Contexts: GET, POST
+     *
+     * The value of this prarameter, is an XML element with the format
+     *
+     * <exist:default-collection>
+     *     (sx:sequence)
+     * </exist:default-collection>
+     */
+    Default_Collection,
 
     /**
      * Can be used in either the Query String of a GET request

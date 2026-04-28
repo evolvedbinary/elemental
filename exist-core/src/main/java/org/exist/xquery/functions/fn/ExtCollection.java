@@ -122,13 +122,21 @@ public class ExtCollection extends BasicFunction {
     }
 
     private Sequence getDefaultCollectionItems() throws XPathException {
-        final DocumentSet staticallyKnownDocuments = context.getStaticallyKnownDocuments();
-        final Sequence items = new ValueSequence(staticallyKnownDocuments.getDocumentCount());
-        addAll(staticallyKnownDocuments, items);
+        @Nullable Sequence items = null;
 
-        final Sequence dynamicCollection = context.getDynamicallyAvailableCollection("");
+        @Nullable final Sequence dynamicCollection = context.getDynamicallyAvailableCollection("");
         if (dynamicCollection != null) {
-            items.addAll(dynamicCollection);
+            items = new ValueSequence(dynamicCollection);
+        }
+
+        if (items == null) {
+            final DocumentSet staticallyKnownDocuments = context.getStaticallyKnownDocuments();
+            items = new ValueSequence(staticallyKnownDocuments.getDocumentCount());
+            addAll(staticallyKnownDocuments, items);
+        }
+
+        if (items == null) {
+            items = Sequence.EMPTY_SEQUENCE;
         }
 
         return items;
@@ -141,6 +149,7 @@ public class ExtCollection extends BasicFunction {
 
         } else {
             @Nullable MutableDocumentSet docs = null;
+
             final XmldbURI uri = XmldbURI.create(collectionUri);
             try (@Nullable final Collection coll = context.getBroker().openCollection(uri, Lock.LockMode.READ_LOCK)) {
                 if (coll == null) {
