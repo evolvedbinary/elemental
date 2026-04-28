@@ -123,7 +123,7 @@ public class SMEvents implements Configurable {
     	            }
 
 					final Sequence contextSequence;
-					final ContextItemDeclaration cid = context.getContextItemDeclartion();
+					final ContextItemDeclaration cid = context.getContextItemDeclaration();
 					if(cid != null) {
 						contextSequence = cid.eval(null, null);
 					} else {
