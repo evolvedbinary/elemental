@@ -90,7 +90,7 @@ if "%TARGET%"=="useage" (
 
 :: Determine script directory
 set "SCRIPT_DIR=%~dp0"
-set "BASE_CMD=%SCRIPT_DIR%\mvnw.cmd -V"
+set "BASE_CMD=mvn -V"
 
 :: Set CMD based on TARGET
 if "%TARGET%"=="clean" (
