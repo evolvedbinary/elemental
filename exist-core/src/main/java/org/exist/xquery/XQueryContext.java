@@ -797,7 +797,7 @@ public class XQueryContext implements BinaryValueManager, Context {
         this.contextItemDeclaration = contextItemDeclaration;
     }
 
-    public ContextItemDeclaration getContextItemDeclartion() {
+    public ContextItemDeclaration getContextItemDeclaration() {
         return contextItemDeclaration;
     }
 
