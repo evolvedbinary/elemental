@@ -43,7 +43,7 @@
     <parent>
         <groupId>xyz.elemental</groupId>
         <artifactId>elemental-media-type</artifactId>
-        <version>7.6.0</version>
+        <version>7.7.0-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -56,7 +56,7 @@
         <connection>scm:git:https://github.com/evolvedbinary/elemental.git</connection>
         <developerConnection>scm:git:https://github.com/evolvedbinary/elemental.git</developerConnection>
         <url>scm:git:https://github.com/evolvedbinary/elemental.git</url>
-      <tag>elemental-7.6.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <dependencies>
