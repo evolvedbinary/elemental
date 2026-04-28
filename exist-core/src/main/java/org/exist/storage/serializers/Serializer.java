@@ -1089,6 +1089,9 @@ public abstract class Serializer implements XMLReader {
         }
         if (wrap) {
             receiver.startPrefixMapping(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
+            if (typed) {
+                receiver.startPrefixMapping(Namespaces.SCHEMA_NS_PREFIX, Namespaces.SCHEMA_NS);
+            }
             receiver.startElement(ELEM_RESULT_QNAME, attrs);
         }
 
@@ -1103,6 +1106,9 @@ public abstract class Serializer implements XMLReader {
 
         if (wrap) {
             receiver.endElement(ELEM_RESULT_QNAME);
+            if (typed) {
+                receiver.endPrefixMapping(Namespaces.SCHEMA_NS_PREFIX);
+            }
             receiver.endPrefixMapping(Namespaces.EXIST_NS_PREFIX);
         }
         receiver.endDocument();
@@ -1176,6 +1182,9 @@ public abstract class Serializer implements XMLReader {
 
         if (wrap) {
             receiver.startPrefixMapping(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
+            if (typed) {
+                receiver.startPrefixMapping(Namespaces.SCHEMA_NS_PREFIX, Namespaces.SCHEMA_NS);
+            }
             receiver.startElement(ELEM_RESULT_QNAME, attrs);
         }
 
@@ -1183,6 +1192,9 @@ public abstract class Serializer implements XMLReader {
 
         if (wrap) {
             receiver.endElement(ELEM_RESULT_QNAME);
+            if (typed) {
+                receiver.endPrefixMapping(Namespaces.SCHEMA_NS_PREFIX);
+            }
             receiver.endPrefixMapping(Namespaces.EXIST_NS_PREFIX);
         }
 
