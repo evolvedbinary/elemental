@@ -761,6 +761,7 @@
                                 <include>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</include>
+                                <include>src/test/java/org/exist/xquery/ArrowOperatorTest.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/import-from-pkg-test.conf.xml</include>
                                 <include>src/test/java/org/exist/xquery/ImportFromPkgTest.java</include>
                                 <include>src/main/java/org/exist/xquery/JavaBinding.java</include>
@@ -1207,6 +1208,7 @@
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
                                 <include>src/main/java/org/exist/xquery/AbstractInternalModule.java</include>
+                                <include>src/main/java/org/exist/xquery/ArrowOperator.java</include>
                                 <include>src/test/java/org/exist/xquery/CardinalityTest.java</include>
                                 <include>src/test/java/org/exist/xquery/CleanupTest.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
@@ -2011,6 +2013,8 @@
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
                                 <exclude>src/test/java/org/exist/xqj/MarshallerTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/AbstractInternalModule.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/ArrowOperator.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/ArrowOperatorTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Cardinality.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CardinalityTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CastExpressionTest.java</exclude>

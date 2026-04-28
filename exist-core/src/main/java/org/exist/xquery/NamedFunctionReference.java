@@ -57,12 +57,14 @@ import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 
+import javax.annotation.Nullable;
+
 public class NamedFunctionReference extends AbstractExpression {
 
 	private QName qname;
 	private int arity;
 
-	private FunctionCall resolvedFunction = null;
+	@Nullable FunctionCall resolvedFunction = null;
 	
 	public NamedFunctionReference(XQueryContext context, QName qname, int arity) {
 		super(context);
