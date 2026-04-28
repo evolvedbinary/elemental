@@ -72,11 +72,11 @@ public class DayTimeDurationValue extends OrderedDurationValue {
     public static final Duration CANONICAL_ZERO_DURATION =
             TimeUtils.getInstance().newDuration(true, null, null, null, null, null, ZERO_DECIMAL);
 
-    DayTimeDurationValue(final Duration duration) throws XPathException {
+    public DayTimeDurationValue(final Duration duration) throws XPathException {
         this(null, duration);
     }
 
-    DayTimeDurationValue(final Expression expression, Duration duration) throws XPathException {
+    public DayTimeDurationValue(final Expression expression, Duration duration) throws XPathException {
         super(expression, duration);
         if (duration.isSet(DatatypeConstants.YEARS) || duration.isSet(DatatypeConstants.MONTHS)) {
             throw new XPathException(getExpression(), ErrorCodes.XPTY0004, "the value '" + duration + "' is not an xdt:dayTimeDuration since it specifies year or month values");

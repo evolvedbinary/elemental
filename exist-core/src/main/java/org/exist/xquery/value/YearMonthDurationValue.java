@@ -71,11 +71,11 @@ public class YearMonthDurationValue extends OrderedDurationValue {
     public static final Duration CANONICAL_ZERO_DURATION =
             TimeUtils.getInstance().newDuration(true, null, BigInteger.ZERO, null, null, null, null);
 
-    YearMonthDurationValue(final Duration duration) throws XPathException {
+    public YearMonthDurationValue(final Duration duration) throws XPathException {
         this(null, duration);
     }
 
-    YearMonthDurationValue(final Expression expression, Duration duration) throws XPathException {
+    public YearMonthDurationValue(final Expression expression, Duration duration) throws XPathException {
         super(expression, duration);
         if (!duration.equals(DurationValue.CANONICAL_ZERO_DURATION)) {
             if (duration.isSet(DatatypeConstants.DAYS) ||

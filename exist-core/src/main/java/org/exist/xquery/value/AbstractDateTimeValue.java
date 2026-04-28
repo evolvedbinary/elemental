@@ -129,6 +129,12 @@ public abstract class AbstractDateTimeValue extends ComputableValue {
         }
     }
 
+    protected static XMLGregorianCalendar toXMLGregorianCalendar(final GregorianCalendar gregorianCalendar) {
+        final XMLGregorianCalendar xgc = TimeUtils.getInstance().newXMLGregorianCalendar(gregorianCalendar);
+        xgc.normalize();
+        return xgc;
+    }
+
     /**
      * Utility method that is able to clone a calendar whose year is 0
      * (whatever a year 0 means).
