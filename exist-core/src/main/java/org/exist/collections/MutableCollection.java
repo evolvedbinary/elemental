@@ -481,7 +481,7 @@ public class MutableCollection implements Collection {
         if(recursive && subColls != null) {
             // process the child collections
             for(final XmldbURI subCol : subColls) {
-                try(final Collection child = broker.openCollection(subCol, NO_LOCK)) {      // NOTE: the recursive call below to child.addDocs will take a lock
+                try(final Collection child = broker.openCollection(subCol, INTENTION_READ)) {      // NOTE: the recursive call below to child.addDocs will take a lock
                     //A collection may have been removed in the meantime, so check first
                     if(child != null) {
                         child.allDocs(broker, docs, recursive, lockMap);
