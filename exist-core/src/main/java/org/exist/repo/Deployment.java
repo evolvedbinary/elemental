@@ -329,7 +329,7 @@ public class Deployment {
 
     private void checkExistDbProcessorVersion(final PackageLoader.Version version) throws PackageException {
         final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0.0");
-        final String eXistCompatibleProcVersion = SystemProperties.getInstance().getSystemProperty("exist-db-expath-pkg-compatible-version", "6.3.0");
+        final String eXistCompatibleProcVersion = SystemProperties.getInstance().getSystemProperty("exist-db-expath-pkg-compatible-version", "6.4.0");
 
         final DependencyVersion depVersion = version.getDependencyVersion();
         if (!depVersion.isCompatible(eXistCompatibleProcVersion)) {

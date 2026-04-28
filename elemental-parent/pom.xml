@@ -88,7 +88,7 @@
         <project.parent.relativePath>.</project.parent.relativePath>
 
         <!-- NOTE: this needs to be set to the latest eXist-db compatible version of the EXPath packages that we want -->
-        <exist-db.expath.pkg.compatible.version>6.3.0</exist-db.expath.pkg.compatible.version>
+        <exist-db.expath.pkg.compatible.version>6.4.0</exist-db.expath.pkg.compatible.version>
 
         <!-- Sonar cloud-->
         <sonar.projectKey>evolvedbinary_elemental</sonar.projectKey>
