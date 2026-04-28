@@ -57,13 +57,9 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.functions.array.ArrayType;
 import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
-import org.w3c.dom.Comment;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.ProcessingInstruction;
-import org.w3c.dom.Text;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
@@ -331,7 +327,7 @@ public class Marshaller {
         return result;
     }
 
-    private static Item demarshallValue(final XQueryContext context, final ElementImpl sxValue) throws XMLStreamException, XPathException {
+    public static Item demarshallValue(final XQueryContext context, final ElementImpl sxValue) throws XMLStreamException, XPathException {
         int type = Type.ITEM;
         final String typeName = sxValue.getAttribute(ATTR_TYPE);
         if (!typeName.isEmpty()) {
@@ -349,7 +345,8 @@ public class Marshaller {
         final InMemoryNodeSet sxEntries = new InMemoryNodeSet();
         sxValue.selectChildren(new NameTest(Type.ELEMENT, ENTRY_ELEMENT_QNAME), sxEntries);
 
-        Node item = sxValue.getFirstChild();
+        @Nullable Node item = null;
+        item = sxValue.getFirstChild();
 
         if (type == Type.ATTRIBUTE || (type == Type.ITEM && attrNameString != null)) {
             if (attrNameString.isEmpty()) {
@@ -385,50 +382,73 @@ public class Marshaller {
 
             switch (type) {
                 case Type.ELEMENT:
-                    if (item instanceof Document) {
-                        return (ElementImpl) ((DocumentImpl) item).getDocumentElement();
-                    } else if (!(item instanceof Element)) {
-                        throw new XMLStreamException("sx:value should only contain an Element if type is " + typeName);
-                    } else {
-                        return (ElementImpl) item;
-                    }
+                    do {
+                        if (item.getNodeType() == Node.DOCUMENT_NODE) {
+                            item = ((DocumentImpl) item).getDocumentElement();
+                        }
+
+                        if (item.getNodeType() == Node.ELEMENT_NODE) {
+                            return (ElementImpl) item;
+                        }
+
+                        item = item.getNextSibling();
+                    } while (item != null);
+
+                    throw new XMLStreamException("sx:value must contain an Element if type is " + typeName);
+
 
                 case Type.COMMENT:
-                    if (!(item instanceof Comment)) {
-                        throw new XMLStreamException("sx:value should only contain a Comment node if type is " + typeName);
-                    }
-                    return (CommentImpl) item;
+                    do {
+                        if (item.getNodeType() == Node.COMMENT_NODE) {
+                            return (CommentImpl) item;
+                        }
+                        item = item.getNextSibling();
+                    } while (item != null);
+
+                    throw new XMLStreamException("sx:value must contain a Comment node if type is " + typeName);
+
 
                 case Type.PROCESSING_INSTRUCTION:
-                    if (!(item instanceof ProcessingInstruction)) {
-                        throw new XMLStreamException("sx:value should only contain a Processing Instruction node if type is " + typeName);
-                    }
-                    return (ProcessingInstructionImpl) item;
+                    do {
+                        if (item.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
+                            return (ProcessingInstructionImpl) item;
+                        }
+                        item = item.getNextSibling();
+                    } while (item != null);
+
+                    throw new XMLStreamException("sx:value must contain a Processing Instruction node if type is " + typeName);
+
 
                 case Type.TEXT:
-                    if (!(item instanceof Text)) {
-                        throw new XMLStreamException("sx:value should only contain a Text node if type is " + typeName);
-                    }
-                    return (TextImpl) item;
+                    do {
+                        if (item.getNodeType() == Node.TEXT_NODE) {
+                            return (TextImpl) item;
+                        }
+                        item = item.getNextSibling();
+                    } while (item != null);
+
 
                 case Type.DOCUMENT:
                 default:
-                    if (item instanceof Document || item instanceof Element) {
-                        final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(((NodeImpl) item).getExpression());
-                        try {
-                            receiver.startDocument();
-                            ((NodeImpl) item).copyTo(null, receiver);
-                            receiver.endDocument();
-                        } catch (final SAXException e) {
-                            throw new XPathException(item != null ? ((NodeImpl) item).getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
+                    do {
+                        if (item.getNodeType() == Node.DOCUMENT_NODE || item.getNodeType() == Node.ELEMENT_NODE) {
+                            final DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(((NodeImpl) item).getExpression());
+                            try {
+                                receiver.startDocument();
+                                ((NodeImpl) item).copyTo(null, receiver);
+                                receiver.endDocument();
+                            } catch (final SAXException e) {
+                                throw new XPathException(item != null ? ((NodeImpl) item).getExpression() : null, "Error while demarshalling node: " + e.getMessage(), e);
+                            }
+                            return (NodeImpl) receiver.getDocument();
                         }
-                        return (NodeImpl) receiver.getDocument();
-                    } else {
-                        throw new XMLStreamException("sx:value should only contain a Node if type is " + typeName);
-                    }
+                        item = item.getNextSibling();
+                    } while (item != null);
+
+                    throw new XMLStreamException("sx:value must contain a Document or Element if type is " + typeName);
             }
 
-        } else if (type == Type.ITEM && !(item instanceof Text)) {
+        } else if (type == Type.ITEM && item.getNodeType() != Node.TEXT_NODE) {
             // item() type requested and we have been given a node which is not a text() node
             return (NodeImpl) item;
 
@@ -463,13 +483,13 @@ public class Marshaller {
         } else {
             // specific non-node type or text()
             final StringBuilder data = new StringBuilder();
-            while (item != null) {
-                if (!(item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)) {
-                    throw new XMLStreamException("sx:value should only contain text if type is " + typeName);
+            do {
+                if (item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE) {
+                    data.append(item.getNodeValue());
                 }
-                data.append(item.getNodeValue());
                 item = item.getNextSibling();
-            }
+            } while (item != null);
+
             return new StringValue(data.toString()).convertTo(type);
         }
     }
