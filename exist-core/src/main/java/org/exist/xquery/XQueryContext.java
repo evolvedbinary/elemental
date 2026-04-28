@@ -1231,6 +1231,7 @@ public class XQueryContext implements BinaryValueManager, Context {
             staticDocuments = protectedDocuments.toDocumentSet();
             return staticDocuments;
         }
+
         final MutableDocumentSet ndocs = new DefaultDocumentSet(40);
 
         if (staticDocumentPaths == null) {
@@ -1269,7 +1270,8 @@ public class XQueryContext implements BinaryValueManager, Context {
                 }
             }
         }
-        staticDocuments = ndocs;
+
+        this.staticDocuments = ndocs;
         return staticDocuments;
     }
 

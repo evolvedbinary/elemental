@@ -107,7 +107,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.AttributesImpl;
-import org.xml.sax.helpers.XMLFilterImpl;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.MediaTypeResolver;
 
@@ -336,17 +335,37 @@ public class RESTServer {
                 query = getParameter(request, Query);
             }
         }
-        final String _var = getParameter(request, Variables);
-        List /*<Namespace>*/ namespaces = null;
-        ElementImpl variables = null;
+
+        @Nullable final String _contextItem = getParameter(request, Context_Item);
+        @Nullable ElementImpl contextItemParam = null;
         try {
-            if (_var != null) {
-                final NamespaceExtractor nsExtractor = new NamespaceExtractor();
-                variables = parseXML(broker.getBrokerPool(), _var, nsExtractor);
-                namespaces = nsExtractor.getNamespaces();
+            if (_contextItem != null) {
+                contextItemParam = parseXML(broker.getBrokerPool(), _contextItem);
             }
         } catch (final SAXException e) {
-            final XPathException x = new XPathException(variables != null ? variables.getExpression() : null, e.toString());
+            final XPathException x = new XPathException(contextItemParam != null ? contextItemParam.getExpression() : null, e.toString());
+            writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, UTF_8.name(), query, path, x);
+        }
+
+        @Nullable final String _defaultCollection = getParameter(request, Default_Collection);
+        @Nullable ElementImpl defaultCollectionParam = null;
+        try {
+            if (_defaultCollection != null) {
+                defaultCollectionParam = parseXML(broker.getBrokerPool(), _defaultCollection);
+            }
+        } catch (final SAXException e) {
+            final XPathException x = new XPathException(defaultCollectionParam != null ? defaultCollectionParam.getExpression() : null, e.toString());
+            writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, UTF_8.name(), query, path, x);
+        }
+
+        @Nullable final String _var = getParameter(request, Variables);
+        @Nullable ElementImpl variablesParam = null;
+        try {
+            if (_var != null) {
+                variablesParam = parseXML(broker.getBrokerPool(), _var);
+            }
+        } catch (final SAXException e) {
+            final XPathException x = new XPathException(variablesParam != null ? variablesParam.getExpression() : null, e.toString());
             writeXPathException(response, HttpServletResponse.SC_BAD_REQUEST, UTF_8.name(), query, path, x);
         }
 
@@ -421,7 +440,7 @@ public class RESTServer {
         if (query != null) {
             // query parameter specified, search method does all the rest of the work
             try {
-                search(broker, transaction, query, path, namespaces, variables, howmany, start, typed, outputProperties,
+                search(broker, transaction, query, path, null, contextItemParam, defaultCollectionParam, variablesParam, howmany, start, typed, outputProperties,
                         wrap, cache, request, response);
 
             } catch (final XPathException e) {
@@ -766,15 +785,16 @@ public class RESTServer {
             int howmany = 10;
             int start = 1;
             boolean typed = false;
-            ElementImpl variables = null;
+            @Nullable ElementImpl contextItemParam = null;
+            @Nullable ElementImpl defaultCollectionParam = null;
+            @Nullable ElementImpl variablesParam = null;
             boolean enclose = true;
             boolean cache = false;
             String query = null;
 
             try {
                 final String content = getRequestContent(request);
-                final NamespaceExtractor nsExtractor = new NamespaceExtractor();
-                final ElementImpl root = parseXML(broker.getBrokerPool(), content, nsExtractor);
+                final ElementImpl root = parseXML(broker.getBrokerPool(), content);
                 final String rootNS = root.getNamespaceURI();
 
                 if (rootNS != null && rootNS.equals(Namespaces.EXIST_NS)) {
@@ -852,8 +872,14 @@ public class RESTServer {
                                     }
                                     query = buf.toString();
 
+                                } else if (Context_Item.xmlKey().equals(child.getLocalName())) {
+                                    contextItemParam = (ElementImpl) child;
+
+                                } else if (Default_Collection.xmlKey().equals(child.getLocalName())) {
+                                    defaultCollectionParam = (ElementImpl) child;
+
                                 } else if (Variables.xmlKey().equals(child.getLocalName())) {
-                                    variables = (ElementImpl) child;
+                                    variablesParam = (ElementImpl) child;
 
                                 } else if (Properties.xmlKey().equals(child.getLocalName())) {
                                     Node node = child.getFirstChild();
@@ -882,7 +908,7 @@ public class RESTServer {
                     if (query != null) {
 
                         try {
-                            search(broker, transaction, query, path, nsExtractor.getNamespaces(), variables,
+                            search(broker, transaction, query, path, null, contextItemParam, defaultCollectionParam, variablesParam,
                                     howmany, start, typed, outputProperties,
                                     enclose, cache, request, response);
                         } catch (final XPathException e) {
@@ -979,22 +1005,19 @@ public class RESTServer {
         }
     }
 
-    private ElementImpl parseXML(final BrokerPool pool, final String content,
-            final NamespaceExtractor nsExtractor)
-            throws SAXException, IOException {
+    private ElementImpl parseXML(final BrokerPool pool, final String content) throws SAXException, IOException {
         final InputSource src = new InputSource(new StringReader(content));
         final XMLReaderPool parserPool = pool.getParserPool();
         XMLReader reader = null;
         try {
             reader = parserPool.borrowXMLReader();
             final SAXAdapter adapter = new SAXAdapter((Expression) null);
-            nsExtractor.setContentHandler(adapter);
+
+            reader.setContentHandler(adapter);
             reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
-            nsExtractor.setParent(reader);
-            nsExtractor.parse(src);
+            reader.parse(src);
 
             final Document doc = adapter.getDocument();
-
             return (ElementImpl) doc.getDocumentElement();
         } finally {
             if (reader != null) {
@@ -1003,41 +1026,13 @@ public class RESTServer {
         }
     }
 
-    private class NamespaceExtractor extends XMLFilterImpl {
-
-        final List<Namespace> namespaces = new ArrayList<>();
-
-        @Override
-        public void startPrefixMapping(final String prefix, final String uri)
-            throws SAXException {
-            if (!Namespaces.EXIST_NS.equals(uri)) {
-                final Namespace ns = new Namespace(prefix, uri);
-                namespaces.add(ns);
-            }
-            super.startPrefixMapping(prefix, uri);
-        }
-
-        public List<Namespace> getNamespaces() {
-            return namespaces;
-        }
-    }
-
     public static class Namespace {
-
-        private final String prefix;
-        private final String uri;
+        final String prefix;
+        final String uri;
 
         public Namespace(final String prefix, final String uri) {
             this.prefix = prefix;
             this.uri = uri;
-        }
-
-        public String getPrefix() {
-            return prefix;
-        }
-
-        public String getUri() {
-            return uri;
         }
     }
 
@@ -1309,7 +1304,9 @@ public class RESTServer {
      * @param query the XQuery
      * @param path the path of the request
      * @param namespaces any XQuery namespace bindings
-     * @param variables any XQuery variable bindings
+     * @param contextItemParam optional XQuery Context Item
+     * @param defaultCollectionParam optional XQuery Default Collection
+     * @param variablesParam any XQuery variable bindings
      * @param howmany the number of items in the results to return
      * @param start the start position in the results to return
      * @param typed whether the result nodes should be typed
@@ -1324,11 +1321,13 @@ public class RESTServer {
      * @throws XPathException if the XQuery raises an error
      */
     protected void search(final DBBroker broker, final Txn transaction, final String query,
-        final String path, final List<Namespace> namespaces,
-        final ElementImpl variables, final int howmany, final int start,
-        final boolean typed, final Properties outputProperties,
-        final boolean wrap, final boolean cache,
-        final HttpServletRequest request,
+        final String path, @Nullable final List<Namespace> namespaces,
+        @Nullable final ElementImpl contextItemParam,
+        @Nullable final ElementImpl defaultCollectionParam,
+        @Nullable final ElementImpl variablesParam, final int howmany,
+        final int start, final boolean typed,
+        final Properties outputProperties, final boolean wrap,
+        final boolean cache, final HttpServletRequest request,
         final HttpServletResponse response) throws BadRequestException,
         PermissionDeniedException, XPathException {
 
@@ -1398,10 +1397,14 @@ public class RESTServer {
                 compilationTime = 0;
             }
 
-            declareVariables(context, variables, request, response);
+            setupDefaultCollection(context, defaultCollectionParam);
+            declareVariables(context, variablesParam, request, response);
+
+            @Nullable final Item contextItem = extractContextItem(contextItemParam);
+            final Sequence contextSequence = contextItem != null ? new ValueSequence(contextItem) : null;
 
             final long executeStart = System.currentTimeMillis();
-            final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
+            final Sequence resultSequence = xquery.execute(broker, compiled, contextSequence, outputProperties);
             final long executionTime = System.currentTimeMillis() - executeStart;
 
             if (LOG.isDebugEnabled()) {
@@ -1430,35 +1433,80 @@ public class RESTServer {
         }
     }
 
-    private void declareNamespaces(final XQueryContext context,
-        final List<Namespace> namespaces) throws XPathException {
-
+    private void declareNamespaces(final XQueryContext context, @Nullable final List<Namespace> namespaces) throws XPathException {
         if (namespaces == null) {
             return;
         }
 
         for (final Namespace ns : namespaces) {
-            context.declareNamespace(ns.getPrefix(), ns.getUri());
+            context.declareNamespace(ns.prefix, ns.uri);
+        }
+    }
+
+    /**
+     * Extract the Context Item from the Element parameter.
+     *
+     * @param contextItem a parameter specifying the Context Item for the XQuery, or null
+     *
+     * @throws XPathException if an error occurs extracting the Context Item.
+     */
+    private @Nullable Item extractContextItem(@Nullable final ElementImpl contextItem) throws XPathException {
+        if (contextItem == null) {
+            return null;
+        }
+
+        @Nullable final NodeImpl value = contextItem.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.VALUE_ELEMENT_QNAME));
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return Marshaller.demarshallValue(null, (ElementImpl) value);
+        } catch (final XMLStreamException xe) {
+            throw new XPathException((Expression) null, xe.toString());
+        }
+    }
+
+    private void setupDefaultCollection(final XQueryContext context, @Nullable final ElementImpl defaultCollectionParam) throws XPathException {
+        if (defaultCollectionParam == null) {
+            return;
+        }
+
+        @Nullable final NodeImpl value = defaultCollectionParam.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
+        if (value == null) {
+            return;
+        }
+
+        try {
+            @Nullable final Sequence sequence = Marshaller.demarshall(context, value);
+            if (sequence != null) {
+                context.addDynamicallyAvailableCollection("", (broker, txn, uri) -> sequence);
+            }
+        } catch (final XMLStreamException xe) {
+            throw new XPathException((Expression) null, xe.toString());
         }
     }
 
     /**
      * Pass the request, response and session objects to the XQuery context.
      *
-     * @param context
-     * @param request
-     * @param response
-     * @throws XPathException
+     * @param context the context for the XQuery
+     * @param variables variable bindings for the XQuery, or null
+     * @param request the HTTP request
+     * @param response the HTTP response
+     *
+     * @throws XPathException if an error occurs declaring variables
      */
     private HttpRequestWrapper declareVariables(final XQueryContext context,
-        final ElementImpl variables, final HttpServletRequest request,
+        @Nullable final ElementImpl variables,
+        final HttpServletRequest request,
         final HttpServletResponse response) throws XPathException {
 
         final HttpRequestWrapper reqw = new HttpRequestWrapper(request, formEncoding, containerEncoding);
         final ResponseWrapper respw = new HttpResponseWrapper(response);
         context.setHttpContext(new XQueryContext.HttpContext(reqw, respw));
 
-        //enable EXQuery Request Module (if present)
+        // enable EXQuery Request Module (if present)
         try {
             if(xqueryContextExqueryRequestAttribute != null && cstrHttpServletRequestAdapter != null) {
                 final HttpRequest exqueryRequestAdapter = cstrHttpServletRequestAdapter.apply(request, () -> (String)context.getBroker().getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY));
@@ -1529,7 +1577,7 @@ public class RESTServer {
             }
 
             // get serialized sequence
-            final NodeImpl value = variable.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
+            @Nullable final NodeImpl value = variable.getFirstChild(new NameTest(Type.ELEMENT, Marshaller.SEQUENCE_ELEMENT_QNAME));
             final Sequence sequence;
             try {
                 sequence = value == null ? Sequence.EMPTY_SEQUENCE : Marshaller.demarshall(context, value);
@@ -2050,10 +2098,10 @@ public class RESTServer {
             serializer.setOutput(writer, defaultProperties);
 
             serializer.startDocument();
-            serializer.startPrefixMapping("exist", Namespaces.EXIST_NS);
+            serializer.startPrefixMapping(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
 
             if (wrap) {
-                serializer.startElement(Namespaces.EXIST_NS, "result", "exist:result", null);
+                serializer.startElement(Namespaces.EXIST_NS, "result", Namespaces.EXIST_NS_PREFIX + ":result", null);
             }
 
             final AttributesImpl attrs = new AttributesImpl();
@@ -2073,8 +2121,7 @@ public class RESTServer {
 
             addPermissionAttributes(attrs, collection.getPermissionsNoLock());
 
-            serializer.startElement(Namespaces.EXIST_NS, "collection",
-                    "exist:collection", attrs);
+            serializer.startElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection", attrs);
 
             for (final Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext();) {
                 final XmldbURI child = i.next();
@@ -2097,8 +2144,8 @@ public class RESTServer {
                     }
 
                     addPermissionAttributes(attrs, childCollection.getPermissionsNoLock());
-                    serializer.startElement(Namespaces.EXIST_NS, "collection", "exist:collection", attrs);
-                    serializer.endElement(Namespaces.EXIST_NS, "collection", "exist:collection");
+                    serializer.startElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection", attrs);
+                    serializer.endElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection");
                 }
             }
 
@@ -2135,15 +2182,15 @@ public class RESTServer {
                     }
 
                     addPermissionAttributes(attrs, doc.getPermissions());
-                    serializer.startElement(Namespaces.EXIST_NS, "resource", "exist:resource", attrs);
-                    serializer.endElement(Namespaces.EXIST_NS, "resource", "exist:resource");
+                    serializer.startElement(Namespaces.EXIST_NS, "resource", Namespaces.EXIST_NS_PREFIX + ":resource", attrs);
+                    serializer.endElement(Namespaces.EXIST_NS, "resource", Namespaces.EXIST_NS_PREFIX + ":resource");
                 }
             }
 
-            serializer.endElement(Namespaces.EXIST_NS, "collection", "exist:collection");
+            serializer.endElement(Namespaces.EXIST_NS, "collection", Namespaces.EXIST_NS_PREFIX + ":collection");
 
             if (wrap) {
-                serializer.endElement(Namespaces.EXIST_NS, "result", "exist:result");
+                serializer.endElement(Namespaces.EXIST_NS, "result", Namespaces.EXIST_NS_PREFIX + ":result");
             }
 
             serializer.endDocument();

@@ -55,6 +55,7 @@ import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
 import java.util.GregorianCalendar;
 
 /**
@@ -93,7 +94,7 @@ public class DateValue extends AbstractDateTimeValue {
         this(null, calendar);
     }
 
-    public DateValue(final Expression expression, XMLGregorianCalendar calendar) throws XPathException {
+    public DateValue(final Expression expression, final XMLGregorianCalendar calendar) throws XPathException {
         super(expression, stripCalendar(cloneXMLGregorianCalendar(calendar)));
     }
 
@@ -182,6 +183,8 @@ public class DateValue extends AbstractDateTimeValue {
             return (T) buf;
         } else if (target == Long.class || target == long.class) {
             return (T) Long.valueOf(serializeToLong());
+        } else if (target == LocalDate.class) {
+            return (T)calendar.toGregorianCalendar().toZonedDateTime().toLocalDate();
         } else {
             return super.toJavaObject(target);
         }

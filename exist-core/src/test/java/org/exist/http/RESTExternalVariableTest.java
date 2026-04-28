@@ -21,7 +21,7 @@
 package org.exist.http;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import com.googlecode.junittoolbox.ParallelRunner;
+import com.googlecode.junittoolbox.ParallelParameterized;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -39,7 +39,9 @@ import org.exist.xquery.value.Type;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.w3c.dom.Attr;
+import org.w3c.dom.Node;
 import org.xmlunit.diff.DefaultNodeMatcher;
 import org.xmlunit.diff.ElementSelectors;
 import org.xmlunit.matchers.CompareMatcher;
@@ -50,6 +52,7 @@ import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Map;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
@@ -66,14 +69,29 @@ import static org.exist.http.RESTExternalVariableTest.UntypedMapRep.untypedMap;
 import static org.exist.http.RESTExternalVariableTest.UntypedNamedValueRep.value;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.xmlunit.matchers.HasXPathMatcher.hasXPath;
 
 /**
  * See: <a href="https://github.com/eXist-db/exist/issues/5844">[BUG] The JavaDoc comments for variable in the REST API are inconsistent with the implementation</a>.
  *
  * @author <a href="mailto:adam@evolvedbinary.com>Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
+@RunWith(ParallelParameterized.class)
 public class RESTExternalVariableTest {
+
+    @Parameterized.Parameters(name = "{0}")
+    public static java.util.Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+            { "xmlns-prefixed-ns", true },
+            { "xmlns-default-ns", false }
+        });
+    }
+
+    @Parameterized.Parameter
+    public String testTypeName;
+
+    @Parameterized.Parameter(value = 1)
+    public boolean useXmlnsPrefixes;
 
     @ClassRule
     public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
@@ -316,13 +334,23 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedUntypedElementValue() throws IOException {
-        final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        } else {
+            externalVariable = UntypedValueRep.value("<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedElement() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
@@ -339,31 +367,56 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementSuppliedElement() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementSuppliedElements() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        } else {
+            externalVariable = UntypedValueRep.value("<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedUntypedElements() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedElements() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>"), value(Type.ELEMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
@@ -380,19 +433,34 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptElementSuppliedElement() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptElementSuppliedElements() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>"), value(Type.ELEMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptElementSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        } else {
+            externalVariable = UntypedValueRep.value("<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()?", externalVariable);
     }
 
@@ -409,25 +477,45 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementsSuppliedElement() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementsSuppliedElements() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>"), value(Type.ELEMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementsSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementsSuppliedUntypeds() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()+", externalVariable);
     }
 
@@ -444,37 +532,67 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableElementzSuppliedElement() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementzSuppliedElements() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello xmlns=\"\">world</hello>"), value(Type.ELEMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementszSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableElementzSuppliedUntypeds() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedUntypedDocument() throws IOException {
-        final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        } else {
+            externalVariable = UntypedValueRep.value("<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedDocument() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
@@ -491,32 +609,57 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedDocument() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedDocuments() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        } else {
+            externalVariable = UntypedValueRep.value("<hello xmlns=\"\">world</hello>");
+        }
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedUntypedDocuments() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableUntypedSuppliedDocuments() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>"), value(Type.DOCUMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
@@ -533,19 +676,34 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableOptDocumentSuppliedDocument() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptDocumentSuppliedDocuments() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>"), value(Type.DOCUMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()?", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableOptDocumentSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = UntypedValueRep.value("<hello>world</hello>");
+        } else {
+            externalVariable = UntypedValueRep.value("<hello xmlns=\"\">world</hello>");
+        }
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()?", externalVariable);
     }
@@ -563,26 +721,46 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedDocument() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedDocuments() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>"), value(Type.DOCUMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>") };
+        }
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()+", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentsSuppliedUntypeds() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()+", externalVariable);
     }
@@ -600,26 +778,46 @@ public class RESTExternalVariableTest {
 
     @Test
     public void queryPostWithExternalVariableDocumentzSuppliedDocument() throws IOException {
-        final ExternalVariableValueRep externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        final ExternalVariableValueRep externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
+        } else {
+            externalVariable = value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>");
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentzSuppliedDocuments() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello xmlns=\"\">world</hello>"), value(Type.DOCUMENT, "<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentszSuppliedUntyped() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>") };
+        }
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()*", externalVariable);
     }
 
     @Test
     public void queryPostWithExternalVariableDocumentzSuppliedUntypeds() throws IOException {
-        final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        final ExternalVariableValueRep[] externalVariable;
+        if (useXmlnsPrefixes) {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello>world</hello>"), UntypedValueRep.value("<goodbye>see you soon</goodbye>") };
+        } else {
+            externalVariable = new ExternalVariableValueRep[] { UntypedValueRep.value("<hello xmlns=\"\">world</hello>"), UntypedValueRep.value("<goodbye xmlns=\"\">see you soon</goodbye>") };
+        }
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected document-node(), got element()</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "document-node()*", externalVariable);
     }
@@ -1622,6 +1820,75 @@ public class RESTExternalVariableTest {
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
     }
 
+    @Test
+    public void queryPostWrappedTypedWithExternalVariableStringConstructElement() throws IOException {
+        queryPostWithExternalVariableStringConstructElement(true, true);
+    }
+
+    @Test
+    public void queryPostWrappedNotTypedWithExternalVariableStringConstructElement() throws IOException {
+        queryPostWithExternalVariableStringConstructElement(true, false);
+    }
+
+    @Test
+    public void queryPostNotWrappedTypedWithExternalVariableStringConstructElement() throws IOException {
+        queryPostWithExternalVariableStringConstructElement(false, true);
+    }
+
+    @Test
+    public void queryPostNotWrappedNotTypedWithExternalVariableStringConstructElement() throws IOException {
+        queryPostWithExternalVariableStringConstructElement(false, false);
+    }
+
+    private void queryPostWithExternalVariableStringConstructElement(final boolean wrap, final boolean typed) throws IOException {
+        final String query;
+        if (useXmlnsPrefixes) {
+            query = "<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"" + (wrap ? "yes" : "no") + "\" typed=\"" + (typed ? "yes" : "no") + "\">\n" +
+                "\t<exist:variables>\n" +
+                "\t\t<exist:variable>\n" +
+                "\t\t\t<exist:qname>\n" +
+                "\t\t\t\t<exist:localname>my-variable</exist:localname>\n" +
+                "\t\t\t</exist:qname>\n" +
+                "\t\t\t<sx:sequence>\n" +
+                "\t\t\t\t<sx:value type=\"xs:string\">greeting</sx:value>" +
+                "\t\t\t</sx:sequence>\n" +
+                "\t\t</exist:variable>\n" +
+                "\t</exist:variables>\n" +
+                "\t<exist:text><![CDATA[\n" +
+                "declare variable $my-variable external;\n" +
+                "element { $my-variable } { text { \"Hello, world.\" } }\n" +
+                "\t]]></exist:text>\n" +
+                "</exist:query>\n";
+        } else {
+            query = "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"" + (wrap ? "yes" : "no") + "\" typed=\"" + (typed ? "yes" : "no") + "\">\n" +
+                "\t<variables>\n" +
+                "\t\t<variable>\n" +
+                "\t\t\t<qname>\n" +
+                "\t\t\t\t<localname>my-variable</localname>\n" +
+                "\t\t\t</qname>\n" +
+                "\t\t\t<sequence xmlns=\"http://exist-db.org/xquery/types/serialized\">\n" +
+                "\t\t\t\t<value type=\"xs:string\">greeting</value>" +
+                "\t\t\t</sequence>\n" +
+                "\t\t</variable>\n" +
+                "\t</variables>\n" +
+                "\t<text><![CDATA[\n" +
+                "declare variable $my-variable external;\n" +
+                "element { $my-variable } { text { \"Hello, world.\" } }\n" +
+                "\t]]></text>\n" +
+                "</query>\n";
+        }
+
+        final HttpResponse response = doPostWithAuth(getResourceUri(), query);
+        final int resultStatusCode = response.getStatusLine()
+            .getStatusCode();
+
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+
+        //final String actual = "<xs:y xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"><greeting>Hello, world.</greeting></xs:y>";
+        final String actual = readResponse(response.getEntity());
+        assertThat(actual, hasXPath("//greeting[namespace-uri() = ''][text() = 'Hello, world.']").withNamespaceContext(NS_CONTEXT));
+    }
+
     private void queryPostWithExternalVariable(final int expectedResponseCode, @Nullable final String xqExternalVariableType, final ExternalVariableValueRep... externalVariableSequence) throws IOException {
         queryPostWithExternalVariable(Tuple(expectedResponseCode, null), externalVariableSequence, xqExternalVariableType, externalVariableSequence);
     }
@@ -1791,38 +2058,73 @@ public class RESTExternalVariableTest {
         return xdmType == Type.MAP || (xdmType == Type.ITEM && externalVariableValueRep instanceof MapRep);
     }
 
-    private static String buildQueryExternalVariable(@Nullable final String xqExternalVariableType, @Nullable final ExternalVariableValueRep... externalVariableSequence) {
+    private String buildQueryExternalVariable(@Nullable final String xqExternalVariableType, @Nullable final ExternalVariableValueRep... externalVariableSequence) {
         final StringBuilder builder = new StringBuilder();
-        builder.append("<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n");
 
-        if (externalVariableSequence!= null) {
-            builder.append("\t<exist:variables>\n");
-            builder.append("\t\t<exist:variable>\n");
-            builder.append("\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>my-variable</exist:localname></exist:qname>\n");
-            buildQueryExternalVariableSequence(builder, 3, externalVariableSequence);
-            builder.append("\t\t</exist:variable>\n");
-            builder.append("\t</exist:variables>\n");
-        }
+        if (useXmlnsPrefixes) {
+            builder.append("<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n");
 
-        builder.append("\t<exist:text><![CDATA[\n");
-        builder.append("declare variable $local:my-variable");
-        if (xqExternalVariableType != null) {
-            builder.append(" as ").append(xqExternalVariableType);
+            if (externalVariableSequence != null) {
+                builder.append("\t<exist:variables>\n");
+                builder.append("\t\t<exist:variable>\n");
+                builder.append("\t\t\t<exist:qname><exist:prefix>local</exist:prefix><exist:localname>my-variable</exist:localname></exist:qname>\n");
+                buildQueryExternalVariableSequence(builder, 3, externalVariableSequence);
+                builder.append("\t\t</exist:variable>\n");
+                builder.append("\t</exist:variables>\n");
+            }
+
+            builder.append("\t<exist:text><![CDATA[\n");
+            builder.append("declare variable $local:my-variable");
+            if (xqExternalVariableType != null) {
+                builder.append(" as ").append(xqExternalVariableType);
+            }
+            builder.append(" external;\n");
+            builder.append("$local:my-variable\n");
+            builder.append("\t]]></exist:text>\n");
+            builder.append("</exist:query>\n");
+
+        } else {
+            builder.append("<query xmlns=\"http://exist.sourceforge.net/NS/exist\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n");
+
+            if (externalVariableSequence != null) {
+                builder.append("\t<variables>\n");
+                builder.append("\t\t<variable>\n");
+                builder.append("\t\t\t<qname><prefix>local</prefix><localname>my-variable</localname></qname>\n");
+                buildQueryExternalVariableSequence(builder, 3, externalVariableSequence);
+                builder.append("\t\t</variable>\n");
+                builder.append("\t</variables>\n");
+            }
+
+            builder.append("\t<text><![CDATA[\n");
+            builder.append("declare variable $local:my-variable");
+            if (xqExternalVariableType != null) {
+                builder.append(" as ").append(xqExternalVariableType);
+            }
+            builder.append(" external;\n");
+            builder.append("$local:my-variable\n");
+            builder.append("\t]]></text>\n");
+            builder.append("</query>\n");
         }
-        builder.append(" external;\n");
-        builder.append("$local:my-variable\n");
-        builder.append("\t]]></exist:text>\n");
-        builder.append("</exist:query>\n");
 
         return builder.toString();
     }
 
     private static final char[] INDENTS = { '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t' };
 
-    private static void buildQueryExternalVariableSequence(final StringBuilder builder, final int indentCount, final ExternalVariableValueRep... externalVariableSequence) {
-        builder.append(INDENTS, 0, indentCount).append("<sx:sequence>\n");
+    private void buildQueryExternalVariableSequence(final StringBuilder builder, final int indentCount, final ExternalVariableValueRep... externalVariableSequence) {
+        if (useXmlnsPrefixes) {
+            builder.append(INDENTS, 0, indentCount).append("<sx:sequence>\n");
+        } else {
+            builder.append(INDENTS, 0, indentCount).append("<sequence xmlns=\"http://exist-db.org/xquery/types/serialized\">\n");
+        }
+
         for (final ExternalVariableValueRep externalVariableSequenceItem : externalVariableSequence) {
-            builder.append(INDENTS, 0, indentCount + 1).append("<sx:value");
+            if (useXmlnsPrefixes) {
+                builder.append(INDENTS, 0, indentCount + 1).append("<sx:value");
+            } else {
+                builder.append(INDENTS, 0, indentCount + 1).append("<value");
+            }
+
             if (externalVariableSequenceItem instanceof ExternalVariableTypedValueRep) {
                 builder.append(" type=\"").append(Type.getTypeName(((ExternalVariableTypedValueRep) externalVariableSequenceItem).getXdmType())).append("\"");
             }
@@ -1846,15 +2148,31 @@ public class RESTExternalVariableTest {
                 // Map type
                 builder.append('\n');
                 for (final EntryRep entryRep : ((MapRep) externalVariableSequenceItem).getEntries()) {
-                    builder.append(INDENTS, 0, indentCount + 2).append("<sx:entry>\n");
-                    builder.append(INDENTS, 0, indentCount + 3).append("<sx:key");
+                    if (useXmlnsPrefixes) {
+                        builder.append(INDENTS, 0, indentCount + 2).append("<sx:entry>\n");
+                        builder.append(INDENTS, 0, indentCount + 3).append("<sx:key");
+                    } else {
+                        builder.append(INDENTS, 0, indentCount + 2).append("<entry>\n");
+                        builder.append(INDENTS, 0, indentCount + 3).append("<key");
+                    }
+
                     final ValueRep key = entryRep.key.key;
                     if (key instanceof ExternalVariableTypedValueRep) {
                         builder.append(" type=\"").append(Type.getTypeName(((ExternalVariableTypedValueRep) key).getXdmType())).append("\"");
                     }
-                    builder.append('>').append(key.getContent()).append("</sx:key>\n");
+                    if (useXmlnsPrefixes) {
+                        builder.append('>').append(key.getContent()).append("</sx:key>\n");
+                    } else {
+                        builder.append('>').append(key.getContent()).append("</key>\n");
+                    }
+
                     buildQueryExternalVariableSequence(builder, indentCount + 3, entryRep.value.values);
-                    builder.append(INDENTS, 0, indentCount + 2).append("</sx:entry>\n");
+
+                    if (useXmlnsPrefixes) {
+                        builder.append(INDENTS, 0, indentCount + 2).append("</sx:entry>\n");
+                    } else {
+                        builder.append(INDENTS, 0, indentCount + 2).append("</entry>\n");
+                    }
                 }
                 builder.append(INDENTS, 0, indentCount + 1);
 
@@ -1862,9 +2180,18 @@ public class RESTExternalVariableTest {
                 builder.append(((ValueRep) externalVariableSequenceItem).getContent());
             }
 
-            builder.append("</sx:value>\n");
+            if (useXmlnsPrefixes) {
+                builder.append("</sx:value>\n");
+            } else {
+                builder.append("</value>\n");
+            }
         }
-        builder.append(INDENTS, 0, indentCount).append("</sx:sequence>\n");
+
+        if (useXmlnsPrefixes) {
+            builder.append(INDENTS, 0, indentCount).append("</sx:sequence>\n");
+        } else {
+            builder.append(INDENTS, 0, indentCount).append("</sequence>\n");
+        }
     }
 
     private static String getServerUri() {

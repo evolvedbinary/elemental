@@ -63,6 +63,7 @@ import org.exist.xquery.*;
 import org.exist.xquery.functions.xmldb.XMLDBModule;
 import org.exist.xquery.value.*;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -114,88 +115,120 @@ public class ExtCollection extends Function {
                 context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());
             }
         }
+
         final List<String> args = getParameterValues(contextSequence, contextItem);
-        final Sequence result;
-        try {
-            if (args.isEmpty()) {
-                final Sequence docs = toSequence(context.getStaticallyKnownDocuments());
-                final Sequence dynamicCollection = context.getDynamicallyAvailableCollection("");
-                if (dynamicCollection != null) {
-                    result = new ValueSequence();
-                    result.addAll(docs);
-                    result.addAll(dynamicCollection);
-                } else {
-                    result = docs;
-                }
-            } else {
-                final Sequence dynamicCollection = context.getDynamicallyAvailableCollection(asUri(args.get(0)).toString());
-                if (dynamicCollection != null) {
-                    result = dynamicCollection;
-                } else {
-                    final MutableDocumentSet ndocs = new DefaultDocumentSet();
-                    for (final String next : args) {
-                        final XmldbURI uri = new AnyURIValue(this, next).toXmldbURI();
-                        try (final Collection coll = context.getBroker().openCollection(uri, Lock.LockMode.READ_LOCK)) {
-                            if (coll == null) {
-                                if (context.isRaiseErrorOnFailedRetrieval()) {
-                                    throw new XPathException(this, ErrorCodes.FODC0002, "Can not access collection '" + uri + "'");
-                                }
-                            } else {
-                                if (context.inProtectedMode()) {
-                                    context.getProtectedDocs().getDocsByCollection(coll, ndocs);
-                                } else {
-                                    coll.allDocs(context.getBroker(), ndocs,
-                                            includeSubCollections, context.getProtectedDocs());
-                                }
-                            }
-                        }
-                    }
-                    result = toSequence(ndocs);
-                }
+
+        @Nullable final List<URI> collectionUris;
+        if (args.isEmpty()) {
+            collectionUris = null;
+        } else {
+            collectionUris = new ArrayList<>(args.size());
+            for (final String arg : args) {
+                collectionUris.add(asUri(arg));
             }
-        } catch (final XPathException e) { //From AnyURIValue constructor
-            e.setLocation(line, column);
-            Sequence flattenedArgs = Sequence.EMPTY_SEQUENCE;
-            try {
-                flattenedArgs = argsToSeq(contextSequence, contextItem);
-            } catch (final XPathException xe) {
-                LOG.warn(e.getMessage(), xe);
-            }
-            throw new XPathException(this, ErrorCodes.FODC0002, e.getMessage(), flattenedArgs, e);
-        } catch (final PermissionDeniedException e) {
-            Sequence flattenedArgs = Sequence.EMPTY_SEQUENCE;
-            try {
-                flattenedArgs = argsToSeq(contextSequence, contextItem);
-            } catch (final XPathException xe) {
-                LOG.warn(e.getMessage(), xe);
-            }
-            throw new XPathException(this, ErrorCodes.FODC0002, "Can not access collection '" + e.getMessage() + "'", flattenedArgs, e);
-        } catch (final LockException e) {
-            Sequence flattenedArgs = Sequence.EMPTY_SEQUENCE;
-            try {
-                flattenedArgs = argsToSeq(contextSequence, contextItem);
-            } catch (final XPathException xe) {
-                LOG.warn(e.getMessage(), xe);
-            }
-            throw new XPathException(this, ErrorCodes.FODC0002, e.getMessage(), flattenedArgs, e);
         }
 
-        // iterate through all docs and create the node set
+        final Sequence result = getCollectionItems(collectionUris);
 
         registerUpdateListener();
         if (context.getProfiler().isEnabled()) {
             context.getProfiler().end(this, "", result);
         }
+
         return result;
     }
 
-    private Sequence argsToSeq(final Sequence contextSequence, final Item contextItem) throws XPathException {
-        final ValueSequence sequence = new ValueSequence();
-        for (int i = 0; i < getArgumentCount(); i++) {
-            final Sequence seq = getArgument(i).eval(contextSequence, contextItem);
-            sequence.addAll(seq);
+    protected Sequence getCollectionItems(@Nullable final List<URI> collectionUris) throws XPathException {
+        if (collectionUris == null) {
+            // no collection-uri(s)
+            return getDefaultCollectionItems();
         }
-        return sequence;
+
+        return getCollectionUriItems(collectionUris);
+    }
+
+    private Sequence getDefaultCollectionItems() throws XPathException {
+        @Nullable Sequence items = null;
+
+        @Nullable final Sequence dynamicCollection = context.getDynamicallyAvailableCollection("");
+        if (dynamicCollection != null) {
+            items = new ValueSequence(dynamicCollection);
+        }
+
+        if (items == null) {
+            final DocumentSet staticallyKnownDocuments = context.getStaticallyKnownDocuments();
+            items = new ValueSequence(staticallyKnownDocuments.getDocumentCount());
+            addAll(staticallyKnownDocuments, items);
+        }
+
+        if (items == null) {
+            items = Sequence.EMPTY_SEQUENCE;
+        }
+
+        return items;
+    }
+
+    private Sequence getCollectionUriItems(final List<URI> collectionUris) throws XPathException {
+        @Nullable Sequence items = null;
+        for (final URI collectionUri : collectionUris) {
+            items = getCollectionUriItems(collectionUri, items);
+        }
+
+        if (items == null) {
+            items = Sequence.EMPTY_SEQUENCE;
+        }
+
+        return items;
+    }
+
+    private @Nullable Sequence getCollectionUriItems(final URI collectionUri, @Nullable Sequence items) throws XPathException {
+        @Nullable final Sequence dynamicCollection = context.getDynamicallyAvailableCollection(collectionUri.toString());
+        if (dynamicCollection != null) {
+            if (items == null) {
+                items = dynamicCollection;
+            } else {
+                items.addAll(dynamicCollection);
+            }
+
+            return items;
+
+        } else {
+            @Nullable MutableDocumentSet docs = null;
+
+            final XmldbURI uri = XmldbURI.create(collectionUri);
+            try (@Nullable final Collection coll = context.getBroker().openCollection(uri, Lock.LockMode.READ_LOCK)) {
+                if (coll == null) {
+                    if (context.isRaiseErrorOnFailedRetrieval()) {
+                        throw new XPathException(this, ErrorCodes.FODC0002, "Can not access collection '" + uri + "'");
+                    }
+                } else {
+                    docs = new DefaultDocumentSet();
+                    if (context.inProtectedMode()) {
+                        context.getProtectedDocs().getDocsByCollection(coll, docs);
+                    } else {
+                        coll.allDocs(context.getBroker(), docs, includeSubCollections, context.getProtectedDocs());
+                    }
+                }
+            } catch (final XPathException e) {  // From AnyURIValue constructor
+                throw new XPathException(this, ErrorCodes.FODC0002, e.getMessage(), new StringValue(collectionUri.toString()), e);
+            } catch (final PermissionDeniedException e) {
+                throw new XPathException(this, ErrorCodes.FODC0002, "Can not access collection '" + e.getMessage() + "'", new StringValue(collectionUri.toString()), e);
+            } catch (final LockException e) {
+                throw new XPathException(this, ErrorCodes.FODC0002, e.getMessage(), new StringValue(collectionUri.toString()), e);
+            }
+
+            if (docs == null || docs.getDocumentCount() == 0) {
+                return Sequence.EMPTY_SEQUENCE;
+            }
+
+            if (items == null) {
+                items = new ValueSequence(docs.getDocumentCount());
+            } else {
+                addAll(docs, items);
+            }
+
+            return items;
+        }
     }
 
     private URI asUri(final String path) throws XPathException {
@@ -231,8 +264,7 @@ public class ExtCollection extends Function {
         return args;
     }
 
-    private Sequence toSequence(final DocumentSet docs) throws XPathException {
-        final Sequence result = new ValueSequence();
+    private void addAll(final DocumentSet docs, final Sequence items) throws XPathException {
         final LockManager lockManager = context.getBroker().getBrokerPool().getLockManager();
         for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext(); ) {
             final DocumentImpl doc = i.next();
@@ -245,7 +277,7 @@ public class ExtCollection extends Function {
                     if (!context.inProtectedMode()) {
                         dlock = lockManager.acquireDocumentReadLock(doc.getURI());
                     }
-                    result.add(new NodeProxy(null, doc));
+                    items.add(new NodeProxy(this, doc));
                 } catch (final LockException e) {
                     throw new XPathException(this, ErrorCodes.FODC0002, e);
                 } finally {
@@ -255,8 +287,6 @@ public class ExtCollection extends Function {
                 }
             }
         }
-
-        return result;
     }
 
     protected void registerUpdateListener() {

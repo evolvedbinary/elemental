@@ -60,6 +60,7 @@ public interface Namespaces {
     String DTD_NS = XMLConstants.XML_DTD_NS_URI;
 
 	String SCHEMA_NS = XMLConstants.W3C_XML_SCHEMA_NS_URI;
+	String SCHEMA_NS_PREFIX = "xs";
     String SCHEMA_DATATYPES_NS = "http://www.w3.org/2001/XMLSchema-datatypes";
 	String SCHEMA_INSTANCE_NS = XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI;
     

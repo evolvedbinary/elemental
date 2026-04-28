@@ -56,6 +56,7 @@ import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.nio.ByteBuffer;
+import java.time.ZonedDateTime;
 
 /**
  * @author <a href="mailto:radek@evolvedbinary.com">Radek Hübner</a>
@@ -80,6 +81,15 @@ public class DateTimeStampValue extends DateTimeValue {
 
     public DateTimeStampValue(final Expression expression, final String dateTime) throws XPathException {
         super(expression, dateTime);
+        checkValidTimezone();
+    }
+
+    public DateTimeStampValue(final ZonedDateTime zonedDateTime) throws XPathException {
+       this(null, zonedDateTime);
+    }
+
+    public DateTimeStampValue(final Expression expression, final ZonedDateTime zonedDateTime) throws XPathException {
+        super(expression, zonedDateTime);
         checkValidTimezone();
     }
 

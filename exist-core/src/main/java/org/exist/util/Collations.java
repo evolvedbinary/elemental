@@ -274,6 +274,7 @@ public class Collations {
         } else if (uri.startsWith("java:")) {
             // java class specified: this should be a subclass of
             // com.ibm.icu.text.RuleBasedCollator
+            // TODO(AR) RuleBasedCollator is a final class - we should only need to sub-class Collator.class
             final String uriClassName = uri.substring("java:".length());
             try {
                 final Class<?> collatorClass = Class.forName(uriClassName);
