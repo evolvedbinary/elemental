@@ -34,36 +34,21 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package xyz.elemental.mediatype.impl;
-
-import xyz.elemental.mediatype.MediaTypeResolver;
-import xyz.elemental.mediatype.MediaTypeResolverFactory;
-
-import javax.annotation.Nullable;
-import java.nio.file.Path;
+package xyz.elemental.mediatype;
 
 /**
- * Implementation of a Media Type Resolver Factory for
- * constructing {@link MediaTypeResolverImpl} instances.
+ * Information about a Media Type Alias. (aka MIME Type)
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class MediaTypeResolverFactoryImpl implements MediaTypeResolverFactory {
+public interface MediaTypeAlias extends MediaType {
 
-    public MediaTypeResolverFactoryImpl() {
-    }
-
-    @Override
-    public MediaTypeResolver newMediaTypeResolver() {
-        return newMediaTypeResolver((Path[]) null);
-    }
-
-    @Override
-    public MediaTypeResolver newMediaTypeResolver(@Nullable final Path... configDirs) {
-        final ApplicationMimetypesFileTypeMap mimetypesFileTypeMap = new ApplicationMimetypesFileTypeMap(
-                configDirs);
-        final MediaTypeAliaser mediaTypeAliaser = new MediaTypeAliaser(configDirs);
-        final MediaTypeMapper mediaTypeMapper = new MediaTypeMapper(configDirs);
-        return new MediaTypeResolverImpl(mimetypesFileTypeMap, mediaTypeAliaser, mediaTypeMapper);
-    }
+    /**
+     * Get the alias identifier of the Media Type.
+     *
+     * For example {@code text/xml}.
+     *
+     * @return the identifier of the alias of the Media Type
+     */
+    String getAliasIdentifier();
 }

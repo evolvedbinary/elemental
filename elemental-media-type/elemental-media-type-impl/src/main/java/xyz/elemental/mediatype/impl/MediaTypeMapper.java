@@ -37,29 +37,23 @@
 package xyz.elemental.mediatype.impl;
 
 import io.lacuna.bifurcan.IList;
-import io.lacuna.bifurcan.LinearList;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.elemental.mediatype.StorageType;
+import xyz.elemental.mediatype.impl.MediaTypeConfigUtil.MediaTypeConfigSource;
 import xyz.elemental.mediatype.impl.configuration.MediaType;
 import xyz.elemental.mediatype.impl.configuration.MediaTypeMappings;
 import xyz.elemental.mediatype.impl.configuration.Storage;
 
 import javax.annotation.Nullable;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Unmarshaller;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static xyz.elemental.mediatype.impl.MediaTypeConfigUtil.findConfigSources;
+import static xyz.elemental.mediatype.impl.MediaTypeConfigUtil.parseConfigSources;
 
 /**
  * Maps Media Types to database Storage Types.
@@ -92,153 +86,61 @@ public class MediaTypeMapper {
     private final Function<String, StorageType>[] matchers;
 
     public MediaTypeMapper(@Nullable final Path... configDirs) {
-        final IList<MappingsFileSource> mappingsFileSources = getMappingsFileSources(configDirs);
-        this.matchers = loadMatchers(mappingsFileSources);
+        final IList<MediaTypeConfigSource> mappingsFileSources = findConfigSources(MediaTypeMapper.class, MEDIA_TYPE_MAPPINGS_FILENAME, configDirs);
+        final IList<Function<String, StorageType>> matchers = parseConfigSources(MediaTypeMappings.class, mappingsFileSources, MediaTypeMapper::mappingsToMatchers);
+        this.matchers = matchers.toArray(Function[]::new);
     }
 
-    private static IList<MappingsFileSource> getMappingsFileSources(final Path... configDirs) {
-        final LinearList<MappingsFileSource> mappingsFileSources = new LinearList<>();
-
-        LOG.trace("MediaTypeMapper: load HOME");
-        @Nullable final Path userConfigFolder = PathUtil.getUserConfigFolder();
-        if (userConfigFolder != null) {
-            final Path mappingsFile = userConfigFolder.resolve(MEDIA_TYPE_MAPPINGS_FILENAME);
-            if (!Files.exists(mappingsFile)) {
-                LOG.trace("No media-type-mappings.xml found at: {}, skipping...", mappingsFile.toAbsolutePath());
-            } else {
-                mappingsFileSources.addLast(new MappingsFileSource(mappingsFile));
-            }
+    private static void mappingsToMatchers(final String configLocation, final MediaTypeMappings mediaTypeMappings, final IList<Function<String, StorageType>> matchers) {
+        if (mediaTypeMappings.getStorage() == null || mediaTypeMappings.getStorage().isEmpty()) {
+            LOG.error("No mappings found in {} skipping...", configLocation);
+            return;
         }
 
-        LOG.trace("MediaTypeMapper: load application");
-        if (configDirs != null) {
-            for (final Path configDir : configDirs) {
-                final Path mappingsFile = configDir.resolve(MEDIA_TYPE_MAPPINGS_FILENAME);
-                if (!Files.exists(mappingsFile)) {
-                    LOG.warn("No custom media-type-mappings.xml found at: {}, skipping...", mappingsFile.toAbsolutePath());
-                } else {
-                    mappingsFileSources.addLast(new MappingsFileSource(mappingsFile));
-                }
-            }
-        }
+        for (final Storage storage : mediaTypeMappings.getStorage()) {
+            for (final MediaType mediaType : storage.getMediaType()) {
 
-        LOG.trace("ApplicationMimetypesFileTypeMap: load classpath from xyz.elemental.mediatype");
-        final String classPathLocationStr = "xyz/elemental/mediatype/" + MEDIA_TYPE_MAPPINGS_FILENAME;
-        @Nullable final URL url = MediaTypeMapper.class.getClassLoader().getResource(classPathLocationStr);
-        if (url == null) {
-            LOG.trace("No media-type-mappings.xml found on classpath from xyz.elemental.mediatype, skipping...");
-        } else {
-            final InputStream is = MediaTypeMapper.class.getClassLoader().getResourceAsStream(classPathLocationStr);
-            mappingsFileSources.addLast(new MappingsFileSource(url.toString(), is));
-        }
-
-        return mappingsFileSources.forked();
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Function<String, StorageType>[] loadMatchers(final IList<MappingsFileSource> mappingsFileSources) {
-        try {
-            assert (!mappingsFileSources.isLinear());
-
-            final JAXBContext context;
-            final Unmarshaller unmarshaller;
-            try {
-                context = JAXBContext.newInstance(MediaTypeMappings.class);
-                unmarshaller = context.createUnmarshaller();
-            } catch (final JAXBException e) {
-                LOG.error("Unable to instantiate JAXB Unmarshaller: {}", e.getMessage(), e);
-                return new Function[0];
-            }
-
-            final LinearList<Function<String, StorageType>> matchersList = new LinearList<>();
-            for (final MappingsFileSource mappingsFileSource : mappingsFileSources) {
-                if (mappingsFileSource.path != null && !Files.exists(mappingsFileSource.path)) {
-                    LOG.warn("Mappings path {} does not exist, skipping...", mappingsFileSource.path);
-                    continue;
-                }
-
-                try {
-                    final MediaTypeMappings mappings;
-                    if (mappingsFileSource.path != null) {
-                        mappings = (MediaTypeMappings) unmarshaller.unmarshal(mappingsFileSource.path.toUri().toURL());
-                    } else {
-                        mappings = (MediaTypeMappings) unmarshaller.unmarshal(mappingsFileSource.is);
-                    }
-                    if (mappings == null || mappings.getStorage() == null || mappings.getStorage().isEmpty()) {
-                        LOG.error("No  mappings found in {} skipping...", mappingsFileSource.location);
-                        continue;
-                    }
-
-                    for (final Storage storage : mappings.getStorage()) {
-                        for (final MediaType mediaType : storage.getMediaType()) {
-
-                            final StorageType storageType = toStorageType(storage.getType());
-                            final Function<String, StorageType> matcher;
-                            switch (mediaType.getMatch()) {
-                                case STARTS_WITH:
-                                    matcher = identifier -> {
-                                        if (identifier.startsWith(mediaType.getValue())) {
-                                            return storageType;
-                                        } else {
-                                            return null;
-                                        }
-                                    };
-                                    break;
-
-                                case FULL:
-                                    matcher = identifier -> {
-                                        if (identifier.equals(mediaType.getValue())) {
-                                            return storageType;
-                                        } else {
-                                            return null;
-                                        }
-                                    };
-                                    break;
-
-                                case PATTERN:
-                                    final Pattern pattern = Pattern.compile(mediaType.getValue());
-                                    final Matcher patternMatcher = pattern.matcher("");
-                                    matcher = identifier -> {
-                                        patternMatcher.reset(identifier);
-                                        if (patternMatcher.matches()) {
-                                            return storageType;
-                                        } else {
-                                            return null;
-                                        }
-                                    };
-                                    break;
-
-                                default:
-                                    throw new IllegalArgumentException();
+                final StorageType storageType = toStorageType(storage.getType());
+                final Function<String, StorageType> matcher;
+                switch (mediaType.getMatch()) {
+                    case STARTS_WITH:
+                        matcher = identifier -> {
+                            if (identifier.startsWith(mediaType.getValue())) {
+                                return storageType;
+                            } else {
+                                return null;
                             }
+                        };
+                        break;
 
-                            matchersList.addLast(matcher);
-                        }
-                    }
+                    case FULL:
+                        matcher = identifier -> {
+                            if (identifier.equals(mediaType.getValue())) {
+                                return storageType;
+                            } else {
+                                return null;
+                            }
+                        };
+                        break;
 
-                } catch (final MalformedURLException | JAXBException e) {
-                    @Nullable String message = e.getMessage();
-                    if (message == null) {
-                        @Nullable final Throwable cause = e.getCause();
-                        if (cause != null) {
-                            message = cause.getMessage();
-                        }
-                    }
-                    LOG.error("Skipping {} due to error: {}", mappingsFileSource.location, message, e);
+                    case PATTERN:
+                        final Pattern pattern = Pattern.compile(mediaType.getValue());
+                        final Matcher patternMatcher = pattern.matcher("");
+                        matcher = identifier -> {
+                            patternMatcher.reset(identifier);
+                            if (patternMatcher.matches()) {
+                                return storageType;
+                            } else {
+                                return null;
+                            }
+                        };
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException();
                 }
-            }
 
-            return matchersList.toArray(Function[]::new);
-
-        } finally {
-            for (final MappingsFileSource mappingsFileSource : mappingsFileSources) {
-                if (mappingsFileSource.is != null) {
-                    try {
-                        mappingsFileSource.is.close();
-                    } catch (final IOException e) {
-                        LOG.warn("Unable to close mappings file source: {} ", mappingsFileSource.location, e);
-                    }
-                }
+                matchers.addLast(matcher);
             }
         }
     }
@@ -286,27 +188,5 @@ public class MediaTypeMapper {
         }
 
         return defaultStorageType;
-    }
-
-    private static class MappingsFileSource {
-        private final String location;
-
-        /**
-         * Either {@link #path} or {@link #is} will be set, but never both.
-         */
-        @Nullable private final Path path;
-        @Nullable private final InputStream is;
-
-        private MappingsFileSource(final Path path) {
-            this.location = path.normalize().toAbsolutePath().toString();
-            this.path = path;
-            this.is = null;
-        }
-
-        private MappingsFileSource(final String location, final InputStream is) {
-            this.location = location;
-            this.is = is;
-            this.path = null;
-        }
     }
 }

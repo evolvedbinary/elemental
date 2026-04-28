@@ -38,9 +38,18 @@
 
 -->
 <jxb:bindings version="3.0" xmlns:jxb="https://jakarta.ee/xml/ns/jaxb" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
     <jxb:bindings schemaLocation="../xsd/media-type-mappings.xsd" node="//xsd:schema">
         <jxb:schemaBindings>
             <jxb:package name="xyz.elemental.mediatype.impl.configuration"/>
         </jxb:schemaBindings>
     </jxb:bindings>
+
+   <!-- NOTE(AR) We only need to declare one Schema from the namespace to bind all schemas in that namespace -->
+    <!-- jxb:bindings schemaLocation="../xsd/media-type-aliases.xsd" node="//xsd:schema">
+        <jxb:schemaBindings>
+            <jxb:package name="xyz.elemental.mediatype.impl.configuration"/>
+        </jxb:schemaBindings>
+    </jxb:bindings -->
+
 </jxb:bindings>

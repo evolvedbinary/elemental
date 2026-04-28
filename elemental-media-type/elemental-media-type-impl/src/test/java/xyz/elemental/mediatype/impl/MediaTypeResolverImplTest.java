@@ -39,6 +39,7 @@ package xyz.elemental.mediatype.impl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
+import xyz.elemental.mediatype.MediaTypeAlias;
 import xyz.elemental.mediatype.MediaTypeResolver;
 import xyz.elemental.mediatype.StorageType;
 
@@ -49,28 +50,29 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MediaTypeResolverImplTest {
 
     // TODO(AR) if an explicit content type is provided, e.g. HTTP PUT, store the mime type with the document data??? what if its not provided, lookup and store, or lookup on retrieval?
 
+    private static MediaTypeAliaser MEDIA_TYPE_ALIASER = null;
     private static MediaTypeMapper MEDIA_TYPE_MAPPER = null;
     private static MediaTypeResolver DEFAULT_MEDIA_RESOLVER = null;
     private static MediaTypeResolver APPLICATION_MEDIA_RESOLVER = null;
 
     @BeforeAll
     public static void setupMediaResolvers() throws URISyntaxException {
+        @Nullable final URL mediaTypeAliases = MediaTypeResolverImplTest.class.getResource("media-type-aliases.xml");
+        assertNotNull(mediaTypeAliases);
         @Nullable final URL mediaTypeMappings = MediaTypeResolverImplTest.class.getResource("media-type-mappings.xml");
         assertNotNull(mediaTypeMappings);
         final Path configDir = Paths.get(mediaTypeMappings.toURI()).getParent();
+        MEDIA_TYPE_ALIASER = new MediaTypeAliaser(configDir);
         MEDIA_TYPE_MAPPER = new MediaTypeMapper(configDir);
 
         final ApplicationMimetypesFileTypeMap defaultMimetypesFileTypeMap = new ApplicationMimetypesFileTypeMap((Path[]) null);
-        DEFAULT_MEDIA_RESOLVER = new MediaTypeResolverImpl(defaultMimetypesFileTypeMap, MEDIA_TYPE_MAPPER);
+        DEFAULT_MEDIA_RESOLVER = new MediaTypeResolverImpl(defaultMimetypesFileTypeMap, MEDIA_TYPE_ALIASER, MEDIA_TYPE_MAPPER);
 
         APPLICATION_MEDIA_RESOLVER = new MediaTypeResolverFactoryImpl().newMediaTypeResolver(configDir);
     }
@@ -485,6 +487,14 @@ public class MediaTypeResolverImplTest {
     // </editor-fold>
 
 
+    // <editor-fold desc="Media Type aliases which are default only">
+    @Test
+    public void defaultResolveTextXmlAliasIdentifier() {
+        assertDefaultResolveFromAliasIdentifier("text/xml", MediaType.APPLICATION_XML, new String[] {"xsl", "xml"}, StorageType.XML);
+    }
+    // </editor-fold>
+
+
     // <editor-fold desc="Media Type definitions which are Application (e.g. FusionDB) specific">
     @Test
     public void applicationResolveDitaExtension() {
@@ -693,6 +703,19 @@ public class MediaTypeResolverImplTest {
     // </editor-fold>
 
 
+    // <editor-fold desc="Media Type aliases which are application only">
+    @Test
+    public void applicationResolveTextXmlAliasIdentifier() {
+        assertApplicationResolveFromAliasIdentifier("text/xml", MediaType.APPLICATION_XML, new String[] {"fo", "nvdl", "rng", "stx", "xconf", "xml", "xsd", "xsl"}, StorageType.XML);
+    }
+
+    @Test
+    public void applicationResolveApplicationAdamQueryAliasIdentifier() {
+        assertApplicationResolveFromAliasIdentifier("application/adam-query", MediaType.APPLICATION_XQUERY, new String[] {"xq", "xql", "xqm", "xquery", "xqws", "xqy"}, StorageType.BINARY);
+    }
+    // </editor-fold>
+
+
     /**
      * Check that multiple levels of mime.types files
      * yield correct lookups via. both
@@ -720,7 +743,7 @@ public class MediaTypeResolverImplTest {
         assertEquals(MediaType.APPLICATION_XML, mimetypesFileTypeMap.getContentType("something.xsd"));
         assertEquals("test/x.xsl+xml", mimetypesFileTypeMap.getContentType("something.xsl"));
 
-        final MediaTypeResolverImpl specificMediaTypeResolver = new MediaTypeResolverImpl(mimetypesFileTypeMap, MEDIA_TYPE_MAPPER);
+        final MediaTypeResolverImpl specificMediaTypeResolver = new MediaTypeResolverImpl(mimetypesFileTypeMap, MEDIA_TYPE_ALIASER, MEDIA_TYPE_MAPPER);
 
         assertResolveFromFileName(specificMediaTypeResolver, "something.xadam", "test/extensible-markup-language", new String[] {"xml", "xadam"}, StorageType.BINARY);
         assertResolveFromFileName(specificMediaTypeResolver, "something.xconf", "test/prs.existdb.collection-config+xml", new String[] {"xconf"}, StorageType.XML);
@@ -815,12 +838,41 @@ public class MediaTypeResolverImplTest {
 
     private void assertApplicationResolveFromIdentifier(final String identifier, final String[] expectedExtensions, final StorageType expectedStorageType) {
         assertNotNull(APPLICATION_MEDIA_RESOLVER);
-        assertResolveFromIdentifier(APPLICATION_MEDIA_RESOLVER,  identifier, expectedExtensions, expectedStorageType);
+        assertResolveFromIdentifier(APPLICATION_MEDIA_RESOLVER, identifier, expectedExtensions, expectedStorageType);
     }
 
     private void assertResolveFromIdentifier(final MediaTypeResolver mediaTypeResolver, final String identifier, final String[] expectedExtensions, final StorageType expectedStorageType) {
         final @Nullable MediaType mediaType = mediaTypeResolver.fromString(identifier);
         assertNotNull(mediaType);
+        assertEquals(identifier, mediaType.getIdentifier());
+        assertArrayAnyOrderEquals(expectedExtensions, mediaType.getKnownFileExtensions());
+        assertEquals(expectedStorageType, mediaType.getStorageType());
+    }
+
+    private void assertAllResolveFromAliasIdentifier(final String aliasIdentifier, final String identifier, final String[] expectedExtensions, final StorageType expectedStorageType) {
+        assertDefaultResolveFromAliasIdentifier(aliasIdentifier, identifier, expectedExtensions, expectedStorageType);
+        assertApplicationResolveFromAliasIdentifier(aliasIdentifier, identifier, expectedExtensions, expectedStorageType);
+    }
+
+    private void assertDefaultResolveFromAliasIdentifier(final String aliasIdentifier, final String identifier, final String[] expectedExtensions, final StorageType expectedStorageType) {
+        assertNotNull(DEFAULT_MEDIA_RESOLVER);
+        assertResolveFromAliasIdentifier(DEFAULT_MEDIA_RESOLVER, aliasIdentifier, identifier, expectedExtensions, expectedStorageType);
+    }
+
+    private void assertApplicationResolveFromAliasIdentifier(final String aliasIdentifier, final String identifier, final String[] expectedExtensions, final StorageType expectedStorageType) {
+        assertNotNull(APPLICATION_MEDIA_RESOLVER);
+        assertResolveFromAliasIdentifier(APPLICATION_MEDIA_RESOLVER, aliasIdentifier, identifier, expectedExtensions, expectedStorageType);
+    }
+
+    private void assertResolveFromAliasIdentifier(final MediaTypeResolver mediaTypeResolver, final String aliasIdentifier, final String identifier, final String[] expectedExtensions, final StorageType expectedStorageType) {
+        final @Nullable MediaType mediaType = mediaTypeResolver.fromString(aliasIdentifier);
+        assertNotNull(mediaType);
+        assertEquals(identifier, mediaType.getIdentifier());
+
+        assertTrue(mediaType instanceof MediaTypeAlias);
+        final MediaTypeAlias mediaTypeAlias = (MediaTypeAlias) mediaType;
+        assertEquals(aliasIdentifier, mediaTypeAlias.getAliasIdentifier());
+
         assertArrayAnyOrderEquals(expectedExtensions, mediaType.getKnownFileExtensions());
         assertEquals(expectedStorageType, mediaType.getStorageType());
     }
