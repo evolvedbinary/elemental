@@ -83,6 +83,10 @@ public class CommandlineOptions {
             .description("do not make embedded mode available")
             .defaultValue(false)
             .build();
+    private static final Argument<Boolean> noAutoDeployArg = optionArgument("-a", "--no-auto-deploy")
+        .description("Disable auto-deployment of EXPath Packages")
+        .defaultValue(false)
+        .build();
 
 
     /* gui arguments */
@@ -168,7 +172,7 @@ public class CommandlineOptions {
 
     public static CommandlineOptions parse(final String[] args) throws ArgumentException, URISyntaxException {
         final ParsedArguments arguments = CommandLineParser
-                .withArguments(userArg, passwordArg, useSslArg, embeddedArg, embeddedConfigArg, noEmbeddedModeArg)
+                .withArguments(userArg, passwordArg, useSslArg, embeddedArg, embeddedConfigArg, noEmbeddedModeArg, noAutoDeployArg)
                 .andArguments(noGuiArg, guiQueryDialogArg)
                 .andArguments(mkColArg, rmColArg, setColArg)
                 .andArguments(parseDocsArg, getDocArg, rmDocArg)
@@ -189,6 +193,7 @@ public class CommandlineOptions {
         final boolean embedded = getBool(arguments, embeddedArg);
         final Optional<Path> embeddedConfig = getPathOpt(arguments, embeddedConfigArg);
         final boolean noEmbeddedMode = getBool(arguments, noEmbeddedModeArg);
+        final boolean noAutoDeploy = getBool(arguments, noAutoDeployArg);
 
         final boolean startGUI = !getBool(arguments, noGuiArg);
         final boolean openQueryGUI = getBool(arguments, guiQueryDialogArg);
@@ -233,6 +238,7 @@ public class CommandlineOptions {
                 embedded,
                 embeddedConfig,
                 noEmbeddedMode,
+                noAutoDeploy,
                 startGUI,
                 openQueryGUI,
                 mkCol,
@@ -252,7 +258,7 @@ public class CommandlineOptions {
         );
     }
 
-    public CommandlineOptions(boolean quiet, boolean verbose, Optional<Path> outputFile, Map<String, String> options, Optional<String> username, Optional<String> password, boolean useSSL, boolean embedded, Optional<Path> embeddedConfig, boolean noEmbeddedMode, boolean startGUI, boolean openQueryGUI, Optional<XmldbURI> mkCol, Optional<XmldbURI> rmCol, Optional<XmldbURI> setCol, List<Path> parseDocs, Optional<XmldbURI> getDoc, Optional<String> rmDoc, Optional<String> xpath, List<Path> queryFiles, Optional<Integer> howManyResults, Optional<Path> traceQueriesFile, Optional<String> setDoc, Optional<Path> xupdateFile, boolean reindex, boolean reindexRecurse) {
+    public CommandlineOptions(boolean quiet, boolean verbose, Optional<Path> outputFile, Map<String, String> options, Optional<String> username, Optional<String> password, boolean useSSL, boolean embedded, Optional<Path> embeddedConfig, boolean noEmbeddedMode, boolean noAutoDeploy, boolean startGUI, boolean openQueryGUI, Optional<XmldbURI> mkCol, Optional<XmldbURI> rmCol, Optional<XmldbURI> setCol, List<Path> parseDocs, Optional<XmldbURI> getDoc, Optional<String> rmDoc, Optional<String> xpath, List<Path> queryFiles, Optional<Integer> howManyResults, Optional<Path> traceQueriesFile, Optional<String> setDoc, Optional<Path> xupdateFile, boolean reindex, boolean reindexRecurse) {
         this.quiet = quiet;
         this.verbose = verbose;
         this.outputFile = outputFile;
@@ -263,6 +269,7 @@ public class CommandlineOptions {
         this.embedded = embedded;
         this.embeddedConfig = embeddedConfig;
         this.noEmbeddedMode = noEmbeddedMode;
+        this.noAutoDeploy = noAutoDeploy;
         this.startGUI = startGUI;
         this.openQueryGUI = openQueryGUI;
         this.mkCol = mkCol;
@@ -292,6 +299,7 @@ public class CommandlineOptions {
     final boolean embedded;
     final Optional<Path> embeddedConfig;
     final boolean noEmbeddedMode;
+    final boolean noAutoDeploy;
 
     final boolean startGUI;
     final boolean openQueryGUI;

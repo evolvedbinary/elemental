@@ -65,12 +65,18 @@ import org.exist.start.StartException;
 import org.exist.storage.BrokerPool;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.FileUtils;
+import org.exist.util.OSUtil;
 import org.exist.util.SingleInstanceConfiguration;
+import org.exist.util.SystemExitCodes;
 import org.exist.validation.XmlLibraryChecker;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.ShutdownListener;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
+import se.softhouse.jargo.Argument;
+import se.softhouse.jargo.ArgumentException;
+import se.softhouse.jargo.CommandLineParser;
+import se.softhouse.jargo.ParsedArguments;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,7 +89,10 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.exist.repo.AutoDeploymentTrigger.AUTODEPLOY_PROPERTY;
+import static org.exist.util.ArgumentUtil.getBool;
 import static org.exist.util.ThreadUtils.newGlobalThread;
+import static se.softhouse.jargo.Arguments.*;
 
 /**
  * This class provides a main method to start Jetty with eXist. It registers shutdown
@@ -108,6 +117,19 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     private final static int STATUS_STOPPING = 2;
     private final static int STATUS_STOPPED = 3;
 
+    /* general arguments */
+    private static final Argument<String> jettyConfigFilePath = stringArgument()
+            .description("Path to Jetty Config File")
+            .build();
+    private static final Argument<String> existConfigFilePath = stringArgument()
+            .description("Path to Elemental Config File")
+            .build();
+    private static final Argument<Boolean> noAutoDeployArg = optionArgument("-a", "--no-auto-deploy")
+        .description("Disable auto-deployment of EXPath Packages")
+        .defaultValue(false)
+        .build();
+    private static final Argument<?> helpArg = helpArgument("-h", "--help");
+
     @GuardedBy("this") private int status = STATUS_STOPPED;
     @GuardedBy("this") private Optional<Thread> shutdownHookThread = Optional.empty();
     @GuardedBy("this") private int primaryPort = 8080;
@@ -116,11 +138,26 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     public static void main(final String[] args) {
         try {
             CompatibleJavaVersionCheck.checkForCompatibleJavaVersion();
+
+            final ParsedArguments arguments = CommandLineParser
+                    .withArguments(jettyConfigFilePath, existConfigFilePath)
+                    .andArguments(noAutoDeployArg, helpArg)
+                    .programName("startup" + (OSUtil.IS_WINDOWS ? ".bat" : ".sh"))
+                    .parse(args);
+
+            final boolean noAutoDeploy = getBool(arguments, noAutoDeployArg);
+            if (noAutoDeploy) {
+                System.setProperty(AUTODEPLOY_PROPERTY, "off");
+            }
+
         } catch (final StartException e) {
             if (e.getMessage() != null && !e.getMessage().isEmpty()) {
                 System.err.println(e.getMessage());
             }
             System.exit(e.getErrorCode());
+        } catch (final ArgumentException e) {
+            System.out.println(e.getMessageAndUsage());
+            System.exit(SystemExitCodes.INVALID_ARGUMENT_EXIT_CODE);
         }
 
         final JettyStart start = new JettyStart();

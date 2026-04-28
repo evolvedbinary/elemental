@@ -147,6 +147,7 @@ public class InteractiveClient {
     public static final String CREATE_DATABASE = "create-database";
     public static final String LOCAL_MODE = "local-mode-opt";
     public static final String NO_EMBED_MODE = "NO_EMBED_MODE";
+    public static final String NO_AUTO_DEPLOY = "no-autodeploy";
 
     // values
     protected static final String EDIT_CMD = "emacsclient -t $file";
@@ -155,6 +156,7 @@ public class InteractiveClient {
     protected static final String SSL_ENABLE_DEFAULT = "FALSE";
     protected static final String LOCAL_MODE_DEFAULT = "FALSE";
     protected static final String NO_EMBED_MODE_DEFAULT = "FALSE";
+    protected static final String NO_AUTO_DEPLOY_DEFAULT = "FALSE";
     protected static final String USER_DEFAULT = SecurityManager.DBA_USER;
 
     protected static final String driver = "org.exist.xmldb.DatabaseImpl";
@@ -173,6 +175,7 @@ public class InteractiveClient {
         defaultProps.setProperty(PERMISSIONS, "false");
         defaultProps.setProperty(EXPAND_XINCLUDES, "true");
         defaultProps.setProperty(SSL_ENABLE, SSL_ENABLE_DEFAULT);
+        defaultProps.setProperty(NO_AUTO_DEPLOY, NO_AUTO_DEPLOY_DEFAULT);
     }
 
     protected static final int colSizes[] = new int[]{10, 10, 10, -1};
@@ -333,6 +336,7 @@ public class InteractiveClient {
         // Configure database
         database.setProperty(CREATE_DATABASE, "true");
         database.setProperty(SSL_ENABLE, properties.getProperty(SSL_ENABLE));
+        database.setProperty(NO_AUTO_DEPLOY, properties.getProperty(NO_AUTO_DEPLOY));
 
         // secure empty configuration
         final String configProp = properties.getProperty(InteractiveClient.CONFIGURATION);
@@ -1970,6 +1974,9 @@ public class InteractiveClient {
         options.embeddedConfig.ifPresent(config -> properties.setProperty(CONFIGURATION, config.toAbsolutePath().toString()));
         if(options.noEmbeddedMode) {
             props.setProperty(NO_EMBED_MODE, "TRUE");
+        }
+        if (options.noAutoDeploy) {
+            props.setProperty(NO_AUTO_DEPLOY, "TRUE");
         }
     }
 
