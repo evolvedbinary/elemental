@@ -58,6 +58,12 @@ import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalField;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -96,7 +102,25 @@ public class DateTimeValue extends AbstractDateTimeValue {
     }
 
     public DateTimeValue(final Expression expression, final Instant instant) {
-        super(expression, dateToXMLGregorianCalendar(new Date(instant.toEpochMilli())));
+        super(expression, toXMLGregorianCalendar(new Date(instant.toEpochMilli())));
+        normalize();
+    }
+
+    public DateTimeValue(final ZonedDateTime zonedDateTime) {
+        this(null, zonedDateTime);
+    }
+
+    public DateTimeValue(final Expression expression, final ZonedDateTime zonedDateTime) {
+        super(expression, toXMLGregorianCalendar(zonedDateTime));
+        normalize();
+    }
+
+    public DateTimeValue(final LocalDateTime localDateTime) {
+        this(null, localDateTime);
+    }
+
+    public DateTimeValue(final Expression expression, final LocalDateTime localDateTime) {
+        super(expression, toXMLGregorianCalendar(localDateTime));
         normalize();
     }
 
@@ -105,7 +129,7 @@ public class DateTimeValue extends AbstractDateTimeValue {
     }
 
     public DateTimeValue(final Expression expression, Date date) {
-        super(expression, dateToXMLGregorianCalendar(date));
+        super(expression, toXMLGregorianCalendar(date));
         normalize();
     }
 
@@ -125,12 +149,33 @@ public class DateTimeValue extends AbstractDateTimeValue {
         normalize();
     }
 
-    private static XMLGregorianCalendar dateToXMLGregorianCalendar(Date date) {
+    private static XMLGregorianCalendar toXMLGregorianCalendar(final Date date) {
         final GregorianCalendar gc = new GregorianCalendar();
         gc.setTime(date);
-        final XMLGregorianCalendar xgc = TimeUtils.getInstance().newXMLGregorianCalendar(gc);
+        return toXMLGregorianCalendar(gc);
+    }
+
+    private static XMLGregorianCalendar toXMLGregorianCalendar(final LocalDateTime localDateTime) {
+        final XMLGregorianCalendar xgc = TimeUtils.getInstance().newXMLGregorianCalendar();
+        xgc.setYear(localDateTime.getYear());
+        xgc.setMonth(localDateTime.getMonthValue());
+        xgc.setDay(localDateTime.getDayOfMonth());
+        xgc.setHour(localDateTime.getHour());
+        xgc.setMinute(localDateTime.getMinute());
+        xgc.setSecond(localDateTime.getSecond());
+        xgc.setMillisecond(localDateTime.getNano() / 1_000_000);
+        xgc.setTimezone(DatatypeConstants.FIELD_UNDEFINED);
         xgc.normalize();
         return xgc;
+    }
+
+    private static XMLGregorianCalendar toXMLGregorianCalendar(final Instant instant) {
+        return toXMLGregorianCalendar(LocalDateTime.ofInstant(instant, ZoneOffset.UTC));
+    }
+
+    private static XMLGregorianCalendar toXMLGregorianCalendar(final ZonedDateTime zonedDateTime) {
+        final GregorianCalendar gc = GregorianCalendar.from(zonedDateTime);
+        return toXMLGregorianCalendar(gc);
     }
 
     private static XMLGregorianCalendar fillCalendar(XMLGregorianCalendar calendar) {
@@ -228,6 +273,12 @@ public class DateTimeValue extends AbstractDateTimeValue {
                 final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
                 serialize(buf);
                 return (T) buf;
+            } else if (target == ZonedDateTime.class) {
+                return (T) calendar.toGregorianCalendar().toZonedDateTime();
+            } else if (target == OffsetDateTime.class) {
+                return (T) calendar.toGregorianCalendar().toZonedDateTime().toOffsetDateTime();
+            } else if (target == LocalDateTime.class) {
+                return (T)calendar.toGregorianCalendar().toZonedDateTime().toLocalDateTime();
             } else {
                 return super.toJavaObject(target);
             }

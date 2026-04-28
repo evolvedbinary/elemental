@@ -74,6 +74,7 @@ import org.xmldb.api.base.Database;
 import se.softhouse.jargo.Argument;
 import se.softhouse.jargo.ArgumentException;
 import se.softhouse.jargo.CommandLineParser;
+import se.softhouse.jargo.ParsedArguments;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -85,9 +86,10 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.exist.repo.AutoDeploymentTrigger.AUTODEPLOY_PROPERTY;
+import static org.exist.util.ArgumentUtil.getBool;
 import static org.exist.util.ThreadUtils.newGlobalThread;
-import static se.softhouse.jargo.Arguments.helpArgument;
-import static se.softhouse.jargo.Arguments.stringArgument;
+import static se.softhouse.jargo.Arguments.*;
 
 /**
  * This class provides a main method to start Jetty with eXist. It registers shutdown
@@ -119,6 +121,10 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     private static final Argument<String> existConfigFilePath = stringArgument()
             .description("Path to Elemental Config File")
             .build();
+    private static final Argument<Boolean> noAutoDeployArg = optionArgument("-a", "--no-auto-deploy")
+        .description("Disable auto-deployment of EXPath Packages")
+        .defaultValue(false)
+        .build();
     private static final Argument<?> helpArg = helpArgument("-h", "--help");
 
     @GuardedBy("this") private int status = STATUS_STOPPED;
@@ -130,11 +136,16 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
         try {
             CompatibleJavaVersionCheck.checkForCompatibleJavaVersion();
 
-            CommandLineParser
+            final ParsedArguments arguments = CommandLineParser
                     .withArguments(jettyConfigFilePath, existConfigFilePath)
-                    .andArguments(helpArg)
+                    .andArguments(noAutoDeployArg, helpArg)
                     .programName("startup" + (OSUtil.IS_WINDOWS ? ".bat" : ".sh"))
                     .parse(args);
+
+            final boolean noAutoDeploy = getBool(arguments, noAutoDeployArg);
+            if (noAutoDeploy) {
+                System.setProperty(AUTODEPLOY_PROPERTY, "off");
+            }
 
         } catch (final StartException e) {
             if (e.getMessage() != null && !e.getMessage().isEmpty()) {

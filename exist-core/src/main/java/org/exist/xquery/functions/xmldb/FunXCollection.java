@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,6 +52,7 @@ import org.exist.xquery.functions.fn.ExtCollection;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 
 import static org.exist.xquery.FunctionDSL.*;
@@ -60,13 +85,13 @@ public class FunXCollection extends ExtCollection {
 
 	@Override
 	public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
-		final URI collectionUri;
+		@Nullable final URI collectionUri;
 		if (args.length == 0 || args[0].isEmpty()) {
 			collectionUri = null;
 		} else {
 			collectionUri = asUri(args[0].itemAt(0).getStringValue());
 		}
 
-		return getCollectionItems(new URI[] { collectionUri });
+		return getCollectionItems(collectionUri);
 	}
 }

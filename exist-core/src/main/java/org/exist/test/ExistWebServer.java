@@ -48,6 +48,8 @@ public class ExistWebServer extends ExternalResource {
 
     private static final Logger LOG =  LogManager.getLogger(ExistWebServer.class);
 
+    public static final String USE_TEMPORARY_STORAGE_PROPERTY = "exist.use-temporary-storage";
+
     private static final String CONFIG_PROP_FILES = "org.exist.db-connection.files";
     private static final String CONFIG_PROP_JOURNAL_DIR = "org.exist.db-connection.recovery.journal-dir";
 
@@ -113,7 +115,8 @@ public class ExistWebServer extends ExternalResource {
         }
 
         if (server == null) {
-            if(useTemporaryStorage) {
+            final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
+            if(useTemporaryStorage || propUseTemporaryStorage) {
                 this.temporaryStorage = Optional.of(Files.createTempDirectory("org.exist.test.ExistWebServer"));
                 final String absTemporaryStorage = temporaryStorage.get().toAbsolutePath().toString();
                 System.setProperty(CONFIG_PROP_FILES, absTemporaryStorage);
@@ -166,7 +169,8 @@ public class ExistWebServer extends ExternalResource {
             server.shutdown();
             server = null;
 
-            if(useTemporaryStorage && temporaryStorage.isPresent()) {
+            final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
+            if((useTemporaryStorage || propUseTemporaryStorage) && temporaryStorage.isPresent()) {
                 FileUtils.deleteQuietly(temporaryStorage.get());
                 temporaryStorage = Optional.empty();
                 System.clearProperty(CONFIG_PROP_JOURNAL_DIR);

@@ -50,6 +50,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.exist.repo.AutoDeploymentTrigger.AUTODEPLOY_PROPERTY;
+
 /**
  * The XMLDB driver class for eXist. This driver manages two different
  * internal implementations. The first communicates with a remote
@@ -100,6 +102,8 @@ public class DatabaseImpl implements Database {
     private Boolean ssl_allow_self_signed = true;
     private Boolean ssl_verify_hostname = false;
 
+    private Boolean no_autodeploy = false;
+
     public DatabaseImpl() {
         final String initdb = System.getProperty("exist.initdb");
         if (initdb != null) {
@@ -120,6 +124,10 @@ public class DatabaseImpl implements Database {
             }
             if (journalDir != null) {
                 config.setProperty(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, Paths.get(journalDir));
+            }
+
+            if (no_autodeploy) {
+                System.setProperty(AUTODEPLOY_PROPERTY, "off");
             }
 
             BrokerPool.configure(instanceName, 1, 5, config);
@@ -368,6 +376,7 @@ public class DatabaseImpl implements Database {
     public final static String DATA_DIR = "data-dir";
     public final static String JOURNAL_DIR = "journal-dir";
     public final static String SSL_ENABLE = "ssl-enable";
+    public final static String NO_AUTODEPLOY = "no-autodeploy";
     public final static String SSL_ALLOW_SELF_SIGNED = "ssl-allow-self-signed";
     public final static String SSL_VERIFY_HOSTNAME = "ssl-verify-hostname";
 
@@ -387,6 +396,7 @@ public class DatabaseImpl implements Database {
             case SSL_ENABLE -> ssl_enable.toString();
             case SSL_ALLOW_SELF_SIGNED -> ssl_allow_self_signed.toString();
             case SSL_VERIFY_HOSTNAME -> ssl_verify_hostname.toString();
+            case NO_AUTODEPLOY -> no_autodeploy.toString();
             default -> defaultValue;
         };
         return value;
@@ -403,6 +413,7 @@ public class DatabaseImpl implements Database {
             case SSL_ENABLE -> this.ssl_enable = Boolean.valueOf(value);
             case SSL_ALLOW_SELF_SIGNED -> this.ssl_allow_self_signed = Boolean.valueOf(value);
             case SSL_VERIFY_HOSTNAME -> this.ssl_verify_hostname = Boolean.valueOf(value);
+            case NO_AUTODEPLOY -> this.no_autodeploy = Boolean.valueOf(value);
             default -> LOG.warn("Ignoring unknown property: {}, value: {} ", property, value);
         }
     }

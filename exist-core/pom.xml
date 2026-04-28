@@ -1415,6 +1415,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/validate/JingXsdTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/xmldb/FunXCollection.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBGetMimeType.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBLoadFromPattern.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBModule.java</include>
@@ -2249,6 +2250,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/AbstractXMLDBTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/xmldb/FunXCollection.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/XMLDBAuthenticateTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBGetMimeType.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/XMLDBLoadFromPattern.java</exclude>

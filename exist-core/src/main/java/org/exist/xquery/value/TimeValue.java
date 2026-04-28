@@ -55,6 +55,8 @@ import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.nio.ByteBuffer;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.util.GregorianCalendar;
 
 /**
@@ -172,6 +174,10 @@ public class TimeValue extends AbstractDateTimeValue {
             return (T) buf;
         } else if (target == Long.class || target == long.class) {
             return (T) Long.valueOf(serializeToLong());
+        } else if (target == OffsetTime.class) {
+            return (T)calendar.toGregorianCalendar().toZonedDateTime().toOffsetDateTime().toOffsetTime();
+        } else if (target == LocalTime.class) {
+            return (T)calendar.toGregorianCalendar().toZonedDateTime().toLocalTime();
         } else {
             return super.toJavaObject(target);
         }

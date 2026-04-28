@@ -52,6 +52,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Templates;
@@ -1084,14 +1085,17 @@ public abstract class Serializer implements XMLReader {
             attrs.addAttribute(ATTR_SESSION_ID, outputProperties.getProperty(PROPERTY_SESSION_ID));
         }
         attrs.addAttribute(ATTR_COMPILATION_TIME_QNAME, Long.toString(compilationTime));
-        attrs.addAttribute(ATTR_EXECUTION_TIME_QNAME, Long.toString(compilationTime));
+        attrs.addAttribute(ATTR_EXECUTION_TIME_QNAME, Long.toString(executionTime));
 
         if (!documentStarted) {
             receiver.startDocument();
             documentStarted = true;
         }
         if (wrap) {
-            receiver.startPrefixMapping("exist", Namespaces.EXIST_NS);
+            receiver.startPrefixMapping(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
+            if (typed) {
+                receiver.startPrefixMapping(Namespaces.SCHEMA_NS_PREFIX, Namespaces.SCHEMA_NS);
+            }
             receiver.startElement(ELEM_RESULT_QNAME, attrs);
         }
 
@@ -1106,7 +1110,10 @@ public abstract class Serializer implements XMLReader {
 
         if (wrap) {
             receiver.endElement(ELEM_RESULT_QNAME);
-            receiver.endPrefixMapping("exist");
+            if (typed) {
+                receiver.endPrefixMapping(Namespaces.SCHEMA_NS_PREFIX);
+            }
+            receiver.endPrefixMapping(Namespaces.EXIST_NS_PREFIX);
         }
         receiver.endDocument();
     }
@@ -1178,7 +1185,10 @@ public abstract class Serializer implements XMLReader {
         }
 
         if (wrap) {
-            receiver.startPrefixMapping("exist", Namespaces.EXIST_NS);
+            receiver.startPrefixMapping(Namespaces.EXIST_NS_PREFIX, Namespaces.EXIST_NS);
+            if (typed) {
+                receiver.startPrefixMapping(Namespaces.SCHEMA_NS_PREFIX, Namespaces.SCHEMA_NS);
+            }
             receiver.startElement(ELEM_RESULT_QNAME, attrs);
         }
 
@@ -1186,7 +1196,10 @@ public abstract class Serializer implements XMLReader {
 
         if (wrap) {
             receiver.endElement(ELEM_RESULT_QNAME);
-            receiver.endPrefixMapping("exist");
+            if (typed) {
+                receiver.endPrefixMapping(Namespaces.SCHEMA_NS_PREFIX);
+            }
+            receiver.endPrefixMapping(Namespaces.EXIST_NS_PREFIX);
         }
 
         receiver.endDocument();
