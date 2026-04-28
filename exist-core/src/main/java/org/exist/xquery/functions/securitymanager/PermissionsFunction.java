@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,15 +46,17 @@
 package org.exist.xquery.functions.securitymanager;
 
 import org.exist.collections.Collection;
-import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.*;
 import org.exist.security.ACLPermission.ACE_ACCESS_TYPE;
 import org.exist.security.ACLPermission.ACE_TARGET;
 import org.exist.storage.DBBroker;
+import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
+import org.exist.util.LockException;
 import org.exist.util.SyntaxException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
@@ -52,7 +78,7 @@ import java.util.Optional;
 
 /**
  *
- * @author <a href="mailto:adam@existsolutions.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class PermissionsFunction extends BasicFunction {
 
@@ -409,20 +435,49 @@ public class PermissionsFunction extends BasicFunction {
     }
     
     private Permission getPermissions(final XmldbURI pathUri) throws XPathException, PermissionDeniedException {
-        final Permission permissions;
-        final Collection col = context.getBroker().getCollection(pathUri);
-        if(col != null) {
-            permissions = col.getPermissionsNoLock();
-        } else {
-            final DocumentImpl doc = context.getBroker().getResource(pathUri, Permission.READ);
-            if(doc != null) {
-                permissions = doc.getPermissions();
-            } else {
-                throw new XPathException(this, "Resource or collection '" + pathUri.toString() + "' does not exist.");
+        final DBBroker broker = context.getBroker();
+        if (pathUri.equals(XmldbURI.DB)) {
+            // Can only be a Collection (i.e. `/db`)
+            try (final Collection rootCollection = broker.openCollection(pathUri, Lock.LockMode.READ_LOCK)) {
+                return rootCollection.getPermissions();
             }
-        }
 
-        return permissions;
+        } else {
+            // Interrogate the parent Collection so that we can efficiently work out if this URI indicates a Collection or Document
+            final XmldbURI parentCollectionUri = pathUri.removeLastSegment();
+            final XmldbURI resourceName = pathUri.lastSegment();
+
+            try (final Collection parentCollection = broker.openCollection(parentCollectionUri, Lock.LockMode.READ_LOCK)) {
+
+                if (parentCollection.hasChildCollectionNoLock(broker, resourceName)) {
+                    // URI indicates a Collection
+
+                    try (final Collection collection = broker.openCollection(pathUri, Lock.LockMode.READ_LOCK)) {
+
+                        // asymmetrical locking - unlock parent
+                        parentCollection.close();
+
+                        return collection.getPermissions();
+                    }
+                } else {
+                    // URI indicates a Document
+
+                    try (final LockedDocument lockedDocument = parentCollection.getDocumentWithLock(broker, resourceName, Lock.LockMode.READ_LOCK)) {
+
+                        // asymmetrical locking - unlock parent
+                        parentCollection.close();
+
+                        if (lockedDocument != null) {
+                            return lockedDocument.getDocument().getPermissions();
+                        }
+                    } catch (final LockException e) {
+                        throw new PermissionDeniedException(e.getMessage(), e);
+                    }
+                }
+            }
+
+            throw new XPathException(this, "Resource or collection '" + pathUri + "' does not exist.");
+        }
     }
 
     private org.exist.dom.memtree.DocumentImpl permissionsToXml(final Permission permission) {
