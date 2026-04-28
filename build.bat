@@ -25,7 +25,7 @@
 @REM
 
 @echo off
-setlocal enabledelayedexpansion
+setlocal
 
 set "TARGET=useage"
 set "DEBUG=false"
@@ -118,16 +118,21 @@ if "%TARGET%"=="clean" (
 ) else if "%TARGET%"=="dependency-security-check" (
     set "CMD=%BASE_CMD% dependency-check:check"
 ) else if "%TARGET%"=="format-poms" (
+    setlocal enabledelayedexpansion
     set "SAXON=%USERPROFILE%\.m2\repository\net\sf\saxon\Saxon-HE\9.9.1-8\Saxon-HE-9.9.1-8.jar"
-    for /r %%POM in (pom.xml) do (
-        echo | set /p dummyName="Formatting %%POM ..."
-        java -jar "%SAXON%" -s:%%POM -xsl:format-pom.xslt -o:%%POM
-        echo OK
+    for /r %%P in (pom.xml) do (
+        if exist "%%P" (
+            set "POM=%%P"
+            echo | set /p dummyName="Formatting !POM! ..."
+            java -jar "!SAXON!" -s:!POM! -xsl:format-pom.xslt -o:!POM!
+            echo OK
 
-        echo | set /p dummyName="Checking for duplicate license entries in %%POM ... "
-        java -cp "%SAXON%" net.sf.saxon.Query -q:check-pom-license-uniqueness.xq pom-file-uri=file:%%POM
-        echo OK
+            echo | set /p dummyName="Checking for duplicate license entries in !POM! ... "
+            java -cp "!SAXON!" net.sf.saxon.Query -q:check-pom-license-uniqueness.xq pom-file-path=!POM!
+            echo OK
+        )
     )
+    endlocal
     goto end
 ) else (
     echo Invalid target: %TARGET%
