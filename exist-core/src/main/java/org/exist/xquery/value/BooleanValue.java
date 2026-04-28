@@ -291,6 +291,8 @@ public class BooleanValue extends AtomicValue {
      * 1 byte.
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
@@ -316,6 +318,8 @@ public class BooleanValue extends AtomicValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the BooleanValue.
+     *
+     * @throws XPathException if an error occurs constructing a BooleanValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws XPathException {
         final byte b = buf.get();

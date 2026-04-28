@@ -616,6 +616,8 @@ public class IntegerValue extends NumericValue {
      *  byte[...] the big integer byte[] value
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(6)) {
@@ -634,6 +636,8 @@ public class IntegerValue extends NumericValue {
      *  byte[...] the big integer byte[] value
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
@@ -648,6 +652,9 @@ public class IntegerValue extends NumericValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the IntegerValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing an IntegerValue.
      */
     public static IntegerValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         return deserialize(expression, buf, null);
@@ -661,6 +668,9 @@ public class IntegerValue extends NumericValue {
      * @param checkType an XDM type to check that matches against the deserialized IntegerValue type.
      *
      * @return the IntegerValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing an IntegerValue.
      */
     public static IntegerValue deserialize(@Nullable Expression expression, final ByteBuffer buf, @Nullable final Integer checkType) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);

@@ -64,6 +64,13 @@ import javax.annotation.Nullable;
  */
 public interface EXistResource extends Resource, AutoCloseable {
 
+    /**
+     * Get the permissions of the resource.
+     *
+     * @return the permissions of the resource.
+     *
+     * @throws XMLDBException if an error occurs whilst getting the permissions.
+     */
     Permission getPermissions() throws XMLDBException;
 
     /**
@@ -75,6 +82,11 @@ public interface EXistResource extends Resource, AutoCloseable {
      */
     long getContentLength() throws XMLDBException;
 
+    /**
+     * Set the SAX Lexical Handler.
+     *
+     * @param handler the lexical handler.
+     */
     void setLexicalHandler(LexicalHandler handler);
 
     /**
@@ -99,6 +111,8 @@ public interface EXistResource extends Resource, AutoCloseable {
      *
      * @return the Internet Media Type.
      *
+     * @throws XMLDBException if an error occurs whilst getting the mime type.
+     *
      * @deprecated Use {@link #getMediaType()} instead.
      */
     @Deprecated
@@ -108,25 +122,78 @@ public interface EXistResource extends Resource, AutoCloseable {
      * Get the Internet Media Type of the resource.
      *
      * @return the Internet Media Type.
+     *
+     * @throws XMLDBException if an error occurs whilst getting the media type.
      */
     String getMediaType() throws XMLDBException;
 
+    /**
+     * Get the Document Type of the resource.
+     *
+     * @return the Document Type.
+     *
+     * @throws XMLDBException if an error occurs whilst getting the document type.
+     */
     DocumentType getDocType() throws XMLDBException;
 
+    /**
+     * Set the Document Type of the resource.
+     *
+     * @param doctype the Document Type.
+     *
+     * @throws XMLDBException if an error occurs whilst setting the document type.
+     */
     void setDocType(DocumentType doctype) throws XMLDBException;
 
+    /**
+     * Set the Last Modification Time of the resource.
+     *
+     * @param lastModificationTime the Last Modification Time.
+     *
+     * @throws XMLDBException if an error occurs whilst setting the last modification time.
+     */
     void setLastModificationTime(Instant lastModificationTime) throws XMLDBException;
 
+    /**
+     * Free any other resources associated with accessing this resource.
+     *
+     * @throws XMLDBException if an error occurs whilst freeing resources.
+     */
     void freeResources() throws XMLDBException;
 
+    /**
+     * Set the Properties of the resource.
+     *
+     * @param properties the properties.
+     */
     void setProperties(Properties properties);
 
+    /**
+     * Get the Properties of the resource.
+     *
+     * @return the properties.
+     */
     @Nullable Properties getProperties();
 
+    /**
+     * Get the type name of the resource.
+     *
+     * @return the type name.
+     */
     String getTypeName();
 
+    /**
+     * Determine if the resource is closed.
+     *
+     * @return true if the resource is closed, false otherwise.
+     */
     boolean isClosed();
 
+    /**
+     * Close the resource.
+     *
+     * @throws XMLDBException if an error occurs whilst closing the resource.
+     */
     @Override
     void close() throws XMLDBException;
 }

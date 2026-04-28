@@ -202,6 +202,14 @@ public class TimeValue extends AbstractDateTimeValue {
         ByteConversion.shortToByteH((short) (timezone == DatatypeConstants.FIELD_UNDEFINED ? Short.MAX_VALUE : timezone), buf);
     }
 
+    /**
+     * Deserializes a TimeValue that has been bit-packed into a Byte Buffer.
+     *
+     * @param expression the expression that creates the TimeValue object.
+     * @param buf the buffer holding the value to deserialize.
+     *
+     * @return the TimeValue
+     */
     public static TimeValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) {
         final int hour = buf.get();
         final int minute = buf.get();
@@ -248,6 +256,9 @@ public class TimeValue extends AbstractDateTimeValue {
 
     /**
      * Deserializes a TimeValue that has been bit-packed into a long (64 bits)
+     *
+     * @param expression the expression that creates the TimeValue object.
+     * @param l the long value to deserialize.
      *
      * @return the TimeValue
      */

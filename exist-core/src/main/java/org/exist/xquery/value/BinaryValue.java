@@ -341,6 +341,8 @@ public abstract class BinaryValue extends AtomicValue implements Closeable {
      * Serializes to a byte array.
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     private byte[] serializeRaw() throws IOException {
         try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
@@ -357,6 +359,8 @@ public abstract class BinaryValue extends AtomicValue implements Closeable {
      *  byte[4..] the data
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final byte[] serialized;
@@ -384,9 +388,12 @@ public abstract class BinaryValue extends AtomicValue implements Closeable {
      * Deserializes from a ByteBuffer.
      *
      * @param expression the expression that creates the IntegerValue object.
+     * @param binaryValueType the type of the binary value to deserialize to.
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the IntegerValue.
+     *
+     * @throws XPathException if an error occurs constructing a BinaryValue.
      */
     public static BinaryValue deserialize(@Nullable final Expression expression, final BinaryValueType binaryValueType, final ByteBuffer buf) throws XPathException {
         final int dataLen = ByteConversion.byteToIntH(buf);

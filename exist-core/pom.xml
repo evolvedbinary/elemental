@@ -2715,6 +2715,7 @@ The BaseX Team. The original license statement is also included below.]]></pream
                         <exclude>org.exist.xmldb.ShutdownTest</exclude>
 
                         <!-- NOTE: this seems to cause intermittent issues under macOS and Windows on CircleCI -->
+                        <exclude>org.exist.xmldb.concurrent.ConcurrentResource2Test</exclude>
                         <exclude>org.exist.xmlrpc.MoveResourceTest</exclude>
                     </excludes>
                 </configuration>

@@ -65,27 +65,42 @@ public interface VariableByteInput {
      * Read a single byte and return as an int value.
      * 
      * @return the byte value as int or -1 if no more bytes are available.
-     * @throws IOException in case of an I/O error
+     *
+     * @throws IOException in case of an I/O error.
      */
     int read() throws IOException;
 
     /**
      * Fill the provided byte array with data from the input.
      * 
-     * @param data the buffer to read
+     * @param data the buffer to write data to.
+     *
+     * @return the number of bytes written to the buffer.
+     *
      * @throws IOException in case of an I/O error
-     * @return the number of bytes read
      */
     int read(byte[] data) throws IOException;
-    
-    int read(byte b[], int off, int len) throws IOException;
+
+    /**
+     * Fill the provided byte array with data from the input.
+     *
+     * @param data the buffer to write data to.
+     * @param off the offset in the buffer to start writing at.
+     * @param len the maximum number of bytes to write into the buffer.
+     *
+     * @return the number of bytes written to the buffer.
+     *
+     * @throws IOException in case of an I/O error.
+     */
+    int read(byte data[], int off, int len) throws IOException;
     
     /**
      * Returns a value &gt; 0 if more bytes can be read
      * from the input.
      *
-     * @throws IOException in case of an I/O error
-     * @return the number of bytes available
+     * @return the number of bytes available.
+     *
+     * @throws IOException in case of an I/O error.
      */
     int available() throws IOException;
     
@@ -93,16 +108,18 @@ public interface VariableByteInput {
      * Read a single byte. Throws EOFException if no
      * more bytes are available.
      *
-     * @throws IOException in case of an I/O error
-     * @return the byte read
+     * @return the byte read.
+     *
+     * @throws IOException in case of an I/O error.
      */
     byte readByte() throws IOException;
 
     /**
      * Read a short value in variable byte encoding.
      *
-     * @throws IOException in case of an I/O error
-     * @return the short read
+     * @return the short read.
+     *
+     * @throws IOException in case of an I/O error.
      */
     short readShort() throws IOException;
 
@@ -112,14 +129,17 @@ public interface VariableByteInput {
      * Requires 2 bytes.
      *
      * @return the short.
+     *
+     * @throws IOException in case of an I/O error.
      */
     short readFixedShort() throws IOException;
 
     /**
      * Read an integer value in variable byte encoding.
      *
-     * @throws IOException in case of an I/O error
-     * @return the int read
+     * @return the int read.
+     *
+     * @throws IOException in case of an I/O error.
      */
     int readInt() throws IOException;
 
@@ -129,14 +149,17 @@ public interface VariableByteInput {
      * Requires 4 bytes.
      *
      * @return the int.
+     *
+     * @throws IOException in case of an I/O error.
      */
     int readFixedInt() throws IOException;
     
     /**
      * Read a long value in variable byte encoding.
      *
-     * @throws IOException in case of an I/O error
-     * @return the long read
+     * @return the long read.
+     *
+     * @throws IOException in case of an I/O error.
      */
     long readLong() throws IOException;
 
@@ -146,42 +169,44 @@ public interface VariableByteInput {
      * Requires 8 bytes.
      *
      * @return the long.
+     *
+     * @throws IOException in case of an I/O error.
      */
     long readFixedLong() throws IOException;
 
     /**
      * Read a big integer in variable byte encoding.
      *
-     * @throws IOException in case of an I/O error
+     * @return the big integer read.
      *
-     * @return the big integer read
+     * @throws IOException in case of an I/O error.
      */
     BigInteger readBigInteger() throws IOException;
 
     /**
      * Read a fixed size big integer from input.
      *
-     * @throws IOException in case of an I/O error
+     * @return the big integer read.
      *
-     * @return the big integer read
+     * @throws IOException in case of an I/O error.
      */
     BigInteger readFixedBigInteger() throws IOException;
 
     /**
      * Read a big decimal in variable byte encoding.
      *
-     * @throws IOException in case of an I/O error
+     * @return the big decimal read.
      *
-     * @return the big decimal read
+     * @throws IOException in case of an I/O error.
      */
     BigDecimal readBigDecimal() throws IOException;
 
     /**
      * Read a fixed size big decimal from input.
      *
-     * @throws IOException in case of an I/O error
+     * @return the big decimal read.
      *
-     * @return the big decimal read
+     * @throws IOException in case of an I/O error.
      */
     BigDecimal readFixedBigDecimal() throws IOException;
 
@@ -189,26 +214,36 @@ public interface VariableByteInput {
      * Read a string as UTF-8 encoded bytes from the input.
      *
      * @return the string.
+     *
+     * @throws IOException in case of an I/O error.
      */
     String readUTF() throws IOException;
 
     /**
-     * Read the following count numeric values from the input
-     * and drop them.
+     * Skip over a number of numeric values from.
      * 
-     * @param count the number of bytes to skip
-     * @throws IOException in case of an I/O error
+     * @param count the number of numeric values to skip.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void skip(int count) throws IOException;
 
+    /**
+     * Skip over a number of bytes.
+     *
+     * @param count the number of bytes to skip.
+     *
+     * @throws IOException in case of an I/O error.
+     */
     void skipBytes(long count) throws IOException;
     
     /**
      * Copy the next numeric value from the input to the
      * specified output stream.
      * 
-     * @param output the output destination to copy the data to
-     * @throws IOException in case of an I/O error
+     * @param output the output destination to copy the data to.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void copyTo(VariableByteOutput output) throws IOException;
 
@@ -216,13 +251,22 @@ public interface VariableByteInput {
      * Copy the count next numeric values from the input to
      * the specified output stream.
      * 
-     * @param os the output destination to copy the data to
-     * @param count the number of bytes to copy
-     * @throws IOException in case of an I/O error
+     * @param os the output destination to copy the data to.
+     * @param count the number of bytes to copy.
+     *
+     * @throws IOException in case of an I/O error.
      */
     void copyTo(VariableByteOutput os, int count)
             throws IOException;
-    
+
+    /**
+     * Copy bytes from the input to the specified output stream.
+     *
+     * @param os the output destination to copy the data to.
+     * @param bytes the number of bytes to copy.
+     *
+     * @throws IOException in case of an I/O error.
+     */
     void copyRaw(VariableByteOutput os, int bytes)
     	throws IOException;
 }

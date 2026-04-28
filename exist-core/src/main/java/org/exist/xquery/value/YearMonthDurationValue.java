@@ -271,7 +271,10 @@ public class YearMonthDurationValue extends OrderedDurationValue {
      *  byte[...] VBE BigInteger encoded month
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
+    @Override
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(37)) {
 
@@ -292,7 +295,10 @@ public class YearMonthDurationValue extends OrderedDurationValue {
      *  byte[...] VBE BigInteger encoded month
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
+    @Override
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
 
@@ -308,6 +314,9 @@ public class YearMonthDurationValue extends OrderedDurationValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the YearMonthDurationValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a YearMonthDurationValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
