@@ -169,6 +169,8 @@ public class GYearValue extends AbstractDateTimeValue {
      * 6 bytes where: [0-3 (Year), 4-5 (Timezone)]
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final ByteBuffer buf = ByteBuffer.allocate(SERIALIZED_SIZE);
@@ -198,6 +200,8 @@ public class GYearValue extends AbstractDateTimeValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the GYearValue.
+     *
+     * @throws XPathException if an error occurs constructing a GYearValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws XPathException {
         final int year = ByteConversion.byteToIntH(buf);

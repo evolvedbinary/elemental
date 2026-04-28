@@ -629,6 +629,8 @@ public class DecimalValue extends NumericValue {
      *  byte[...] the big decimal byte[] value
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         final byte[] data = value.unscaledValue().toByteArray();
@@ -651,6 +653,8 @@ public class DecimalValue extends NumericValue {
      *  byte[...] the big decimal byte[] value
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
@@ -664,6 +668,9 @@ public class DecimalValue extends NumericValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the DecimalValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a DecimalValue.
      */
     public static DecimalValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);

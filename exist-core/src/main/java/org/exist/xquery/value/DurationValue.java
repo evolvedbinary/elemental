@@ -478,6 +478,8 @@ public class DurationValue extends ComputableValue {
      *  byte[...] VBE BigDecimal encoded seconds
      *
      * @return the serialized data.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public byte[] serialize() throws IOException {
         try (final VariableByteArrayOutputStream vbos = new VariableByteArrayOutputStream(37)) {
@@ -523,6 +525,8 @@ public class DurationValue extends ComputableValue {
      *  byte[...] VBE BigDecimal encoded seconds
      *
      * @param buf the ByteBuffer to serialize to.
+     *
+     * @throws IOException if an I/O error occurs during serialization.
      */
     public void serialize(final ByteBuffer buf) throws IOException {
         final VariableByteBufferOutput vbb = new VariableByteBufferOutput(buf);
@@ -543,6 +547,9 @@ public class DurationValue extends ComputableValue {
      * @param buf the ByteBuffer to deserialize from.
      *
      * @return the DurationValue.
+     *
+     * @throws IOException if an I/O error occurs during deserialization.
+     * @throws XPathException if an error occurs constructing a DurationValue.
      */
     public static AtomicValue deserialize(@Nullable final Expression expression, final ByteBuffer buf) throws IOException, XPathException {
         final VariableByteBufferInput vbbi = new VariableByteBufferInput(buf);
