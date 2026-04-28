@@ -65,6 +65,16 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+        <xs:element name="default-collection" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Values for the Default Collection of the Dynamic Context</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="sx:sequence"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="properties" minOccurs="0">
           <xs:annotation>
             <xs:documentation>Properties to pass to the Serializer.</xs:documentation>
