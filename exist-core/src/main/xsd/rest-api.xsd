@@ -35,6 +35,13 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="text" type="xs:string"/>
+                <xs:element name="context-item" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element ref="sx:value"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="variables" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
