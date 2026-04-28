@@ -65,6 +65,8 @@ package org.exist.start;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -284,10 +286,11 @@ public class Main {
             if (existHomeDir.isPresent() && Files.exists(existHomeDir.get().resolve(CONFIG_DIR_NAME))) {
                 log4jConfigurationFile = existHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve("log4j2.xml"));
             }
+        }
 
-            if (log4jConfigurationFile.isPresent() && Files.isReadable(log4jConfigurationFile.get())) {
-                System.setProperty(PROP_LOG4J_CONFIGURATION_FILE, log4jConfigurationFile.get().toAbsolutePath().toString());
-            }
+        // (fix for windows machine)Always normalise to a file: URI so Log4j2 can resolve it on all platforms (including Windows)
+        if (log4jConfigurationFile.isPresent() && Files.isReadable(log4jConfigurationFile.get())) {
+            System.setProperty(PROP_LOG4J_CONFIGURATION_FILE, log4jConfigurationFile.get().toAbsolutePath().toUri().toString());
         }
 
         if (log4jConfigurationFile.isPresent()) {
