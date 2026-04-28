@@ -2318,6 +2318,7 @@
                                 <exclude>src/main/java/org/exist/xupdate/Update.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/XUpdateTest.java</exclude>
+                                <exclude>src/main/resources/xyz/elemental/mediatype/media-type-aliases.xml</exclude>
                                 <exclude>src/main/resources/xyz/elemental/mediatype/media-type-mappings.xml</exclude>
                                 <exclude>src/main/resources/xyz/elemental/mediatype/mime.types</exclude>
                                 <?license-section end?>
@@ -2498,6 +2499,7 @@ The original license statement is also included below.]]></preamble>
                             <includes>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeService.java</include>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeUtil.java</include>
+                                <include>src/main/resources/xyz/elemental/mediatype/media-type-aliases.xml</include>
                                 <include>src/main/resources/xyz/elemental/mediatype/media-type-mappings.xml</include>
                                 <include>src/main/resources/xyz/elemental/mediatype/mime.types</include>
                             </includes>

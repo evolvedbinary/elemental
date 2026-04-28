@@ -379,9 +379,15 @@ public abstract class AbstractRestoreHandler extends DefaultHandler {
             listener.warn("Missing mimetype attribute in the backup __contents__.xml file for: " + commonAttributes.name + ", assuming: " + mediaType);
         } else {
             mediaType = mediaTypeResolver.fromString(mediaTypeStr.trim());
-            if (xmlType && mediaType.getStorageType() != StorageType.XML) {
-                mediaType = MediaTypeImpl.builder(mediaTypeStr.trim(), StorageType.XML).build();
-            } else if ((!xmlType) && mediaType.getStorageType() != StorageType.BINARY) {
+            if (mediaType != null) {
+                if (xmlType && mediaType.getStorageType() != StorageType.XML) {
+                    mediaType = MediaTypeImpl.builder(mediaTypeStr.trim(), StorageType.XML).build();
+                } else if ((!xmlType) && mediaType.getStorageType() != StorageType.BINARY) {
+                    mediaType = MediaTypeImpl.builder(mediaTypeStr.trim(), StorageType.BINARY).build();
+                }
+            } else {
+                // could not find a MediaType for the mediaTypeStr - this could mean we are missing a Media Type in mime.types or media-type-aliases.xml
+                listener.warn("Could not find MediaType for: " + mediaTypeStr + " when restoring: " + is.getSymbolicPath() + ". Document will be stored as a binary document.");
                 mediaType = MediaTypeImpl.builder(mediaTypeStr.trim(), StorageType.BINARY).build();
             }
         }
