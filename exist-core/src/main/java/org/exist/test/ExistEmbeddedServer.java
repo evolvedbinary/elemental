@@ -52,6 +52,8 @@ public class ExistEmbeddedServer extends ExternalResource {
 
     private static final Logger LOG =  LogManager.getLogger(ExistEmbeddedServer.class);
 
+    public static final String USE_TEMPORARY_STORAGE_PROPERTY = "exist.use-temporary-storage";
+
     private final Optional<String> instanceName;
     private final Optional<Path> configFile;
     private final Optional<Properties> configProperties;
@@ -141,7 +143,8 @@ public class ExistEmbeddedServer extends ExternalResource {
                 }
             });
 
-            if (useTemporaryStorage) {
+            final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
+            if (useTemporaryStorage || propUseTemporaryStorage) {
                 if (!temporaryStorage.isPresent()) {
                     this.temporaryStorage = Optional.of(Files.createTempDirectory("org.exist.test.ExistEmbeddedServer"));
                 }
@@ -196,7 +199,8 @@ public class ExistEmbeddedServer extends ExternalResource {
             // clear instance variables
             pool = null;
 
-            if(useTemporaryStorage && temporaryStorage.isPresent() && clearTemporaryStorage) {
+            final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
+            if((useTemporaryStorage || propUseTemporaryStorage) && temporaryStorage.isPresent() && clearTemporaryStorage) {
                 FileUtils.deleteQuietly(temporaryStorage.get());
                 temporaryStorage = Optional.empty();
             }
