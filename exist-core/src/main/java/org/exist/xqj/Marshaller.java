@@ -253,7 +253,8 @@ public class Marshaller {
         if (!SEQ_ELEMENT.equals(parser.getLocalName())) {
             throw new XMLStreamException("Root element should be a " + SEQ_ELEMENT_PREFIXED_NAME);
         }
-        final ValueSequence result = new ValueSequence();
+
+        Sequence result = Sequence.EMPTY_SEQUENCE;
         while ((event = parser.next()) != XMLStreamConstants.END_DOCUMENT) {
             switch (event) {
                 case XMLStreamConstants.START_ELEMENT :
@@ -277,6 +278,10 @@ public class Marshaller {
                             item = streamToDOM(type, parser, null);
                         } else {
                             item = new StringValue(null, parser.getElementText()).convertTo(type);
+                        }
+
+                        if (result == Sequence.EMPTY_SEQUENCE) {
+                            result = new ValueSequence();
                         }
                         result.add(item);
                     }
@@ -310,10 +315,14 @@ public class Marshaller {
     }
 
     private static Sequence demarshallValues(final XQueryContext context, final NodeImpl node) throws XMLStreamException, XPathException {
-        final ValueSequence result = new ValueSequence();
         final InMemoryNodeSet sxValues = new InMemoryNodeSet();
         node.selectChildren(new NameTest(Type.ELEMENT, VALUE_ELEMENT_QNAME), sxValues);
 
+        if (sxValues.isEmpty()) {
+            return Sequence.EMPTY_SEQUENCE;
+        }
+
+        final ValueSequence result = new ValueSequence(sxValues.size());
         for (final SequenceIterator itSxValue = sxValues.iterate(); itSxValue.hasNext();) {
             final ElementImpl sxValue = (ElementImpl) itSxValue.nextItem();
             final Item item = demarshallValue(context, sxValue);
