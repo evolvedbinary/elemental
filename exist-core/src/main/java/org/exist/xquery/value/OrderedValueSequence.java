@@ -212,7 +212,9 @@ public class OrderedValueSequence extends AbstractSequence {
 //		FastQSort.sort(items, 0, count - 1);
 
         Arrays.parallelSort(items, 0, count);
+
         Arrays.stream(items, 0, count).parallel().forEach(Entry::clear);
+        encounteredPrimitiveTypesForOrderSpecs.forEach(BitSet::clear);
     }
 
     @Override
@@ -408,7 +410,6 @@ public class OrderedValueSequence extends AbstractSequence {
     }
 
     private static class Entry implements Comparable<Entry> {
-        private final List<BitSet> encounteredPrimitiveTypesForOrderSpecs;
         private final List<OrderSpec> orderSpecs;
         private Item item;
         private final int pos;
@@ -417,13 +418,11 @@ public class OrderedValueSequence extends AbstractSequence {
         /**
          * Private constructor, use {@link #create(List, List, Item, int, Sequence)} instead.
          *
-         * @param encounteredPrimitiveTypesForOrderSpecs a list of bitset which will be populated with the primitive type of each value in the entry of each orderspec
          * @param item the item in the sequence.
          * @param position the original position of the item in the result sequence.
          * @param values the values for the entry.
          */
-        private Entry(final List<BitSet> encounteredPrimitiveTypesForOrderSpecs, final List<OrderSpec> orderSpecs, final Item item, final int position, final List<AtomicValue> values) {
-            this.encounteredPrimitiveTypesForOrderSpecs = encounteredPrimitiveTypesForOrderSpecs;
+        private Entry(final List<OrderSpec> orderSpecs, final Item item, final int position, final List<AtomicValue> values) {
             this.orderSpecs = orderSpecs;
             this.item = item;
             this.pos = position;
@@ -474,7 +473,7 @@ public class OrderedValueSequence extends AbstractSequence {
                 }
             }
 
-            return new Entry(encounteredPrimitiveTypesForOrderSpecs, orderSpecs, item, position, values);
+            return new Entry(orderSpecs, item, position, values);
         }
 
         @Override
@@ -555,10 +554,7 @@ public class OrderedValueSequence extends AbstractSequence {
         }
 
         public void clear() {
-            for (final BitSet encounteredPrimitiveTypesForOrderSpec : encounteredPrimitiveTypesForOrderSpecs) {
-                encounteredPrimitiveTypesForOrderSpec.clear();
-            }
-            values = null;
+            this.values = null;
         }
     }
 
