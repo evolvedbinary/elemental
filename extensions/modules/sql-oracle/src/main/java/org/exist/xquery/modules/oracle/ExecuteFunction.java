@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -65,16 +89,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * eXist Oracle Module Extension ExecuteFunction
+ * eXist-db Oracle Module Extension ExecuteFunction
  * 
  * Execute a PL/SQL stored procedure within an Oracle RDBMS.
  * 
  * @author <a href="mailto:robert.walpole@metoffice.gov.uk">Robert Walpole</a>
  * @serial 2009-03-23
  * @version 1.0
- * 
- * @see org.exist.xquery.BasicFunction#BasicFunction(org.exist.xquery.XQueryContext,
- *      org.exist.xquery.FunctionSignature)
  */
 public class ExecuteFunction extends BasicFunction {
 		
@@ -124,17 +145,17 @@ public class ExecuteFunction extends BasicFunction {
     private final static String TYPE_ATTRIBUTE_NAME = "type";
     private final static String POSITION_ATTRIBUTE_NAME = "pos";
     
-    private DateFormat xmlDf;
+    private final DateFormat xmlDf;
 
 	/**
      * ExecuteFunction Constructor
      *
-     * @param context
-     *            The Context of the calling XQuery
+     * @param context The Context of the calling XQuery.
+	 * @param signature The signature of the function
      */
-    public ExecuteFunction( XQueryContext context, FunctionSignature signature ) {
-        super( context, signature );
-        xmlDf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    public ExecuteFunction(final XQueryContext context, final FunctionSignature signature)  {
+        super(context, signature);
+        this.xmlDf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
     }
     
 	@Override
@@ -372,12 +393,13 @@ public class ExecuteFunction extends BasicFunction {
 	}
 	
 	/**
-	 * Release DB resources
-	 * @param connection
-	 * @param statement
-	 * @param rs
+	 * Release DB resources.
+	 *
+	 * @param connection the database connection.
+	 * @param statement the query statement.
+	 * @param rs the query results.
 	 */
-	protected void release(Connection connection, Statement statement, ResultSet rs) {
+	protected void release(final Connection connection, final Statement statement, final ResultSet rs) {
 		if (rs != null) {
 			try {
 				rs.close();
