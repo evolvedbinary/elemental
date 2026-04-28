@@ -107,7 +107,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.AttributesImpl;
-import org.xml.sax.helpers.XMLFilterImpl;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.MediaTypeResolver;
 
@@ -339,13 +338,10 @@ public class RESTServer {
             }
         }
         final String _var = getParameter(request, Variables);
-        List /*<Namespace>*/ namespaces = null;
         ElementImpl variables = null;
         try {
             if (_var != null) {
-                final NamespaceExtractor nsExtractor = new NamespaceExtractor();
-                variables = parseXML(broker.getBrokerPool(), _var, nsExtractor);
-                namespaces = nsExtractor.getNamespaces();
+                variables = parseXML(broker.getBrokerPool(), _var);
             }
         } catch (final SAXException e) {
             final XPathException x = new XPathException(variables != null ? variables.getExpression() : null, e.toString());
@@ -439,7 +435,7 @@ public class RESTServer {
         if (query != null) {
             // query parameter specified, search method does all the rest of the work
             try {
-                search(broker, transaction, query, path, namespaces, variables, howmany, start, typed, outputProperties,
+                search(broker, transaction, query, path, null, variables, howmany, start, typed, outputProperties,
                         wrap, cache, request, response);
 
             } catch (final XPathException e) {
@@ -796,8 +792,7 @@ public class RESTServer {
 
             try {
                 final String content = getRequestContent(request);
-                final NamespaceExtractor nsExtractor = new NamespaceExtractor();
-                final ElementImpl root = parseXML(broker.getBrokerPool(), content, nsExtractor);
+                final ElementImpl root = parseXML(broker.getBrokerPool(), content);
                 final String rootNS = root.getNamespaceURI();
 
                 if (rootNS != null && rootNS.equals(Namespaces.EXIST_NS)) {
@@ -905,7 +900,7 @@ public class RESTServer {
                     if (query != null) {
 
                         try {
-                            search(broker, transaction, query, path, nsExtractor.getNamespaces(), variables,
+                            search(broker, transaction, query, path, null, variables,
                                     howmany, start, typed, outputProperties,
                                     enclose, cache, request, response);
                         } catch (final XPathException e) {
@@ -1002,22 +997,19 @@ public class RESTServer {
         }
     }
 
-    private ElementImpl parseXML(final BrokerPool pool, final String content,
-            final NamespaceExtractor nsExtractor)
-            throws SAXException, IOException {
+    private ElementImpl parseXML(final BrokerPool pool, final String content) throws SAXException, IOException {
         final InputSource src = new InputSource(new StringReader(content));
         final XMLReaderPool parserPool = pool.getParserPool();
         XMLReader reader = null;
         try {
             reader = parserPool.borrowXMLReader();
             final SAXAdapter adapter = new SAXAdapter((Expression) null);
-            nsExtractor.setContentHandler(adapter);
+
+            reader.setContentHandler(adapter);
             reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
-            nsExtractor.setParent(reader);
-            nsExtractor.parse(src);
+            reader.parse(src);
 
             final Document doc = adapter.getDocument();
-
             return (ElementImpl) doc.getDocumentElement();
         } finally {
             if (reader != null) {
@@ -1026,41 +1018,13 @@ public class RESTServer {
         }
     }
 
-    private class NamespaceExtractor extends XMLFilterImpl {
-
-        final List<Namespace> namespaces = new ArrayList<>();
-
-        @Override
-        public void startPrefixMapping(final String prefix, final String uri)
-            throws SAXException {
-            if (!Namespaces.EXIST_NS.equals(uri)) {
-                final Namespace ns = new Namespace(prefix, uri);
-                namespaces.add(ns);
-            }
-            super.startPrefixMapping(prefix, uri);
-        }
-
-        public List<Namespace> getNamespaces() {
-            return namespaces;
-        }
-    }
-
     public static class Namespace {
-
-        private final String prefix;
-        private final String uri;
+        final String prefix;
+        final String uri;
 
         public Namespace(final String prefix, final String uri) {
             this.prefix = prefix;
             this.uri = uri;
-        }
-
-        public String getPrefix() {
-            return prefix;
-        }
-
-        public String getUri() {
-            return uri;
         }
     }
 
@@ -1347,11 +1311,11 @@ public class RESTServer {
      * @throws XPathException if the XQuery raises an error
      */
     protected void search(final DBBroker broker, final Txn transaction, final String query,
-        final String path, final List<Namespace> namespaces,
-        final ElementImpl variables, final int howmany, final int start,
-        final boolean typed, final Properties outputProperties,
-        final boolean wrap, final boolean cache,
-        final HttpServletRequest request,
+        final String path, @Nullable final List<Namespace> namespaces,
+        @Nullable final ElementImpl variables, final int howmany,
+        final int start, final boolean typed,
+        final Properties outputProperties, final boolean wrap,
+        final boolean cache, final HttpServletRequest request,
         final HttpServletResponse response) throws BadRequestException,
         PermissionDeniedException, XPathException {
 
@@ -1453,15 +1417,13 @@ public class RESTServer {
         }
     }
 
-    private void declareNamespaces(final XQueryContext context,
-        final List<Namespace> namespaces) throws XPathException {
-
+    private void declareNamespaces(final XQueryContext context, @Nullable final List<Namespace> namespaces) throws XPathException {
         if (namespaces == null) {
             return;
         }
 
         for (final Namespace ns : namespaces) {
-            context.declareNamespace(ns.getPrefix(), ns.getUri());
+            context.declareNamespace(ns.prefix, ns.uri);
         }
     }
 
