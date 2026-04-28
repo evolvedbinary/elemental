@@ -166,16 +166,27 @@ public class Configuration implements ErrorHandler
             // firstly, try to read the configuration from a file within the
             // classpath
             try {
-                is = Configuration.class.getClassLoader().getResourceAsStream(configFilename);
 
-                if(is != null) {
-                    LOG.info("Reading configuration from classloader");
+                // 1. we try the root of the class hierarchy
+                is = Configuration.class.getClassLoader().getResourceAsStream(configFilename);
+                if (is != null) {
                     configFilePath = Optional.of(Paths.get(Configuration.class.getClassLoader().getResource(configFilename).toURI()));
+                    LOG.info("Reading configuration from Class Loader: " + configFilePath.get());
                 }
-            } catch(final Exception e) {
+
+                if (is == null) {
+                    // 2. we try the package org.exist.util
+                    is = Configuration.class.getResourceAsStream(configFilename);
+                    if (is != null) {
+                        configFilePath = Optional.of(Paths.get(Configuration.class.getResource(configFilename).toURI()));
+                        LOG.info("Reading configuration from Classpath org.exist.util: " + configFilePath.get());
+                    }
+                }
+
+            } catch (final Exception e) {
                 // EB: ignore and go forward, e.g. in case there is an absolute
                 // file name for configFileName
-                LOG.debug( e );
+                LOG.debug(e);
             }
 
             // otherwise, secondly try to read configuration from file. Guess the
