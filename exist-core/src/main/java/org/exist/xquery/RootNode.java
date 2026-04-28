@@ -72,7 +72,7 @@ public class RootNode extends Step {
         }
 
         // second, check if a context item is declared
-        final ContextItemDeclaration decl = context.getContextItemDeclartion();
+        final ContextItemDeclaration decl = context.getContextItemDeclaration();
         if (decl != null) {
             final Sequence seq = decl.eval(null, null);
             if (!seq.isEmpty()) {
