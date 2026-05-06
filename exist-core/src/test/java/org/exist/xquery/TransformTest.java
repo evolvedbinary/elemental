@@ -95,6 +95,50 @@ public class TransformTest {
                 "<p>End Template 1</p>" +
                 "</doc>", result);
     }
+
+    @Test
+    public void transformWithSameDirectoryImportViaDbLocation() throws XMLDBException {
+        final String query =
+            "import module namespace transform='http://exist-db.org/xquery/transform';\n" +
+            "let $xml := <empty/>\n" +
+            "let $xsl := '/db/" + TEST_COLLECTION_NAME + "/same-dir/a.xsl'\n" +
+            "return transform:transform($xml, $xsl, ())";
+        final String result = execQuery(query);
+        assertEquals("<doc><p>From A</p><p>From B</p></doc>", result);
+    }
+
+    @Test
+    public void transformWithSameDirectoryImportViaXmldbLocation() throws XMLDBException {
+        final String query =
+            "import module namespace transform='http://exist-db.org/xquery/transform';\n" +
+            "let $xml := <empty/>\n" +
+            "let $xsl := 'xmldb:exist:///db/" + TEST_COLLECTION_NAME + "/same-dir/a.xsl'\n" +
+            "return transform:transform($xml, $xsl, ())";
+        final String result = execQuery(query);
+        assertEquals("<doc><p>From A</p><p>From B</p></doc>", result);
+    }
+
+    @Test
+    public void transformWithSameDirectoryImportViaDbNode() throws XMLDBException {
+        final String query =
+            "import module namespace transform='http://exist-db.org/xquery/transform';\n" +
+            "let $xml := <empty/>\n" +
+            "let $xsl := doc('/db/" + TEST_COLLECTION_NAME + "/same-dir/a.xsl')\n" +
+            "return transform:transform($xml, $xsl, ())";
+        final String result = execQuery(query);
+        assertEquals("<doc><p>From A</p><p>From B</p></doc>", result);
+    }
+
+    @Test
+    public void transformWithSameDirectoryImportViaXmldbNode() throws XMLDBException {
+        final String query =
+            "import module namespace transform='http://exist-db.org/xquery/transform';\n" +
+            "let $xml := <empty/>\n" +
+            "let $xsl := doc('xmldb:exist:///db/" + TEST_COLLECTION_NAME + "/same-dir/a.xsl')\n" +
+            "return transform:transform($xml, $xsl, ())";
+        final String result = execQuery(query);
+        assertEquals("<doc><p>From A</p><p>From B</p></doc>", result);
+    }
     
     
     private String execQuery(String query) throws XMLDBException {
@@ -171,6 +215,31 @@ public class TransformTest {
         addXMLDocument(xsl1, doc1, "1.xsl");
         addXMLDocument(xsl2, doc2, "2.xsl");
         addXMLDocument(xsl3, doc3, "3.xsl");
+
+        service =
+                testCollection.getService(
+                    CollectionManagementService.class);
+
+        Collection sameDir = service.createCollection("same-dir");
+        assertNotNull(sameDir);
+
+        String docA = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n"+
+        "<xsl:import href='b.xsl'/>\n" +
+        "<xsl:template match='/'>" +
+        "<doc><p>From A</p><xsl:call-template name='from-b'/></doc>" +
+        "</xsl:template>" +
+        "</xsl:stylesheet>";
+
+        String docB = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n"+
+        "<xsl:template name='from-b'>" +
+        "<p>From B</p>" +
+        "</xsl:template>" +
+        "</xsl:stylesheet>";
+
+        addXMLDocument(sameDir, docA, "a.xsl");
+        addXMLDocument(sameDir, docB, "b.xsl");
     }
 
     @After
