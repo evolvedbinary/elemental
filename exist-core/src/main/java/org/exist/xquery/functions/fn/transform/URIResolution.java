@@ -56,8 +56,13 @@ public class URIResolution {
         if (relativeURI.isAbsolute()) {
             return relative;
         }
-        var baseURI = new URI(base.getStringValue() );
+        var baseURI = new URI(base.getStringValue());
         if (!baseURI.isAbsolute()) {
+            var basePath = base.getStringValue();
+            if (basePath.startsWith("/")) {
+                var baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+                return new AnyURIValue(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + baseDir + relative.getStringValue());
+            }
             return relative;
         }
         try {

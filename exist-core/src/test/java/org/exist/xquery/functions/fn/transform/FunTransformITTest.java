@@ -58,6 +58,35 @@ import static org.junit.Assert.*;
  */
 public class FunTransformITTest {
 
+    private static final XmldbURI TEST_IMPORT_XSLT_COLLECTION = XmldbURI.create("/db/fn-transform-import-test");
+    private static final XmldbURI IMPORT_A_XSLT_NAME = XmldbURI.create("a.xsl");
+    private static final XmldbURI IMPORT_B_XSLT_NAME = XmldbURI.create("b.xsl");
+
+    private static final String IMPORT_A_XSLT =
+        "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">\n" +
+        "  <xsl:import href=\"b.xsl\"/>\n" +
+        "  <xsl:template match=\"/\">\n" +
+        "    <doc><p>From A</p><xsl:call-template name=\"from-b\"/></doc>\n" +
+        "  </xsl:template>\n" +
+        "</xsl:stylesheet>";
+
+    private static final String IMPORT_B_XSLT =
+        "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">\n" +
+        "  <xsl:template name=\"from-b\"><p>From B</p></xsl:template>\n" +
+        "</xsl:stylesheet>";
+
+    private static final String SAME_DIR_IMPORT_QUERY =
+        "fn:transform(map {\n" +
+        "  \"stylesheet-location\": \"xmldb:exist:///db/fn-transform-import-test/a.xsl\",\n" +
+        "  \"source-node\": document { <empty/> }\n" +
+        "})?output";
+
+    private static final String SAME_DIR_IMPORT_VIA_NODE_QUERY =
+        "fn:transform(map {\n" +
+        "  \"stylesheet-node\": doc(\"xmldb:exist:///db/fn-transform-import-test/a.xsl\"),\n" +
+        "  \"source-node\": document { <empty/> }\n" +
+        "})?output";
+
     private static final XmldbURI TEST_IDENTITY_XSLT_COLLECTION = XmldbURI.create("/db/transform-identity-test");
     private static final XmldbURI IDENTITY_XSLT_NAME = XmldbURI.create("xsl-identity.xslt");
 
@@ -143,6 +172,26 @@ public class FunTransformITTest {
     @ClassRule
     public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
 
+    /**
+     * Tests that fn:transform can resolve a relative xsl:import (same directory)
+     * when the stylesheet is given as a URI location.
+     */
+    @Test
+    public void sameDirectoryImportViaLocation() throws XPathException, PermissionDeniedException, EXistException {
+        final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
+        expectQuery(SAME_DIR_IMPORT_QUERY, expected);
+    }
+
+    /**
+     * Tests that fn:transform can resolve a relative xsl:import (same directory)
+     * when the stylesheet is given as a node loaded from the database.
+     */
+    @Test
+    public void sameDirectoryImportViaNode() throws XPathException, PermissionDeniedException, EXistException {
+        final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
+        expectQuery(SAME_DIR_IMPORT_VIA_NODE_QUERY, expected);
+    }
+
     @Test
     public void identityPersistentDom() throws XPathException, PermissionDeniedException, EXistException {
         final Source expected = Input.fromString(IDENTITY_XML).build();
@@ -210,6 +259,11 @@ public class FunTransformITTest {
             createCollection(broker, transaction, TEST_IDENTITY_XSLT_COLLECTION,
                 Tuple(IDENTITY_XSLT_NAME, IDENTITY_XSLT),
                 Tuple(IDENTITY_XML_NAME, IDENTITY_XML)
+            );
+
+            createCollection(broker, transaction, TEST_IMPORT_XSLT_COLLECTION,
+                Tuple(IMPORT_A_XSLT_NAME, IMPORT_A_XSLT),
+                Tuple(IMPORT_B_XSLT_NAME, IMPORT_B_XSLT)
             );
 
             transaction.commit();
