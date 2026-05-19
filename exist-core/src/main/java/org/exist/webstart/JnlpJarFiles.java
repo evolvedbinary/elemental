@@ -83,6 +83,8 @@ public class JnlpJarFiles {
             "commons-io-%latest%",
             "commons-logging-%latest%",
             "commons-pool-%latest%",
+            "elemental-media-type-api-%latest%",
+            "elemental-media-type-impl-%latest%",
             "jargo-%latest%",
             "bcprov-jdk18on-%latest%",
             "fastutil-%latest%-min",
