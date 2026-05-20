@@ -64,7 +64,7 @@ import java.util.*;
  *
  * @author Wolf
  */
-public class ArrayType extends FunctionReference implements Lookup.LookupSupport {
+public class ArrayType extends FunctionReference implements Iterable<Sequence>, Lookup.LookupSupport {
 
     // the signature of the function which is evaluated if the map is called as a function item
     private static final FunctionSignature ACCESSOR =
@@ -265,6 +265,11 @@ public class ArrayType extends FunctionReference implements Lookup.LookupSupport
     public Sequence[] toArray() {
         final Sequence[] array = new Sequence[vector.length()];
         return (Sequence[]) RT.seqToPassedArray(vector.seq(), array);
+    }
+
+    @Override
+    public Iterator<Sequence> iterator() {
+        return new SeqIterator<>(vector.seq());
     }
 
     public int getSize() {

@@ -47,6 +47,7 @@ package org.exist.test;
 
 import org.exist.EXistException;
 import org.exist.TestUtils;
+import org.exist.source.StringSource;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.xmldb.EXistCollection;
@@ -199,8 +200,7 @@ public class ExistXmldbEmbeddedServer extends ExternalResource {
 
 
     public ResourceSet executeQuery(final String query) throws XMLDBException {
-        final CompiledExpression compiledQuery = xpathQueryService.compile(query);
-        return xpathQueryService.execute(compiledQuery);
+       return xpathQueryService.execute(new StringSource(query));
     }
 
     public ResourceSet executeQuery(final String query, final Map<String, Object> externalVariables)

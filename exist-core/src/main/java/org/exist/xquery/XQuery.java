@@ -51,6 +51,7 @@ import antlr.collections.AST;
 
 import java.io.*;
 import java.text.NumberFormat;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -71,11 +72,16 @@ import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
+import org.exist.xquery.functions.array.ArrayType;
+import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.parser.XQueryLexer;
 import org.exist.xquery.parser.XQueryParser;
 import org.exist.xquery.parser.XQueryTreeParser;
 import org.exist.xquery.util.ExpressionDumper;
+import org.exist.xquery.value.BinaryValue;
+import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
+import org.exist.xquery.value.SequenceIterator;
 
 import javax.annotation.Nullable;
 
@@ -431,6 +437,7 @@ public class XQuery {
             context.getProfiler().traceQueryStart();
             broker.getBrokerPool().getProcessMonitor().queryStarted(context.getWatchDog());
 
+            @Nullable Sequence result = null;
             FunctionCall call = null;
             try {
 
@@ -441,7 +448,6 @@ public class XQuery {
                     }
                 }
 
-                final Sequence result;
                 if (expression instanceof LibraryModuleRoot) {
                     if (functionCall == null) {
                         if (expression != null) {
@@ -486,11 +492,13 @@ public class XQuery {
                 broker.getBrokerPool().getProcessMonitor().queryCompleted(context.getWatchDog());
                 expression.reset();
 
-                if (call != null) {
+                if(call != null) {
                     call.reset();
                 }
 
-                if(resetContext) {
+                runCleanupTasks(context, result);
+
+                if (resetContext) {
                     context.reset();
                 }
             }
@@ -518,12 +526,6 @@ public class XQuery {
         final XQueryContext context = new XQueryContext(broker.getBrokerPool());
         final CompiledXQuery compiled = compile(context, expression);
         return execute(broker, compiled, contextSequence);
-        // NOTE(AR) we might consider the below cleanup, but what if a binary value is needed from the result sequence?
-//        try {
-//            return execute(broker, compiled, contextSequence);
-//        } finally {
-//            context.runCleanupTasks();
-//        }
     }
 
     /**
@@ -542,11 +544,112 @@ public class XQuery {
         final XQueryContext context = new XQueryContext(broker.getBrokerPool());
         final CompiledXQuery compiled = compile(context, new FileSource(file.toPath(), true));
         return execute(broker, compiled, contextSequence);
-        // NOTE(AR) we might consider the below cleanup, but what if a binary value is needed from the result sequence?
-//        try {
-//            return execute(broker, compiled, contextSequence);
-//        } finally {
-//            context.runCleanupTasks();
-//        }
+    }
+
+    /**
+     * Runs cleanup tasks after query execution to free any resources that are no longer needed.
+     *
+     * @param xqueryContext the XQuery Context.
+     * @param queryResult the result Sequence of the Query.
+     */
+    private static void runCleanupTasks(final XQueryContext xqueryContext, @Nullable final Sequence queryResult) {
+        if (queryResult == null) {
+            // There are no results produced by the query, so we can cleanup everything
+            xqueryContext.runCleanupTasks();
+
+        } else {
+            // There are results produced, so we can only cleanup resources that don't appear in the result sequence
+            cleanupOrphanedValues(xqueryContext, queryResult);
+        }
+    }
+
+    /**
+     * Runs cleanup tasks that cleanup items that do not appear in the Query Result.
+     * At present the only items that may need to be cleaned up are BinaryValue types.
+     *
+     * @param xqueryContext the XQuery Context.
+     * @param queryResult the result Sequence of the Query.
+     */
+    private static void cleanupOrphanedValues(final XQueryContext xqueryContext, final Sequence queryResult) {
+        xqueryContext.runCleanupTasks(false, false, clazz -> clazz.equals(XQueryContext.BinaryValueCleanupTask.class), obj -> {
+            if (obj instanceof BinaryValue) {
+                final boolean hasReference = sequenceHasItemReference(queryResult, obj);
+                return !hasReference;
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * Checks if a Sequence contains an Item.
+     * The check is performed by reference equality.
+     *
+     * @param sequence the Sequence to inspect.
+     * @param itemReference The item to look for by reference.
+     *
+     * @return true if the sequence contains the item, false otherwise.
+     */
+    private static boolean sequenceHasItemReference(final Sequence sequence, final Object itemReference) {
+        if (sequence instanceof MapType) {
+            return itemHasItemReference((MapType) sequence, itemReference);
+        }
+
+        if (sequence instanceof ArrayType) {
+            return itemHasItemReference((ArrayType) sequence, itemReference);
+        }
+
+        try {
+            final SequenceIterator itItem = sequence.iterate();
+            while (itItem.hasNext()) {
+                final Item item = itItem.nextItem();
+                if (itemHasItemReference(item, itemReference)) {
+                    return true;
+                }
+            }
+        } catch (final XPathException e) {
+            // no-op
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if an Item matches an Item (by reference equality).
+     * If the Item is a Map or Array, we also checks its members (recursively).
+     *
+     * @param item the Item to inspect.
+     * @param itemReference The item to look for by reference.
+     *
+     * @return true if the Item matches or contains the Item reference, false otherwise.
+     */
+    private static boolean itemHasItemReference(final Item item, final Object itemReference) {
+        if (item == itemReference) {
+            return true;
+        }
+
+        if (item instanceof MapType) {
+            final MapType mapType = (MapType) item;
+            final Iterator<Sequence> itMapValues = mapType.valueIterator();
+            while (itMapValues.hasNext()) {
+                final Sequence mapValue = itMapValues.next();
+                if (sequenceHasItemReference(mapValue, itemReference)) {
+                    return true;
+                }
+            }
+        }
+
+        if (item instanceof ArrayType) {
+            final ArrayType arrayType = (ArrayType) item;
+            final Iterator<Sequence> itArrayValues = arrayType.iterator();
+            while (itArrayValues.hasNext()) {
+                final Sequence arrayValue = itArrayValues.next();
+                if (sequenceHasItemReference(arrayValue, itemReference)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
