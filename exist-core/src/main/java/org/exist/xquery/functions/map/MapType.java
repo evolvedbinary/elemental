@@ -333,6 +333,15 @@ public class MapType extends AbstractMapType {
         return map.iterator();
     }
 
+    /**
+     * Get an iterator over the values in the Map.
+     *
+     * @return an iterator over the values in the map.
+     */
+    public Iterator<Sequence> valueIterator() {
+        return map.values().iterator();
+    }
+
     @Override
     public AtomicValue key() {
         if (map.size() > 0) {

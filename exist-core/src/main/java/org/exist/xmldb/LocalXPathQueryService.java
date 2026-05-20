@@ -70,7 +70,6 @@ import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
-import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.w3c.dom.Node;

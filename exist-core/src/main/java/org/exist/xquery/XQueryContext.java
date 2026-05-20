@@ -3471,7 +3471,7 @@ public class XQueryContext implements BinaryValueManager, Context {
     }
 
     /**
-     * Cleanup Task which is responsible for relasing the streams
+     * Cleanup Task which is responsible for releasing the streams
      * of any {@link BinaryValue} which have been used during
      * query execution
      */
@@ -3603,7 +3603,19 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     @Override
     public void runCleanupTasks(final Predicate<Object> predicate) {
-        if (importedContextsCleanupTasksFns != null) {
+        runCleanupTasks(true, true, (clazz) -> true, predicate);
+    }
+
+    /**
+     * Run cleanup tasks.
+     *
+     * @param runImportedContextsCleanupTasks true if cleanup tasks for imported contexts should be run.
+     * @param clearCleanupTasks true if after cleanup tasks have run they should be cleared.
+     * @param cleanupTaskFilter a predicate to selectively choose which cleanup tasks are run.
+     * @param predicate a predicate to determine what objects should be cleaned up by the cleanup tasks.
+     */
+    public void runCleanupTasks(final boolean runImportedContextsCleanupTasks, final boolean clearCleanupTasks, final Predicate<Class<? extends CleanupTask>> cleanupTaskFilter, final Predicate<Object> predicate) {
+        if (runImportedContextsCleanupTasks && importedContextsCleanupTasksFns != null) {
             for (final Consumer<Predicate<Object>> importedContextsCleanupTasksFn : importedContextsCleanupTasksFns) {
                 importedContextsCleanupTasksFn.accept(predicate);
             }
@@ -3611,15 +3623,20 @@ public class XQueryContext implements BinaryValueManager, Context {
         }
 
         for (final CleanupTask cleanupTask : cleanupTasks) {
-            try {
-                cleanupTask.cleanup(this, predicate);
-            } catch (final Throwable t) {
-                LOG.error("Cleaning up XQueryContext: Ignoring: {}", t.getMessage(), t);
+            if (cleanupTaskFilter.test(cleanupTask.getClass())) {
+                try {
+                    cleanupTask.cleanup(this, predicate);
+                } catch (final Throwable t) {
+                    LOG.error("Cleaning up XQueryContext: Ignoring: {}", t.getMessage(), t);
+                }
             }
         }
-        // now it is safe to clear the cleanup tasks list as we know they have run
-        // do not move this anywhere else
-        cleanupTasks.clear();
+
+        if (clearCleanupTasks) {
+            // now it is safe to clear the cleanup tasks list as we know they have run
+            // do not move this anywhere else
+            cleanupTasks.clear();
+        }
     }
 
     @Immutable

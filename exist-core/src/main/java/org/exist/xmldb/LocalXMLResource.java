@@ -84,6 +84,7 @@ import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.AtomicValue;
+import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
@@ -222,6 +223,24 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             });
             return content;
         }
+    }
+
+    /**
+     * Allows access to the underlying XDM typed value.
+     * Should be used sparingly!
+     *
+     * @return the Underlying Xdm value.
+     */
+    public @Nullable Item getContentAsXdm() {
+        if (root instanceof NodeValue) {
+            return (NodeValue) root;
+        }
+
+        if (value != null) {
+            return value;
+        }
+
+        return null;
     }
 
     private String serialize(final DBBroker broker, final ConsumerE<Serializer, SAXException> toSaxFunction) throws SAXException, IOException {

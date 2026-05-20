@@ -1112,6 +1112,7 @@
                                 <include>src/test/java/org/exist/util/io/ByteArrayContentTest.java</include>
                                 <include>src/main/java/org/exist/util/io/ContentFile.java</include>
                                 <include>src/main/java/org/exist/util/io/ContentFilePoolObjectFactory.java</include>
+                                <include>src/main/java/org/exist/util/io/FilterInputStreamCacheMonitor.java</include>
                                 <include>src/test/java/org/exist/util/io/FilterInputStreamCacheMonitorTest.java</include>
                                 <include>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</include>
                                 <include>src/main/java/org/exist/util/io/VirtualTempPath.java</include>
@@ -1926,6 +1927,7 @@
                                 <exclude>src/test/java/org/exist/util/io/ByteArrayContentTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/io/ContentFile.java</exclude>
                                 <exclude>src/main/java/org/exist/util/io/ContentFilePoolObjectFactory.java</exclude>
+                                <exclude>src/main/java/org/exist/util/io/FilterInputStreamCacheMonitor.java</exclude>
                                 <exclude>src/test/java/org/exist/util/io/FilterInputStreamCacheMonitorTest.java</exclude>
                                 <exclude>src/test/java/org/exist/util/io/OverflowToDiskStreamTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/io/VirtualTempPath.java</exclude>
