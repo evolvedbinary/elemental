@@ -218,15 +218,13 @@ public class ExtCollection extends Function {
             }
 
             if (docs == null || docs.getDocumentCount() == 0) {
-                return Sequence.EMPTY_SEQUENCE;
+                return items;
             }
 
             if (items == null) {
                 items = new ValueSequence(docs.getDocumentCount());
-            } else {
-                addAll(docs, items);
             }
-
+            addAll(docs, items);
             return items;
         }
     }
