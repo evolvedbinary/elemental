@@ -46,15 +46,17 @@
 package org.exist.xquery.functions.fn;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.cglib.proxy.Callback;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.InvocationHandlerAdapter;
+import net.bytebuddy.matcher.ElementMatchers;
 import net.sf.saxon.Configuration;
 import net.sf.saxon.om.Item;
 import net.sf.saxon.regex.RegexIterator;
@@ -80,22 +82,18 @@ import javax.xml.XMLConstants;
 public class FunAnalyzeString extends BasicFunction {
 
     /**
-     * Implements a cglib MethodInterceptor to implement the `characters`
+     * Implements a ByteBuddy Invocation Handler to implement the `characters`
      * method of Saxon 9's net.sf.saxon.regex.RegexIterator$MatchHandler
      * and Saxon 12's net.sf.saxon.regex.RegexMatchHandler
      */
-    private static final MethodInterceptor CHARACTERS_INTERCEPTOR = (final Object obj, final Method method, final Object[] args, final MethodProxy proxy) -> {
-        if ("characters".equals(method.getName())) {
-            final MemTreeBuilder builder = ((AbstractSaxonRegexMatchHandler) obj).builder;
-            builder.characters(args[0].toString());
-            return null;
-        }
-        return proxy.invokeSuper(obj, args);
+    private static final InvocationHandler CHARACTERS_HANDLER = (final Object proxy, final Method method, final Object[] args) -> {
+        final MemTreeBuilder builder = ((AbstractSaxonRegexMatchHandler) proxy).builder;
+        final Object s = args[0];
+        builder.characters(s.toString());
+        return null;
     };
 
-    @SuppressWarnings("unchecked")
-    private static final Class<? extends AbstractSaxonRegexMatchHandler> SAXON_MATCH_HANDLER_CLASS = createSaxonMatchHandlerClass();
-    private static final Constructor<? extends AbstractSaxonRegexMatchHandler> SAXON_MATCH_HANDLER_CLASS_CONSTRUCTOR = getSaxonMatchHandlerClassConstructor(SAXON_MATCH_HANDLER_CLASS);
+    private static final Constructor<? extends AbstractSaxonRegexMatchHandler> SAXON_MATCH_HANDLER_CLASS_CONSTRUCTOR = getSaxonMatchHandlerClassConstructor(createSaxonMatchHandlerClass());
     private static final Method SAXON_PROCESS_MATCHING_SUBSTRING_FN = getSaxonProcessMatchingSubstringFunction();
 
     private final static QName fnAnalyzeString = new QName("analyze-string", FnModule.NAMESPACE_URI);
@@ -217,15 +215,10 @@ public class FunAnalyzeString extends BasicFunction {
         builder.startElement(QN_MATCH, null);
 
         try {
-            Enhancer.registerCallbacks(SAXON_MATCH_HANDLER_CLASS, new Callback[]{ CHARACTERS_INTERCEPTOR });
-            try {
-                final AbstractSaxonRegexMatchHandler matchHandler = SAXON_MATCH_HANDLER_CLASS_CONSTRUCTOR.newInstance(builder);
-                SAXON_PROCESS_MATCHING_SUBSTRING_FN.invoke(regexIterator, matchHandler);
-            } finally {
-                Enhancer.registerCallbacks(SAXON_MATCH_HANDLER_CLASS, null);
-            }
+            final AbstractSaxonRegexMatchHandler matchHandler = SAXON_MATCH_HANDLER_CLASS_CONSTRUCTOR.newInstance(builder);
+            SAXON_PROCESS_MATCHING_SUBSTRING_FN.invoke(regexIterator, matchHandler);
         } catch (final InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new net.sf.saxon.trans.XPathException("Unable to dynamically invoke net.sf.saxon.regex.RegexIterator#processMatchingSubstring: " + e.getMessage(), e);
+            throw new net.sf.saxon.trans.XPathException("Unable to dynamically invoke net.sf.saxon.regex.RegexIterator#processMatchingSubsOkay,tring: " + e.getMessage(), e);
         }
 
         builder.endElement();
@@ -287,13 +280,17 @@ public class FunAnalyzeString extends BasicFunction {
         return createSaxonMatchHandlerClass(matchHandlerInterfaceClazz);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxonMatchHandlerClass(final Class<?> saxonMatchHandlerInterface) {
-        final Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(AbstractSaxonRegexMatchHandler.class);
-        enhancer.setInterfaces(new Class[]{saxonMatchHandlerInterface});
-        enhancer.setCallbackType(MethodInterceptor.class);
-        return (Class<? extends AbstractSaxonRegexMatchHandler>) enhancer.createClass();
+    private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxonMatchHandlerClass(final Class<?> saxonMatchHandlerInterface) throws IllegalStateException{
+        try (final DynamicType.Unloaded<AbstractSaxonRegexMatchHandler> unloadedAbstractSaxonRegexMatchHandler = new ByteBuddy().subclass(AbstractSaxonRegexMatchHandler.class)
+                .implement(saxonMatchHandlerInterface)
+                .method(ElementMatchers.named("characters"))
+                .intercept(InvocationHandlerAdapter.of(CHARACTERS_HANDLER))
+                .make()) {
+
+            return unloadedAbstractSaxonRegexMatchHandler
+                    .load(AbstractSaxonRegexMatchHandler.class.getClassLoader(), ClassLoadingStrategy.Default.INJECTION)
+                    .getLoaded();
+        }
     }
 
     /**

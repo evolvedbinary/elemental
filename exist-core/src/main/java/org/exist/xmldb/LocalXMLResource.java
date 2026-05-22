@@ -45,9 +45,27 @@
  */
 package org.exist.xmldb;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.stream.Stream;
+
+import javax.annotation.Nullable;
+import javax.xml.transform.TransformerException;
+
 import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.evolvedbinary.j8fu.tuple.Tuple3;
-import net.sf.cglib.proxy.*;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.implementation.InvocationHandlerAdapter;
+import net.bytebuddy.matcher.ElementMatchers;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
@@ -72,24 +90,16 @@ import org.exist.xquery.value.Type;
 import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.*;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import xyz.elemental.mediatype.MediaType;
-
-import javax.annotation.Nullable;
-import javax.xml.transform.TransformerException;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.stream.Stream;
-
-import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Local implementation of XMLResource.
@@ -281,20 +291,32 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             throw new IllegalArgumentException("Provided node does not implement org.w3c.dom");
         }
 
-        final Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(domClazz.get());
-        final Class[] interfaceClasses;
-        if (node instanceof StoredNode) {
-            interfaceClasses = new Class[]{domClazz.get(), StoredNodeIdentity.class};
-        } else if (node instanceof org.exist.dom.memtree.NodeImpl) {
-            interfaceClasses = new Class[]{domClazz.get(), MemtreeNodeIdentity.class};
-        } else {
-            interfaceClasses = new Class[] { domClazz.get() };
-        }
-        enhancer.setInterfaces(interfaceClasses);
-        enhancer.setCallback(new DOMMethodInterceptor(node));
+        DynamicType.Builder<? extends Node> byteBuddyBuilder = new ByteBuddy()
+                .subclass(domClazz.get());
 
-        return (Node)enhancer.create();
+        // these interfaces are just used to flag the node type (persistent or memtree) to make
+        // the implementation of {@link DOMMethodInterceptor} simpler.
+        if (node instanceof StoredNode) {
+            byteBuddyBuilder = byteBuddyBuilder.implement(StoredNodeIdentity.class);
+        } else if (node instanceof org.exist.dom.memtree.NodeImpl) {
+            byteBuddyBuilder = byteBuddyBuilder.implement(MemtreeNodeIdentity.class);
+        }
+
+        byteBuddyBuilder = byteBuddyBuilder
+                .method(ElementMatchers.any())
+                .intercept(InvocationHandlerAdapter.of(new DOMMethodInterceptor(node)));
+
+        try {
+            final Node nodeProxy = byteBuddyBuilder
+                    .make()
+                    .load(getClass().getClassLoader())
+                    .getLoaded()
+                    .getDeclaredConstructor().newInstance();
+
+            return nodeProxy;
+        } catch (final NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
     }
 
     private Optional<Class<? extends Node>> getW3cNodeInterface(final Class<? extends Node> nodeClazz) {
@@ -304,7 +326,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                 .map(c -> (Class<? extends Node>)c);
     }
 
-    private class DOMMethodInterceptor implements MethodInterceptor {
+    public class DOMMethodInterceptor implements InvocationHandler {
         private final Node node;
 
         public DOMMethodInterceptor(final Node node) {
@@ -312,7 +334,9 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
         }
 
         @Override
-        public Object intercept(final Object obj, final Method method, final Object[] args, final MethodProxy proxy) throws Throwable {
+        public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+
+
             /*
                 NOTE(AR): we have to take special care of eXist-db's
                 persistent and memtree DOM's node equality.
@@ -333,9 +357,9 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
              */
             Object domResult = null;
             if(method.getName().equals("equals")
-                    && obj instanceof StoredNodeIdentity
+                    && proxy instanceof StoredNodeIdentity
                     && args.length == 1 && args[0] instanceof StoredNodeIdentity) {
-                final StoredNodeIdentity ni1 = ((StoredNodeIdentity) obj);
+                final StoredNodeIdentity ni1 = ((StoredNodeIdentity) proxy);
                 final StoredNodeIdentity ni2 = ((StoredNodeIdentity) args[0]);
 
                 final Optional<Boolean> niEquals = ni1.getNodeId().flatMap(n1id -> ni2.getNodeId().map(n1id::equals));
@@ -343,9 +367,9 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                     domResult = niEquals.get();
                 }
             } else if(method.getName().equals("equals")
-                        && obj instanceof MemtreeNodeIdentity
+                        && proxy instanceof MemtreeNodeIdentity
                         && args.length == 1 && args[0] instanceof MemtreeNodeIdentity) {
-                    final MemtreeNodeIdentity ni1 = ((MemtreeNodeIdentity) obj);
+                    final MemtreeNodeIdentity ni1 = ((MemtreeNodeIdentity) proxy);
                     final MemtreeNodeIdentity ni2 = ((MemtreeNodeIdentity) args[0]);
 
                     final Optional<Boolean> niEquals = ni1.getNodeId().flatMap(n1id -> ni2.getNodeId().map(n2id -> n1id._1 == n2id._1 && n1id._2 == n2id._2 && n1id._3 == n2id._3));
@@ -353,12 +377,12 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                         domResult = niEquals.get();
                     }
             } else if(method.getName().equals("getNodeId")) {
-                if (obj instanceof StoredNodeIdentity
-                        && args.length == 0
+                if (proxy instanceof StoredNodeIdentity
+                        && (args == null || args.length == 0)
                         && node instanceof StoredNode) {
                     domResult = Optional.of(((StoredNode) node).getNodeId());
-                } else if (obj instanceof MemtreeNodeIdentity
-                        && args.length == 0
+                } else if (proxy instanceof MemtreeNodeIdentity
+                        && (args == null || args.length == 0)
                         && node instanceof org.exist.dom.memtree.NodeImpl) {
                     final org.exist.dom.memtree.NodeImpl memtreeNode = (org.exist.dom.memtree.NodeImpl) node;
                     domResult = Optional.of(Tuple(memtreeNode.getOwnerDocument(), memtreeNode.getNodeNumber(), memtreeNode.getNodeType()));
@@ -399,7 +423,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
      * Used by {@link DOMMethodInterceptor} to
      * help with equality of persistent DOM nodes.
      */
-    private interface StoredNodeIdentity {
+    public interface StoredNodeIdentity {
         Optional<NodeId> getNodeId();
     }
 
@@ -407,7 +431,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
      * Used by {@link DOMMethodInterceptor} to
      * help with equality of memtree DOM nodes.
      */
-    private interface MemtreeNodeIdentity {
+    public interface MemtreeNodeIdentity {
         Optional<Tuple3<DocumentImpl, Integer, Short>> getNodeId();
     }
 
