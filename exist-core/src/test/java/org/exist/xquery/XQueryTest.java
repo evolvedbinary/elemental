@@ -722,11 +722,10 @@ public class XQueryTest {
         query = "let $v as document-node() :=  doc('" + XmldbURI.ROOT_COLLECTION + "/test/" + NUMBERS_XML + "') \n" + "return $v";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
             assertEquals("XQuery: " + query, 1, result.getSize());
-            //TODO : no way to test the node type ?
-            //assertEquals( "XQuery: " + query, Node.DOCUMENT_NODE, ((XMLResource)result.getResource(0)));
             try (final XMLResource resource = (XMLResource) result.getResource(0)) {
                 final Node n = resource.getContentAsDOM();
                 assertTrue(n instanceof Document);
+                assertEquals("XQuery: " + query, Node.DOCUMENT_NODE, n.getNodeType());
                 assertEquals("XQuery: " + query, "test", ((Document) n).getDocumentElement().getNodeName());
             }
         }
@@ -904,33 +903,37 @@ public class XQueryTest {
         }
         assertTrue(exceptionThrown);
 
-        //TODO : uncomment when PI are OK
-
-        /*
         query = "let $a := <x>a<?foo ?>c</x>/self::processing-instruction('foo') return <z>{$a}</z>";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
             assertEquals( "XQuery: " + query, 1, result.getSize() );
-            assertEquals( "XQuery: " + query, "<z/>", ((XMLResource)result.getResource(0)).getContent());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("XQuery: " + query, "<z/>", resource.getContent());
+            }
         }
 
         query = "let $a := <x>a<?foo ?>c</x>/parent::processing-instruction('foo') return <z>{$a}</z>";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
             assertEquals( "XQuery: " + query, 1, result.getSize() );
-            assertEquals( "XQuery: " + query, "<z/>", ((XMLResource)result.getResource(0)).getContent());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("XQuery: " + query, "<z/>", resource.getContent());
+            }
         }
 
         query = "let $a := <x>a<?foo ?>c</x>/ancestor::processing-instruction('foo') return <z>{$a}</z>";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
             assertEquals( "XQuery: " + query, 1, result.getSize() );
-            assertEquals( "XQuery: " + query, "<z/>", ((XMLResource)result.getResource(0)).getContent());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("XQuery: " + query, "<z/>", resource.getContent());
+            }
         }
 
         query = "let $a := <x>a<?foo ?>c</x>/ancestor-or-self::processing-instruction('foo') return <z>{$a}</z>";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
             assertEquals( "XQuery: " + query, 1, result.getSize() );
-            assertEquals( "XQuery: " + query, "<z/>", ((XMLResource)result.getResource(0)).getContent());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("XQuery: " + query, "<z/>", resource.getContent());
+            }
         }
-        */
 
 //			This one is intercepted by the parser
         query = "let $a := <x>a<?foo ?>c</x>/attribute::processing-instruction('foo') return <z>{$a}</z>";
@@ -1501,13 +1504,12 @@ public class XQueryTest {
         boolean exceptionThrown = false;
         String message = "";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            //TODO : to be decided !
-            //assertTrue(exceptionThrown);
             assertEquals(0, result.getSize());
         } catch (final XMLDBException e) {
             exceptionThrown = true;
             message = e.getMessage();
         }
+        assertFalse(message, exceptionThrown);
 
         query = "doc-available('" + XmldbURI.ROOT_COLLECTION + "/test/" + NUMBERS_XML + "')";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
@@ -1867,11 +1869,10 @@ public class XQueryTest {
         message = "";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
             // needed to make sure that result is closed
-        } catch (final XMLDBException e) {
-            message = e.getMessage();
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("bar", resource.getContent());
+            }
         }
-        //TODO : how toserialize this resultand get the error ? -pb
-        //assertTrue(message.indexOf("XQDY0025") > -1);
     }
 
     /** CAUTION side effect on field xml
@@ -1943,9 +1944,7 @@ public class XQueryTest {
         }
     }
 
-    //TODO : understand this test and make sure that the expected result is correct
-    //expected:<3> but was:<2>
-    @Ignore
+    @Ignore("Understand this test and make sure that the expected result is correct - expected:<3> but was:<2>")
     @Test
     public void xupdateAttributesAndElements() throws XMLDBException {
         final String query =
@@ -2616,7 +2615,6 @@ public class XQueryTest {
     /**
      * <a href="http://sourceforge.net/support/tracker.php?aid=2871975">http://sourceforge.net/support/tracker.php?aid=2871975</a>
      */
-    @Ignore
     @Test
     public void stringOfEmptySequenceWithExplicitContext_2871975() throws XMLDBException {
         // OK
