@@ -87,7 +87,7 @@ public class JnlpJarFiles {
             "elemental-media-type-impl-%latest%",
             "jargo-%latest%",
             "bcprov-jdk18on-%latest%",
-            "fastutil-%latest%-min",
+            "fastutil-%latest%",
             "j8fu-%latest%",
             "jackson-core-%latest%",
             "jcip-annotations-%latest%",
