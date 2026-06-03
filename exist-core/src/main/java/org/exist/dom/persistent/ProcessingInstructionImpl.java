@@ -55,6 +55,8 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 import org.w3c.dom.ProcessingInstruction;
 
+import javax.annotation.Nullable;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -148,13 +150,10 @@ public class ProcessingInstructionImpl extends NamedNode<ProcessingInstructionIm
         this.data = data;
     }
 
-    /**
-     * ? @see org.w3c.dom.Node#getBaseURI()
-     */
     @Override
-    public String getBaseURI() {
-        final StoredNode parent = getParentStoredNode();
-        if(parent != null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final StoredNode parent = getParentStoredNode();
+        if (parent != null) {
             return parent.getBaseURI();
         } else {
             return getOwnerDocument().getBaseURI();

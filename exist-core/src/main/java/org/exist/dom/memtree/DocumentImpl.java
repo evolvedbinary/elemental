@@ -1657,26 +1657,28 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Document {
     }
 
     @Override
-    public String getBaseURI() {
-        final Element el = getDocumentElement();
-        if(el != null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final Element el = getDocumentElement();
+        if (el != null) {
             final String baseURI = getDocumentElement().getAttributeNS(Namespaces.XML_NS, "base");
-            if(baseURI != null) {
+            if (!baseURI.isEmpty()) {
                 return baseURI;
             }
         }
-        final String docURI = getDocumentURI();
-        if(docURI != null) {
+
+        @Nullable final String docURI = getDocumentURI();
+        if (docURI != null) {
             return docURI;
         } else {
-            if(context!=null && context.isBaseURIDeclared()) {
+            if (context != null && context.isBaseURIDeclared()) {
                 try {
                     return context.getBaseURI().getStringValue();
-                } catch(final XPathException e) {
-                    //TODO : make something !
+                } catch (final XPathException e) {
+                    // no-op
                 }
             }
-            return XmldbURI.EMPTY_URI.toString();
+
+            return null;
         }
     }
 
