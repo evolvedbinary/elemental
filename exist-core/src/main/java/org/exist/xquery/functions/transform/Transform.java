@@ -181,7 +181,11 @@ public class Transform extends BasicFunction {
 
         // Parameter 1 & 2
         final Sequence inputNode = args[0];
-        final Item stylesheetItem = args[1].itemAt(0);
+        Item stylesheetItem = args[1].itemAt(0);
+        if (stylesheetItem instanceof StringValue sv && sv.toString().startsWith("/db/")) {
+            // adjust /db like URI to xmldb:exist:///db/ like URI
+            stylesheetItem = new StringValue(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + sv.toString().substring(3));
+        }
 
         // Parse 3rd parameter
         final Node options = args[2].isEmpty() ? null : ((NodeValue) args[2].itemAt(0)).getNode();
