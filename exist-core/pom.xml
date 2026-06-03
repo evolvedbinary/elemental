@@ -803,6 +803,7 @@
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/test/resources/standalone-webapp/WEB-INF/web.xml</include>
                                 <include>src/main/xjb/rest-api.xjb</include>
+                                <include>src/test/xquery/base-uri.xql</include>
                                 <include>src/test/xquery/parenthesizedLocationStep.xml</include>
                                 <include>src/test/xquery/tail-recursion.xml</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
@@ -893,6 +894,7 @@
                                 <include>src/main/java/org/exist/dom/QName.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
+                                <include>src/main/java/org/exist/dom/memtree/CommentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</include>
@@ -923,6 +925,7 @@
                                 <include>src/main/java/org/exist/dom/persistent/EmptyNodeSet.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/LockToken.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/NodeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeProxy.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeSet.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/NodeTest.java</include>
@@ -1510,6 +1513,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/test/resources/standalone-webapp/WEB-INF/web.xml</exclude>
                                 <exclude>src/main/xjb/rest-api.xjb</exclude>
+                                <exclude>src/test/xquery/base-uri.xql</exclude>
                                 <exclude>src/test/xquery/binary-value.xqm</exclude>
                                 <exclude>src/test/xquery/instance-of.xqm</exclude>
                                 <exclude>src/test/xquery/operator-mapping.xqm</exclude>
@@ -1612,6 +1616,7 @@
                                 <exclude>src/main/java/org/exist/dom/QName.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/CommentImpl.java</include>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</exclude>
@@ -1650,6 +1655,7 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/EmptyNodeSet.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/LockToken.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/NodeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeProxy.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeSet.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/NodeTest.java</exclude>

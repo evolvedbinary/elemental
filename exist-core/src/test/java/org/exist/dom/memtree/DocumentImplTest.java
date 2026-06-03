@@ -206,6 +206,36 @@ public class DocumentImplTest {
         assertEquals(Namespaces.XHTML_NS, namespaceUri);
     }
 
+    @Test
+    public void getBaseURI_withDocumentURI() throws IOException, SAXException, ParserConfigurationException {
+        final DocumentImpl doc;
+        try(final InputStream is = new UnsynchronizedByteArrayInputStream("<root/>".getBytes(UTF_8))) {
+            doc = parseExist(is);
+        }
+        doc.setDocumentURI("file:///intranet/xsl/template.xsl");
+        assertEquals("file:///intranet/xsl/template.xsl", doc.getBaseURI());
+    }
+
+    @Test
+    public void getBaseURI_prefersXmlBaseOnRoot() throws IOException, SAXException, ParserConfigurationException {
+        final DocumentImpl doc;
+        try(final InputStream is = new UnsynchronizedByteArrayInputStream(
+                "<root xml:base=\"http://example.org/\"/>".getBytes(UTF_8))) {
+            doc = parseExist(is);
+        }
+        doc.setDocumentURI("file:///intranet/xsl/template.xsl");
+        assertEquals("http://example.org/", doc.getBaseURI());
+    }
+
+    @Test
+    public void getBaseURI_noDocumentURI() throws IOException, SAXException, ParserConfigurationException {
+        final DocumentImpl doc;
+        try(final InputStream is = new UnsynchronizedByteArrayInputStream("<root/>".getBytes(UTF_8))) {
+            doc = parseExist(is);
+        }
+        assertNull("", doc.getBaseURI());
+    }
+
     private Document parseXerces(final InputStream is) throws ParserConfigurationException, SAXException, IOException {
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);

@@ -50,6 +50,7 @@ import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -172,7 +173,7 @@ public class FunBaseURI extends BasicFunction {
         final boolean hasContextBaseURI = context.isBaseURIDeclared();
 
         // "" when not set, can be null
-        final String nodeBaseURI = node.getBaseURI();
+        @Nullable final String nodeBaseURI = node.getBaseURI();
         final boolean hasNodeBaseURI = notNullOrEmptyOrWs(nodeBaseURI);
 
         try {

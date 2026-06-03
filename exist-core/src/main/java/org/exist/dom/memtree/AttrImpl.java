@@ -53,6 +53,8 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.*;
 
+import javax.annotation.Nullable;
+
 
 public class AttrImpl extends NodeImpl implements Attr {
 
@@ -90,9 +92,9 @@ public class AttrImpl extends NodeImpl implements Attr {
     }
 
     @Override
-    public String getBaseURI() {
-        final Node parent = document.getNode(document.attrParent[nodeNumber]);
-        if(parent == null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final Node parent = document.getNode(document.attrParent[nodeNumber]);
+        if (parent == null) {
             return null;
         }
         return parent.getBaseURI();

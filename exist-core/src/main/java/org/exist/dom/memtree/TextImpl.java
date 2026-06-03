@@ -24,7 +24,10 @@ package org.exist.dom.memtree;
 import org.exist.xquery.Expression;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.Node;
 import org.w3c.dom.Text;
+
+import javax.annotation.Nullable;
 
 
 public class TextImpl extends AbstractCharacterData implements Text {
@@ -40,6 +43,15 @@ public class TextImpl extends AbstractCharacterData implements Text {
     @Override
     public int getItemType() {
         return Type.TEXT;
+    }
+
+    @Override
+    public @Nullable String getBaseURI() {
+        @Nullable final Node parent = getParentNode();
+        if (parent == null) {
+            return null;
+        }
+        return parent.getBaseURI();
     }
 
     @Override
