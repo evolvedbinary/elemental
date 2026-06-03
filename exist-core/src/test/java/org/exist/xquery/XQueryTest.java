@@ -2578,14 +2578,14 @@ public class XQueryTest {
         ResourceSet result = service.query(query);
 
         assertEquals(1, result.getSize());
-        assertEquals("/db/test/baseuri.xml", result.getResource(0).getContent().toString());
+        assertEquals("xmldb:exist:///db/test/baseuri.xml", result.getResource(0).getContent().toString());
 
         query = "doc('/db/test/baseuri.xml')/Root/Node1/base-uri()";
 
         result = service.query(query);
 
         assertEquals(1, result.getSize());
-        assertEquals("/db/test/baseuri.xml", result.getResource(0).getContent().toString());
+        assertEquals("xmldb:exist:///db/test/baseuri.xml", result.getResource(0).getContent().toString());
 
 
         query = "doc('/db/test/baseuri.xml')/Root/Node1/Node2/base-uri()";
@@ -2593,14 +2593,14 @@ public class XQueryTest {
         result = service.query(query);
 
         assertEquals(1, result.getSize());
-        assertEquals("/db/test/baseuri.xml", result.getResource(0).getContent().toString());
+        assertEquals("xmldb:exist:///db/test/baseuri.xml", result.getResource(0).getContent().toString());
 
         query = "doc('/db/test/baseuri.xml')/Root/Node1/Node2/Node3/base-uri()";
 
         result = service.query(query);
 
         assertEquals(1, result.getSize());
-        assertEquals("/db/test/baseuri.xml", result.getResource(0).getContent().toString());
+        assertEquals("xmldb:exist:///db/test/baseuri.xml", result.getResource(0).getContent().toString());
     }
 
     /**

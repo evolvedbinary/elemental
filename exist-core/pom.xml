@@ -806,6 +806,7 @@
                                 <include>src/test/xquery/base-uri.xql</include>
                                 <include>src/test/xquery/parenthesizedLocationStep.xml</include>
                                 <include>src/test/xquery/tail-recursion.xml</include>
+                                <include>src/test/xquery/indexing/indexes-base-uri.xq</include>
                                 <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/numbers/format-numbers.xql</include>
                                 <include>src/test/xquery/util/util.xml</include>
@@ -894,6 +895,7 @@
                                 <include>src/main/java/org/exist/dom/QName.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
+                                <include>src/main/java/org/exist/dom/memtree/CDATASectionImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/CommentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
@@ -913,6 +915,7 @@
                                 <include>src/test/java/org/exist/dom/persistent/BasicNodeSetTest.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/BinaryDocument.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/CDataIntergationTest.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/CDATASectionImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/CommentImpl.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/CommentTest.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/DefaultDocumentSetTest.java</include>
@@ -1115,6 +1118,7 @@
                                 <include>src/test/java/org/exist/util/CollationsTest.java</include>
                                 <include>src/main/java/org/exist/util/Configuration.java</include>
                                 <include>src/test/java/org/exist/util/DOMSerializerTest.java</include>
+                                <include>src/main/java/org/exist/util/EXistURISchemeURIResolver.java</include>
                                 <include>src/test/java/org/exist/util/LeasableTest.java</include>
                                 <include>src/test/java/org/exist/util/MediaTypeResolverTest.java</include>
                                 <include>src/main/java/org/exist/util/MimeTable.java</include>
@@ -1417,6 +1421,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/validate/JingSchematronTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/validate/JingXsdTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/validation/Shared.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/FunXCollection.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/xmldb/XMLDBGetMimeType.java</include>
@@ -1522,6 +1527,7 @@
                                 <exclude>src/test/xquery/pi.xqm</exclude>
                                 <exclude>src/test/xquery/tail-recursion.xml</exclude>
                                 <exclude>src/test/xquery/type-promotion.xqm</exclude>
+                                <exclude>src/test/xquery/indexing/indexes-base-uri.xq</exclude>
                                 <exclude>src/test/xquery/maps/maps.xqm</exclude>
                                 <exclude>src/test/xquery/numbers/format-numbers.xql</exclude>
                                 <exclude>src/test/xquery/securitymanager/acl.xqm</exclude>
@@ -1616,7 +1622,8 @@
                                 <exclude>src/main/java/org/exist/dom/QName.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
-                                <include>src/main/java/org/exist/dom/memtree/CommentImpl.java</include>
+                                <exclude>src/main/java/org/exist/dom/memtree/CDATASectionImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/memtree/CommentImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</exclude>
@@ -1643,6 +1650,7 @@
                                 <exclude>src/test/java/org/exist/dom/persistent/BasicNodeSetTest.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/BinaryDocument.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/CDataIntergationTest.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/CDATASectionImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/CommentImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/CommentTest.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/DefaultDocumentSetTest.java</exclude>
@@ -1913,6 +1921,7 @@
                                 <exclude>src/test/java/org/exist/util/CollectionOfArrayIteratorTest.java</exclude>
                                 <exclude>src/main/java/org/exist/util/Configuration.java</exclude>
                                 <exclude>src/test/java/org/exist/util/DOMSerializerTest.java</exclude>
+                                <exclude>src/main/java/org/exist/util/EXistURISchemeURIResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/util/IPUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/JREUtil.java</exclude>
                                 <exclude>src/test/java/org/exist/util/LeasableTest.java</exclude>
@@ -2254,6 +2263,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/validate/JingSchematronTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/validate/JingXsdTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/validation/Jaxp.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/validation/Shared.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/AbstractXMLDBTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/xmldb/DbStore2Test.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/xmldb/FunXCollection.java</exclude>
