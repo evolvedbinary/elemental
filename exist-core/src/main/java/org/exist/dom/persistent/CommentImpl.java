@@ -53,6 +53,8 @@ import org.exist.xquery.Expression;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Node;
 
+import javax.annotation.Nullable;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CommentImpl extends AbstractCharacterData<CommentImpl> implements Comment {
@@ -84,6 +86,16 @@ public class CommentImpl extends AbstractCharacterData<CommentImpl> implements C
     @Override
     public String toString() {
         return "<!-- " + cdata.toString() + " -->";
+    }
+
+    @Override
+    public @Nullable String getBaseURI() {
+        @Nullable final Node parent = getParentNode();
+        if (parent != null) {
+            return parent.getBaseURI();
+        } else {
+            return null;
+        }
     }
 
     /**
