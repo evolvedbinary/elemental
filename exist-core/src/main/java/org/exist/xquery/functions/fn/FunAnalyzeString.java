@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.InvocationHandlerAdapter;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -277,14 +278,15 @@ public class FunAnalyzeString extends BasicFunction {
     }
 
     private static Class<? extends AbstractSaxonRegexMatchHandler> createSaxonMatchHandlerClass(final Class<?> saxonMatchHandlerInterface) throws IllegalStateException{
-        try {
-            return new ByteBuddy().subclass(AbstractSaxonRegexMatchHandler.class)
+        try (final DynamicType.Unloaded<AbstractSaxonRegexMatchHandler> unloadedAbstractSaxonRegexMatchHandler = new ByteBuddy().subclass(AbstractSaxonRegexMatchHandler.class)
                 .implement(saxonMatchHandlerInterface)
                 .method(ElementMatchers.named("characters"))
                 .intercept(InvocationHandlerAdapter.of(CHARACTERS_HANDLER))
-                .make()
-                .load(AbstractSaxonRegexMatchHandler.class.getClassLoader(), ClassLoadingStrategy.UsingLookup.of(MethodHandles.privateLookupIn(AbstractSaxonRegexMatchHandler.class, java.lang.invoke.MethodHandles.lookup())))
-                .getLoaded();
+                .make()) {
+
+            return unloadedAbstractSaxonRegexMatchHandler
+                    .load(AbstractSaxonRegexMatchHandler.class.getClassLoader(), ClassLoadingStrategy.UsingLookup.of(MethodHandles.privateLookupIn(AbstractSaxonRegexMatchHandler.class, java.lang.invoke.MethodHandles.lookup())))
+                    .getLoaded();
         } catch (final IllegalAccessException e) {
             throw new IllegalStateException("Unable to obtain lookup for dynamic Saxon Match Handler class: " + e.getMessage(), e);
         }
