@@ -865,6 +865,7 @@
                                 <include>src/main/java/org/exist/dom/QName.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/AttrImpl.java</include>
+                                <include>src/main/java/org/exist/dom/memtree/CommentImpl.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</include>
                                 <include>src/main/java/org/exist/dom/memtree/DocumentImpl.java</include>
                                 <include>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</include>
@@ -896,6 +897,7 @@
                                 <include>src/main/java/org/exist/dom/persistent/LockToken.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/Match.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</include>
+                                <include>src/main/java/org/exist/dom/persistent/NodeImpl.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeProxy.java</include>
                                 <include>src/main/java/org/exist/dom/persistent/NodeSet.java</include>
                                 <include>src/test/java/org/exist/dom/persistent/NodeTest.java</include>
@@ -1576,6 +1578,7 @@
                                 <exclude>src/main/java/org/exist/dom/QName.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AbstractCharacterData.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/AttrImpl.java</exclude>
+                                <include>src/main/java/org/exist/dom/memtree/CommentImpl.java</include>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentBuilderReceiver.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/memtree/DocumentImpl.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/memtree/DocumentImplTest.java</exclude>
@@ -1615,6 +1618,7 @@
                                 <exclude>src/main/java/org/exist/dom/persistent/LockToken.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/Match.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NewArrayNodeSet.java</exclude>
+                                <exclude>src/main/java/org/exist/dom/persistent/NodeImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeProxy.java</exclude>
                                 <exclude>src/main/java/org/exist/dom/persistent/NodeSet.java</exclude>
                                 <exclude>src/test/java/org/exist/dom/persistent/NodeTest.java</exclude>

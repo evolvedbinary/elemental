@@ -60,6 +60,7 @@ import org.exist.util.serializer.AttrList;
 import org.exist.xquery.Expression;
 import org.w3c.dom.*;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -430,9 +431,9 @@ public class AttrImpl extends NamedNode<AttrImpl> implements Attr {
     }
 
     @Override
-    public String getBaseURI() {
-        final Element e = getOwnerElement();
-        if(e != null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final Element e = getOwnerElement();
+        if (e != null) {
             return e.getBaseURI();
         }
         return null;

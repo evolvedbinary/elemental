@@ -61,6 +61,7 @@ import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
 import org.w3c.dom.*;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -619,18 +620,18 @@ public class ElementImpl extends NodeImpl implements Element {
     }
 
     @Override
-    public String getBaseURI() {
-        final XmldbURI baseURI = calculateBaseURI();
-        if(baseURI != null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final XmldbURI baseURI = calculateBaseURI();
+        if (baseURI != null) {
             return baseURI.toString();
         }
 
-        return "";//UNDERSTAND: is it ok?
+        return null;
     }
 
     // NOTE(AR) please keep in sync with org.exist.dom.persistent.ElementImpl
-    private XmldbURI calculateBaseURI() {
-        XmldbURI baseURI = null;
+    private @Nullable XmldbURI calculateBaseURI() {
+        @Nullable XmldbURI baseURI = null;
 
         final String nodeBaseURI = getAttributeNS(Namespaces.XML_NS, "base");
         if (!nodeBaseURI.isEmpty()) {
@@ -648,27 +649,32 @@ public class ElementImpl extends NodeImpl implements Element {
 
         if (parent != -1) {
             if (nodeBaseURI.isEmpty()) {
-                baseURI = ((ElementImpl) document.getNode(parent))
-                    .calculateBaseURI();
+                baseURI = ((ElementImpl) document.getNode(parent)).calculateBaseURI();
             } else {
-                final XmldbURI parentsBaseURI = ((ElementImpl) document.getNode(parent)).calculateBaseURI();
-                if (parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")) {
-                    baseURI = parentsBaseURI.append(baseURI);
+                @Nullable final XmldbURI parentsBaseURI = ((ElementImpl) document.getNode(parent)).calculateBaseURI();
+                if (parentsBaseURI == null) {
+                    baseURI = null;
                 } else {
-                    // there is a filename, remove it
-                    baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
+                    if (parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")) {
+                        baseURI = parentsBaseURI.append(baseURI);
+                    } else {
+                        // there is a filename, remove it
+                        baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
+                    }
                 }
             }
         } else {
-            if (nodeBaseURI.isEmpty()) {
-                return XmldbURI.create(getOwnerDocument().getBaseURI(), false);
+            @Nullable final String docBaseURI = getOwnerDocument().getBaseURI();
+            if (docBaseURI == null) {
+                baseURI = null;
+            } else if (nodeBaseURI.isEmpty()) {
+                baseURI = XmldbURI.create(docBaseURI, false);
             } else if (nodeNumber != 1) {
-                final String docBaseURI = getOwnerDocument().getBaseURI();
                 if (docBaseURI.endsWith("/")) {
-                    baseURI = XmldbURI.create(getOwnerDocument().getBaseURI(), false);
+                    baseURI = XmldbURI.create(docBaseURI, false);
                     baseURI.append(baseURI);
                 } else {
-                    baseURI = XmldbURI.create(getOwnerDocument().getBaseURI(), false);
+                    baseURI = XmldbURI.create(docBaseURI, false);
                     baseURI = baseURI.removeLastSegment();
                     baseURI.append(baseURI);
                 }

@@ -804,7 +804,7 @@ public abstract class NodeImpl<T extends NodeImpl<T>> implements INode<DocumentI
     }
 
     @Override
-    public String getBaseURI() {
+    public @Nullable String getBaseURI() {
         return null;
     }
 
