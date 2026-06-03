@@ -284,10 +284,11 @@ public class Main {
             if (existHomeDir.isPresent() && Files.exists(existHomeDir.get().resolve(CONFIG_DIR_NAME))) {
                 log4jConfigurationFile = existHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve("log4j2.xml"));
             }
+        }
 
-            if (log4jConfigurationFile.isPresent() && Files.isReadable(log4jConfigurationFile.get())) {
-                System.setProperty(PROP_LOG4J_CONFIGURATION_FILE, log4jConfigurationFile.get().toAbsolutePath().toString());
-            }
+        // Always normalise to a file:/ URI so log4j can resolve it on all platforms (especially Windows)
+        if (log4jConfigurationFile.isPresent() && Files.isReadable(log4jConfigurationFile.get())) {
+            System.setProperty(PROP_LOG4J_CONFIGURATION_FILE, log4jConfigurationFile.get().toAbsolutePath().toUri().toString());
         }
 
         if (log4jConfigurationFile.isPresent()) {
@@ -319,12 +320,41 @@ public class Main {
         Thread.currentThread().setContextClassLoader(cl);
 
         // Invoke main class using new classloader.
+        args = cleanupArgs(args);
         try {
             invokeMain(cl, _classname, args);
         } catch (final Exception e) {
             e.printStackTrace();
             throw new StartException(ERROR_CODE_GENERAL);
         }
+    }
+
+    public static String[] cleanupArgs(final String[] args) {
+        if (args == null) {
+            return null;
+        }
+        if (args.length == 0) {
+            return args;
+        }
+
+        final String[] nargs = new String[args.length];
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+
+            if (arg.startsWith("\"") && arg.indexOf('\"', 1) > -1 && (arg.endsWith("conf.xml") || arg.endsWith("log4j2.xml"))) {
+                // String that starts with quote, has a quote somewhere in it, and ends with conf.xml or log4j2.xml - such invalid strings can be produced by startup.bat on Windows
+                arg = arg.replaceAll("\"", "");
+            }
+
+            if (arg.indexOf('\\') != -1 && arg.indexOf('\\') < arg.indexOf('/') && (arg.endsWith("conf.xml") || arg.endsWith("log4j2.xml"))) {
+                // String that contains both '\' path separators followed by `/` path separators, and ends with conf.xml or log4j2.xml - such invalid strings can be produced by startup.bat on Windows
+                arg = arg.replaceAll("/", "\\\\");
+            }
+
+            nargs[i] = arg;
+        }
+
+        return nargs;
     }
 
     private Optional<String> getFromSysPropOrEnv(final String sysPropName, final String envVarName) {
