@@ -2000,18 +2000,18 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     }
 
     @Override
-    public String getBaseURI() {
-        final XmldbURI baseURI = calculateBaseURI();
-        if(baseURI != null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final XmldbURI baseURI = calculateBaseURI();
+        if (baseURI != null) {
             return baseURI.toString();
         }
 
-        return ""; //UNDERSTAND: is it ok?
+        return null;
     }
 
     // NOTE(AR) please keep in sync with org.exist.dom.memtree.ElementImpl
     private XmldbURI calculateBaseURI() {
-        XmldbURI baseURI = null;
+        @Nullable XmldbURI baseURI = null;
 
         final String nodeBaseURI = getAttributeNS(Namespaces.XML_NS, "base");
         if (!nodeBaseURI.isEmpty()) {
@@ -2022,28 +2022,35 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
         }
 
         final IStoredNode<?> parent = getParentStoredNode();
+
         if (parent != null) {
             if (nodeBaseURI.isEmpty()) {
                 baseURI = ((ElementImpl) parent).calculateBaseURI();
             } else {
-                final XmldbURI parentsBaseURI = ((ElementImpl) parent).calculateBaseURI();
-                if (parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")) {
-                    baseURI = parentsBaseURI.append(baseURI);
+                @Nullable final XmldbURI parentsBaseURI = ((ElementImpl) parent).calculateBaseURI();
+                if (parentsBaseURI == null) {
+                    baseURI = null;
                 } else {
-                    // there is a filename, remove it
-                    baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
+                    if (parentsBaseURI.toString().endsWith("/") || !parentsBaseURI.toString().contains("/")) {
+                        baseURI = parentsBaseURI.append(baseURI);
+                    } else {
+                        // there is a filename, remove it
+                        baseURI = parentsBaseURI.removeLastSegment().append(baseURI);
+                    }
                 }
             }
         } else {
-            if (nodeBaseURI.isEmpty()) {
-                return XmldbURI.create(getOwnerDocument().getBaseURI(), false);
+            @Nullable final String docBaseURI = getOwnerDocument().getBaseURI();
+            if (docBaseURI == null) {
+                baseURI = null;
+            } else if (nodeBaseURI.isEmpty()) {
+                baseURI = XmldbURI.create(docBaseURI, false);
             } else {
-                final String docBaseURI = getOwnerDocument().getBaseURI();
                 if (docBaseURI.endsWith("/")) {
-                    baseURI = XmldbURI.create(getOwnerDocument().getBaseURI(), false);
+                    baseURI = XmldbURI.create(docBaseURI, false);
                     baseURI.append(baseURI);
                 } else {
-                    baseURI = XmldbURI.create(getOwnerDocument().getBaseURI(), false);
+                    baseURI = XmldbURI.create(docBaseURI, false);
                     baseURI = baseURI.removeLastSegment();
                     baseURI.append(baseURI);
                 }

@@ -58,6 +58,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 import org.w3c.dom.UserDataHandler;
 
+import javax.annotation.Nullable;
+
 /**
  * TextImpl.java
  *
@@ -175,9 +177,9 @@ public class TextImpl extends AbstractCharacterData<TextImpl> implements Text {
     }
 
     @Override
-    public String getBaseURI() {
-        final Node parent = getParentNode();
-        if(parent != null) {
+    public @Nullable String getBaseURI() {
+        @Nullable final Node parent = getParentNode();
+        if (parent != null) {
             return parent.getBaseURI();
         } else {
             return null;

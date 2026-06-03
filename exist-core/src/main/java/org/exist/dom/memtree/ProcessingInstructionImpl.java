@@ -57,6 +57,8 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 import org.w3c.dom.ProcessingInstruction;
 
+import javax.annotation.Nullable;
+
 
 public class ProcessingInstructionImpl extends NodeImpl implements ProcessingInstruction {
 
@@ -102,37 +104,12 @@ public class ProcessingInstructionImpl extends NodeImpl implements ProcessingIns
     }
 
     @Override
-    public String getBaseURI() {
-        String baseURI = "";
-        int parent = -1;
-        int test = document.getParentNodeFor(nodeNumber);
-
-        if(document.nodeKind[test] != Node.DOCUMENT_NODE) {
-            parent = test;
+    public @Nullable String getBaseURI() {
+        @Nullable final Node parent = getParentNode();
+        if (parent == null) {
+            return null;
         }
-
-        // fixme! Testa med 0/ljo
-        while((parent != -1) && (document.getNode(parent).getBaseURI() != null)) {
-
-            if(baseURI.isEmpty()) {
-                baseURI = document.getNode(parent).getBaseURI();
-            } else {
-                baseURI = document.getNode(parent).getBaseURI() + "/" + baseURI;
-            }
-
-            test = document.getParentNodeFor(parent);
-
-            if(document.nodeKind[test] == Node.DOCUMENT_NODE) {
-                return (baseURI);
-            } else {
-                parent = test;
-            }
-        }
-
-        if(baseURI.isEmpty()) {
-            baseURI = getOwnerDocument().getBaseURI();
-        }
-        return (baseURI);
+        return parent.getBaseURI();
     }
 
     @Override
