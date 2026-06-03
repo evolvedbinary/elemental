@@ -1,4 +1,28 @@
 (:
+ : Elemental
+ : Copyright (C) 2024, Evolved Binary Ltd
+ :
+ : admin@evolvedbinary.com
+ : https://www.evolvedbinary.com | https://www.elemental.xyz
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; version 2.1.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :
+ : NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ :       The original license header is included below.
+ :
+ : =====================================================================
+ :
  : eXist-db Open Source Native XML Database
  : Copyright (C) 2001 The eXist-db Authors
  :
@@ -50,7 +74,7 @@ function but:tearDown() {
 
 declare
     %test:pending("Each test interferes with each other test, we need to figure out how to have but:tearDown called after every test")
-    %test:assertEquals("/db/but/a/data/test.xml", "/db/but/a/data/test.xml", "/db/but/b/data/test.xml")
+    %test:assertEquals("xmldb:exist:///db/but/a/data/test.xml", "xmldb:exist:///db/but/a/data/test.xml", "xmldb:exist:///db/but/b/data/test.xml")
 function but:base-uri-after-collection-copy() {
     let $test-col-a-data-uri := xmldb:create-collection($but:test-col-a-uri, "data")
     let $doc-path := xmldb:store($test-col-a-data-uri, "test.xml", $but:XML)
@@ -66,7 +90,7 @@ function but:base-uri-after-collection-copy() {
 };
 
 declare
-    %test:assertEquals("/db/but/a/data/test.xml", "/db/but/b/data/test.xml")
+    %test:assertEquals("xmldb:exist:///db/but/a/data/test.xml", "xmldb:exist:///db/but/b/data/test.xml")
 function but:base-uri-after-collection-move() {
     let $test-col-a-data-uri := xmldb:create-collection($but:test-col-a-uri, "data")
     let $doc-path := xmldb:store($test-col-a-data-uri, "test.xml", $but:XML)
@@ -83,7 +107,7 @@ function but:base-uri-after-collection-move() {
 
 declare
     %test:pending("Each test interferes with each other test, we need to figure out how to have but:tearDown called after every test")
-    %test:assertEquals("/db/but/a/data/test.xml", "/db/but/a/data/test.xml", "/db/but/b/test.xml")
+    %test:assertEquals("xmldb:exist:///db/but/a/data/test.xml", "xmldb:exist:///db/but/a/data/test.xml", "xmldb:exist:///db/but/b/test.xml")
 function but:base-uri-after-resource-copy() {
     let $test-col-a-data-uri := xmldb:create-collection($but:test-col-a-uri, "data")
     let $doc-path := xmldb:store($test-col-a-data-uri, "test.xml", $but:XML)
@@ -100,7 +124,7 @@ function but:base-uri-after-resource-copy() {
 
 declare
     %test:pending("Each test interferes with each other test, we need to figure out how to have but:tearDown called after every test")
-    %test:assertEquals("/db/but/a/data/test.xml", "/db/but/b/test.xml")
+    %test:assertEquals("xmldb:exist:///db/but/a/data/test.xml", "xmldb:exist:///db/but/b/test.xml")
 function but:base-uri-after-resource-move() {
     let $test-col-a-data-uri := xmldb:create-collection($but:test-col-a-uri, "data")
     let $doc-path := xmldb:store($test-col-a-data-uri, "test.xml", $but:XML)

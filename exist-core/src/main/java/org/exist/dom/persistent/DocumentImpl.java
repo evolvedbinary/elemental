@@ -1592,7 +1592,7 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
 
     @Override
     public String getBaseURI() {
-        return getURI().toString();
+        return XmldbURI.EMBEDDED_SERVER_URI_PREFIX + getURI().getCollectionPath();
     }
 
     @Override

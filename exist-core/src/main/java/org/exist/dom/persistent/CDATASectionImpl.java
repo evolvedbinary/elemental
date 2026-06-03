@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,11 +51,14 @@ import org.exist.util.ByteArrayPool;
 import org.exist.util.ByteConversion;
 import org.exist.util.UTF8;
 import org.exist.util.XMLString;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Expression;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
+
+import javax.annotation.Nullable;
 
 public class CDATASectionImpl extends AbstractCharacterData implements CDATASection {
 
@@ -77,6 +104,20 @@ public class CDATASectionImpl extends AbstractCharacterData implements CDATASect
     }
 
     @Override
+    public @Nullable String getBaseURI() {
+        @Nullable final Node parent = getParentNode();
+        if (parent != null) {
+            @Nullable String strBaseUri = parent.getBaseURI();
+            if (strBaseUri != null && strBaseUri.startsWith("/db/")) {
+                // Must be a URI!
+                strBaseUri = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + strBaseUri;
+            }
+            return strBaseUri;
+        } else {
+            return null;
+        }
+    }
+
     /**
      * Serializes a (persistent DOM) CDATA Section to a byte array
      *
@@ -94,6 +135,7 @@ public class CDATASectionImpl extends AbstractCharacterData implements CDATASect
      * @return the returned byte array after use must be returned to the ByteArrayPool
      *     by calling {@link ByteArrayPool#releaseByteArray(byte[])}
      */
+    @Override
     public byte[] serialize() {
         final int nodeIdLen = nodeId.size();
         final byte[] data = ByteArrayPool.getByteArray(LENGTH_SIGNATURE_LENGTH + NodeId.LENGTH_NODE_ID_UNITS +

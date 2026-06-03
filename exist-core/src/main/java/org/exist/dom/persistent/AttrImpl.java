@@ -57,6 +57,7 @@ import org.exist.util.UTF8;
 import org.exist.util.XMLString;
 import org.exist.util.pool.NodePool;
 import org.exist.util.serializer.AttrList;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Expression;
 import org.w3c.dom.*;
 
@@ -434,7 +435,12 @@ public class AttrImpl extends NamedNode<AttrImpl> implements Attr {
     public @Nullable String getBaseURI() {
         @Nullable final Element e = getOwnerElement();
         if (e != null) {
-            return e.getBaseURI();
+            @Nullable String strBaseUri = e.getBaseURI();
+            if (strBaseUri != null && strBaseUri.startsWith("/db/")) {
+                // Must be a URI!
+                strBaseUri = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + strBaseUri;
+            }
+            return strBaseUri;
         }
         return null;
     }
