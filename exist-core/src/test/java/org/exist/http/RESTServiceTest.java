@@ -60,6 +60,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
+import org.apache.http.util.EntityUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.exist.EXistException;
 import org.exist.Namespaces;
@@ -233,6 +234,20 @@ public class RESTServiceTest {
 
     private static final XmldbURI TEST_XMLDECL_COLLECTION_URI = XmldbURI.ROOT_COLLECTION_URI.append("rest-test-xmldecl");
     private static final XmldbURI TEST_XML_DOC_WITH_XMLDECL_URI = XmldbURI.create("test-with-xmldecl.xml");
+
+    private static final String TEST_PRODUCES_XML_XQUERY =
+            "xquery version \"3.0\";\n" +
+                    "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";\n" +
+                    "declare option output:method \"xml\";\n" +
+                    "declare option output:media-type \"application/xml\";\n" +
+                    "<test>xml</test>";
+
+    private static final String TEST_PRODUCES_JSON_XQUERY =
+            "xquery version \"3.0\";\n" +
+                    "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";\n" +
+                    "declare option output:method \"json\";\n" +
+                    "declare option output:media-type \"application/json\";\n" +
+                    "<test><json1>json</json1> <json2>json</json2></test>";
 
     private static String credentials;
     private static String badCredentials;
@@ -1249,6 +1264,111 @@ public class RESTServiceTest {
         assertEquals("<bookmap id=\"bookmap-2\"/>\r\n", responseBody);
     }
 
+    @Test
+    public void queryProducesXmlWithAcceptXml() throws IOException {
+        doPut(TEST_PRODUCES_XML_XQUERY, "produces-xml.xq", HttpStatus.CREATED_201);
+        final String uri = getCollectionUri() + "/produces-xml.xq";
+
+        final HttpResponse response = Request.Get(uri)
+                .setHeader("Accept", MediaType.APPLICATION_XML)
+                .setHeader("Authorization", "Basic " + credentials)
+                .execute()
+                .returnResponse();
+
+        final int resultStatusCode = response.getStatusLine().getStatusCode();
+        final String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
+        assertEquals("<test>xml</test>", responseBody);
+    }
+
+    @Test
+    public void queryProducesJsonWithAcceptXml() throws IOException {
+        doPut(TEST_PRODUCES_JSON_XQUERY, "produces-json.xq", HttpStatus.CREATED_201);
+        final String uri = getCollectionUri() + "/produces-json.xq";
+
+        final HttpResponse response = Request.Get(uri)
+                .setHeader("Authorization", "Basic " + credentials)
+                .setHeader("Accept", MediaType.APPLICATION_XML)
+                .execute()
+                .returnResponse();
+
+        final int resultStatusCode = response.getStatusLine().getStatusCode();
+        final String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertResponseMediaType("application/json", response);
+        assertEquals("{ \"json1\" : \"json\", \"json2\" : \"json\" }", responseBody);
+    }
+
+    @Test
+    public void queryProducesXmlWithAcceptJson() throws IOException {
+        doPut(TEST_PRODUCES_XML_XQUERY, "produces-xml.xq", HttpStatus.CREATED_201);
+        final String uri = getCollectionUri() + "/produces-xml.xq";
+
+        final HttpResponse response = Request.Get(uri)
+                .setHeader("Authorization", "Basic " + credentials)
+                .setHeader("Accept", "application/json")
+                .execute()
+                .returnResponse();
+
+        final int resultStatusCode = response.getStatusLine().getStatusCode();
+        final String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
+        assertEquals("<test>xml</test>", responseBody);
+    }
+
+    @Test
+    public void queryProducesJsonWithAcceptJson() throws IOException {
+        doPut(TEST_PRODUCES_JSON_XQUERY, "produces-json.xq", HttpStatus.CREATED_201);
+        final String uri = getCollectionUri() + "/produces-json.xq";
+
+        final HttpResponse response = Request.Get(uri)
+                .setHeader("Authorization", "Basic " + credentials)
+                .setHeader("Accept", "application/json")
+                .execute()
+                .returnResponse();
+
+        final int resultStatusCode = response.getStatusLine().getStatusCode();
+        final String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertResponseMediaType("application/json", response);
+        assertEquals("{ \"json1\" : \"json\", \"json2\" : \"json\" }", responseBody);
+    }
+
+    @Test
+    public void queryProducesXmlWithNoAccept() throws IOException {
+        doPut(TEST_PRODUCES_XML_XQUERY, "produces-xml.xq", HttpStatus.CREATED_201);
+        final String uri = getCollectionUri() + "/produces-xml.xq";
+
+        final HttpResponse response = Request.Get(uri)
+                .setHeader("Authorization", "Basic " + credentials)
+                .execute()
+                .returnResponse();
+
+        final int resultStatusCode = response.getStatusLine().getStatusCode();
+        final String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertResponseMediaType(MediaType.APPLICATION_XML, response);
+        assertEquals("<test>xml</test>", responseBody);
+    }
+
+    @Test
+    public void queryProducesJsonWithNoAccept() throws IOException {
+        doPut(TEST_PRODUCES_JSON_XQUERY, "produces-json.xq", HttpStatus.CREATED_201);
+        final String uri = getCollectionUri() + "/produces-json.xq";
+
+        final HttpResponse response = Request.Get(uri)
+                .setHeader("Authorization", "Basic " + credentials)
+                .execute()
+                .returnResponse();
+
+        final int resultStatusCode = response.getStatusLine().getStatusCode();
+        final String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertResponseMediaType("application/json", response);
+        assertEquals("{ \"json1\" : \"json\", \"json2\" : \"json\" }", responseBody);
+    }
 
 
     private void chmod(final String resourcePath, final String mode) throws IOException {
