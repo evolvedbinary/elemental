@@ -258,7 +258,7 @@ public class Query extends Function implements Optimizable {
         final LuceneIndexWorker index = (LuceneIndexWorker) context.getBroker().getIndexController().getWorkerByIndexId(LuceneIndex.ID);
 
         final DocumentSet docs = contextSequence.getDocumentSet();
-        final Item key = getKey(contextSequence, null);
+        @Nullable final Item key = getKey(contextSequence, null);
         @Nullable final List<QName> qnames = contextQNames != null ? Arrays.asList(contextQNames) : null;
         final QueryOptions options = parseOptions(this, contextSequence, null, 3);
         try {

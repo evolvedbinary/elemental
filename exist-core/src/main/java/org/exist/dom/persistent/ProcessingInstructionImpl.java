@@ -50,6 +50,7 @@ import org.exist.numbering.NodeId;
 import org.exist.storage.Signatures;
 import org.exist.util.ByteConversion;
 import org.exist.util.pool.NodePool;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Expression;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
@@ -154,7 +155,12 @@ public class ProcessingInstructionImpl extends NamedNode<ProcessingInstructionIm
     public @Nullable String getBaseURI() {
         @Nullable final StoredNode parent = getParentStoredNode();
         if (parent != null) {
-            return parent.getBaseURI();
+            @Nullable String strBaseUri = parent.getBaseURI();
+            if (strBaseUri != null && strBaseUri.startsWith("/db/")) {
+                // Must be a URI!
+                strBaseUri = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + strBaseUri;
+            }
+            return strBaseUri;
         } else {
             return getOwnerDocument().getBaseURI();
         }

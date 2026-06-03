@@ -172,20 +172,30 @@ public abstract class AbstractFieldConfig {
         }
     }
 
-    private String resolveURI(String baseURI, String location) {
+    private String resolveURI(@Nullable final String strBaseUri, final String strLocation) {
         try {
-            final URI uri = new URI(location);
-            if (!uri.isAbsolute() && baseURI != null && baseURI.startsWith(CollectionConfigurationManager.CONFIG_COLLECTION)) {
-                String base = baseURI.substring(CollectionConfigurationManager.CONFIG_COLLECTION.length());
-                final int lastSlash = base.lastIndexOf('/');
-                if (lastSlash > -1) {
-                    base = base.substring(0, lastSlash);
+            final URI uriLocation = new URI(strLocation);
+            if (!uriLocation.isAbsolute() && strBaseUri != null) {
+                if (strBaseUri.startsWith(CollectionConfigurationManager.CONFIG_COLLECTION)) {
+                    String base = strBaseUri.substring(CollectionConfigurationManager.CONFIG_COLLECTION.length());
+                    final int lastSlash = base.lastIndexOf('/');
+                    if (lastSlash > -1) {
+                        base = base.substring(0, lastSlash);
+                    }
+                    final String resolved = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + base + '/' + strLocation;
+                    return resolved;
                 }
-                return XmldbURI.EMBEDDED_SERVER_URI_PREFIX + base + '/' + location;
+
+                if (strBaseUri.startsWith(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + CollectionConfigurationManager.CONFIG_COLLECTION)) {
+                    final String basePath = strBaseUri.substring((XmldbURI.EMBEDDED_SERVER_URI_PREFIX + CollectionConfigurationManager.CONFIG_COLLECTION).length());
+                    final String locationPath = new URI(basePath).resolve(uriLocation).toString();
+                    final String resolved = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + locationPath;
+                    return resolved;
+                }
             }
-        } catch (URISyntaxException e) {
+        } catch (final URISyntaxException e) {
             // ignore and return location
         }
-        return location;
+        return strLocation;
     }
 }
