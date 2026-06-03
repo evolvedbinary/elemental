@@ -56,6 +56,7 @@ import net.sf.saxon.s9api.XdmValue;
 import org.exist.dom.memtree.NamespaceNode;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.security.PermissionDeniedException;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -490,7 +491,13 @@ class Options {
         final List<Tuple2<String, Source>> results = new ArrayList<>(1);
         final Optional<String> stylesheetLocation = Options.STYLESHEET_LOCATION.get(options).map(StringValue::getStringValue);
         if (stylesheetLocation.isPresent()) {
-            results.add(Tuple(stylesheetLocation.get(), resolveStylesheetLocation(stylesheetLocation.get())));
+            final String strStylesheetLocationUri;
+            if (stylesheetLocation.get().startsWith("/db/")) {
+                strStylesheetLocationUri = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + stylesheetLocation.get();
+            } else {
+                strStylesheetLocationUri = stylesheetLocation.get();
+            }
+            results.add(Tuple(strStylesheetLocationUri, resolveStylesheetLocation(stylesheetLocation.get())));
         }
 
         final Optional<Node> stylesheetNode = Options.STYLESHEET_NODE.get(options).map(NodeValue::getNode);

@@ -2021,7 +2021,12 @@ public class ElementImpl extends NamedNode<ElementImpl> implements Element {
     public @Nullable String getBaseURI() {
         @Nullable final XmldbURI baseURI = calculateBaseURI();
         if (baseURI != null) {
-            return baseURI.toString();
+            String strBaseUri = baseURI.toString();
+            if (strBaseUri.startsWith("/db/")) {
+                // Must be a URI!
+                strBaseUri = XmldbURI.EMBEDDED_SERVER_URI_PREFIX + baseURI;
+            }
+            return strBaseUri;
         }
 
         return null;

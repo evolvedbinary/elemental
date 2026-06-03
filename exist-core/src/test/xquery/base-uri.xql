@@ -118,7 +118,7 @@ function baseuri:cleanup() {
 
 
 declare
-    %test:assertEquals("-/db/base-uri/test.xml")
+    %test:assertEquals("-xmldb:exist:///db/base-uri/test.xml")
 function baseuri:root() {
      $baseuri:DOCUMENT/base-uri() || "-" || base-uri(doc($baseuri:full_path_document))
 };
@@ -131,7 +131,7 @@ function baseuri:sub1() {
 };
 
 declare
-    %test:assertEquals("http://example.org/a/","http://example.org/b/","http://example.org/c/","/yy","/db/base-uri/zz")
+    %test:assertEquals("http://example.org/a/","http://example.org/b/","http://example.org/c/","/yy","xmldb:exist:///db/base-uri/zz")
 function baseuri:sub2() {
      for $sub in doc($baseuri:full_path_document)//sub
      return base-uri($sub)
