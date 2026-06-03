@@ -2313,6 +2313,19 @@ public class RESTServer {
         int start, final Properties outputProperties, final boolean wrap, final long compilationTime, final long executionTime)
             throws BadRequestException {
 
+        // set output headers
+        final String encoding = outputProperties.getProperty(OutputKeys.ENCODING);
+        if (!response.containsHeader("Content-Type")) {
+            String mimeType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
+            if (mimeType != null) {
+                final int semicolon = mimeType.indexOf(';');
+                if (semicolon != Constants.STRING_NOT_FOUND) {
+                    mimeType = mimeType.substring(0, semicolon);
+                }
+                response.setContentType(mimeType + "; charset=" + encoding);
+            }
+        }
+
         // calculate number of results to return
         final int rlen = results.getItemCount();
         if (!results.isEmpty()) {
