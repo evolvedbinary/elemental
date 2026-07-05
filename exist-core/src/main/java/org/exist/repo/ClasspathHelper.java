@@ -92,7 +92,7 @@ public class ClasspathHelper implements BrokerPoolService {
         if (!(loader instanceof EXistClassLoader))
             {return;}
         if (!isCompatible(pkg)) {
-            LOG.warn("Package {} is not compatible with this version of eXist. To avoid conflicts, Java libraries shipping with this package are not loaded.", pkg.getName());
+            LOG.warn("Package {} is not compatible with this version of Elemental. To avoid conflicts, Java libraries shipping with this package are not loaded.", pkg.getName());
             return;
         }
         final FileSystemStorage.FileSystemResolver resolver = (FileSystemStorage.FileSystemResolver) pkg.getResolver();
@@ -113,7 +113,7 @@ public class ClasspathHelper implements BrokerPoolService {
             for (final Packages pkgs : repo.get().getParentRepo().listPackages()) {
                 final Package pkg = pkgs.latest();
                 if (!isCompatible(pkg)) {
-                    LOG.warn("Package {} is not compatible with this version of eXist. To avoid conflicts, Java libraries shipping with this package are not loaded.", pkg.getName());
+                    LOG.warn("Package {} is not compatible with this version of Elemental. To avoid conflicts, Java libraries shipping with this package are not loaded.", pkg.getName());
                 } else {
                     try {
                         final FileSystemStorage.FileSystemResolver resolver = (FileSystemStorage.FileSystemResolver) pkg.getResolver();
