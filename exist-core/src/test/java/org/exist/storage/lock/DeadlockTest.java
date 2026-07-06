@@ -69,6 +69,7 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
@@ -80,7 +81,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -197,9 +197,10 @@ public class DeadlockTest {
 
     @After
     public void clearDB() throws XMLDBException {
-		final org.xmldb.api.base.Collection root = DatabaseManager.getCollection("xmldb:exist:///db/test", "admin", "");
-		CollectionManagementService service = root.getService(CollectionManagementService.class);
-		service.removeCollection(".");
+		try (final org.xmldb.api.base.Collection root = DatabaseManager.getCollection("xmldb:exist:///db/test", "admin", "")) {
+			CollectionManagementService service = root.getService(CollectionManagementService.class);
+			service.removeCollection(".");
+		}
     }
 
     @Test
@@ -337,16 +338,16 @@ public class DeadlockTest {
 			}
 			
 			String query = buf.toString();
-			try {
-				org.xmldb.api.base.Collection testCollection = DatabaseManager
-						.getCollection("xmldb:exist://" + collection, "admin", null);
+			try (final org.xmldb.api.base.Collection testCollection = DatabaseManager
+					.getCollection("xmldb:exist://" + collection, "admin", null)) {
                 if (testCollection == null)
                     return;
                 EXistXPathQueryService service = testCollection.getService(EXistXPathQueryService.class);
 				service.beginProtected();
 				try {
-					ResourceSet result = service.query(query);
-                    result.getSize();
+					try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+						result.getSize();
+					}
 				} finally {
 					service.endProtected();
 				}
@@ -374,9 +375,8 @@ public class DeadlockTest {
                 final String collection = "/db/test/" + collectionId;
                 final int docId = random.nextInt(documentCount) * collectionId;
                 final String document = "test" + docId + ".xml";
-                try {
-                    final org.xmldb.api.base.Collection testCollection = DatabaseManager.getCollection("xmldb:exist://" + collection, "admin", "");
-                    final Resource resource = testCollection.getResource(document);
+                try (final org.xmldb.api.base.Collection testCollection = DatabaseManager.getCollection("xmldb:exist://" + collection, "admin", "");
+					 final Resource resource = testCollection.getResource(document)) {
                     if (resource != null) {
                         testCollection.removeResource(resource);
                         removed = true;

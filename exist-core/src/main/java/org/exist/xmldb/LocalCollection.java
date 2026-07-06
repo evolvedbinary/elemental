@@ -77,7 +77,11 @@ import org.exist.xmldb.function.LocalXmldbCollectionFunction;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.Service;
+import org.xmldb.api.base.ServiceProviderCache;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.ServiceProviderCache.ProviderRegistry;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -250,9 +254,9 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         }
         final R r;
         if (XMLResource.class.isAssignableFrom(type)) {
-            r = (R)new LocalXMLResource(user, brokerPool, this, idURI);
+            r = (R) new LocalXMLResource(user, brokerPool, this, idURI);
         } else if (BinaryResource.class.isAssignableFrom(type)) {
-            r = (R)new LocalBinaryResource(user, brokerPool, this, idURI);
+            r = (R) new LocalBinaryResource(user, brokerPool, this, idURI);
         } else {
             throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type: " + type);
         }

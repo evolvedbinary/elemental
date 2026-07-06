@@ -47,6 +47,7 @@ package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -60,7 +61,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -84,12 +85,12 @@ public class JingSchematronTest {
     public static void prepareResources() throws XMLDBException, IOException {
 
         // Switch off validation
-        try (Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/tournament")) {
+        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/tournament")) {
             existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
         // Store schematron 1.5 test files
-        try (Collection col15 = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "tournament/1.5")) {
+        try (final Collection col15 = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "tournament/1.5")) {
 
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/tournament/1.5/" + testResource)) {
@@ -115,11 +116,14 @@ public class JingSchematronTest {
                 "doc('/db/tournament/1.5/Tournament-valid.xml'), " +
                 "doc('/db/tournament/1.5/tournament-schema.sch') )";
 
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
 
-        final String r = (String) results.getResource(0).getContent();
-        assertEquals("true", r);
+            try (final Resource resource = results.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("true", r);
+            }
+        }
     }
 
     @Test
@@ -147,10 +151,13 @@ public class JingSchematronTest {
     }
 
     private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, results.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+            try (final Resource resource = results.getResource(0)) {
+                final String result = (String) resource.getContent();
+                assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+            }
+        }
     }
 }

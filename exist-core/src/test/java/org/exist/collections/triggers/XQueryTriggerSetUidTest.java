@@ -61,7 +61,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import org.junit.*;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
@@ -201,23 +201,18 @@ public class XQueryTriggerSetUidTest {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
              final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            final String beforeRealUser = withCompiledQuery(broker, new StringSource(queryBeforeRealUser), compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertNotNull(result);
-                assertEquals(1, result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryBeforeRealUser), false, null, null, null, null, null)) {
 
-                return result.itemAt(0).getStringValue();
-            });
-            assertEquals(GUEST_USER, beforeRealUser);
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(GUEST_USER, queryResult.result.itemAt(0).getStringValue());
+            }
 
-            final String beforeEffectiveUser = withCompiledQuery(broker, new StringSource(queryBeforeEffectiveUser), compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertNotNull(result);
-                assertEquals(1, result.getItemCount());
-
-                return result.itemAt(0).getStringValue();
-            });
-            assertEquals(DBA_USER, beforeEffectiveUser);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryBeforeEffectiveUser), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(DBA_USER, queryResult.result.itemAt(0).getStringValue());
+            }
 
             transaction.commit();
         }
@@ -233,23 +228,17 @@ public class XQueryTriggerSetUidTest {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
              final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            final String afterRealUser = withCompiledQuery(broker, new StringSource(queryAfterRealUser), compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertNotNull(result);
-                assertEquals(1, result.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryAfterRealUser), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(GUEST_USER, queryResult.result.itemAt(0).getStringValue());
+            }
 
-                return result.itemAt(0).getStringValue();
-            });
-            assertEquals(GUEST_USER, afterRealUser);
-
-            final String afterEffectiveUser = withCompiledQuery(broker, new StringSource(queryAfterEffectiveUser), compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertNotNull(result);
-                assertEquals(1, result.getItemCount());
-
-                return result.itemAt(0).getStringValue();
-            });
-            assertEquals(DBA_USER, afterEffectiveUser);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(queryAfterEffectiveUser), false, null, null, null, null, null)) {
+                assertNotNull(queryResult.result);
+                assertEquals(1, queryResult.result.getItemCount());
+                assertEquals(DBA_USER, queryResult.result.itemAt(0).getStringValue());
+            }
 
             transaction.commit();
         }

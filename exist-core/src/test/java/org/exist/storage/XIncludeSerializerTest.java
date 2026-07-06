@@ -45,24 +45,29 @@
  */
 package org.exist.storage;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.fluent.Executor;
+import org.apache.http.client.fluent.Request;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.exist.Namespaces;
 import org.exist.test.ExistWebServer;
+import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import org.xml.sax.SAXException;
+import static org.junit.Assert.assertEquals;
+
 import org.xmlunit.matchers.CompareMatcher;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -170,141 +175,102 @@ public class XIncludeSerializerTest {
             + "</test>";
 
     @Test
-    public void absSimpleREST() throws IOException, SAXException {
+    public void absSimpleREST() throws IOException {
         // path needs to indicate indent and wrap is off
         final String uri = getRestUri() + "/test_simple.xml?_indent=no&_wrap=no";
 
-        // we use honest http
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final StringBuilder out = new StringBuilder();
-        try(final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                out.append(line);
-                out.append("\r\n");
-            }
-        }
+        final String responseBody = responseBodyToString(response);
 
-        final String responseXML = out.toString();
-        assertThat(responseXML, CompareMatcher.isIdenticalTo(XML_RESULT));
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertThat(responseBody, CompareMatcher.isIdenticalTo(XML_RESULT));
     }
 
     @Test
-    public void relSimpleREST1() throws IOException, SAXException {
+    public void relSimpleREST1() throws IOException {
         final String uri = getRestUri() + "/test_relative1.xml?_indent=no&_wrap=no";
 
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
-        String line;
-        final StringBuilder out = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            out.append(line);
-            out.append("\r\n");
-        }
-        final String responseXML = out.toString();
-        assertThat(responseXML, CompareMatcher.isIdenticalTo(XML_RESULT));
+        final String responseBody = responseBodyToString(response);
+
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertThat(responseBody, CompareMatcher.isIdenticalTo(XML_RESULT));
     }
 
     @Test
-    public void relSimpleREST2() throws IOException, SAXException {
+    public void relSimpleREST2() throws IOException {
         // path needs to indicate indent and wrap is off
         final String uri = getRestUri() + "/test_relative2.xml?_indent=no&_wrap=no";
 
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
-        String line;
-        final StringBuilder out = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            out.append(line);
-            out.append("\r\n");
-        }
-        final String responseXML = out.toString();
-        assertThat(responseXML, CompareMatcher.isIdenticalTo(XML_RESULT));
+        final String responseBody = responseBodyToString(response);
+
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertThat(responseBody, CompareMatcher.isIdenticalTo(XML_RESULT));
     }
 
     @Test
-    public void xpointerREST3() throws IOException, SAXException {
+    public void xpointerREST3() throws IOException {
         final String uri = getRestUri() + "/test_xpointer1.xml?_indent=no&_wrap=no";
 
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
-        String line;
-        StringBuilder out = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            out.append(line);
-            out.append("\r\n");
-        }
-        final String responseXML = out.toString();
-        assertThat(responseXML, CompareMatcher.isIdenticalTo(XML_RESULT_XPOINTER));
+        final String responseBody = responseBodyToString(response);
+
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertThat(responseBody, CompareMatcher.isIdenticalTo(XML_RESULT_XPOINTER));
     }
 
     @Test
-    public void xpointerREST4() throws IOException, SAXException {
+    public void xpointerREST4() throws IOException {
         final String uri = getRestUri() + "/test_xpointer2.xml?_indent=no&_wrap=no";
 
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
-        String line;
-        final StringBuilder out = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            out.append(line);
-            out.append("\r\n");
-        }
-        final String responseXML = out.toString();
-        assertThat(responseXML, CompareMatcher.isIdenticalTo(XML_RESULT_XPOINTER));
+        final String responseBody = responseBodyToString(response);
+
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertThat(responseBody, CompareMatcher.isIdenticalTo(XML_RESULT_XPOINTER));
     }
 
     @Test
-    public void fallback1() throws IOException, SAXException {
+    public void fallback1() throws IOException {
         final String uri = getRestUri() + "/test_fallback1.xml?_indent=no&_wrap=no";
 
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"));
-        String line;
-        final StringBuilder out = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            out.append(line);
-            out.append("\r\n");
-        }
-        final String responseXML = out.toString();
-        assertThat(responseXML, CompareMatcher.isIdenticalTo(XML_RESULT_FALLBACK1));
+        final String responseBody = responseBodyToString(response);
+
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertThat(responseBody, CompareMatcher.isIdenticalTo(XML_RESULT_FALLBACK1));
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void fallback2() throws IOException {
         final String uri = getRestUri() + "/test_fallback2.xml?_indent=no&_wrap=no";
 
-        final HttpURLConnection connect = getConnection(uri);
-        connect.setRequestMethod("GET");
-        connect.connect();
+        final HttpResponse response = Executor.newInstance()
+            .execute(Request.Get(uri))
+            .returnResponse();
 
-        final StringBuilder out = new StringBuilder();
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connect.getInputStream(), "UTF-8"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                out.append(line);
-                out.append("\r\n");
-            }
-        }
-        final String responseXML = out.toString();
+        final String responseBody = responseBodyToString(response);
+
+        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_BAD_REQUEST, response.getStatusLine().getStatusCode());
     }
 
     //TODO add full url test e.g. http://www.example.org/test.xml for xinclude
@@ -331,14 +297,6 @@ public class XIncludeSerializerTest {
     // probably overkill
     //TODO check serialisation via this interface, simple and relative???
     // probably overkill
-    /*
-     * helper functions
-     *
-     */
-    protected HttpURLConnection getConnection(final String url) throws IOException {
-        final URL u = new URL(url);
-        return (HttpURLConnection) u.openConnection();
-    }
 
     private static XmlRpcClient getClient() throws MalformedURLException {
         final XmlRpcClient client = new XmlRpcClient();
@@ -420,5 +378,11 @@ public class XIncludeSerializerTest {
         params.add("/db/xinclude_test/test_fallback2.xml");
         params.add(1);
         xmlrpc.execute("parse", params);
+    }
+
+    private static String responseBodyToString(final HttpResponse response) throws IOException {
+        try (final InputStream is = response.getEntity().getContent()) {
+            return InputStreamUtil.readString(is, UTF_8);
+        }
     }
 }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -46,12 +70,16 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.ResourceIterator;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author jmv
@@ -73,34 +101,32 @@ public class DOMTest {
 	 */
 	@Test
 	public void test1() throws XMLDBException {
-
-
-		CollectionManagementService cms =
-				existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
-		cms.createCollection("A"); // jmv
+		final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+		try (final Collection created = cms.createCollection("A")) { } // jmv
 		cms.removeCollection("A");
-		cms.createCollection("A");
-		Collection coll = existEmbeddedServer.getRoot().getChildCollection("A");
+		try (final Collection created = cms.createCollection("A")) { }
 
-		XMLResource r =
-			coll.createResource(
-				name,
-				XMLResource.class);
-		r.setContent(
-			"<properties><property key=\"type\">Table</property></properties>");
-		coll.storeResource(r);
+		try (final Collection coll = existEmbeddedServer.getRoot().getChildCollection("A")) {
 
-		XPathQueryService xpqs = coll.getService(XPathQueryService.class);
-		ResourceSet rs =
-			xpqs.query(
-				"//properties[property[@key='type' and text()='Table']]");
-		for (ResourceIterator i = rs.getIterator();
-			i.hasMoreResources();
-			) {
-			r = (XMLResource) i.nextResource();
-			String s = (String) r.getContent();
-			Node content = r.getContentAsDOM();
-			coll.removeResource(r);
+			try (final XMLResource r = coll.createResource(name, XMLResource.class)) {
+				r.setContent("<properties><property key=\"type\">Table</property></properties>");
+				coll.storeResource(r);
+			}
+
+			final XPathQueryService xpqs = coll.getService(XPathQueryService.class);
+			try (final EXistResourceSet rs = (EXistResourceSet) xpqs.query("//properties[property[@key='type' and text()='Table']]")) {
+				for (final ResourceIterator i = rs.getIterator(); i.hasMoreResources(); ) {
+					try (final XMLResource r = (XMLResource) i.nextResource()) {
+						final String s = (String) r.getContent();
+						assertNotNull(s);
+						final Node content = r.getContentAsDOM();
+						assertNotNull(content);
+						assertTrue(content instanceof Element);
+
+						coll.removeResource(r);
+					}
+				}
+			}
 		}
 
 		cms.removeCollection("A");
@@ -112,68 +138,63 @@ public class DOMTest {
 	 * */
 	@Test
 	public void test2() throws XMLDBException, InstantiationException, IllegalAccessException, ClassNotFoundException, ParserConfigurationException, IOException {
-		for (int i = 0; i < 2; i++) {
-			XMLResource resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name);
-			if (resource == null) {
-				resource =
-					existEmbeddedServer.getRoot().createResource(
-						name,
-						XMLResource.class);
 
-				DocumentBuilderFactory dbf =
-					DocumentBuilderFactory.newInstance();
-				DocumentBuilder db = dbf.newDocumentBuilder();
-				Document doc = db.newDocument();
-				Element rootElem = doc.createElement("element");
-				doc.appendChild(rootElem);
+		try (final XMLResource resource = existEmbeddedServer.getRoot().createResource(name, XMLResource.class)) {
+			final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			final DocumentBuilder db = dbf.newDocumentBuilder();
+			final Document doc = db.newDocument();
+			final Element rootElem = doc.createElement("element");
+			doc.appendChild(rootElem);
+			resource.setContentAsDOM(doc);
+			existEmbeddedServer.getRoot().storeResource(resource);
+		}
 
-				resource.setContentAsDOM(doc);
-				existEmbeddedServer.getRoot().storeResource(resource);
-
-				resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name);
-			}
-
-			String s = (String) resource.getContent();
-			Node content = resource.getContentAsDOM();
+		try (final XMLResource resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name)) {
+			final String s = (String) resource.getContent();
+			assertNotNull(s);
+			final Node content = resource.getContentAsDOM();
+			assertNotNull(content);
+			assertTrue(content instanceof Document);
 		}
 
 		existEmbeddedServer.restart();
 
-		XMLResource resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name);
-		existEmbeddedServer.getRoot().removeResource(resource);
+		try (final XMLResource resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name)) {
+			existEmbeddedServer.getRoot().removeResource(resource);
+		}
 	}
 	
 	/** like test 2 but add attribute and text as well */
 	@Test
 	public void test3() throws XMLDBException, ParserConfigurationException {
-		Collection coll = existEmbeddedServer.getRoot();
-		XMLResource resource =
-			coll.createResource(
-				name,
-				XMLResource.class);
+		final Collection coll = existEmbeddedServer.getRoot();
+		try (final XMLResource resource = coll.createResource(name, XMLResource.class)) {
+			final Document doc =
+				DocumentBuilderFactory
+					.newInstance()
+					.newDocumentBuilder()
+					.newDocument();
+			final Element rootElem = doc.createElement("element");
+			final Element propertyElem = doc.createElement("property");
+			propertyElem.setAttribute("key", "value");
+			propertyElem.appendChild(doc.createTextNode("text"));
+			rootElem.appendChild(propertyElem);
+			doc.appendChild(rootElem);
+			resource.setContentAsDOM(doc);
 
-		Document doc =
-			DocumentBuilderFactory
-				.newInstance()
-				.newDocumentBuilder()
-				.newDocument();
-		Element rootElem = doc.createElement("element");
-		Element propertyElem = doc.createElement("property");
-		propertyElem.setAttribute("key", "value");
-		propertyElem.appendChild(doc.createTextNode("text"));
-		rootElem.appendChild(propertyElem);
-		doc.appendChild(rootElem);
-		resource.setContentAsDOM(doc);
+			coll.storeResource(resource);
+		}
 
-		coll.storeResource(resource);
-		coll.close();
+		try (final Collection coll2 = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "")) {
+			final XMLResource resource = (XMLResource) coll2.getResource(name);
+			final String s = (String) resource.getContent();
+			assertNotNull(s);
+			final Node content = resource.getContentAsDOM();
+			assertNotNull(content);
+			assertTrue(content instanceof Document);
 
-		coll = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-		resource = (XMLResource) coll.getResource(name);
-		String s = (String) resource.getContent();
-		Node n = resource.getContentAsDOM();
-
-		coll.removeResource(resource);
+			coll2.removeResource(resource);
+		}
 	}
 
 	/** like test 3 but uses the DOM as input to an (identity) XSLT transform */
@@ -188,65 +209,67 @@ public class DOMTest {
 	}
 
 	private void _test4(boolean getContentAsDOM) throws TransformerException, ParserConfigurationException, XMLDBException, IOException, SAXException {
-		Collection coll =  existEmbeddedServer.getRoot();
-		XMLResource resource =
-			coll.createResource(
-				name,
-				XMLResource.class);
+		final Collection coll = existEmbeddedServer.getRoot();
+		try (final XMLResource resource = coll.createResource(name, XMLResource.class)) {
 
-		Document doc =
-			DocumentBuilderFactory
-				.newInstance()
-				.newDocumentBuilder()
-				.newDocument();
-		Element rootElem = doc.createElement("element");
-		Element propertyElem = doc.createElement("property");
-		propertyElem.setAttribute("key", "value");
-		propertyElem.appendChild(doc.createTextNode("text"));
-		rootElem.appendChild(propertyElem);
-		doc.appendChild(rootElem);
-		resource.setContentAsDOM(doc);
+			final Document doc =
+				DocumentBuilderFactory
+					.newInstance()
+					.newDocumentBuilder()
+					.newDocument();
+			final Element rootElem = doc.createElement("element");
+			final Element propertyElem = doc.createElement("property");
+			propertyElem.setAttribute("key", "value");
+			propertyElem.appendChild(doc.createTextNode("text"));
+			rootElem.appendChild(propertyElem);
+			doc.appendChild(rootElem);
+			resource.setContentAsDOM(doc);
 
-		coll.storeResource(resource);
-		coll.close();
-
-		coll = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-		resource = (XMLResource) coll.getResource(name);
-
-		Node n;
-		if (getContentAsDOM) {
-			n = resource.getContentAsDOM();
-		} else {
-			String s = (String) resource.getContent();
-			byte[] bytes;
-			bytes = s.getBytes(UTF_8);
-			try(final UnsynchronizedByteArrayInputStream bais = new UnsynchronizedByteArrayInputStream(bytes)) {
-				DocumentBuilder db =
-						DocumentBuilderFactory.newInstance().newDocumentBuilder();
-				n = db.parse(bais);
-			}
+			coll.storeResource(resource);
 		}
 
-		Transformer t = TransformerFactory.newInstance().newTransformer();
-		DOMSource source = new DOMSource(n);
-		SAXResult result = new SAXResult(new DOMTest.SAXHandler());
-		t.transform(source, result);
+		try (final Collection coll2 = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "")) {
+			try (final XMLResource resource = (XMLResource) coll2.getResource(name)) {
 
-		coll.removeResource(resource);
+				final Node n;
+				if (getContentAsDOM) {
+					n = resource.getContentAsDOM();
+				} else {
+					final String s = (String) resource.getContent();
+					final byte[] bytes = s.getBytes(UTF_8);
+					try (final UnsynchronizedByteArrayInputStream bais = new UnsynchronizedByteArrayInputStream(bytes)) {
+						final DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+						n = db.parse(bais);
+					}
+				}
+				assertNotNull(n);
+				assertTrue(n instanceof Document);
+
+				final Transformer t = TransformerFactory.newInstance().newTransformer();
+				final DOMSource source = new DOMSource(n);
+				final SAXResult result = new SAXResult(new DOMTest.SAXHandler());
+				t.transform(source, result);
+
+				coll2.removeResource(resource);
+			}
+		}
 	}
 
 	public static class SAXHandler implements ContentHandler {
 		SAXHandler() {
 		}
 
+		@Override
 		public void characters(char[] ch, int start, int length) {
 			LOG.trace("SAXHandler.characters({}, {}, {})", new String(ch), start, length);
 		}
 
+		@Override
 		public void endDocument() {
 			LOG.trace("SAXHandler.endDocument()");
 		}
 
+		@Override
 		public void endElement(
 			String namespaceURI,
 			String localName,
@@ -254,30 +277,37 @@ public class DOMTest {
 			LOG.trace("SAXHandler.endElement({}, {}, {})", namespaceURI, localName, qName);
 		}
 
+		@Override
 		public void endPrefixMapping(String prefix) {
 			LOG.trace("SAXHandler.endPrefixMapping({})", prefix);
 		}
 
+		@Override
 		public void ignorableWhitespace(char[] ch, int start, int length) {
 			LOG.trace("SAXHandler.ignorableWhitespace({}, {}, {})", new String(ch), start, length);
 		}
 
+		@Override
 		public void processingInstruction(String target, String data) {
 			LOG.trace("SAXHandler.processingInstruction({}, {})", target, data);
 		}
 
+		@Override
 		public void setDocumentLocator(Locator locator) {
 			LOG.trace("SAXHandler.setDocumentLocator({})", locator);
 		}
 
+		@Override
 		public void skippedEntity(String name) {
 			LOG.trace("SAXHandler.skippedEntity({})", name);
 		}
 
+		@Override
 		public void startDocument() {
 			LOG.trace("SAXHandler.startDocument()");
 		}
 
+		@Override
 		public void startElement(
 			String namespaceURI,
 			String localName,
@@ -286,6 +316,7 @@ public class DOMTest {
 			LOG.trace("SAXHandler.startElement({}, {}, {},{})", namespaceURI, localName, qName, atts);
 		}
 
+		@Override
 		public void startPrefixMapping(String prefix, String xuri) {
 			LOG.trace("SAXHandler.startPrefixMapping({}, {})", prefix, xuri);
 		}

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -56,13 +80,14 @@ public class DatabaseCollectionTest {
     @Before
     public void setUp() throws XMLDBException {
         final CollectionManagementService cms = existServer.getRoot().getService(CollectionManagementService.class);
-        final Collection test = cms.createCollection(TEST_COLLECTION);
-        final UserManagementService ums = test.getService(UserManagementService.class);
+        try (final Collection test = cms.createCollection(TEST_COLLECTION)) {
+            final UserManagementService ums = test.getService(UserManagementService.class);
 
-        // change ownership to guest
-        final Account guest = ums.getAccount(TestUtils.GUEST_DB_USER);
-        ums.chown(guest, guest.getPrimaryGroup());
-        ums.chmod(Permission.DEFAULT_COLLECTION_PERM);
+            // change ownership to guest
+            final Account guest = ums.getAccount(TestUtils.GUEST_DB_USER);
+            ums.chown(guest, guest.getPrimaryGroup());
+            ums.chmod(Permission.DEFAULT_COLLECTION_PERM);
+        }
     }
 
     @After
@@ -74,18 +99,23 @@ public class DatabaseCollectionTest {
     
     @Test
     public void createCollections() throws XMLDBException {
-        final Collection testCollection = DatabaseManager.getCollection(ROOT_URI + "/" + TEST_COLLECTION);
-        final CollectionManagementService service = testCollection.getService(CollectionManagementService.class);
-        Collection validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION);
-        assertNotNull(validationCollection);
+        try (final Collection testCollection = DatabaseManager.getCollection(ROOT_URI + "/" + TEST_COLLECTION)) {
+            final CollectionManagementService service = testCollection.getService(CollectionManagementService.class);
+            try (final Collection validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION)) {
+                assertNotNull(validationCollection);
+            }
 
-        validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION + "/" + TestTools.VALIDATION_TMP_COLLECTION);
-        assertNotNull(validationCollection);
+            try (final Collection validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION + "/" + TestTools.VALIDATION_TMP_COLLECTION)) {
+                assertNotNull(validationCollection);
+            }
 
-        validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION + "/" + TestTools.VALIDATION_XSD_COLLECTION);
-        assertNotNull(validationCollection);
+            try (final Collection validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION + "/" + TestTools.VALIDATION_XSD_COLLECTION)) {
+                assertNotNull(validationCollection);
+            }
 
-        validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION + "/" + TestTools.VALIDATION_DTD_COLLECTION);
-        assertNotNull(validationCollection);
+            try (final Collection validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION + "/" + TestTools.VALIDATION_DTD_COLLECTION)) {
+                assertNotNull(validationCollection);
+            }
+        }
     }
 }

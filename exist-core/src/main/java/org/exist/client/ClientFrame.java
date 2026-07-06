@@ -443,7 +443,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         item = new JMenuItem(Messages.getString("ClientFrame.62a"));
         item.addActionListener(e -> {
             try {
-                final DatabaseInstanceManager service = client.current.getService(DatabaseInstanceManager.class);
+                final DatabaseInstanceManager service = client.getCollection().getService(DatabaseInstanceManager.class);
                 service.enterServiceMode();
             } catch (final XMLDBException ex) {
                 showErrorMessage(ex.getMessage(), ex);
@@ -454,7 +454,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         item = new JMenuItem(Messages.getString("ClientFrame.62b"));
         item.addActionListener(e -> {
             try {
-                final DatabaseInstanceManager service = client.current.getService(DatabaseInstanceManager.class);
+                final DatabaseInstanceManager service = client.getCollection().getService(DatabaseInstanceManager.class);
                 service.exitServiceMode();
             } catch (final XMLDBException ex) {
                 showErrorMessage(ex.getMessage(), ex);
@@ -737,7 +737,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     private void removeAction(final ActionEvent ev) {
 
         final ResourceDescriptor[] res = getSelectedResources();
-        final Collection removeRootCollection = client.current;
+        final Collection removeRootCollection = client.getCollection();
         // String cmd;
         if (JOptionPane.showConfirmDialog(this,
                 Messages.getString("ClientFrame.104") + Messages.getString("ClientFrame.105"), //$NON-NLS-1$ //$NON-NLS-2$
@@ -758,9 +758,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                             showErrorMessage(e.getMessage(), e);
                         }
                     } else {
-                        try {
-                            final Resource res1 = removeRootCollection
-                                    .getResource(resource.getName().toString());
+                        try (final Resource res1 = removeRootCollection.getResource(resource.getName().toString())) {
                             removeRootCollection.removeResource(res1);
                         } catch (final XMLDBException e) {
                             showErrorMessage(e.getMessage(), e);
@@ -791,11 +789,9 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         PrettyXmldbURI[] collections;
 
         //get an array of collection paths
-        try {
-            final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
-            final List<PrettyXmldbURI> alCollections = getCollections(root, new ArrayList<>());
-            collections = new PrettyXmldbURI[alCollections.size()];
-            alCollections.toArray(collections);
+        try (final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION)) {
+            final List<PrettyXmldbURI> collectionUris = getCollections(root, new ArrayList<>());
+            collections = collectionUris.toArray(new PrettyXmldbURI[0]);
         } catch (final XMLDBException e) {
             showErrorMessage(e.getMessage(), e);
             return;
@@ -810,7 +806,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         final XmldbURI destinationPath = ((PrettyXmldbURI) val).getTargetURI();
         final Runnable moveTask = () -> {
             try {
-                final EXistCollectionManagementService service = client.current.getService(EXistCollectionManagementService.class);
+                final EXistCollectionManagementService service = client.getCollection().getService(EXistCollectionManagementService.class);
                 for (ResourceDescriptor re : res) {
                     setStatus(Messages.getString("ClientFrame.115") + re.getName() + Messages.getString("ClientFrame.116") + destinationPath + Messages.getString("ClientFrame.117")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                     if (re.isCollection()) {
@@ -851,7 +847,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         final XmldbURI destinationFilename = parseIt;
         final Runnable renameTask = () -> {
             try {
-                final EXistCollectionManagementService service = client.current.getService(EXistCollectionManagementService.class);
+                final EXistCollectionManagementService service = client.getCollection().getService(EXistCollectionManagementService.class);
                 boolean changed = false;
                 for (final ResourceDescriptor re : res) {
                     if (!re.getName().equals(destinationFilename)) {
@@ -881,11 +877,9 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         PrettyXmldbURI[] collections;
 
         //get an array of collection paths
-        try {
-            final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
-            final List<PrettyXmldbURI> alCollections = getCollections(root, new ArrayList<>());
-            collections = new PrettyXmldbURI[alCollections.size()];
-            alCollections.toArray(collections);
+        try (final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION)) {
+            final List<PrettyXmldbURI> collectionUris = getCollections(root, new ArrayList<>());
+            collections = collectionUris.toArray(new PrettyXmldbURI[0]);
         } catch (final XMLDBException e) {
             showErrorMessage(e.getMessage(), e);
             return;
@@ -901,7 +895,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
 
         final Runnable moveTask = () -> {
             try {
-                final EXistCollectionManagementService service = client.current.getService(EXistCollectionManagementService.class);
+                final EXistCollectionManagementService service = client.getCollection().getService(EXistCollectionManagementService.class);
                 for (ResourceDescriptor re : res) {
 
                     //TODO
@@ -929,27 +923,38 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         client.newClientThread("move", moveTask).start();
     }
 
-    private ArrayList<PrettyXmldbURI> getCollections(final Collection root, final ArrayList<PrettyXmldbURI> collectionsList) throws XMLDBException {
+    static List<PrettyXmldbURI> getCollections(final Collection root, final List<PrettyXmldbURI> collectionsList) throws XMLDBException {
         collectionsList.add(new PrettyXmldbURI(XmldbURI.create(root.getName())));
-        Collection child = null;
-        for (String childCollection : root.listChildCollections()) {
+        for (final String childCollection : root.listChildCollections()) {
+            @Nullable Collection child = null;
             try {
-                child = root.getChildCollection(childCollection);
-            } catch (final XMLDBException xmldbe) {
-                if (xmldbe.getCause() instanceof PermissionDeniedException) {
+                try {
+                    child = root.getChildCollection(childCollection);
+                } catch (final XMLDBException e) {
+                    if (e.getCause() instanceof PermissionDeniedException) {
+                        continue;
+                    } else {
+                        throw e;
+                    }
+                } catch (final Exception e) {
+                    System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
                     continue;
-                } else {
-                    throw xmldbe;
                 }
-            } catch (Exception npe) {
-                System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
-                continue;
-            }
-            try {
-                getCollections(child, collectionsList);
-            } catch (Exception ee) {
-                System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
-                continue;
+
+                try {
+                    getCollections(child, collectionsList);
+                } catch (final Exception e) {
+                    System.out.println("Corrupted resource/collection skipped: " + child != null ? child.getName() != null ? child.getName() : "unknown" : "unknown");
+                    continue;
+                }
+            } finally {
+                if (child != null) {
+                    try {
+                        child.close();
+                    } catch (final XMLDBException e) {
+                        System.out.println("Unable to close collection: " + child.getName() + ". " + e.getMessage());
+                    }
+                }
             }
         }
         return collectionsList;
@@ -960,7 +965,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
         final ResourceDescriptor[] res;
         if (selRows.length == 0) {
             res = new ResourceDescriptor[1];
-            res[0] = new ResourceDescriptor.Collection(client.path);
+            res[0] = new ResourceDescriptor.Collection(client.getPath());
         } else {
             res = new ResourceDescriptor[selRows.length];
 
@@ -981,7 +986,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                 ClientFrame.this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                 final IndexQueryService service;
                 try {
-                    service = client.current.getService(IndexQueryService.class);
+                    service = client.getCollection().getService(IndexQueryService.class);
                     for (final ResourceDescriptor next : collections) {
                         setStatus(Messages.getString("ClientFrame.142") + next.getName() + Messages.getString("ClientFrame.143")); //$NON-NLS-1$ //$NON-NLS-2$
                         service.reindexCollection(next.getName());
@@ -1138,9 +1143,10 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                     dbUri = XmldbURI.xmldbUriFor(uri);
                 }
 
-                final Collection collection = DatabaseManager.getCollection(dbUri.toString(), username, password);
-                final EXistRestoreService service = collection.getService(EXistRestoreService.class);
-                service.restore(f.toAbsolutePath().toString(), dbaPassword, listener, overwriteApps);
+                try (final Collection collection = DatabaseManager.getCollection(dbUri.toString(), username, password)) {
+                    final EXistRestoreService service = collection.getService(EXistRestoreService.class);
+                    service.restore(f.toAbsolutePath().toString(), dbaPassword, listener, overwriteApps);
+                }
 
                 if (JOptionPane.showConfirmDialog(null, Messages.getString("ClientFrame.223"), Messages.getString("ClientFrame.224"),
                         JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
@@ -1224,7 +1230,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                         JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
                     return;
                 }
-                final Resource resource;
+                Resource resource = null;
                 final SAXSerializer contentSerializer;
                 try {
                     final Collection collection = client.getCollection();
@@ -1253,6 +1259,14 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                 } catch (final Exception e) {
                     System.err.println("An exception occurred" + e.getMessage());
                     e.printStackTrace();
+                } finally {
+                    if (resource != null) {
+                        try {
+                            resource.close();
+                        } catch (final XMLDBException e) {
+                            // no-op
+                        }
+                    }
                 }
             }
         }
@@ -1312,30 +1326,32 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                 final Permission thisPerm;
 
                 if (selectedRow.isCollection()) {
-                    final Collection coll = collection.getChildCollection(thisName.toString());
-                    thisCreated = DATE_TIME_FORMATTER.format(coll.getCreationTime());
-                    thisModified = NON_APPLICABLE;
-                    thisMimeType = COLLECTION_MIME_TYPE;
-                    thisMessageDigestType = NON_APPLICABLE;
-                    thisMessageDigestValue = NON_APPLICABLE;
-                    thisSize = NON_APPLICABLE;
-                    thisPerm = service.getPermissions(coll);
-                } else {
-                    final Resource res = collection.getResource(thisName.toString());
-                    thisCreated = DATE_TIME_FORMATTER.format(res.getCreationTime());
-                    thisModified = DATE_TIME_FORMATTER.format(res.getLastModificationTime());
-                    thisMimeType = ((EXistResource) res).getMediaType();
-                    if (res instanceof EXistBinaryResource) {
-                        final MessageDigest messageDigest = ((EXistBinaryResource) res).getContentDigest(DigestType.BLAKE_256);
-                        thisMessageDigestType = messageDigest.getDigestType().getCommonNames()[0];
-                        thisMessageDigestValue = messageDigest.toHexString();
-                        thisSize = humanSize(((EXistBinaryResource) res).getContentLength());
-                    } else {
+                    try (final Collection coll = collection.getChildCollection(thisName.toString())) {
+                        thisCreated = DATE_TIME_FORMATTER.format(coll.getCreationTime());
+                        thisModified = NON_APPLICABLE;
+                        thisMimeType = COLLECTION_MIME_TYPE;
                         thisMessageDigestType = NON_APPLICABLE;
                         thisMessageDigestValue = NON_APPLICABLE;
                         thisSize = NON_APPLICABLE;
+                        thisPerm = service.getPermissions(coll);
                     }
-                    thisPerm = service.getPermissions(res);
+                } else {
+                    try (final Resource res = collection.getResource(thisName.toString())) {
+                        thisCreated = DATE_TIME_FORMATTER.format(res.getCreationTime());
+                        thisModified = DATE_TIME_FORMATTER.format(res.getLastModificationTime());
+                        thisMimeType = ((EXistResource) res).getMediaType();
+                        if (res instanceof EXistBinaryResource) {
+                            final MessageDigest messageDigest = ((EXistBinaryResource) res).getContentDigest(DigestType.BLAKE_256);
+                            thisMessageDigestType = messageDigest.getDigestType().getCommonNames()[0];
+                            thisMessageDigestValue = messageDigest.toHexString();
+                            thisSize = humanSize(((EXistBinaryResource) res).getContentLength());
+                        } else {
+                            thisMessageDigestType = NON_APPLICABLE;
+                            thisMessageDigestValue = NON_APPLICABLE;
+                            thisSize = NON_APPLICABLE;
+                        }
+                        thisPerm = service.getPermissions(res);
+                    }
                 }
 
                 name = getUpdated(name, () ->  URIUtils.urlDecodeUtf8(thisName));
@@ -1478,7 +1494,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             doc.insertString(commandStart++, "\n", defaultAttrs); //$NON-NLS-1$
             if (command != null) {
                 processRunnable.setAction(command);
-                client.console.getHistory().add(command);
+                client.getConsole().getHistory().add(command);
             }
         } catch (final BadLocationException e) {
             e.printStackTrace();
@@ -1486,8 +1502,8 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     }
 
     private void historyBack() {
-        client.console.getHistory().previous();
-        final String item = client.console.getHistory().current();
+        client.getConsole().getHistory().previous();
+        final String item = client.getConsole().getHistory().current();
         if (item == null) {
             return;
         }
@@ -1502,8 +1518,8 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
     }
 
     private void historyForward() {
-        client.console.getHistory().next();
-        final String item = client.console.getHistory().current();
+        client.getConsole().getHistory().next();
+        final String item = client.getConsole().getHistory().current();
         try {
             if (shell.getCaretPosition() > commandStart) {
                 doc.remove(commandStart, doc.getLength() - commandStart);
@@ -1541,9 +1557,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                 } else {
                     // open a document for editing
                     ClientFrame.this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-                    try {
-                        final Resource doc = client.retrieve(resource.getName(), properties.getProperty(OutputKeys.INDENT, "yes")); //$NON-NLS-1$
-
+                    try (final Resource doc = client.retrieve(resource.getName(), properties.getProperty(OutputKeys.INDENT, "yes"))) {
                         if (MediaType.APPLICATION_XQUERY.equals(((EXistResource) doc).getMediaType())) {
                             final Collection collection = client.getCollection();
                             final QueryDialog dialog = new QueryDialog(client, collection, doc, properties);
@@ -1553,7 +1567,6 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                             view.setSize(new Dimension(640, 400));
                             view.viewDocument();
                         }
-                        //doc will be closed in one of the dialogs above when they are closed
                     } catch (final XMLDBException ex) {
                         showErrorMessage(Messages.getString("ClientFrame.206") + ex.getMessage(), ex); //$NON-NLS-1$
                     }

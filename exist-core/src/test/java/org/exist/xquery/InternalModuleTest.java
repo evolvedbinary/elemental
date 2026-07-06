@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,19 +43,18 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery;
 
 import org.exist.dom.QName;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.LocalXMLResource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.w3c.dom.Node;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
@@ -109,25 +132,28 @@ public class InternalModuleTest {
     }
 
     private void requestResponseSessionVariablesQuery_4_x_X_Api(final EXistXQueryService queryService, final Source query) throws XMLDBException {
-        final ResourceSet result = queryService.execute(query);  // this variation of execute will use the XQueryPool for caching
+        // this variation of execute will use the XQueryPool for caching
+        try (final EXistResourceSet result = queryService.execute(query)) {
 
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        final LocalXMLResource resource = (LocalXMLResource)result.getResource(0);
-        assertNotNull(resource);
+            try (final LocalXMLResource resource = (LocalXMLResource) result.getResource(0)) {
+                assertNotNull(resource);
 
-        final Node actualDoc = resource.getContentAsDOM();
+                final Node actualDoc = resource.getContentAsDOM();
 
-        final javax.xml.transform.Source expected = Input.fromString("<vars><request>XPDY0002</request><session>XPDY0002</session><response>XPDY0002</response></vars>").build();
-        final javax.xml.transform.Source actual = Input.fromNode(actualDoc).build();
+                final javax.xml.transform.Source expected = Input.fromString("<vars><request>XPDY0002</request><session>XPDY0002</session><response>XPDY0002</response></vars>").build();
+                final javax.xml.transform.Source actual = Input.fromNode(actualDoc).build();
 
-        final Diff diff = DiffBuilder.compare(expected)
-                .withTest(actual)
-                .checkForSimilar()
-                .build();
+                final Diff diff = DiffBuilder.compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 
     private static String getModuleVariableQuery(final String javaClass) {
@@ -142,25 +168,27 @@ public class InternalModuleTest {
 
     private void moduleVariablesQuery(final EXistXQueryService queryService, final Source query, final long expectedCount) throws XMLDBException {
 
-        final ResourceSet result = queryService.execute(query);  // this variation of execute will use the XQueryPool for caching
+        // this variation of queryService#execute will use the XQueryPool for caching
+        try (final EXistResourceSet result = queryService.execute(query)) {
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+            try (final LocalXMLResource resource = (LocalXMLResource) result.getResource(0)) {
+                assertNotNull(resource);
 
-        final LocalXMLResource resource = (LocalXMLResource)result.getResource(0);
-        assertNotNull(resource);
+                final Node actualDoc = resource.getContentAsDOM();
 
-        final Node actualDoc = resource.getContentAsDOM();
+                final javax.xml.transform.Source expected = Input.fromString("<variables><var1>" + expectedCount + "</var1></variables>").build();
+                final javax.xml.transform.Source actual = Input.fromNode(actualDoc).build();
 
-        final javax.xml.transform.Source expected = Input.fromString("<variables><var1>" + expectedCount + "</var1></variables>").build();
-        final javax.xml.transform.Source actual = Input.fromNode(actualDoc).build();
+                final Diff diff = DiffBuilder.compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
 
-        final Diff diff = DiffBuilder.compare(expected)
-                .withTest(actual)
-                .checkForSimilar()
-                .build();
-
-        assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 
     public static class TestModuleWithVariables extends AbstractInternalModule {

@@ -45,6 +45,7 @@
  */
 package org.exist.http;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.persistent.BinaryDocument;
@@ -57,11 +58,10 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
-import org.exist.xquery.value.Sequence;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
@@ -116,9 +116,7 @@ public class AuditTrailSessionListener implements HttpSessionListener {
         if (xqueryResourcePath != null && xqueryResourcePath.length() > 0) {
             xqueryResourcePath = xqueryResourcePath.trim();
 
-            @Nullable CompiledXQuery compiled = null;
-            @Nullable XQueryContext context = null;
-            @Nullable Source source = null;
+            @Nullable Source source;
 
             try {
                 final BrokerPool pool = BrokerPool.getInstance();
@@ -146,44 +144,18 @@ public class AuditTrailSessionListener implements HttpSessionListener {
                             return;
                         }
 
-                        final XQuery xquery = pool.getXQueryService();
-                        if (xquery == null) {
-                            LOG.error("broker unable to retrieve XQueryService");
-                            return;
-                        }
-
-                        compiled = xqpool.borrowCompiledXQuery(broker, source);
-                        if (compiled == null) {
-                            context = new XQueryContext(broker.getBrokerPool());
-                        } else {
-                            context = compiled.getContext();
-                            context.prepareForReuse();
-                        }
-                        context.setStaticallyKnownDocuments(new XmldbURI[]{pathUri});
-                        context.setBaseURI(new AnyURIValue(pathUri.toString()));
-
-                        if (compiled == null) {
-                            compiled = xquery.compile(context, source);
-                        } else {
-                            compiled.getContext().updateContext(context);
-                            context.getWatchDog().reset();
-                        }
+                        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{pathUri});
+                            xqueryContext.setBaseURI(new AnyURIValue(pathUri.toString()));
+                        };
 
                         final Properties outputProperties = new Properties();
+                        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null)) {
 
-                        final long startTime = System.currentTimeMillis();
-                        final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
-                        final long queryTime = System.currentTimeMillis() - startTime;
-                        if (LOG.isTraceEnabled()) {
-                            LOG.trace("XQuery execution results: {} in {}ms.", result.toString(), queryTime);
+                            if (LOG.isTraceEnabled()) {
+                                LOG.trace("XQuery execution results: {} in {}ms.", queryResult.result.toString(), queryResult.executionTime);
+                            }
                         }
-                    }
-                } finally {
-                    if (context != null) {
-                        context.runCleanupTasks();
-                    }
-                    if (compiled != null && source != null) {
-                        xqpool.returnCompiledXQuery(source, compiled);
                     }
                 }
 

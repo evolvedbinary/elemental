@@ -47,6 +47,7 @@ package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -60,7 +61,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -82,11 +83,11 @@ public class JaxpXsdCatalogTest {
     public static void prepareResources() throws XMLDBException, IOException {
 
         // Switch off validation
-        try (Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse")) {
+        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse")) {
             existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
-        try (Collection schemasCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/schemas")) {
+        try (final Collection schemasCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/schemas")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/schemas/MyNameSpace.xsd")) {
                 assertNotNull(is);
@@ -100,14 +101,14 @@ public class JaxpXsdCatalogTest {
 
         }
 
-        try (Collection parseCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse")) {
+        try (final Collection parseCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse")) {
             try (final InputStream is = SAMPLES.getSample("validation/parse/catalog.xml")) {
                 assertNotNull(is);
                 existEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
             }
         }
 
-        try (Collection instanceCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/instance")) {
+        try (final Collection instanceCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/instance")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/valid.xml")) {
                 assertNotNull(is);
@@ -123,8 +124,11 @@ public class JaxpXsdCatalogTest {
 
     @Before
     public void clearGrammarCache() throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()");
-        results.getResource(0).getContent();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+            try (final Resource resource = result.getResource(0)) {
+                resource.getContent();
+            }
+        }
     }
 
     @Test
@@ -214,9 +218,12 @@ public class JaxpXsdCatalogTest {
     }
 
     private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                final String content = (String) resource.getContent();
+                assertThat(content, hasXPath("//status/text()", equalTo(expectedValue)));
+            }
+        }
     }
 }

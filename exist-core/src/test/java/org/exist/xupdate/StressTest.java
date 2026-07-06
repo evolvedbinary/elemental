@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -32,6 +56,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.DBUtils;
 import org.junit.After;
@@ -44,7 +69,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -101,12 +125,14 @@ public class StressTest {
             tagsWritten[i] = tag;
 
             final String query = "//" + tagsWritten[rand.nextInt(i + 1)];
-            final ResourceSet result = xquery.query(query);
-            assertEquals(result.getSize(), 1);
+            try (final EXistResourceSet result = (EXistResourceSet) xquery.query(query)) {
+                assertEquals(result.getSize(), 1);
+            }
         }
 
-        final XMLResource res = (XMLResource) testCol.getResource("test.xml");
-        assertNotNull(res);
+        try (final XMLResource res = (XMLResource) testCol.getResource("test.xml")) {
+            assertNotNull(res);
+        }
     }
 
     private void removeTags() throws XMLDBException {
@@ -127,14 +153,17 @@ public class StressTest {
 
     private void fetchDb() throws XMLDBException {
         final XPathQueryService xquery = testCol.getService(XPathQueryService.class);
-        final ResourceSet result = xquery.query("for $n in collection('" + XmldbURI.ROOT_COLLECTION + "/test')//* return local-name($n)");
+        try (final EXistResourceSet result = (EXistResourceSet) xquery.query("for $n in collection('" + XmldbURI.ROOT_COLLECTION + "/test')//* return local-name($n)")) {
 
-        for (int i = 0; i < result.getSize(); i++) {
-            final Resource r = result.getResource(i);
-            final String tag = r.getContent().toString();
+            for (int i = 0; i < result.getSize(); i++) {
+                try (final Resource r = result.getResource(i)) {
+                    final String tag = r.getContent().toString();
 
-            final ResourceSet result2 = xquery.query("//" + tag);
-            assertEquals(result2.getSize(), 1);
+                    try (final EXistResourceSet result2 = (EXistResourceSet) xquery.query("//" + tag)) {
+                        assertEquals(result2.getSize(), 1);
+                    }
+                }
+            }
         }
     }
 
@@ -160,6 +189,8 @@ public class StressTest {
 
     @After
     public void tearDown() throws XMLDBException, LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+        testCol.close();
+
         TestUtils.cleanupDB();
     }
 }

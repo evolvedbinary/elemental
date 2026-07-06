@@ -109,8 +109,23 @@ public class PatchTest extends RESTTest {
 
     @AfterClass
     public static void afterClass() throws XMLDBException {
-        root.removeResource(bin);
-        root.removeResource(xml);
+        try {
+            root.removeResource(bin);
+            root.removeResource(xml);
+        } finally {
+            if (bin != null) {
+                bin.close();
+                bin = null;
+            }
+            if (xml != null) {
+                xml.close();
+                xml = null;
+            }
+            if (root != null) {
+                root.close();
+                root = null;
+            }
+        }
     }
 
     @Test

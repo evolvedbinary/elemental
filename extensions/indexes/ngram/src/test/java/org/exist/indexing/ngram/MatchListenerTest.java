@@ -58,6 +58,7 @@ import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -69,7 +70,7 @@ import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.AfterClass;
@@ -157,32 +158,42 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ngram:contains(., 'mixed')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> content.</para>"));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            String query = "//para[ngram:contains(., 'mixed')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> content.</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'content')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>mixed</hi> " + MATCH_START + "content" + MATCH_END + ".</para>"));
+            query = "//para[ngram:contains(., 'content')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>mixed</hi> " + MATCH_START + "content" + MATCH_END + ".</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'nested')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> inner</note> elements.</para>"));
+            query = "//para[ngram:contains(., 'nested')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> inner</note> elements.</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'content') and ngram:contains(., 'mixed')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> " + MATCH_START + "content" + MATCH_END + ".</para>"));
+            query = "//para[ngram:contains(., 'content') and ngram:contains(., 'mixed')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi> " + MATCH_START + "content" + MATCH_END + ".</para>"));
+            }
         }
     }
 
@@ -191,15 +202,15 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
-
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            final Sequence seq = xquery.execute(broker, "//para[ngram:contains(., 'mixed')]/hi", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            final String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>"));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            final String query = "//para[ngram:contains(., 'mixed')]/hi";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                final String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>"));
+            }
         }
     }
 
@@ -208,21 +219,24 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            String query = "//para[ngram:contains(., 'nested')]/note";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> inner</note>"));
+            }
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ngram:contains(., 'nested')]/note", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> inner</note>"));
-
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'nested')]//hi", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "nested" + MATCH_END + "</hi>"));
+            query = "//para[ngram:contains(., 'nested')]//hi";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<hi>" + MATCH_START + "nested" + MATCH_END + "</hi>"));
+            }
         }
     }
 
@@ -231,27 +245,33 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            String query = "//para[ngram:contains(term, 'term')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            }
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ngram:contains(term, 'term')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            query = "//term[ngram:contains(., 'term')]/..";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            }
 
-            seq = xquery.execute(broker, "//term[ngram:contains(., 'term')]/..", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
-
-            seq = xquery.execute(broker, "//term[ngram:contains(., 'term')]/ancestor::para", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            query = "//term[ngram:contains(., 'term')]/ancestor::para";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END + "</term>.</para>"));
+            }
         }
     }
 
@@ -260,33 +280,42 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            String query = "//para[ngram:contains(., 'mixed content')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>" + MATCH_START + " content" + MATCH_END + ".</para>"));
+            }
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ngram:contains(., 'mixed content')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph with <hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>" + MATCH_START + " content" + MATCH_END + ".</para>"));
+            query = "//para[ngram:contains(., 'with mixed content')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph " + MATCH_START + "with " + MATCH_END + "<hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>" + MATCH_START + " content" + MATCH_END + ".</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'with mixed content')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some paragraph " + MATCH_START + "with " + MATCH_END + "<hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>" + MATCH_START + " content" + MATCH_END + ".</para>"));
+            query = "//para[ngram:contains(., 'with nested')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph " + MATCH_START + "with " + MATCH_END + "<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> inner</note> elements.</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'with nested')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph " + MATCH_START + "with " + MATCH_END + "<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi> inner</note> elements.</para>"));
-
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'with nested inner elements')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph " + MATCH_START + "with " + MATCH_END + "<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note>" + MATCH_START + " elements" + MATCH_END + ".</para>"));
+            query = "//para[ngram:contains(., 'with nested inner elements')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph " + MATCH_START + "with " + MATCH_END + "<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note>" + MATCH_START + " elements" + MATCH_END + ".</para>"));
+            }
         }
     }
 
@@ -295,20 +324,24 @@ public class MatchListenerTest {
         configureAndStore(CONF2, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//para[ngram:contains(note, 'nested inner')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note> elements.</para>"));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            String query = "//para[ngram:contains(note, 'nested inner')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note> elements.</para>"));
+            }
 
-            seq = xquery.execute(broker, "//note[ngram:contains(., 'nested inner')]/parent::para", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note> elements.</para>"));
+            query = "//note[ngram:contains(., 'nested inner')]/parent::para";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragraph with <note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note> elements.</para>"));
+            }
         }
     }
 
@@ -317,27 +350,33 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
+            String query = "//para[ngram:contains(., 'double match')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double match" + MATCH_END + " " + MATCH_START + "double match" + MATCH_END + "</para>"));
+            }
 
-            Sequence seq = xquery.execute(broker, "//para[ngram:contains(., 'double match')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double match" + MATCH_END + " " + MATCH_START + "double match" + MATCH_END + "</para>"));
+            query = "//para[ngram:contains(., 'aaa aaa')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "aaa aaa" + MATCH_END + " aaa</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:contains(., 'aaa aaa')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "aaa aaa" + MATCH_END + " aaa</para>"));
-
-            seq = xquery.execute(broker, "//para[ngram:ends-with(., 'aaa aaa')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>aaa " + MATCH_START + "aaa aaa" + MATCH_END + "</para>"));
+            query = "//para[ngram:ends-with(., 'aaa aaa')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>aaa " + MATCH_START + "aaa aaa" + MATCH_END + "</para>"));
+            }
         }
     }
 
@@ -346,28 +385,35 @@ public class MatchListenerTest {
         configureAndStore(CONF1, XML);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+            String query = "//para[ngram:wildcard-contains(., 'double.*match')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double match double match" + MATCH_END + "</para>"));
+            }
 
-            Sequence seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., 'double.*match')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "double match double match" + MATCH_END + "</para>"));
-
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., 'paragraph.*content\\.')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>some " + MATCH_START + "paragraph with " + MATCH_END + "<hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>" + MATCH_START + " content." + MATCH_END + "</para>"));
+            query = "//para[ngram:wildcard-contains(., 'paragraph.*content\\.')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                String result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>some " + MATCH_START + "paragraph with " + MATCH_END + "<hi>" + MATCH_START + "mixed" + MATCH_END + "</hi>" + MATCH_START + " content." + MATCH_END + "</para>"));
+            }
 
             String wildcardQuery = "...with.*[tn].*ele.ent[sc].*";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragra" + MATCH_START + "ph with " + MATCH_END + "<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note>" + MATCH_START + " elements." + MATCH_END + "</para>"));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            String result;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>another paragra" + MATCH_START + "ph with " + MATCH_END + "<note><hi>" + MATCH_START + "nested" + MATCH_END + "</hi>" + MATCH_START + " inner" + MATCH_END + "</note>" + MATCH_START + " elements." + MATCH_END + "</para>"));
+            }
 
             final Iterable<Node> it = XPATH_ENGINE.selectNodes("//exist:match", Input.fromString(result).build());
             final StringBuilder m = new StringBuilder();
@@ -378,73 +424,100 @@ public class MatchListenerTest {
             assertMatches(wildcardQuery, match);
 
             wildcardQuery = "\\*.*\\?";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>Where did all the " + MATCH_START + "*s go?" + MATCH_END + "</para>"));
-            assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>Where did all the " + MATCH_START + "*s go?" + MATCH_END + "</para>"));
+                assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            }
 
             wildcardQuery = ".est[][?]tes.";
 
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "test]test" + MATCH_END + " " + MATCH_START + "test[test" + MATCH_END + " " + MATCH_START + "test?test" + MATCH_END + "</para>"));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "test]test" + MATCH_END + " " + MATCH_START + "test[test" + MATCH_END + " " + MATCH_START + "test?test" + MATCH_END + "</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '^" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "test]test" + MATCH_END + " test[test test?test</para>"));
+            query = "//para[ngram:wildcard-contains(., '^" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "test]test" + MATCH_END + " test[test test?test</para>"));
+            }
 
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "$')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>test]test test[test " + MATCH_START + "test?test" + MATCH_END + "</para>"));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "$')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>test]test test[test " + MATCH_START + "test?test" + MATCH_END + "</para>"));
+            }
 
             wildcardQuery = "^aaa.aaa$";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "aaacaaa" + MATCH_END + "</para>"));
-            assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "aaacaaa" + MATCH_END + "</para>"));
+                assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            }
 
             wildcardQuery = ".+simple";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "a simple" + MATCH_END + " paragraph</para>"));
-            assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "a simple" + MATCH_END + " paragraph</para>"));
+                assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            }
 
             wildcardQuery = "a s.?i.?m.?p.?l.?e.?";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "a simple " + MATCH_END + "paragraph</para>"));
-            assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "a simple " + MATCH_END + "paragraph</para>"));
+                assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            }
 
             wildcardQuery = "a s.?i.?m.?p.?l.?e.?";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
-            result = queryResult2String(broker, seq, 0);
-            assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "a simple " + MATCH_END + "paragraph</para>"));
-            assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+                result = queryResult2String(broker, seq, 0);
+                assertThat(result, CompareMatcher.isIdenticalTo("<para>" + MATCH_START + "a simple " + MATCH_END + "paragraph</para>"));
+                assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+            }
 
             wildcardQuery = "b.{3,6}c";
-            seq = xquery.execute(broker, "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]", null);
-            assertNotNull(seq);
-            assertEquals(2, seq.getItemCount());
+            query = "//para[ngram:wildcard-contains(., '" + wildcardQuery + "')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(2, seq.getItemCount());
 
-            for (int i = 0; i < 2; i++) {
-                result = queryResult2String(broker, seq, i);
-                assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+                for (int i = 0; i < 2; i++) {
+                    result = queryResult2String(broker, seq, i);
+                    assertThat(result, hasXPath("//exist:match", matchesRegex(wildcardQuery)).withNamespaceContext(NS_CONTEXT));
+                }
             }
         }
     }
@@ -458,22 +531,20 @@ public class MatchListenerTest {
         configureAndStore(CONF3, XML2);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
             final String[] strings = new String[] { "龍", "龍護", "曰龍護", "名曰龍護" };
             for (int i = 0; i < strings.length; i++) {
-                final Sequence seq = xquery.execute(broker, 
-                        "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";\n" +
-                        "//tei:p[ngram:contains(., '" + strings[i] + "')]",
-                        null);
-                assertNotNull(seq);
-                assertEquals(1, seq.getItemCount());
-                final String result = queryResult2String(broker, seq, 0);
+                final String query = "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";\n" +
+                        "//tei:p[ngram:contains(., '" + strings[i] + "')]";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertNotNull(seq);
+                    assertEquals(1, seq.getItemCount());
+                    final String result = queryResult2String(broker, seq, 0);
 
-                assertThat(result, hasXPath("count(//exist:match)", equalTo(i < 2 ? "2" : "1")).withNamespaceContext(NS_CONTEXT));
-                assertThat(result, hasXPath("//exist:match[text() = '" + strings[i] + "']").withNamespaceContext(NS_CONTEXT));
+                    assertThat(result, hasXPath("count(//exist:match)", equalTo(i < 2 ? "2" : "1")).withNamespaceContext(NS_CONTEXT));
+                    assertThat(result, hasXPath("//exist:match[text() = '" + strings[i] + "']").withNamespaceContext(NS_CONTEXT));
+                }
             }
         }
     }
@@ -483,24 +554,22 @@ public class MatchListenerTest {
         configureAndStore(CONF3, XML2);
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
             final String[] strings = new String[] { "龍", "龍護", "曰龍護", "名曰龍護" };
             for (int i = 0; i < strings.length; i++) {
-                final Sequence seq = xquery.execute(broker, 
-                        "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";\n" +
+                final String query = "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";\n" +
                         "for $para in //tei:p[ngram:contains(., '" + strings[i] + "')]\n" +
                         "return\n" +
-                        "   <match>{$para}</match>",
-                        null);
-                assertNotNull(seq);
-                assertEquals(1, seq.getItemCount());
-                final String result = queryResult2String(broker, seq, 0);
+                        "   <match>{$para}</match>";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertNotNull(seq);
+                    assertEquals(1, seq.getItemCount());
+                    final String result = queryResult2String(broker, seq, 0);
 
-                assertThat(result, hasXPath("count(//exist:match)", equalTo(i < 2 ? "2" : "1")).withNamespaceContext(NS_CONTEXT));
-                assertThat(result, hasXPath("//exist:match[text() = '" + strings[i] + "']").withNamespaceContext(NS_CONTEXT));
+                    assertThat(result, hasXPath("count(//exist:match)", equalTo(i < 2 ? "2" : "1")).withNamespaceContext(NS_CONTEXT));
+                    assertThat(result, hasXPath("//exist:match[text() = '" + strings[i] + "']").withNamespaceContext(NS_CONTEXT));
+                }
             }
         }
     }
@@ -509,7 +578,7 @@ public class MatchListenerTest {
     public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
 
     @BeforeClass
-    public static void startDB() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, TriggerException {
+    public static void startDB() throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
@@ -544,7 +613,7 @@ public class MatchListenerTest {
         }
     }
 
-    private void configureAndStore(String config, String xml) throws PermissionDeniedException, IOException, SAXException, EXistException, LockException, CollectionConfigurationException {
+    private void configureAndStore(final String config, final String xml) throws PermissionDeniedException, IOException, SAXException, EXistException, LockException, CollectionConfigurationException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
@@ -562,8 +631,8 @@ public class MatchListenerTest {
         }
     }
 
-    private String queryResult2String(DBBroker broker, Sequence seq, int index) throws SAXException, XPathException {
-        Properties props = new Properties();
+    private String queryResult2String(final DBBroker broker, final Sequence seq, final int index) throws SAXException, XPathException {
+        final Properties props = new Properties();
         props.setProperty(OutputKeys.INDENT, "no");
         props.setProperty(EXistOutputKeys.HIGHLIGHT_MATCHES, "elements");
         final Serializer serializer = broker.borrowSerializer();

@@ -45,6 +45,7 @@
  */
 package org.exist.http.servlets;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -53,13 +54,10 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -70,7 +68,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -192,59 +189,60 @@ public class RedirectorServlet extends AbstractExistHttpServlet {
         final FileSource source = new FileSource(p, true);
 
         try {
-            // Prepare and execute the XQuery
-            final Sequence result = executeQuery(source, request, response);
-
             String redirectTo = null;
             String servletName = null;
             String path = null;
             ModifiableRequestWrapper modifiedRequest = null;
-            // parse the query result element
-            if (result != null && result.getItemCount() == 1) {
-                Node node = (Node)result.itemAt(0);
-                if (node.getNodeType() == Node.DOCUMENT_NODE) {
-                    node = ((Document) node).getDocumentElement();
-                }
-                if (node.getNodeType() != Node.ELEMENT_NODE) {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-                            "Redirect XQuery should return an XML element. Received: " + node);
-                    return;
-                }
-                Element elem = (Element) node;
-                final String ns = elem.getNamespaceURI();
-                if (ns == null || ((!Namespaces.EXIST_NS.equals(ns)) && "dispatch".equals(elem.getLocalName()))) {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-                            "Redirect XQuery should return an element <exist:dispatch>. Received: " + node);
-                    return;
-                }
-                if (elem.hasAttribute("path")) {
-                    path = elem.getAttribute("path");
-                } else if (elem.hasAttribute("servlet-name")) {
-                    servletName = elem.getAttribute("servlet-name");
-                } else if (elem.hasAttribute("redirect")) {
-                    redirectTo = elem.getAttribute("redirect");
-                } else {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-                            "Element <exist:dispatch> should either provide an attribute 'path' or 'servlet-name'. Received: " +
-                                    node);
-                    return;
-                }
 
-                // Check for add-parameter elements etc.
-                if (elem.hasChildNodes()) {
-                    node = elem.getFirstChild();
-                    while (node != null) {
-                        final String nsUri = node.getNamespaceURI();
-                        if (node.getNodeType() == Node.ELEMENT_NODE && nsUri != null && Namespaces.EXIST_NS.equals(nsUri)) {
-                            elem = (Element) node;
-                            if ("add-parameter".equals(elem.getLocalName())) {
-                                if (modifiedRequest == null) {
-                                    modifiedRequest = new ModifiableRequestWrapper(req);
+            // Execute the XQuery
+            try (final XQueryUtil.QueryResult queryResult = executeQuery(source, request, response)) {
+                // parse the query result element
+                if (queryResult.result != null && queryResult.result.getItemCount() == 1) {
+                    Node node = (Node) queryResult.result.itemAt(0);
+                    if (node.getNodeType() == Node.DOCUMENT_NODE) {
+                        node = ((Document) node).getDocumentElement();
+                    }
+                    if (node.getNodeType() != Node.ELEMENT_NODE) {
+                        response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                            "Redirect XQuery should return an XML element. Received: " + node);
+                        return;
+                    }
+                    Element elem = (Element) node;
+                    final String ns = elem.getNamespaceURI();
+                    if (ns == null || ((!Namespaces.EXIST_NS.equals(ns)) && "dispatch".equals(elem.getLocalName()))) {
+                        response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                            "Redirect XQuery should return an element <exist:dispatch>. Received: " + node);
+                        return;
+                    }
+                    if (elem.hasAttribute("path")) {
+                        path = elem.getAttribute("path");
+                    } else if (elem.hasAttribute("servlet-name")) {
+                        servletName = elem.getAttribute("servlet-name");
+                    } else if (elem.hasAttribute("redirect")) {
+                        redirectTo = elem.getAttribute("redirect");
+                    } else {
+                        response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                            "Element <exist:dispatch> should either provide an attribute 'path' or 'servlet-name'. Received: " +
+                                node);
+                        return;
+                    }
+
+                    // Check for add-parameter elements etc.
+                    if (elem.hasChildNodes()) {
+                        node = elem.getFirstChild();
+                        while (node != null) {
+                            final String nsUri = node.getNamespaceURI();
+                            if (node.getNodeType() == Node.ELEMENT_NODE && nsUri != null && Namespaces.EXIST_NS.equals(nsUri)) {
+                                elem = (Element) node;
+                                if ("add-parameter".equals(elem.getLocalName())) {
+                                    if (modifiedRequest == null) {
+                                        modifiedRequest = new ModifiableRequestWrapper(req);
+                                    }
+                                    modifiedRequest.addParameter(elem.getAttribute("name"), elem.getAttribute("value"));
                                 }
-                                modifiedRequest.addParameter(elem.getAttribute("name"), elem.getAttribute("value"));
                             }
+                            node = node.getNextSibling();
                         }
-                        node = node.getNextSibling();
                     }
                 }
             }
@@ -292,44 +290,21 @@ public class RedirectorServlet extends AbstractExistHttpServlet {
         }
     }
 
-    private Sequence executeQuery(final Source source, final RequestWrapper request, final ResponseWrapper response) throws EXistException, XPathException, PermissionDeniedException, IOException {
-        final XQuery xquery = getPool().getXQueryService();
-        final XQueryPool pool = getPool().getXQueryPool();
+    private XQueryUtil.QueryResult executeQuery(final Source source, final RequestWrapper request, final ResponseWrapper response) throws EXistException, XPathException, PermissionDeniedException, IOException {
 
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
         try (final DBBroker broker = getPool().getBroker()) {
 
-            compiled = pool.borrowCompiledXQuery(broker, source);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.toString());
+            };
+
+            final Properties outputProperties = new Properties();
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null);
 
             // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
-            if (compiled == null) {
-                context = new XQueryContext(getPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.toString());
-
-            if (compiled == null) {
-                compiled = xquery.compile(context, source);
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
-
-            return xquery.execute(broker, compiled, null, new Properties());
-
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                pool.returnCompiledXQuery(source, compiled);
-            }
+            return queryResult;
         }
     }
 

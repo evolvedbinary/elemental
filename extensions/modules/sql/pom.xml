@@ -189,6 +189,7 @@
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
                                 <include>src/main/java/org/exist/xquery/modules/sql/ExecuteFunction.java</include>
+                                <include>src/test/java/org/exist/xquery/modules/sql/ExecuteIT.java</include>
                             </includes>
                         </licenseSet>
 
@@ -206,6 +207,7 @@
                                 <exclude>src/test/java/org/exist/xquery/modules/sql/ConnectionIT.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/sql/ConnectionPoolIT.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/sql/ExecuteFunction.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/modules/sql/ExecuteIT.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/sql/GetConnectionFunction.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/sql/H2DatabaseResource.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/modules/sql/ImplicitConnectionCloseIT.java</exclude>

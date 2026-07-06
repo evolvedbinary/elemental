@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.EXistException;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.DocumentSet;
@@ -57,13 +58,11 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 
 import javax.annotation.Nullable;
@@ -96,39 +95,19 @@ public class Conditional extends Modification {
             LOG.debug("Processing xupdate:if ...");
         }
 
-		final XQuery xquery = broker.getBrokerPool().getXQueryService();
-		final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
 		final Source source = new StringSource(selectStmt);
 
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            compiled = pool.borrowCompiledXQuery(broker, source);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            xqueryContext.setStaticallyKnownDocuments(docs);
+            declareNamespaces(xqueryContext);
+        };
 
-            //context.setBackwardsCompatibility(true);
-            context.setStaticallyKnownDocuments(docs);
-            declareNamespaces(context);
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+            declareVariables(xqueryContext);
+        };
 
-            if (compiled == null) {
-                try {
-                    compiled = xquery.compile(context, source);
-                } catch (final IOException e) {
-                    throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
-
-            declareVariables(context);
-
-            final Sequence seq = xquery.execute(broker, compiled, null);
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+            final Sequence seq = queryResult.result;
             if (seq.effectiveBooleanValue()) {
                 long mods = 0;
                 for (final Modification modification : modifications) {
@@ -141,16 +120,12 @@ public class Conditional extends Modification {
                 }
 
                 return mods;
+
             } else {
                 return 0;
             }
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                pool.returnCompiledXQuery(source, compiled);
-            }
+        } catch (final IOException e) {
+            throw new EXistException("An exception occurred while compiling the query: " + e.getMessage());
         }
 	}
 

@@ -45,6 +45,7 @@
  */
 package org.exist.http.urlrewrite;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import jakarta.servlet.annotation.MultipartConfig;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
@@ -72,7 +73,6 @@ import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.LockException;
@@ -262,93 +262,100 @@ public class XQueryURLRewrite extends HttpServlet {
                         outputProperties.setProperty(OutputKeys.ENCODING, UTF_8.name());
                         outputProperties.setProperty(OutputKeys.MEDIA_TYPE, MediaType.APPLICATION_XML);
 
-                        final Sequence result = runQuery(broker, modifiedRequest, response, modelView, staticRewrite, outputProperties);
+                        try (@Nullable final XQueryUtil.QueryResult queryResult = runQuery(broker, modifiedRequest, response, modelView, staticRewrite, outputProperties)) {
 
-                        logResult(broker, result);
+                            if (queryResult != null) {
+                                logResult(broker, queryResult);
+                            }
 
-                        if (response.isCommitted()) {
-                            return;
-                        }
-
-                        // process the query result
-                        if (result.getItemCount() == 1) {
-                            final Item resource = result.itemAt(0);
-                            if (!Type.subTypeOf(resource.getType(), Type.NODE)) {
-                                throw new ServletException("XQueryURLRewrite: urlrewrite query should return an element!");
-                            }
-                            Node node = ((NodeValue) resource).getNode();
-                            if (node.getNodeType() == Node.DOCUMENT_NODE) {
-                                node = ((Document) node).getDocumentElement();
-                            }
-                            if (node.getNodeType() != Node.ELEMENT_NODE) {
-                                //throw new ServletException("Redirect XQuery should return an XML element!");
-                                response(broker, response, outputProperties, result);
-                                return;
-                            }
-                            Element elem = (Element) node;
-                            final String ns = elem.getNamespaceURI();
-                            if (!Namespaces.EXIST_NS.equals(ns)) {
-                                response(broker, response, outputProperties, result);
+                            if (response.isCommitted()) {
                                 return;
                             }
 
-                            final String nsUri = elem.getNamespaceURI();
-                            if (Namespaces.EXIST_NS.equals(nsUri) && "dispatch".equals(elem.getLocalName())) {
-                                node = elem.getFirstChild();
-                                while (node != null) {
-                                    final String nodeNs = node.getNamespaceURI();
-                                    if (node.getNodeType() == Node.ELEMENT_NODE && Namespaces.EXIST_NS.equals(nodeNs)) {
-                                        final Element action = (Element) node;
-                                        if ("view".equals(action.getLocalName())) {
-                                            parseViews(modifiedRequest, action, modelView);
-                                        } else if ("error-handler".equals(action.getLocalName())) {
-                                            parseErrorHandlers(modifiedRequest, action, modelView);
-                                        } else if ("cache-control".equals(action.getLocalName())) {
-                                            final String option = action.getAttribute("cache");
-                                            modelView.setUseCache("yes".equals(option));
-                                        } else {
-                                            final URLRewrite urw = parseAction(modifiedRequest, action);
-                                            if (urw != null) {
-                                                modelView.setModel(urw);
-                                            }
-                                        }
+                            // process the query result
+                            if (queryResult != null) {
+                                if (queryResult.result.getItemCount() == 1) {
+                                    final Item resource = queryResult.result.itemAt(0);
+                                    if (!Type.subTypeOf(resource.getType(), Type.NODE)) {
+                                        throw new ServletException("XQueryURLRewrite: urlrewrite query should return an element!");
                                     }
-                                    node = node.getNextSibling();
+                                    Node node = ((NodeValue) resource).getNode();
+                                    if (node.getNodeType() == Node.DOCUMENT_NODE) {
+                                        node = ((Document) node).getDocumentElement();
+                                    }
+                                    if (node.getNodeType() != Node.ELEMENT_NODE) {
+                                        //throw new ServletException("Redirect XQuery should return an XML element!");
+                                        response(broker, response, outputProperties, queryResult.result);
+                                        return;
+                                    }
+                                    Element elem = (Element) node;
+                                    final String ns = elem.getNamespaceURI();
+                                    if (!Namespaces.EXIST_NS.equals(ns)) {
+                                        response(broker, response, outputProperties, queryResult.result);
+                                        return;
+                                    }
+
+                                    final String nsUri = elem.getNamespaceURI();
+                                    if (Namespaces.EXIST_NS.equals(nsUri) && "dispatch".equals(elem.getLocalName())) {
+                                        node = elem.getFirstChild();
+                                        while (node != null) {
+                                            final String nodeNs = node.getNamespaceURI();
+                                            if (node.getNodeType() == Node.ELEMENT_NODE && Namespaces.EXIST_NS.equals(nodeNs)) {
+                                                final Element action = (Element) node;
+                                                if ("view".equals(action.getLocalName())) {
+                                                    parseViews(modifiedRequest, action, modelView);
+                                                } else if ("error-handler".equals(action.getLocalName())) {
+                                                    parseErrorHandlers(modifiedRequest, action, modelView);
+                                                } else if ("cache-control".equals(action.getLocalName())) {
+                                                    final String option = action.getAttribute("cache");
+                                                    modelView.setUseCache("yes".equals(option));
+                                                } else {
+                                                    final URLRewrite urw = parseAction(modifiedRequest, action);
+                                                    if (urw != null) {
+                                                        modelView.setModel(urw);
+                                                    }
+                                                }
+                                            }
+                                            node = node.getNextSibling();
+                                        }
+                                        if (modelView.getModel() == null) {
+                                            modelView.setModel(new PassThrough(config, elem, modifiedRequest));
+                                        }
+                                    } else if (nsUri != null && Namespaces.EXIST_NS.equals(elem.getNamespaceURI()) && "ignore".equals(elem.getLocalName())) {
+                                        modelView.setModel(new PassThrough(config, elem, modifiedRequest));
+                                        final NodeList nl = elem.getElementsByTagNameNS(Namespaces.EXIST_NS, "cache-control");
+                                        if (nl.getLength() > 0) {
+                                            elem = (Element) nl.item(0);
+                                            final String option = elem.getAttribute("cache");
+                                            modelView.setUseCache("yes".equals(option));
+                                        }
+                                    } else {
+                                        response(broker, response, outputProperties, queryResult.result);
+                                        return;
+                                    }
+                                } else if (queryResult.result.getItemCount() > 1) {
+                                    response(broker, response, outputProperties, queryResult.result);
+                                    return;
                                 }
-                                if (modelView.getModel() == null) {
-                                    modelView.setModel(new PassThrough(config, elem, modifiedRequest));
-                                }
-                            } else if (nsUri != null && Namespaces.EXIST_NS.equals(elem.getNamespaceURI()) && "ignore".equals(elem.getLocalName())) {
-                                modelView.setModel(new PassThrough(config, elem, modifiedRequest));
-                                final NodeList nl = elem.getElementsByTagNameNS(Namespaces.EXIST_NS, "cache-control");
-                                if (nl.getLength() > 0) {
-                                    elem = (Element) nl.item(0);
-                                    final String option = elem.getAttribute("cache");
-                                    modelView.setUseCache("yes".equals(option));
-                                }
-                            } else {
-                                response(broker, response, outputProperties, result);
-                                return;
                             }
-                        } else if (result.getItemCount() > 1) {
-                            response(broker, response, outputProperties, result);
-                            return;
+
+                            if (modelView.useCache()) {
+                                LOG.debug("Caching request to {}", request.getRequestURI());
+                                urlCache.put(modifiedRequest.getHeader("Host") + request.getRequestURI(), modelView);
+                            }
                         }
 
-                        if (modelView.useCache()) {
-                            LOG.debug("Caching request to {}", request.getRequestURI());
-                            urlCache.put(modifiedRequest.getHeader("Host") + request.getRequestURI(), modelView);
-                        }
+                        // store the original request URI to org.exist.forward.request-uri
+                        modifiedRequest.setAttribute(RQ_ATTR_REQUEST_URI, request.getRequestURI());
+                        modifiedRequest.setAttribute(RQ_ATTR_SERVLET_PATH, request.getServletPath());
+
                     }
-
-                    // store the original request URI to org.exist.forward.request-uri
-                    modifiedRequest.setAttribute(RQ_ATTR_REQUEST_URI, request.getRequestURI());
-                    modifiedRequest.setAttribute(RQ_ATTR_SERVLET_PATH, request.getServletPath());
-
                 }
+
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("URLRewrite took {}ms.", System.currentTimeMillis() - start);
                 }
+
                 final HttpServletResponse wrappedResponse =
                         new CachingResponseWrapper(response, modelView.hasViews() || modelView.hasErrorHandlers());
                 if (modelView.getModel() == null) {
@@ -634,11 +641,11 @@ public class XQueryURLRewrite extends HttpServlet {
         authenticator = new BasicAuthenticator(pool);
     }
 
-    private void logResult(final DBBroker broker, final Sequence result) throws SAXException {
-        if (LOG.isTraceEnabled() && result.getItemCount() > 0) {
+    private void logResult(final DBBroker broker, final XQueryUtil.QueryResult queryResult) throws SAXException {
+        if (LOG.isTraceEnabled() && queryResult.result.getItemCount() > 0) {
             final Serializer serializer = broker.borrowSerializer();
             try {
-                final Item item = result.itemAt(0);
+                final Item item = queryResult.result.itemAt(0);
                 if (Type.subTypeOf(item.getType(), Type.NODE)) {
                     LOG.trace(serializer.serialize((NodeValue) item));
                 }
@@ -663,59 +670,30 @@ public class XQueryURLRewrite extends HttpServlet {
         }
     }
 
-    private Sequence runQuery(final DBBroker broker, final RequestWrapper request, final HttpServletResponse response, final ModelAndView model, final URLRewrite staticRewrite, final Properties outputProperties) throws ServletException, XPathException, PermissionDeniedException {
+    private @Nullable XQueryUtil.QueryResult runQuery(final DBBroker broker, final RequestWrapper request, final HttpServletResponse response, final ModelAndView model, final URLRewrite staticRewrite, final Properties outputProperties) throws ServletException, XPathException, PermissionDeniedException {
         // Try to find the XQuery
         final SourceInfo sourceInfo = getSourceInfo(broker, request, staticRewrite);
         if (sourceInfo == null) {
-            return Sequence.EMPTY_SEQUENCE; // no controller found
+            return null;
         }
+
+        model.setSourceInfo(sourceInfo);
 
         final String basePath = staticRewrite == null ? "." : staticRewrite.getTarget();
 
-        final XQuery xquery = broker.getBrokerPool().getXQueryService();
-        final XQueryPool xqyPool = broker.getBrokerPool().getXQueryPool();
-
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            if (compiledCache) {
-                compiled = xqyPool.borrowCompiledXQuery(broker, sourceInfo.source);
-            }
-
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
             // Find correct module load path
-            context.setModuleLoadPath(sourceInfo.moduleLoadPath);
+            xqueryContext.setModuleLoadPath(sourceInfo.moduleLoadPath);
+        };
 
-            if (compiled == null) {
-                try {
-                    compiled = xquery.compile(context, sourceInfo.source);
-                } catch (final IOException e) {
-                    throw new ServletException("Failed to read query from " + query, e);
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+            declareVariables(xqueryContext, sourceInfo, staticRewrite, basePath, request, response);
+        };
 
-            declareVariables(context, sourceInfo, staticRewrite, basePath, request, response);
-
-            model.setSourceInfo(sourceInfo);
-
-            return xquery.execute(broker, compiled, null, outputProperties);
-
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null && compiledCache) {
-                xqyPool.returnCompiledXQuery(sourceInfo.source, compiled);
-            }
+        try {
+            return XQueryUtil.query(broker, sourceInfo.source, compiledCache, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+        } catch (final IOException e) {
+            throw new XPathException("Unable to compile query source: " + e.getMessage(), e);
         }
     }
 

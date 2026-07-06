@@ -58,6 +58,7 @@ import org.exist.http.rest.Result;
 import org.exist.http.rest.Value;
 import org.exist.test.ExistWebServer;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
+import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -74,6 +75,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.exist.TestUtils.ADMIN_DB_PWD;
@@ -204,8 +206,12 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Except
             ).returnResponse();
         }
 
-        if(response.getStatusLine().getStatusCode() != SC_OK) {
-            throw new IOException("Unable to query, HTTP response code: " + response.getStatusLine().getStatusCode());
+        if (response.getStatusLine().getStatusCode() != SC_OK) {
+            final String responseBody;
+            try (final InputStream is = response.getEntity().getContent()) {
+                responseBody = InputStreamUtil.readString(is, UTF_8);
+            }
+            throw new IOException("Unable to query, HTTP response code: " + response.getStatusLine().getStatusCode() + ": " + responseBody);
         }
 
         return response;

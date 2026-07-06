@@ -91,18 +91,24 @@ public class GetDataTest extends RESTTest {
     @BeforeClass
     public static void beforeClass() throws XMLDBException {
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
-        BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class);
-        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
-        res.setContent(XQUERY);
-        root.storeResource(res);
-        UserManagementService ums = root.getService(UserManagementService.class);
-        ums.chmod(res, 0777);
+        try (final BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class)) {
+            ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
+            res.setContent(XQUERY);
+            root.storeResource(res);
+            UserManagementService ums = root.getService(UserManagementService.class);
+            ums.chmod(res, 0777);
+        }
     }
 
     @AfterClass
     public static void afterClass() throws XMLDBException {
-        BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME);
-        root.removeResource(res);
+        try (final BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME)) {
+            root.removeResource(res);
+        }
+        if (root != null) {
+            root.close();
+            root = null;
+        }
     }
 
     @Test

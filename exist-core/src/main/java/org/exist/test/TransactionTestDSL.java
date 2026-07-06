@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -32,6 +56,7 @@ import org.exist.dom.persistent.NewArrayNodeSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -41,7 +66,7 @@ import org.exist.test.TransactionTestDSL.TransactionScheduleBuilder.NilOperation
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -623,10 +648,11 @@ public interface TransactionTestDSL {
             return (broker, transaction, listener, doc) -> {
                 listener.event("Updating document: " + doc.getDocumentURI() + ", with: " + xqueryUpdate);
 
-                final XQuery xquery = broker.getBrokerPool().getXQueryService();
                 final NodeSet nodeSet = new NewArrayNodeSet();
                 nodeSet.add(new NodeProxy(null, doc));
-                xquery.execute(broker, xqueryUpdate, nodeSet);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(xqueryUpdate), false, nodeSet, null, null, null, null)) {
+                    // Query result is not used but must be closed
+                }
                 return null;
             };
         }
@@ -645,10 +671,11 @@ public interface TransactionTestDSL {
             return (broker, transaction, listener, doc) -> {
                 listener.event("Querying document: " + doc.getDocumentURI() + ", with: " + query);
 
-                final XQuery xquery = broker.getBrokerPool().getXQueryService();
                 final NodeSet nodeSet = new NewArrayNodeSet();
                 nodeSet.add(new NodeProxy(null, doc));
-                xquery.execute(broker, query, nodeSet);
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, nodeSet, null, null, null, null)) {
+                    // Query result is not used but must be closed
+                }
                 return null;
             };
         }

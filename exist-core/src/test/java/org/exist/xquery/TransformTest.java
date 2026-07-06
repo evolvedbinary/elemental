@@ -47,6 +47,7 @@ package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.Before;
@@ -55,7 +56,6 @@ import org.junit.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -141,80 +141,81 @@ public class TransformTest {
     }
     
     
-    private String execQuery(String query) throws XMLDBException {
-    	XQueryService service = testCollection.getService(XQueryService.class);
+    private String execQuery(final String query) throws XMLDBException {
+    	final XQueryService service = testCollection.getService(XQueryService.class);
         service.setProperty("indent", "no");
-    	ResourceSet result = service.query(query);
-    	assertEquals(result.getSize(), 1);
-    	return result.getResource(0).getContent().toString();
+    	try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(result.getSize(), 1);
+            try (final Resource resource = result.getResource(0)) {
+                return resource.getContent().toString();
+            }
+        }
     }
     
-    private void addXMLDocument(Collection c, String doc, String id) throws XMLDBException {
-    	Resource r = c.createResource(id, XMLResource.class);
-    	r.setContent(doc);
-    	((EXistResource) r).setMediaType(MediaType.APPLICATION_XML);
-    	c.storeResource(r);
+    private void addXMLDocument(final Collection c, final String doc, final String id) throws XMLDBException {
+    	try (final Resource r = c.createResource(id, XMLResource.class)) {
+            r.setContent(doc);
+            ((EXistResource) r).setMediaType(MediaType.APPLICATION_XML);
+            c.storeResource(r);
+        }
     }
 
     @Before
     public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
-        CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
-                    CollectionManagementService.class);
+        CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection(TEST_COLLECTION_NAME);
         assertNotNull(testCollection);
 
-        service =
-                testCollection.getService(
-                    CollectionManagementService.class);
+        service = testCollection.getService(CollectionManagementService.class);
 
-        Collection xsl1 = service.createCollection("xsl1");
-        assertNotNull(xsl1);
-
-        Collection xsl3 = service.createCollection("xsl3");
-        assertNotNull(xsl3);
-
-        service =
-                xsl1.getService(
-                    CollectionManagementService.class);
-
-        Collection xsl2 = service.createCollection("xsl2");
-        assertNotNull(xsl2);
+        try (final Collection xsl1 = service.createCollection("xsl1")) {
+            assertNotNull(xsl1);
 
 
-        String	doc1 = "<?xml version='1.0' encoding='UTF-8'?>\n" +
-        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n"+
-        "<xsl:import href='xsl2/2.xsl' />\n" +
-        "<xsl:template match='/'>\n" +
-        "<doc>" +
-        "<p>Start Template 1</p>" +
-        "<xsl:call-template name='template-2' />" +
-        "<xsl:call-template name='template-3' />" +
-        "<p>End Template 1</p>" +
-        "</doc>" +
-        "</xsl:template>" +
-        "</xsl:stylesheet>";
+            try (final Collection xsl3 = service.createCollection("xsl3")) {
+                assertNotNull(xsl3);
 
-        String doc2 = "<?xml version='1.0' encoding='UTF-8'?>\n" +
-        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n"+
-        "<xsl:import href='../../xsl3/3.xsl' />\n" +
-        "<xsl:template name='template-2'>\n" +
-        "<p>Start Template 2</p>" +
-        "<xsl:call-template name='template-3' />" +
-        "<p>End Template 2</p>" +
-        "</xsl:template>" +
-        "</xsl:stylesheet>";
+                service = xsl1.getService(CollectionManagementService.class);
 
-        String	doc3 = "<?xml version='1.0' encoding='UTF-8'?>\n" +
-        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n"+
-        "<xsl:template name='template-3'>\n" +
-        "<p>Template 3</p>" +
-        "</xsl:template>" +
-        "</xsl:stylesheet>";
+                try (final Collection xsl2 = service.createCollection("xsl2")) {
+                    assertNotNull(xsl2);
 
-        addXMLDocument(xsl1, doc1, "1.xsl");
-        addXMLDocument(xsl2, doc2, "2.xsl");
-        addXMLDocument(xsl3, doc3, "3.xsl");
+                    final String doc1 = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n" +
+                        "<xsl:import href='xsl2/2.xsl' />\n" +
+                        "<xsl:template match='/'>\n" +
+                        "<doc>" +
+                        "<p>Start Template 1</p>" +
+                        "<xsl:call-template name='template-2' />" +
+                        "<xsl:call-template name='template-3' />" +
+                        "<p>End Template 1</p>" +
+                        "</doc>" +
+                        "</xsl:template>" +
+                        "</xsl:stylesheet>";
+
+                    final String doc2 = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n" +
+                        "<xsl:import href='../../xsl3/3.xsl' />\n" +
+                        "<xsl:template name='template-2'>\n" +
+                        "<p>Start Template 2</p>" +
+                        "<xsl:call-template name='template-3' />" +
+                        "<p>End Template 2</p>" +
+                        "</xsl:template>" +
+                        "</xsl:stylesheet>";
+
+                    final String doc3 = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                        "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>\n" +
+                        "<xsl:template name='template-3'>\n" +
+                        "<p>Template 3</p>" +
+                        "</xsl:template>" +
+                        "</xsl:stylesheet>";
+
+                    addXMLDocument(xsl1, doc1, "1.xsl");
+                    addXMLDocument(xsl2, doc2, "2.xsl");
+                    addXMLDocument(xsl3, doc3, "3.xsl");
+                }
+            }
+        }
 
         service =
                 testCollection.getService(
@@ -244,12 +245,11 @@ public class TransformTest {
 
     @After
     public void tearDown() throws XMLDBException {
-        Collection root =
-            DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-        CollectionManagementService service =
-                root.getService(
-                    CollectionManagementService.class);
-        service.removeCollection(TEST_COLLECTION_NAME);
+        testCollection.close();
+        try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "")) {
+            final CollectionManagementService service = root.getService(CollectionManagementService.class);
+            service.removeCollection(TEST_COLLECTION_NAME);
+        }
         testCollection = null;
     }
 }

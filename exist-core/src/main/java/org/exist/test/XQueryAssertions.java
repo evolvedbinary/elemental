@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,9 +46,7 @@
 package org.exist.test;
 
 import com.evolvedbinary.j8fu.Either;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.ErrorCodes;
-import org.exist.xquery.XPathException;
+import org.exist.xquery.*;
 import org.exist.xquery.value.Sequence;
 import org.hamcrest.Matcher;
 import javax.xml.transform.Source;
@@ -57,12 +79,12 @@ public class XQueryAssertions {
         assertXQErrorColumn(column, xpe);
     }
 
-    public static void assertXQDynamicError(final ErrorCodes.ErrorCode expectedCode, final int line, final int column, final String expectedMessage, final Either<XPathException, Sequence> actual) {
+    public static void assertXQDynamicError(final ErrorCodes.ErrorCode expectedCode, final int line, final int column, final String expectedMessage, final Either<XPathException, XQueryUtil.QueryResult> actual) {
         assertXQDynamicError(expectedCode, line, column, actual);
         assertXQErrorMessage(expectedMessage, actual.left().get());
     }
 
-    public static void assertXQDynamicError(final ErrorCodes.ErrorCode expectedCode, final int line, final int column, final Either<XPathException, Sequence> actual) {
+    public static void assertXQDynamicError(final ErrorCodes.ErrorCode expectedCode, final int line, final int column, final Either<XPathException, XQueryUtil.QueryResult> actual) {
         assertTrue("Expected dynamic error: " + expectedCode.getErrorQName() + ", but no error was thrown.", actual.isLeft());
         final XPathException xpe = actual.left().get();
         assertXQErrorLine(line, xpe);
@@ -70,19 +92,19 @@ public class XQueryAssertions {
         assertXQErrorCode(expectedCode, xpe);
     }
 
-    public static void assertThatXQResult(final Either<XPathException, Sequence> actual, final Matcher<Sequence> expectedMatcher) {
+    public static void assertThatXQResult(final Either<XPathException, XQueryUtil.QueryResult> actual, final Matcher<Sequence> expectedMatcher) {
         if (actual.isLeft()) {
             fail("Expected result, but found XPathException: " + actual.left().get().toString());
         }
-        final Sequence sequence = actual.right().get();
+        final Sequence sequence = actual.right().get().result;
         assertThat(sequence, expectedMatcher);
     }
 
-    public static void assertXQResultSimilar(final Source expectedSource, final Either<XPathException, Sequence> actual) {
+    public static void assertXQResultSimilar(final Source expectedSource, final Either<XPathException, XQueryUtil.QueryResult> actual) {
         assertThatXQResult(actual, hasSimilarXml(expectedSource));
     }
 
-    public static void assertXQResultIdentical(final Source expectedSource, final Either<XPathException, Sequence> actual) {
+    public static void assertXQResultIdentical(final Source expectedSource, final Either<XPathException, XQueryUtil.QueryResult> actual) {
         assertThatXQResult(actual, hasIdenticalXml(expectedSource));
     }
 

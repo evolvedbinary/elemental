@@ -46,6 +46,7 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.rules.TemporaryFolder;
 import org.xmldb.api.base.Resource;
 
@@ -59,7 +60,7 @@ import org.exist.xmldb.XmldbURI;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.CompiledExpression;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.ResourceIterator;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -95,7 +96,7 @@ public class StoredModuleTest {
         final CollectionManagementService cmService = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         if (collection == null) {
             //cmService.removeCollection(collectionName);
-            cmService.createCollection(collectionName);
+            try (final Collection created = cmService.createCollection(collectionName)) { }
         }
 
         collection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + collectionName, "admin", "");
@@ -104,10 +105,11 @@ public class StoredModuleTest {
     }
 
     private void writeModule(Collection collection, String modulename, String module) throws XMLDBException {
-        BinaryResource res = collection.createResource(modulename, BinaryResource.class);
-        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
-        res.setContent(module.getBytes());
-        collection.storeResource(res);
+        try (final BinaryResource res = collection.createResource(modulename, BinaryResource.class)) {
+            ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
+            res.setContent(module.getBytes());
+            collection.storeResource(res);
+        }
         collection.close();
     }
 
@@ -129,8 +131,11 @@ public class StoredModuleTest {
         CompiledExpression compiledQuery = xqService.compile(query);
         for (int i = 0; i < cols.length; i++) {
             xqService.declareVariable("itg-modules:coll", cols[i]);
-            ResourceSet result = xqService.execute(compiledQuery);
-            result.getResource(0).getContent();
+            try (final EXistResourceSet result = (EXistResourceSet) xqService.execute(compiledQuery)) {
+                try (final Resource resource = result.getResource(0)) {
+                    resource.getContent();
+                }
+            }
         }
     }
 
@@ -148,9 +153,12 @@ public class StoredModuleTest {
         Collection c = createCollection(collectionName);
         writeModule(c, "module1.xqm", module);
 
-        ResourceSet rs = existEmbeddedServer.executeQuery(query);
-        String r = (String) rs.getResource(0).getContent();
-        assertEquals("hi from module 1", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("hi from module 1", r);
+            }
+        }
 
     }
     private static final String module2 = "module namespace mod2 = 'urn:module2'; " +
@@ -205,9 +213,12 @@ public class StoredModuleTest {
         Collection c3 = createCollection(collection3Name);
         writeModule(c3, "module3.xqm", module3a);
 
-        ResourceSet rs = existEmbeddedServer.executeQuery(query);
-        String r = (String) rs.getResource(0).getContent();
-        assertEquals("hi from module 3a", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("hi from module 3a", result);
+            }
+        }
     }
 
     @Test 
@@ -230,19 +241,25 @@ public class StoredModuleTest {
         writeModule(c3, "module3.xqm", module3a);
 
         // test relative module import in subfolder
-        ResourceSet rs = existEmbeddedServer.executeQuery(query);
-        String r = (String) rs.getResource(0).getContent();
-        assertEquals("hi from module 3a", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("hi from module 3a", r);
+            }
+        }
 
         // test relative module import in same folder, and using ".."
         writeModule(c2, "module2.xqm", module2b);
 
-        rs = existEmbeddedServer.executeQuery(query);
-        r = (String) rs.getResource(0).getContent();
-        assertEquals("hi from module 4", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("hi from module 4", r);
+            }
+        }
     }
 
-    @Test 
+    @Test
     public void testRelativeImportFile() throws Exception {
         final String collection2Name = "module2";
         final String collection3Name = "module3";
@@ -266,16 +283,22 @@ public class StoredModuleTest {
         writeFile(c3.resolve("module3.xqm"), module3a);
 
         // test relative module import in subfolder
-        ResourceSet rs = existEmbeddedServer.executeQuery(query);
-        String r = (String) rs.getResource(0).getContent();
-        assertEquals("hi from module 3a", r);
-        
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("hi from module 3a", r);
+            }
+        }
+
         // test relative module import in same folder, and using ".."
         writeFile(c2.resolve("module2.xqm"), module2b);
 
-        rs = existEmbeddedServer.executeQuery(query);
-        r = (String) rs.getResource(0).getContent();
-        assertEquals("hi from module 4", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("hi from module 4", r);
+            }
+        }
     }
 
     @Test
@@ -400,24 +423,27 @@ public class StoredModuleTest {
                 "import module namespace processor = \"http://processor\" at \"xmldb:exist://" + testHome.getName() + "/processor.xqm\";" +
                 "\tprocessor:execute-module-function(xs:anyURI('http://moda'), xs:anyURI('" + testHome.getName() + "/module1.xqm'), 'hello')";
 
-        final ResourceSet rs1 = existEmbeddedServer.executeQuery(query1);
-        
-        assertEquals(1, rs1.getSize());
-        Resource r1 = rs1.getIterator().nextResource();
-        assertEquals("<hello-from>module1</hello-from>", r1.getContent());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query1)) {
+            assertEquals(1, result.getSize());
+            final ResourceIterator it = result.getIterator();
+            try (final Resource r1 = it.nextResource()) {
+                assertEquals("<hello-from>module1</hello-from>", r1.getContent());
+            }
+        }
         
         final String query2 = 
                 "xquery version \"1.0\";" +
                 "import module namespace processor = \"http://processor\" at \"xmldb:exist://" + testHome.getName() + "/processor.xqm\";" +
                 "\tprocessor:execute-module-function(xs:anyURI('http://moda'), xs:anyURI('" + testHome.getName() + "/module2.xqm'), 'hello')";
-        
 
-        final ResourceSet rs2 = existEmbeddedServer.executeQuery(query2);
-        
-        assertEquals(1, rs2.getSize());
-        Resource r2 = rs2.getIterator().nextResource();
-        assertEquals("<hello-from>module2</hello-from>", r2.getContent());
-        
+
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query2)) {
+            assertEquals(1, result.getSize());
+            final ResourceIterator it = result.getIterator();
+            try (final Resource r2 = it.nextResource()) {
+                assertEquals("<hello-from>module2</hello-from>", r2.getContent());
+            }
+        }
     }
 
     private void writeFile(final Path path, final String module) throws IOException {

@@ -174,6 +174,7 @@
                                 <include>pom.xml</include>
                                 <include>src/test/resources-filtered/conf.xml</include>
                                 <include>src/test/resources/log4j2.xml</include>
+                                <include>src/main/java/org/exist/xqdoc/ant/XQDocTask.java</include>
                                 <include>src/main/java/org/exist/xqdoc/xquery/Scan.java</include>
                             </includes>
                         </licenseSet>
@@ -188,6 +189,7 @@
                                 <exclude>xqdoc-1.0.xsd</exclude>
                                 <exclude>src/test/resources-filtered/conf.xml</exclude>
                                 <exclude>src/test/resources/log4j2.xml</exclude>
+                                <exclude>src/main/java/org/exist/xqdoc/ant/XQDocTask.java</exclude>
                                 <exclude>src/main/java/org/exist/xqdoc/xquery/Scan.java</exclude>
                             </excludes>
                         </licenseSet>

@@ -202,19 +202,7 @@
                                 <exclude>src/test/resources/log4j2.xml</exclude>
                                 <exclude>src/main/java/org/exist/contentextraction/ContentReceiver.java</exclude>
                                 <exclude>src/test/java/org/exist/contentextraction/xquery/ContentFunctionsTest.java</exclude>
-                                <exclude>src/test/java/org/exist/contentextraction/xquery/Util.java</exclude>
                             </excludes>
-                        </licenseSet>
-
-                        <licenseSet>
-                            <!--
-                                FDB backport to LGPL 2.1-only licensed code
-                            -->
-                            <header>${project.parent.relativePath}/../exist-parent/FDB-backport-to-existdb-LGPL-21-ONLY-license.template.txt</header>
-                            <includes>
-                                <include>src/test/java/org/exist/contentextraction/xquery/Util.java</include>
-                            </includes>
-
                         </licenseSet>
 
                     </licenseSets>

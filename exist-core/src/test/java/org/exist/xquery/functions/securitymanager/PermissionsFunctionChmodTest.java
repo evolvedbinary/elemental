@@ -97,35 +97,35 @@ public class PermissionsFunctionChmodTest {
     public static final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
 
     @Test
-    public void changeDocumentModeAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentModeAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         xqueryChangeMode(pool, adminUser, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), RWXRWXRWX);
     }
 
     @Test
-    public void changeCollectionModeAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionModeAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         xqueryChangeMode(pool, adminUser, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), RWXRWXRWX);
     }
 
     @Test
-    public void changeDocumentModeAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentModeAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         xqueryChangeMode(pool, user1, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), RWXRWXRWX);
     }
 
     @Test
-    public void changeCollectionModeAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionModeAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         xqueryChangeMode(pool, user1, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), RWXRWXRWX);
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentModeAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentModeAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         extractPermissionDenied(() ->
@@ -134,7 +134,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionModeAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionModeAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         extractPermissionDenied(() ->
@@ -143,7 +143,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeDocumentModeAsDBA_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentModeAsDBA_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
 
@@ -158,7 +158,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeCollectionModeAsDBA_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionModeAsDBA_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
 
@@ -173,7 +173,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeDocumentModeAsNonDBAOwner_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentModeAsNonDBAOwner_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -188,7 +188,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeCollectionModeAsNonDBAOwner_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionModeAsNonDBAOwner_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -203,7 +203,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentModeAsNonOwner_clearsSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentModeAsNonOwner_clearsSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
 
@@ -220,7 +220,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionModeAsNonOwner_clearsSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionModeAsNonOwner_clearsSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
 

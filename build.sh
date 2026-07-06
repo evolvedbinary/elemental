@@ -27,6 +27,9 @@
 
 set -e
 
+# Uncomment below to assist in debugging
+#set -x
+
 TARGET="useage"
 DEBUG=false
 OFFLINE=false
@@ -173,7 +176,7 @@ fi
 
 if [ "${TARGET}" == "format-poms" ]; then
   SAXON="${HOME}/.m2/repository/net/sf/saxon/Saxon-HE/9.9.1-8/Saxon-HE-9.9.1-8.jar"
-  POMS="$(find . -name pom.xml)"
+  POMS="$(find $SCRIPT_DIR -name pom.xml)"
   for pom in $POMS; do
 
     echo -n "Formatting ${pom} ... "

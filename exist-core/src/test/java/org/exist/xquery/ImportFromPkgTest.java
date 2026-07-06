@@ -21,10 +21,10 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import java.io.File;
@@ -64,12 +64,13 @@ public class ImportFromPkgTest {
         expected.add("functx.xq");
         expected.add("functx.xsl");
 
-        final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
-        assertEquals(2, resultSet.getSize());
-        final Set<String> actual = new HashSet<>();
-        actual.add(resultSet.getResource(0).getContent().toString());
-        actual.add(resultSet.getResource(1).getContent().toString());
-        assertEquals(expected, actual);
+        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+            assertEquals(2, resultSet.getSize());
+            final Set<String> actual = new HashSet<>();
+            actual.add(resultSet.getResource(0).getContent().toString());
+            actual.add(resultSet.getResource(1).getContent().toString());
+            assertEquals(expected, actual);
+        }
     }
 
     @Test
@@ -78,12 +79,13 @@ public class ImportFromPkgTest {
             "import module namespace functx = \"http://www.functx.com\";\n" +
             "\n" +
             "<test>{functx:index-of-string('hello', 'll')}</test>";
-        final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
-        assertNotNull(resultSet);
-        assertEquals(1, resultSet.getSize());
-        final Resource result = resultSet.getResource(0);
-        assertNotNull(result);
-        assertEquals("<test>3</test>", result.getContent().toString());
+        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+            assertNotNull(resultSet);
+            assertEquals(1, resultSet.getSize());
+            final Resource result = resultSet.getResource(0);
+            assertNotNull(result);
+            assertEquals("<test>3</test>", result.getContent().toString());
+        }
     }
 
     @Test
@@ -92,12 +94,13 @@ public class ImportFromPkgTest {
             "import module namespace functx = \"http://www.functx.com\" at \"/db/system/repo/functx-1.0.1/functx/functx.xq\";\n" +
             "\n" +
             "<test>{functx:index-of-string('hello', 'll')}</test>";
-        final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
-        assertNotNull(resultSet);
-        assertEquals(1, resultSet.getSize());
-        final Resource result = resultSet.getResource(0);
-        assertNotNull(result);
-        assertEquals("<test>3</test>", result.getContent().toString());
+        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+            assertNotNull(resultSet);
+            assertEquals(1, resultSet.getSize());
+            final Resource result = resultSet.getResource(0);
+            assertNotNull(result);
+            assertEquals("<test>3</test>", result.getContent().toString());
+        }
     }
 
     @Test
@@ -106,22 +109,24 @@ public class ImportFromPkgTest {
             "import module namespace functx = \"http://www.functx.com\" at \"xmldb:exist:///db/system/repo/functx-1.0.1/functx/functx.xq\";\n" +
                 "\n" +
                 "<test>{functx:index-of-string('hello', 'll')}</test>";
-        final ResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query);
-        assertNotNull(resultSet);
-        assertEquals(1, resultSet.getSize());
-        final Resource result = resultSet.getResource(0);
-        assertNotNull(result);
-        assertEquals("<test>3</test>", result.getContent().toString());
+        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+            assertNotNull(resultSet);
+            assertEquals(1, resultSet.getSize());
+            final Resource result = resultSet.getResource(0);
+            assertNotNull(result);
+            assertEquals("<test>3</test>", result.getContent().toString());
+        }
     }
 
     @Test
     public void declareFunctx() {
-        try {
-            final String query =
-                "declare namespace functx = \"http://www.functx.com\";\n" +
+        final String query =
+            "declare namespace functx = \"http://www.functx.com\";\n" +
                 "\n" +
                 "<test>{functx:index-of-string('hello', 'll')}</test>";
-            existXmldbEmbeddedServer.executeQuery(query);
+
+        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+            // needed to close the resultSet
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage().startsWith("err:XPST0017 Call to undeclared function: functx:index-of-string"));
             return;

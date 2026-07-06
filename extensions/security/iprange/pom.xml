@@ -103,6 +103,7 @@
                             </multi>
                             <includes>
                                 <include>pom.xml</include>
+                                <include>src/main/java/org/exist/security/realm/iprange/IPRangeRealm.java</include>
                                 <include>src/main/java/org/exist/security/realm/iprange/IPRangeServlet.java</include>
                             </includes>
                         </licenseSet>
@@ -114,6 +115,7 @@
                             <header>${project.parent.relativePath}/../../exist-parent/existdb-LGPL-21-license.template.txt</header>
                             <excludes>
                                 <exclude>pom.xml</exclude>
+                                <exclude>src/main/java/org/exist/security/realm/iprange/IPRangeRealm.java</exclude>
                                 <exclude>src/main/java/org/exist/security/realm/iprange/IPRangeServlet.java</exclude>
                             </excludes>
                         </licenseSet>
@@ -138,6 +140,11 @@
             <groupId>xyz.elemental</groupId>
             <artifactId>elemental-media-type-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.evolvedbinary.j8fu</groupId>
+            <artifactId>j8fu</artifactId>
         </dependency>
 
         <dependency>

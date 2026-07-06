@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,12 +46,13 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -53,7 +78,7 @@ public class NamespaceUpdateTest {
 
 	@Test
 	public void updateAttribute() throws XMLDBException {
-		XQueryService service = testCollection.getService(XQueryService.class);
+		final XQueryService service = testCollection.getService(XQueryService.class);
 		String query =
 				"declare namespace t='http://www.foo.com';\n" +
 						"<test xmlns='http://www.foo.com'>\n" +
@@ -66,27 +91,32 @@ public class NamespaceUpdateTest {
 		query =
 				"declare namespace t='http://www.foo.com';\n" +
 						"/t:test/@ID/string(.)";
-		ResourceSet result = service.query(query);
-		assertEquals(1, result.getSize());
-		assertEquals("myid", result.getResource(0).getContent().toString());
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+			assertEquals(1, result.getSize());
+			try (final Resource resource = result.getResource(0)) {
+				assertEquals("myid", resource.getContent().toString());
+			}
+		}
 	}
 
 	@Before
 	public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
 		// initialize driver
 		final CollectionManagementService service =
-				existEmbeddedServer.getRoot().getService(
-						CollectionManagementService.class);
+			existEmbeddedServer.getRoot().getService(
+				CollectionManagementService.class);
 		testCollection = service.createCollection("test");
 		assertNotNull(testCollection);
 
-		final XMLResource doc = testCollection.createResource("namespace-updates.xml", XMLResource.class);
-		doc.setContent(namespaces);
-		testCollection.storeResource(doc);
+		try (final XMLResource doc = testCollection.createResource("namespace-updates.xml", XMLResource.class)) {
+			doc.setContent(namespaces);
+			testCollection.storeResource(doc);
+		}
 	}
 
 	@After
 	public void tearDown() throws Exception {
+		testCollection.close();
 		final CollectionManagementService service =
 				existEmbeddedServer.getRoot().getService(
 						CollectionManagementService.class);

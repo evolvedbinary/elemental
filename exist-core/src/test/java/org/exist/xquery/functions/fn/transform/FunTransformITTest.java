@@ -24,6 +24,7 @@ import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.ManagedCollectionLock;
@@ -33,7 +34,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -185,37 +186,37 @@ public class FunTransformITTest {
     public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
 
     @Test
-    public void sameDirectoryImportViaDbLocation() throws XPathException, PermissionDeniedException, EXistException {
+    public void sameDirectoryImportViaDbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
         expectQuery(SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY, expected);
     }
 
     @Test
-    public void sameDirectoryImportViaXmldbLocation() throws XPathException, PermissionDeniedException, EXistException {
+    public void sameDirectoryImportViaXmldbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
         expectQuery(SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY, expected);
     }
 
     @Test
-    public void sameDirectoryImportViaDbNode() throws XPathException, PermissionDeniedException, EXistException {
+    public void sameDirectoryImportViaDbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
         expectQuery(SAME_DIR_IMPORT_VIA_DB_NODE_QUERY, expected);
     }
 
     @Test
-    public void sameDirectoryImportViaXmldbNode() throws XPathException, PermissionDeniedException, EXistException {
+    public void sameDirectoryImportViaXmldbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
         expectQuery(SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY, expected);
     }
 
     @Test
-    public void identityPersistentDom() throws XPathException, PermissionDeniedException, EXistException {
+    public void identityPersistentDom() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString(IDENTITY_XML).build();
         expectQuery(IDENTITY_PERSISTENT_XSLT_QUERY, expected);
     }
 
     @Test
-    public void identityMemoryDom() throws XPathException, PermissionDeniedException, EXistException {
+    public void identityMemoryDom() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString(IDENTITY_XML).build();
         expectQuery(IDENTITY_MEMORY_XSLT_QUERY, expected);
     }
@@ -224,7 +225,7 @@ public class FunTransformITTest {
      * {@see https://github.com/eXist-db/exist/issues/5682}
      */
     @Test
-    public void identityMixedMemoryAndPersistentDom() throws XPathException, PermissionDeniedException, EXistException {
+    public void identityMixedMemoryAndPersistentDom() throws XPathException, PermissionDeniedException, EXistException, IOException {
         // Document reference
         Source expected = Input.fromString("<mixed i=\"j\">" + IDENTITY_XML + "</mixed>").build();
         expectQuery(IDENTITY_MIXED_XSLT_QUERY_1, expected);
@@ -246,11 +247,11 @@ public class FunTransformITTest {
         expectQuery(IDENTITY_MIXED_XSLT_QUERY_5, expected);
     }
 
-    private static void expectQuery(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException {
+    private static void expectQuery(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = xquery.execute(broker, query, null);
+        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());

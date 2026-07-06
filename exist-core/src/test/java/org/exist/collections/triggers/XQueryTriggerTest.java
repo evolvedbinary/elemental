@@ -55,14 +55,10 @@ import javax.xml.transform.OutputKeys;
 import org.apache.commons.codec.binary.Base64;
 import org.exist.TestUtils;
 import org.exist.test.ExistXmldbEmbeddedServer;
-import org.exist.xmldb.EXistCollectionManagementService;
-import org.exist.xmldb.EXistResource;
-import org.exist.xmldb.IndexQueryService;
-import org.exist.xmldb.XmldbURI;
+import org.exist.xmldb.*;
 import org.junit.*;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -276,23 +272,27 @@ public class XQueryTriggerTest {
         testCollection = service.createCollection(TEST_COLLECTION);
         assertNotNull(testCollection);
 
-        final XMLResource doc = testCollection.createResource(LOG_NAME, XMLResource.class );
-        doc.setContent(EMPTY_LOG);
-        testCollection.storeResource(doc);
+        try (final XMLResource doc = testCollection.createResource(LOG_NAME, XMLResource.class )) {
+            doc.setContent(EMPTY_LOG);
+            testCollection.storeResource(doc);
+        }
 
-        final BinaryResource module = testCollection.createResource(MODULE_NAME, BinaryResource.class );
-        ((EXistResource)module).setMediaType(MediaType.APPLICATION_XQUERY);
-        module.setContent(MODULE.getBytes());
-        testCollection.storeResource(module);
+        try (final BinaryResource module = testCollection.createResource(MODULE_NAME, BinaryResource.class )) {
+            ((EXistResource)module).setMediaType(MediaType.APPLICATION_XQUERY);
+            module.setContent(MODULE.getBytes());
+            testCollection.storeResource(module);
+        }
     }
 
     @After
     public void cleanup() throws XMLDBException {
+        if (testCollection != null) {
+            testCollection.close();
+            testCollection = null;
+        }
         final CollectionManagementService service = existEmbeddedServer.getRoot()
                 .getService(CollectionManagementService.class);
         service.removeCollection(TEST_COLLECTION);
-
-        testCollection = null;
     }
 
     /** test a trigger fired by storing a new Document  */
@@ -303,32 +303,36 @@ public class XQueryTriggerTest {
         idxConf.configureCollection(COLLECTION_CONFIG);
 
         // this will fire the trigger
-        final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class );
-        doc.setContent(DOCUMENT_CONTENT);
-        testCollection.storeResource(doc);
+        try (final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class )) {
+            doc.setContent(DOCUMENT_CONTENT);
+            testCollection.storeResource(doc);
+        }
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
         final XPathQueryService service = testCollection.getService(XPathQueryService.class);
 
-        ResourceSet result = service.query(BEFORE+CREATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+CREATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+CREATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+CREATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(EVENTS);
-        // TODO(AR) should be 6 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //assertEquals(6, result.getSize());
-        assertEquals(4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(EVENTS)) {
+            // TODO(AR) should be 6 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //assertEquals(6, result.getSize());
+            assertEquals(4, result.getSize());
+        }
     }
 
     /** test a trigger fired by a Document Update */
@@ -337,9 +341,10 @@ public class XQueryTriggerTest {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
-        final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class );
-        doc.setContent(DOCUMENT_CONTENT);
-        testCollection.storeResource(doc);
+        try (final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class )) {
+            doc.setContent(DOCUMENT_CONTENT);
+            testCollection.storeResource(doc);
+        }
 
         //TODO : trigger UPDATE events !
         final XUpdateQueryService update = testCollection.getService(XUpdateQueryService.class);
@@ -352,35 +357,40 @@ public class XQueryTriggerTest {
         // this is necessary to compare with MODIFIED_DOCUMENT_CONTENT ; TODO better compare with XML diff tool
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet result = service.query(BEFORE+CREATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+CREATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+CREATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+CREATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(BEFORE+UPDATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+UPDATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+UPDATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+UPDATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(EVENTS);
-        // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //assertEquals(12, result.getSize());
-        assertEquals(8, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(EVENTS)) {
+            // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //assertEquals(12, result.getSize());
+            assertEquals(8, result.getSize());
+        }
     }
 
     /** test a trigger fired by a Document Delete */
@@ -389,11 +399,16 @@ public class XQueryTriggerTest {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
-        final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class );
+        try (final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class )) {
             doc.setContent(DOCUMENT_CONTENT);
-        testCollection.storeResource(doc);
+            testCollection.storeResource(doc);
+        }
 
-        testCollection.removeResource(testCollection.getResource(DOCUMENT_NAME));
+        try (final Resource res = testCollection.getResource(DOCUMENT_NAME)) {
+            if (res != null) {
+                testCollection.removeResource(res);
+            }
+        }
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
@@ -402,36 +417,41 @@ public class XQueryTriggerTest {
 
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet result = service.query(BEFORE+CREATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+CREATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+CREATE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+CREATE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(BEFORE+DELETE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+DELETE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+DELETE+DOCUMENT+documentURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+DELETE+DOCUMENT+documentURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(EVENTS);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(EVENTS)) {
 
-        // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        BEFORE DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        BEFORE DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
 //        assertEquals(12, result.getSize());
-        assertEquals(8, result.getSize());
+            assertEquals(8, result.getSize());
+        }
     }
 
 	/** test a trigger fired by creating a new Binary Document  */
@@ -442,10 +462,11 @@ public class XQueryTriggerTest {
         idxConf.configureCollection(COLLECTION_CONFIG);
 
         // this will fire the trigger
-        final Resource res = testCollection.createResource(BINARY_DOCUMENT_NAME, BinaryResource.class);
-        final byte[] content = Base64.decodeBase64(BINARY_DOCUMENT_CONTENT);
-        res.setContent(content);
-        testCollection.storeResource(res);
+        try (final Resource res = testCollection.createResource(BINARY_DOCUMENT_NAME, BinaryResource.class)) {
+            final byte[] content = Base64.decodeBase64(BINARY_DOCUMENT_CONTENT);
+            res.setContent(content);
+            testCollection.storeResource(res);
+        }
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
@@ -454,23 +475,26 @@ public class XQueryTriggerTest {
         //TODO : understand why it is necessary !
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet result = service.query(BEFORE+CREATE+DOCUMENT+binaryURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+CREATE+DOCUMENT+binaryURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+CREATE+DOCUMENT+binaryURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+CREATE+DOCUMENT+binaryURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(EVENTS);
-        // TODO(AR) should be 6 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //assertEquals(6, result.getSize());
-        assertEquals(4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(EVENTS)) {
+            // TODO(AR) should be 6 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //assertEquals(6, result.getSize());
+            assertEquals(4, result.getSize());
+        }
 
     }
 
@@ -481,13 +505,17 @@ public class XQueryTriggerTest {
         idxConf.configureCollection(COLLECTION_CONFIG);
 
         // this will fire the trigger
-        final Resource res = testCollection.createResource(BINARY_DOCUMENT_NAME, BinaryResource.class);
-        final byte[] content = Base64.decodeBase64(BINARY_DOCUMENT_CONTENT);
-        res.setContent(content);
+        try (final Resource res = testCollection.createResource(BINARY_DOCUMENT_NAME, BinaryResource.class)) {
+            final byte[] content = Base64.decodeBase64(BINARY_DOCUMENT_CONTENT);
+            res.setContent(content);
+            testCollection.storeResource(res);
+        }
 
-        testCollection.storeResource(res);
-
-        testCollection.removeResource(testCollection.getResource(BINARY_DOCUMENT_NAME));
+        try (final Resource res = testCollection.getResource(BINARY_DOCUMENT_NAME)) {
+            if (res != null) {
+                testCollection.removeResource(res);
+            }
+        }
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
@@ -496,35 +524,40 @@ public class XQueryTriggerTest {
 
         service.setProperty(OutputKeys.INDENT, "no");
 
-        ResourceSet result = service.query(BEFORE+CREATE+DOCUMENT+binaryURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+CREATE+DOCUMENT+binaryURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+CREATE+DOCUMENT+binaryURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+CREATE+DOCUMENT+binaryURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(BEFORE+DELETE+DOCUMENT+binaryURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(BEFORE+DELETE+DOCUMENT+binaryURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(AFTER+DELETE+DOCUMENT+binaryURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(AFTER+DELETE+DOCUMENT+binaryURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = service.query(EVENTS);
-        // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        BEFORE DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(EVENTS)) {
+            // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        BEFORE DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER DELETE_DOCUMENT(/db/testXQueryTrigger/test.xml): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
 //        assertEquals(12, result.getSize());
-        assertEquals(8, result.getSize());
+            assertEquals(8, result.getSize());
+        }
 
     }
 
@@ -535,31 +568,35 @@ public class XQueryTriggerTest {
         idxConf.configureCollection(COLLECTION_CONFIG);
 
         final CollectionManagementService service = testCollection.getService(CollectionManagementService.class);
-        final Collection collection = service.createCollection("test");
-        assertNotNull(collection);
+        try (final Collection collection = service.createCollection("test")) {
+            assertNotNull(collection);
+        }
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
         final XPathQueryService query = existEmbeddedServer.getRoot().getService(XPathQueryService.class);
 
-        ResourceSet result = query.query(BEFORE+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) query.query(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = query.query(AFTER+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) query.query(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = query.query(EVENTS);
-        // TODO(AR) should be 6 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //assertEquals(6, result.getSize());
-        assertEquals(4, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) query.query(EVENTS)) {
+            // TODO(AR) should be 6 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //assertEquals(6, result.getSize());
+            assertEquals(4, result.getSize());
+        }
     }
 
     /** test a trigger fired by a Collection manipulations */
@@ -572,58 +609,66 @@ public class XQueryTriggerTest {
         final XmldbURI dstURI = XmldbURI.xmldbUriFor("/db/testXQueryTrigger/test-dst");
 
         final EXistCollectionManagementService service = testCollection.getService(EXistCollectionManagementService.class);
-        final Collection src = service.createCollection("test");
-        assertNotNull(src);
+        try (final Collection src = service.createCollection("test");
+             final Collection dst = service.createCollection("test-dst")) {
+            assertNotNull(src);
 
-        final Collection dst = service.createCollection("test-dst");
-        assertNotNull(dst);
+            assertNotNull(dst);
+        }
 
         service.copy(srcURI, dstURI, null);
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        ResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(BEFORE+COPY+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+COPY+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+COPY+COLLECTION+testDstTestCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+COPY+COLLECTION+testDstTestCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(EVENTS);
-        // TODO(AR) should be 18 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-    //        Execute: BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-    //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-    //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
-    //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
-    //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: BEFORE COPY_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-    //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER COPY_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-    //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-    //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(EVENTS)) {
+            // TODO(AR) should be 18 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        Execute: BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
+            //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
+            //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: BEFORE COPY_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER COPY_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        Execute: BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        Execute: AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
 //        assertEquals(18, result.getSize());
-        assertEquals(12, result.getSize());
+            assertEquals(12, result.getSize());
+        }
     }
 
     /** test a trigger fired by a Collection manipulations */
@@ -636,58 +681,66 @@ public class XQueryTriggerTest {
         final XmldbURI dstURI = XmldbURI.xmldbUriFor("/db/testXQueryTrigger/test-dst");
 
         final EXistCollectionManagementService service = testCollection.getService(EXistCollectionManagementService.class);
-        final Collection src = service.createCollection("test");
-        assertNotNull(src);
+        try (final Collection src = service.createCollection("test");
+             final Collection dst = service.createCollection("test-dst")) {
+            assertNotNull(src);
 
-        final Collection dst = service.createCollection("test-dst");
-        assertNotNull(dst);
+            assertNotNull(dst);
+        }
 
         service.move(srcURI, dstURI, null);
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        ResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(BEFORE+MOVE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+MOVE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+MOVE+COLLECTION+testDstTestCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+MOVE+COLLECTION+testDstTestCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(EVENTS);
-        // TODO(AR) should be 18 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        BEFORE MOVE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER MOVE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(EVENTS)) {
+            // TODO(AR) should be 18 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test-dst): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        BEFORE MOVE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER MOVE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
 //        assertEquals(18, result.getSize());
-        assertEquals(12, result.getSize());
+            assertEquals(12, result.getSize());
+        }
     }
 
     /** test a trigger fired by a Collection manipulations */
@@ -697,51 +750,58 @@ public class XQueryTriggerTest {
         idxConf.configureCollection(COLLECTION_CONFIG);
 
         final CollectionManagementService service = testCollection.getService(CollectionManagementService.class);
-        final Collection collection = service.createCollection("test");
-        assertNotNull(collection);
+        try (final Collection collection = service.createCollection("test")) {
+            assertNotNull(collection);
+        }
 
         service.removeCollection("test");
 
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        ResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(BEFORE+DELETE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+DELETE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(AFTER+DELETE+COLLECTION+testCollectionURI);
-        assertEquals(1, result.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+DELETE+COLLECTION+testCollectionURI)) {
+            assertEquals(1, result.getSize());
+        }
 
-        result = existEmbeddedServer.executeQuery(EVENTS);
-        // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
-        // results should contain:
-        //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        BEFORE DELETE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER DELETE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
-        //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
-        //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(EVENTS)) {
+            // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
+            // results should contain:
+            //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        BEFORE DELETE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER DELETE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
+            //        BEFORE UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
+            //        AFTER UPDATE_DOCUMENT(/db/testXQueryTrigger/XQueryTriggerLog.xml): XQueryTrigger
 //        assertEquals(12, result.getSize());
-        assertEquals(8, result.getSize());
+            assertEquals(8, result.getSize());
+        }
     }
 
     @Test
     public void storeDocumentInvalidTriggerForPrepare() throws XMLDBException {
-        final BinaryResource invalidModule = testCollection.createResource(MODULE_NAME, BinaryResource.class );
-        ((EXistResource)invalidModule).setMediaType(MediaType.APPLICATION_XQUERY);
-        invalidModule.setContent(INVALID_MODULE.getBytes());
-        testCollection.storeResource(invalidModule);
+        try (final BinaryResource invalidModule = testCollection.createResource(MODULE_NAME, BinaryResource.class )) {
+            ((EXistResource)invalidModule).setMediaType(MediaType.APPLICATION_XQUERY);
+            invalidModule.setContent(INVALID_MODULE.getBytes());
+            testCollection.storeResource(invalidModule);
+        }
 
         // configure the Collection with the trigger under test
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
@@ -752,9 +812,10 @@ public class XQueryTriggerTest {
         for(int i = 0; i < max_store_attempts; i++) {
             try {
                 // this will fire the trigger
-                final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class);
-                doc.setContent(DOCUMENT_CONTENT);
-                testCollection.storeResource(doc);
+                try (final XMLResource doc = testCollection.createResource(DOCUMENT_NAME, XMLResource.class)) {
+                    doc.setContent(DOCUMENT_CONTENT);
+                    testCollection.storeResource(doc);
+                }
             } catch(XMLDBException xdbe) {
                if (xdbe.getCause() instanceof TriggerException && xdbe.getCause().getMessage().equals(XQueryTrigger.PREPARE_EXCEPTION_MESSAGE)) {
                    count_prepare_exceptions++;

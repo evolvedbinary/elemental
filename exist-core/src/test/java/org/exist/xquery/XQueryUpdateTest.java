@@ -53,6 +53,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
@@ -84,11 +85,10 @@ public class XQueryUpdateTest {
     protected final static int ITEMS_TO_APPEND = 500;
 
     @Test
-    public void append() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void append() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            XQuery xquery = pool.getXQueryService();
             String query =
             	"   declare variable $i external;\n" +
             	"	update insert\n" +
@@ -98,28 +98,37 @@ public class XQueryUpdateTest {
             	"			<stock>{$i * 10}</stock>\n" +
             	"		</product>\n" +
             	"	into /products";
-            XQueryContext context = new XQueryContext(pool);
-            CompiledXQuery compiled = xquery.compile(context, query);
+            final XQueryContext context = new XQueryContext(pool);
+            final CompiledXQuery compiled = pool.getXQueryService().compile(context, query);
             for (int i = 0; i < ITEMS_TO_APPEND; i++) {
                 context.declareVariable("i", true, Integer.valueOf(i));
-                xquery.execute(broker, compiled, null);
+                pool.getXQueryService().execute(broker, compiled, null);
             }
 
-            Sequence seq = xquery.execute(broker, "/products", null);
-            assertEquals(seq.getItemCount(), 1);
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
-            seq = xquery.execute(broker, "//product", null);
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "//product[price > 0.0]", null);
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            query = "//product[price > 0.0]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
@@ -129,54 +138,71 @@ public class XQueryUpdateTest {
         append();
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            XQuery xquery = pool.getXQueryService();
             String query =
             	"   declare variable $i external;\n" +
             	"	update insert\n" +
             	"		attribute name { concat('n', $i) }\n" +
             	"	into //product[@num = $i]";
-            XQueryContext context = new XQueryContext(pool);
-            CompiledXQuery compiled = xquery.compile(context, query);
+            final XQueryContext context = new XQueryContext(pool);
+            final CompiledXQuery compiled = pool.getXQueryService().compile(context, query);
             for (int i = 0; i < ITEMS_TO_APPEND; i++) {
                 context.declareVariable("i", true, Integer.valueOf(i));
-                xquery.execute(broker, compiled, null);
+                pool.getXQueryService().execute(broker, compiled, null);
             }
 
-            Sequence seq = xquery.execute(broker, "/products", null);
-            assertEquals(seq.getItemCount(), 1);
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
+            }
 
-                seq = xquery.execute(broker, "//product", null);
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
 
-                seq = xquery.execute(broker, "//product[@name = 'n20']", null);
+            query = "//product[@name = 'n20']";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(1, seq.getItemCount());
+            }
 
-                store(broker, "attribs.xml", "<test attr1='aaa' attr2='bbb'>ccc</test>");
-                query = "update insert attribute attr1 { 'eee' } into /test";
+            store(broker, "attribs.xml", "<test attr1='aaa' attr2='bbb'>ccc</test>");
+            query = "update insert attribute attr1 { 'eee' } into /test";
 
-                //testing duplicate attribute ...
-                xquery.execute(broker, query, null);
+            //testing duplicate attribute ...
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-                seq = xquery.execute(broker, "doc('" + TEST_COLLECTION + "/attribs.xml')/test[@attr1 = 'eee']", null);
+            query = "doc('" + TEST_COLLECTION + "/attribs.xml')/test[@attr1 = 'eee']";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(1, seq.getItemCount());
-                serializer.serialize((NodeValue) seq.itemAt(0));
-
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
         }
     }
 
     @Test
-    public void insertBefore() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void insertBefore() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
                     "   update insert\n" +
@@ -187,11 +213,15 @@ public class XQueryUpdateTest {
                             "       </product>\n" +
                             "   into /products";
 
-            XQuery xquery = pool.getXQueryService();
-            xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            Sequence seq = xquery.execute(broker, "//product", null);
-            assertEquals(1, seq.getItemCount());
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query =
                 "   declare variable $i external;\n" +
@@ -202,35 +232,44 @@ public class XQueryUpdateTest {
                 "           <stock>{$i * 10}</stock>\n" +
                 "       </product>\n" +
                 "   preceding /products/product[1]";
-            XQueryContext context = new XQueryContext(pool);
-            CompiledXQuery compiled = xquery.compile(context, query);
+            final XQueryContext context = new XQueryContext(pool);
+            final CompiledXQuery compiled = pool.getXQueryService().compile(context, query);
             for (int i = 0; i < ITEMS_TO_APPEND; i++) {
                 context.declareVariable("i", true, Integer.valueOf(i));
-                xquery.execute(broker, compiled, null);
+                pool.getXQueryService().execute(broker, compiled, null);
             }
 
-            seq = xquery.execute(broker, "/products", null);
-            assertEquals(seq.getItemCount(), 1);
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
-            seq = xquery.execute(broker, "//product", null);
-            assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "//product[price > 0.0]", null);
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            query = "//product[price > 0.0]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
     @Test
-    public void insertAfter() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void insertAfter() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
                     "   update insert\n" +
@@ -241,11 +280,15 @@ public class XQueryUpdateTest {
                             "       </product>\n" +
                             "   into /products";
 
-            XQuery xquery = pool.getXQueryService();
-            xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            Sequence seq = xquery.execute(broker, "//product", null);
-            assertEquals(1, seq.getItemCount());
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query =
                 "   declare variable $i external;\n" +
@@ -256,172 +299,232 @@ public class XQueryUpdateTest {
                 "           <stock>{$i * 10}</stock>\n" +
                 "       </product>\n" +
                 "   following /products/product[1]";
-            XQueryContext context = new XQueryContext(pool);
-            CompiledXQuery compiled = xquery.compile(context, query);
+            final XQueryContext context = new XQueryContext(pool);
+            final CompiledXQuery compiled = pool.getXQueryService().compile(context, query);
             for (int i = 0; i < ITEMS_TO_APPEND; i++) {
                 context.declareVariable("i", true, Integer.valueOf(i));
-                xquery.execute(broker, compiled, null);
+                pool.getXQueryService().execute(broker, compiled, null);
             }
 
-            seq = xquery.execute(broker, "/products", null);
-            assertEquals(seq.getItemCount(), 1);
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
-            seq = xquery.execute(broker, "//product", null);
-            assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND + 1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "//product[price > 0.0]", null);
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            query = "//product[price > 0.0]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
     @Test
-    public void update() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void update() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-
-            XQuery xquery = pool.getXQueryService();
 
             String query =
             	"declare option exist:output-size-limit '-1';\n" +
             	"for $prod at $i in //product return\n" +
                 "	update value $prod/description\n" +
                 "	with 'Updated Description ' || $i";
-            Sequence seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "count(//product[starts-with(description, 'Updated')])", null);
-            assertEquals(ITEMS_TO_APPEND, (int)seq.itemAt(0).toJavaObject(int.class));
+            query = "count(//product[starts-with(description, 'Updated')])";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, (int)seq.itemAt(0).toJavaObject(int.class));
+            }
 
             for (int i = 1; i <= ITEMS_TO_APPEND; i++) {
-                seq = xquery.execute(broker, "//product[description eq 'Updated Description " + i + "']", null);
+                query = "//product[description eq 'Updated Description " + i + "']";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertEquals(1, seq.getItemCount());
+                }
+            }
+
+            query = "//product[stock cast as xs:double gt 400]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(459, seq.getItemCount());
+            }
+
+            query = "//product[starts-with(stock, '401')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
                 assertEquals(1, seq.getItemCount());
             }
 
-            seq = xquery.execute(broker, "//product[stock cast as xs:double gt 400]", null);
-            assertEquals(459, seq.getItemCount());
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "//product[starts-with(stock, '401')]", null);
-            assertEquals(1, seq.getItemCount());
+            query = "//product[@num cast as xs:integer eq 3]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/products", null);
-            assertEquals(1, seq.getItemCount());
-
-            seq = xquery.execute(broker, "//product[@num cast as xs:integer eq 3]", null);
-            assertEquals(1, seq.getItemCount());
-
-            seq = xquery.execute(broker, "/products", null);
-            assertEquals(1, seq.getItemCount());
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+            }
 
             query =
                     "declare option exist:output-size-limit '-1';\n" +
                             "for $prod in //product return\n" +
                             "	update value $prod/stock\n" +
                             "	with (<local>10</local>,<external>1</external>)";
-            seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "//product/stock/external[. cast as xs:integer eq 1]", null);
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            query = "//product/stock/external[. cast as xs:integer eq 1]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
     @Test
-    public void remove() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void remove() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            XQuery xquery = pool.getXQueryService();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
         	String query =
         		"for $prod in //product return\n" +
         		"	update delete $prod\n";
-        	Sequence seq = xquery.execute(broker, query, null);
+        	try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-        	seq = xquery.execute(broker, "//product", null);
-        	assertEquals(seq.getItemCount(), 0);
+        	query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 0);
+            }
 
         }
     }
 
     @Test
-    public void rename() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void rename() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-
-            XQuery xquery = pool.getXQueryService();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
             	"for $prod in //product return\n" +
             	"	update rename $prod/description as 'desc'\n";
-            Sequence seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "//product/desc", null);
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            query = "//product/desc";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
             query =
             	"for $prod in //product return\n" +
             	"	update rename $prod/@num as 'count'\n";
-            seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "//product/@count", null);
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            query = "//product/@count";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
         }
     }
 
     @Test
-    public void replace() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void replace() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-
-            XQuery xquery = pool.getXQueryService();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
             	"for $prod in //product return\n" +
             	"	update replace $prod/description with <desc>An updated description.</desc>\n";
-            Sequence seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "//product/desc", null);
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            query = "//product/desc";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
             query =
             	"for $prod in //product return\n" +
             	"	update replace $prod/@num with '1'\n";
-            seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "//product/@num", null);
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            query = "//product/@num";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
 
             query =
             	"for $prod in //product return\n" +
             	"	update replace $prod/desc/text() with 'A new update'\n";
-            seq = xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
-            seq = xquery.execute(broker, "//product[starts-with(desc, 'A new')]", null);
-            assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            query = "//product[starts-with(desc, 'A new')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+            }
         }
     }
 
     @Test
     public void attrUpdate() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             store(broker, "test.xml", UPDATE_XML);
 
             String query =
@@ -432,47 +535,52 @@ public class XQueryUpdateTest {
                     "   update value $done with xs:int($done + 1),\n" +
                     "   xs:int(/progress/@done)\n" +
                     ")";
-            XQuery xquery = pool.getXQueryService();
-            @SuppressWarnings("unused")
-			Sequence result = xquery.execute(broker, query, null);
+
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
         }
     }
 
     @Test
-    public void appendCDATA() throws EXistException, PermissionDeniedException, XPathException, SAXException {
+    public void appendCDATA() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-
-            XQuery xquery = pool.getXQueryService();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query =
             	"	update insert\n" +
             	"		<product>\n" +
             	"			<description><![CDATA[me & you <>]]></description>\n" +
             	"		</product>\n" +
             	"	into /products";
-            XQueryContext context = new XQueryContext(pool);
-            CompiledXQuery compiled = xquery.compile(context, query);
+            final XQueryContext context = new XQueryContext(pool);
+            final CompiledXQuery compiled = pool.getXQueryService().compile(context, query);
             for (int i = 0; i < ITEMS_TO_APPEND; i++) {
-                xquery.execute(broker, compiled, null);
+                pool.getXQueryService().execute(broker, compiled, null);
             }
 
-            Sequence seq = xquery.execute(broker, "/products", null);
-            assertEquals(seq.getItemCount(), 1);
+            query = "/products";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(seq.getItemCount(), 1);
 
-            final Serializer serializer = broker.borrowSerializer();
-            try {
-                serializer.serialize((NodeValue) seq.itemAt(0));
-            } finally {
-                broker.returnSerializer(serializer);
+                final Serializer serializer = broker.borrowSerializer();
+                try {
+                    serializer.serialize((NodeValue) seq.itemAt(0));
+                } finally {
+                    broker.returnSerializer(serializer);
+                }
             }
 
-            seq = xquery.execute(broker, "//product", null);
-            assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            query = "//product";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
+            }
         }
     }
 
     @Test
-    public void insertAttrib() throws EXistException, PermissionDeniedException, XPathException {
+    public void insertAttrib() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query =
@@ -482,13 +590,15 @@ public class XQueryUpdateTest {
                 "let $attrib := <Value f='ATTRIB VALUE'/>/@* "+
                 "return update insert $attrib into $node";
 
-            XQuery xquery = pool.getXQueryService();
-			xquery.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                // no result access needed
+            }
 
 			query = "doc('/db/insertAttribDoc.xml')/element()[@f eq 'ATTRIB VALUE']";
-			Sequence result = xquery.execute(broker, query, null);
-
-			assertFalse(result.isEmpty());
+			try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
+                assertFalse(result.isEmpty());
+            }
         }
     }
 

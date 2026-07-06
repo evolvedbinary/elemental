@@ -46,10 +46,11 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmlunit.matchers.CompareMatcher;
 
@@ -72,8 +73,11 @@ public class XQueryProcessingInstructionTest {
                 "</doc>" +
                 "return\n" +
                 "$xml";
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, CompareMatcher.isIdenticalTo("<doc><?pi test?>This is a p.</doc>"));
+        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+            try (final Resource resource = results.getResource(0)) {
+                final String result = (String) resource.getContent();
+                assertThat(result, CompareMatcher.isIdenticalTo("<doc><?pi test?>This is a p.</doc>"));
+            }
+        }
     }
 }

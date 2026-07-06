@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -61,16 +85,18 @@ public class MimeTypeTest {
         // store an XML document without an .xml extension
     	try(Collection collection = DatabaseManager.getCollection(getBaseUri() + "/db/" + COLLECTION_NAME, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)){
             final Class<? extends Resource> xmlResourceType = XMLResource.class;
-            final XMLResource resource = (XMLResource)collection.createResource(DOCUMENT_NAME, xmlResourceType);
-            resource.setContent(XML_CONTENT);
-            collection.storeResource(resource);
-            assertEquals(ResourceType.XML_RESOURCE, resource.getResourceType());
+            try (final XMLResource resource = (XMLResource)collection.createResource(DOCUMENT_NAME, xmlResourceType)) {
+                resource.setContent(XML_CONTENT);
+                collection.storeResource(resource);
+                assertEquals(ResourceType.XML_RESOURCE, resource.getResourceType());
+            }
     	}
-    	
+
         // retrieve the document and verify its resource type
     	try(Collection collection = DatabaseManager.getCollection(getBaseUri() + "/db/" + COLLECTION_NAME, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)){
-            Resource resource = collection.getResource(DOCUMENT_NAME);
-            assertEquals(ResourceType.XML_RESOURCE, resource.getResourceType());
+            try (final Resource resource = collection.getResource(DOCUMENT_NAME)) {
+                assertEquals(ResourceType.XML_RESOURCE, resource.getResourceType());
+            }
     	}
     }
 
@@ -81,21 +107,25 @@ public class MimeTypeTest {
         Database database = (Database) cl.newInstance();
         DatabaseManager.registerDatabase(database);
 
-        Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        
-        CollectionManagementService mgmt = root.getService(CollectionManagementService.class);
-        assertThatNoException().isThrownBy(() -> mgmt.createCollection(COLLECTION_NAME));
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            CollectionManagementService mgmt = root.getService(CollectionManagementService.class);
+            assertThatNoException().isThrownBy(() -> {
+                try (final Collection created = mgmt.createCollection(COLLECTION_NAME)) { }
+            });
+        }
     }
 
     @AfterClass
     public static void stopServer() throws XMLDBException {
-        Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        CollectionManagementService mgmt =
-                root.getService(CollectionManagementService.class);
-        mgmt.removeCollection(COLLECTION_NAME);
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            CollectionManagementService mgmt =
+                    root.getService(CollectionManagementService.class);
+            mgmt.removeCollection(COLLECTION_NAME);
+        }
 
-        Collection config = DatabaseManager.getCollection(getBaseUri() + "/db/system/config/db", "admin", "");
-        mgmt = config.getService(CollectionManagementService.class);
-        mgmt.removeCollection(COLLECTION_NAME);
+        try (final Collection config = DatabaseManager.getCollection(getBaseUri() + "/db/system/config/db", "admin", "")) {
+            CollectionManagementService mgmt = config.getService(CollectionManagementService.class);
+            mgmt.removeCollection(COLLECTION_NAME);
+        }
     }
 }

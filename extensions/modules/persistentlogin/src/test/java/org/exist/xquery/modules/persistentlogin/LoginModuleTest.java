@@ -102,12 +102,13 @@ public class LoginModuleTest {
             "sm:id()/(descendant::sm:effective,descendant::sm:real)[1]/sm:username/string()";
 
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + EXIST_WEB_SERVER.getPort() + "/xmlrpc" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class);
-        ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
-        res.setContent(xquery);
-        root.storeResource(res);
-        final UserManagementService ums = root.getService(UserManagementService.class);
-        ums.chmod(res, 0777);
+        try (final BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class)) {
+            ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
+            res.setContent(xquery);
+            root.storeResource(res);
+            final UserManagementService ums = root.getService(UserManagementService.class);
+            ums.chmod(res, 0777);
+        }
 
         final BasicCookieStore store = new BasicCookieStore();
         client = HttpClientBuilder.create().setDefaultCookieStore(store).build();
@@ -115,8 +116,12 @@ public class LoginModuleTest {
 
     @After
     public void cleanup() throws XMLDBException {
-        final BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME);
-        root.removeResource(res);
+        try (final BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME)) {
+            root.removeResource(res);
+        } finally {
+            root.close();
+            root = null;
+        }
     }
 
     @Test

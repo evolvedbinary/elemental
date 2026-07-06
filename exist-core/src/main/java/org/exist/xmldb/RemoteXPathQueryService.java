@@ -56,7 +56,11 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.Leasable;
 import org.exist.xmlrpc.RpcAPI;
 import org.exist.xquery.XPathException;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 
 import javax.annotation.Nullable;
@@ -102,7 +106,7 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
     }
 
     @Override
-    public ResourceSet query(final String query, final String sortExpr)
+    public EXistResourceSet query(final String query, final String sortExpr)
             throws XMLDBException {
         final Map<String, Object> optParams = new HashMap<>();
 
@@ -211,7 +215,7 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
     }
 
     @Override
-    public ResourceSet execute(final Source source) throws XMLDBException {
+    public EXistResourceSet execute(final Source source) throws XMLDBException {
         try {
             final String xq = source.getContent();
             return query(xq, null);
@@ -221,7 +225,7 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
     }
 
     @Override
-    public ResourceSet executeStoredQuery(final String uri) throws XMLDBException {
+    public EXistResourceSet executeStoredQuery(final String uri) throws XMLDBException {
 
         final List<Object> params = new ArrayList<>();
         params.add(uri);
@@ -247,13 +251,13 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
     }
 
     @Override
-    public ResourceSet query(final XMLResource res, final String query)
+    public EXistResourceSet query(final XMLResource res, final String query)
             throws XMLDBException {
         return query(res, query, null);
     }
 
     @Override
-    public ResourceSet query(final XMLResource res, final String query, final String sortExpr)
+    public EXistResourceSet query(final XMLResource res, final String query, final String sortExpr)
             throws XMLDBException {
         final RemoteXMLResource resource = (RemoteXMLResource) res;
         final Map<String, Object> optParams = new HashMap<>();
@@ -299,7 +303,7 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
     }
 
     @Override
-    public ResourceSet queryResource(final String resource, final String query) throws XMLDBException {
+    public EXistResourceSet queryResource(final String resource, final String query) throws XMLDBException {
         final Resource res = collection.getResource(resource);
         try {
             if (res == null) {
@@ -367,7 +371,7 @@ public class RemoteXPathQueryService extends AbstractRemoteService implements EX
     }
 
     @Override
-    public ResourceSet execute(final XMLResource res, final CompiledExpression expression) throws XMLDBException {
+    public EXistResourceSet execute(final XMLResource res, final CompiledExpression expression) throws XMLDBException {
         return query(res, ((RemoteCompiledExpression) expression).getQuery());
     }
 

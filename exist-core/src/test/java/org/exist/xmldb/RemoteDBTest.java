@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -53,41 +77,34 @@ public abstract class RemoteDBTest {
 
     protected void setUpRemoteDatabase() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         //Connect to the DB
-        Class<?> cl = Class.forName(DB_DRIVER);
-        Database database = (Database) cl.newInstance();
+        final Class<?> cl = Class.forName(DB_DRIVER);
+        final Database database = (Database) cl.newInstance();
         assertNotNull(database);
         DatabaseManager.registerDatabase(database);
         //Get the root collection...
-        Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "");
-        assertNotNull(rootCollection);
-        CollectionManagementService cms = rootCollection.getService(
-                CollectionManagementService.class);
-        //Creates the child collection
-        Collection childCollection = cms.createCollection(CHILD_COLLECTION);
-        assertNotNull(childCollection);
-        //... and work from it
-        setCollection((RemoteCollection) childCollection);
-        assertNotNull(childCollection);
+        try (final Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
+            assertNotNull(rootCollection);
+            final CollectionManagementService cms = rootCollection.getService(CollectionManagementService.class);
+            //Creates the child collection
+            //... and work from it
+            this.collection = (RemoteCollection) cms.createCollection(CHILD_COLLECTION);
+            assertNotNull(this.collection);
+        }
     }
 
     protected void removeCollection() {
-    	try {
-	        Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "");
-	        assertNotNull(rootCollection);
-	        CollectionManagementService cms = rootCollection.getService(
-	                CollectionManagementService.class);
-	        cms.removeCollection(CHILD_COLLECTION);
-        } catch (Exception e) {            
+        collection.close();
+    	try (final Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
+            assertNotNull(rootCollection);
+            final CollectionManagementService cms = rootCollection.getService(CollectionManagementService.class);
+            cms.removeCollection(CHILD_COLLECTION);
+        } catch (final Exception e) {
             fail(e.getMessage()); 
         }
     }
 
-    public RemoteCollection getCollection() {
+    protected RemoteCollection getCollection() {
         return collection;
-    }
-
-    public void setCollection(RemoteCollection collection) {
-        this.collection = collection;
     }
 
     protected String getTestCollectionName() {

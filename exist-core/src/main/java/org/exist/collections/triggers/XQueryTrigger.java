@@ -54,11 +54,11 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.DBSource;
@@ -246,8 +246,8 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 	
 	private void prepare(final TriggerEvent event, final DBBroker broker, final Txn transaction, final XmldbURI src, final XmldbURI dst, final boolean isCollection) throws TriggerException {
 		//get the query
-		final Source query = getQuerySource(broker);
-		if (query == null) {
+		final Source source = getQuerySource(broker);
+		if (source == null) {
 			return;
 		}
 
@@ -259,53 +259,26 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			return;
 		}
 
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
+		final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+			declareExternalVariables(xqueryContext, TriggerPhase.BEFORE, event, src, dst, isCollection);
+		};
 
-            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, query);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
+		try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreExecution, null, null)) {
 
-            if (compiled == null) {
-                compiled = service.compile(context, query);
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Trigger fired for prepare in: {}", queryResult.executionTime);
+			}
 
-            declareExternalVariables(context, TriggerPhase.BEFORE, event, src, dst, isCollection);
-
-            //execute the XQuery
-            //TODO : should we provide another contextSet ?
-            final NodeSet contextSet = NodeSet.EMPTY_SET;
-            service.execute(broker, compiled, contextSet);
-            //TODO : should we have a special processing ?
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Trigger fired for prepare");
-            }
-
-        } catch (final XPathException | IOException | PermissionDeniedException e) {
-            TriggerStatePerThread.clear();
-            throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(query, compiled);
-            }
-        }
+		} catch (final XPathException | IOException | PermissionDeniedException e) {
+			TriggerStatePerThread.clear();
+			throw new TriggerException(PREPARE_EXCEPTION_MESSAGE, e);
+		}
     }
     
 	private void finish(final TriggerEvent event, final DBBroker broker, final Txn transaction, final XmldbURI src, final XmldbURI dst, final boolean isCollection) {
     	//get the query
-    	final Source query = getQuerySource(broker);
-		if (query == null) {
+    	final Source source = getQuerySource(broker);
+		if (source == null) {
 			return;
 		}
 
@@ -317,47 +290,21 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
 			return;
 		}
 
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            compiled = broker.getBrokerPool().getXQueryPool().borrowCompiledXQuery(broker, query);
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
+		final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+			declareExternalVariables(xqueryContext, TriggerPhase.AFTER, event, src, dst, isCollection);
+		};
 
-            if (compiled == null) {
-                compiled = service.compile(context, query);
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
-
-            declareExternalVariables(context, TriggerPhase.AFTER, event, src, dst, isCollection);
-
-            //execute the XQuery
-            //TODO : should we provide another contextSet ?
-            final NodeSet contextSet = NodeSet.EMPTY_SET;
-            service.execute(broker, compiled, contextSet);
-            //TODO : should we have a special processing ?
-
-        } catch (final XPathException | IOException | PermissionDeniedException e) {
-            LOG.error("Error during trigger finish", e);
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                broker.getBrokerPool().getXQueryPool().returnCompiledXQuery(query, compiled);
-            }
-        }
+		long executionTime = -1;
+		try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreExecution, null, null)) {
+			executionTime = queryResult.executionTime;
+		} catch (final XPathException | IOException | PermissionDeniedException e) {
+			LOG.error("Error during trigger finish", e);
+		}
 
 		TriggerStatePerThread.clearIfFinished(TriggerPhase.AFTER);
 
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("Trigger fired for finish");
+			LOG.debug("Trigger fired for finish in {}", executionTime);
 		}
 	}
 

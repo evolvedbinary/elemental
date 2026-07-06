@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,13 +43,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn;
 
 import com.googlecode.junittoolbox.ParallelParameterized;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.FileUtils;
 
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -34,7 +58,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmlunit.builder.DiffBuilder;
@@ -97,29 +120,30 @@ public class ExtDocTest {
     @Test
     public void parse() throws XMLDBException {
         final URI docUri = externalDoc.toUri();
-        final ResourceSet result = existEmbeddedServer.executeQuery(
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
             "xquery version \"3.1\";\n" +
             "\n" +
             "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";" +
             "declare option output:omit-xml-declaration \"yes\";\n" +
             "\n" +
             "fn:doc('" + docUri + "')"
-        );
+        )) {
 
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
-        final Resource resource = result.getResource(0);
-        assertNotNull(resource);
-        assertEquals(XML_RESOURCE, resource.getResourceType());
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
+            final Resource resource = result.getResource(0);
+            assertNotNull(resource);
+            assertEquals(XML_RESOURCE, resource.getResourceType());
 
-        final Source expectedSource = Input.fromString(docContent).build();
-        final Source actualSource = Input.fromNode(((XMLResource)resource).getContentAsDOM()).build();
+            final Source expectedSource = Input.fromString(docContent).build();
+            final Source actualSource = Input.fromNode(((XMLResource) resource).getContentAsDOM()).build();
 
-        final Diff diff = DiffBuilder.compare(expectedSource)
+            final Diff diff = DiffBuilder.compare(expectedSource)
                 .withTest(actualSource)
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.toString(), diff.hasDifferences());
+        }
     }
 }

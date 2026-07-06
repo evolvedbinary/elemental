@@ -64,6 +64,7 @@ import xyz.elemental.mediatype.MediaTypeResolver;
 import xyz.elemental.mediatype.StorageType;
 import xyz.elemental.mediatype.impl.MediaTypeImpl;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,134 +122,173 @@ public class XMLDBStoreTask extends AbstractXMLDBTask {
             path = uri.substring(p + 3);
         }
 
-        Collection root = null;
+        @Nullable Collection root = null;
         try {
+            try {
 
-            if (createCollection) {
-                root = DatabaseManager.getCollection(baseURI + XmldbURI.ROOT_COLLECTION, user, password);
-                root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION, path);
-            } else {
-                root = DatabaseManager.getCollection(uri, user, password);
-            }
-        } catch (final XMLDBException e) {
-            final String msg = "XMLDB exception caught: " + e.getMessage();
-
-            if (failonerror) {
-                throw new BuildException(msg, e);
-            } else {
-                log(msg, e, Project.MSG_ERR);
-                return;
-            }
-        }
-
-        if (root == null) {
-            final String msg = "Collection " + uri + " could not be found.";
-
-            if (failonerror) {
-                throw new BuildException(msg);
-            } else {
-                log(msg, Project.MSG_ERR);
-            }
-
-        } else {
-            Collection col = root;
-            String relDir;
-            String prevDir = null;
-
-            if (srcFile != null) {
-                log("Storing " + srcFile.getName());
-
-                MediaType mediaType = getMediaTypeResolver().fromFileName(srcFile.getName());
-                final String baseMediaType;
-
-                if (forceMimeType != null) {
-                    baseMediaType = forceMimeType;
-
-                } else if (mediaType != null) {
-                    baseMediaType = mediaType.getIdentifier();
-
+                if (createCollection) {
+                    root = DatabaseManager.getCollection(baseURI + XmldbURI.ROOT_COLLECTION, user, password);
+                    root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION, path);
                 } else {
-                    baseMediaType = defaultMimeType;
+                    root = DatabaseManager.getCollection(uri, user, password);
+                }
+            } catch (final XMLDBException e) {
+                final String msg = "XMLDB exception caught: " + e.getMessage();
+
+                if (failonerror) {
+                    throw new BuildException(msg, e);
+                } else {
+                    log(msg, e, Project.MSG_ERR);
+                    return;
+                }
+            }
+
+            if (root == null) {
+                final String msg = "Collection " + uri + " could not be found.";
+
+                if (failonerror) {
+                    throw new BuildException(msg);
+                } else {
+                    log(msg, Project.MSG_ERR);
                 }
 
-                if (type != null) {
-                    if ("xml".equals(type) && (mediaType == null || mediaType.getStorageType() != StorageType.XML)) {
-                        if (baseMediaType != null) {
-                            mediaType = MediaTypeImpl.builder(baseMediaType, StorageType.XML).build();
-                        } else {
-                            mediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
-                        }
+            } else {
 
-                    } else if ("binary".equals(type) && (mediaType == null || mediaType.getStorageType() != StorageType.BINARY)) {
+                if (srcFile != null) {
+                    log("Storing " + srcFile.getName());
+
+                    MediaType mediaType = getMediaTypeResolver().fromFileName(srcFile.getName());
+                    final String baseMediaType;
+
+                    if (forceMimeType != null) {
+                        baseMediaType = forceMimeType;
+
+                    } else if (mediaType != null) {
+                        baseMediaType = mediaType.getIdentifier();
+
+                    } else {
+                        baseMediaType = defaultMimeType;
+                    }
+
+                    if (type != null) {
+                        if ("xml".equals(type) && (mediaType == null || mediaType.getStorageType() != StorageType.XML)) {
+                            if (baseMediaType != null) {
+                                mediaType = MediaTypeImpl.builder(baseMediaType, StorageType.XML).build();
+                            } else {
+                                mediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
+                            }
+
+                        } else if ("binary".equals(type) && (mediaType == null || mediaType.getStorageType() != StorageType.BINARY)) {
+                            if (baseMediaType != null) {
+                                mediaType = MediaTypeImpl.builder(baseMediaType, StorageType.BINARY).build();
+                            } else {
+                                mediaType = mediaTypeResolver.forUnknown();
+                            }
+                        }
+                    }
+
+                    // single file
+                    if (mediaType == null) {
+                        final String msg = "Cannot guess mime-type kind for " + srcFile.getName() + ". Treating it as a binary.";
+                        log(msg, Project.MSG_ERR);
                         if (baseMediaType != null) {
                             mediaType = MediaTypeImpl.builder(baseMediaType, StorageType.BINARY).build();
                         } else {
                             mediaType = mediaTypeResolver.forUnknown();
                         }
                     }
-                }
 
-                // single file
-                if (mediaType == null) {
-                    final String msg = "Cannot guess mime-type kind for " + srcFile.getName() + ". Treating it as a binary.";
-                    log(msg, Project.MSG_ERR);
-                    if (baseMediaType != null) {
-                        mediaType = MediaTypeImpl.builder(baseMediaType, StorageType.BINARY).build();
-                    } else {
-                        mediaType = mediaTypeResolver.forUnknown();
+                    final Class<? extends Resource> resourceType = mediaType.getStorageType() == StorageType.XML ? XMLResource.class : BinaryResource.class;
+
+                    if (targetFile == null) {
+                        targetFile = srcFile.getName();
                     }
-                }
 
-                final Class<? extends Resource> resourceType = mediaType.getStorageType() == StorageType.XML ? XMLResource.class : BinaryResource.class;
+                    try {
+                        log("Creating resource " + targetFile + " in collection " + root.getName() + " of type " + resourceType + " with media-type: " + mediaType.getIdentifier(), Project.MSG_DEBUG);
+                        try (final Resource res = root.createResource(targetFile, resourceType)) {
+                            if (srcFile.length() == 0) {
+                                // note: solves bug id 2429889 when this task hits empty files
+                            } else {
+                                res.setContent(srcFile);
+                                ((EXistResource) res).setMediaType(mediaType.getIdentifier());
+                                root.storeResource(res);
+                            }
 
-                if (targetFile == null) {
-                    targetFile = srcFile.getName();
-                }
+                            if (permissions != null) {
+                                setPermissions(res);
+                            }
+                        }
+                    } catch (final XMLDBException e) {
+                        final String msg = "XMLDB exception caught: " + e.getMessage();
 
-                try {
-                    log("Creating resource " + targetFile + " in collection " + col.getName() + " of type " + resourceType + " with media-type: " + mediaType.getIdentifier(), Project.MSG_DEBUG);
-                    try (Resource res = col.createResource(targetFile, resourceType)) {
-                        if (srcFile.length() == 0) {
-                            // note: solves bug id 2429889 when this task hits empty files
+                        if (failonerror) {
+                            throw new BuildException(msg, e);
                         } else {
-                            res.setContent(srcFile);
-                            ((EXistResource) res).setMediaType(mediaType.getIdentifier());
-                            col.storeResource(res);
-                        }
-
-                        if (permissions != null) {
-                            setPermissions(res);
+                            log(msg, e, Project.MSG_ERR);
                         }
                     }
-                } catch (final XMLDBException e) {
-                    final String msg = "XMLDB exception caught: " + e.getMessage();
+                } else {
 
-                    if (failonerror) {
-                        throw new BuildException(msg, e);
-                    } else {
-                        log(msg, e, Project.MSG_ERR);
-                    }
-                }
-            } else {
+                    for (final FileSet fileSet : fileSetList) {
+                        log("Storing fileset", Project.MSG_DEBUG);
 
-                for (final FileSet fileSet : fileSetList) {
-                    log("Storing fileset", Project.MSG_DEBUG);
+                        // using fileset
+                        final DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
+                        scanner.scan();
+                        final String[] includedFiles = scanner.getIncludedFiles();
+                        final String[] includedDirs = scanner.getIncludedDirectories();
+                        log("Found " + includedDirs.length + " directories and " + includedFiles.length + " files.\n");
 
-                    // using fileset
-                    final DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
-                    scanner.scan();
-                    final String[] includedFiles = scanner.getIncludedFiles();
-                    final String[] includedDirs = scanner.getIncludedDirectories();
-                    log("Found " + includedDirs.length + " directories and " + includedFiles.length + " files.\n");
+                        final File baseDir = scanner.getBasedir();
 
-                    final File baseDir = scanner.getBasedir();
+                        if (includeEmptyDirs && createSubcollections) {
 
-                    if (includeEmptyDirs && createSubcollections) {
+                            @Nullable String prevDir = null;
+                            for (final String included : includedDirs) {
 
-                        for (final String included : includedDirs) {
+                                try {
+                                    log("Creating " + included + " ...\n");
+
+                                    //TODO : use dedicated function in XmldbURI
+                                    // check whether the relative file path contains file seps
+
+                                    p = included.lastIndexOf(File.separatorChar);
+
+                                    if (p != Constants.STRING_NOT_FOUND) {
+                                        String relDir = included.substring(0, p);
+
+                                        // It's necessary to do this translation on Windows, and possibly MacOS:
+                                        relDir = relDir.replace(File.separatorChar, '/');
+
+                                        if (createSubcollections && ((prevDir == null) || (!relDir.equals(prevDir)))) {
+
+                                            //TODO : use dedicated function in XmldbURI
+                                            root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION + path, relDir);
+                                            prevDir = relDir;
+                                        }
+
+                                    } else {
+                                        root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION + path, included);
+                                    }
+                                } catch (final XMLDBException e) {
+                                    final String msg = "XMLDB exception caught: " + e.getMessage();
+
+                                    if (failonerror) {
+                                        throw new BuildException(msg, e);
+                                    } else {
+                                        log(msg, e, Project.MSG_ERR);
+                                    }
+                                }
+                            }
+                        }
+
+                        @Nullable String prevDir = null;
+                        for (final String included : includedFiles) {
 
                             try {
-                                log("Creating " + included + " ...\n");
+                                final File file = new File(baseDir, included);
+                                log("Storing " + included + " ...\n");
 
                                 //TODO : use dedicated function in XmldbURI
                                 // check whether the relative file path contains file seps
@@ -256,7 +296,7 @@ public class XMLDBStoreTask extends AbstractXMLDBTask {
                                 p = included.lastIndexOf(File.separatorChar);
 
                                 if (p != Constants.STRING_NOT_FOUND) {
-                                    relDir = included.substring(0, p);
+                                    String relDir = included.substring(0, p);
 
                                     // It's necessary to do this translation on Windows, and possibly MacOS:
                                     relDir = relDir.replace(File.separatorChar, '/');
@@ -264,12 +304,78 @@ public class XMLDBStoreTask extends AbstractXMLDBTask {
                                     if (createSubcollections && ((prevDir == null) || (!relDir.equals(prevDir)))) {
 
                                         //TODO : use dedicated function in XmldbURI
-                                        col = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION + path, relDir);
+                                        root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION + path, relDir);
                                         prevDir = relDir;
                                     }
 
                                 } else {
-                                    col = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION + path, included);
+
+                                    // No file separator found in resource name, reset col to the root collection
+                                    try {
+                                        root.close();
+                                    } catch (final XMLDBException e) {
+                                        // no-op
+                                    }
+                                    if (createCollection) {
+                                        root = DatabaseManager.getCollection(baseURI + XmldbURI.ROOT_COLLECTION, user, password);
+                                        root = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION, path);
+                                    } else {
+                                        root = DatabaseManager.getCollection(uri, user, password);
+                                    }
+                                }
+
+                                MediaType currentMediaType = getMediaTypeResolver().fromFileName(file.getName());
+                                final String currentBaseMediaType;
+
+                                if (forceMimeType != null) {
+                                    currentBaseMediaType = forceMimeType;
+
+                                } else if (currentMediaType != null) {
+                                    currentBaseMediaType = currentMediaType.getIdentifier();
+
+                                } else {
+                                    currentBaseMediaType = defaultMimeType;
+
+                                }
+
+                                if (type != null) {
+
+                                    if ("xml".equals(type) && (currentMediaType == null || currentMediaType.getStorageType() != StorageType.XML)) {
+                                        if (currentBaseMediaType != null) {
+                                            currentMediaType = MediaTypeImpl.builder(currentBaseMediaType, StorageType.XML).build();
+                                        } else {
+                                            currentMediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
+                                        }
+
+                                    } else if ("binary".equals(type) && (currentMediaType == null || currentMediaType.getStorageType() != StorageType.BINARY)) {
+                                        if (currentBaseMediaType != null) {
+                                            currentMediaType = MediaTypeImpl.builder(currentBaseMediaType, StorageType.BINARY).build();
+                                        } else {
+                                            currentMediaType = mediaTypeResolver.forUnknown();
+                                        }
+                                    }
+                                }
+
+                                if (currentMediaType == null) {
+                                    final String msg = "Cannot find mime-type kind for " + file.getName() + ". Treating it as a binary.";
+                                    log(msg, Project.MSG_ERR);
+                                    if (currentBaseMediaType != null) {
+                                        currentMediaType = MediaTypeImpl.builder(currentBaseMediaType, StorageType.BINARY).build();
+                                    } else {
+                                        currentMediaType = mediaTypeResolver.forUnknown();
+                                    }
+                                }
+
+                                final Class<? extends Resource> resourceType = currentMediaType.getStorageType() == StorageType.XML ? XMLResource.class : BinaryResource.class;
+                                log("Creating resource " + file.getName() + " in collection " + root.getName() + " of type " + resourceType + " with media-type: " + currentMediaType.getIdentifier(), Project.MSG_DEBUG);
+                                try (final Resource res = root.createResource(file.getName(), resourceType)) {
+                                    res.setContent(file);
+                                    ((EXistResource) res).setMediaType(currentMediaType.getIdentifier());
+                                    root.storeResource(res);
+
+                                    if (permissions != null) {
+                                        setPermissions(res);
+                                    }
                                 }
                             } catch (final XMLDBException e) {
                                 final String msg = "XMLDB exception caught: " + e.getMessage();
@@ -282,100 +388,14 @@ public class XMLDBStoreTask extends AbstractXMLDBTask {
                             }
                         }
                     }
-
-                    for (final String included : includedFiles) {
-
-                        try {
-                            final File file = new File(baseDir, included);
-                            log("Storing " + included + " ...\n");
-
-                            //TODO : use dedicated function in XmldbURI
-                            // check whether the relative file path contains file seps
-
-                            p = included.lastIndexOf(File.separatorChar);
-
-                            if (p != Constants.STRING_NOT_FOUND) {
-                                relDir = included.substring(0, p);
-
-                                // It's necessary to do this translation on Windows, and possibly MacOS:
-                                relDir = relDir.replace(File.separatorChar, '/');
-
-                                if (createSubcollections && ((prevDir == null) || (!relDir.equals(prevDir)))) {
-
-                                    //TODO : use dedicated function in XmldbURI
-                                    col = mkcol(root, baseURI, XmldbURI.ROOT_COLLECTION + path, relDir);
-                                    prevDir = relDir;
-                                }
-
-                            } else {
-
-                                // No file separator found in resource name, reset col to the root collection
-                                col = root;
-                            }
-
-                            MediaType currentMediaType = getMediaTypeResolver().fromFileName(file.getName());
-                            final String currentBaseMediaType;
-
-                            if (forceMimeType != null) {
-                                currentBaseMediaType = forceMimeType;
-
-                            } else if (currentMediaType != null) {
-                                currentBaseMediaType = currentMediaType.getIdentifier();
-
-                            } else {
-                                currentBaseMediaType = defaultMimeType;
-
-                            }
-
-                            if (type != null) {
-
-                                if ("xml".equals(type) && (currentMediaType == null || currentMediaType.getStorageType() != StorageType.XML)) {
-                                    if (currentBaseMediaType != null) {
-                                        currentMediaType = MediaTypeImpl.builder(currentBaseMediaType, StorageType.XML).build();
-                                    } else {
-                                        currentMediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);
-                                    }
-
-                                } else if ("binary".equals(type) && (currentMediaType == null || currentMediaType.getStorageType() != StorageType.BINARY)) {
-                                    if (currentBaseMediaType != null) {
-                                        currentMediaType = MediaTypeImpl.builder(currentBaseMediaType, StorageType.BINARY).build();
-                                    } else {
-                                        currentMediaType = mediaTypeResolver.forUnknown();
-                                    }
-                                }
-                            }
-
-                            if (currentMediaType == null) {
-                                final String msg = "Cannot find mime-type kind for " + file.getName() + ". Treating it as a binary.";
-                                log(msg, Project.MSG_ERR);
-                                if (currentBaseMediaType != null) {
-                                    currentMediaType = MediaTypeImpl.builder(currentBaseMediaType, StorageType.BINARY).build();
-                                } else {
-                                    currentMediaType = mediaTypeResolver.forUnknown();
-                                }
-                            }
-
-                            final Class<? extends Resource> resourceType = currentMediaType.getStorageType() == StorageType.XML ? XMLResource.class : BinaryResource.class;
-                            log("Creating resource " + file.getName() + " in collection " + col.getName() + " of type " + resourceType + " with media-type: " + currentMediaType.getIdentifier(), Project.MSG_DEBUG);
-                            try (Resource res = col.createResource(file.getName(), resourceType)) {
-                                res.setContent(file);
-                                ((EXistResource) res).setMediaType(currentMediaType.getIdentifier());
-                                col.storeResource(res);
-
-                                if (permissions != null) {
-                                    setPermissions(res);
-                                }
-                            }
-                        } catch (final XMLDBException e) {
-                            final String msg = "XMLDB exception caught: " + e.getMessage();
-
-                            if (failonerror) {
-                                throw new BuildException(msg, e);
-                            } else {
-                                log(msg, e, Project.MSG_ERR);
-                            }
-                        }
-                    }
+                }
+            }
+        } finally {
+            if (root != null) {
+                try {
+                    root.close();
+                } catch (final XMLDBException e) {
+                    // no-op
                 }
             }
         }

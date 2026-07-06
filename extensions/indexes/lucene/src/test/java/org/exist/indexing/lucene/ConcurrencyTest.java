@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -42,6 +66,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.LockException;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.IndexQueryService;
 import org.junit.AfterClass;
@@ -50,7 +75,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XUpdateQueryService;
@@ -147,29 +171,36 @@ public class ConcurrencyTest {
         storeDocs(collectionName);
 
         final EXistXQueryService xqs = test.getService(EXistXQueryService.class);
-        ResourceSet result = xqs.query("//SPEECH[ft:query(LINE, 'king')]");
-        assertEquals(98, result.getSize());
-
-        result = xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]");
-        assertEquals(118, result.getSize());
-
-        for (String resourceName : test.listResources()) {
-            final Resource resource = test.getResource(resourceName);
-            test.removeResource(resource);
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(LINE, 'king')]")) {
+            assertEquals(98, result.getSize());
         }
-        result = xqs.query("//SPEECH[ft:query(LINE, 'king')]");
-        assertEquals(0, result.getSize());
 
-        result = xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]");
-        assertEquals(0, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]")) {
+            assertEquals(118, result.getSize());
+        }
+
+        for (final String resourceName : test.listResources()) {
+            try (final Resource resource = test.getResource(resourceName)) {
+                test.removeResource(resource);
+            }
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(LINE, 'king')]")) {
+            assertEquals(0, result.getSize());
+        }
+
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]")) {
+            assertEquals(0, result.getSize());
+        }
     }
 
     private void xupdateDocs(final String collectionName) throws XMLDBException, IOException, URISyntaxException {
         storeDocs(collectionName);
 
         final EXistXQueryService xqs = test.getService(EXistXQueryService.class);
-        ResourceSet result = xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]");
-        assertEquals(118, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]")) {
+            assertEquals(118, result.getSize());
+        }
 
         final String xupdate =
             LuceneIndexTest.XUPDATE_START +
@@ -178,37 +209,33 @@ public class ConcurrencyTest {
         final XUpdateQueryService xuqs = test.getService(XUpdateQueryService.class);
         xuqs.update(xupdate);
 
-        result = xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]");
-        assertEquals(0, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(SPEAKER, 'juliet')]")) {
+            assertEquals(0, result.getSize());
+        }
 
-        result = xqs.query("//SPEECH[ft:query(LINE, 'king')]");
-        assertEquals(98, result.getSize());
+        try (final EXistResourceSet result = (EXistResourceSet) xqs.query("//SPEECH[ft:query(LINE, 'king')]")) {
+            assertEquals(98, result.getSize());
+        }
     }
 
-    private void storeDocs(final String collectionName) throws XMLDBException, IOException, URISyntaxException {
-        Collection collection = null;
-        try {
-            collection = existEmbeddedServer.createCollection(test, collectionName);
+    private void storeDocs(final String collectionName) throws XMLDBException, IOException {
+        try (final Collection collection = existEmbeddedServer.createCollection(test, collectionName)) {
 
             final IndexQueryService iqs = collection.getService(IndexQueryService.class);
             iqs.configureCollection(COLLECTION_CONFIG1);
 
             for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
-                final Resource resource = collection.createResource(sampleName, XMLResource.class);
-                try (final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
+                try (final Resource resource = collection.createResource(sampleName, XMLResource.class);
+                     final InputStream is = SAMPLES.getShakespeareSample(sampleName)) {
                     resource.setContent(InputStreamUtil.readString(is, UTF_8));
+                    collection.storeResource(resource);
                 }
-                collection.storeResource(resource);
-            }
-        } finally {
-            if(collection != null) {
-                collection.close();
             }
         }
     }
 
     @BeforeClass
-    public static void initDB() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    public static void initDB() throws XMLDBException {
         test = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "test");
     }
 

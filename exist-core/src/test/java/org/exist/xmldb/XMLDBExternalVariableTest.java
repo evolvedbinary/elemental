@@ -48,7 +48,6 @@ import org.xml.sax.XMLReader;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.CompiledExpression;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XQueryService;
 
@@ -125,8 +124,7 @@ public class XMLDBExternalVariableTest {
 
             final CompiledExpression compiled = xqueryService.compile("declare variable $local:my-variable as xs:string* external;\n$local:my-variable");
 
-            try {
-                xqueryService.execute(compiled);
+            try (final EXistResourceSet result = (EXistResourceSet) xqueryService.execute(compiled)) {
                 fail("Expected XMLDBException with cause XPathException: XPDY0002 External variable local:other-variable is not declared in the XQuery");
             } catch (final XMLDBException e) {
                 final Throwable cause = e.getCause();
@@ -1667,11 +1665,10 @@ public class XMLDBExternalVariableTest {
     private void queryPostWithExternalVariable(final Tuple2<ErrorCodes.ErrorCode, String> expectedResponse, final ExternalVariableValueRep[] expectedResult, @Nullable final String xqExternalVariableType, final ExternalVariableValueRep... externalVariableSequence) throws XMLDBException {
         @Nullable final Object[] externalVariableValue = buildExternalVariableValue(externalVariableSequence);
         final String query = buildQueryExternalVariable(xqExternalVariableType);
-        final Either<XMLDBException, Tuple2<Collection, ResourceSet>> response = doPostWithAuth(externalVariableValue, query);
+        final Either<XMLDBException, Tuple2<Collection, EXistResourceSet>> response = doPostWithAuth(externalVariableValue, query);
         @Nullable final Collection dbCollection = response.map(r -> r._1).getOrElse((Collection) null);
-        @Nullable final ResourceSet actualResultSet = response.map(r -> r._2).getOrElse((ResourceSet) null);
 
-        try {
+        try (@Nullable final EXistResourceSet actualResultSet = response.map(r -> r._2).getOrElse((EXistResourceSet) null);) {
             if (expectedResponse._1 == null) {
                 // We expect success
                 assertTrue(response.isRight());
@@ -1718,13 +1715,6 @@ public class XMLDBExternalVariableTest {
                 }
             }
         } finally {
-            if (actualResultSet instanceof AutoCloseable) {
-                try {
-                    ((AutoCloseable) actualResultSet).close();
-                } catch (final Exception e) {
-                    // no-op
-                }
-            }
             if (dbCollection != null) {
                 dbCollection.close();
             }
@@ -1855,7 +1845,7 @@ public class XMLDBExternalVariableTest {
         return results;
     }
 
-    private Either<XMLDBException, Tuple2<Collection, ResourceSet>> doPostWithAuth(@Nullable final Object[] externalVariableValue, final String query) throws XMLDBException {
+    private Either<XMLDBException, Tuple2<Collection, EXistResourceSet>> doPostWithAuth(@Nullable final Object[] externalVariableValue, final String query) throws XMLDBException {
         // NOTE(AR) dbCollection will be closed either when XMLDBException is captured, or the ResourceSet is closed
         final Collection dbCollection = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         try {
@@ -1872,7 +1862,7 @@ public class XMLDBExternalVariableTest {
 
             final CompiledExpression compiled = xqueryService.compile(query);
             try {
-                return Either.Right(Tuple(dbCollection, xqueryService.execute(compiled)));
+                return Either.Right(Tuple(dbCollection, (EXistResourceSet) xqueryService.execute(compiled)));
             } catch (final XMLDBException e) {
                 dbCollection.close();
                 return Either.Left(e);

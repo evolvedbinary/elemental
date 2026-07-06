@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,10 +46,11 @@
 package org.exist.xquery.functions.fn;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -39,7 +64,7 @@ public class FunNumberTest {
     
     @Test
     public void testFnNumberWithContext() throws XMLDBException {
-        final ResourceSet resourceSet = existEmbeddedServer.executeQuery(
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
             "let $errors := " +
                 "<report>" +
                     "<message level=\"Error\" line=\"1191\" column=\"49\" repeat=\"96\"></message>" +
@@ -49,15 +74,18 @@ public class FunNumberTest {
                     "<message level=\"Error\" line=\"255702\" column=\"414\" repeat=\"9\"></message>" +
                 "</report>" +
             "return sum($errors//message/(@repeat/number(),1)[1])"
-        );
-        
-        assertEquals(1, resourceSet.getSize());
-        assertEquals("194", resourceSet.getResource(0).getContent());
+        )) {
+
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("194", resource.getContent());
+            }
+        }
     }
     
     @Test
     public void testFnNumberWithArgument() throws XMLDBException {
-        final ResourceSet resourceSet = existEmbeddedServer.executeQuery(
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
             "let $errors := " +
                 "<report>" +
                     "<message level=\"Error\" line=\"1191\" column=\"49\" repeat=\"96\"></message>" +
@@ -67,9 +95,12 @@ public class FunNumberTest {
                     "<message level=\"Error\" line=\"255702\" column=\"414\" repeat=\"9\"></message>" +
                 "</report>" +
             "return sum($errors//message/(number(@repeat),1)[1])"
-        );
-        
-        assertEquals(1, resourceSet.getSize());
-        assertEquals("NaN", resourceSet.getResource(0).getContent());
+        )) {
+
+            assertEquals(1, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                assertEquals("NaN", resource.getContent());
+            }
+        }
     }
 }

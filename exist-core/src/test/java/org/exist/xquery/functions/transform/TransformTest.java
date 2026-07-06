@@ -50,6 +50,7 @@ import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -60,7 +61,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
@@ -236,12 +237,12 @@ public class TransformTest {
      * {@see https://github.com/eXist-db/exist/issues/1506}
      */
     @Test
-    public void keys() throws EXistException, PermissionDeniedException, XPathException {
+    public void keys() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(LIST_OPS_XQUERY), false, null, null, null, null, null)) {
 
-            final Sequence sequence = xquery.execute(broker, LIST_OPS_XQUERY, null);
+            final Sequence sequence = queryResult.result;
             assertNotNull(sequence);
 
             assertEquals(1, sequence.getItemCount());
@@ -261,11 +262,11 @@ public class TransformTest {
 
     @Ignore("https://github.com/eXist-db/exist/issues/2096")
     @Test
-    public void xslDocument() throws EXistException, PermissionDeniedException, XPathException {
+    public void xslDocument() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = xquery.execute(broker, DOCUMENT_XSLT_QUERY, null);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(DOCUMENT_XSLT_QUERY), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
@@ -326,11 +327,11 @@ public class TransformTest {
         transform_twoNodesCountDescendants();
     }
 
-    private static void transform1(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, XPathException {
+    private static void transform1(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = xquery.execute(broker, getCountDescendantsXquery(collectionUri), null);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(getCountDescendantsXquery(collectionUri)), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
@@ -349,7 +350,7 @@ public class TransformTest {
 
     private void reindex(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, IOException, LockException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             broker.reindexCollection(transaction, collectionUri);
             transaction.commit();
@@ -379,11 +380,11 @@ public class TransformTest {
                 "</xsl:stylesheet>";
     }
 
-    private static void transform_twoNodesCountDescendants() throws EXistException, PermissionDeniedException, XPathException {
+    private static void transform_twoNodesCountDescendants() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xquery = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final Sequence sequence = xquery.execute(broker, COUNT_DESCENDANTS_TWO_NODES_QUERY, null);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(COUNT_DESCENDANTS_TWO_NODES_QUERY), false, null, null, null, null, null)) {
+            final Sequence sequence = queryResult.result;
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());

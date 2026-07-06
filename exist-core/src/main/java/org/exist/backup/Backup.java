@@ -63,7 +63,12 @@ import org.exist.xquery.value.DateTimeValue;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.Database;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.ResourceType;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 
 import javax.annotation.Nullable;
@@ -230,12 +235,12 @@ public class Backup {
     }
 
     public void backup(final boolean guiMode, final JFrame parent) throws XMLDBException, IOException, SAXException {
-        final Collection current = DatabaseManager.getCollection(rootCollection.toString(), user, pass);
-
         if (guiMode) {
             final BackupDialog dialog = new BackupDialog(parent, false);
             dialog.setSize(new Dimension(350, 150));
             dialog.setVisible(true);
+            final Collection current = DatabaseManager.getCollection(rootCollection.toString(), user, pass);
+            // NOTE(AR) Transfers ownership of `current` Collection object to BackupRunnable
             final BackupRunnable backupRunnable = new BackupRunnable(current, dialog, this);
             final Thread backupThread = newBackupThread("backup-" + backupThreadId.getAndIncrement(), backupRunnable);
             backupThread.start();
@@ -258,7 +263,9 @@ public class Backup {
                 }
             }
         } else {
-            backup(current, null);
+            try (final Collection current = DatabaseManager.getCollection(rootCollection.toString(), user, pass)) {
+                backup(current, null);
+            }
         }
     }
 
@@ -352,126 +359,127 @@ public class Backup {
                         continue;
                     }
 
-                    final Resource resource = current.getResource(resources.get(i));
-
-                    if (dialog != null) {
-                        dialog.setResource(resources.get(i));
-                        dialog.setProgress(i);
-                    }
-
-                    // Avoid NPE
-                    if (resource == null) {
-                        final String msg = "Resource " + resources.get(i) + " could not be found.";
+                    try (final Resource resource = current.getResource(resources.get(i))) {
 
                         if (dialog != null) {
-                            Object[] options = {"Ignore", "Abort"};
-                            int n = JOptionPane.showOptionDialog(null, msg, "Backup Error",
+                            dialog.setResource(resources.get(i));
+                            dialog.setProgress(i);
+                        }
+
+                        // Avoid NPE
+                        if (resource == null) {
+                            final String msg = "Resource " + resources.get(i) + " could not be found.";
+
+                            if (dialog != null) {
+                                Object[] options = {"Ignore", "Abort"};
+                                int n = JOptionPane.showOptionDialog(null, msg, "Backup Error",
                                     JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                                     options, options[1]);
-                            if (n == JOptionPane.YES_OPTION) {
-                                // ignore one
-                                continue;
+                                if (n == JOptionPane.YES_OPTION) {
+                                    // ignore one
+                                    continue;
+                                }
+
+                                // Abort
+                                dialog.dispose();
+                                JOptionPane.showMessageDialog(null, "Backup aborted.", "Abort", JOptionPane.WARNING_MESSAGE);
                             }
-
-                            // Abort
-                            dialog.dispose();
-                            JOptionPane.showMessageDialog(null, "Backup aborted.", "Abort", JOptionPane.WARNING_MESSAGE);
+                            throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, msg);
                         }
-                        throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, msg);
-                    }
 
-                    final String name = resources.get(i);
-                    String filename = encode(URIUtils.urlDecodeUtf8(resources.get(i)));
+                        final String name = resources.get(i);
+                        String filename = encode(URIUtils.urlDecodeUtf8(resources.get(i)));
 
-                    // Check for special resource names which cause problems as filenames, and if so, replace the filename with a generated filename
+                        // Check for special resource names which cause problems as filenames, and if so, replace the filename with a generated filename
 
-                    if (".".equals(name.trim())) {
-                        filename = EXIST_GENERATED_FILENAME_DOT_FILENAME + i;
-                    } else if ("..".equals(name.trim())) {
-                        filename = EXIST_GENERATED_FILENAME_DOTDOT_FILENAME + i;
-                    }
+                        if (".".equals(name.trim())) {
+                            filename = EXIST_GENERATED_FILENAME_DOT_FILENAME + i;
+                        } else if ("..".equals(name.trim())) {
+                            filename = EXIST_GENERATED_FILENAME_DOTDOT_FILENAME + i;
+                        }
 
-                    final OutputStream os;
-                    if (resource instanceof ExtendedResource) {
-                        if (deduplicateBlobs && resource instanceof EXistBinaryResource) {
-                            // only add distinct blobs to the Blob Store once!
-                            final String blobId = ((EXistBinaryResource) resource).getBlobId().toString();
-                            if (!seenBlobIds.contains(blobId)) {
-                                os = output.newBlobEntry(blobId);
+                        final OutputStream os;
+                        if (resource instanceof ExtendedResource) {
+                            if (deduplicateBlobs && resource instanceof EXistBinaryResource) {
+                                // only add distinct blobs to the Blob Store once!
+                                final String blobId = ((EXistBinaryResource) resource).getBlobId().toString();
+                                if (!seenBlobIds.contains(blobId)) {
+                                    os = output.newBlobEntry(blobId);
+                                    ((ExtendedResource) resource).getContentIntoAStream(os);
+                                    output.closeEntry();
+
+                                    seenBlobIds.add(blobId);
+                                }
+                            } else {
+                                os = output.newEntry(filename);
                                 ((ExtendedResource) resource).getContentIntoAStream(os);
                                 output.closeEntry();
-
-                                seenBlobIds.add(blobId);
                             }
                         } else {
                             os = output.newEntry(filename);
-                            ((ExtendedResource) resource).getContentIntoAStream(os);
+                            final Writer writer = new BufferedWriter(new OutputStreamWriter(os, UTF_8));
+
+                            // write resource to contentSerializer
+                            final SAXSerializer contentSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
+                            try {
+                                contentSerializer.setOutput(writer, defaultOutputProperties);
+                                ((EXistResource) resource).setLexicalHandler(contentSerializer);
+                                ((XMLResource) resource).getContentAsSAX(contentSerializer);
+                            } finally {
+                                SerializerPool.getInstance().returnObject(contentSerializer);
+                            }
+
+                            writer.flush();
                             output.closeEntry();
                         }
-                    } else {
-                        os = output.newEntry(filename);
-                        final Writer writer = new BufferedWriter(new OutputStreamWriter(os, UTF_8));
+                        final EXistResource ris = (EXistResource) resource;
 
-                        // write resource to contentSerializer
-                        final SAXSerializer contentSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
-                        try {
-                            contentSerializer.setOutput(writer, defaultOutputProperties);
-                            ((EXistResource) resource).setLexicalHandler(contentSerializer);
-                            ((XMLResource) resource).getContentAsSAX(contentSerializer);
-                        } finally {
-                            SerializerPool.getInstance().returnObject(contentSerializer);
+                        //store permissions
+                        final ResourceType resourceType = resource.getResourceType();
+                        attr.clear();
+                        attr.addAttribute(Namespaces.EXIST_NS, "type", "type", "CDATA", resourceType.typeName());
+                        attr.addAttribute(Namespaces.EXIST_NS, "name", "name", "CDATA", name);
+                        writeUnixStylePermissionAttributes(attr, perms[i]);
+                        Instant date = ris.getCreationTime();
+
+                        if (date != null) {
+                            attr.addAttribute(Namespaces.EXIST_NS, "created", "created", "CDATA", "" + new DateTimeValue(date));
+                        }
+                        date = ris.getLastModificationTime();
+
+                        if (date != null) {
+                            attr.addAttribute(Namespaces.EXIST_NS, "modified", "modified", "CDATA", "" + new DateTimeValue(date));
                         }
 
-                        writer.flush();
-                        output.closeEntry();
-                    }
-                    final EXistResource ris = (EXistResource) resource;
+                        attr.addAttribute(Namespaces.EXIST_NS, "filename", "filename", "CDATA", filename);
+                        attr.addAttribute(Namespaces.EXIST_NS, "mimetype", "mimetype", "CDATA", encode(((EXistResource) resource).getMediaType()));
 
-                    //store permissions
-                    final ResourceType resourceType = resource.getResourceType();
-                    attr.clear();
-                    attr.addAttribute(Namespaces.EXIST_NS, "type", "type", "CDATA", resourceType.typeName());
-                    attr.addAttribute(Namespaces.EXIST_NS, "name", "name", "CDATA", name);
-                    writeUnixStylePermissionAttributes(attr, perms[i]);
-                    Instant date = ris.getCreationTime();
+                        if (XML_RESOURCE.equals(resourceType)) {
 
-                    if (date != null) {
-                        attr.addAttribute(Namespaces.EXIST_NS, "created", "created", "CDATA", "" + new DateTimeValue(date));
-                    }
-                    date = ris.getLastModificationTime();
+                            if (ris.getDocType() != null) {
 
-                    if (date != null) {
-                        attr.addAttribute(Namespaces.EXIST_NS, "modified", "modified", "CDATA", "" + new DateTimeValue(date));
-                    }
+                                if (ris.getDocType().getName() != null) {
+                                    attr.addAttribute(Namespaces.EXIST_NS, "namedoctype", "namedoctype", "CDATA", ris.getDocType().getName());
+                                }
 
-                    attr.addAttribute(Namespaces.EXIST_NS, "filename", "filename", "CDATA", filename);
-                    attr.addAttribute(Namespaces.EXIST_NS, "mimetype", "mimetype", "CDATA", encode(((EXistResource) resource).getMediaType()));
+                                if (ris.getDocType().getPublicId() != null) {
+                                    attr.addAttribute(Namespaces.EXIST_NS, "publicid", "publicid", "CDATA", ris.getDocType().getPublicId());
+                                }
 
-                    if (XML_RESOURCE.equals(resourceType)) {
-
-                        if (ris.getDocType() != null) {
-
-                            if (ris.getDocType().getName() != null) {
-                                attr.addAttribute(Namespaces.EXIST_NS, "namedoctype", "namedoctype", "CDATA", ris.getDocType().getName());
+                                if (ris.getDocType().getSystemId() != null) {
+                                    attr.addAttribute(Namespaces.EXIST_NS, "systemid", "systemid", "CDATA", ris.getDocType().getSystemId());
+                                }
                             }
-
-                            if (ris.getDocType().getPublicId() != null) {
-                                attr.addAttribute(Namespaces.EXIST_NS, "publicid", "publicid", "CDATA", ris.getDocType().getPublicId());
-                            }
-
-                            if (ris.getDocType().getSystemId() != null) {
-                                attr.addAttribute(Namespaces.EXIST_NS, "systemid", "systemid", "CDATA", ris.getDocType().getSystemId());
-                            }
+                        } else {
+                            attr.addAttribute(Namespaces.EXIST_NS, "blob-id", "blob-id", "CDATA", ((EXistBinaryResource) ris).getBlobId().toString());
                         }
-                    } else {
-                        attr.addAttribute(Namespaces.EXIST_NS, "blob-id", "blob-id", "CDATA", ((EXistBinaryResource) ris).getBlobId().toString());
-                    }
 
-                    serializer.startElement(Namespaces.EXIST_NS, "resource", "resource", attr);
-                    if (perms[i] instanceof ACLPermission) {
-                        writeACLPermission(serializer, (ACLPermission) perms[i]);
+                        serializer.startElement(Namespaces.EXIST_NS, "resource", "resource", attr);
+                        if (perms[i] instanceof ACLPermission) {
+                            writeACLPermission(serializer, (ACLPermission) perms[i]);
+                        }
+                        serializer.endElement(Namespaces.EXIST_NS, "resource", "resource");
                     }
-                    serializer.endElement(Namespaces.EXIST_NS, "resource", "resource");
                 } catch (final XMLDBException e) {
                     System.err.println("Failed to backup resource " + resources.get(i) + " from collection " + current.getName());
                     throw e;
@@ -503,14 +511,15 @@ public class Backup {
 
         // descend into sub-collections
         for (final String collection : collections) {
-            final Collection child = current.getChildCollection(collection);
+            try (final Collection child = current.getChildCollection(collection)) {
+                if (child.getName().equals(XmldbURI.TEMP_COLLECTION)) {
+                    continue;
+                }
 
-            if (child.getName().equals(XmldbURI.TEMP_COLLECTION)) {
-                continue;
+                output.newCollection(encode(URIUtils.urlDecodeUtf8(collection)));
+                backup(seenBlobIds, child, output, dialog);
+                output.closeCollection();
             }
-            output.newCollection(encode(URIUtils.urlDecodeUtf8(collection)));
-            backup(seenBlobIds, child, output, dialog);
-            output.closeCollection();
         }
     }
 
@@ -543,6 +552,12 @@ public class Backup {
                 dialog.setVisible(false);
             } catch (final Exception e) {
                 e.printStackTrace();
+            } finally {
+                try {
+                    collection.close();
+                } catch (final XMLDBException e) {
+                    // no-op
+                }
             }
         }
     }

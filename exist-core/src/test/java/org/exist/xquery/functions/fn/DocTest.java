@@ -46,15 +46,18 @@
 package org.exist.xquery.functions.fn;
 
 import com.evolvedbinary.j8fu.Either;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.ExistSAXParserFactory;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
@@ -75,7 +78,6 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmlunit.builder.DiffBuilder;
@@ -127,57 +129,61 @@ public class DocTest {
 
     @After
     public void tearDown() throws XMLDBException {
+        if (test != null) {
+            test.close();
+            test = null;
+        }
         final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         //Creates the 'test' collection
         cms.removeCollection("test");
-        test = null;
 
         existEmbeddedServer.getRoot().removeResource(existEmbeddedServer.getRoot().getResource("test.xml"));
     }
     
     private void storeResource(final Collection col, final String fileName, final Class<? extends Resource> type, final String mimeType, final String content) throws XMLDBException {
-    	Resource res = col.createResource(fileName, type);
-    	res.setContent(content);
-    	
-    	if (mimeType != null) {
-            ((EXistResource) res).setMediaType(mimeType);
-        }
-        
-    	col.storeResource(res);
+    	try (final Resource res = col.createResource(fileName, type)) {
+    	    res.setContent(content);
+
+    	    if (mimeType != null) {
+                ((EXistResource) res).setMediaType(mimeType);
+            }
+
+    	    col.storeResource(res);
+    	}
     }
 
     @Test
     public void testURIResolveWithEval() throws XMLDBException {
         String query = "util:eval(xs:anyURI('/db/test/test.xq'), false(), ())";
-        ResourceSet result = existEmbeddedServer.executeQuery(query);
-
-        LocalXMLResource res = (LocalXMLResource)result.getResource(0);
-        assertNotNull(res);
-        Node n = res.getContentAsDOM();
-        assertTrue(n instanceof Document);
-        assertEquals("y", ((Document) n).getDocumentElement().getLocalName());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            LocalXMLResource res = (LocalXMLResource) result.getResource(0);
+            assertNotNull(res);
+            Node n = res.getContentAsDOM();
+            assertTrue(n instanceof Document);
+            assertEquals("y", ((Document) n).getDocumentElement().getLocalName());
+        }
 
         query = "util:eval(xs:anyURI('/db/test/test1.xq'), false(), ())";
-        result = existEmbeddedServer.executeQuery(query);
-
-        res = (LocalXMLResource)result.getResource(0);
-        assertNotNull(res);
-        n = res.getContentAsDOM();
-        assertTrue(n instanceof Document);
-        assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            XMLResource res = (LocalXMLResource) result.getResource(0);
+            assertNotNull(res);
+            Node n = res.getContentAsDOM();
+            assertTrue(n instanceof Document);
+            assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        }
 
         query = "util:eval(xs:anyURI('/db/test/test2.xq'), false(), ())";
-        result = existEmbeddedServer.executeQuery(query);
-
-        res = (LocalXMLResource)result.getResource(0);
-        assertNotNull(res);
-        n = res.getContentAsDOM();
-        assertTrue(n instanceof Document);
-        assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            XMLResource res = (LocalXMLResource) result.getResource(0);
+            assertNotNull(res);
+            Node n = res.getContentAsDOM();
+            assertTrue(n instanceof Document);
+            assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
+        }
     }
 
     @Test
-    public void doc_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void doc_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -185,31 +191,33 @@ public class DocTest {
         final String query = "fn:doc('" + docUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0) instanceof Node);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            final Source expectedSource = Input.fromString(doc).build();
-            final Source actualSource = Input.fromNode((Node)result.itemAt(0)).build();
-            final Diff diff = DiffBuilder.compare(expectedSource)
-                    .withTest(actualSource)
-                    .checkForIdentical()
-                    .checkForSimilar()
-                    .build();
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0) instanceof Node);
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+                final Source expectedSource = Input.fromString(doc).build();
+                final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
+                final Diff diff = DiffBuilder.compare(expectedSource)
+                        .withTest(actualSource)
+                        .checkForIdentical()
+                        .checkForSimilar()
+                        .build();
+
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
         }
     }
 
     @Test
-    public void doc_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void doc_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -218,32 +226,38 @@ public class DocTest {
         final String query = "fn:doc('" + docRelativeUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e.getMessage(), e);
+                }
+                xqueryContext.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0) instanceof Node);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            final Source expectedSource = Input.fromString(doc).build();
-            final Source actualSource = Input.fromNode((Node)result.itemAt(0)).build();
-            final Diff diff = DiffBuilder.compare(expectedSource)
-                    .withTest(actualSource)
-                    .checkForIdentical()
-                    .checkForSimilar()
-                    .build();
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0) instanceof Node);
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+                final Source expectedSource = Input.fromString(doc).build();
+                final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
+                final Diff diff = DiffBuilder.compare(expectedSource)
+                        .withTest(actualSource)
+                        .checkForIdentical()
+                        .checkForSimilar()
+                        .build();
+
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
         }
     }
 
     @Test
-    public void docAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException {
+    public void docAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -251,21 +265,23 @@ public class DocTest {
         final String query = "fn:doc-available('" + docUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.addDynamicallyAvailableDocument(docUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
+
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+            }
         }
     }
 
     @Test
-    public void docAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException {
+    public void docAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -274,36 +290,39 @@ public class DocTest {
         final String query = "fn:doc-available('" + docRelativeUri + "')";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
-            context.setBaseURI(new AnyURIValue(new URI(baseUri)));
-            context.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                try {
+                    xqueryContext.setBaseURI(new AnyURIValue(new URI(baseUri)));
+                } catch (final URISyntaxException e) {
+                    throw new XPathException(e.getMessage(), e);
+                }
+                xqueryContext.addDynamicallyAvailableDocument(baseUri + docRelativeUri, (broker2, transaction, uri) -> asInMemoryDocument(doc));
+            };
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, setupXqueryContextPreCompilation, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertFalse(result.isEmpty());
-            assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+                assertFalse(result.isEmpty());
+                assertEquals(1, result.getItemCount());
+                assertTrue(result.itemAt(0).toJavaObject(Boolean.class).booleanValue());
+            }
         }
     }
 
     @Test
-    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException {
+    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
         final String query = "('/db/test.xml', '/db/test/test.xml', '/db/non-existent.xml')[fn:doc-available(.)]";
 
         try (final DBBroker broker = pool.getBroker()) {
-            final XQueryContext context = new XQueryContext(pool);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            final XQuery xqueryService = pool.getXQueryService();
-            final CompiledXQuery compiled = xqueryService.compile(context, query);
-            final Sequence result = xqueryService.execute(broker, compiled, null);
-
-            assertFalse(result.isEmpty());
-            assertEquals(2, result.getItemCount());
-            assertEquals("/db/test.xml", result.itemAt(0).getStringValue());
-            assertEquals("/db/test/test.xml", result.itemAt(1).getStringValue());
+                assertFalse(result.isEmpty());
+                assertEquals(2, result.getItemCount());
+                assertEquals("/db/test.xml", result.itemAt(0).getStringValue());
+                assertEquals("/db/test/test.xml", result.itemAt(1).getStringValue());
+            }
         }
     }
 

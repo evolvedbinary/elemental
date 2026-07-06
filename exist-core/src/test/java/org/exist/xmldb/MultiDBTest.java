@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,7 +53,11 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.Database;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.ResourceIterator;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 
@@ -60,36 +88,36 @@ public class MultiDBTest {
     @Test
     public void store() throws XMLDBException, IOException {
         for (int i = 0; i < INSTANCE_COUNT; i++) {
-            Collection root = DatabaseManager.getCollection("xmldb:test" + i + "://" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-            Collection test = root.getChildCollection("test");
-            if (test == null) {
-                CollectionManagementService service = root.getService(CollectionManagementService.class);
-                test = service.createCollection("test");
-            }
+            try (final Collection root = DatabaseManager.getCollection("xmldb:test" + i + "://" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+                final CollectionManagementService service = root.getService(CollectionManagementService.class);
 
-            for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
-                loadFile(SAMPLES.getShakespeareSample(sampleName), test, sampleName);
+                try (final Collection test = service.createCollection("test")) {
+                    for (final String sampleName : SAMPLES.getShakespeareXmlSampleNames()) {
+                        loadFile(SAMPLES.getShakespeareSample(sampleName), test, sampleName);
+                    }
+                    doQuery(test, "//SPEECH[SPEAKER='HAMLET']");
+                }
             }
-
-            doQuery(test, "//SPEECH[SPEAKER='HAMLET']");
         }
     }
 
     protected static void loadFile(final InputStream is, final Collection collection, final String fileName) throws XMLDBException, IOException {
         // create new XMLResource; an id will be assigned to the new resource
-        XMLResource document = 
-                collection.createResource(fileName,
-                        XMLResource.class);
-        document.setContent(InputStreamUtil.readString(is, UTF_8));
-        collection.storeResource(document);
+        try (final XMLResource document = collection.createResource(fileName, XMLResource.class)) {
+            document.setContent(InputStreamUtil.readString(is, UTF_8));
+            collection.storeResource(document);
+        }
     }
 
     private static void doQuery(Collection collection, String query) throws XMLDBException {
-        EXistXQueryService service = collection.getService(EXistXQueryService.class);
-        ResourceSet result = service.query(query);
-        for (ResourceIterator i = result.getIterator(); i.hasMoreResources(); ) {
-            @SuppressWarnings("unused")
-            String content = i.nextResource().getContent().toString();
+        final EXistXQueryService service = collection.getService(EXistXQueryService.class);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            for (ResourceIterator i = result.getIterator(); i.hasMoreResources(); ) {
+                try (final Resource resource = i.nextResource()) {
+                    @SuppressWarnings("unused")
+                    final String content = resource.getContent().toString();
+                }
+            }
         }
     }
 
@@ -120,12 +148,13 @@ public class MultiDBTest {
     @After
     public void tearDown() throws XMLDBException {
         for (int i = 0; i < INSTANCE_COUNT; i++) {
-            Collection root = DatabaseManager.getCollection("xmldb:test" + i + "://" + XmldbURI.ROOT_COLLECTION, "admin", "");
-            final CollectionManagementService service = root.getService(CollectionManagementService.class);
-            service.removeCollection("test");
+            try (final Collection root = DatabaseManager.getCollection("xmldb:test" + i + "://" + XmldbURI.ROOT_COLLECTION, "admin", "")) {
+                final CollectionManagementService service = root.getService(CollectionManagementService.class);
+                service.removeCollection("test");
 
-            final DatabaseInstanceManager mgr = root.getService(DatabaseInstanceManager.class);
-            mgr.shutdown();
+                final DatabaseInstanceManager mgr = root.getService(DatabaseInstanceManager.class);
+                mgr.shutdown();
+            }
         }
     }
 }

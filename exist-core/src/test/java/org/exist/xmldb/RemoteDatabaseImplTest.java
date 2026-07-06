@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -55,28 +79,31 @@ public class RemoteDatabaseImplTest extends RemoteDBTest {
         Database database = (Database) cl.newInstance();
         DatabaseManager.registerDatabase(database);
 
-        Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "");
+        try (final Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
 
-        CollectionManagementService cms = rootCollection.getService(CollectionManagementService.class);
-        Collection adminCollection = cms.createCollection(ADMIN_COLLECTION_NAME);
-        UserManagementService ums = rootCollection.getService(UserManagementService.class);
-        if (ums != null) {
-            Permission p = ums.getPermissions(adminCollection);
-            p.setMode(Permission.USER_STRING + "=+read,+write," + Permission.GROUP_STRING + "=-read,-write," + Permission.OTHER_STRING + "=-read,-write");
-            ums.setPermissions(adminCollection, p);
+            CollectionManagementService cms = rootCollection.getService(CollectionManagementService.class);
+            try (final Collection adminCollection = cms.createCollection(ADMIN_COLLECTION_NAME)) {
+                UserManagementService ums = rootCollection.getService(UserManagementService.class);
+                if (ums != null) {
+                    Permission p = ums.getPermissions(adminCollection);
+                    p.setMode(Permission.USER_STRING + "=+read,+write," + Permission.GROUP_STRING + "=-read,-write," + Permission.OTHER_STRING + "=-read,-write");
+                    ums.setPermissions(adminCollection, p);
 
-            Collection guestCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION + "/" + ADMIN_COLLECTION_NAME, "guest", "guest");
+                    try (final Collection guestCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION + "/" + ADMIN_COLLECTION_NAME, "guest", "guest");
+                         final Resource resource = guestCollection.createResource("testguest", BinaryResource.class)) {
 
-            Resource resource = guestCollection.createResource("testguest", BinaryResource.class);
-            resource.setContent("123".getBytes());
-            try {
-                guestCollection.storeResource(resource);
-                fail();
-            } catch (XMLDBException e) {
+                        resource.setContent("123".getBytes());
+                        try {
+                            guestCollection.storeResource(resource);
+                            fail();
+                        } catch (XMLDBException e) {
 
+                        }
+                    }
+
+                    cms.removeCollection(ADMIN_COLLECTION_NAME);
+                }
             }
-
-            cms.removeCollection(ADMIN_COLLECTION_NAME);
         }
     }
 }

@@ -48,6 +48,7 @@ package org.exist.repo;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.ManagedCollectionLock;
@@ -57,8 +58,7 @@ import org.exist.util.InputStreamSupplierInputSource;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -111,47 +111,52 @@ public class PackageTriggerTest {
 
         // Install and deploy XAR
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = brokerPool.getXQueryService();
-            final Sequence result = xquery.execute(broker, "repo:install-and-deploy-from-db('/db/" + xarFile + "')", null);
-            Assert.assertEquals(1, result.getItemCount());
+            final String query = "repo:install-and-deploy-from-db('/db/" + xarFile + "')";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(1, queryResult.result.getItemCount());
+            }
         }
 
         // Store collection.xconf in newly created collection under /db/system/config
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = brokerPool.getXQueryService();
-            final Sequence result = xquery.execute(broker, "xmldb:create-collection('/db/system/config/db','trigger-test'), " +
+            final String query = "xmldb:create-collection('/db/system/config/db','trigger-test'), " +
                     "xmldb:store('/db/system/config/db/trigger-test', '" + DEFAULT_COLLECTION_CONFIG_FILE + "', " +
-                    "<collection xmlns=\"http://exist-db.org/collection-config/1.0\"><triggers><trigger class=\"org.exist.repo.ExampleTrigger\"/></triggers></collection>)", null);
-            Assert.assertEquals(2, result.getItemCount());
+                    "<collection xmlns=\"http://exist-db.org/collection-config/1.0\"><triggers><trigger class=\"org.exist.repo.ExampleTrigger\"/></triggers></collection>)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(2, queryResult.result.getItemCount());
+            }
         }
 
     }
 
 
     @Test
-    public void checkTriggerFires() throws EXistException, PermissionDeniedException, XPathException {
+    public void checkTriggerFires() throws EXistException, PermissionDeniedException, XPathException, IOException {
 
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
 
         // Create collection
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = brokerPool.getXQueryService();
-            final Sequence result = xquery.execute(broker, "xmldb:create-collection('/db','trigger-test')", null);
-            Assert.assertEquals(1, result.getItemCount());
+            final String query = "xmldb:create-collection('/db','trigger-test')";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(1, queryResult.result.getItemCount());
+            }
         }
 
         // Store document to fire trigger
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = brokerPool.getXQueryService();
-            final Sequence result = xquery.execute(broker, "xmldb:store('/db/trigger-test', 'test.xml', <a>b</a>)", null);
-            Assert.assertEquals(1, result.getItemCount());
+            final String query = "xmldb:store('/db/trigger-test', 'test.xml', <a>b</a>)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals(1, queryResult.result.getItemCount());
+            }
         }
 
         // Verify two documents are now in collection
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = brokerPool.getXQueryService();
-            final Sequence result = xquery.execute(broker, "xmldb:get-child-resources('/db/trigger-test')", null);
-            Assert.assertEquals("After trigger execution two documents should be in the collection.", 2, result.getItemCount());
+            final String query = "xmldb:get-child-resources('/db/trigger-test')";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                Assert.assertEquals("After trigger execution two documents should be in the collection.", 2, queryResult.result.getItemCount());
+            }
         }
 
     }

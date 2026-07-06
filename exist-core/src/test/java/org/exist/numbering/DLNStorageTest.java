@@ -51,6 +51,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
@@ -59,7 +60,7 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
 import org.w3c.dom.Attr;
@@ -87,56 +88,64 @@ public class DLNStorageTest {
 
     @Test
     public void nodeStorage() throws Exception {
-        BrokerPool pool = BrokerPool.getInstance();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            // test element ids
-            Sequence seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test/para",
-                    null);
-            assertEquals(3, seq.getItemCount());
-            NodeProxy comment = (NodeProxy) seq.itemAt(0);
-            assertEquals("1.1", comment.getNodeId().toString());
-            comment = (NodeProxy) seq.itemAt(1);
-            assertEquals("1.3", comment.getNodeId().toString());
-            comment = (NodeProxy) seq.itemAt(2);
-            assertEquals("1.5", comment.getNodeId().toString());
+        final BrokerPool pool = BrokerPool.getInstance();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test//a",
-                    null);
-            assertEquals(1, seq.getItemCount());
-            NodeProxy a = (NodeProxy) seq.itemAt(0);
-            assertEquals("1.3.2", a.getNodeId().toString());
+            // test element ids
+            String query = "doc('/db/test/test_string.xml')/test/para";
+            Sequence seq;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                seq = queryResult.result;
+                assertEquals(3, seq.getItemCount());
+                NodeProxy comment = (NodeProxy) seq.itemAt(0);
+                assertEquals("1.1", comment.getNodeId().toString());
+                comment = (NodeProxy) seq.itemAt(1);
+                assertEquals("1.3", comment.getNodeId().toString());
+                comment = (NodeProxy) seq.itemAt(2);
+                assertEquals("1.5", comment.getNodeId().toString());
+            }
+
+            query = "doc('/db/test/test_string.xml')/test//a";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+                NodeProxy a = (NodeProxy) seq.itemAt(0);
+                assertEquals("1.3.2", a.getNodeId().toString());
+            }
 
             // test attribute id
-            seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test//a/@href",
-                    null);
-            assertEquals(1, seq.getItemCount());
-            NodeProxy href = (NodeProxy) seq.itemAt(0);
-            StorageAddress.toString(href);
-            assertEquals("1.3.2.1", href.getNodeId().toString());
-            // test Attr deserialization
-            Attr attr = (Attr) href.getNode();
-            StorageAddress.toString(((NodeHandle)attr));
-            // test Attr fields
-            assertEquals("href", attr.getNodeName());
-            assertEquals("href", attr.getName());
-            assertEquals("#", attr.getValue());
-            // test DOMFile.getNodeValue()
-            assertEquals("#", href.getStringValue());
+            query = "doc('/db/test/test_string.xml')/test//a/@href";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+                NodeProxy href = (NodeProxy) seq.itemAt(0);
+                StorageAddress.toString(href);
+                assertEquals("1.3.2.1", href.getNodeId().toString());
+                // test Attr deserialization
+                Attr attr = (Attr) href.getNode();
+                StorageAddress.toString(((NodeHandle) attr));
+                // test Attr fields
+                assertEquals("href", attr.getNodeName());
+                assertEquals("href", attr.getName());
+                assertEquals("#", attr.getValue());
+                // test DOMFile.getNodeValue()
+                assertEquals("#", href.getStringValue());
+            }
 
             // test text node
-            seq = xquery.execute(broker, "doc('/db/test/test_string.xml')/test//b/text()",
-                    null);
-            assertEquals(1, seq.getItemCount());
-            NodeProxy text = (NodeProxy) seq.itemAt(0);
-            assertEquals("1.5.2.1", text.getNodeId().toString());
-            // test DOMFile.getNodeValue()
-            assertEquals("paragraph", text.getStringValue());
-            // test Text deserialization
-            Text node = (Text) text.getNode();
-            assertEquals("paragraph", node.getNodeValue());
-            assertEquals("paragraph", node.getData());
+            query = "doc('/db/test/test_string.xml')/test//b/text()";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                seq = queryResult.result;
+                assertEquals(1, seq.getItemCount());
+                NodeProxy text = (NodeProxy) seq.itemAt(0);
+                assertEquals("1.5.2.1", text.getNodeId().toString());
+                // test DOMFile.getNodeValue()
+                assertEquals("paragraph", text.getStringValue());
+                // test Text deserialization
+                Text node = (Text) text.getNode();
+                assertEquals("paragraph", node.getNodeValue());
+                assertEquals("paragraph", node.getData());
+            }
         }
     }
 

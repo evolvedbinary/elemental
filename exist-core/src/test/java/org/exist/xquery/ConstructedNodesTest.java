@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -25,10 +49,11 @@ import javax.xml.transform.OutputKeys;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XQueryService;
 
@@ -74,15 +99,15 @@ public class ConstructedNodesTest {
 			"<option value=\"3\">Meat</option>",
 			"<option value=\"4\">Dairy</option>"
 		};
-		
-		ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-			
-        assertEquals(expectedResults.length, result.getSize());
 
-        for(int i = 0; i < result.getSize(); i++)
-        {
-            assertEquals(expectedResults[i], result.getResource(i).getContent());
-        }
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+			assertEquals(expectedResults.length, result.getSize());
+			for (int i = 0; i < result.getSize(); i++) {
+				try (final Resource resource = result.getResource(i)) {
+					assertEquals(expectedResults[i], resource.getContent());
+				}
+			}
+		}
 	}
 	
 	/***
@@ -108,15 +133,15 @@ public class ConstructedNodesTest {
 				"<category uid=\"2\">Vegetable</category>",
 				"<category uid=\"1\">Fruit</category>"
 		};
-		
-		ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-			
-        assertEquals(expectedResults.length, result.getSize());
 
-        for(int i = 0; i < result.getSize(); i++)
-        {
-            assertEquals(expectedResults[i], result.getResource(i).getContent());
-        }
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+			assertEquals(expectedResults.length, result.getSize());
+			for (int i = 0; i < result.getSize(); i++) {
+				try (final Resource resource = result.getResource(i)) {
+					assertEquals(expectedResults[i], resource.getContent());
+				}
+			}
+		}
 	}
 	
 	/**
@@ -141,15 +166,15 @@ public class ConstructedNodesTest {
 				"<category uid=\"1\">Fruit</category>",
 				"<category uid=\"1\">Fruit</category>"
 		};
-		
-		ResourceSet result = existEmbeddedServer.executeQuery(xquery);
-			
-        assertEquals(expectedResults.length, result.getSize());
 
-        for(int i = 0; i < result.getSize(); i++)
-        {
-            assertEquals(expectedResults[i], result.getResource(i).getContent());
-        }
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+			assertEquals(expectedResults.length, result.getSize());
+			for (int i = 0; i < result.getSize(); i++) {
+				try (final Resource resource = result.getResource(i)) {
+					assertEquals(expectedResults[i], resource.getContent());
+				}
+			}
+		}
 	}
 	
 	/**
@@ -159,31 +184,36 @@ public class ConstructedNodesTest {
 	 */
     @Test
 	public void constructedTextNodes() throws XMLDBException {
-		String xquery =
+		final String xquery =
 			"declare variable $hello-text-first := <a>{ \"hello\" }<b>world</b></a>;\n" +
 			"declare variable $hello-text-last := <a><b>world</b>{ \"hello\" }</a>;\n" +
 			"($hello-text-first, $hello-text-last)";
 		
-		String expectedResults [] = { 
+		final String expectedResults [] = {
 				"<a>hello<b>world</b></a>",
 				"<a><b>world</b>hello</a>"
 				};
 
 		final XQueryService xpathQueryService = existEmbeddedServer.getRoot().getService(XQueryService.class);
 
-        String oki = xpathQueryService.getProperty(OutputKeys.INDENT);
+        final String oki = xpathQueryService.getProperty(OutputKeys.INDENT);
 		xpathQueryService.setProperty(OutputKeys.INDENT, "no");
+		try {
 
-        ResourceSet result = xpathQueryService.query(xquery);
+			try (final EXistResourceSet result = (EXistResourceSet) xpathQueryService.query(xquery)) {
 
-        assertEquals(expectedResults.length, result.getSize());
+				assertEquals(expectedResults.length, result.getSize());
 
-        for(int i = 0; i < result.getSize(); i++)
-        {
-            assertEquals(expectedResults[i], result.getResource(i).getContent());
-        }
+				for (int i = 0; i < result.getSize(); i++) {
+					try (final Resource resource =  result.getResource(i)) {
+						assertEquals(expectedResults[i], resource.getContent());
+					}
+				}
+			}
 
-        // Restore indent property to ensure test atomicity
-		xpathQueryService.setProperty(OutputKeys.INDENT, oki);
+		} finally {
+			// Restore indent property to ensure test atomicity
+			xpathQueryService.setProperty(OutputKeys.INDENT, oki);
+		}
 	}
 }

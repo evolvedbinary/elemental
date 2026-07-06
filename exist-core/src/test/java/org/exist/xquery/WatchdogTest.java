@@ -53,8 +53,8 @@ public class WatchdogTest {
             "};";
 
         try (final Collection dbCollection = existEmbeddedServer.getRoot();
-        final Collection watchdogTestCollection = existEmbeddedServer.createCollection(dbCollection, "watchdog-test")) {
-            final Resource nodesModule = watchdogTestCollection.createResource("nodes.xqm", BinaryResource.class);
+             final Collection watchdogTestCollection = existEmbeddedServer.createCollection(dbCollection, "watchdog-test");
+             final Resource nodesModule = watchdogTestCollection.createResource("nodes.xqm", BinaryResource.class)) {
             nodesModule.setContent(queryModule);
             watchdogTestCollection.storeResource(nodesModule);
         }

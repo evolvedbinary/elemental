@@ -173,9 +173,10 @@ public class XUpdateTest {
     private void addDocument(final String sourceFile) throws XMLDBException, IOException, URISyntaxException {
         final Path f = getRelFile(SOURCE_DIR_NAME + "/" + sourceFile);
 
-        final XMLResource document = col.createResource(XUPDATE_FILE, XMLResource.class);
-        document.setContent(f);
-        col.storeResource(document);
+        try (final XMLResource document = col.createResource(XUPDATE_FILE, XMLResource.class)) {
+            document.setContent(f);
+            col.storeResource(document);
+        }
     }
 
     private Path getRelFile(final String relPath) throws IOException, URISyntaxException {
@@ -193,8 +194,9 @@ public class XUpdateTest {
     }
 
     private void removeDocument() throws XMLDBException {
-        final Resource document = col.getResource(XUPDATE_FILE);
-        col.removeResource(document);
+        try (final Resource document = col.getResource(XUPDATE_FILE)) {
+            col.removeResource(document);
+        }
     }
 
     /**
@@ -208,8 +210,9 @@ public class XUpdateTest {
 
         service.update(xUpdateModifications);
 
-        final XMLResource ret = (XMLResource) col.getResource(XUPDATE_FILE);
-        return ((String) ret.getContent());
+        try (final XMLResource ret = (XMLResource) col.getResource(XUPDATE_FILE)) {
+            return ((String) ret.getContent());
+        }
     }
 
     @Before

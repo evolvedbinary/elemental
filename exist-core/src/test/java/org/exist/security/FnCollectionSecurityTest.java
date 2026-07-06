@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.security.internal.aider.ACEAider;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -35,7 +60,7 @@ import org.exist.util.LockException;
 import org.exist.util.SyntaxException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -124,9 +149,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
 
             transaction.commit();
         }
@@ -142,9 +167,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
 
             transaction.commit();
         }
@@ -160,9 +185,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();
@@ -176,7 +201,7 @@ public class FnCollectionSecurityTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void cannotAccessCollectionInCollectionHierarchyWithDeniedExecute() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException {
+    public void cannotAccessCollectionInCollectionHierarchyWithDeniedExecute() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException, IOException {
 
         // as docTestUser1 user
         final String query = "fn:collection('" + TEST_SUB_COLLECTION_1_1 + "')";
@@ -186,9 +211,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+             final Txn transaction = pool.getTransactionManager().beginTransaction();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();
@@ -202,7 +227,7 @@ public class FnCollectionSecurityTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void cannotAccessCollectionInCollectionHierarchyWithDeniedReadAndExecuteAce() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException {
+    public void cannotAccessCollectionInCollectionHierarchyWithDeniedReadAndExecuteAce() throws EXistException, AuthenticationException, PermissionDeniedException, XPathException, IOException {
 
         // as docTestUser1 user
         final String query = "fn:collection('" + TEST_SUB_COLLECTION_2_2 + "')";
@@ -212,9 +237,9 @@ public class FnCollectionSecurityTest {
         final Subject testUser1 = securityManager.authenticate(TEST_USER_1, TEST_USER_1);
 
         try (final DBBroker broker = pool.get(Optional.of(testUser1));
-                final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final XQuery xqueryService = pool.getXQueryService();
-            final Sequence result = xqueryService.execute(broker, query, null);
+                final Txn transaction = pool.getTransactionManager().beginTransaction();
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             fail("Expected PermissionDeniedException via XPathException");
 
             transaction.commit();

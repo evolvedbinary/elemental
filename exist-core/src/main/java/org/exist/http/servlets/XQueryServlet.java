@@ -45,6 +45,8 @@
  */
 package org.exist.http.servlets;
 
+import com.evolvedbinary.j8fu.function.BiConsumerE;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -62,6 +64,7 @@ import org.exist.util.Configuration;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
+import org.exist.xquery.util.HTTPUtils;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import xyz.elemental.mediatype.MediaType;
@@ -456,105 +459,98 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 //            baseUri = null;
 //        }
 
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        final String requestAttr = (String) request.getAttribute(ATTR_XQUERY_ATTRIBUTE);
-        try(final DBBroker broker = getPool().get(Optional.ofNullable(user))) {
-            final XQuery xquery = broker.getBrokerPool().getXQueryService();
-            compiled = getPool().getXQueryPool().borrowCompiledXQuery(broker, source);
+        try (final DBBroker broker = getPool().get(Optional.ofNullable(user))) {
 
-            // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+            final String requestXqueryAttr = (String) request.getAttribute(ATTR_XQUERY_ATTRIBUTE);
 
-            if (compiled == null) {
-               context = new XQueryContext(getPool());
-               context.setModuleLoadPath(moduleLoadPath);
-            } else {
-               context = compiled.getContext();
-               context.setModuleLoadPath(moduleLoadPath);
-               context.prepareForReuse();
-            }
-
-
-            if (compiled == null) {
+            @Nullable final Long timeout;
+            final String timeoutOpt = (String) request.getAttribute(ATTR_TIMEOUT);
+            if (timeoutOpt != null) {
                 try {
-                    compiled = xquery.compile(context, source);
-                } catch (final XPathException e) {
-                    throw new EXistException("Cannot compile xquery: " + e.getMessage(), e);
-                } catch (final IOException e) {
-                    throw new EXistException("I/O exception while compiling xquery: " + e.getMessage(), e);
+                    timeout = Long.parseLong(timeoutOpt);
+                } catch (final NumberFormatException e) {
+                    throw new EXistException("Bad timeout option: " + timeoutOpt);
                 }
             } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
+                timeout = null;
             }
+
+            @Nullable final Integer maxNodes;
+            final String maxNodesOpt = (String) request.getAttribute(ATTR_MAX_NODES);
+            if (maxNodesOpt != null) {
+                try{
+                    maxNodes = Integer.parseInt(maxNodesOpt);
+                } catch (final NumberFormatException e) {
+                    throw new EXistException("Bad max-nodes option: " + maxNodesOpt);
+                }
+            } else {
+                maxNodes = null;
+            }
+
+            final HttpRequestWrapper reqw = new HttpRequestWrapper(request, getFormEncoding(), getContainerEncoding());
+            final ResponseWrapper respw = new HttpResponseWrapper(response);
+
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.setHttpContext(new XQueryContext.HttpContext(reqw, respw, session != null ? new HttpSessionWrapper(session) : null));
+                if (timeout != null) {
+                    xqueryContext.getWatchDog().setTimeout(timeout);
+                }
+                if (maxNodes != null) {
+                    xqueryContext.getWatchDog().setMaxNodes(maxNodes);
+                }
+                DebuggeeFactory.checkForDebugRequest(request, xqueryContext);
+            };
+
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> setupXqueryContextPostExecution = (xqueryContext, queryResult) -> {
+                // Pass last modified date to the HTTP response
+                HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
+            };
 
             final Properties outputProperties = new Properties();
             outputProperties.put("base-uri", collectionURI.toString());
 
-            final HttpRequestWrapper reqw = new HttpRequestWrapper(request, getFormEncoding(), getContainerEncoding());
-            final ResponseWrapper respw = new HttpResponseWrapper(response);
-            context.setHttpContext(new XQueryContext.HttpContext(reqw, respw, session != null ? new HttpSessionWrapper( session ) : null));
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, null, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
-            final String timeoutOpt = (String) request.getAttribute(ATTR_TIMEOUT);
-            if (timeoutOpt != null) {
-                try {
-                    final long timeout = Long.parseLong(timeoutOpt);
-                    context.getWatchDog().setTimeout(timeout);
-                } catch (final NumberFormatException e) {
-                    throw new EXistException("Bad timeout option: " + timeoutOpt);
-                }
-            }
+                // special header to indicate that the query is not returned from cache
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
-            final String maxNodesOpt = (String) request.getAttribute(ATTR_MAX_NODES);
-            if (maxNodesOpt != null) {
-                try{
-                    final int maxNodes = Integer.parseInt(maxNodesOpt);
-                    context.getWatchDog().setMaxNodes(maxNodes);
-                } catch (final NumberFormatException e) {
-                    throw new EXistException("Bad max-nodes option: " + maxNodesOpt);
-                }
-            }
-
-            DebuggeeFactory.checkForDebugRequest(request, context);
-
-            final Sequence resultSequence = xquery.execute(broker, compiled, null, outputProperties);
-
-            final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
-            if (mediaType != null) {
-                if (!response.isCommitted()) {
-                    if (isTextContent(mediaType)) {
-                		response.setContentType(mediaType + "; charset=" + getFormEncoding());
-                        response.setCharacterEncoding(getFormEncoding());
-                    } else {
-                        response.setContentType(mediaType);
+                final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
+                if (mediaType != null) {
+                    if (!response.isCommitted()) {
+                        if (isTextContent(mediaType)) {
+                    		response.setContentType(mediaType + "; charset=" + getFormEncoding());
+                            response.setCharacterEncoding(getFormEncoding());
+                        } else {
+                            response.setContentType(mediaType);
+                        }
                     }
+
+                } else {
+    	            String contentType = this.contentType;
+    	            try {
+    	                contentType = getServletContext().getMimeType(path);
+    	                if (contentType == null) {
+                            contentType = this.contentType;
+                        }
+
+    	            } catch (final Throwable e) {
+    	                contentType = this.contentType;
+
+    	            } finally {
+    	                if (isTextContent(contentType)) {
+                            contentType += "; charset=" + getFormEncoding();
+                        }
+    	                response.setContentType(contentType);
+    	            }
                 }
-                
-            } else {
-	            String contentType = this.contentType;
-	            try {
-	                contentType = getServletContext().getMimeType(path);
-	                if (contentType == null)
-	                    {contentType = this.contentType;}
-                    
-	            } catch (final Throwable e) {
-	                contentType = this.contentType;
-                    
-	            } finally {
-	                if (isTextContent(contentType)) {
-                        contentType += "; charset=" + getFormEncoding();
-                    }
-	                response.setContentType(contentType );
-	            }
-            }
-            
-            if (requestAttr != null && (XmldbURI.API_LOCAL.equals(collectionURI.getApiName())) ) {
-                request.setAttribute(requestAttr, resultSequence);
-                
-            } else {
-                XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
-                serializer.serialize(resultSequence);
+
+                if (requestXqueryAttr != null && (XmldbURI.API_LOCAL.equals(collectionURI.getApiName())) ) {
+                    request.setAttribute(requestXqueryAttr, queryResult.result);
+
+                } else {
+                    final XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
+                    serializer.serialize(queryResult.result);
+                }
             }
             
 		} catch (final PermissionDeniedException e) {
@@ -565,7 +561,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 			}
 			return;
            
-        } catch (final XPathException e){
+        } catch (final XPathException e) {
             
             final Logger logger = getLog();            
             if(logger.isDebugEnabled()) {
@@ -586,14 +582,6 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             } else {
             	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             	sendError(output, "Error", e.getMessage());
-            }
-            
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                getPool().getXQueryPool().returnCompiledXQuery(source, compiled);
             }
         }
 

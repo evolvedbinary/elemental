@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -50,9 +74,8 @@ public class XMLDBXUpdateTask extends AbstractXMLDBTask
         log( "XUpdate command is: " + commands, Project.MSG_DEBUG );
         registerDatabase();
 
-        try {
-            log( "Get base collection: " + uri, Project.MSG_DEBUG );
-            final Collection base = DatabaseManager.getCollection( uri, user, password );
+        log( "Get base collection: " + uri, Project.MSG_DEBUG );
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
             if( base == null ) {
                 final String msg = "Collection " + uri + " could not be found.";
@@ -68,18 +91,19 @@ public class XMLDBXUpdateTask extends AbstractXMLDBTask
 
                 if( resource != null ) {
                     log( "Updating resource: " + resource, Project.MSG_INFO );
-                    final Resource res = base.getResource( resource );
+                    try (final Resource res = base.getResource( resource )) {
 
-                    if( res == null ) {
-                        final String msg = "Resource " + resource + " not found.";
+                        if (res == null) {
+                            final String msg = "Resource " + resource + " not found.";
 
-                        if( failonerror ) {
-                            throw( new BuildException( msg ) );
+                            if (failonerror) {
+                                throw (new BuildException(msg));
+                            } else {
+                                log(msg, Project.MSG_ERR);
+                            }
                         } else {
-                            log( msg, Project.MSG_ERR );
+                            service.updateResource(resource, commands);
                         }
-                    } else {
-                        service.updateResource( resource, commands );
                     }
 
                 } else {

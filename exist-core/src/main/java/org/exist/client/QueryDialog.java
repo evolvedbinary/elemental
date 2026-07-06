@@ -89,10 +89,7 @@ import javax.xml.transform.OutputKeys;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.security.PermissionDeniedException;
 import org.exist.util.Holder;
-import org.exist.xmldb.EXistXQueryService;
-import org.exist.xmldb.LocalCollection;
-import org.exist.xmldb.UserManagementService;
-import org.exist.xmldb.XmldbURI;
+import org.exist.xmldb.*;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryWatchDog;
@@ -104,7 +101,6 @@ import org.xmldb.api.base.CompiledExpression;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceIterator;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -347,7 +343,7 @@ public class QueryDialog extends JFrame {
         JLabel label = new JLabel(Messages.getString("QueryDialog.historylabel"));
         historyBox.add(label);
         final JComboBox<String> historyList = new JComboBox<>(history);
-        for (final String queryHistory : client.queryHistory) {
+        for (final String queryHistory : client.getQueryHistory()) {
             addQuery(queryHistory);
         }
         historyList.setSelectedIndex(-1);  // by default - we are not using anything from the history!
@@ -355,7 +351,7 @@ public class QueryDialog extends JFrame {
             if (itemEvent.getStateChange() == ItemEvent.SELECTED) {
                 final JComboBox<String> list = (JComboBox<String>) itemEvent.getSource();
                 final int idx = list.getSelectedIndex();
-                query.setText(client.queryHistory.get(idx));
+                query.setText(client.getQueryHistory().get(idx));
             }
         });
         historyBox.add(historyList);
@@ -592,7 +588,7 @@ public class QueryDialog extends JFrame {
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             long tResult = 0;
             long tCompiled = 0;
-            ResourceSet result = null;
+            EXistResourceSet result = null;
             XQueryContext context = null;
             try {
                 final EXistXQueryService service = collection.getService(EXistXQueryService.class);
@@ -618,7 +614,7 @@ public class QueryDialog extends JFrame {
                     exprDisplay.setText(writer.toString());
                 }
 
-                result = service.execute(compiled);
+                result = (EXistResourceSet) service.execute(compiled);
                 tResult = System.currentTimeMillis() - t1;
                 runningContext.set(null);
 
@@ -672,6 +668,14 @@ public class QueryDialog extends JFrame {
                         Messages.getString("QueryDialog.queryrunerrormessage") + ": "
                                 + InteractiveClient.getExceptionMessage(e), e);
             } finally {
+                if (result != null) {
+                    try {
+                        result.close();
+                    } catch (final XMLDBException e) {
+                        // ignore error
+                    }
+                }
+
                 if (context != null) {
                     context.runCleanupTasks();
                 }
@@ -683,7 +687,7 @@ public class QueryDialog extends JFrame {
                         // ignore error
                     }
             }
-            if (client.queryHistory.isEmpty() || !client.queryHistory.getLast().equals(xpath)) {
+            if (client.getQueryHistory().isEmpty() || !client.getQueryHistory().getLast().equals(xpath)) {
                 client.addToHistory(xpath);
                 client.writeQueryHistory();
                 addQuery(xpath);
@@ -711,8 +715,7 @@ public class QueryDialog extends JFrame {
 
         @Override
         public Void doInBackground() {
-            try {
-                final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
+            try (final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION)) {
                 getCollections(root, currentCollectionName);
             } catch (final XMLDBException e) {
                 ClientFrame.showErrorMessage(
@@ -745,14 +748,14 @@ public class QueryDialog extends JFrame {
                 publish(rootName);
             }
 
-            for (String collectionName : root.listChildCollections()) {
-                try (Collection child = root.getChildCollection(collectionName)) {
+            for (final String collectionName : root.listChildCollections()) {
+                try (final Collection child = root.getChildCollection(collectionName)) {
                     getCollections(child, currentCollection);
-                } catch (final XMLDBException xmldbe) {
-                    if (!(xmldbe.getCause() instanceof PermissionDeniedException)) {
-                        throw xmldbe;
+                } catch (final XMLDBException e) {
+                    if (!(e.getCause() instanceof PermissionDeniedException)) {
+                        throw e;
                     }
-                } catch (Exception npe) {
+                } catch (final Exception e) {
                     System.out.println("Corrupted resource/collection skipped: " + collectionName);
                 }
             }

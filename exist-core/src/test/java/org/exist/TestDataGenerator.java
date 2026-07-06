@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -32,6 +56,7 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.util.FileUtils;
 import org.exist.util.LockException;
 import org.exist.util.serializer.SAXSerializer;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
@@ -40,7 +65,6 @@ import org.exist.xquery.value.*;
 import org.xml.sax.SAXException;
 import org.xmldb.api.base.CompiledExpression;
 import org.xmldb.api.base.ResourceIterator;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
@@ -133,13 +157,14 @@ public class TestDataGenerator {
 
                 service.declareVariable("filename", generatedFiles[i].getFileName().toString());
                 service.declareVariable("count", Integer.valueOf(i));
-                final ResourceSet result = service.execute(compiled);
+                try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
 
-                try(final Writer out = Files.newBufferedWriter(generatedFiles[i], StandardCharsets.UTF_8)) {
-                    final SAXSerializer sax = new SAXSerializer(out, outputProps);
-                    for (ResourceIterator iter = result.getIterator(); iter.hasMoreResources(); ) {
-                        try (XMLResource r = (XMLResource) iter.nextResource()) {
-                            r.getContentAsSAX(sax);
+                    try (final Writer out = Files.newBufferedWriter(generatedFiles[i], StandardCharsets.UTF_8)) {
+                        final SAXSerializer sax = new SAXSerializer(out, outputProps);
+                        for (ResourceIterator iter = result.getIterator(); iter.hasMoreResources(); ) {
+                            try (XMLResource r = (XMLResource) iter.nextResource()) {
+                                r.getContentAsSAX(sax);
+                            }
                         }
                     }
                 }

@@ -47,12 +47,13 @@ package org.exist.xquery.functions.fn;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.runner.RunWith;
-import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -79,9 +80,12 @@ public class FunLangTest {
 			"</desclist>" +
 			"return " +
 			"$doc-frag//desc[lang(\"en-US\")]";
-        final ResourceSet resourceSet = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, resourceSet.getSize());
-        assertEquals("<desc xml:lang=\"en-US\" n=\"1\">\n    <line>The first line of the description.</line>\n</desc>", resourceSet.getResource(0).getContent());
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+			assertEquals(1, result.getSize());
+			try (final Resource resource = result.getResource(0)) {
+				assertEquals("<desc xml:lang=\"en-US\" n=\"1\">\n    <line>The first line of the description.</line>\n</desc>", resource.getContent());
+			}
+		}
     }
 
 	@Test
@@ -98,9 +102,12 @@ public class FunLangTest {
 			"</desclist>" +
 			"return " +
 			"lang(\"en-US\", $doc-frag//desc[@n eq \"2\"])";
-		final ResourceSet resourceSet = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, resourceSet.getSize());
-        assertEquals("false", resourceSet.getResource(0).getContent());
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+			assertEquals(1, result.getSize());
+			try (final Resource resource = result.getResource(0)) {
+				assertEquals("false", resource.getContent());
+			}
+		}
     }
     
     @Test
@@ -117,8 +124,11 @@ public class FunLangTest {
 			"</desclist>" +
 			"return " +
 			"lang(\"en-US\", $doc-frag//desc/@n[. eq \"1\"])";
-		final ResourceSet resourceSet = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, resourceSet.getSize());
-        assertEquals("true", resourceSet.getResource(0).getContent());
+		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+			assertEquals(1, result.getSize());
+			try (final Resource resource = result.getResource(0)) {
+				assertEquals("true", resource.getContent());
+			}
+		}
     }
 }

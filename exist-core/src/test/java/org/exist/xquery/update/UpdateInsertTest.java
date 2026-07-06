@@ -47,7 +47,6 @@ package org.exist.xquery.update;
 
 import org.junit.Test;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XQueryService;
 
 import java.util.UUID;
 
@@ -61,22 +60,21 @@ public class UpdateInsertTest extends AbstractUpdateTest {
     @Test
     public void insertNamespacedAttribute() throws XMLDBException {
         final String docName = "pathNs2.xml";
-        final XQueryService service =
-            storeXMLStringAndGetQueryService(docName, "<test/>");
+        storeXMLString(docName, "<test/>");
 
-        queryResource(service, docName, "//t[@xml:id]", 0);
+        queryResourceV(docName, "//t[@xml:id]", 0);
 
         String update = "update insert <t xml:id=\"id1\"/> into /test";
-        queryResource(service, docName, update, 0);
+        queryResourceV(docName, update, 0);
 
-        queryResource(service, docName, "//t[@xml:id eq 'id1']", 1);
-        queryResource(service, docName, "/test/id('id1')", 1);
+        queryResourceV(docName, "//t[@xml:id eq 'id1']", 1);
+        queryResourceV(docName, "/test/id('id1')", 1);
 
         update = "update value //t/@xml:id with 'id2'";
-        queryResource(service, docName, update, 0);
+        queryResourceV(docName, update, 0);
 
-        queryResource(service, docName, "//t[@xml:id eq 'id2']", 1);
-        queryResource(service, docName, "id('id2', /test)", 1);
+        queryResourceV(docName, "//t[@xml:id eq 'id2']", 1);
+        queryResourceV(docName, "id('id2', /test)", 1);
     }
 
     @Test
@@ -95,18 +93,17 @@ public class UpdateInsertTest extends AbstractUpdateTest {
         "</annotation-list>";
 
         final String docName = "A00969_annotations.xml";
-        final XQueryService service =
-                storeXMLStringAndGetQueryService(docName, doc);
+        storeXMLString(docName, doc);
 
-        queryResource(service, docName, "//annotation-item[@temp-id = '" + tempId + "']/@status", 1);
-        queryResource(service, docName, "//annotation-item[@temp-id = '" + tempId + "']/@id", 0);
+        queryResourceV(docName, "//annotation-item[@temp-id = '" + tempId + "']/@status", 1);
+        queryResourceV(docName, "//annotation-item[@temp-id = '" + tempId + "']/@id", 0);
 
         final String uuid = UUID.randomUUID().toString();
 
         final String update = "update insert attribute id {'" + uuid + "'} preceding //annotation-item[@temp-id = '" + tempId + "']/@status";
-        queryResource(service, docName, update, 0);
+        queryResourceV(docName, update, 0);
 
-        queryResource(service, docName, "//annotation-item[@temp-id = '" + tempId + "']/@id", 1);
+        queryResourceV(docName, "//annotation-item[@temp-id = '" + tempId + "']/@id", 1);
     }
 
     @Test
@@ -114,17 +111,16 @@ public class UpdateInsertTest extends AbstractUpdateTest {
         final String doc = "<empty/>";
 
         final String docName = "empty.xml";
-        final XQueryService service =
-                storeXMLStringAndGetQueryService(docName, doc);
+        storeXMLString(docName, doc);
 
-        queryResource(service, docName, "//empty/child::node()", 0);
+        queryResourceV(docName, "//empty/child::node()", 0);
 
         final String uuid = UUID.randomUUID().toString();
 
         final String update = "update insert document { <uuid>" + uuid + "</uuid> } into /empty";
 
-        queryResource(service, docName, update, 0);
+        queryResourceV(docName, update, 0);
 
-        queryResource(service, docName, "//empty/uuid", 1);
+        queryResourceV(docName, "//empty/uuid", 1);
     }
 }

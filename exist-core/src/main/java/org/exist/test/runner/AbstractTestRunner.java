@@ -45,6 +45,7 @@
  */
 package org.exist.test.runner;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
@@ -53,17 +54,13 @@ import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.util.DatabaseConfigurationException;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
-import org.exist.xquery.value.Sequence;
 import org.junit.runner.Runner;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,58 +86,35 @@ public abstract class AbstractTestRunner extends Runner {
         this.parallel = parallel;
     }
 
-    protected static Sequence executeQuery(final BrokerPool brokerPool, final Source query, final List<Function<XQueryContext, Tuple2<String, Object>>> externalVariableBindings) throws EXistException, PermissionDeniedException, XPathException, IOException, DatabaseConfigurationException {
-	final SecurityManager securityManager = requireNonNull(brokerPool.getSecurityManager(), "securityManager is null");
-        try (final DBBroker broker = brokerPool.get(Optional.of(securityManager.getSystemSubject()))) {
-            final XQueryPool queryPool = brokerPool.getXQueryPool();
-            CompiledXQuery compiledQuery = queryPool.borrowCompiledXQuery(broker, query);
+    protected static void executeQuery(final BrokerPool brokerPool, final Source source, final List<Function<XQueryContext, Tuple2<String, Object>>> externalVariableBindings) throws EXistException, PermissionDeniedException, XPathException, IOException, DatabaseConfigurationException {
 
-            @Nullable XQueryContext context = null;
-            try {
-                if (compiledQuery == null) {
-                    context = new XQueryContext(broker.getBrokerPool());
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            // Setup paths in the context
+            xqueryContext.setBaseURI(new AnyURIValue("/db"));
+            if (source instanceof FileSource) {
+                final Path queryPath = Paths.get(((FileSource) source).getPath().toAbsolutePath().toString());
+                if (Files.isDirectory(queryPath)) {
+                    xqueryContext.setModuleLoadPath(queryPath.toString());
                 } else {
-                    context = compiledQuery.getContext();
-                    context.prepareForReuse();
-                }
-
-                // setup misc. context
-                context.setBaseURI(new AnyURIValue("/db"));
-                if(query instanceof FileSource) {
-                    final Path queryPath = Paths.get(((FileSource) query).getPath().toAbsolutePath().toString());
-                    if(Files.isDirectory(queryPath)) {
-                        context.setModuleLoadPath(queryPath.toString());
-                    } else {
-                        context.setModuleLoadPath(queryPath.getParent().toString());
-                    }
-                }
-
-                final XQuery xqueryService = brokerPool.getXQueryService();
-
-                // compile or update the context
-                if (compiledQuery == null) {
-                    compiledQuery = xqueryService.compile(context, query);
-                } else {
-                    compiledQuery.getContext().updateContext(context);
-                    context.getWatchDog().reset();
-                }
-
-                // declare variables for the query
-                for(final Function<XQueryContext, Tuple2<String, Object>> externalVariableBinding : externalVariableBindings) {
-                    final Tuple2<String, Object> nameValue = externalVariableBinding.apply(context);
-                    context.declareVariable(nameValue._1, true, nameValue._2);
-                }
-
-                return xqueryService.execute(broker, compiledQuery, null);
-
-            } finally {
-                if (context != null) {
-                    context.runCleanupTasks();
-                }
-                if (compiledQuery != null) {
-                    queryPool.returnCompiledXQuery(query, compiledQuery);
+                    xqueryContext.setModuleLoadPath(queryPath.getParent().toString());
                 }
             }
+        };
+
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+            // Declare variables for the query
+            for(final Function<XQueryContext, Tuple2<String, Object>> externalVariableBinding : externalVariableBindings) {
+                final Tuple2<String, Object> nameValue = externalVariableBinding.apply(xqueryContext);
+                xqueryContext.declareVariable(nameValue._1, true, nameValue._2);
+            }
+        };
+
+        final SecurityManager securityManager = requireNonNull(brokerPool.getSecurityManager(), "securityManager is null");
+
+        try (final DBBroker broker = brokerPool.get(Optional.of(securityManager.getSystemSubject()));
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+
+            // Query result is not used but must be closed
         }
     }
 

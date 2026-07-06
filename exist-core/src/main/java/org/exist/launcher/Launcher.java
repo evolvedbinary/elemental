@@ -49,6 +49,7 @@ import org.exist.EXistException;
 import org.exist.jetty.JettyStart;
 import org.exist.repo.ExistRepository;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.start.CompatibleJavaVersionCheck;
 import org.exist.start.Main;
 import org.exist.start.StartException;
@@ -58,7 +59,7 @@ import org.exist.util.ConfigurationHelper;
 import org.exist.util.FileUtils;
 import org.exist.util.SystemExitCodes;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 
@@ -705,19 +706,21 @@ public class Launcher extends Observable implements Observer {
             final BrokerPool pool = BrokerPool.getInstance();
             try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-                final XQuery xquery = pool.getXQueryService();
-                final Sequence pkgs = xquery.execute(broker, "repo:list()", null);
-                for (final SequenceIterator i = pkgs.iterate(); i.hasNext(); ) {
-                    final ExistRepository.Notification notification = new ExistRepository.Notification(ExistRepository.Action.INSTALL, i.nextItem().getStringValue());
-                    final Optional<ExistRepository> expathRepo = pool.getExpathRepo();
-                    if (expathRepo.isPresent()) {
-                        update(expathRepo.get(), notification);
-                        utilityPanel.update(expathRepo.get(), notification);
+                final String query = "repo:list()";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence pkgs = queryResult.result;
+                    for (final SequenceIterator i = pkgs.iterate(); i.hasNext(); ) {
+                        final ExistRepository.Notification notification = new ExistRepository.Notification(ExistRepository.Action.INSTALL, i.nextItem().getStringValue());
+                        final Optional<ExistRepository> expathRepo = pool.getExpathRepo();
+                        if (expathRepo.isPresent()) {
+                            update(expathRepo.get(), notification);
+                            utilityPanel.update(expathRepo.get(), notification);
+                        }
+                        expathRepo.orElseThrow(() -> new EXistException("EXPath repository is not available."));
                     }
-                    expathRepo.orElseThrow(() -> new EXistException("EXPath repository is not available."));
                 }
             }
-        } catch (final EXistException | XPathException | PermissionDeniedException e) {
+        } catch (final EXistException | IOException | XPathException | PermissionDeniedException e) {
             System.err.println("Failed to check installed packages: " + e.getMessage());
             e.printStackTrace();
         }
