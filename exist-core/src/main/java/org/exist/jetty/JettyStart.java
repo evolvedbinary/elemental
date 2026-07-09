@@ -61,10 +61,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.exist.SystemProperties;
 import org.exist.http.servlets.ExistExtensionServlet;
+import org.exist.repo.AutoDeploymentTrigger;
 import org.exist.start.CompatibleJavaVersionCheck;
 import org.exist.start.Main;
 import org.exist.start.StartException;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.BrokerPoolConstants;
 import org.exist.util.*;
 import org.exist.validation.XmlLibraryChecker;
 import org.exist.xmldb.DatabaseImpl;
@@ -76,6 +78,7 @@ import se.softhouse.jargo.ArgumentException;
 import se.softhouse.jargo.CommandLineParser;
 import se.softhouse.jargo.ParsedArguments;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
@@ -130,7 +133,8 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     @GuardedBy("this") private int status = STATUS_STOPPED;
     @GuardedBy("this") private Optional<Thread> shutdownHookThread = Optional.empty();
     @GuardedBy("this") private int primaryPort = 8080;
-
+    private final Properties additionalElementalConfigProperties;
+    private final Properties additionalJettyConfigProperties;
 
     public static void main(final String[] args) {
         try {
@@ -162,7 +166,17 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     }
 
     public JettyStart() {
-        // Additional checks XML libs @@@@
+        this(null, null);
+    }
+
+    /**
+     * @param additionalElementalConfigProperties any additional Elemental configuration properties.
+     * @param additionalJettyConfigProperties any additional Jetty configuration properties
+     */
+    public JettyStart(@Nullable final Properties additionalElementalConfigProperties, @Nullable final Properties additionalJettyConfigProperties) {
+        this.additionalElementalConfigProperties = additionalElementalConfigProperties != null ? additionalElementalConfigProperties : new Properties();
+        this.additionalJettyConfigProperties = additionalJettyConfigProperties != null ? additionalJettyConfigProperties : new Properties();
+        // Additional checks XML libs
         XmlLibraryChecker.check();
     }
 
@@ -175,11 +189,11 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     }
 
     public synchronized void run(final boolean standalone) {
-        final String jettyProperty = Optional.ofNullable(System.getProperty(JETTY_HOME_PROP))
+        final String jettyHome = Optional.ofNullable(System.getProperty(JETTY_HOME_PROP))
                 .orElseGet(() -> {
                     final Optional<Path> home = ConfigurationHelper.getExistHome();
-                    final Path jettyHome = FileUtils.resolve(home, "tools").resolve("jetty");
-                    final String jettyPath = jettyHome.toAbsolutePath().toString();
+                    final Path toolsJetty = FileUtils.resolve(home, "tools").resolve("jetty");
+                    final String jettyPath = toolsJetty.toAbsolutePath().toString();
                     System.setProperty(JETTY_HOME_PROP, jettyPath);
                     return jettyPath;
                 });
@@ -188,9 +202,9 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
         final Path jettyConfig;
         if (standalone) {
-            jettyConfig = Paths.get(jettyProperty).normalize().resolve("etc").resolve(Main.STANDALONE_ENABLED_JETTY_CONFIGS);
+            jettyConfig = Paths.get(jettyHome).normalize().resolve("etc").resolve(Main.STANDALONE_ENABLED_JETTY_CONFIGS);
         } else {
-            jettyConfig = Paths.get(jettyProperty).normalize().resolve("etc").resolve(Main.STANDARD_ENABLED_JETTY_CONFIGS);
+            jettyConfig = Paths.get(jettyHome).normalize().resolve("etc").resolve(Main.STANDARD_ENABLED_JETTY_CONFIGS);
         }
         run(new String[] { jettyConfig.toAbsolutePath().toString() }, null);
     }
@@ -224,16 +238,21 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             }
         }
 
-        final Map<String, String> configProperties;
+        final Map<String, String> jettyConfigProperties;
         try {
-            configProperties = getConfigProperties(jettyConfig.getParent());
+            jettyConfigProperties = getJettyConfigProperties(jettyConfig.getParent());
 
             // modify JETTY_HOME and JETTY_BASE properties when running with classpath config
             if (configFromClasspath) {
                 final String jettyClasspathHome = jettyConfig.getParent().getParent().toAbsolutePath().toString();
                 System.setProperty(JETTY_HOME_PROP, jettyClasspathHome);
-                configProperties.put(JETTY_HOME_PROP, jettyClasspathHome);
-                configProperties.put(JETTY_BASE_PROP, jettyClasspathHome);
+                jettyConfigProperties.put(JETTY_HOME_PROP, jettyClasspathHome);
+                jettyConfigProperties.put(JETTY_BASE_PROP, jettyClasspathHome);
+            }
+
+            // override any specified Jetty config properties
+            for (final Map.Entry<Object, Object> additionalJettyConfigProperty : additionalJettyConfigProperties.entrySet()) {
+                jettyConfigProperties.put(additionalJettyConfigProperty.getKey().toString(), additionalJettyConfigProperty.getValue().toString());
             }
 
             if (observer != null) {
@@ -272,9 +291,28 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
             logger.info("[Log4j Configuration: {}]", System.getProperty("log4j.configurationFile"));
             logger.info("[Jetty Version: {}]", Jetty.VERSION);
-            logger.info("[Jetty Home: {}]", configProperties.get(JETTY_HOME_PROP));
-            logger.info("[Jetty Base: {}]", configProperties.get(JETTY_BASE_PROP));
+            logger.info("[Jetty Home: {}]", jettyConfigProperties.get(JETTY_HOME_PROP));
+            logger.info("[Jetty Base: {}]", jettyConfigProperties.get(JETTY_BASE_PROP));
             logger.info("[Jetty Configuration: {}]", jettyConfig.toAbsolutePath().toString());
+
+            // override any specified Elemental config properties
+            for (final Map.Entry<Object, Object> additionalElementalConfigProperty : additionalElementalConfigProperties.entrySet()) {
+                final Object additionalElementalConfigPropertyKey = additionalElementalConfigProperty.getKey();
+                final Object additionalElementalConfigPropertyValue = additionalElementalConfigProperty.getValue();
+                if (AUTODEPLOY_PROPERTY.equals(additionalElementalConfigPropertyKey) && "off".equals(additionalElementalConfigPropertyValue)) {
+                    // remove auto deploy from config if present
+                    final List<Configuration.StartupTriggerConfig> configuredStartupTriggers = (List<Configuration.StartupTriggerConfig>) config.getProperty(BrokerPoolConstants.PROPERTY_STARTUP_TRIGGERS);
+                    for (final Configuration.StartupTriggerConfig configuredStartupTrigger : configuredStartupTriggers) {
+                        if (AutoDeploymentTrigger.class.getName().equals(configuredStartupTrigger.clazz())) {
+                            configuredStartupTriggers.remove(configuredStartupTrigger);
+                            break;
+                        }
+                    }
+
+                } else {
+                    config.setProperty(additionalElementalConfigPropertyKey.toString(), additionalElementalConfigPropertyValue);
+                }
+            }
 
             BrokerPool.configure(1, 5, config, Optional.ofNullable(observer));
 
@@ -291,21 +329,21 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
         try {
             // load jetty configurations
-            final List<Path> configFiles = getEnabledConfigFiles(jettyConfig);
+            final List<Path> jettyConfigFiles = getEnabledJettyConfigFiles(jettyConfig);
             final List<Object> configuredObjects = new ArrayList<>();
-            XmlConfiguration last = null;
-            for(final Path confFile : configFiles) {
+            XmlConfiguration lastJettyConfiguration = null;
+            for(final Path jettyConfigFile : jettyConfigFiles) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("[Loading Jetty Configuration: {}]", confFile.toString());
+                    logger.debug("[Loading Jetty Configuration: {}]", jettyConfigFile.toString());
                 }
-                final Resource resource = new PathResource(confFile);
-                final XmlConfiguration configuration = new XmlConfiguration(resource);
-                if (last != null) {
-                    configuration.getIdMap().putAll(last.getIdMap());
+                final Resource resource = new PathResource(jettyConfigFile);
+                final XmlConfiguration jettyConfiguration = new XmlConfiguration(resource);
+                if (lastJettyConfiguration != null) {
+                    jettyConfiguration.getIdMap().putAll(lastJettyConfiguration.getIdMap());
                 }
-                configuration.getProperties().putAll(configProperties);
-                configuredObjects.add(configuration.configure());
-                last = configuration;
+                jettyConfiguration.getProperties().putAll(jettyConfigProperties);
+                configuredObjects.add(jettyConfiguration.configure());
+                lastJettyConfiguration = jettyConfiguration;
             }
 
             // start Jetty
@@ -546,7 +584,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
         return server;
     }
 
-    private Map<String, String> getConfigProperties(final Path configDir) throws IOException {
+    private Map<String, String> getJettyConfigProperties(final Path configDir) throws IOException {
         final Map<String, String> configProperties = new HashMap<>();
 
         //load jetty.properties file
@@ -570,7 +608,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
         return configProperties;
     }
 
-    private List<Path> getEnabledConfigFiles(final Path enabledJettyConfigs) throws IOException {
+    private List<Path> getEnabledJettyConfigFiles(final Path enabledJettyConfigs) throws IOException {
         if(Files.notExists(enabledJettyConfigs)) {
             throw new IOException("Cannot find config enabler: "  + enabledJettyConfigs.toString());
         } else {

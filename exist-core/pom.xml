@@ -1118,6 +1118,8 @@
                                 <include>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</include>
                                 <include>src/main/java/org/exist/storage/sync/SyncTask.java</include>
                                 <include>src/test/java/org/exist/storage/util/PauseFunction.java</include>
+                                <include>src/main/java/org/exist/test/ExistEmbeddedServer.java</include>
+                                <include>src/main/java/org/exist/test/ExistWebServer.java</include>
                                 <include>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</include>
                                 <include>src/main/java/org/exist/test/TransactionTestDSL.java</include>
                                 <include>src/main/java/org/exist/test/XQueryAssertions.java</include>
@@ -2013,6 +2015,8 @@
                                 <exclude>src/test/java/org/exist/storage/txn/TxnTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/util/PauseFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/test/DiffMatcher.java</exclude>
+                                <exclude>src/main/java/org/exist/test/ExistEmbeddedServer.java</exclude>
+                                <exclude>src/main/java/org/exist/test/ExistWebServer.java</exclude>
                                 <exclude>src/main/java/org/exist/test/ExistXmldbEmbeddedServer.java</exclude>
                                 <exclude>src/main/java/org/exist/test/TransactionTestDSL.java</exclude>
                                 <exclude>src/test/java/org/exist/test/Util.java</exclude>
