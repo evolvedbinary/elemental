@@ -1890,6 +1890,8 @@
                                 <exclude>src/main/java/org/exist/security/management/GroupsManagement.java</exclude>
                                 <exclude>src/main/java/org/exist/source/AbstractSource.java</exclude>
                                 <exclude>src/main/java/org/exist/source/DBSource.java</exclude>
+                                <exclude>src/main/java/org/exist/source/DbStoreSource.java</exclude>
+                                <exclude>src/main/java/org/exist/source/DbUriSource.java</exclude>
                                 <exclude>src/main/java/org/exist/source/Source.java</exclude>
                                 <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/source/URLSource.java</exclude>
@@ -2732,6 +2734,8 @@ The original license statement is also included below.]]></preamble>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeService.java</include>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeUtil.java</include>
                                 <include>src/main/java/org/exist/security/internal/aider/ImmutableUnixStylePermissionAider.java</include>
+                                <include>src/main/java/org/exist/source/DbStoreSource.java</include>
+                                <include>src/main/java/org/exist/source/DbUriSource.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryRestTest.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryTest.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryXmlDbTest.java</include>

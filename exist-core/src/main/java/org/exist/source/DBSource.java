@@ -64,10 +64,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Source implementation that reads from a binary resource
  * stored in the database.
+ *
+ * Should be used under a lock on the document, otherwise if
+ * no document is available, or only a lock for reads is required
+ * choose {@link DbUriSource} instead.
  * 
  * @author wolf
  */
-public class DBSource extends AbstractSource {
+public class DBSource extends AbstractSource implements DbStoreSource {
     
     private final BinaryDocument doc;
     private final long lastModified;
@@ -93,6 +97,7 @@ public class DBSource extends AbstractSource {
         return "DB";
     }
 
+    @Override
     public XmldbURI getDocumentPath() {
     	return doc.getURI();
     }
