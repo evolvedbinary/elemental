@@ -52,10 +52,10 @@ import java.nio.charset.Charset;
 
 import net.jpountz.xxhash.XXHash64;
 import net.jpountz.xxhash.XXHashFactory;
-import org.exist.EXistException;
 import org.exist.dom.QName;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.Subject;
+import org.exist.security.Permission;
+import org.exist.security.SecurityManager;
+import org.exist.security.internal.aider.ImmutableUnixStylePermissionAider;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.parser.DeclScanner;
 import org.exist.xquery.parser.XQueryLexer;
@@ -71,6 +71,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public abstract class AbstractSource implements Source {
 
+    private static final Permission ALLOW_ALL_PERMISSIONS = new ImmutableUnixStylePermissionAider(SecurityManager.DBA_USER, SecurityManager.DBA_GROUP, 0777);
+
     private final long key;
 
     protected AbstractSource(final long key) {
@@ -85,11 +87,6 @@ public abstract class AbstractSource implements Source {
     @Override
     public Charset getEncoding() throws IOException {
         return null;
-    }
-
-    @Deprecated
-    public void validate(final Subject subject, final int perm) throws PermissionDeniedException, EXistException {
-        // no-op
     }
 
     @Override
@@ -172,6 +169,11 @@ public abstract class AbstractSource implements Source {
             }
         }
         return str;
+    }
+
+    @Override
+    public Permission getPermissions() throws IOException {
+        return ALLOW_ALL_PERMISSIONS;
     }
 
     protected static final long XXHASH64_SEED = 0x79742bc8;

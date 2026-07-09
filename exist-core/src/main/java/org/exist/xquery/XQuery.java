@@ -67,7 +67,6 @@ import org.exist.security.EffectiveSubject;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
-import org.exist.source.DBSource;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
@@ -229,10 +228,16 @@ public class XQuery {
     private CompiledXQuery compile(final XQueryContext context, final Reader reader, final boolean xpointer) throws XPathException, PermissionDeniedException {
 
         //check read permission
-        if (context.getSource() instanceof DBSource) {
-            ((DBSource) context.getSource()).validate(Permission.READ);
+        @Nullable final Subject currentSubject = context.getSubject();
+        if (currentSubject != null) {
+            try {
+                if (!context.getSource().getPermissions().validate(currentSubject, Permission.READ)) {
+                    throw new PermissionDeniedException("Subject '" + currentSubject.getName() + "' does not have read  access to resource '" + context.getSource().pathOrShortIdentifier() + "'.");
+                }
+            } catch (final IOException e) {
+                throw new PermissionDeniedException("Subject '" + currentSubject.getName() + "' does not have read  access to resource '" + context.getSource().pathOrShortIdentifier() + "'.", e);
+            }
         }
-        
         
     	//TODO: move XQueryContext.getUserFromHttpSession() here, have to check if servlet.jar is in the classpath
     	//before compiling/executing that code though to avoid a dependency on servlet.jar - reflection? - deliriumsky
@@ -376,8 +381,12 @@ public class XQuery {
     public Sequence execute(final DBBroker broker, final CompiledXQuery expression, @Nullable final Tuple3<QName, List<Expression>, Optional<ErrorCodes.ErrorCode>> functionCall, @Nullable Sequence contextSequence, final Properties outputProperties, final boolean resetContext) throws XPathException, PermissionDeniedException {
     	
         //check execute permissions
-        if (expression.getContext().getSource() instanceof DBSource) {
-            ((DBSource) expression.getContext().getSource()).validate(Permission.EXECUTE);
+        try {
+            if (!expression.getContext().getSource().getPermissions().validate(broker.getCurrentSubject(), Permission.EXECUTE)) {
+                throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have execute access to resource '" + expression.getContext().getSource().pathOrShortIdentifier() + "'.");
+            }
+        } catch (final IOException e) {
+            throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have execute access to resource '" + expression.getContext().getSource().pathOrShortIdentifier() + "'.", e);
         }
         
         final long start = System.currentTimeMillis();
@@ -405,22 +414,23 @@ public class XQuery {
         //if setUid or setGid, become Effective User
         EffectiveSubject effectiveSubject = null;
         final Source src = expression.getContext().getSource();
-        if(src instanceof DBSource) {
-            final DBSource dbSrc = (DBSource)src;
-            final Permission perm = dbSrc.getPermissions();
-
-            if(perm.isSetUid()) {
-                if(perm.isSetGid()) {
-                    //setUid and SetGid
-                    effectiveSubject = new EffectiveSubject(perm.getOwner(), perm.getGroup());
-                } else {
-                    //just setUid
-                    effectiveSubject = new EffectiveSubject(perm.getOwner());
-                }
-            } else if(perm.isSetGid()) {
-                //just setGid, so we use the current user as the effective user
-                effectiveSubject = new EffectiveSubject(callingUser, perm.getGroup());
+        final Permission perm;
+        try {
+            perm = src.getPermissions();
+        } catch (final IOException e) {
+            throw new PermissionDeniedException(e);
+        }
+        if (perm.isSetUid()) {
+            if(perm.isSetGid()) {
+                //setUid and SetGid
+                effectiveSubject = new EffectiveSubject(perm.getOwner(), perm.getGroup());
+            } else {
+                //just setUid
+                effectiveSubject = new EffectiveSubject(perm.getOwner());
             }
+        } else if (perm.isSetGid()) {
+            //just setGid, so we use the current user as the effective user
+            effectiveSubject = new EffectiveSubject(callingUser, perm.getGroup());
         }
         
         try {

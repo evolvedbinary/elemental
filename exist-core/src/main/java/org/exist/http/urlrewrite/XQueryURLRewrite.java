@@ -504,8 +504,12 @@ public class XQueryURLRewrite extends HttpServlet {
 
         try (final DBBroker broker = pool.get(Optional.ofNullable(user))) {
 
-            if (model.getSourceInfo().source instanceof DBSource) {
-                ((DBSource) model.getSourceInfo().source).validate(Permission.EXECUTE);
+            try {
+                if (!model.getSourceInfo().source.getPermissions().validate(broker.getCurrentSubject(), Permission.EXECUTE)) {
+                    throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have read access to resource '" + model.sourceInfo.source.pathOrShortIdentifier() + "'.");
+                }
+            } catch (final IOException e) {
+                throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have read access to resource '" + model.sourceInfo.source.pathOrShortIdentifier() + "'.", e);
             }
 
             if (model.getSourceInfo().source.isValid() != Source.Validity.VALID) {
