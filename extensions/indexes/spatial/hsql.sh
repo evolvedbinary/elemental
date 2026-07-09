@@ -23,7 +23,6 @@
 
 
 # Run the HSQL Database Manager
-# $Id$
 
 if [ -z "${EXIST_HOME}" ]; then
 	EXIST_HOME="../../..";

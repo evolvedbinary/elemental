@@ -171,6 +171,7 @@
                                 <include>src/main/java/org/exist/xquery/modules/compression/AbstractCompressFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/AbstractExtractFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/CompressionModule.java</include>
+                                <include>src/test/java/xquery/modules/compression/CompressionTests.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/EntryFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/UnTarFunction.java</include>
                                 <include>src/main/java/org/exist/xquery/modules/compression/UnZipFunction.java</include>
@@ -192,6 +193,7 @@
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/AbstractCompressFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/AbstractExtractFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/CompressionModule.java</exclude>
+                                <exclude>src/test/java/xquery/modules/compression/CompressionTests.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/EntryFunctions.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/UnTarFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/modules/compression/UnZipFunction.java</exclude>

@@ -52,8 +52,6 @@
 
     Returns:
     Sequence of document-uris.
-    
-    $Id$
 :)
 
 declare variable $local:collection as xs:string external;
