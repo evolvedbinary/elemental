@@ -187,7 +187,7 @@ public class ConcurrentBrokerPoolTest {
             server.startDb();
             try {
                 store(server.getBrokerPool());
-                return Tuple(server.getTemporaryStorage().get(), uuid);
+                return Tuple(server.getTemporaryStorage(), uuid);
             } finally {
                 server.stopDb(false);  // NOTE: false flag ensures we don't delete the temporary storage!
             }
