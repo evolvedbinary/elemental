@@ -4,7 +4,6 @@
     | to the XML-RPC, REST and WebDAV servlets, plus XQueryURLRewrite for the URL
     | handling. Use this configuration if you need a minimum setup with web content
     | stored in the db.
-    | $Id$
     +-->
 <web-app 
     xmlns="https://jakarta.ee/xml/ns/jakartaee"
