@@ -277,7 +277,14 @@ public class JavaBinding extends BasicFunction {
                             // instance method
                             final boolean voidReturnThis = javaClassNameAndBindingParams._2.voidReturnsThis && (void.class == javaReturnType || Void.class == javaReturnType);
                             javaReflectiveCallInvoker = javaArgs -> {
-                                final Object javaResult = method.invoke(javaArgs[0], Arrays.copyOfRange(javaArgs, 1, javaArgs.length));
+                                final Object instance = javaArgs[0];
+                                final Class<?> instanceClazz = instance.getClass();
+                                final Class<?> methodDeclaringClazz = method.getDeclaringClass();
+                                if (!methodDeclaringClazz.isAssignableFrom(instanceClazz)) {
+                                    throw new IllegalArgumentException("Expected an instance of type (or sub-type) of: " + methodDeclaringClazz.getName() + ", but received type: " + instanceClazz.getName());
+                                }
+
+                                final Object javaResult = method.invoke(instance, Arrays.copyOfRange(javaArgs, 1, javaArgs.length));
                                 if (voidReturnThis) {
                                     // method returns void and `?void=this` is set, so return this
                                     return javaArgs[0];
