@@ -421,17 +421,13 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 //                System.out.println("path="+path);
                 if(descriptor.allowSource(path)) {
 
-                    if (source instanceof DBSource) {
-                        try {
-                            ((DBSource) source).validate(user, Permission.READ);
-                        } catch (final PermissionDeniedException e) {
-                            if (getDefaultUser().equals(user)) {
-                                getAuthenticator().sendChallenge(request, response);
-                            } else {
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. (no read access)");
-                            }
-                            return;
+                    if (!source.getPermissions().validate(user, Permission.READ)) {
+                        if (getDefaultUser().equals(user)) {
+                            getAuthenticator().sendChallenge(request, response);
+                        } else {
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. (no read access)");
                         }
+                        return;
                     }
                     
 					//Show the source of the XQuery

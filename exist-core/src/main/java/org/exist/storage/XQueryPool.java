@@ -32,6 +32,7 @@
  */
 package org.exist.storage;
 
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -43,7 +44,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
 import org.exist.source.Source;
 import org.exist.util.Configuration;
 import org.exist.util.Holder;
@@ -183,8 +183,12 @@ public class XQueryPool implements BrokerPoolService {
         }
 
         //check execution permission
-        if (source instanceof DBSource) {
-            ((DBSource) source).validate(Permission.EXECUTE);
+        try {
+            if (!source.getPermissions().validate(broker.getCurrentSubject(), Permission.EXECUTE)) {
+                throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have execute access to resource '" + source.pathOrShortIdentifier() + "'.");
+            }
+        } catch (final IOException e) {
+            throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have execute access to resource '" + source.pathOrShortIdentifier() + "'.", e);
         }
 
         return borrowedCompiledQuery.value;
@@ -193,8 +197,6 @@ public class XQueryPool implements BrokerPoolService {
     /**
      * Determines if a compiled XQuery is still valid.
      *
-     * @param broker the database broker
-     * @param source the source of the query
      * @param compiledXQuery the compiled query
      *
      * @return true if the compiled query is still valid, false otherwise.

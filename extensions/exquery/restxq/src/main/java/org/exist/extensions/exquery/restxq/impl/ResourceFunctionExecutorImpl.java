@@ -27,6 +27,7 @@
 package org.exist.extensions.exquery.restxq.impl;
 
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -44,7 +45,6 @@ import org.exist.dom.memtree.DocumentImpl;
 import org.exist.security.EffectiveSubject;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
 import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -217,27 +217,27 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
      * @param xquery The XQuery to determine the effective subject for
      * @return Maybe an effective subject or empty if there is no setUid or setGid bits
      */
-    private Optional<EffectiveSubject> getEffectiveSubject(final CompiledXQuery xquery) {
+    private Optional<EffectiveSubject> getEffectiveSubject(final CompiledXQuery xquery) throws PermissionDeniedException {
         final Optional<EffectiveSubject> effectiveSubject;
 
         final Source src = xquery.getContext().getSource();
-        if(src instanceof DBSource dbSrc) {
-            final Permission perm = dbSrc.getPermissions();
-
-            if(perm.isSetUid()) {
-                if(perm.isSetGid()) {
-                    //setUid and SetGid
-                    effectiveSubject = Optional.of(new EffectiveSubject(perm.getOwner(), perm.getGroup()));
-                } else {
-                    //just setUid
-                    effectiveSubject = Optional.of(new EffectiveSubject(perm.getOwner()));
-                }
-            } else if(perm.isSetGid()) {
-                //just setGid, so we use the current user as the effective user
-                effectiveSubject = Optional.of(new EffectiveSubject(xquery.getContext().getBroker().getCurrentSubject(), perm.getGroup()));
+        final Permission perm;
+        try {
+            perm = src.getPermissions();
+        } catch (final IOException e) {
+            throw new PermissionDeniedException(e);
+        }
+        if(perm.isSetUid()) {
+            if(perm.isSetGid()) {
+                //setUid and SetGid
+                effectiveSubject = Optional.of(new EffectiveSubject(perm.getOwner(), perm.getGroup()));
             } else {
-                effectiveSubject = Optional.empty();
+                //just setUid
+                effectiveSubject = Optional.of(new EffectiveSubject(perm.getOwner()));
             }
+        } else if(perm.isSetGid()) {
+            //just setGid, so we use the current user as the effective user
+            effectiveSubject = Optional.of(new EffectiveSubject(xquery.getContext().getBroker().getCurrentSubject(), perm.getGroup()));
         } else {
             effectiveSubject = Optional.empty();
         }

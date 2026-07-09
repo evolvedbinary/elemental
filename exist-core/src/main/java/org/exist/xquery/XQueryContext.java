@@ -2215,7 +2215,7 @@ public class XQueryContext implements BinaryValueManager, Context {
     }
 
     @Override
-    public DBBroker getBroker() {
+    public @Nullable DBBroker getBroker() {
         if (db != null) {
             return db.getActiveBroker();
         }
@@ -2227,8 +2227,12 @@ public class XQueryContext implements BinaryValueManager, Context {
     }
 
     @Override
-    public Subject getSubject() {
-        return getBroker().getCurrentSubject();
+    public @Nullable Subject getSubject() {
+        @Nullable final DBBroker broker = getBroker();
+        if (broker == null) {
+            return null;
+        }
+        return broker.getCurrentSubject();
     }
 
     /**

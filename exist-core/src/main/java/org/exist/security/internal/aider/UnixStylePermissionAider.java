@@ -360,7 +360,31 @@ public class UnixStylePermissionAider extends AbstractUnixStylePermission implem
     
     @Override
     public boolean validate(final Subject user, final int mode) {
-    	throw new UnsupportedOperationException("Validation of Permission Aider is unsupported");
+
+        //group dba has full access
+        if (user.hasDbaRole()) {
+            return true;
+        }
+
+        //check owner
+        if (user.getId() == owner.getId()) {                  //check owner
+            return (mode & ((this.mode >>> 6) & 7)) == mode;  //check owner mode
+        }
+
+        //check group
+        final int[] userGroupIds = user.getGroupIds();
+        for(final int userGroupId : userGroupIds) {
+            if (userGroupId == ownerGroup.getId()) {
+                return (mode & ((this.mode >>> 3) & 7)) == mode;
+            }
+        }
+
+        //check other
+        if ((mode & (this.mode & 7)) == mode) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override

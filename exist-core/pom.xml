@@ -1048,6 +1048,7 @@
                                 <include>src/main/java/org/exist/security/management/AccountsManagement.java</include>
                                 <include>src/main/java/org/exist/security/management/GroupsManagement.java</include>
                                 <include>src/main/java/org/exist/source/AbstractSource.java</include>
+                                <include>src/main/java/org/exist/source/DBSource.java</include>
                                 <include>src/main/java/org/exist/source/Source.java</include>
                                 <include>src/main/java/org/exist/source/SourceFactory.java</include>
                                 <include>src/main/java/org/exist/source/URLSource.java</include>
@@ -1881,10 +1882,12 @@
                                 <exclude>src/test/java/org/exist/security/internal/BackupRestoreSecurityPrincipalsTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/RealmImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/SecurityManagerImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/internal/aider/ImmutableUnixStylePermissionAider.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/aider/UnixStylePermissionAider.java</exclude>
                                 <exclude>src/main/java/org/exist/security/management/AccountsManagement.java</exclude>
                                 <exclude>src/main/java/org/exist/security/management/GroupsManagement.java</exclude>
                                 <exclude>src/main/java/org/exist/source/AbstractSource.java</exclude>
+                                <exclude>src/main/java/org/exist/source/DBSource.java</exclude>
                                 <exclude>src/main/java/org/exist/source/Source.java</exclude>
                                 <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/source/URLSource.java</exclude>
@@ -2724,6 +2727,7 @@ The original license statement is also included below.]]></preamble>
                             <includes>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeService.java</include>
                                 <include>src/main/java/org/exist/mediatype/MediaTypeUtil.java</include>
+                                <include>src/main/java/org/exist/security/internal/aider/ImmutableUnixStylePermissionAider.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryRestTest.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryTest.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryXmlDbTest.java</include>
