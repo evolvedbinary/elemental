@@ -51,6 +51,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.debuggee.Debuggee;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.DBSource;
@@ -77,6 +78,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.modules.XMLResource;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
@@ -87,7 +89,6 @@ import org.exist.dom.persistent.ExtArrayNodeSet;
 import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
-import org.exist.security.Permission;
 import com.evolvedbinary.j8fu.Either;
 
 import javax.annotation.Nullable;
@@ -277,66 +278,78 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 	
     @Override
     public EXistResourceSet executeStoredQuery(final String uri) throws XMLDBException {
-        return execute((broker, transaction) -> {
-            final DocumentImpl resource = broker.getResource(new XmldbURI(uri), Permission.READ | Permission.EXECUTE);
-            if (resource == null) {
-                throw new XMLDBException(ErrorCodes.INVALID_URI, "No stored XQuery exists at: " + uri);
+        return withDb((broker, transaction) -> {
+            try (final LockedDocument lockedResource = broker.getXMLResource(new XmldbURI(uri), LockMode.READ_LOCK)) {
+                if (lockedResource == null) {
+                    throw new XMLDBException(ErrorCodes.INVALID_URI, "No stored XQuery exists at: " + uri);
+                }
+                final DocumentImpl resource = lockedResource.getDocument();
+                if (!(resource instanceof BinaryDocument)) {
+                    throw new XMLDBException(ErrorCodes.INVALID_URI, "Document is not an XQuery: " + uri);
+                }
+
+                final Source dbSource = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, false);
+
+                return execute(broker, transaction, dbSource);
             }
-            return new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, false);
         });
     }
 
     private EXistResourceSet execute(final LocalXmldbFunction<Source> sourceOp) throws XMLDBException {
         return withDb((broker, transaction) -> {
-
             final Source source = sourceOp.apply(broker, transaction);
-            final XmldbURI[] docs = new XmldbURI[]{ XmldbURI.create(collection.getName(broker, transaction)) };
-
-            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
-                xqueryContext.setStaticallyKnownDocuments(docs);
-                try {
-                    setupContext(source, xqueryContext);
-                } catch (final XMLDBException e) {
-                    throw new XPathException(e);
-                }
-            };
-
-            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = this::declareVariables;
-
-            boolean queryResultOwnershipTransferred = false;
-            @Nullable XQueryUtil.QueryResult queryResult = null;
-            try {
-                queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
-
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("Query took {} ms.", queryResult.executionTime);
-                }
-
-                if (queryResult.result == null) {
-                    return null;
-                }
-
-                final Properties resourceSetProperties = new Properties(properties);
-                resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
-
-                // NOTE(AR) LocalResourceSet takes ownership of QueryResult sequence! So it is responsible to call `QueryResult#close()` when it is finished with it
-                final EXistResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, null);
-                queryResultOwnershipTransferred = true;
-                return resourceSet;
-
-            } catch (final XPathException e) {
-                if (e.getCause() instanceof XMLDBException) {
-                    throw (XMLDBException) e.getCause();
-                }
-                throw e;
-
-            } finally {
-                if (queryResult != null && !queryResultOwnershipTransferred) {
-                    // NOTE(AR) we are returning null or an exception was raised, and so we still own the queryResult and we must therefore close it
-                    queryResult.close();
-                }
-            }
+            return execute(broker, transaction, source);
         });
+    }
+
+    private EXistResourceSet execute(final DBBroker broker, final Txn transaction, final Source source) throws XMLDBException, XPathException, PermissionDeniedException, IOException {
+
+        final XmldbURI[] docs = new XmldbURI[]{ XmldbURI.create(collection.getName(broker, transaction)) };
+
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            xqueryContext.setStaticallyKnownDocuments(docs);
+            try {
+                setupContext(source, xqueryContext);
+            } catch (final XMLDBException e) {
+                throw new XPathException(e);
+            }
+        };
+
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = this::declareVariables;
+
+        boolean queryResultOwnershipTransferred = false;
+        @Nullable XQueryUtil.QueryResult queryResult = null;
+        try {
+            queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Query took {} ms.", queryResult.executionTime);
+            }
+
+            if (queryResult.result == null) {
+                return null;
+            }
+
+            final Properties resourceSetProperties = new Properties(properties);
+            resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+
+            // NOTE(AR) LocalResourceSet takes ownership of QueryResult sequence! So it is responsible to call `QueryResult#close()` when it is finished with it
+            final EXistResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, null);
+            queryResultOwnershipTransferred = true;
+            return resourceSet;
+
+        } catch (final XPathException | PermissionDeniedException | IOException e) {
+            if (e.getCause() instanceof XMLDBException) {
+                throw (XMLDBException) e.getCause();
+            }
+            throw e;
+
+        } finally {
+            if (queryResult != null && !queryResultOwnershipTransferred) {
+                // NOTE(AR) we are returning null or an exception was raised, and so we still own the queryResult and we must therefore close it
+                queryResult.close();
+            }
+        }
     }
 
     @Override
