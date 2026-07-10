@@ -1044,6 +1044,7 @@
                                 <include>src/test/java/org/exist/security/internal/BackupRestoreSecurityPrincipalsTest.java</include>
                                 <include>src/main/java/org/exist/security/internal/RealmImpl.java</include>
                                 <include>src/main/java/org/exist/security/internal/SecurityManagerImpl.java</include>
+                                <include>src/main/java/org/exist/security/internal/SMEvents.java</include>
                                 <include>src/main/java/org/exist/security/internal/aider/UnixStylePermissionAider.java</include>
                                 <include>src/main/java/org/exist/security/management/AccountsManagement.java</include>
                                 <include>src/main/java/org/exist/security/management/GroupsManagement.java</include>
@@ -1051,6 +1052,7 @@
                                 <include>src/main/java/org/exist/source/DBSource.java</include>
                                 <include>src/main/java/org/exist/source/Source.java</include>
                                 <include>src/main/java/org/exist/source/SourceFactory.java</include>
+                                <include>src/test/java/org/exist/source/SourceFactoryTest.java</include>
                                 <include>src/main/java/org/exist/source/URLSource.java</include>
                                 <include>src/test/java/org/exist/stax/EmbeddedXMLStreamReaderTest.java</include>
                                 <include>src/test/java/org/exist/storage/AbstractUpdateTest.java</include>
@@ -1884,6 +1886,7 @@
                                 <exclude>src/test/java/org/exist/security/internal/BackupRestoreSecurityPrincipalsTest.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/RealmImpl.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/SecurityManagerImpl.java</exclude>
+                                <exclude>src/main/java/org/exist/security/internal/SMEvents.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/aider/ImmutableUnixStylePermissionAider.java</exclude>
                                 <exclude>src/main/java/org/exist/security/internal/aider/UnixStylePermissionAider.java</exclude>
                                 <exclude>src/main/java/org/exist/security/management/AccountsManagement.java</exclude>
@@ -1894,6 +1897,7 @@
                                 <exclude>src/main/java/org/exist/source/DbUriSource.java</exclude>
                                 <exclude>src/main/java/org/exist/source/Source.java</exclude>
                                 <exclude>src/main/java/org/exist/source/SourceFactory.java</exclude>
+                                <exclude>src/test/java/org/exist/source/SourceFactoryTest.java</exclude>
                                 <exclude>src/main/java/org/exist/source/URLSource.java</exclude>
                                 <exclude>src/test/java/org/exist/stax/EmbeddedXMLStreamReaderTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/AbstractRecoverTest.java</exclude>

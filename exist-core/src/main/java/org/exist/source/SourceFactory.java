@@ -58,17 +58,11 @@ import java.nio.file.Paths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock.LockMode;
-import org.exist.storage.serializers.Serializer;
 import org.exist.util.FileUtils;
 import org.exist.xmldb.XmldbURI;
-import org.xml.sax.SAXException;
 
 import javax.annotation.Nullable;
 
@@ -204,27 +198,13 @@ public class SourceFactory {
      * @return the source, or null if there is no such resource in the db indicated by {@code path}.
      */
     private static @Nullable Source getSource_fromDb(final DBBroker broker, final XmldbURI path) throws PermissionDeniedException, IOException {
-        Source source = null;
-        try(final LockedDocument lockedResource = broker.getXMLResource(path, LockMode.READ_LOCK)) {
-            if (lockedResource != null) {
-                final DocumentImpl resource = lockedResource.getDocument();
-                if (resource.getResourceType() == DocumentImpl.BINARY_FILE) {
-                    source = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, true);
-                } else {
-                    final Serializer serializer = broker.borrowSerializer();
-                    try {
-                        // XML document: serialize to string source so it can be read as a stream
-                        // by fn:unparsed-text and friends
-                        source = new StringSource(serializer.serialize(resource));
-                    } catch (final SAXException e) {
-                        throw new IOException(e.getMessage());
-                    } finally {
-                        broker.returnSerializer(serializer);
-                    }
-                }
-            }
+        try {
+            return DbUriSource.from(broker.getBrokerPool(), path, true, false);
+        } catch (final DbUriSource.NoSuchDocumentException e) {
+                return null;
+        } catch (final EXistException e) {
+            throw new IOException(e);
         }
-        return source;
     }
 
     /**

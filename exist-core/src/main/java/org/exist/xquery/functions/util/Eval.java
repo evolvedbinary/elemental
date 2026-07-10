@@ -46,14 +46,14 @@ import javax.xml.datatype.Duration;
 
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.Namespaces;
-import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.memtree.NodeImpl;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
@@ -65,7 +65,6 @@ import org.exist.util.XMLReaderPool;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
-import org.exist.xquery.functions.fn.FnModule;
 import org.exist.xquery.functions.fn.FunSerialize;
 import org.exist.xquery.functions.fn.FunSubSequence;
 import org.exist.xquery.value.*;
@@ -304,8 +303,8 @@ public class Eval extends BasicFunction {
         if (Type.subTypeOf(expr.getType(), Type.ANY_URI)) {
             String uri = null;
 
-            if (querySource instanceof DBSource) {
-                final XmldbURI documentPath = ((DBSource)querySource).getDocumentPath();
+            if (querySource instanceof DbStoreSource) {
+                final XmldbURI documentPath = ((DbStoreSource) querySource).getDocumentPath();
                 uri = XmldbURI.EMBEDDED_SERVER_URI.append(documentPath).removeLastSegment().toString();
             } else if (querySource instanceof FileSource) {
                 uri = ((FileSource) querySource).getPath().getParent().toString();
@@ -535,7 +534,7 @@ public class Eval extends BasicFunction {
                         throw new XPathException(this, "source for module " + location + " is not an XQuery or " +
                         "declares a wrong mime-type");
                     }
-                    querySource = new DBSource(context.getBroker().getBrokerPool(), (BinaryDocument) sourceDoc, true);
+                    querySource = DbUriSource.from(context.getBroker().getBrokerPool(), context.getBroker().getCurrentSubject(), sourceDoc, true, false);
                 } catch (final PermissionDeniedException e) {
                     throw new XPathException(this, "permission denied to read module source from " + location);
                 }
