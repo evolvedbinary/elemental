@@ -43,7 +43,7 @@ import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -166,7 +166,7 @@ public class RunningXQueryTest {
                 xqueryContext.declareVariable(new QName(RUNNING_LATCH_REF_XQUERY_VARIABLE_NAME), true, this.queryRunningLatchRef);
                 xqueryContext.declareVariable(new QName(EXIT_LATCH_REF_XQUERY_VARIABLE_NAME), true, this.queryExitLatchRef);
 
-                final Source querySource = new DBSource(broker, (BinaryDocument) lockedQuerySourceDocumentRef.get().getDocument(), true);
+                final Source querySource = DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), lockedQuerySourceDocumentRef.get().getDocument(), true, false);
                 compiledQuery = xquery.compile(xqueryContext, querySource);
 
                 final Sequence result = xquery.execute(broker, compiledQuery, null);

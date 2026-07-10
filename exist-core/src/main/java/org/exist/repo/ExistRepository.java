@@ -48,13 +48,16 @@ package org.exist.repo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolService;
 import org.exist.storage.BrokerPoolServiceException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.NativeBroker;
+import org.exist.storage.lock.Lock;
 import org.exist.util.Configuration;
 import org.exist.util.FileUtils;
 import org.exist.xmldb.XmldbURI;
@@ -70,7 +73,6 @@ import org.expath.pkg.repo.Packages;
 import org.expath.pkg.repo.PackageException;
 import org.expath.pkg.repo.Repository;
 import org.expath.pkg.repo.URISpace;
-import org.w3c.dom.Document;
 
 import javax.annotation.Nullable;
 import javax.xml.transform.Source;
@@ -323,16 +325,24 @@ public class ExistRepository extends Observable implements BrokerPoolService {
 
         // 1. attempt to locate it within a library
         XmldbURI xqueryDbPath = XmldbURI.create("xmldb:exist:///db/system/repo/" + relXQueryPath);
-        @Nullable Document doc = broker.getXMLResource(xqueryDbPath);
-        if (doc != null && doc instanceof BinaryDocument) {
-            return new DBSource(broker.getBrokerPool(), (BinaryDocument) doc, false);
+        try (@Nullable final LockedDocument lockedDoc = broker.getXMLResource(xqueryDbPath, Lock.LockMode.READ_LOCK)) {
+            if (lockedDoc != null) {
+                final DocumentImpl doc = lockedDoc.getDocument();
+                if (doc instanceof BinaryDocument) {
+                    return DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), doc, false, false);
+                }
+            }
         }
 
         // 2. attempt to locate it within an app
         xqueryDbPath = XmldbURI.create("xmldb:exist:///db/apps/" + relXQueryPath);
-        doc = broker.getXMLResource(xqueryDbPath);
-        if (doc != null && doc instanceof BinaryDocument) {
-            return new DBSource(broker.getBrokerPool(), (BinaryDocument) doc, false);
+        try (@Nullable LockedDocument lockedDoc = broker.getXMLResource(xqueryDbPath, Lock.LockMode.READ_LOCK)) {
+            if (lockedDoc != null) {
+                final DocumentImpl doc = lockedDoc.getDocument();
+                if (doc instanceof BinaryDocument) {
+                    return DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), doc, false, false);
+                }
+            }
         }
 
         return null;

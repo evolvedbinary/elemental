@@ -48,15 +48,13 @@ package org.exist.http;
 import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.LockedDocument;
+import org.exist.EXistException;
+import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
-import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -67,7 +65,7 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
-import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -116,50 +114,29 @@ public class AuditTrailSessionListener implements HttpSessionListener {
         if (xqueryResourcePath != null && xqueryResourcePath.length() > 0) {
             xqueryResourcePath = xqueryResourcePath.trim();
 
-            @Nullable Source source;
-
             try {
                 final BrokerPool pool = BrokerPool.getInstance();
-                final XQueryPool xqpool = pool.getXQueryPool();
-
                 final Subject sysSubject = pool.getSecurityManager().getSystemSubject();
 
-                try (final DBBroker broker = pool.get(Optional.of(sysSubject))) {
-                    if (broker == null) {
-                        LOG.error("Unable to retrieve DBBroker for {}", sysSubject.getName());
-                        return;
-                    }
+                final XmldbURI pathUri = XmldbURI.create(xqueryResourcePath);
+                final Source source = DbUriSource.from(pool, sysSubject, pathUri, true, false);
+    
+                final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                    xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{pathUri});
+                    xqueryContext.setBaseURI(new AnyURIValue(pathUri.toString()));
+                };
 
-                    final XmldbURI pathUri = XmldbURI.create(xqueryResourcePath);
+                final Properties outputProperties = new Properties();
+                try (final DBBroker broker = pool.get(Optional.of(sysSubject));
+                     final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null)) {
 
-                    try (final LockedDocument lockedResource = broker.getXMLResource(pathUri, LockMode.READ_LOCK)) {
-
-                        if (lockedResource != null) {
-                            if (LOG.isTraceEnabled()) {
-                                LOG.trace("Resource [{}] exists.", xqueryResourcePath);
-                            }
-                            source = new DBSource(pool, (BinaryDocument) lockedResource.getDocument(), true);
-                        } else {
-                            LOG.error("Resource [{}] does not exist.", xqueryResourcePath);
-                            return;
-                        }
-
-                        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
-                            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{pathUri});
-                            xqueryContext.setBaseURI(new AnyURIValue(pathUri.toString()));
-                        };
-
-                        final Properties outputProperties = new Properties();
-                        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null)) {
-
-                            if (LOG.isTraceEnabled()) {
-                                LOG.trace("XQuery execution results: {} in {}ms.", queryResult.result.toString(), queryResult.executionTime);
-                            }
-                        }
+                    if (LOG.isTraceEnabled()) {
+                        LOG.trace("XQuery execution results: {} in {}ms.", queryResult.result.toString(), queryResult.executionTime);
                     }
                 }
-
-            } catch (final Exception e) {
+            } catch (final DbUriSource.NoSuchDocumentException e) {
+                LOG.error("Resource [{}] does not exist.", xqueryResourcePath);
+            } catch (final EXistException | PermissionDeniedException | XPathException | IOException e) {
                 LOG.error("Exception while executing [{}] script", xqueryResourcePath, e);
             }
         }

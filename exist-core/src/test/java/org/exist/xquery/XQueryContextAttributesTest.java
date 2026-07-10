@@ -37,7 +37,7 @@ import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -78,7 +78,7 @@ public class XQueryContextAttributesTest {
 
             final XmldbURI mainQueryUri = XmldbURI.create("/db/query1.xq");
             final InputSource mainQuery = new StringInputSource("<not-important/>".getBytes(UTF_8));
-            final DBSource mainQuerySource = storeQuery(broker, transaction, mainQueryUri, mainQuery);
+            final DbUriSource mainQuerySource = storeQuery(broker, transaction, mainQueryUri, mainQuery);
 
             final XQueryContext escapedMainQueryContext = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
                 final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
@@ -120,7 +120,7 @@ public class XQueryContextAttributesTest {
                     ("import module namespace mod1 = 'http://mod1' at 'xmldb:exist://" + libraryQueryUri + "';\n" +
                     "mod1:f1()").getBytes(UTF_8)
             );
-            final DBSource mainQuerySource = storeQuery(broker, transaction, mainQueryUri, mainQuery);
+            final DbUriSource mainQuerySource = storeQuery(broker, transaction, mainQueryUri, mainQuery);
 
             final Tuple2<XQueryContext, ModuleContext> escapedContexts = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
                 final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
@@ -160,13 +160,12 @@ public class XQueryContextAttributesTest {
         }
     }
 
-    private static DBSource storeQuery(final DBBroker broker, final Txn transaction, final XmldbURI uri, final InputSource source) throws IOException, PermissionDeniedException, SAXException, LockException, EXistException {
+    private static DbUriSource storeQuery(final DBBroker broker, final Txn transaction, final XmldbURI uri, final InputSource source) throws IOException, PermissionDeniedException, SAXException, LockException, EXistException {
         try (final Collection collection = broker.openCollection(uri.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
             final MediaType xqueryMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
             broker.storeDocument(transaction, uri.lastSegment(), source, xqueryMediaType, collection);
             final BinaryDocument doc = (BinaryDocument) collection.getDocument(broker, uri.lastSegment());
-
-            return new DBSource(broker.getBrokerPool(), doc, false);
+            return DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), doc, false, false);
         }
     }
 }

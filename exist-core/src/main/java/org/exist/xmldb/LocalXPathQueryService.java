@@ -55,6 +55,7 @@ import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
@@ -416,8 +417,8 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             context.setModuleLoadPath(moduleLoadPath);
         } else if (source != null) {
             String modulePath = null;
-            if (source instanceof DBSource) {
-                modulePath = ((DBSource) source).getDocumentPath().removeLastSegment().toString();
+            if (source instanceof DbStoreSource) {
+                modulePath = ((DbStoreSource) source).getDocumentPath().removeLastSegment().toString();
             } else if (source instanceof FileSource) {
                 modulePath = ((FileSource) source).getPath().getParent().toString();
             }
