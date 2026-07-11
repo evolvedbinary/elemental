@@ -185,7 +185,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     private EXistResourceSet doQuery(final DBBroker broker, final Txn transaction, final String query, final XmldbURI[] docs, final Sequence contextSet, final String sortExpr) throws XMLDBException {
-        final Either<XPathException, CompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
+        final Either<XPathException, LocalCompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
         if(maybeExpr.isLeft()) {
             final XPathException e = maybeExpr.left().get();
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -272,6 +272,9 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     @Override
     public EXistResourceSet executeStoredQuery(final String uri) throws XMLDBException {
         return withDb((broker, transaction) -> {
+
+            final Either<XPathException, LocalCompiledExpression> maybeExpr;
+
             try (final LockedDocument lockedResource = broker.getXMLResource(new XmldbURI(uri), LockMode.READ_LOCK)) {
                 if (lockedResource == null) {
                     throw new XMLDBException(ErrorCodes.INVALID_URI, "No stored XQuery exists at: " + uri);
@@ -282,8 +285,15 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 }
 
                 final Source dbSource = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, false);
+                maybeExpr = compileAndCheck(broker, transaction, dbSource);
+            }
 
-                return execute(broker, transaction, dbSource);
+            // NOTE(AR) query is now compiled so we can release the LockedDocument eagerly above
+            if (maybeExpr.isLeft()) {
+                final XPathException e = maybeExpr.left().get();
+                throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+            } else {
+                return execute(broker, transaction, null, null, maybeExpr.right().get(), null);
             }
         });
     }
@@ -344,7 +354,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     @Override
     public CompiledExpression compile(final String query) throws XMLDBException {
         return withDb((broker, transaction) -> {
-            final Either<XPathException, CompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
+            final Either<XPathException, LocalCompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
             if(maybeExpr.isLeft()) {
                 final XPathException e = maybeExpr.left().get();
                 throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -356,7 +366,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 
     @Override
     public CompiledExpression compileAndCheck(final String query) throws XMLDBException, XPathException {
-    	final Either<XPathException, CompiledExpression> result = withDb((broker, transaction) -> compileAndCheck(broker, transaction, query));
+    	final Either<XPathException, LocalCompiledExpression> result = withDb((broker, transaction) -> compileAndCheck(broker, transaction, query));
         if(result.isLeft()) {
             throw result.left().get();
         } else {
@@ -364,10 +374,12 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         }
     }
 
-    private Either<XPathException, CompiledExpression> compileAndCheck(final DBBroker broker, final Txn transaction, final String query) throws XMLDBException {
-
+    private Either<XPathException, LocalCompiledExpression> compileAndCheck(final DBBroker broker, final Txn transaction, final String query) throws XMLDBException {
         final Source source = new StringSource(query);
+        return compileAndCheck(broker, transaction, source);
+    }
 
+    private Either<XPathException, LocalCompiledExpression> compileAndCheck(final DBBroker broker, final Txn transaction, final Source source) throws XMLDBException {
         final ConsumerE<XQueryContext, XPathException> preCompilationContext = xqueryContext -> setupContext(source, xqueryContext);
 
         try {
@@ -376,7 +388,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 LOG.debug("Compilation took {}ms", compilationResult.compilationTime);
             }
 
-            final CompiledExpression compiledExpression = new LocalCompiledExpression(compilationResult);
+            final LocalCompiledExpression compiledExpression = new LocalCompiledExpression(compilationResult);
             return Either.Right(compiledExpression);
         } catch (final PermissionDeniedException e) {
             throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, e.getMessage(), e);
