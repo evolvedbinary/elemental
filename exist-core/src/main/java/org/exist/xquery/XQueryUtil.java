@@ -31,6 +31,7 @@ import org.exist.xquery.value.Sequence;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Properties;
 
 /**
@@ -215,9 +216,10 @@ public class XQueryUtil {
          */
         public static final int RETRIEVED_CACHED_COMPILED_QUERY = -1;
 
-        private final Source source;
+        public final Source source;
         private @Nullable final XQueryPool xqueryPool;
-        private final CompiledXQuery compiledXquery;
+        // NOTE(AR) package-private so that we can access it from tests
+        final CompiledXQuery compiledXquery;
         private final XQueryContext xqueryContext;
         private boolean closed = false;
 
@@ -248,6 +250,21 @@ public class XQueryUtil {
             closed = true;
         }
 
+        /**
+         * Should only be called from the XML:DB API for CompiledExpression.
+         *
+         * @param writer the output destination.
+         */
+        public void dump(final Writer writer) {
+            compiledXquery.dump(writer);
+        }
+
+        /**
+         * Should only be called from the XML:DB API for CompiledExpression.
+         */
+        public void reset() {
+            compiledXquery.reset();
+        }
     }
 
     public static class QueryResult implements AutoCloseable {
@@ -260,8 +277,8 @@ public class XQueryUtil {
         public final long compilationTime;
         public final long executionTime;
         public final Sequence result;
-        
-        public QueryResult(final Source source, @Nullable final XQueryPool xqueryPool, @Nullable final CompiledXQuery compiledXquery, final XQueryContext xqueryContext, final long compilationTime, final long executionTime, final Sequence result) {
+
+        private QueryResult(final Source source, @Nullable final XQueryPool xqueryPool, @Nullable final CompiledXQuery compiledXquery, final XQueryContext xqueryContext, final long compilationTime, final long executionTime, final Sequence result) {
             this.source = source;
             this.xqueryPool = xqueryPool;
             this.compiledXquery = compiledXquery;

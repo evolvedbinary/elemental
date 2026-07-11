@@ -1282,6 +1282,7 @@
                                 <include>src/main/java/org/exist/xquery/ArrowOperator.java</include>
                                 <include>src/test/java/org/exist/xquery/CardinalityTest.java</include>
                                 <include>src/test/java/org/exist/xquery/CleanupTest.java</include>
+                                <include>src/main/java/org/exist/xquery/CompiledXQuery.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</include>
                                 <include>src/test/java/org/exist/xquery/ConstructedNodesTest.java</include>
                                 <include>src/main/java/org/exist/xquery/Context.java</include>
@@ -1498,6 +1499,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/util/Base64FunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/util/BaseConverterTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/util/CollectionName.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/util/EvalTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/util/ExpandTest.java</include>
@@ -2130,6 +2132,7 @@
                                 <exclude>src/main/java/org/exist/xmldb/LocalBinaryResource.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalCollection.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/LocalCollectionTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmldb/LocalCompiledExpression.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalResourceSet.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalRestoreService.java</exclude>
                                 <exclude>src/main/java/org/exist/xmldb/LocalXMLResource.java</exclude>
@@ -2205,6 +2208,7 @@
                                 <exclude>src/test/java/org/exist/xquery/CardinalityTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CastExpressionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/CleanupTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/CompiledXQuery.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesRecoveryTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/ConstructedNodesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/Context.java</exclude>
@@ -2446,6 +2450,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/util/Base64FunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/util/BaseConverterTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/BuiltinFunctions.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/util/CollectionName.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/DescribeFunction.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/util/Eval.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/util/EvalTest.java</exclude>
@@ -2740,6 +2745,7 @@ The original license statement is also included below.]]></preamble>
                                 <include>src/main/java/org/exist/security/internal/aider/ImmutableUnixStylePermissionAider.java</include>
                                 <include>src/main/java/org/exist/source/DbStoreSource.java</include>
                                 <include>src/main/java/org/exist/source/DbUriSource.java</include>
+                                <include>src/main/java/org/exist/xmldb/LocalCompiledExpression.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryRestTest.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryTest.java</include>
                                 <include>src/test/java/org/exist/xquery/RunningXQueryXmlDbTest.java</include>

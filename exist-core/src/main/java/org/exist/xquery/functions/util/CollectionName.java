@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -36,14 +60,11 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.FunctionReturnSequenceType;
 import org.exist.xquery.value.Item;
-import org.exist.xquery.value.JavaObjectValue;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.XMLDBException;
 
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
@@ -69,9 +90,7 @@ public class CollectionName extends BasicFunction {
 		super(context, signature);
 	}
 	
-	/* (non-Javadoc)
-	 * @see org.exist.xquery.BasicFunction#eval(org.exist.xquery.value.Sequence[], org.exist.xquery.value.Sequence)
-	 */
+	@Override
 	public Sequence eval(Sequence[] args, Sequence contextSequence)
 		throws XPathException {
 		
@@ -79,16 +98,7 @@ public class CollectionName extends BasicFunction {
 	        return Sequence.EMPTY_SEQUENCE;
 	    }
 		final Item item = args[0].itemAt(0);
-		if(item.getType() == Type.JAVA_OBJECT) {
-			final Object o = ((JavaObjectValue) item).getObject();
-            if (!(o instanceof Collection collection))
-                {throw new XPathException(this, "Passed Java object should be of type org.xmldb.api.base.Collection");}
-            try {
-				return new StringValue(this, collection.getName());
-			} catch (final XMLDBException e) {
-				throw new XPathException(this, "Failed to retrieve collection name", e);
-			}
-        } else if (Type.subTypeOf(item.getType(), Type.STRING)) {
+		if (Type.subTypeOf(item.getType(), Type.STRING)) {
             final String path = item.getStringValue();
             try {
                 final XmldbURI uri = XmldbURI.xmldbUriFor(path).removeLastSegment();
@@ -103,10 +113,9 @@ public class CollectionName extends BasicFunction {
 				//TODO: use xmldbUri
 				return new StringValue(this, p.getOwnerDocument().getCollection().getURI().toString());
 			}
-		} else
-			{throw new XPathException(this, "First argument to util:collection-name should be either " +
-				"a Java object of type org.xmldb.api.base.Collection or a node; got: " + 
-				Type.getTypeName(item.getType()));}
+		} else {
+			throw new XPathException(this, "First argument to util:collection-name should be either a node() or xs:string type; got: " + Type.getTypeName(item.getType()));
+		}
 		return Sequence.EMPTY_SEQUENCE;
 	}
 
