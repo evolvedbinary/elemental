@@ -1389,7 +1389,7 @@ public class RESTServer {
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
                 // special header to indicate that the query is not returned from cache
-                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found {} in {}ms.", queryResult.result.getItemCount(), queryResult.executionTime);
@@ -1604,7 +1604,7 @@ public class RESTServer {
         try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
             // Special header to indicate whether the compiled query is returned from the cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
             final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
             writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, wrap);
@@ -1663,7 +1663,7 @@ public class RESTServer {
         try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
             // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
             writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, false);
         } catch (final IOException e) {

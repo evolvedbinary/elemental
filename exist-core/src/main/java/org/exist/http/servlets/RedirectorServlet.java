@@ -302,7 +302,7 @@ public class RedirectorServlet extends AbstractExistHttpServlet {
             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, null, null);
 
             // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
             return queryResult;
         }

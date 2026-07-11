@@ -32,7 +32,7 @@
  */
 package org.exist.xquery.modules.sql;
 
-import com.evolvedbinary.j8fu.tuple.Tuple2;
+import com.evolvedbinary.j8fu.function.BiConsumerE;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
@@ -43,6 +43,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.Holder;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
@@ -69,10 +70,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.exist.xquery.XQueryUtil.executeQuery;
-import static org.exist.xquery.XQueryUtil.withCompiledQuery;
 import static org.junit.Assert.*;
 
 /**
@@ -125,25 +123,28 @@ public class JndiConnectionIT {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final XQueryContext escapedMainQueryContext = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
+            // will hold the number of open connections once the query has finished executing
+            final Holder<Integer> connectionsCountHolder = new Holder<>();
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> postExecutionContext = (xqueryContext, result) -> {
+                final int connectionsCount = ModuleUtils.readContextMap(xqueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
+                connectionsCountHolder.value = connectionsCount;
+            };
 
-                // execute the query
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
-
+            // execute query
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, postExecutionContext)) {
                 // check that the handle for the sql connection that was created was valid
+                final Sequence result = queryResult.result;
                 assertEquals(1, result.getItemCount());
                 assertTrue(result.itemAt(0) instanceof IntegerValue);
                 assertEquals(Type.LONG, result.itemAt(0).getType());
+
+                // check there is an active connection
                 final long connectionHandle = result.itemAt(0).toJavaObject(long.class);
-                assertFalse(connectionHandle == 0);
+                assertNotEquals(0, connectionHandle);
+            }
 
-                return mainQueryContext;
-            });
-
-            // check the connections map is empty
-            final int connectionsCount = ModuleUtils.readContextMap(escapedMainQueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
-            assertEquals(0, connectionsCount);
+            // now the query has finished executing and been reset, check the connections map is empty
+            assertEquals(0, connectionsCountHolder.value.intValue());
 
             transaction.commit();
         }
@@ -173,42 +174,41 @@ public class JndiConnectionIT {
                 broker.storeDocument(transaction, XmldbURI.create("mymodule.xqm"), new StringInputSource(moduleQuery.getBytes(UTF_8)), xqueryMediaType, collection);
             }
 
-            final Tuple2<XQueryContext, ModuleContext> escapedContexts = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
+            // will hold the number of open connections in the Main Module once the query has finished executing
+            final Holder<Integer> mainModuleConnectionsCountHolder = new Holder<>();
+            // will hold the number of open connections in the Library Module once the query has finished executing
+            final Holder<Integer> libraryModuleConnectionsCountHolder = new Holder<>();
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> postExecutionContext = (mainModuleXqueryContext, result) -> {
+                final int mainModuleConnectionsCount = ModuleUtils.readContextMap(mainModuleXqueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
+                mainModuleConnectionsCountHolder.value = mainModuleConnectionsCount;
 
-                // get the context of the library module
-                final Module[] libraryModules = mainQueryContext.getModules("http://mymodule.com");
-                assertEquals(1, libraryModules.length);
-                assertTrue(libraryModules[0] instanceof ExternalModule);
+                final Module[] libraryModules = mainModuleXqueryContext.getModules("http://mymodule.com");
                 final ExternalModule libraryModule = (ExternalModule) libraryModules[0];
-                final XQueryContext libraryQueryContext = libraryModule.getContext();
-                assertTrue(libraryQueryContext instanceof ModuleContext);
+                final XQueryContext libraryModuleXqueryContext = libraryModule.getContext();
+                final int libraryModuleConnectionsCount = ModuleUtils.readContextMap(libraryModuleXqueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
+                libraryModuleConnectionsCountHolder.value = libraryModuleConnectionsCount;
+            };
 
-                // execute the query
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
+
+            // execute query
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, postExecutionContext)) {
 
                 // check that the handle for the sql connection that was created was valid
+                final Sequence result = queryResult.result;
                 assertEquals(1, result.getItemCount());
                 assertTrue(result.itemAt(0) instanceof IntegerValue);
                 assertEquals(Type.LONG, result.itemAt(0).getType());
+
+                // check there is an active connection
                 final long connectionHandle = result.itemAt(0).toJavaObject(long.class);
-                assertFalse(connectionHandle == 0);
+                assertNotEquals(0, connectionHandle);
+            }
 
-                // intentionally escape the contexts from the lambda
-                return Tuple(mainQueryContext, (ModuleContext) libraryQueryContext);
-            });
+            // now the query has finished executing and been reset, check the connections map is empty for the Main Module
+            assertEquals(0, mainModuleConnectionsCountHolder.value.intValue());
 
-            final XQueryContext escapedMainQueryContext = escapedContexts._1;
-            final ModuleContext escapedLibraryQueryContext = escapedContexts._2;
-            assertTrue(escapedMainQueryContext != escapedLibraryQueryContext);
-
-            // check the connections were closed in the main module
-            final int mainConnectionsCount = ModuleUtils.readContextMap(escapedMainQueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
-            assertEquals(0, mainConnectionsCount);
-
-            // check the connections were closed in the library module
-            final int libraryConnectionsCount = ModuleUtils.readContextMap(escapedLibraryQueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
-            assertEquals(0, libraryConnectionsCount);
+            // now the query has finished executing and been reset, check the connections map is empty for the Library Module
+            assertEquals(0, libraryModuleConnectionsCountHolder.value.intValue());
 
             transaction.commit();
         }
