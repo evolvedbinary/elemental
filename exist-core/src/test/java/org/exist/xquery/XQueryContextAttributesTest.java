@@ -32,7 +32,8 @@
  */
 package org.exist.xquery;
 
-import com.evolvedbinary.j8fu.tuple.Tuple2;
+import com.evolvedbinary.j8fu.function.BiConsumerE;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.BinaryDocument;
@@ -43,6 +44,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.Holder;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
@@ -57,9 +59,6 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.exist.xquery.XQueryUtil.executeQuery;
-import static org.exist.xquery.XQueryUtil.withCompiledQuery;
 import static org.junit.Assert.*;
 
 /**
@@ -80,23 +79,26 @@ public class XQueryContextAttributesTest {
             final InputSource mainQuery = new StringInputSource("<not-important/>".getBytes(UTF_8));
             final DbUriSource mainQuerySource = storeQuery(broker, transaction, mainQueryUri, mainQuery);
 
-            final XQueryContext escapedMainQueryContext = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
+            // set some attributes on the context before query execution
+            final ConsumerE<XQueryContext, XPathException> preExecutionContext = xQueryContext -> {
+                xQueryContext.setAttribute("attr1", "value1");
+                xQueryContext.setAttribute("attr2", "value2");
+            };
 
-                mainQueryContext.setAttribute("attr1", "value1");
-                mainQueryContext.setAttribute("attr2", "value2");
+            // will hold whether the context attributes is empty once the query has finished executing
+            final Holder<Boolean> attributesIsEmptyHolder = new Holder<>();
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> postExecutionContext = (xqueryContext, result) -> {
+                attributesIsEmptyHolder.value = xqueryContext.attributes.isEmpty();
+            };
 
-                // execute the query
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
+            // execute the query
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, preExecutionContext, postExecutionContext)) {
+                final Sequence result = queryResult.result;
                 assertEquals(1, result.getItemCount());
+            }
 
-                // intentionally escape the context from the lambda
-                return mainQueryContext;
-            });
-
-            assertNull(escapedMainQueryContext.getAttribute("attr1"));
-            assertNull(escapedMainQueryContext.getAttribute("attr2"));
-            assertTrue(escapedMainQueryContext.attributes.isEmpty());
+            // now the query has finished executing and been reset, check the attributes map is empty for the Main Module
+            assertTrue(attributesIsEmptyHolder.value);
 
             transaction.commit();
         }
@@ -122,39 +124,40 @@ public class XQueryContextAttributesTest {
             );
             final DbUriSource mainQuerySource = storeQuery(broker, transaction, mainQueryUri, mainQuery);
 
-            final Tuple2<XQueryContext, ModuleContext> escapedContexts = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
 
-                // get the context of the library module
-                final Module[] libraryModules = mainQueryContext.getModules("http://mod1");
-                assertEquals(1, libraryModules.length);
-                assertTrue(libraryModules[0] instanceof ExternalModule);
+            // set some attributes on the context in the Library Module before query execution
+            final ConsumerE<XQueryContext, XPathException> preExecutionContext = mainModuleXqueryContext -> {
+                final Module[] libraryModules = mainModuleXqueryContext.getModules("http://mod1");
                 final ExternalModule libraryModule = (ExternalModule) libraryModules[0];
-                final XQueryContext libraryQueryContext = libraryModule.getContext();
-                assertTrue(libraryQueryContext instanceof ModuleContext);
+                final XQueryContext libraryModuleXqueryContext = libraryModule.getContext();
+                libraryModuleXqueryContext.setAttribute("attr1", "value1");
+                libraryModuleXqueryContext.setAttribute("attr2", "value2");
+            };
 
-                libraryQueryContext.setAttribute("attr1", "value1");
-                libraryQueryContext.setAttribute("attr2", "value2");
+            // will hold whether the context attributes in the Main Module is empty once the query has finished executing
+            final Holder<Boolean> mainModuleAttributesIsEmptyHolder = new Holder<>();
+            // will hold whether the context attributes in the Library Module is empty once the query has finished executing
+            final Holder<Boolean> libraryModuleAttributesIsEmptyHolder = new Holder<>();
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> postExecutionContext = (mainModuleXqueryContext, result) -> {
+                mainModuleAttributesIsEmptyHolder.value = mainModuleXqueryContext.attributes.isEmpty();
 
-                // execute the query
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
+                final Module[] libraryModules = mainModuleXqueryContext.getModules("http://mod1");
+                final ExternalModule libraryModule = (ExternalModule) libraryModules[0];
+                final XQueryContext libraryModuleXqueryContext = libraryModule.getContext();
+                libraryModuleAttributesIsEmptyHolder.value = libraryModuleXqueryContext.attributes.isEmpty();
+            };
+
+            // execute the query
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, preExecutionContext, postExecutionContext)) {
+                final Sequence result = queryResult.result;
                 assertEquals(1, result.getItemCount());
+            }
 
-                // intentionally escape the contexts from the lambda
-                return Tuple(mainQueryContext, (ModuleContext) libraryQueryContext);
-            });
+            // now the query has finished executing and been reset, check the attributes map is empty for the Main Module
+            assertTrue(mainModuleAttributesIsEmptyHolder.value);
 
-            final XQueryContext escapedMainQueryContext = escapedContexts._1;
-            final ModuleContext escapedLibraryQueryContext = escapedContexts._2;
-            assertTrue(escapedMainQueryContext != escapedLibraryQueryContext);
-
-            assertNull(escapedMainQueryContext.getAttribute("attr1"));
-            assertNull(escapedMainQueryContext.getAttribute("attr2"));
-            assertTrue(escapedMainQueryContext.attributes.isEmpty());
-
-            assertNull(escapedLibraryQueryContext.getAttribute("attr1"));
-            assertNull(escapedLibraryQueryContext.getAttribute("attr2"));
-            assertTrue(escapedLibraryQueryContext.attributes.isEmpty());
+            // now the query has finished executing and been reset, check the attributes map is empty for the Library Module
+            assertTrue(libraryModuleAttributesIsEmptyHolder.value);
 
             transaction.commit();
         }

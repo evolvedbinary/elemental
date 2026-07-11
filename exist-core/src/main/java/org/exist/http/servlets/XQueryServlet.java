@@ -508,7 +508,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, null, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
                 // special header to indicate that the query is not returned from cache
-                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
                 final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
                 if (mediaType != null) {
