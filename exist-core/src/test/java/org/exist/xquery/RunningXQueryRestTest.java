@@ -224,7 +224,7 @@ public class RunningXQueryRestTest {
      * We try and read the XQuery source document under those conditions, and the read should succeed.
      */
     @Test
-    public void readRunningXQuerySourceDocument() throws InterruptedException, ExecutionException, TimeoutException, XPathException {
+    public void readRunningXQuerySourceDocument() throws InterruptedException, ExecutionException, TimeoutException {
         // Prepare a Callable that will try and read the XQuery's source document
         final Callable<String> readDocumentCallable = () -> {
 
@@ -263,36 +263,47 @@ public class RunningXQueryRestTest {
 
     /**
      * When this test is run, the /db/running-xquery-test/latched-query.xq XQuery
-     * is already executing (see {@link #runXQuery()}) in a separate thread that holds a READ_LOCK on its Source document.
+     * is already executing (see {@link #runXQuery()}) in a separate thread,
+     * that should have released the READ_LOCK on its Source document after query compilation.
      *
-     * We try and replace the XQuery source document under those conditions, which should not be possible
-     * as writing to the document would require a WRITE_LOCK, but a READ_LOCK is already held.
+     * We try and replace the XQuery source document under those conditions, which should be possible
+     * as no lock is held on the source document after compilation.
      */
     @Test
-    public void replaceRunningXQuerySourceDocument() throws InterruptedException {
+    public void replaceRunningXQuerySourceDocument() throws InterruptedException, ExecutionException, TimeoutException {
         // Prepare a Callable that will try and replace the XQuery's source document
-        final Callable<Boolean> replaceDocumentCallable = () -> {
+        final Callable<Integer> replaceDocumentCallable = () -> {
 
-            final String replacementQuery = "<replaced/>";
+            try {
+                final String replacementQuery = "<replaced/>";
 
-            final HttpResponse storeResponse = executor.execute(
-                    Request
-                            .Put(docUri)
-                            .addHeader("Content-Type", MediaType.APPLICATION_XQUERY)
-                            .bodyByteArray(replacementQuery.getBytes(UTF_8))
-            ).returnResponse();
+                final HttpResponse storeResponse = executor.execute(
+                        Request
+                                .Put(docUri)
+                                .addHeader("Content-Type", MediaType.APPLICATION_XQUERY)
+                                .bodyByteArray(replacementQuery.getBytes(UTF_8))
+                ).returnResponse();
 
-            // NOTE(AR) It should not have been possible to get to this point as we should not be able to acquire a WRITE_LOCK lock on the document (above) when calling broker.storeDocument, as the query thread holds a READ_LOCK on the document
+                return storeResponse.getStatusLine().getStatusCode();
 
-            return SC_CREATED == storeResponse.getStatusLine().getStatusCode();
+            } finally {
+                // Instruct the running XQuery to finish
+                @Nullable final CountDownLatch exitLatch = LatchWrappersSingleton.INSTANCE.queryExitLatchRef.get();
+                assertNotNull("exitLatch should not be null at this point", exitLatch);
+                exitLatch.countDown();
+            }
         };
 
         // Run the replaceDocumentCallable from a separate thread so that we don't block our test
-        final Future<Boolean> replacedDocumentFuture = executorService.submit(replaceDocumentCallable);
-        assertThrows(
-                "We should not have been able to replace the document as that requires this thread to obtain a WRITE_LOCK on the document, but the query thread already holds a READ_LOCK on the document",
-                TimeoutException.class, () ->
-                        replacedDocumentFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        );
+        final Future<Integer> replacedDocumentFuture = executorService.submit(replaceDocumentCallable);
+        final Integer replaceDocumentStatus = replacedDocumentFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertEquals(SC_CREATED, replaceDocumentStatus.intValue());
+
+        // Check the results of the query
+        final byte[] queryResult = queryResultFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertNotNull(queryResult);
+        final String queryResultStr = new String(queryResult, UTF_8);
+        assertTrue(queryResultStr.startsWith("<elapsed-time exit-latch-zero=\"true\">PT"));
+        assertTrue(queryResultStr.endsWith("</elapsed-time>"));
     }
 }
