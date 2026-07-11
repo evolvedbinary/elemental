@@ -73,7 +73,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -264,36 +263,47 @@ public class RunningXQueryXmlDbTest {
 
     /**
      * When this test is run, the /db/running-xquery-test/latched-query.xq XQuery
-     * is already executing (see {@link #runXQuery()}) in a separate thread that holds a READ_LOCK on its Source document.
+     * is already executing (see {@link #runXQuery()}) in a separate thread,
+     * that should have released the READ_LOCK on its Source document after query compilation.
      *
-     * We try and replace the XQuery source document under those conditions, which should not be possible
-     * as writing to the document would require a WRITE_LOCK, but a READ_LOCK is already held.
+     * We try and replace the XQuery source document under those conditions, which should be possible
+     * as no lock is held on the source document after compilation.
      */
     @Test
-    public void replaceRunningXQuerySourceDocument() {
+    public void replaceRunningXQuerySourceDocument() throws ExecutionException, InterruptedException, TimeoutException {
         // Prepare a Callable that will try and replace the XQuery's source document
         final Callable<Boolean> replaceDocumentCallable = () -> {
 
-            final String replacementQuery = "<replaced/>";
+            try {
+                final String replacementQuery = "<replaced/>";
 
-            try (final Collection testCollection = DatabaseManager.getCollection(getBaseUri() + TEST_COLLECTION_URI.getCollectionPath(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-                 final EXistResource queryResource = (EXistResource) testCollection.getResource(LATCHED_QUERY_URI.getCollectionPath())) {
-                queryResource.setMediaType(MediaType.APPLICATION_XQUERY);
-                queryResource.setContent(replacementQuery.getBytes(UTF_8));
-                testCollection.storeResource(queryResource);
+                try (final Collection testCollection = DatabaseManager.getCollection(getBaseUri() + TEST_COLLECTION_URI.getCollectionPath(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
+                     final EXistResource queryResource = (EXistResource) testCollection.getResource(LATCHED_QUERY_URI.getCollectionPath())) {
+                    queryResource.setMediaType(MediaType.APPLICATION_XQUERY);
+                    queryResource.setContent(replacementQuery.getBytes(UTF_8));
+                    testCollection.storeResource(queryResource);
+                }
+
+                return true;
+
+            } finally {
+                // Instruct the running XQuery to finish
+                @Nullable final CountDownLatch exitLatch = LatchWrappersSingleton.INSTANCE.queryExitLatchRef.get();
+                assertNotNull("exitLatch should not be null at this point", exitLatch);
+                exitLatch.countDown();
             }
-
-            // NOTE(AR) It should not have been possible to get to this point as we should not be able to acquire a WRITE_LOCK lock on the document (above) when calling broker.storeDocument, as the query thread holds a READ_LOCK on the document
-
-            return true;
         };
 
         // Run the replaceDocumentCallable from a separate thread so that we don't block our test
         final Future<Boolean> replacedDocumentFuture = executorService.submit(replaceDocumentCallable);
-        assertThrows(
-                "We should not have been able to replace the document as that requires this thread to obtain a WRITE_LOCK on the document, but the query thread already holds a READ_LOCK on the document",
-                TimeoutException.class, () ->
-                        replacedDocumentFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        );
+        final Boolean replaceDocumentStatus = replacedDocumentFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertTrue(replaceDocumentStatus);
+
+        // Check the results of the query
+        // Check the results of the query
+        final String queryResult = queryResultFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertNotNull(queryResult);
+        assertTrue(queryResult.startsWith("<elapsed-time exit-latch-zero=\"true\">PT"));
+        assertTrue(queryResult.endsWith("</elapsed-time>"));
     }
 }

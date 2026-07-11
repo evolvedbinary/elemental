@@ -151,6 +151,8 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.xmldb.EXistXPathQueryService.BEGIN_PROTECTED_MAX_LOCKING_RETRIES;
 import static java.nio.file.StandardOpenOption.*;
 
+// TODO(AR) this class leaks resources from the XQueryPool and XQueryContext not being cleaned up correctly, switch to XQueryUtil for compilation/execution
+
 /**
  * This class implements the actual methods defined by
  * {@link org.exist.xmlrpc.RpcAPI}.
@@ -2159,22 +2161,31 @@ public class RpcConnection implements RpcAPI {
 
         final Optional<String> sortBy = Optional.ofNullable(parameters.get(RpcAPI.SORT_EXPR)).map(Object::toString);
 
-        return this.<Map<String, Object>>readDocument(XmldbURI.createInternal(pathToQuery)).apply((document, broker, transaction) -> {
-            final BinaryDocument xquery = (BinaryDocument) document;
-            if (xquery.getResourceType() != DocumentImpl.BINARY_FILE) {
-                throw new EXistException("Document " + pathToQuery + " is not a binary resource");
-            }
+        return withDb((broker, transaction) -> {
 
-            if (!xquery.getPermissions().validate(user, Permission.READ | Permission.EXECUTE)) {
-                throw new PermissionDeniedException("Insufficient privileges to access resource");
-            }
+            final CompiledXQuery compiledXquery = this.<CompiledXQuery>readDocument(broker, transaction, XmldbURI.createInternal(pathToQuery)).apply((document, broker1, transaction1) -> {
+                if (document.getResourceType() != DocumentImpl.BINARY_FILE) {
+                    throw new EXistException("Document " + pathToQuery + " is not a binary resource");
+                }
 
-            final Source source = new DBSource(broker.getBrokerPool(), xquery, true);
+                if (!document.getPermissions().validate(user, Permission.READ | Permission.EXECUTE)) {
+                    throw new PermissionDeniedException("Insufficient privileges to access resource");
+                }
 
+                final Source source = new DBSource(broker1.getBrokerPool(), (BinaryDocument) document, true);
+                try {
+                    return this.<CompiledXQuery>compileQuery(broker1, transaction1, source, parameters).apply(cx -> (CompiledXQuery) cx);
+                } catch (final XPathException e) {
+                    throw new EXistException(e);
+                }
+            });
+
+            // NOTE(AR) query is now compiled so we can release the readDocument lock eagerly above
             try {
-                final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
-                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, getXdmSerializationOptions(compiledQuery.getContext()), doQuery(broker, compiledQuery, null, parameters), sortBy));
-                return rpcResponse;
+                final QueryResult queryResult = doQuery(broker, compiledXquery, null, parameters);
+
+                final Properties xdmSerializationOptions = getXdmSerializationOptions(compiledXquery.getContext());
+                return queryResultToTypedRpcResponse(startTime, xdmSerializationOptions, queryResult, sortBy);
             } catch (final XPathException e) {
                 throw new EXistException(e);
             }
