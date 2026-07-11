@@ -1387,7 +1387,9 @@ public class RESTServer {
             @Nullable final Item contextItem = extractContextItem(contextItemParam);
             final Sequence contextSequence = contextItem != null ? new ValueSequence(contextItem) : null;
 
-            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+            @Nullable XQueryUtil.QueryResult queryResult = null;
+            try {
+                queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution);
 
                 // special header to indicate that the query is not returned from cache
                 response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
@@ -1405,6 +1407,11 @@ public class RESTServer {
                 }
 
                 writeResults(response, broker, transaction, queryResult, howmany, start, typed, outputProperties, wrap);
+            } finally {
+                if (!cache && queryResult != null) {
+                    // NOTE(AR) we can only close the query result if we are not caching it for reuse in the sessionManager, otherwise it has to be closed when it is later removed from the sessionManager
+                    queryResult.close();
+                }
             }
 
         } catch (final IOException e) {
