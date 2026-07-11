@@ -56,6 +56,7 @@ import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
+import org.exist.xmldb.LocalCompiledExpression;
 import org.exist.xquery.value.FunctionReference;
 import org.exist.xquery.value.Sequence;
 import org.junit.After;
@@ -63,7 +64,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.CompiledExpression;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -139,16 +139,20 @@ public class CleanupTest {
     @Test
     public void resetStateOfModuleVars() throws XMLDBException, XPathException {
         final EXistXQueryService service = (EXistXQueryService)collection.getService("XQueryService", "1.0");
-        final CompiledExpression compiled = service.compile(TEST_QUERY);
 
-        final Module[] modules = ((PathExpr) compiled).getContext().getModules(MODULE_NS);
+        final LocalCompiledExpression compiledExpression = (LocalCompiledExpression) service.compile(TEST_QUERY);
+        final XQueryUtil.CompilationResult compilationResult = compiledExpression.getCompilationResult();
+        final CompiledXQuery compiledXquery = compilationResult.compiledXquery;
+
+
+        final Module[] modules = compiledXquery.getContext().getModules(MODULE_NS);
         assertEquals(1, modules.length);
         final Module module = modules[0];
         final java.util.Collection<VariableDeclaration> varDecls = ((ExternalModule) module).getVariableDeclarations();
         final Iterator<VariableDeclaration> vi = varDecls.iterator();
         final VariableDeclaration var1 = vi.next();
         final VariableDeclaration var2 = vi.next();
-        final FunctionCall root = (FunctionCall) ((PathExpr) compiled).getFirst();
+        final FunctionCall root = (FunctionCall) ((PathExpr) compiledXquery).getFirst();
         final UserDefinedFunction calledFunc = root.getFunction();
         final Expression calledBody = calledFunc.getFunctionBody();
 
@@ -159,7 +163,7 @@ public class CleanupTest {
         var2.setContextDocSet(DocumentSet.EMPTY_DOCUMENT_SET);
 
         // execute query and check result
-        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiledExpression)) {
             assertEquals(result.getSize(), 1);
             try (final EXistResource resource = (EXistResource) result.getResource(0)) {
                 assertEquals(resource.getContent(), "Hello world123");
@@ -194,13 +198,17 @@ public class CleanupTest {
         // see https://github.com/eXist-db/exist/pull/1512 and use of util:eval
         final EXistXQueryService service = (EXistXQueryService)collection.getService("XQueryService", "1.0");
 
-        final CompiledExpression compiled = service.compile(INTERNAL_MODULE_EVAL_TEST);
-        final Module[] modules = ((PathExpr) compiled).getContext().getModules(MODULE_NS);
+        final LocalCompiledExpression compiledExpression = (LocalCompiledExpression) service.compile(INTERNAL_MODULE_EVAL_TEST);
+        final XQueryUtil.CompilationResult compilationResult = compiledExpression.getCompilationResult();
+        final CompiledXQuery compiledXquery = compilationResult.compiledXquery;
+
+
+        final Module[] modules = compiledXquery.getContext().getModules(MODULE_NS);
         assertEquals(1, modules.length);
         final Module module = modules[0];
         module.declareVariable(new QName("VAR", MODULE_NS, "t"), "TEST");
 
-        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiledExpression)) {
             assertEquals(result.getSize(), 2);
             try (final EXistResource resource = (EXistResource) result.getResource(1)) {
                 assertEquals(resource.getContent(), "TEST");
@@ -215,15 +223,18 @@ public class CleanupTest {
     public void resetStateofInternalModule() throws XMLDBException, XPathException {
         final EXistXQueryService service = (EXistXQueryService)collection.getService("XQueryService", "1.0");
 
-        final CompiledExpression compiled = service.compile(INTERNAL_MODULE_TEST);
-        final Module[] modules = ((PathExpr) compiled).getContext().getModules(MODULE_NS);
+        final LocalCompiledExpression compiledExpression = (LocalCompiledExpression) service.compile(INTERNAL_MODULE_TEST);
+        final XQueryUtil.CompilationResult compilationResult = compiledExpression.getCompilationResult();
+        final CompiledXQuery compiledXquery = compilationResult.compiledXquery;
+
+        final Module[] modules = compiledXquery.getContext().getModules(MODULE_NS);
         assertEquals(1, modules.length);
         final Module module = modules[0];
         module.declareVariable(new QName("VAR", MODULE_NS, "t"), "TEST");
-        final InternalFunctionCall root = (InternalFunctionCall) ((PathExpr) compiled).getFirst();
+        final InternalFunctionCall root = (InternalFunctionCall) ((PathExpr) compiledXquery).getFirst();
         final TestModule.TestFunction func = (TestModule.TestFunction) root.getFunction();
 
-        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiledExpression)) {
             assertEquals(result.getSize(), 1);
             try (final EXistResource resource = (EXistResource) result.getResource(0)) {
                 assertEquals(resource.getContent(), "TEST");
