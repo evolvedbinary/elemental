@@ -303,6 +303,20 @@ public class XQueryUtil {
             compilationResult.closed = true;
         }
 
+        /**
+         * Get the total time to produce the query result.
+         * This is compilation time (if any) plus the execution time.
+         *
+         * @return total time to produce the query result.
+         */
+        public long totalTime() {
+            if (compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY) {
+                return executionTime;
+            } else {
+                return compilationTime + executionTime;
+            }
+        }
+
         @Override
         public void close() {
             if (closed) {
