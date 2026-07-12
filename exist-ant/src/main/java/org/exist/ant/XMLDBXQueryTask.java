@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,10 +51,14 @@ import org.apache.tools.ant.PropertyHelper;
 import org.exist.source.*;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.ResourceIterator;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 
 import javax.xml.transform.OutputKeys;
@@ -81,9 +109,8 @@ public class XMLDBXQueryTask extends AbstractXMLDBTask {
 
         registerDatabase();
 
-        try {
-            log("Get base collection: " + uri, Project.MSG_DEBUG);
-            final Collection base = DatabaseManager.getCollection(uri, user, password);
+        log("Get base collection: " + uri, Project.MSG_DEBUG);
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
             if (base == null) {
                 final String msg = "Collection " + uri + " could not be found.";
@@ -108,47 +135,57 @@ public class XMLDBXQueryTask extends AbstractXMLDBTask {
                 }
 
                 final Source source;
-                if (queryUri != null) {
-                    log("XQuery url " + queryUri, Project.MSG_DEBUG);
+                EXistResource resource = null;
+                try {
+                    if (queryUri != null) {
+                        log("XQuery url " + queryUri, Project.MSG_DEBUG);
 
-                    if (queryUri.startsWith(XmldbURI.XMLDB_URI_PREFIX)) {
-                        final Resource resource = base.getResource(queryUri);
-                        source = new BinarySource((byte[]) resource.getContent(), true);
+                        if (queryUri.startsWith(XmldbURI.XMLDB_URI_PREFIX)) {
+                            resource = (EXistResource) base.getResource(queryUri);
+                            source = new BinarySource((byte[]) resource.getContent(), true);
+                        } else {
+                            source = new URLSource(new URL(queryUri));
+                        }
+                    } else if (queryFile != null) {
+                        log("XQuery file " + queryFile.getAbsolutePath(), Project.MSG_DEBUG);
+                        source = new FileSource(queryFile.toPath(), true);
                     } else {
-                        source = new URLSource(new URL(queryUri));
-                    }
-                } else if (queryFile != null) {
-                    log("XQuery file " + queryFile.getAbsolutePath(), Project.MSG_DEBUG);
-                    source = new FileSource(queryFile.toPath(), true);
-                } else {
-                    log("XQuery string: " + query, Project.MSG_DEBUG);
-                    source = new StringSource(query);
-                }
-
-                final ResourceSet results = service.execute(source);
-                log("Found " + results.getSize() + " results", Project.MSG_INFO);
-
-                if ((destDir != null) && (results != null)) {
-                    log("write results to directory " + destDir.getAbsolutePath(), Project.MSG_INFO);
-                    final ResourceIterator iter = results.getIterator();
-
-                    log("Writing results to directory " + destDir.getAbsolutePath(), Project.MSG_DEBUG);
-
-                    while (iter.hasMoreResources()) {
-                        final XMLResource res = (XMLResource) iter.nextResource();
-                        log("Writing resource " + res.getId(), Project.MSG_DEBUG);
-                        writeResource(res, destDir);
+                        log("XQuery string: " + query, Project.MSG_DEBUG);
+                        source = new StringSource(query);
                     }
 
-                } else if (outputproperty != null) {
-                    final ResourceIterator iter = results.getIterator();
-                    String result = null;
+                    try (final EXistResourceSet results = service.execute(source)) {
+                        log("Found " + results.getSize() + " results", Project.MSG_INFO);
 
-                    while (iter.hasMoreResources()) {
-                        final XMLResource res = (XMLResource) iter.nextResource();
-                        result = res.getContent().toString();
+                        if ((destDir != null) && (results != null)) {
+                            log("write results to directory " + destDir.getAbsolutePath(), Project.MSG_INFO);
+                            final ResourceIterator iter = results.getIterator();
+
+                            log("Writing results to directory " + destDir.getAbsolutePath(), Project.MSG_DEBUG);
+
+                            while (iter.hasMoreResources()) {
+                                try (final EXistResource res = (EXistResource) iter.nextResource()) {
+                                    log("Writing resource " + res.getId(), Project.MSG_DEBUG);
+                                    writeResource((XMLResource) res, destDir);
+                                }
+                            }
+
+                        } else if (outputproperty != null) {
+                            final ResourceIterator iter = results.getIterator();
+                            String result = null;
+
+                            while (iter.hasMoreResources()) {
+                                try (final EXistResource res = (EXistResource) iter.nextResource()) {
+                                    result = res.getContent().toString();
+                                }
+                            }
+                            getProject().setNewProperty(outputproperty, result);
+                        }
                     }
-                    getProject().setNewProperty(outputproperty, result);
+                } finally {
+                    if (resource != null) {
+                        resource.close();
+                    }
                 }
             }
 

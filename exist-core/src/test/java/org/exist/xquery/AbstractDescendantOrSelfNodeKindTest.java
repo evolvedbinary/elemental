@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,9 +46,10 @@
 package org.exist.xquery;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import static org.junit.Assert.assertEquals;
@@ -50,54 +75,75 @@ public abstract class AbstractDescendantOrSelfNodeKindTest {
         "</doc>";
 
 
-    protected abstract ResourceSet executeQueryOnDoc(final String docQuery) throws XMLDBException;
+    protected abstract EXistResourceSet executeQueryOnDoc(final String docQuery) throws XMLDBException;
 
     @Test
     public void documentNodeCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//document-node())");
-        assertEquals(1, result.getSize());
-        assertEquals(0, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//document-node())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(0, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 
     @Test
     public void nodeCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//node())");
-        assertEquals(1, result.getSize());
-        assertEquals(23, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//node())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(23, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 
     @Test
     public void elementCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//element())");
-        assertEquals(1, result.getSize());
-        assertEquals(7, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//element())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(7, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 
     @Test
     public void textCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//text())");
-        assertEquals(1, result.getSize());
-        assertEquals(14, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//text())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(14, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 
     @Test
     public void attributeCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//attribute())");
-        assertEquals(1, result.getSize());
-        assertEquals(4, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//attribute())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(4, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 
     @Test
     public void commentCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//comment())");
-        assertEquals(1, result.getSize());
-        assertEquals(1, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//comment())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(1, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 
     @Test
     public void processingInstructionCount() throws XMLDBException {
-        final ResourceSet result = executeQueryOnDoc("count($doc//processing-instruction())");
-        assertEquals(1, result.getSize());
-        assertEquals(1, Integer.parseInt((String)result.getResource(0).getContent()));
+        try (final EXistResourceSet result = executeQueryOnDoc("count($doc//processing-instruction())")) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                assertEquals(1, Integer.parseInt((String) resource.getContent()));
+            }
+        }
     }
 }

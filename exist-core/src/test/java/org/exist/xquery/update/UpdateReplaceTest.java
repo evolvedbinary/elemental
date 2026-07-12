@@ -45,10 +45,10 @@
  */
 package org.exist.xquery.update;
 
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.Test;
 import org.w3c.dom.Document;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
@@ -74,26 +74,30 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                         "      update replace $legacy with <AA/>,\n" +
                         "    doc('/db/test/" + testDocName + "')/Test";
 
-        final XQueryService xqueryService = storeXMLStringAndGetQueryService(testDocName, testDoc);
-        final ResourceSet result = xqueryService.query(updateQuery);
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+        storeXMLString(testDocName, testDoc);
+        final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(updateQuery)) {
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        final Resource res1 = result.getResource(0);
-        assertNotNull(res1);
-        assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
-        final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
 
-        final Source actual = Input.fromDocument(doc).build();
-        final Source expected = Input.fromString("<Test><Content><AA/></Content></Test>").build();
+            try (final EXistResource res1 = (EXistResource) result.getResource(0)) {
+                assertNotNull(res1);
+                assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
+                final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
 
-        final Diff diff = DiffBuilder
-                .compare(expected)
-                .withTest(actual)
-                .checkForSimilar()
-                .build();
+                final Source actual = Input.fromDocument(doc).build();
+                final Source expected = Input.fromString("<Test><Content><AA/></Content></Test>").build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+                final Diff diff = DiffBuilder
+                    .compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
+
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 
     @Test
@@ -108,26 +112,29 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                         "      update replace $legacy with <AA/>,\n" +
                         "    doc('/db/test/" + testDocName + "')/Test";
 
-        final XQueryService xqueryService = storeXMLStringAndGetQueryService(testDocName, testDoc);
-        final ResourceSet result = xqueryService.query(updateQuery);
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+        storeXMLString(testDocName, testDoc);
+        final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(updateQuery)) {
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        final Resource res1 = result.getResource(0);
-        assertNotNull(res1);
-        assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
-        final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
+            try (final EXistResource res1 = (EXistResource) result.getResource(0)) {
+                assertNotNull(res1);
+                assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
+                final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
 
-        final Source actual = Input.fromDocument(doc).build();
-        final Source expected = Input.fromString("<Test><Content><AA/><A/></Content></Test>").build();
+                final Source actual = Input.fromDocument(doc).build();
+                final Source expected = Input.fromString("<Test><Content><AA/><A/></Content></Test>").build();
 
-        final Diff diff = DiffBuilder
-                .compare(expected)
-                .withTest(actual)
-                .checkForSimilar()
-                .build();
+                final Diff diff = DiffBuilder
+                    .compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 
     @Test
@@ -142,26 +149,29 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                 "      update replace $legacy with <AA/>,\n" +
                 "    doc('/db/test/" + testDocName + "')/Test";
 
-        final XQueryService xqueryService = storeXMLStringAndGetQueryService(testDocName, testDoc);
-        final ResourceSet result = xqueryService.query(updateQuery);
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+        storeXMLString(testDocName, testDoc);
+        final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(updateQuery)) {
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        final Resource res1 = result.getResource(0);
-        assertNotNull(res1);
-        assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
-        final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
+            try (final EXistResource res1 = (EXistResource) result.getResource(0)) {
+                assertNotNull(res1);
+                assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
+                final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
 
-        final Source actual = Input.fromDocument(doc).build();
-        final Source expected = Input.fromString("<Test><Content Foo='bar'><AA/></Content></Test>").build();
+                final Source actual = Input.fromDocument(doc).build();
+                final Source expected = Input.fromString("<Test><Content Foo='bar'><AA/></Content></Test>").build();
 
-        final Diff diff = DiffBuilder
-                .compare(expected)
-                .withTest(actual)
-                .checkForSimilar()
-                .build();
+                final Diff diff = DiffBuilder
+                    .compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 
     @Test
@@ -176,25 +186,28 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                         "      update replace $legacy with <AA/>,\n" +
                         "    doc('/db/test/" + testDocName + "')/Test";
 
-        final XQueryService xqueryService = storeXMLStringAndGetQueryService(testDocName, testDoc);
-        final ResourceSet result = xqueryService.query(updateQuery);
-        assertNotNull(result);
-        assertEquals(1, result.getSize());
+        storeXMLString(testDocName, testDoc);
+        final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(updateQuery)) {
+            assertNotNull(result);
+            assertEquals(1, result.getSize());
 
-        final Resource res1 = result.getResource(0);
-        assertNotNull(res1);
-        assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
-        final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
+            try (final EXistResource res1 = (EXistResource) result.getResource(0)) {
+                assertNotNull(res1);
+                assertEquals(XMLResource.RESOURCE_TYPE, res1.getResourceType());
+                final Document doc = ((XMLResource) res1).getContentAsDOM().getOwnerDocument();
 
-        final Source actual = Input.fromDocument(doc).build();
-        final Source expected = Input.fromString("<Test><Content Foo='bar'><AA/><A/></Content></Test>").build();
+                final Source actual = Input.fromDocument(doc).build();
+                final Source expected = Input.fromString("<Test><Content Foo='bar'><AA/><A/></Content></Test>").build();
 
-        final Diff diff = DiffBuilder
-                .compare(expected)
-                .withTest(actual)
-                .checkForSimilar()
-                .build();
+                final Diff diff = DiffBuilder
+                    .compare(expected)
+                    .withTest(actual)
+                    .checkForSimilar()
+                    .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.toString(), diff.hasDifferences());
+            }
+        }
     }
 }

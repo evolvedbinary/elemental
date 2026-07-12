@@ -46,9 +46,10 @@
 package org.exist.xquery.functions.system;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,9 +64,12 @@ public class GetRunningXQueriesTest {
 
     @Test
     public void caller() throws XMLDBException {
-        final ResourceSet result = existXmldbEmbeddedServer.executeQuery("system:get-running-xqueries()");
-        assertNotNull(result);
-        final String resultDoc = (String) result.getResource(0).getContent();
-        assertThat(resultDoc, hasXPath("count(//@caller)", equalTo("1")));
+        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery("system:get-running-xqueries()")) {
+            assertNotNull(result);
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String resultDoc = (String) resource.getContent();
+                assertThat(resultDoc, hasXPath("count(//@caller)", equalTo("1")));
+            }
+        }
     }
 }

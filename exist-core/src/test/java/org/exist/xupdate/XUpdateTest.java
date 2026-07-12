@@ -65,6 +65,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.UserManagementService;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -79,7 +80,6 @@ import org.junit.runners.Parameterized.Parameters;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -174,9 +174,10 @@ public class XUpdateTest {
     private void addDocument(final String sourceFile) throws XMLDBException, IOException, URISyntaxException {
         final Path f = getRelFile(SOURCE_DIR_NAME + "/" + sourceFile);
 
-        final XMLResource document = (XMLResource) col.createResource(XUPDATE_FILE, "XMLResource");
-        document.setContent(f);
-        col.storeResource(document);
+        try (final EXistResource document = (EXistResource) col.createResource(XUPDATE_FILE, XMLResource.RESOURCE_TYPE)) {
+            document.setContent(f);
+            col.storeResource(document);
+        }
     }
 
     private Path getRelFile(final String relPath) throws IOException, URISyntaxException {
@@ -194,8 +195,9 @@ public class XUpdateTest {
     }
 
     private void removeDocument() throws XMLDBException {
-        final Resource document = col.getResource(XUPDATE_FILE);
-        col.removeResource(document);
+        try (final EXistResource document = (EXistResource) col.getResource(XUPDATE_FILE)) {
+            col.removeResource(document);
+        }
     }
 
     /**
@@ -209,8 +211,9 @@ public class XUpdateTest {
 
         service.update(xUpdateModifications);
 
-        final XMLResource ret = (XMLResource) col.getResource(XUPDATE_FILE);
-        return ((String) ret.getContent());
+        try (final EXistResource ret = (EXistResource) col.getResource(XUPDATE_FILE)) {
+            return ((String) ret.getContent());
+        }
     }
 
     @Before

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -30,7 +54,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
@@ -72,33 +99,42 @@ public class DeclareVariableTest {
 
     @Before
     public void setUp() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
-        testCollection = service.createCollection(TEST_COLLECTION_NAME);
-        assertNotNull(testCollection);
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+            testCollection = service.createCollection(TEST_COLLECTION_NAME);
+            assertNotNull(testCollection);
+        }
     }
 
     @After
     public void tearDown() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
-        service.removeCollection(TEST_COLLECTION_NAME);
-        testCollection = null;
+        testCollection.close();
+        try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService service = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+            service.removeCollection(TEST_COLLECTION_NAME);
+            testCollection = null;
+        }
     }
 
     @Test
     public void declareBigInteger() throws XMLDBException {
-        final Resource result = executeQueryWithExternalVariable(new BigInteger("123456789123456789123456789"));
-        assertEquals("123456789123456789123456789", result.getContent());
+        try (final EXistResourceSet result = executeQueryWithExternalVariable(new BigInteger("123456789123456789123456789"))) {
+            final Resource resource = result.getResource(0);
+            assertNotNull(resource);
+            assertEquals("123456789123456789123456789", resource.getContent());
+        }
     }
 
     @Test
     public void declareBigDecimal() throws XMLDBException {
-        final Resource result = executeQueryWithExternalVariable(new BigDecimal("1.1"));
-        assertEquals("1.1", result.getContent());
+        try (final EXistResourceSet result = executeQueryWithExternalVariable(new BigDecimal("1.1"))) {
+            final Resource resource = result.getResource(0);
+            assertNotNull(resource);
+            assertEquals("1.1", resource.getContent());
+        }
     }
 
-    private Resource executeQueryWithExternalVariable(final Object value) throws XMLDBException {
+    private EXistResourceSet executeQueryWithExternalVariable(final Object value) throws XMLDBException {
         final XQueryService xqueryService = (XQueryService) testCollection.getService("XQueryService", "1.0");
         xqueryService.declareVariable("x", value);
 
@@ -108,11 +144,8 @@ public class DeclareVariableTest {
                 "$x";
 
         final CompiledExpression compiled = xqueryService.compile(query);
-
-        final ResourceSet resourceSet = xqueryService.execute(compiled);
+        final EXistResourceSet resourceSet = (EXistResourceSet) xqueryService.execute(compiled);
         assertEquals(1, resourceSet.getSize());
-        final Resource resource = resourceSet.getResource(0);
-        assertNotNull(resource);
-        return resource;
+        return resourceSet;
     }
 }

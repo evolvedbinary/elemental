@@ -82,7 +82,7 @@ import org.xmldb.api.base.XMLDBException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class RemoteResourceSet implements ResourceSet, AutoCloseable {
+public class RemoteResourceSet implements ResourceSet, EXistResourceSet {
 
     private final Leasable<XmlRpcClient> leasableXmlRpcClient;
     private final RemoteCollection collection;
@@ -93,7 +93,7 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
     private boolean closed;
     private LazyVal<Integer> inMemoryBufferSize;
 
-    private static Logger LOG = LogManager.getLogger(RemoteResourceSet.class.getName());
+    private static final Logger LOG = LogManager.getLogger(RemoteResourceSet.class);
 
     public RemoteResourceSet(final Leasable<XmlRpcClient> leasableXmlRpcClient, final RemoteCollection col, final Properties properties, final Object[] resources, final int handle, final int hash) {
         this.leasableXmlRpcClient = leasableXmlRpcClient;
@@ -128,10 +128,12 @@ public class RemoteResourceSet implements ResourceSet, AutoCloseable {
         if (handle < 0) {
             return;
         }
+
         final List<Object> params = new ArrayList<>();
         params.add(handle);
-        if (hash > -1)
+        if (hash > -1) {
             params.add(hash);
+        }
         collection.execute("releaseQueryResult", params);
         hash = -1;
         resources.clear();

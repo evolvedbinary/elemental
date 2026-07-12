@@ -28,10 +28,10 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.value.Item;
-import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -44,12 +44,12 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.exist.test.Util.executeQuery;
-import static org.exist.test.Util.withCompiledQuery;
 import static org.exist.util.MapUtil.HashMap;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -83,14 +83,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.DOUBLE, queryResult.getType());
-            assertEquals(-0.058374143427580086, queryResult.toJavaObject(double.class), 0);
+                assertEquals(Type.DOUBLE, item.getType());
+                assertEquals(-0.058374143427580086, item.toJavaObject(double.class), 0);
+            }
 
             transaction.commit();
         }
@@ -108,14 +107,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -133,14 +131,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertFalse(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertFalse(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -157,14 +154,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -182,14 +178,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -206,14 +201,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -230,14 +224,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -254,14 +247,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a,b", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a,b", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -278,14 +270,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a,b", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a,b", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -302,14 +293,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a,b", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a,b", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -327,14 +317,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -351,14 +340,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a,b,c", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a,b,c", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -375,14 +363,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a,b,c", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a,b,c", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -399,14 +386,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("a,b,c", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("a,b,c", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -424,14 +410,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -448,14 +433,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.ARRAY, queryResult.getType());
-            assertArrayEquals(new String[] {"a", "b"}, queryResult.toJavaObject(String[].class));
+                assertEquals(Type.ARRAY, item.getType());
+                assertArrayEquals(new String[]{"a", "b"}, item.toJavaObject(String[].class));
+            }
 
             transaction.commit();
         }
@@ -474,14 +458,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.ARRAY, queryResult.getType());
-            assertArrayEquals(new String[] {"a", "b"}, queryResult.toJavaObject(String[].class));
+                assertEquals(Type.ARRAY, item.getType());
+                assertArrayEquals(new String[] {"a", "b"}, item.toJavaObject(String[].class));
+            }
 
             transaction.commit();
         }
@@ -500,14 +483,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.ARRAY, queryResult.getType());
-            assertArrayEquals(new String[] {"a", "b"}, queryResult.toJavaObject(String[].class));
+                assertEquals(Type.ARRAY, item.getType());
+                assertArrayEquals(new String[] {"a", "b"}, item.toJavaObject(String[].class));
+            }
 
             transaction.commit();
         }
@@ -524,14 +506,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.MAP, queryResult.getType());
-            assertEquals(HashMap(Tuple("a", BigInteger.valueOf(1)), Tuple("b", BigInteger.valueOf(2)), Tuple("c", BigInteger.valueOf(3))), queryResult.toJavaObject(Map.class));
+                assertEquals(Type.MAP, item.getType());
+                assertEquals(HashMap(Tuple("a", BigInteger.valueOf(1)), Tuple("b", BigInteger.valueOf(2)), Tuple("c", BigInteger.valueOf(3))), item.toJavaObject(Map.class));
+            }
 
             transaction.commit();
         }
@@ -550,14 +531,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.MAP, queryResult.getType());
-            assertEquals(HashMap(Tuple("a", BigInteger.valueOf(1)), Tuple("b", BigInteger.valueOf(2)), Tuple("c", BigInteger.valueOf(3))), queryResult.toJavaObject(Map.class));
+                assertEquals(Type.MAP, item.getType());
+                assertEquals(HashMap(Tuple("a", BigInteger.valueOf(1)), Tuple("b", BigInteger.valueOf(2)), Tuple("c", BigInteger.valueOf(3))), item.toJavaObject(Map.class));
+            }
 
             transaction.commit();
         }
@@ -576,14 +556,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.MAP, queryResult.getType());
-            assertEquals(HashMap(Tuple("a", BigInteger.valueOf(1)), Tuple("b", BigInteger.valueOf(2)), Tuple("c", BigInteger.valueOf(3))), queryResult.toJavaObject(Map.class));
+                assertEquals(Type.MAP, item.getType());
+                assertEquals(HashMap(Tuple("a", BigInteger.valueOf(1)), Tuple("b", BigInteger.valueOf(2)), Tuple("c", BigInteger.valueOf(3))), item.toJavaObject(Map.class));
+            }
 
             transaction.commit();
         }
@@ -601,14 +580,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -627,14 +605,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.ARRAY, queryResult.getType());
-            assertArrayEquals(new byte[] { 'h', 'e', 'l', 'l', 'o' }, queryResult.toJavaObject(byte[].class));
+                assertEquals(Type.ARRAY, item.getType());
+                assertArrayEquals(new byte[] { 'h', 'e', 'l', 'l', 'o' }, item.toJavaObject(byte[].class));
+            }
 
             transaction.commit();
         }
@@ -652,14 +629,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -676,14 +652,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.FLOAT, queryResult.getType());
-            assertEquals(1.7000002f, queryResult.toJavaObject(float.class), 0);
+                assertEquals(Type.FLOAT, item.getType());
+                assertEquals(1.7000002f, item.toJavaObject(float.class), 0);
+            }
 
             transaction.commit();
         }
@@ -700,14 +675,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.DOUBLE, queryResult.getType());
-            assertEquals(1.7000000000000002d, queryResult.toJavaObject(double.class), 0);
+                assertEquals(Type.DOUBLE, item.getType());
+                assertEquals(1.7000000000000002d, item.toJavaObject(double.class), 0);
+            }
 
             transaction.commit();
         }
@@ -724,14 +698,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.DOUBLE, queryResult.getType());
-            assertEquals(3.14159265358979323846, queryResult.toJavaObject(double.class), 0);
+                assertEquals(Type.DOUBLE, item.getType());
+                assertEquals(3.14159265358979323846, item.toJavaObject(double.class), 0);
+            }
 
             transaction.commit();
         }
@@ -750,14 +723,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -775,14 +747,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -799,14 +770,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("hello world", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("hello world", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -823,14 +793,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.JAVA_OBJECT, queryResult.getType());
-            assertEquals(new ArrayList<>(), queryResult.toJavaObject(List.class));
+                assertEquals(Type.JAVA_OBJECT, item.getType());
+                assertEquals(new ArrayList<>(), item.toJavaObject(List.class));
+            }
 
             transaction.commit();
         }
@@ -848,14 +817,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -874,14 +842,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("hello world everyone", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("hello world everyone", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -899,14 +866,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.BOOLEAN, queryResult.getType());
-            assertTrue(queryResult.toJavaObject(boolean.class));
+                assertEquals(Type.BOOLEAN, item.getType());
+                assertTrue(item.toJavaObject(boolean.class));
+            }
 
             transaction.commit();
         }
@@ -926,14 +892,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.INTEGER, queryResult.getType());
-            assertEquals(7, (int) queryResult.toJavaObject(int.class));
+                assertEquals(Type.INTEGER, item.getType());
+                assertEquals(7, (int) item.toJavaObject(int.class));
+            }
 
             transaction.commit();
         }
@@ -953,14 +918,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("cherries.apples.bananas", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("cherries.apples.bananas", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }
@@ -982,14 +946,13 @@ public class JavaBindingTest {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Item queryResult = withCompiledQuery(broker, query, compiledQuery -> {
-                final Sequence result = executeQuery(broker, compiledQuery);
-                assertTrue(result.hasOne());
-                return result.itemAt(0);
-            });
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, query, false, null, null, null, null, null)) {
+                Assertions.assertTrue(queryResult.result.hasOne());
+                final Item item = queryResult.result.itemAt(0);
 
-            assertEquals(Type.STRING, queryResult.getType());
-            assertEquals("cherries", queryResult.toJavaObject(String.class));
+                assertEquals(Type.STRING, item.getType());
+                assertEquals("cherries", item.toJavaObject(String.class));
+            }
 
             transaction.commit();
         }

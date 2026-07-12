@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -93,9 +117,13 @@ public class AbsolutePathTests extends XQueryCompilationTest {
                 "let $d := document { <root><x/><x/><y><x/></y></root> }\n" +
                 "return\n" +
                 "  <result>{ $f($d) }</result>";
-        final Either<XPathException, Sequence> actual = executeQuery(query);
 
-        assertXQResultIdentical(expected, actual);
+        final Either<XPathException, XQueryUtil.QueryResult> actual = executeQuery(query);
+        try {
+            assertXQResultIdentical(expected, actual);
+        } finally {
+            close(actual);
+        }
     }
 
     @Test
@@ -106,9 +134,12 @@ public class AbsolutePathTests extends XQueryCompilationTest {
                 "let $d := document { <root/> }\n" +
                 "return\n" +
                 "  $f($d)";
-        final Either<XPathException, Sequence> actual = executeQuery(query);
-
-        assertXQResultIdentical(expected, actual);
+        final Either<XPathException, XQueryUtil.QueryResult> actual = executeQuery(query);
+        try {
+            assertXQResultIdentical(expected, actual);
+        } finally {
+            close(actual);
+        }
     }
 
     @Test
@@ -119,9 +150,12 @@ public class AbsolutePathTests extends XQueryCompilationTest {
                 "let $d := document { <root/> }\n" +
                 "return\n" +
                 "  $f($d)";
-        final Either<XPathException, Sequence> actual = executeQuery(query);
-
-        assertXQResultSimilar(expected, actual);
+        final Either<XPathException, XQueryUtil.QueryResult> actual = executeQuery(query);
+        try {
+            assertXQResultSimilar(expected, actual);
+        } finally {
+            close(actual);
+        }
     }
 
     @Test
@@ -129,8 +163,11 @@ public class AbsolutePathTests extends XQueryCompilationTest {
         final Sequence expected = new IntegerValue(1);
 
         final String query = "count(//*)";
-        final Either<XPathException, Sequence> actual = executeQuery(query);
-
-        assertThatXQResult(actual, equalTo(expected));
+        final Either<XPathException, XQueryUtil.QueryResult> actual = executeQuery(query);
+        try {
+            assertThatXQResult(actual, equalTo(expected));
+        } finally {
+            close(actual);
+        }
     }
 }

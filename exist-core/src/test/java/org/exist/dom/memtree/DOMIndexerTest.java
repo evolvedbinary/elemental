@@ -57,6 +57,7 @@ import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.AuthenticationException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
@@ -68,7 +69,7 @@ import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
@@ -144,11 +145,11 @@ public class DOMIndexerTest {
     @Test
     public void xQuery() throws EXistException, PermissionDeniedException, SAXException, XPathException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
-                final StringBuilderWriter out = new StringBuilderWriter()) {
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence result = xquery.execute(broker, XQUERY, null);
-            final int count = result.getItemCount();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final StringBuilderWriter out = new StringBuilderWriter();
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(XQUERY), false, null, null, null, null, null)) {
+
+            final Sequence result = queryResult.result;
             final Properties props = new Properties();
             props.setProperty(OutputKeys.INDENT, "yes");
             final SAXSerializer serializer = new SAXSerializer(out, props);

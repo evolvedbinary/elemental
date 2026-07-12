@@ -47,17 +47,19 @@ package org.exist.xquery.update;
 
 import org.exist.TestUtils;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
-import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
+
+import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;
 
@@ -94,14 +96,15 @@ public abstract class AbstractUpdateTest {
 
     @After
     public void tearDown() throws XMLDBException {
-        CollectionManagementService service =
-                (CollectionManagementService) existEmbeddedServer.getRoot().getService(
-                        "CollectionManagementService",
-                        "1.0");
+        testCollection.close();
+        CollectionManagementService service = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
         service.removeCollection("test");
-        Collection confColl = DatabaseManager.getCollection("xmldb:exist:///db/system/config/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        service = (CollectionManagementService) confColl.getService("CollectionManagementService", "1.0");
-        service.removeCollection("test");
+
+        try (final Collection confColl = DatabaseManager.getCollection("xmldb:exist:///db/system/config/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            service = (CollectionManagementService) confColl.getService("CollectionManagementService", "1.0");
+            service.removeCollection("test");
+        }
+
         testCollection = null;
     }
 
@@ -111,30 +114,27 @@ public abstract class AbstractUpdateTest {
      * @return the XQuery Service
      * @throws XMLDBException
      */
-    protected XQueryService storeXMLStringAndGetQueryService(final String documentName,
-           final String content) throws XMLDBException {
-        final XMLResource doc =
-            (XMLResource) testCollection.createResource(
-                documentName, "XMLResource" );
-        doc.setContent(content);
-        testCollection.storeResource(doc);
-        final XQueryService service =
-            (XQueryService) testCollection.getService(
-                "XPathQueryService",
-                "1.0");
-        return service;
+    protected void storeXMLString(final String documentName, final String content) throws XMLDBException {
+        try (final EXistResource doc = (EXistResource) testCollection.createResource(documentName, "XMLResource")) {
+            doc.setContent(content);
+            testCollection.storeResource(doc);
+        }
+    }
+
+    protected void queryResourceV(final String resource, final String query, final int expected) throws XMLDBException {
+        try (final EXistResourceSet result = queryResource(resource, query, expected, null)) {
+            // needed to ensure that result is closed
+        }
     }
 
     /** Helper that performs an XQuery and does JUnit assertion on result size.
-     * @see #queryResource(XQueryService, String, String, int, String)
+     * @see #queryResource(String, String, int, String)
      */
-    protected ResourceSet queryResource(final XQueryService service, final String resource,
-            final String query, final int expected) throws XMLDBException {
-        return queryResource(service, resource, query, expected, null);
+    protected EXistResourceSet queryResource(final String resource, final String query, final int expected) throws XMLDBException {
+        return queryResource(resource, query, expected, null);
     }
 
     /** Helper that performs an XQuery and does JUnit assertion on result size.
-     * @param service XQuery service
      * @param resource database resource (collection) to query
      * @param query
      * @param expected size of result
@@ -142,9 +142,9 @@ public abstract class AbstractUpdateTest {
      * @return a ResourceSet, allowing to do more assertions if necessary.
      * @throws XMLDBException
      */
-    protected ResourceSet queryResource(final XQueryService service, final String resource,
-            final String query, final int expected, final String message) throws XMLDBException {
-        final ResourceSet result = service.queryResource(resource, query);
+    protected EXistResourceSet queryResource(final String resource, final String query, final int expected, @Nullable final String message) throws XMLDBException {
+        final XQueryService service = (XQueryService) testCollection.getService("XQueryService", "1.0");
+        final EXistResourceSet result = (EXistResourceSet) service.queryResource(resource, query);
         if (message == null) {
             assertEquals(query, expected, result.getSize());
         } else {

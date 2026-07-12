@@ -45,18 +45,17 @@
  */
 package org.exist.xquery.update;
 
+import com.evolvedbinary.j8fu.function.RunnableE;
 import org.easymock.IArgumentMatcher;
 import org.easymock.IMocksControl;
 import org.exist.dom.persistent.*;
 import org.exist.indexing.*;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XQueryContext;
 import org.junit.Test;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XQueryService;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -67,8 +66,8 @@ import static org.easymock.EasyMock.anyBoolean;
 
 public class IndexIntegrationTest extends AbstractUpdateTest {
 
-    private void run(final XmldbURI docUri, final String data, final BiConsumer<IndexWorker, StreamListener> setup, ConsumerE<XQueryService, XMLDBException> test) throws Exception {
-        final XQueryService service = storeXMLStringAndGetQueryService(docUri.lastSegment().toString(), data);
+    private void run(final XmldbURI docUri, final String data, final BiConsumer<IndexWorker, StreamListener> setup, final RunnableE<XMLDBException> test) throws Exception {
+        storeXMLString(docUri.lastSegment().toString(), data);
 
         final IMocksControl control = createStrictControl();
 
@@ -103,7 +102,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
 
             control.replay();
 
-            test.accept(service);
+            test.run();
 
             control.verify();
             control.resetToStrict();
@@ -146,7 +145,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
                 //flush
                 worker.flush(); expectLastCall();
             },
-            service -> queryResource(service, docName, "update insert <t xml:id=\"id1\"/> into /test", 0)
+            () -> queryResourceV(docName, "update insert <t xml:id=\"id1\"/> into /test", 0)
         );
     }
 
@@ -195,7 +194,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
                 //flush
                 worker.flush(); expectLastCall();
             },
-            service -> queryResource(service, docName, "update value //t/@xml:id with 'id2'", 0)
+            () -> queryResourceV(docName, "update value //t/@xml:id with 'id2'", 0)
         );
     }
 
@@ -231,7 +230,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
                 //flush
                 worker.flush(); expectLastCall();
             },
-            service -> queryResource(service, docName, "update delete //t/@xml:id", 0)
+            () -> queryResourceV(docName, "update delete //t/@xml:id", 0)
         );
     }
 

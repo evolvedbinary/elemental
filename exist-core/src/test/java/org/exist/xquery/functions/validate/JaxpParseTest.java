@@ -47,6 +47,8 @@ package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -59,7 +61,6 @@ import java.io.InputStream;
 
 import org.xml.sax.SAXException;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmlunit.matchers.CompareMatcher;
 
@@ -84,19 +85,11 @@ public class JaxpParseTest {
     public static void prepareResources() throws Exception {
 
         // Switch off validation
-        Collection conf = null;
-        try {
-            conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse_validate");
+        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse_validate")) {
             existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
-        } finally {
-            if(conf != null) {
-                conf.close();
-            }
         }
 
-        Collection schemasCollection = null;
-        try {
-            schemasCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse_validate");
+        try (final Collection schemasCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse_validate")) {
 
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/parse_validate/" + testResource)) {
@@ -104,18 +97,16 @@ public class JaxpParseTest {
                     existEmbeddedServer.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
                 }
             }
-        } finally {
-            if(schemasCollection != null) {
-                schemasCollection.close();
-            }
         }
-
     }
 
     @Before
     public void clearGrammarCache() throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()");
-        results.getResource(0).getContent();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                resource.getContent();
+            }
+        }
     }
 
     @Test
@@ -136,8 +127,11 @@ public class JaxpParseTest {
     }
 
     private String execute(final String query) throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
-        return (String) results.getResource(0).getContent();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                return (String) resource.getContent();
+            }
+        }
     }
 }

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,20 +51,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceIterator;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
-import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 import org.xmldb.api.modules.XUpdateQueryService;
+
+import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -112,6 +137,7 @@ public class ValueIndexTest {
 
     @After
     public void tearDown() throws Exception {
+        testCollection.close();
         final CollectionManagementService service = (CollectionManagementService) existEmbeddedServer.getRoot()
                 .getService("CollectionManagementService", "1.0");
         service.removeCollection("test");
@@ -122,7 +148,7 @@ public class ValueIndexTest {
 	 * @throws XMLDBException
 	 */
 	protected void configureCollection(String config) throws XMLDBException {
-		IndexQueryService idxConf = (IndexQueryService)
+		final IndexQueryService idxConf = (IndexQueryService)
 			testCollection.getService("IndexQueryService", "1.0");
 		idxConf.configureCollection(config);
 	}
@@ -130,58 +156,62 @@ public class ValueIndexTest {
     @Test
     public void strings() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_PATH);
-        XPathQueryService service = storeXMLFileAndGetQueryService(ITEMS_FILENAME, ITEMS_FILE);
-        queryResource(service, ITEMS_FILENAME, "//item[@id = 'i2']", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[name = 'Racing Bicycle']", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[name > 'Racing Bicycle']", 4);
-        queryResource(service, ITEMS_FILENAME, "//item[itemno = 3]", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[itemno eq 3]", 1);
-        ResourceSet result = queryResource(service, ITEMS_FILENAME, "for $i in //item[stock <= 10] return $i/itemno", 5);
-        for (long i = 0; i < result.getSize(); i++) {
-            Resource res = result.getResource(i);
+        storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
+        queryResourceV(ITEMS_FILENAME, "//item[@id = 'i2']", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[name = 'Racing Bicycle']", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[name > 'Racing Bicycle']", 4);
+        queryResourceV(ITEMS_FILENAME, "//item[itemno = 3]", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[itemno eq 3]", 1);
+
+        try (final EXistResourceSet result = queryResource(ITEMS_FILENAME, "for $i in //item[stock <= 10] return $i/itemno", 5)) {
+            for (long i = 0; i < result.getSize(); i++) {
+                try (final EXistResource res = (EXistResource) result.getResource(i)) {
+                    // needed to ensure that res is closed
+                }
+            }
         }
 
-        queryResource(service, ITEMS_FILENAME, "//item[stock > 20]", 1);
-        queryResource(service, ITEMS_FILENAME, "declare namespace x=\"http://www.foo.com\"; //item[x:rating > 8.0]", 2);
-        queryResource(service, ITEMS_FILENAME, "declare namespace xx=\"http://test.com\"; //item[@xx:test = 123]", 1);
-        queryResource(service, ITEMS_FILENAME, "declare namespace xx=\"http://test.com\"; //item[@xx:test eq 123]", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[mixed = 'uneven']", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[mixed eq 'uneven']", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[mixed = 'external']", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[fn:matches(mixed, 'un.*')]", 2);
-        queryResource(service, ITEMS_FILENAME, "//item[price/@specialprice = false()]", 2);
-        queryResource(service, ITEMS_FILENAME, "//item[price/@specialprice = true()]", 1);
-        queryResource(service, ITEMS_FILENAME, "//item[price/@specialprice eq true()]", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[stock > 20]", 1);
+        queryResourceV(ITEMS_FILENAME, "declare namespace x=\"http://www.foo.com\"; //item[x:rating > 8.0]", 2);
+        queryResourceV(ITEMS_FILENAME, "declare namespace xx=\"http://test.com\"; //item[@xx:test = 123]", 1);
+        queryResourceV(ITEMS_FILENAME, "declare namespace xx=\"http://test.com\"; //item[@xx:test eq 123]", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[mixed = 'uneven']", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[mixed eq 'uneven']", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[mixed = 'external']", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[fn:matches(mixed, 'un.*')]", 2);
+        queryResourceV(ITEMS_FILENAME, "//item[price/@specialprice = false()]", 2);
+        queryResourceV(ITEMS_FILENAME, "//item[price/@specialprice = true()]", 1);
+        queryResourceV(ITEMS_FILENAME, "//item[price/@specialprice eq true()]", 1);
     }
 
     @Test
     public void strFunctions() throws XMLDBException {
         configureCollection(CONFIG_PATH);
-        XMLResource resource = (XMLResource) testCollection.createResource("mondial-test.xml", "XMLResource");
-        resource.setContent(CITY);
-        testCollection.storeResource(resource);
+        try (final EXistResource resource = (EXistResource) testCollection.createResource("mondial-test.xml", "XMLResource")) {
+            resource.setContent(CITY);
+            testCollection.storeResource(resource);
+        }
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'Berl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'Berlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'erlin')]", 0);
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'Erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[contains(name, 'erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[contains(name, 'Berlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[contains(name, 'Erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[ends-with(name, 'Berlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[ends-with(name, 'erlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[ends-with(name, 'Ber')]", 0);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'Berl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'Berlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'erlin')]", 0);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'Erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[contains(name, 'erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[contains(name, 'Berlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[contains(name, 'Erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[ends-with(name, 'Berlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[ends-with(name, 'erlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[ends-with(name, 'Ber')]", 0);
 
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'erl', 'i')]", 2);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'Erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'Berlin', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'berlin', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'berlin')]", 0);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, '^Berlin$')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'lin$', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, '.*lin$', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, '^lin$', 'i')]", 0);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'erl', 'i')]", 2);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'Erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'Berlin', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'berlin', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'berlin')]", 0);
+        queryResourceV("mondial-test.xml", "//city[matches(name, '^Berlin$')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'lin$', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, '.*lin$', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, '^lin$', 'i')]", 0);
     }
 
 	/*
@@ -197,28 +227,27 @@ public class ValueIndexTest {
     @Test
 	public void pathIndexStringMatchingFunctions() throws XMLDBException {
         configureCollection(CONFIG_PATH);
-        XMLResource resource = (XMLResource)testCollection.createResource( "mondial-test.xml", "XMLResource" );
-        resource.setContent( CITY );
-        testCollection.storeResource( resource );
+        try (final EXistResource resource = (EXistResource) testCollection.createResource("mondial-test.xml", "XMLResource")) {
+            resource.setContent(CITY);
+            testCollection.storeResource(resource);
+        }
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService( "XPathQueryService", "1.0" );
-
-        queryResource(service, "mondial-test.xml", "//city[ starts-with( name, '^*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ contains( name, '^*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ ends-with( name, '^*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ starts-with( name, '^*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ contains( name, '^*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ ends-with( name, '^*' ) ]", 0);
 	}    
 
     @Test
 	public void pathIndexStringMatchingFunctions2() throws XMLDBException {
         configureCollection(CONFIG_PATH);
-        XMLResource resource = (XMLResource)testCollection.createResource( "mondial-test.xml", "XMLResource" );
-        resource.setContent( CITY );
-        testCollection.storeResource( resource );
+        try (final EXistResource resource = (EXistResource) testCollection.createResource("mondial-test.xml", "XMLResource")) {
+            resource.setContent(CITY);
+            testCollection.storeResource(resource);
+        }
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService( "XPathQueryService", "1.0" );
-        queryResource(service, "mondial-test.xml", "//city[ starts-with( name, '(*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ contains( name, '*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ ends-with( name, '(*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ starts-with( name, '(*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ contains( name, '*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ ends-with( name, '(*' ) ]", 0);
 	}    
 
 	/*
@@ -233,80 +262,81 @@ public class ValueIndexTest {
     @Test
 	public void qnameIndexStringMatchingFunctions() throws XMLDBException {
         configureCollection( CONFIG_QNAME );
-        XMLResource resource = (XMLResource)testCollection.createResource( "mondial-test.xml", "XMLResource" );
-        resource.setContent( CITY );
-        testCollection.storeResource( resource );
+        try (final EXistResource resource = (EXistResource) testCollection.createResource("mondial-test.xml", "XMLResource")) {
+            resource.setContent(CITY);
+            testCollection.storeResource(resource);
+        }
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService( "XPathQueryService", "1.0" );
-
-        queryResource(service, "mondial-test.xml", "//city[ starts-with( name, '^*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ contains( name, '^*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ ends-with( name, '^*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ starts-with( name, '^*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ contains( name, '^*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ ends-with( name, '^*' ) ]", 0);
 	}    
 
     @Test
 	public void qnameIndexStringMatchingFunctions2() throws XMLDBException {
         configureCollection( CONFIG_QNAME );
-        XMLResource resource = (XMLResource)testCollection.createResource( "mondial-test.xml", "XMLResource" );
-        resource.setContent( CITY );
-        testCollection.storeResource( resource );
+        try (final EXistResource resource = (EXistResource) testCollection.createResource("mondial-test.xml", "XMLResource")) {
+            resource.setContent(CITY);
+            testCollection.storeResource(resource);
+        }
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService( "XPathQueryService", "1.0" );
-        queryResource(service, "mondial-test.xml", "//city[ starts-with( name, '(*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ contains( name, '*' ) ]", 0);
-        queryResource(service, "mondial-test.xml", "//city[ ends-with( name, '(*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ starts-with( name, '(*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ contains( name, '*' ) ]", 0);
+        queryResourceV("mondial-test.xml", "//city[ ends-with( name, '(*' ) ]", 0);
 	}    
 
     @Test
     public void strFunctionsQName() throws XMLDBException {
         configureCollection(CONFIG_QNAME);
-        XMLResource resource = (XMLResource) testCollection.createResource("mondial-test.xml", "XMLResource");
-        resource.setContent(CITY);
-        testCollection.storeResource(resource);
+        try (final EXistResource resource = (EXistResource) testCollection.createResource("mondial-test.xml", "XMLResource")) {
+            resource.setContent(CITY);
+            testCollection.storeResource(resource);
+        }
 
-        XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'Berl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'Berlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'erlin')]", 0);
-        queryResource(service, "mondial-test.xml", "//city[starts-with(name, 'Erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[contains(name, 'erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[contains(name, 'Berlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[contains(name, 'Erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[ends-with(name, 'Berlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[ends-with(name, 'erlin')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[ends-with(name, 'Ber')]", 0);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'Berl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'Berlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'erlin')]", 0);
+        queryResourceV("mondial-test.xml", "//city[starts-with(name, 'Erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[contains(name, 'erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[contains(name, 'Berlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[contains(name, 'Erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[ends-with(name, 'Berlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[ends-with(name, 'erlin')]", 1);
+        queryResourceV("mondial-test.xml", "//city[ends-with(name, 'Ber')]", 0);
 
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'erl', 'i')]", 2);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'Erl')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'Berlin', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'berlin', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'berlin')]", 0);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, '^Berlin$')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, 'lin$', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, '.*lin$', 'i')]", 1);
-        queryResource(service, "mondial-test.xml", "//city[matches(name, '^lin$', 'i')]", 0);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'erl', 'i')]", 2);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'Erl')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'Berlin', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'berlin', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'berlin')]", 0);
+        queryResourceV("mondial-test.xml", "//city[matches(name, '^Berlin$')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, 'lin$', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, '.*lin$', 'i')]", 1);
+        queryResourceV("mondial-test.xml", "//city[matches(name, '^lin$', 'i')]", 0);
     }
 
     @Test
     public void qnameIndex() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_QNAME);
-        XPathQueryService service = storeXMLFileAndGetQueryService(ITEMS_FILENAME, ITEMS_FILE);
-        queryResource(service, ITEMS_FILENAME, "//((#exist:optimize#) { item[stock = 10] })", 1);
-        queryResource(service, ITEMS_FILENAME, "//((#exist:optimize#) { item[stock > 20] })", 1);
-        queryResource(service, ITEMS_FILENAME, "//((#exist:optimize#) { item[stock < 16] })", 6);
-        queryResource(service, ITEMS_FILENAME, "declare namespace x=\"http://www.foo.com\"; " +
+        storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
+        queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[stock = 10] })", 1);
+        queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[stock > 20] })", 1);
+        queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[stock < 16] })", 6);
+        queryResourceV(ITEMS_FILENAME, "declare namespace x=\"http://www.foo.com\"; " +
                 "//((#exist:optimize#) { item[x:rating > 8.0] })", 2);
-        queryResource(service, ITEMS_FILENAME, "//((#exist:optimize#) { item[mixed = 'uneven'] })", 1);
-        queryResource(service, ITEMS_FILENAME, "//((#exist:optimize#) { item[mixed = 'external'] })", 1);
-        queryResource(service, ITEMS_FILENAME, "//((#exist:optimize#) { item[@id = 'i1'] })",1);
-        queryResource(service, ITEMS_FILENAME, "declare namespace xx=\"http://test.com\";" +
+        queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[mixed = 'uneven'] })", 1);
+        queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[mixed = 'external'] })", 1);
+        queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[@id = 'i1'] })",1);
+        queryResourceV(ITEMS_FILENAME, "declare namespace xx=\"http://test.com\";" +
                 "//((#exist:optimize#) { item[@xx:test = 123] })", 1);
     }
 
     @Test
     public void indexScan() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_PATH);
-        String queryBody =
+        final XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
+
+        final String queryBody =
             "declare namespace f=\'http://exist-db.org/xquery/test\';\n" +
             "declare namespace mods='http://www.loc.gov/mods/v3';\n" +
             "import module namespace u=\'http://exist-db.org/xquery/util\';\n" +
@@ -320,26 +350,32 @@ public class ValueIndexTest {
             "};\n" +
             "\n";
 
-        XPathQueryService service = storeXMLFileAndGetQueryService(ITEMS_FILENAME, ITEMS_FILE);
+        storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         String query = queryBody + "u:index-keys(//item/name, \'\', util:function(xs:QName(\'f:term-callback\'), 2), 1000)";
-        ResourceSet result = service.query(query);
-        for (ResourceIterator i = result.getIterator(); i.hasMoreResources(); ) {
-            i.nextResource().getContent();
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            for (final ResourceIterator i = result.getIterator(); i.hasMoreResources(); ) {
+                try (final EXistResource resource = (EXistResource) i.nextResource()) {
+                    resource.getContent();
+                }
+            }
+            assertEquals(7, result.getSize());
         }
-        assertEquals(7, result.getSize());
 
         query = queryBody + "u:index-keys(//item/stock, 0, util:function(xs:QName(\'f:term-callback\'), 2), 1000)";
-        result = service.query(query);
-        for (ResourceIterator i = result.getIterator(); i.hasMoreResources(); ) {
-            i.nextResource().getContent();
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            for (final ResourceIterator i = result.getIterator(); i.hasMoreResources(); ){
+                try (final EXistResource resource = (EXistResource) i.nextResource()) {
+                    resource.getContent();
+                }
+            }
+            assertEquals(5, result.getSize());
         }
-        assertEquals(5, result.getSize());
     }
 
     @Test
     public void updates() throws Exception {
         configureCollection(CONFIG_PATH);
-        storeXMLFileAndGetQueryService(ITEMS_FILENAME, ITEMS_FILE);
+        storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         for (int i = 100; i <= 150; i++) {
             String append =
                 "<xu:modifications xmlns:xu=\"http://www.xmldb.org/xupdate\" version=\"1.0\">" +
@@ -356,22 +392,22 @@ public class ValueIndexTest {
                 "   <xu:remove select=\"/items/item[itemno=" + i + "]\"/>" +
                 "</xu:modifications>";
 
-            XPathQueryService query = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
-            XUpdateQueryService update = (XUpdateQueryService) testCollection.getService("XUpdateQueryService", "1.0");
+            final XUpdateQueryService update = (XUpdateQueryService) testCollection.getService("XUpdateQueryService", "1.0");
             long mods = update.updateResource(ITEMS_FILENAME, append);
             assertEquals(mods, 1);
-            queryResource(query, ITEMS_FILENAME, "//item[price = 55.50]", 1);
-            queryResource(query, ITEMS_FILENAME, "//item[@id = 'i" + i + "']",1);
+
+            queryResourceV(ITEMS_FILENAME, "//item[price = 55.50]", 1);
+            queryResourceV(ITEMS_FILENAME, "//item[@id = 'i" + i + "']",1);
             mods = update.updateResource(ITEMS_FILENAME, remove);
             assertEquals(mods, 1);
-            queryResource(query, ITEMS_FILENAME, "//item[itemno = " + i + "]", 0);
+            queryResourceV(ITEMS_FILENAME, "//item[itemno = " + i + "]", 0);
         }
     }
 
     @Test
     public void updatesQName() throws Exception {
         configureCollection(CONFIG_QNAME);
-        storeXMLFileAndGetQueryService(ITEMS_FILENAME, ITEMS_FILE);
+        storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         for (int i = 100; i <= 150; i++) {
             String append =
                 "<xu:modifications xmlns:xu=\"http://www.xmldb.org/xupdate\" version=\"1.0\">" +
@@ -388,52 +424,46 @@ public class ValueIndexTest {
                 "   <xu:remove select=\"/items/item[itemno=" + i + "]\"/>" +
                 "</xu:modifications>";
 
-            XPathQueryService query = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
             XUpdateQueryService update = (XUpdateQueryService) testCollection.getService("XUpdateQueryService", "1.0");
             long mods = update.updateResource(ITEMS_FILENAME, append);
             assertEquals(mods, 1);
-            queryResource(query, ITEMS_FILENAME, "//((#exist:optimize#) { item[price = 55.50] })", 1);
-            queryResource(query, ITEMS_FILENAME, "//((#exist:optimize#) { item[@id = 'i" + i + "']})",1);
-            queryResource(query, ITEMS_FILENAME, "//((#exist:optimize#) { item[itemno = " + i + "] })", 1);
+
+            queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[price = 55.50] })", 1);
+            queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[@id = 'i" + i + "']})",1);
+            queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[itemno = " + i + "] })", 1);
             mods = update.updateResource(ITEMS_FILENAME, remove);
             assertEquals(mods, 1);
-            queryResource(query, ITEMS_FILENAME, "//((#exist:optimize#) { item[itemno = " + i + "] })", 0);
+            queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[itemno = " + i + "] })", 0);
         }
     }
 
-    protected ResourceSet queryResource(XPathQueryService service,
-            String resource, String query, int expected) throws XMLDBException {
-        return queryResource(service, resource, query, expected, null);
+    protected void queryResourceV(final String resource, final String query, final int expected) throws XMLDBException {
+        try (final EXistResourceSet result = queryResource(resource, query, expected, null)) {
+            // needed to ensure that result is closed
+        }
     }
 
-    /**
-     * @param service
-     * @throws XMLDBException
-     */
-    private ResourceSet queryResource(XPathQueryService service,
-            String resource, String query, int expected, String message)
+    protected EXistResourceSet queryResource(final String resource, final String query, final int expected) throws XMLDBException {
+        return queryResource(resource, query, expected, null);
+    }
+
+    private EXistResourceSet queryResource(final String resource, final String query, final int expected, @Nullable final String message)
             throws XMLDBException {
-        ResourceSet result = service.queryResource(resource, query);
-        if (message == null)
+        final XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
+        final EXistResourceSet result = (EXistResourceSet) service.queryResource(resource, query);
+        if (message == null) {
             assertEquals(expected, result.getSize());
-        else
+        } else {
             assertEquals(message, expected, result.getSize());
+        }
         return result;
     }
 
-    /**
-     * @return
-     * @throws XMLDBException
-     */
-    protected XPathQueryService storeXMLFileAndGetQueryService(
-            String documentName, final URL srcFile) throws XMLDBException, URISyntaxException {
-        XMLResource doc = (XMLResource) testCollection.createResource(
-                documentName, "XMLResource");
-        Path f = Paths.get(srcFile.toURI());
-        doc.setContent(f);
-        testCollection.storeResource(doc);
-        XPathQueryService service = (XPathQueryService) testCollection
-                .getService("XPathQueryService", "1.0");
-        return service;
+    protected void storeXMLFile(final String documentName, final URL srcFile) throws XMLDBException, URISyntaxException {
+        try (final EXistResource doc = (EXistResource) testCollection.createResource(documentName, "XMLResource")) {
+            final Path f = Paths.get(srcFile.toURI());
+            doc.setContent(f);
+            testCollection.storeResource(doc);
+        }
     }
 }

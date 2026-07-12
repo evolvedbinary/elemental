@@ -54,6 +54,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import javax.swing.Box;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
@@ -137,13 +138,11 @@ class TriggersDialog extends JFrame {
         //get the collections but not system collections
         final List<PrettyXmldbURI> alCollections = new ArrayList<>();
         
-        try {
-            final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
-            final List<PrettyXmldbURI> alAllCollections = getCollections(root, new ArrayList<>());
-            for (PrettyXmldbURI alAllCollection : alAllCollections) {
-                //TODO : use XmldbURIs !
-                if (!alAllCollection.toString().contains(XmldbURI.CONFIG_COLLECTION)) {
-                    alCollections.add(alAllCollection);
+        try (final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION)) {
+            final List<PrettyXmldbURI> collections = ClientFrame.getCollections(root, new ArrayList<>());
+            for (final PrettyXmldbURI collection : collections) {
+                if (!collection.toString().contains(XmldbURI.CONFIG_COLLECTION)) {
+                    alCollections.add(collection);
                 }
             }
         } catch(final XMLDBException e) {
@@ -225,7 +224,7 @@ class TriggersDialog extends JFrame {
 
             if(result == JOptionPane.YES_OPTION) {
                 //save the collection.xconf changes
-                if(cx.Save()) {
+                if(cx.save()) {
                     //save ok
                     JOptionPane.showMessageDialog(getContentPane(), "Your changes have been saved.");
                 } else {
@@ -234,27 +233,6 @@ class TriggersDialog extends JFrame {
                 }
             }
         }
-    }
-
-    //THIS IS A COPY FROM ClientFrame
-    //TODO: share this code between the two classes
-    private List<PrettyXmldbURI> getCollections(final Collection root, final List<PrettyXmldbURI> collectionsList) throws XMLDBException {
-        collectionsList.add(new PrettyXmldbURI(XmldbURI.create(root.getName())));
-        final String[] childCollections = root.listChildCollections();
-        Collection child;
-        for (String childCollection : childCollections) {
-            try {
-                child = root.getChildCollection(childCollection);
-            } catch (final XMLDBException xmldbe) {
-                if (xmldbe.getCause() instanceof PermissionDeniedException) {
-                    continue;
-                } else {
-                    throw xmldbe;
-                }
-            }
-            getCollections(child, collectionsList);
-        }
-        return collectionsList;
     }
 
     private void actionAddTrigger() {

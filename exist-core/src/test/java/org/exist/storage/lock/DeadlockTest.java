@@ -69,6 +69,8 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
@@ -80,9 +82,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.CollectionManagementService;
 import xyz.elemental.mediatype.MediaType;
 
@@ -346,8 +346,9 @@ public class DeadlockTest {
 						.getService("XQueryService", "1.0");
 				service.beginProtected();
 				try {
-					ResourceSet result = service.query(query);
-                    result.getSize();
+					try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+						result.getSize();
+					}
 				} finally {
 					service.endProtected();
 				}
@@ -375,9 +376,8 @@ public class DeadlockTest {
                 final String collection = "/db/test/" + collectionId;
                 final int docId = random.nextInt(documentCount) * collectionId;
                 final String document = "test" + docId + ".xml";
-                try {
-                    final org.xmldb.api.base.Collection testCollection = DatabaseManager.getCollection("xmldb:exist://" + collection, "admin", "");
-                    final Resource resource = testCollection.getResource(document);
+                try (final org.xmldb.api.base.Collection testCollection = DatabaseManager.getCollection("xmldb:exist://" + collection, "admin", "");
+					 final EXistResource resource = (EXistResource) testCollection.getResource(document)) {
                     if (resource != null) {
                         testCollection.removeResource(resource);
                         removed = true;

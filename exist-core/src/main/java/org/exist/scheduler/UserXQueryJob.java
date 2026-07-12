@@ -49,6 +49,8 @@ import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
+
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -61,13 +63,11 @@ import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.StringValue;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -205,69 +205,38 @@ public class UserXQueryJob extends UserJob {
     }
 
     private void executeXQuery(final BrokerPool pool, final DBBroker broker, final Source source, final Properties params) throws PermissionDeniedException, XPathException, JobExecutionException {
-        final XQueryPool xqPool = pool.getXQueryPool();
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            //execute the xquery
-            final XQuery xquery = pool.getXQueryService();
 
-            //try and get a pre-compiled query from the pool
-            compiled = xqPool.borrowCompiledXQuery(broker, source);
-
-            if (compiled == null) {
-                context = new XQueryContext(pool);
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            if (source instanceof DBSource) {
+                final XmldbURI collectionUri = ((DBSource) source).getDocumentPath().removeLastSegment();
+                xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(collectionUri.getCollectionPath()).toString());
+                xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{collectionUri});
             }
+        };
 
-            if(source instanceof  DBSource) {
-                final XmldbURI collectionUri = ((DBSource)source).getDocumentPath().removeLastSegment();
-                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(collectionUri.getCollectionPath()).toString());
-                context.setStaticallyKnownDocuments(new XmldbURI[] { collectionUri });
-            }
-
-            if (compiled == null) {
-                try {
-                    compiled = xquery.compile(context, source);
-                } catch (final IOException e) {
-                    abort("Failed to read query from " + xqueryResource);
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-            }
-
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
             //declare any parameters as external variables
             if (params != null) {
-                String bindingPrefix = params.getProperty("bindingPrefix");
+                @Nullable String bindingPrefix = params.getProperty("bindingPrefix");
 
                 if (bindingPrefix == null) {
                     bindingPrefix = "local";
                 }
 
-
                 for (final Entry param : params.entrySet()) {
                     final String key = (String) param.getKey();
                     final String value = (String) param.getValue();
-                    context.declareVariable(bindingPrefix + ":" + key, true, new StringValue(value));
+                    xqueryContext.declareVariable(bindingPrefix + ":" + key, true, new StringValue(value));
                 }
             }
+        };
 
-            xquery.execute(broker, compiled, null);
-        } finally {
-            if(context != null) {
-                context.runCleanupTasks();
-            }
-
-            //return the compiled query to the pool
-            if(xqPool != null && source != null && compiled != null) {
-                xqPool.returnCompiledXQuery(source, compiled);
-            }
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+            // Query result is not used but must be closed
+        } catch (final IOException e) {
+            abort("Failed to read query from " + xqueryResource);
         }
     }
-
 
     private void abort(final String message) throws JobExecutionException {
         abort(message, true);

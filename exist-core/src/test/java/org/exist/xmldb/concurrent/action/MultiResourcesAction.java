@@ -68,9 +68,10 @@ public class MultiResourcesAction extends Action {
 
     @Override
     public boolean execute() throws XMLDBException, IOException {
-        final Collection col = DatabaseManager.getCollection(collectionPath, "admin", "");
-        addFiles(col);
-        return true;
+        try (final Collection col = DatabaseManager.getCollection(collectionPath, "admin", "")) {
+            addFiles(col);
+            return true;
+        }
     }
 
     private void addFiles(final Collection col) throws XMLDBException {

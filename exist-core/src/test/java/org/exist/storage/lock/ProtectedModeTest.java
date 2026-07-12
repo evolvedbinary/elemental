@@ -47,6 +47,8 @@ package org.exist.storage.lock;
 
 import org.exist.TestDataGenerator;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +58,6 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
@@ -97,43 +98,45 @@ public class ProtectedModeTest {
 
     @Test
     public void queryCollection() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection("xmldb:exist:///db/protected", "admin", "");
-        final EXistXPathQueryService service = (EXistXPathQueryService) root.getService("XQueryService", "1.0");
-        try {
+        try (final Collection root = DatabaseManager.getCollection("xmldb:exist:///db/protected", "admin", "")) {
+            final EXistXPathQueryService service = (EXistXPathQueryService) root.getService("XQueryService", "1.0");
+
             service.beginProtected();
-            final ResourceSet result = service.query("collection('/db/protected/test5')//book");
-            assertEquals(DOCUMENT_COUNT, result.getSize());
-        } finally {
-            service.endProtected();
+            try (final EXistResourceSet result = (EXistResourceSet) service.query("collection('/db/protected/test5')//book")) {
+                assertEquals(DOCUMENT_COUNT, result.getSize());
+            } finally {
+                service.endProtected();
+            }
         }
     }
 
     @Test
     public void queryRoot() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection("xmldb:exist:///db/protected", "admin", "");
-        final EXistXPathQueryService service = (EXistXPathQueryService) root.getService("XQueryService", "1.0");
-        try {
+        try (final Collection root = DatabaseManager.getCollection("xmldb:exist:///db/protected", "admin", "")) {
+            final EXistXPathQueryService service = (EXistXPathQueryService) root.getService("XQueryService", "1.0");
+
             service.beginProtected();
-            final ResourceSet result = service.query("//book");
-            assertEquals(COLLECTION_COUNT * DOCUMENT_COUNT, result.getSize());
-        } finally {
-            service.endProtected();
+            try (final EXistResourceSet result = (EXistResourceSet) service.query("//book")) {
+                assertEquals(COLLECTION_COUNT * DOCUMENT_COUNT, result.getSize());
+            } finally {
+                service.endProtected();
+            }
         }
     }
 
     @Test
     public void queryDocs() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection("xmldb:exist:///db/protected", "admin", "");
-        final EXistXPathQueryService service = (EXistXPathQueryService) root.getService("XQueryService", "1.0");
-        final Random random = new Random();
-        for (int i = 0; i < COLLECTION_COUNT; i++) {
-            String docURI = "doc('/db/protected/test" + i + "/xdb" + random.nextInt(DOCUMENT_COUNT) + ".xml')";
-            try {
+        try (final Collection root = DatabaseManager.getCollection("xmldb:exist:///db/protected", "admin", "")) {
+            final EXistXPathQueryService service = (EXistXPathQueryService) root.getService("XQueryService", "1.0");
+            final Random random = new Random();
+            for (int i = 0; i < COLLECTION_COUNT; i++) {
+                String docURI = "doc('/db/protected/test" + i + "/xdb" + random.nextInt(DOCUMENT_COUNT) + ".xml')";
                 service.beginProtected();
-                final ResourceSet result = service.query(docURI + "//book");
-                assertEquals(1, result.getSize());
-            } finally {
-                service.endProtected();
+                try (final EXistResourceSet result = (EXistResourceSet) service.query(docURI + "//book")) {
+                    assertEquals(1, result.getSize());
+                } finally {
+                    service.endProtected();
+                }
             }
         }
     }
@@ -141,22 +144,25 @@ public class ProtectedModeTest {
     @BeforeClass
     public static void setupDb() throws XMLDBException, SAXException {
         CollectionManagementService mgmt = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
-        final Collection collection = mgmt.createCollection("protected");
+        try (final Collection collection = mgmt.createCollection("protected")) {
 
-        mgmt = (CollectionManagementService) collection.getService("CollectionManagementService", "1.0");
+            mgmt = (CollectionManagementService) collection.getService("CollectionManagementService", "1.0");
 
-        final TestDataGenerator generator = new TestDataGenerator("xdb", DOCUMENT_COUNT);
-        for (int i = 0; i < COLLECTION_COUNT; i++) {
-            Collection currentColl = mgmt.createCollection("test" + i);
-            try {
-                final Path[] files = generator.generate(currentColl, generateXQ);
-                for (int j = 0; j < files.length; j++) {
-                    final XMLResource resource = (XMLResource) currentColl.createResource("xdb" + j + ".xml", "XMLResource");
-                    resource.setContent(files[j].toFile());
-                    currentColl.storeResource(resource);
+            final TestDataGenerator generator = new TestDataGenerator("xdb", DOCUMENT_COUNT);
+            for (int i = 0; i < COLLECTION_COUNT; i++) {
+                try (final Collection currentColl = mgmt.createCollection("test" + i)) {
+                    try {
+                        final Path[] files = generator.generate(currentColl, generateXQ);
+                        for (int j = 0; j < files.length; j++) {
+                            try (final EXistResource resource = (EXistResource) currentColl.createResource("xdb" + j + ".xml", XMLResource.RESOURCE_TYPE)) {
+                                resource.setContent(files[j].toFile());
+                                currentColl.storeResource(resource);
+                            }
+                        }
+                    } finally {
+                        generator.releaseAll();
+                    }
                 }
-            } finally {
-                generator.releaseAll();
             }
         }
     }

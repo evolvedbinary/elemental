@@ -178,7 +178,7 @@
                         </goals>
                         <configuration>
                             <assembleDirectory>${assemble.dir}</assembleDirectory>
-                            <programs />
+                            <programs/>
                             <configurationDirectory>etc</configurationDirectory>
                             <copyConfigurationDirectory>true</copyConfigurationDirectory>
                             <logsDirectory>logs</logsDirectory>

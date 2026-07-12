@@ -47,6 +47,8 @@ package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
@@ -60,7 +62,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -82,47 +83,27 @@ public class JaxpDtdCatalogTest {
     public static void prepareResources() throws XMLDBException, IOException {
 
         // Switch off validation
-        Collection conf = null;
-        try {
-            conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse");
+        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse")) {
             existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
-        } finally {
-            if(conf != null) {
-                conf.close();
-            }
         }
 
-        Collection dtdsCollection = null;
-        try {
-            dtdsCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/dtds");
+        try (final Collection dtdsCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/dtds")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/dtds/MyNameSpace.dtd")) {
                 assertNotNull(is);
                 existEmbeddedServer.storeResource(dtdsCollection, "MyNameSpace.dtd", InputStreamUtil.readAll(is));
             }
-        } finally {
-            if(dtdsCollection != null) {
-                dtdsCollection.close();
-            }
         }
 
-        Collection parseCollection = null;
-        try {
-            parseCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse");
+        try (final Collection parseCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/catalog.xml")) {
                 assertNotNull(is);
                 existEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
             }
-        } finally {
-            if(parseCollection != null) {
-                parseCollection.close();
-            }
         }
 
-        Collection instanceCollection = null;
-        try {
-            instanceCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/instance");
+        try (final Collection instanceCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/instance")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/valid-dtd.xml")) {
                 assertNotNull(is);
@@ -133,17 +114,16 @@ public class JaxpDtdCatalogTest {
                 assertNotNull(is);
                 existEmbeddedServer.storeResource(instanceCollection, "invalid-dtd.xml", InputStreamUtil.readAll(is));
             }
-        } finally {
-            if(instanceCollection != null) {
-                instanceCollection.close();
-            }
         }
     }
 
     @Before
     public void clearGrammarCache() throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()");
-        results.getResource(0).getContent();
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                resource.getContent();
+            }
+        }
     }
 
     /*
@@ -204,10 +184,13 @@ public class JaxpDtdCatalogTest {
     }
 
     private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
-        final ResourceSet results = existEmbeddedServer.executeQuery(query);
-        assertEquals(1, results.getSize());
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            assertEquals(1, result.getSize());
 
-        final String result = (String) results.getResource(0).getContent();
-        assertThat(result, hasXPath("//status/text()", equalTo(expectedValue)));
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String content = (String) resource.getContent();
+                assertThat(content, hasXPath("//status/text()", equalTo(expectedValue)));
+            }
+        }
     }
 }

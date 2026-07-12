@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,6 +52,8 @@ import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 
+import javax.annotation.Nullable;
+
 
 /**
  * abstract base class for all user-related tasks.
@@ -35,47 +61,81 @@ import org.xmldb.api.base.XMLDBException;
  * @author <a href="mailto:peter.klotz@blue-elephant-systems.com">Peter Klotz</a>
  * @author  andrzej@chaeron.com
  */
-public abstract class UserTask extends AbstractXMLDBTask
-{
-    protected UserManagementService service = null;
-    protected Collection            base    = null;
+public abstract class UserTask extends AbstractXMLDBTask {
+    private @Nullable UserManagementService service = null;
+    private @Nullable Collection base = null;
 
-    /* (non-Javadoc)
-     * @see org.apache.tools.ant.Task#execute()
-     */
-    public void execute() throws BuildException
-    {
-    	if( uri == null ) {
-            throw( new BuildException( "you have to specify an XMLDB collection URI" ) );
-        }
-        
-        registerDatabase();
-        
+    protected UserManagementService getService() {
+        return service;
+    }
+
+    protected Collection getBase() {
+        return base;
+    }
+
+    @Override
+    public final void execute() throws BuildException {
         try {
-            log( "Get base collection: " + uri, Project.MSG_DEBUG );
-            base = DatabaseManager.getCollection( uri, user, password );
+            prepareToExecuteUserTask();
+            executeUserTask();
+        } finally {
+            close();
+        }
+    }
 
-            if( base == null ) {
+    protected void prepareToExecuteUserTask() throws BuildException {
+        if (uri == null) {
+            throw new BuildException( "you have to specify an XMLDB collection URI");
+        }
+
+        registerDatabase();
+
+        try {
+            log("Get base collection: " + uri, Project.MSG_DEBUG);
+            this.base = DatabaseManager.getCollection(uri, user, password);
+
+            if (base == null) {
                 final String msg = "Collection " + uri + " could not be found.";
 
-                if( failonerror ) {
-                    throw( new BuildException( msg ) );
+                if (failonerror) {
+                    throw new BuildException(msg);
                 } else {
-                    log( msg, Project.MSG_ERR );
+                    log(msg, Project.MSG_ERR);
                 }
             } else {
-                service = (UserManagementService)base.getService( "UserManagementService", "1.0" );
+                this.service = (UserManagementService) base.getService( "UserManagementService", "1.0" );
             }
 
-        }
-        catch( final XMLDBException e ) {
+        } catch (final XMLDBException e) {
             final String msg = "XMLDB exception caught: " + e.getMessage();
 
-            if( failonerror ) {
-                throw( new BuildException( msg, e ) );
+            if(failonerror) {
+                throw new BuildException(msg, e);
             } else {
-                log( msg, e, Project.MSG_ERR );
+                log(msg, e, Project.MSG_ERR);
             }
+        }
+    }
+
+    /**
+     * Execute the user task.
+     *
+     * @throws BuildException if an error occurs.
+     */
+    public abstract void executeUserTask() throws BuildException;
+
+    protected void close() {
+        if (service != null) {
+            service = null;
+        }
+
+        if (base != null) {
+            try {
+                base.close();
+            } catch (final XMLDBException e) {
+                // no-op
+            }
+            base = null;
         }
     }
 }

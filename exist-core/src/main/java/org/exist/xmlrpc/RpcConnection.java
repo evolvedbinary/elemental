@@ -143,7 +143,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.MediaTypeResolver;
 
@@ -301,10 +301,14 @@ public class RpcConnection implements RpcAPI {
                 context.setProtectedDocs(lockedDocuments);
             }
             final Properties outputProperties = new Properties();
-            final Sequence result = xquery.execute(broker, compiled, contextSet, outputProperties);
+            final Sequence result = xquery.execute(broker, compiled, contextSet, outputProperties, true);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Query took {} ms.", System.currentTimeMillis() - start);
+            }
+
             // pass last modified date to the HTTP response
             HTTPUtils.addLastModifiedHeader(result, context);
-            LOG.info("query took {}ms.", System.currentTimeMillis() - start);
+
             return new QueryResult(result, outputProperties);
         } catch (final XPathException e) {
             return new QueryResult(e);

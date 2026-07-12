@@ -55,6 +55,7 @@ import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.*;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.GroupAider;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -66,7 +67,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
 import org.xml.sax.SAXException;
@@ -112,7 +113,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentOwnerToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -122,7 +123,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentOwnerToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -132,7 +133,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionOwnerToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -142,7 +143,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionOwnerToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -152,7 +153,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentOwnerToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -162,7 +163,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentOwnerToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -172,7 +173,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionOwnerToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -182,7 +183,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionOwnerToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -192,7 +193,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the owner of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentOwnerToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -202,7 +203,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the owner of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentOwnerToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -212,7 +213,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the owner of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionOwnerToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -222,7 +223,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the owner of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionOwnerToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -232,7 +233,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test
-    public void changeDocumentOwnerAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
     }
@@ -242,7 +243,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test
-    public void changeDocumentOwnerAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
     }
@@ -252,7 +253,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test
-    public void changeCollectionOwnerAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
     }
@@ -262,7 +263,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the owner of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test
-    public void changeCollectionOwnerAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
     }
@@ -272,7 +273,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
@@ -284,7 +285,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test
-    public void changeDocumentOwnerAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
     }
@@ -294,7 +295,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
@@ -306,7 +307,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test
-    public void changeCollectionOwnerAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
     }
@@ -316,7 +317,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the owner of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
@@ -328,7 +329,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the owner of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
@@ -340,7 +341,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the owner of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
@@ -352,7 +353,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the owner of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
@@ -365,7 +366,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -385,7 +386,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -405,7 +406,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -425,7 +426,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionOwnerToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -445,7 +446,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentOwnerToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentOwnerToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -465,7 +466,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentOwnerToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentOwnerToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -485,7 +486,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionOwnerToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionOwnerToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -505,7 +506,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionOwnerToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionOwnerToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -524,7 +525,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentGroupToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -534,7 +535,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentGroupToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -544,7 +545,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionGroupToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToSelfAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -554,7 +555,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionGroupToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToSelfAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -564,7 +565,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the group of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentGroupToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -574,7 +575,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the group of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentGroupToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -584,7 +585,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the group of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionGroupToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToSelfAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -594,7 +595,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the group of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionGroupToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToSelfAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -604,7 +605,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the group of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentGroupToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -614,7 +615,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the group of {@link #USER1_DOC1} from "user1" to "user1".
      */
     @Test
-    public void changeDocumentGroupToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER1_NAME);
     }
@@ -624,7 +625,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the group of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionGroupToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToSelfAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -634,7 +635,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the group of {@link #USER1_COL1} from "user1" to "user1".
      */
     @Test
-    public void changeCollectionGroupToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToSelfAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER1_NAME);
     }
@@ -644,7 +645,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test
-    public void changeDocumentGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
     }
@@ -654,7 +655,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test
-    public void changeDocumentGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
     }
@@ -664,7 +665,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test
-    public void changeCollectionGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
     }
@@ -674,7 +675,7 @@ public class PermissionsFunctionChownTest {
      * as a DBA user change the group of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test
-    public void changeCollectionGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
     }
@@ -684,7 +685,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the group of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
@@ -696,7 +697,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the group of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test
-    public void changeDocumentGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
     }
@@ -706,7 +707,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the group of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
@@ -718,7 +719,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the group of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test
-    public void changeCollectionGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
     }
@@ -728,7 +729,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the group of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
@@ -740,7 +741,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the group of {@link #USER1_DOC1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USER2_NAME);
@@ -752,7 +753,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the group of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
@@ -764,7 +765,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the group of {@link #USER1_COL1} from "user1" to "user2".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USER2_NAME);
@@ -776,7 +777,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the group of {@link #USER1_DOC1} from "user1" to "otherGroup" (of which user1 is a member).
      */
     @Test
-    public void changeDocumentGroupToMemberGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToMemberGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), OTHER_GROUP_NAME);
     }
@@ -786,7 +787,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the group of {@link #USER1_DOC1} from "user1" to "otherGroup" (of which user1 is a member).
      */
     @Test
-    public void changeDocumentGroupToMemberGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToMemberGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), OTHER_GROUP_NAME);
     }
@@ -796,7 +797,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the group of {@link #USER1_COL1} from "user1" to "otherGroup" (of which user1 is a member).
      */
     @Test
-    public void changeCollectionGroupToMemberGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToMemberGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), OTHER_GROUP_NAME);
     }
@@ -806,7 +807,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the group of {@link #USER1_COL1} from "user1" to "otherGroup" (of which user1 is a member).
      */
     @Test
-    public void changeCollectionGroupToMemberGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToMemberGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), OTHER_GROUP_NAME);
     }
@@ -816,7 +817,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the group of {@link #USER1_DOC1} from "user1" to "otherGroup" (of which user2 is a member).
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupToMemberGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToMemberGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), OTHER_GROUP_NAME);
@@ -828,7 +829,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the document's owner) change the group of {@link #USER1_DOC1} from "user1" to "otherGroup" (of which user2 is a member).
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupToMemberGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToMemberGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         extractPermissionDenied(() ->
                 changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), OTHER_GROUP_NAME)
@@ -840,7 +841,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the group of {@link #USER1_COL1} from "user1" to "otherGroup" (of which user2 is a member).
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupToMemberGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToMemberGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), OTHER_GROUP_NAME);
@@ -852,7 +853,7 @@ public class PermissionsFunctionChownTest {
      * as the user "user2" (not the collection's owner) change the group of {@link #USER1_COL1} from "user1" to "otherGroup" (of which user2 is a member).
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupToMemberGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToMemberGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
         extractPermissionDenied(() ->
                 changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), OTHER_GROUP_NAME)
@@ -865,7 +866,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -885,7 +886,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -905,7 +906,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid_restricted() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -925,7 +926,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has cleared the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionGroupToSelfAsNonDBAOwner_clearsSetUidAndSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
@@ -945,7 +946,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentGroupToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentGroupToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -965,7 +966,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeDocumentGroupToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeDocumentGroupToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -985,7 +986,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionGroupToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionGroupToSelfAsDBA_preservesSetUidAndSetGid_restricted() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -1005,7 +1006,7 @@ public class PermissionsFunctionChownTest {
      * Finally make sure that chown has preserved the setUid and setGid bits.
      */
     @Test
-    public void changeCollectionGroupToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException {
+    public void changeCollectionGroupToSelfAsDBA_preservesSetUidAndSetGid() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
         final Subject user1 = pool.getSecurityManager().getSystemSubject();
 
@@ -1020,31 +1021,31 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void changeCollectionOwnerToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-user", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionOwnerToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-user", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionOwnerToRemovedUserAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToRemovedUserAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeCollectionOwnerToRemovedUserAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToRemovedUserAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeCollectionOwnerToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-user", USER1_NAME);
     }
@@ -1053,13 +1054,13 @@ public class PermissionsFunctionChownTest {
      * With {@code posix-chown-restricted="true"},
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "no-such-user".
      */
-    public void changeCollectionOwnerToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-user", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionOwnerToRemovedUserAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToRemovedUserAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
@@ -1069,7 +1070,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "userrm".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerToRemovedUserAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToRemovedUserAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
@@ -1077,7 +1078,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-user", USER1_NAME);
@@ -1085,7 +1086,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-user", USER1_NAME);
@@ -1093,7 +1094,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerToRemovedUserAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToRemovedUserAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
@@ -1101,7 +1102,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionOwnerToRemovedUserAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionOwnerToRemovedUserAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
@@ -1109,55 +1110,55 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void changeCollectionGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToRemovedGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToRemovedGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToRemovedGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToRemovedGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToRemovedGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToRemovedGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeCollectionGroupToRemovedGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToRemovedGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-group", USER1_NAME);
@@ -1165,7 +1166,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), "no-such-group", USER1_NAME);
@@ -1173,7 +1174,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupToRemovedGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToRemovedGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
@@ -1181,7 +1182,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionGroupToRemovedGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeCollectionGroupToRemovedGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), USERRM_NAME, USER1_NAME);
@@ -1189,31 +1190,31 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void changeDocumentOwnerToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-user", USER1_NAME);
     }
 
     @Test
-    public void changeDocumentOwnerToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-user", USER1_NAME);
     }
 
     @Test
-    public void changeDocumentOwnerToRemovedUserAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToRemovedUserAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeDocumentOwnerToRemovedUserAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToRemovedUserAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeDocumentOwnerToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-user", USER1_NAME);
     }
@@ -1223,7 +1224,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "no-such-user".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-user", USER1_NAME);
@@ -1231,7 +1232,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void changeDocumentOwnerToRemovedUserAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToRemovedUserAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
@@ -1241,7 +1242,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "no-such-user".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerToRemovedUserAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToRemovedUserAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
@@ -1249,7 +1250,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-user", USER1_NAME);
@@ -1257,7 +1258,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-user", USER1_NAME);
@@ -1265,7 +1266,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerToRemovedUserAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToRemovedUserAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
@@ -1273,7 +1274,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentOwnerToRemovedUserAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentOwnerToRemovedUserAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
@@ -1281,55 +1282,55 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void changeDocumentGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToRemovedGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToRemovedGroupAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToRemovedGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToRemovedGroupAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeGroup(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-group", USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToRemovedGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToRemovedGroupAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
 
     @Test
-    public void changeDocumentGroupToRemovedGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToRemovedGroupAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeGroup(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-group", USER1_NAME);
@@ -1337,7 +1338,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), "no-such-group", USER1_NAME);
@@ -1345,7 +1346,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupToRemovedGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToRemovedGroupAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
@@ -1353,7 +1354,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentGroupToRemovedGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void changeDocumentGroupToRemovedGroupAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeGroup(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), USERRM_NAME, USER1_NAME);
@@ -1363,31 +1364,31 @@ public class PermissionsFunctionChownTest {
     //TODO need tests for changing owner like "user:group" and checking both resultant group and owner
 
     @Test
-    public void ChangeCollectionOwnerAndGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeCollectionOwnerAndGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeCollectionOwnerAndGroupToRemovedAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToRemovedAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeCollectionOwnerAndGroupToRemovedAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToRemovedAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
@@ -1396,13 +1397,13 @@ public class PermissionsFunctionChownTest {
      * With {@code posix-chown-restricted="true"},
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "no-such-user".
      */
-    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeCollectionOwnerAndGroupToRemovedAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToRemovedAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
     }
@@ -1412,7 +1413,7 @@ public class PermissionsFunctionChownTest {
      * as the collection owner user change the owner of {@link #USER1_COL1} from "user1" to "userrm".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeCollectionOwnerAndGroupToRemovedAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToRemovedAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
@@ -1420,7 +1421,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
@@ -1428,7 +1429,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
@@ -1436,7 +1437,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeCollectionOwnerAndGroupToRemovedAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToRemovedAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
@@ -1444,7 +1445,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeCollectionOwnerAndGroupToRemovedAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeCollectionOwnerAndGroupToRemovedAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
@@ -1452,31 +1453,31 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void ChangeDocumentOwnerAndGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToNonExistentAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeDocumentOwnerAndGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToNonExistentAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeDocumentOwnerAndGroupToRemovedAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToRemovedAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeDocumentOwnerAndGroupToRemovedAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToRemovedAsDBA_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         changeOwner(adminUser, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
     }
 
     @Test
-    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
     }
@@ -1486,7 +1487,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "no-such-user".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
@@ -1494,7 +1495,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test
-    public void ChangeDocumentOwnerAndGroupToRemovedAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToRemovedAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         changeOwner(user1, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
     }
@@ -1504,7 +1505,7 @@ public class PermissionsFunctionChownTest {
      * as the document owner user change the owner of {@link #USER1_DOC1} from "user1" to "no-such-user".
      */
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeDocumentOwnerAndGroupToRemovedAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToRemovedAsNonDBAOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
             changeOwner(user1, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
@@ -1512,7 +1513,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
@@ -1520,7 +1521,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToNonExistentAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple("no-such-user", "no-such-group"), Tuple(USER1_NAME, USER1_NAME));
@@ -1528,7 +1529,7 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeDocumentOwnerAndGroupToRemovedAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToRemovedAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, NOT_RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
@@ -1536,22 +1537,22 @@ public class PermissionsFunctionChownTest {
     }
 
     @Test(expected=PermissionDeniedException.class)
-    public void ChangeDocumentOwnerAndGroupToRemovedAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+    public void ChangeDocumentOwnerAndGroupToRemovedAsNonOwner_restricted() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
         extractPermissionDeniedWithAuth(() -> {
             final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
             changeOwner(user2, RESTRICTED, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), Tuple(USERRM_NAME, USERRM_NAME), Tuple(USER1_NAME, USER1_NAME));
         });
     }
 
-    private void changeOwner(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newOwner) throws EXistException, PermissionDeniedException, XPathException {
+    private void changeOwner(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newOwner) throws EXistException, PermissionDeniedException, XPathException, IOException {
         changeOwner(execAsUser, restricted, uri, newOwner, newOwner);
     }
 
-    private void changeOwner(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final Tuple2<String, String> newOwnerGroup, final Tuple2<String, String> expectedOwnerGroup) throws EXistException, PermissionDeniedException, XPathException {
+    private void changeOwner(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final Tuple2<String, String> newOwnerGroup, final Tuple2<String, String> expectedOwnerGroup) throws EXistException, PermissionDeniedException, XPathException, IOException {
         changeOwner(execAsUser, restricted, uri, newOwnerGroup.<String>fold(og -> og._1 + ":" + og._2), expectedOwnerGroup.<String>fold(og -> og._1 + ":" + og._2));
     }
 
-    private void changeOwner(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newOwnerGroup, final String expectedOwnerGroup) throws EXistException, PermissionDeniedException, XPathException {
+    private void changeOwner(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newOwnerGroup, final String expectedOwnerGroup) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
 
         final boolean prevRestricted = setPosixChownRestricted(restricted);
@@ -1561,10 +1562,10 @@ public class PermissionsFunctionChownTest {
                 "sm:chown(xs:anyURI('" + uri.getRawCollectionPath() + "'), '" + newOwnerGroup + "'),\n" +
                 "sm:get-permissions(xs:anyURI('" + uri.getRawCollectionPath() + "'))/sm:permission/(string(@owner), string(@group))";
 
-        try (final DBBroker broker = pool.get(Optional.of(execAsUser))) {
+        try (final DBBroker broker = pool.get(Optional.of(execAsUser));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            final XQuery xquery = existWebServer.getBrokerPool().getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = queryResult.result;
 
             assertEquals(2, result.getItemCount());
 
@@ -1579,11 +1580,11 @@ public class PermissionsFunctionChownTest {
         }
     }
 
-    private void changeGroup(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newGroup) throws EXistException, PermissionDeniedException, XPathException {
+    private void changeGroup(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newGroup) throws EXistException, PermissionDeniedException, XPathException, IOException {
         changeGroup(execAsUser, restricted, uri, newGroup, newGroup);
     }
 
-    private void changeGroup(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newGroup, final String expectedGroup) throws EXistException, PermissionDeniedException, XPathException {
+    private void changeGroup(final Subject execAsUser, final boolean restricted, final XmldbURI uri, final String newGroup, final String expectedGroup) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = existWebServer.getBrokerPool();
 
         final boolean prevRestricted = setPosixChownRestricted(restricted);
@@ -1593,10 +1594,10 @@ public class PermissionsFunctionChownTest {
                         "sm:chgrp(xs:anyURI('" + uri.getRawCollectionPath() + "'), '" + newGroup + "'),\n" +
                         "sm:get-permissions(xs:anyURI('" + uri.getRawCollectionPath() + "'))/sm:permission/string(@group)";
 
-        try (final DBBroker broker = pool.get(Optional.of(execAsUser))) {
+        try (final DBBroker broker = pool.get(Optional.of(execAsUser));
+                final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
-            final XQuery xquery = existWebServer.getBrokerPool().getXQueryService();
-            final Sequence result = xquery.execute(broker, query, null);
+            final Sequence result = queryResult.result;
 
             assertEquals(1, result.getItemCount());
             assertEquals(expectedGroup, result.itemAt(0).getStringValue());

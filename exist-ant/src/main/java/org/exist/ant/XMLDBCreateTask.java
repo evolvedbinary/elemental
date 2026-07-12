@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,6 +53,7 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
+import javax.annotation.Nullable;
 import java.net.URISyntaxException;
 
 
@@ -50,9 +75,8 @@ public class XMLDBCreateTask extends AbstractXMLDBTask
 
         registerDatabase();
 
-        try {
-            log( "Get base collection: " + uri, Project.MSG_DEBUG );
-            final Collection base = DatabaseManager.getCollection( uri, user, password );
+        log( "Get base collection: " + uri, Project.MSG_DEBUG );
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
             if( base == null ) {
                 final String msg = "Collection " + uri + " could not be found.";
@@ -64,20 +88,30 @@ public class XMLDBCreateTask extends AbstractXMLDBTask
                 }
 
             } else {
-                Collection root = null;
+                @Nullable Collection root = null;
+                try {
+                    if (collection != null) {
+                        log("Creating collection " + collection + " in base collection " + uri, Project.MSG_DEBUG);
+                        root = mkcol(base, uri, collection);
+                    } else {
+                        root = base;
+                    }
 
-                if( collection != null ) {
-                    log( "Creating collection " + collection + " in base collection " + uri, Project.MSG_DEBUG );
-                    root = mkcol( base, uri, collection );
-                } else {
-                    root = base;
+                    if (permissions != null) {
+                        setPermissions(root);
+                    }
+
+                    log("Created collection " + root.getName(), Project.MSG_INFO);
+
+                } finally {
+                    if (root != null) {
+                        try {
+                            root.close();
+                        } catch (final XMLDBException e) {
+                            // no-op
+                        }
+                    }
                 }
-                
-                if( permissions != null ) {
-                	setPermissions( root );
-                }
-                
-                log( "Created collection " + root.getName(), Project.MSG_INFO );
             }
 
         }
@@ -114,37 +148,33 @@ public class XMLDBCreateTask extends AbstractXMLDBTask
     }
 
 
-    private Collection mkcol(final Collection root, final String base, /*String path,*/  final String relPath ) throws XMLDBException, URISyntaxException
-    {
-        CollectionManagementService mgtService;
-        Collection                  current  = root;
-        Collection                  c;
-        XmldbURI                    baseUri  = XmldbURI.xmldbUriFor( base );
-        final XmldbURI                    collPath = XmldbURI.xmldbUriFor( relPath );
-        log( "BASEURI=" + baseUri, Project.MSG_DEBUG );
-        log( "RELPATH=" + relPath, Project.MSG_DEBUG );
-
-        //log("PATH=" + path, Project.MSG_DEBUG);
-
+    private Collection mkcol(Collection collection, final String base, final String relPath) throws XMLDBException, URISyntaxException {
+        XmldbURI baseUri  = XmldbURI.xmldbUriFor(base);
+        final XmldbURI collPath = XmldbURI.xmldbUriFor(relPath);
         final XmldbURI[] segments = collPath.getPathSegments();
 
-        for( final XmldbURI segment : segments ) {
-            baseUri = baseUri.append( segment );
+        for (final XmldbURI segment : segments) {
+            baseUri = baseUri.append( segment);
 
-            log( "Get collection " + baseUri, Project.MSG_DEBUG );
-            c = DatabaseManager.getCollection( baseUri.toString(), user, password );
-
-            if( c == null ) {
-                log( "Create collection management service for collection " + current.getName(), Project.MSG_DEBUG );
-                mgtService = (CollectionManagementService)current.getService( "CollectionManagementService", "1.0" );
-                log( "Create child collection " + segment );
-                current = mgtService.createCollection( segment.toString() );
-                log( "Created collection " + current.getName() + '.' );
-
-            } else {
-                current = c;
+            Collection child = DatabaseManager.getCollection(baseUri.toString(), user, password);
+            if (child == null) {
+                final CollectionManagementService mgtService = (CollectionManagementService) collection.getService("CollectionManagementService", "1.0");
+                log("Create child collection " + segment);
+                child = mgtService.createCollection(segment.toString());
+                log("Created collection " + child.getName() + '.');
             }
+
+            try {
+                // close the parent collection
+                collection.close();
+            } catch (final XMLDBException e) {
+                // no-op
+            }
+
+            collection = child;
+
         }
-        return( current );
+
+        return collection;
     }
 }

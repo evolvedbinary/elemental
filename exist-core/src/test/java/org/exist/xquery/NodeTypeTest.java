@@ -47,12 +47,12 @@ package org.exist.xquery;
 
 import org.exist.TestUtils;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.w3c.dom.Node;
-import org.xmldb.api.base.*;
-import org.xmldb.api.modules.XMLResource;
+import org.xmldb.api.base.CompiledExpression;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XQueryService;
 
 /**
@@ -134,11 +134,13 @@ public class NodeTypeTest {
 		query.append("$doc := xmldb:store('" + XmldbURI.ROOT_COLLECTION + "', $document, $data)");
 		query.append("return <result/>");
 
-		final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
+		final XQueryService service = (XQueryService) server.getRoot().getService("XQueryService", "1.0");
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("document", document);
         service.declareVariable("data", xml);
-        service.execute(cQuery);
+        try (final EXistResourceSet result = (EXistResourceSet) service.execute(cQuery)) {
+			// needed to ensure that result is closed
+		}
 	}
 
 	/**
@@ -175,10 +177,12 @@ public class NodeTypeTest {
 		query.append("    return\n");
 		query.append("		              ()\n");
 
-		final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
+		final XQueryService service = (XQueryService) server.getRoot().getService("XQueryService", "1.0");
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("collection", XmldbURI.ROOT_COLLECTION);
-        service.execute(cQuery);
+		try (final EXistResourceSet result = (EXistResourceSet) service.execute(cQuery)) {
+			// needed to ensure that result is closed
+		}
 	}
 
 	/**
@@ -194,28 +198,8 @@ public class NodeTypeTest {
 
 		final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
         final CompiledExpression cQuery = service.compile(query.toString());
-        service.execute(cQuery);
-	}
-
-	/**
-	 * Loads the xml document identified by <code>document</code> from the database.
-	 *
-	 * @param document the document to load	 
-	 */
-	@SuppressWarnings("unused")
-	private Node load(final String document) throws XMLDBException {
-		final StringBuilder query = new StringBuilder();
-        query.append("declare variable $document as xs:string external;");
-		query.append("let $result := doc(string-join(('" + XmldbURI.ROOT_COLLECTION + "', $document), '/'))");
-		query.append("return ($result)");
-
-		final XQueryService service = (XQueryService)server.getRoot().getService("XQueryService", "1.0");
-        final CompiledExpression cQuery = service.compile(query.toString());
-        service.declareVariable("document", document);
-        final ResourceSet set = service.execute(cQuery);
-        if (set != null && set.getSize() > 0) {
-            return ((XMLResource)set.getIterator().nextResource()).getContentAsDOM();
-        }
-		return null;
+		try (final EXistResourceSet result = (EXistResourceSet) service.execute(cQuery)) {
+			// needed to ensure that result is closed
+		}
 	}
 }

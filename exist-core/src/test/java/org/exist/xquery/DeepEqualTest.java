@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,11 +47,19 @@ package org.exist.xquery;
 
 import org.exist.TestUtils;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
-import org.xmldb.api.modules.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.modules.CollectionManagementService;
+import org.xmldb.api.modules.XMLResource;
+import org.xmldb.api.modules.XPathQueryService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -500,24 +532,34 @@ public class DeepEqualTest {
 
     @Test
     public void forLoop() throws XMLDBException {
-        ResourceSet rs = query.query("let $set := <root><b>test</b><c><a>test</a></c><d><a>test</a></d></root>, $test := <c><a>test</a></c> for $node in $set/* return deep-equal($node, $test)");
-        assertEquals(3, rs.getSize());
-        assertEquals("false", rs.getResource(0).getContent());
-        assertEquals("true", rs.getResource(1).getContent());
-        assertEquals("false", rs.getResource(2).getContent());
+        try (final EXistResourceSet rs = (EXistResourceSet) query.query("let $set := <root><b>test</b><c><a>test</a></c><d><a>test</a></d></root>, $test := <c><a>test</a></c> for $node in $set/* return deep-equal($node, $test)")) {
+            assertEquals(3, rs.getSize());
+            try (final EXistResource resource = (EXistResource) rs.getResource(0)) {
+                assertEquals("false", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) rs.getResource(1)) {
+                assertEquals("true", resource.getContent());
+            }
+            try (final EXistResource resource = (EXistResource) rs.getResource(2)) {
+                assertEquals("false", resource.getContent());
+            }
+        }
     }
 
     private void assertQuery(boolean expected, String q) throws XMLDBException {
-        ResourceSet rs = query.query(q);
-        assertEquals(1, rs.getSize());
-        assertEquals(Boolean.toString(expected), rs.getResource(0).getContent());
+        try (final EXistResourceSet rs = (EXistResourceSet) query.query(q)) {
+            assertEquals(1, rs.getSize());
+            try (final EXistResource resource = (EXistResource) rs.getResource(0)) {
+                assertEquals(Boolean.toString(expected), resource.getContent());
+            }
+        }
     }
 
-    private XMLResource createDocument(String name, String content) throws XMLDBException {
-        XMLResource res = (XMLResource) c.createResource(name, XMLResource.RESOURCE_TYPE);
-        res.setContent(content);
-        c.storeResource(res);
-        return res;
+    private void createDocument(String name, String content) throws XMLDBException {
+        try (final EXistResource res = (EXistResource) c.createResource(name, XMLResource.RESOURCE_TYPE)) {
+            res.setContent(content);
+            c.storeResource(res);
+        }
     }
 
     @ClassRule
@@ -525,23 +567,31 @@ public class DeepEqualTest {
 
     @BeforeClass
     public static void setupTestCollection() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final CollectionManagementService rootcms = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
-        c = root.getChildCollection("test");
-        if (c != null) {
-            rootcms.removeCollection("test");
+        try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+            final CollectionManagementService rootcms = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+
+            try (final Collection c = root.getChildCollection("test")) {
+                if (c != null) {
+                    rootcms.removeCollection("test");
+                }
+            }
+
+            c = rootcms.createCollection("test");
+            assertNotNull(c);
+            query = (XPathQueryService) c.getService("XPathQueryService", "1.0");
         }
-        c = rootcms.createCollection("test");
-        assertNotNull(c);
-        query = (XPathQueryService) c.getService("XPathQueryService", "1.0");
     }
 
     @AfterClass
     public static void tearDown() throws XMLDBException {
         if (c != null) {
-            final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-            final CollectionManagementService rootcms = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
-            rootcms.removeCollection("test");
+            c.close();
+
+            try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
+                final CollectionManagementService rootcms = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+                rootcms.removeCollection("test");
+            }
+
             query = null;
             c = null;
         }

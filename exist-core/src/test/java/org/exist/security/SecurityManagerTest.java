@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,7 @@ import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.internal.RealmImpl;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -34,12 +59,13 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
@@ -83,7 +109,7 @@ public class SecurityManagerTest {
     }
 
     @Test
-    public void deleteAccount() throws EXistException, PermissionDeniedException, XPathException, LockException {
+    public void deleteAccount() throws EXistException, PermissionDeniedException, XPathException, LockException, IOException {
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         final SecurityManager securityManager = brokerPool.getSecurityManager();
 
@@ -172,15 +198,19 @@ public class SecurityManagerTest {
         }
     }
 
-    private boolean removedAccountExists(final DBBroker broker, final String username) throws XPathException, PermissionDeniedException {
-        final XQuery queryService = broker.getBrokerPool().getXQueryService();
-        final Sequence result = queryService.execute(broker, "declare namespace config='http://exist-db.org/Configuration'; collection('" + REMOVED_ACCOUNTS_URI + "')//config:account[config:name eq '" + username + "']", null);
-        return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+    private boolean removedAccountExists(final DBBroker broker, final String username) throws XPathException, PermissionDeniedException, IOException {
+        final String query = "declare namespace config='http://exist-db.org/Configuration'; collection('" + REMOVED_ACCOUNTS_URI + "')//config:account[config:name eq '" + username + "']";
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
+            return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+        }
     }
 
-    private boolean removedGroupExists(final DBBroker broker, final String groupName) throws XPathException, PermissionDeniedException {
-        final XQuery queryService = broker.getBrokerPool().getXQueryService();
-        final Sequence result = queryService.execute(broker, "declare namespace config='http://exist-db.org/Configuration'; collection('" + REMOVED_GROUPS_URI + "')//config:group[config:name eq '" + groupName + "']", null);
-        return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+    private boolean removedGroupExists(final DBBroker broker, final String groupName) throws XPathException, PermissionDeniedException, IOException {
+        final String query = "declare namespace config='http://exist-db.org/Configuration'; collection('" + REMOVED_GROUPS_URI + "')//config:group[config:name eq '" + groupName + "']";
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
+            return result.getItemCount() == 1 && result.itemAt(0).toJavaObject(Boolean.class) == true;
+        }
     }
 }

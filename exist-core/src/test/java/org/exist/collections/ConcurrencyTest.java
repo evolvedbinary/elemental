@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,6 +48,7 @@ package org.exist.collections;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +58,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
@@ -146,17 +170,19 @@ public class ConcurrencyTest {
     @BeforeClass
     public static void initDB() throws XMLDBException {
         final CollectionManagementService mgmt = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
-        final Collection test = mgmt.createCollection("test");
+        try (final Collection test = mgmt.createCollection("test")) {
 
-        for (int i = 1; i <= DOC_COUNT; i++) {
-            final Resource r = test.createResource("test" + i + ".xml", "XMLResource");
-            final String XML =
-                "<test id='" + i + "'>" +
-                "   <a>b</a>" +
-                "   <c>d</c>" +
-                "</test>";
-            r.setContent(XML);
-            test.storeResource(r);
+            for (int i = 1; i <= DOC_COUNT; i++) {
+                try (final EXistResource r = (EXistResource) test.createResource("test" + i + ".xml", "XMLResource")) {
+                    final String XML =
+                        "<test id='" + i + "'>" +
+                            "   <a>b</a>" +
+                            "   <c>d</c>" +
+                            "</test>";
+                    r.setContent(XML);
+                    test.storeResource(r);
+                }
+            }
         }
     }
 

@@ -67,9 +67,7 @@ public class DtdEntityTest {
     public void loadWithEntities() throws XMLDBException {
         final String input = "<a>first empty: &empty; then trade: &trade; </a>";
 
-        Collection col = null;
-        try {
-            col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "entity");
+        try (final Collection col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "entity")) {
             existEmbeddedServer.storeResource(col, "docname.xml", input.getBytes());
 
             // should throw XMLDBException
@@ -78,10 +76,6 @@ public class DtdEntityTest {
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage().contains("The entity \"empty\" was referenced, but not declared"));
             return;
-        } finally {
-            if(col != null) {
-                col.close();
-            }
         }
 
         fail("Should have thrown XMLDBException");
@@ -93,9 +87,7 @@ public class DtdEntityTest {
                 + "<!DOCTYPE procedure PUBLIC \"-//AAAA//DTD Procedure 0.4//EN\" \"aaaa.dtd\" >"
                 + "<a>first empty: &empty; then trade: &trade; </a>";
 
-        Collection col = null;
-        try {
-            col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "entity");
+        try (final Collection col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "entity")) {
             existEmbeddedServer.storeResource(col, "docname.xml", input.getBytes(UTF_8));
 
             // should throw XMLDBException
@@ -104,10 +96,6 @@ public class DtdEntityTest {
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage().contains("The entity \"empty\" was referenced, but not declared"));
             return;
-        } finally {
-            if(col != null) {
-                col.close();
-            }
         }
 
         fail("Should have thrown XMLDBException");

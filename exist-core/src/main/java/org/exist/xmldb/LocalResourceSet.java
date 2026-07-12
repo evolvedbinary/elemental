@@ -60,6 +60,7 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -70,18 +71,22 @@ import org.xmldb.api.base.ResourceIterator;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
-public class LocalResourceSet extends AbstractLocal implements ResourceSet {
+public class LocalResourceSet extends AbstractLocal implements ResourceSet, EXistResourceSet {
 
-    private final static Logger LOG = LogManager.getLogger(LocalResourceSet.class);
+    private static final Logger LOG = LogManager.getLogger(LocalResourceSet.class);
 
     private final List<Object> resources = new ArrayList<>();
     private final Properties outputProperties;
+    private boolean closed;
+    private final Runnable queryResultCloser;
 
-    public LocalResourceSet(final Subject user, final BrokerPool pool, final LocalCollection col, final Properties properties, final Sequence val, final String sortExpr) throws XMLDBException {
+    public LocalResourceSet(final Subject user, final BrokerPool pool, final LocalCollection col, final Properties properties, final XQueryUtil.QueryResult queryResult, final String sortExpr) throws XMLDBException {
         super(user, pool, col);
         this.outputProperties = properties;
+        this.queryResultCloser = queryResult::close;
 
-        if(val.isEmpty()) {
+        final Sequence val = queryResult.result;
+        if (val.isEmpty()) {
             return;
         }
 
@@ -122,16 +127,8 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
 
     @Override
     public void clear() throws XMLDBException {
-        //cleanup any binary values
-        resources.stream().filter((resource) -> (resource instanceof BinaryValue)).forEach((resource) -> {
-            try {
-                ((BinaryValue) resource).close();
-            } catch(final IOException ioe) {
-                LOG.warn("Unable to cleanup BinaryValue: {}", resource.hashCode(), ioe);
-            }
-        });
-
         resources.clear();
+        queryResultCloser.run();
     }
 
     @Override
@@ -258,6 +255,21 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
     @Override
     public void removeResource(final long pos) throws XMLDBException {
         resources.remove(pos);
+    }
+
+    public final boolean isClosed() {
+        return closed;
+    }
+
+    @Override
+    public void close() throws XMLDBException {
+        if (!isClosed()) {
+            try {
+                clear();
+            } finally {
+                closed = true;
+            }
+        }
     }
 
     class NewResourceIterator implements ResourceIterator {

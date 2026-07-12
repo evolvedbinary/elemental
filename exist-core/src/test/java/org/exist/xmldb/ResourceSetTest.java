@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,9 +47,15 @@ package org.exist.xmldb;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.io.InputStreamUtil;
-import org.junit.*;
-import org.xmldb.api.base.*;
-import org.xmldb.api.modules.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.modules.CollectionManagementService;
+import org.xmldb.api.modules.XPathQueryService;
 
 import java.io.InputStream;
 
@@ -49,21 +79,24 @@ public class ResourceSetTest {
 		assertNotNull(testCollection);
 
 		try (final InputStream is = SAMPLES.getSample("shakespeare/shakes.xsl")) {
-			final Resource shakesRes = testCollection.createResource("shakes.xsl", XMLResource.RESOURCE_TYPE);
-			shakesRes.setContent(InputStreamUtil.readAll(is));
-			testCollection.storeResource(shakesRes);
+			try (final EXistResource shakesRes = (EXistResource) testCollection.createResource("shakes.xsl", "XMLResource")) {
+				shakesRes.setContent(InputStreamUtil.readAll(is));
+				testCollection.storeResource(shakesRes);
+			}
 		}
 
 		try (final InputStream is = SAMPLES.getHamletSample()) {
-			final Resource hamletRes = testCollection.createResource("hamlet.xml", XMLResource.RESOURCE_TYPE);
-			hamletRes.setContent(InputStreamUtil.readAll(is));
-			testCollection.storeResource(hamletRes);
+			try (final EXistResource hamletRes = (EXistResource) testCollection.createResource("hamlet.xml", "XMLResource")) {
+				hamletRes.setContent(InputStreamUtil.readAll(is));
+				testCollection.storeResource(hamletRes);
+			}
 		}
 	}
 
 	@After
 	public void tearDown() throws XMLDBException {
 		//delete the test collection
+		testCollection.close();
 		final CollectionManagementService service = (CollectionManagementService)testCollection.getParentCollection().getService("CollectionManagementService", "1.0");
 		service.removeCollection(TEST_COLLECTION);
 	}
@@ -79,10 +112,10 @@ public class ResourceSetTest {
         final XPathQueryService service = (XPathQueryService)
             testCollection.getService("XPathQueryService", "1.0");
 
-        final ResourceSet result1 = service.query(query1);
-        final ResourceSet result2 = service.query(query2);
-
-        assertEquals("size of intersection of " + query1 + " and " + query2 + " yields ", expected, ResourceSetHelper.intersection(result1, result2).getSize());
+        try (final EXistResourceSet result1 = (EXistResourceSet) service.query(query1);
+			 final EXistResourceSet result2 = (EXistResourceSet) service.query(query2)) {
+			assertEquals("size of intersection of " + query1 + " and " + query2 + " yields ", expected, ResourceSetHelper.intersection(result1, result2).getSize());
+		}
 	}
 
 	@Test
@@ -95,9 +128,9 @@ public class ResourceSetTest {
 		final XPathQueryService service = (XPathQueryService)
 				testCollection.getService("XPathQueryService", "1.0");
 
-		final ResourceSet result1 = service.query(query1);
-		final ResourceSet result2 = service.query(query2);
-
-		assertEquals("size of intersection of " + query1 + " and " + query2 + " yields ", expected, ResourceSetHelper.intersection(result1, result2).getSize());
+		try (final EXistResourceSet result1 = (EXistResourceSet) service.query(query1);
+			 final EXistResourceSet result2 = (EXistResourceSet) service.query(query2)) {
+			assertEquals("size of intersection of " + query1 + " and " + query2 + " yields ", expected, ResourceSetHelper.intersection(result1, result2).getSize());
+		}
 	}
 }

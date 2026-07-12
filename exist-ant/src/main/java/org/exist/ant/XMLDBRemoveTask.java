@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,9 +47,9 @@ package org.exist.ant;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
+import org.exist.xmldb.EXistResource;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
@@ -56,9 +80,8 @@ public class XMLDBRemoveTask extends AbstractXMLDBTask
 
         registerDatabase();
 
-        try {
-            log( "Get base collection: " + uri, Project.MSG_DEBUG );
-            final Collection base = DatabaseManager.getCollection( uri, user, password );
+        log( "Get base collection: " + uri, Project.MSG_DEBUG );
+        try (final Collection base = DatabaseManager.getCollection(uri, user, password)) {
 
             if( base == null ) {
                 throw( new BuildException( "Collection " + uri + " could not be found." ) );
@@ -66,18 +89,19 @@ public class XMLDBRemoveTask extends AbstractXMLDBTask
 
             if( resource != null ) {
                 log( "Removing resource: " + resource, Project.MSG_INFO );
-                final Resource res = base.getResource( resource );
+                try (final EXistResource res = (EXistResource) base.getResource( resource )) {
 
-                if( res == null ) {
-                    final String msg = "Resource " + resource + " not found.";
+                    if (res == null) {
+                        final String msg = "Resource " + resource + " not found.";
 
-                    if( failonerror ) {
-                        throw( new BuildException( msg ) );
+                        if (failonerror) {
+                            throw (new BuildException(msg));
+                        } else {
+                            log(msg, Project.MSG_ERR);
+                        }
                     } else {
-                        log( msg, Project.MSG_ERR );
+                        base.removeResource(res);
                     }
-                } else {
-                    base.removeResource( res );
                 }
 
             } else {

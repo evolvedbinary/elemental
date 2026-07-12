@@ -126,11 +126,11 @@ public class CDATASectionImpl extends AbstractCharacterData implements CDATASect
      * signature = [byte] 0xA0
      *
      * nodeIdUnitsLength = [short] (2 bytes) The number of units of the cdata section's NodeId
-     * nodeId = {@see org.exist.numbering.DLNBase#serialize(byte[], int)}
+     * nodeId = {@link org.exist.numbering.DLNBase#serialize(byte[], int)}
      *
      * cdata = eUtf8
      *
-     * eUtf8 = {@see org.exist.util.UTF8#encode(java.lang.String, byte[], int)}
+     * eUtf8 = {@link org.exist.util.UTF8#encode(java.lang.String, byte[], int)}
      *
      * @return the returned byte array after use must be returned to the ByteArrayPool
      *     by calling {@link ByteArrayPool#releaseByteArray(byte[])}

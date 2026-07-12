@@ -95,6 +95,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.evolvedbinary.j8fu</groupId>
+            <artifactId>j8fu</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
             <scope>provided</scope>
@@ -187,6 +193,7 @@
                                 <include>src/test/resources/conf.xml</include>
                                 <include>src/main/xar-resources/controller.xq</include>
                                 <include>src/main/java/org/exist/repo/ExampleModule.java</include>
+                                <include>src/test/java/org/exist/repo/ExampleModuleTest.java</include>
                                 <include>src/main/java/org/exist/repo/ExampleTrigger.java</include>
                             </includes>
                         </licenseSet>
@@ -202,6 +209,7 @@
                                 <exclude>src/test/resources/conf.xml</exclude>
                                 <exclude>src/main/xar-resources/controller.xq</exclude>
                                 <exclude>src/main/java/org/exist/repo/ExampleModule.java</exclude>
+                                <exclude>src/test/java/org/exist/repo/ExampleModuleTest.java</exclude>
                                 <exclude>src/main/java/org/exist/repo/ExampleTrigger.java</exclude>
                             </excludes>
                         </licenseSet>

@@ -45,6 +45,8 @@
  */
 package org.exist.http;
 
+import com.evolvedbinary.j8fu.function.BiConsumerE;
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +75,6 @@ import org.exist.source.StringSource;
 import org.exist.source.URLSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -94,6 +95,7 @@ import org.exist.util.serializer.json.JSONValue;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xqj.Marshaller;
 import org.exist.xquery.*;
+import org.exist.xquery.util.HTTPUtils;
 import org.exist.xquery.value.*;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
@@ -1347,10 +1349,10 @@ public class RESTServer {
             try {
                 final int sessionId = Integer.parseInt(sessionIdParam);
                 if (sessionId > -1) {
-                    final Sequence cached = sessionManager.get(query, sessionId);
-                    if (cached != null) {
+                    @Nullable final XQueryUtil.QueryResult cachedQueryResult = sessionManager.get(query, sessionId);
+                    if (cachedQueryResult != null) {
                         LOG.debug("Returning cached query result");
-                        writeResults(response, broker, transaction, cached, howmany, start, typed, outputProperties, wrap, 0, 0);
+                        writeResults(response, broker, transaction, cachedQueryResult, howmany, start, typed, outputProperties, wrap);
 
                     } else {
                         LOG.debug("Cached query result not found. Probably timed out. Repeating query.");
@@ -1364,72 +1366,48 @@ public class RESTServer {
 
         final XmldbURI pathUri = XmldbURI.create(path);
         final Source source = new StringSource(query);
-        final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
         try {
-            final XQuery xquery = broker.getBrokerPool().getXQueryService();
-            compiled = pool.borrowCompiledXQuery(broker, source);
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ pathUri });
+                xqueryContext.setBaseURI(new AnyURIValue(pathUri.toString()));
+                declareNamespaces(xqueryContext, namespaces);
+            };
 
-            // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+                setupDefaultCollection(xqueryContext, defaultCollectionParam);
+                declareVariables(xqueryContext, variablesParam, request, response);
+            };
 
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            context.setStaticallyKnownDocuments(new XmldbURI[]{pathUri});
-            context.setBaseURI(new AnyURIValue(pathUri.toString()));
-
-            declareNamespaces(context, namespaces);
-
-            final long compilationTime;
-            if (compiled == null) {
-                final long compilationStart = System.currentTimeMillis();
-                compiled = xquery.compile(context, source);
-                compilationTime = System.currentTimeMillis() - compilationStart;
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-                compilationTime = 0;
-            }
-
-            setupDefaultCollection(context, defaultCollectionParam);
-            declareVariables(context, variablesParam, request, response);
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> setupXqueryContextPostExecution = (xqueryContext, queryResult) -> {
+                // Pass last modified date to the HTTP response
+                HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
+            };
 
             @Nullable final Item contextItem = extractContextItem(contextItemParam);
             final Sequence contextSequence = contextItem != null ? new ValueSequence(contextItem) : null;
 
-            final long executeStart = System.currentTimeMillis();
-            final Sequence resultSequence = xquery.execute(broker, compiled, contextSequence, outputProperties);
-            final long executionTime = System.currentTimeMillis() - executeStart;
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Found {} in {}ms.", resultSequence.getItemCount(), executionTime);
-            }
+                // special header to indicate that the query is not returned from cache
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
-            if (cache) {
-                final int sessionId = sessionManager.add(query, resultSequence);
-                outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
-                if (!response.isCommitted()) {
-                    response.setIntHeader(SESSION_ID_HEADER, sessionId);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Found {} in {}ms.", queryResult.result.getItemCount(), queryResult.executionTime);
                 }
-            }
 
-            writeResults(response, broker, transaction, resultSequence, howmany, start, typed, outputProperties, wrap, compilationTime, executionTime);
+                if (cache) {
+                    final int sessionId = sessionManager.add(query, queryResult);
+                    outputProperties.setProperty(Serializer.PROPERTY_SESSION_ID, Integer.toString(sessionId));
+                    if (!response.isCommitted()) {
+                        response.setIntHeader(SESSION_ID_HEADER, sessionId);
+                    }
+                }
+
+                writeResults(response, broker, transaction, queryResult, howmany, start, typed, outputProperties, wrap);
+            }
 
         } catch (final IOException e) {
             throw new BadRequestException(e.getMessage(), e);
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                pool.returnCompiledXQuery(source, compiled);
-            }
         }
     }
 
@@ -1605,65 +1583,33 @@ public class RESTServer {
             throws XPathException, BadRequestException, PermissionDeniedException {
 
         final Source source = new DBSource(broker, (BinaryDocument) resource, true);
-        final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
-        try {
-            final XQuery xquery = broker.getBrokerPool().getXQueryService();
-            compiled = pool.borrowCompiledXQuery(broker, source);
 
-            // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(resource.getCollection().getURI()).toString());
+            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ resource.getCollection().getURI() });
+        };
 
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            // TODO: don't hardcode this?
-            context.setModuleLoadPath(
-                    XmldbURI.EMBEDDED_SERVER_URI.append(
-                            resource.getCollection().getURI()).toString());
-
-            context.setStaticallyKnownDocuments(
-                    new XmldbURI[]{resource.getCollection().getURI()});
-
-            final long compilationTime;
-            if (compiled == null) {
-                try {
-                    final long compilationStart = System.currentTimeMillis();
-                    compiled = xquery.compile(context, source);
-                    compilationTime = System.currentTimeMillis() - compilationStart;
-                } catch (final IOException e) {
-                    throw new BadRequestException("Failed to read query from " + resource.getURI(), e);
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-                compilationTime = 0;
-            }
-
-            final HttpRequestWrapper reqw = declareVariables(context, null, request, response);
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+            final HttpRequestWrapper reqw = declareVariables(xqueryContext, null, request, response);
             reqw.setServletPath(servletPath);
             reqw.setPathInfo(pathInfo);
+            DebuggeeFactory.checkForDebugRequest(request, xqueryContext);
+        };
 
-            DebuggeeFactory.checkForDebugRequest(request, context);
+        final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> setupXqueryContextPostExecution = (xqueryContext, queryResult) -> {
+            // Pass last modified date to the HTTP response
+            HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
+        };
+
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+
+            // Special header to indicate whether the compiled query is returned from the cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
             final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
-
-            final long executeStart = System.currentTimeMillis();
-            final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
-            writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, wrap, compilationTime, System.currentTimeMillis() - executeStart);
-
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                pool.returnCompiledXQuery(source, compiled);
-            }
+            writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, wrap);
+        } catch (final IOException e) {
+            throw new BadRequestException("Failed to read query from " + resource.getURI(), e);
         }
     }
 
@@ -1678,83 +1624,50 @@ public class RESTServer {
             throws XPathException, BadRequestException, PermissionDeniedException {
 
         final URLSource source = new URLSource(this.getClass().getResource("run-xproc.xq"));
-        final XQueryPool pool = broker.getBrokerPool().getXQueryPool();
-        @Nullable CompiledXQuery compiled = null;
-        @Nullable XQueryContext context = null;
 
-        try {
-            final XQuery xquery = broker.getBrokerPool().getXQueryService();
-            compiled = pool.borrowCompiledXQuery(broker, source);
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(resource.getCollection().getURI()).toString());
+            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{resource.getCollection().getURI()});
+        };
 
-            // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, compiled == null ? "false" : "true");
-
-            if (compiled == null) {
-                context = new XQueryContext(broker.getBrokerPool());
-            } else {
-                context = compiled.getContext();
-                context.prepareForReuse();
-            }
-
-            // TODO: don't hardcode this?
-            context.setModuleLoadPath(
-                    XmldbURI.EMBEDDED_SERVER_URI.append(
-                            resource.getCollection().getURI()).toString());
-
-            context.setStaticallyKnownDocuments(
-                    new XmldbURI[]{resource.getCollection().getURI()});
-
-            // compile query
-            final long compilationTime;
-            if (compiled == null) {
-                try {
-                    final long compilationStart = System.currentTimeMillis();
-                    compiled = xquery.compile(context, source);
-                    compilationTime = System.currentTimeMillis() - compilationStart;
-                } catch (final IOException e) {
-                    throw new BadRequestException("Failed to read query from "
-                            + source.getURL(), e);
-                }
-            } else {
-                compiled.getContext().updateContext(context);
-                context.getWatchDog().reset();
-                compilationTime = 0;
-            }
-
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
             // declare variables
-            context.declareVariable("pipeline", true, resource.getURI().toString());
+            xqueryContext.declareVariable("pipeline", true, resource.getURI().toString());
 
             final String stdin = request.getParameter("stdin");
-            context.declareVariable("stdin", true, stdin == null ? "" : stdin);
+            xqueryContext.declareVariable("stdin", true, stdin == null ? "" : stdin);
 
             final String debug = request.getParameter("debug");
-            context.declareVariable("debug", true, debug == null ? "0" : "1");
+            xqueryContext.declareVariable("debug", true, debug == null ? "0" : "1");
 
             final String bindings = request.getParameter("bindings");
-            context.declareVariable("bindings", true, bindings == null ? "<bindings/>" : bindings);
+            xqueryContext.declareVariable("bindings", true, bindings == null ? "<bindings/>" : bindings);
 
             final String autobind = request.getParameter("autobind");
-            context.declareVariable("autobind", true, autobind == null ? "0" : "1");
+            xqueryContext.declareVariable("autobind", true, autobind == null ? "0" : "1");
 
             final String options = request.getParameter("options");
-            context.declareVariable("options", true, options == null ? "<options/>" : options);
+            xqueryContext.declareVariable("options", true, options == null ? "<options/>" : options);
 
-            final HttpRequestWrapper reqw = declareVariables(context, null, request, response);
+            final HttpRequestWrapper reqw = declareVariables(xqueryContext, null, request, response);
             reqw.setServletPath(servletPath);
             reqw.setPathInfo(pathInfo);
+        };
 
-            // execute query
-            final long executeStart = System.currentTimeMillis();
-            final Sequence result = xquery.execute(broker, compiled, null, outputProperties);
-            writeResults(response, broker, transaction, result, -1, 1, false, outputProperties, false, compilationTime, System.currentTimeMillis() - executeStart);
+        final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> setupXqueryContextPostExecution = (xqueryContext, queryResult) -> {
+            // Pass last modified date to the HTTP response
+            HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
+        };
 
-        } finally {
-            if (context != null) {
-                context.runCleanupTasks();
-            }
-            if (compiled != null) {
-                pool.returnCompiledXQuery(source, compiled);
-            }
+        // execute query
+        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+
+            // special header to indicate that the query is not returned from cache
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+
+            writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, false);
+        } catch (final IOException e) {
+            throw new BadRequestException("Failed to read query from " + source.getURL(), e);
         }
     }
 
@@ -2218,9 +2131,8 @@ public class RESTServer {
     }
 
     protected void writeResults(final HttpServletResponse response, final DBBroker broker, final Txn transaction,
-            final Sequence results, int howmany, final int start, final boolean typed,
-            final Properties outputProperties, final boolean wrap, final long compilationTime, final long executionTime)
-            throws BadRequestException {
+                                final XQueryUtil.QueryResult queryResult, int howmany, final int start, final boolean typed,
+                                final Properties outputProperties, final boolean wrap) throws BadRequestException {
 
         // some xquery functions can write directly to the output stream
         // (response:stream-binary() etc...)
@@ -2230,8 +2142,8 @@ public class RESTServer {
         }
 
         // calculate number of results to return
-        if (!results.isEmpty()) {
-            final int rlen = results.getItemCount();
+        if (!queryResult.result.isEmpty()) {
+            final int rlen = queryResult.result.getItemCount();
             if ((start < 1) || (start > rlen)) {
                 throw new BadRequestException("Start parameter out of range");
             }
@@ -2245,17 +2157,17 @@ public class RESTServer {
         final String method = outputProperties.getProperty(SERIALIZATION_METHOD_PROPERTY, "xml");
 
         if ("json".equals(method)) {
-            writeResultJSON(response, broker, transaction, results, howmany, start, outputProperties, wrap, compilationTime, executionTime);
+            writeResultJSON(response, broker, transaction, queryResult, howmany, start, outputProperties, wrap);
         } else {
-            writeResultXML(response, broker, results, howmany, start, typed, outputProperties, wrap, compilationTime, executionTime);
+            writeResultXML(response, broker, queryResult, howmany, start, typed, outputProperties, wrap);
         }
 
     }
 
     private void writeResultXML(final HttpServletResponse response,
-        final DBBroker broker, final Sequence results, final int howmany,
-        final int start, final boolean typed, final Properties outputProperties,
-        final boolean wrap, final long compilationTime, final long executionTime) throws BadRequestException {
+                                final DBBroker broker, final XQueryUtil.QueryResult queryResult, final int howmany,
+                                final int start, final boolean typed, final Properties outputProperties,
+                                final boolean wrap) throws BadRequestException {
 
         // serialize the results to the response output stream
         outputProperties.setProperty(Serializer.GENERATE_DOC_EVENTS, "false");
@@ -2287,7 +2199,7 @@ public class RESTServer {
                 final XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, writer);
 
                 //Marshaller.marshall(broker, results, start, howmany, serializer.getContentHandler());
-                serializer.serialize(results, start, howmany, wrap, typed, compilationTime, executionTime);
+                serializer.serialize(queryResult, start, howmany, wrap, typed);
 
                 writer.flush();
                 writerToClose = writer;
@@ -2309,8 +2221,8 @@ public class RESTServer {
     }
 
     private void writeResultJSON(final HttpServletResponse response,
-        final DBBroker broker, final Txn transaction, final Sequence results, int howmany,
-        int start, final Properties outputProperties, final boolean wrap, final long compilationTime, final long executionTime)
+                                 final DBBroker broker, final Txn transaction, final XQueryUtil.QueryResult queryResult, int howmany,
+                                 int start, final Properties outputProperties, final boolean wrap)
             throws BadRequestException {
 
         // set output headers
@@ -2327,14 +2239,14 @@ public class RESTServer {
         }
 
         // calculate number of results to return
-        final int rlen = results.getItemCount();
-        if (!results.isEmpty()) {
-            if ((start < 1) || (start > rlen)) {
+        final int resultCount = queryResult.result.getItemCount();
+        if (resultCount > 0) {
+            if ((start < 1) || (start > resultCount)) {
                 throw new BadRequestException("Start parameter out of range");
             }
             // FD : correct bound evaluation
-            if (((howmany + start) > rlen) || (howmany <= 0)) {
-                howmany = rlen - start + 1;
+            if (((howmany + start) > resultCount) || (howmany <= 0)) {
+                howmany = resultCount - start + 1;
             }
         } else {
             howmany = 0;
@@ -2350,20 +2262,20 @@ public class RESTServer {
                 final JSONObject root = new JSONObject();
                 root.addObject(new JSONSimpleProperty("start", Integer.toString(start), true));
                 root.addObject(new JSONSimpleProperty("count", Integer.toString(howmany), true));
-                root.addObject(new JSONSimpleProperty("hits", Integer.toString(results.getItemCount()), true));
+                root.addObject(new JSONSimpleProperty("hits", Integer.toString(resultCount), true));
                 if (outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID) != null) {
                     root.addObject(new JSONSimpleProperty("session",
                             outputProperties.getProperty(Serializer.PROPERTY_SESSION_ID)));
                 }
-                root.addObject(new JSONSimpleProperty("compilationTime", Long.toString(compilationTime), true));
-                root.addObject(new JSONSimpleProperty("executionTime", Long.toString(executionTime), true));
+                root.addObject(new JSONSimpleProperty("compilationTime", Long.toString(queryResult.compilationTime), true));
+                root.addObject(new JSONSimpleProperty("executionTime", Long.toString(queryResult.executionTime), true));
 
                 final JSONObject data = new JSONObject("data");
                 root.addObject(data);
 
                 try (final StringBuilderWriter sbWriter = new StringBuilderWriter()) {
                     for (int i = --start; i < start + howmany; i++) {
-                        final Item item = results.itemAt(i);
+                        final Item item = queryResult.result.itemAt(i);
                         if (Type.subTypeOf(item.getType(), Type.NODE)) {
                             final NodeValue value = (NodeValue) item;
                             sbWriter.getBuilder().setLength(0);

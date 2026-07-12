@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,13 +47,13 @@ package org.exist.ant;
 
 import org.apache.tools.ant.Project;
 import org.exist.util.FileUtils;
+import org.exist.xmldb.EXistResource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -77,24 +101,25 @@ public class XmldbTaskTest extends AbstractTaskTest {
 
     @Before
     public void fileSetup() throws XMLDBException {
-        final Collection col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), TEST_COLLECTION_NAME);
+        try (final Collection col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), TEST_COLLECTION_NAME)) {
 
-        final Resource res = col.createResource(TEST_RESOURCE_NAME, XMLResource.RESOURCE_TYPE);
-        res.setContent("<test>hello <subject>world</subject></test>");
-        col.storeResource(res);
+            try (final EXistResource res = (EXistResource) col.createResource(TEST_RESOURCE_NAME, XMLResource.RESOURCE_TYPE)) {
+                res.setContent("<test>hello <subject>world</subject></test>");
+                col.storeResource(res);
+            }
 
-        final Resource binResource = col.createResource(BIN_TEST_RESOURCE_NAME, BinaryResource.RESOURCE_TYPE);
-        binResource.setContent("blah blah");
-        col.storeResource(binResource);
+            try (final EXistResource binResource = (EXistResource) col.createResource(BIN_TEST_RESOURCE_NAME, BinaryResource.RESOURCE_TYPE)) {
+                binResource.setContent("blah blah");
+                col.storeResource(binResource);
+            }
 
-        final CollectionManagementService service = (CollectionManagementService) col.getService("CollectionManagementService", "1.0");
-        final Collection otherCol = service.createCollection(OTHER_TEST_COLLECTION_NAME);
-        final Resource otherRes = otherCol.createResource(OTHER_TEST_RESOURCE_NAME, XMLResource.RESOURCE_TYPE);
-        otherRes.setContent("<test>other</test>");
-        otherCol.storeResource(otherRes);
-        otherCol.close();
-
-        col.close();
+            final CollectionManagementService service = (CollectionManagementService) col.getService("CollectionManagementService", "1.0");
+            try (final Collection otherCol = service.createCollection(OTHER_TEST_COLLECTION_NAME);
+                 final EXistResource otherRes = (EXistResource) otherCol.createResource(OTHER_TEST_RESOURCE_NAME, XMLResource.RESOURCE_TYPE)) {
+                otherRes.setContent("<test>other</test>");
+                otherCol.storeResource(otherRes);
+            }
+        }
     }
 
     @After

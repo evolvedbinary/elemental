@@ -244,6 +244,7 @@
                                 <include>src/main/java/org/exist/indexing/lucene/AbstractFieldConfig.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/AbstractTextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/AnalyzerConfig.java</include>
+                                <include>src/test/java/org/exist/indexing/lucene/ConcurrencyTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/DefaultTextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/FieldType.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneConfig.java</include>
@@ -256,6 +257,7 @@
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</include>
                                 <include>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</include>
+                                <include>src/test/java/org/exist/indexing/lucene/OptimizerTest.java</include>
                                 <include>src/test/java/org/exist/indexing/lucene/SerializeAttrMatchesTest.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/TextExtractor.java</include>
                                 <include>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</include>
@@ -284,6 +286,7 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/AbstractFieldConfig.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/AbstractTextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/AnalyzerConfig.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/lucene/ConcurrencyTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/DefaultTextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/FieldType.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneConfig.java</exclude>
@@ -296,6 +299,7 @@
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatch.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/LuceneMatchListener.java</exclude>
                                 <exclude>src/test/java/org/exist/indexing/lucene/LuceneMatchListenerTest.java</exclude>
+                                <exclude>src/test/java/org/exist/indexing/lucene/OptimizerTest.java</exclude>
                                 <exclude>src/test/java/org/exist/indexing/lucene/SerializeAttrMatchesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/TextExtractor.java</exclude>
                                 <exclude>src/main/java/org/exist/indexing/lucene/XMLToQuery.java</exclude>

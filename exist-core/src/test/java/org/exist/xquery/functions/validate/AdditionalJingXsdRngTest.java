@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -22,13 +46,12 @@
 package org.exist.xquery.functions.validate;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.*;
-import static org.junit.Assert.*;
-
-import org.exist.xquery.XPathException;
-
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
+
+import static org.junit.Assert.*;
 
 /**
  * Additional tests for the validation:jing() function with RNGs and XSDs
@@ -64,9 +87,12 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(query);
-        final String r = (String) result.getResource(0).getContent();
-        assertEquals("true", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("true", r);
+            }
+        }
     }
 
     @Test
@@ -92,13 +118,16 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(query);
-        final String r = (String) result.getResource(0).getContent();
-        assertEquals("false", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("false", r);
+            }
+        }
     }
 
     @Test
-    public void testValidateRNGwithJing() throws XPathException, XMLDBException {
+    public void testValidateRNGwithJing() throws XMLDBException {
         final String query = "let $v := <doc>\n" +
                 "\t<title>Title</title>\n" +
                 "\t<p>Some paragraph.</p>\n" +
@@ -132,9 +161,12 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(query);
-        final String r = (String) result.getResource(0).getContent();
-        assertEquals("true", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("true", r);
+            }
+        }
     }
 
     @Test
@@ -172,14 +204,17 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        final ResourceSet result = existEmbeddedServer.executeQuery(query);
-        final String r = (String) result.getResource(0).getContent();
-        assertEquals("false", r);
+        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("false", r);
+            }
+        }
     }
 
     @Test
     @Ignore("Looks good, but memory issue")
-    public void repeatTests() throws XMLDBException, XPathException {
+    public void repeatTests() throws XMLDBException {
         for (int i = 0; i < 1000; i++) {
             testValidateRNGwithJing();
             testValidateRNGwithJing_invalid();

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -29,11 +53,11 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.IndexQueryService;
 import org.junit.*;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
@@ -83,17 +107,19 @@ public class SAXTriggerTest {
         final BrokerPool db = BrokerPool.getInstance();
         db.registerDocumentTrigger(AnotherTrigger.class);
 
-        final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        try (final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "")) {
 
-        final Resource resource = root.createResource("data.xml", "XMLResource");
-        resource.setContent(DOCUMENT1_CONTENT);
-        root.storeResource(resource);
+            try (final EXistResource resource = (EXistResource) root.createResource("data.xml", "XMLResource")) {
+                resource.setContent(DOCUMENT1_CONTENT);
+                root.storeResource(resource);
+            }
 
-        assertEquals(3, AnotherTrigger.createDocumentEvents);
+            assertEquals(3, AnotherTrigger.createDocumentEvents);
 
-        assertEquals(26, AnotherTrigger.count);
+            assertEquals(26, AnotherTrigger.count);
 
-        assertEquals(DOCUMENT1_CONTENT, AnotherTrigger.sb.toString());
+            assertEquals(DOCUMENT1_CONTENT, AnotherTrigger.sb.toString());
+        }
     }
 
     @Test
@@ -102,31 +128,35 @@ public class SAXTriggerTest {
         final BrokerPool db = BrokerPool.getInstance();
         db.registerDocumentTrigger(StoreTrigger.class);
 
-        final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+        try (final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "")) {
 
-        Resource resource = root.createResource("data.xml", "XMLResource");
-        resource.setContent(DOCUMENT2_CONTENT);
-        root.storeResource(resource);
+            try (final EXistResource resource = (EXistResource) root.createResource("data.xml", "XMLResource")) {
+                resource.setContent(DOCUMENT2_CONTENT);
+                root.storeResource(resource);
+            }
 
-        resource = root.createResource("data.xml", "XMLResource");
-
-        assertEquals(DOCUMENT3_CONTENT, resource.getContent().toString());
+            try (final EXistResource resource = (EXistResource) root.createResource("data.xml", "XMLResource")) {
+                assertEquals(DOCUMENT3_CONTENT, resource.getContent().toString());
+            }
+        }
     }
 
     @Test
-    public void saxEventModificationsAtXConf() throws EXistException, XMLDBException {
-        final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+    public void saxEventModificationsAtXConf() throws XMLDBException {
+        try (final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "")) {
 
-        final IndexQueryService idxConf = (IndexQueryService) root.getService("IndexQueryService", "1.0");
-        idxConf.configureCollection(COLLECTION_CONFIG);
+            final IndexQueryService idxConf = (IndexQueryService) root.getService("IndexQueryService", "1.0");
+            idxConf.configureCollection(COLLECTION_CONFIG);
 
-        Resource resource = root.createResource("data.xml", "XMLResource");
-        resource.setContent(DOCUMENT2_CONTENT);
-        root.storeResource(resource);
+            try (final EXistResource resource = (EXistResource) root.createResource("data.xml", "XMLResource")) {
+                resource.setContent(DOCUMENT2_CONTENT);
+                root.storeResource(resource);
+            }
 
-        resource = root.createResource("data.xml", "XMLResource");
-
-        assertEquals(DOCUMENT3_CONTENT, resource.getContent().toString());
+            try (final EXistResource resource = (EXistResource) root.createResource("data.xml", "XMLResource")) {
+                assertEquals(DOCUMENT3_CONTENT, resource.getContent().toString());
+            }
+        }
     }
 
     @After
@@ -136,32 +166,39 @@ public class SAXTriggerTest {
             CollectionManagementService mgmt = (CollectionManagementService) config.getService("CollectionManagementService", "1.0");
             mgmt.removeCollection(".");
         }
-        final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
-        
-        Resource resource = root.getResource("messages.xml");
-        if (resource != null) {
-            root.removeResource(resource);
-        }
-        
-        resource = root.getResource("data.xml");
-        if (resource != null) {
-            root.removeResource(resource);
+
+        try (final Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "")) {
+
+            try (final EXistResource resource = (EXistResource) root.getResource("messages.xml")) {
+                if (resource != null) {
+                    root.removeResource(resource);
+                }
+            }
+
+            try (final EXistResource resource = (EXistResource) root.getResource("data.xml")) {
+                if (resource != null) {
+                    root.removeResource(resource);
+                }
+            }
         }
     }
 
     @BeforeClass
-    public static void initDB() throws ClassNotFoundException, XMLDBException, InstantiationException, IllegalAccessException {
+    public static void initDB() throws XMLDBException {
         CollectionManagementService mgmt = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
-        Collection testCol = mgmt.createCollection("triggers");
-
-        for (int i = 1; i <= 2; i++) {
+        try (final Collection testCol = mgmt.createCollection("triggers")) {
             mgmt = (CollectionManagementService) testCol.getService("CollectionManagementService", "1.0");
-            testCol = mgmt.createCollection("sub" + i);
+            try (final Collection sub1 = mgmt.createCollection("sub1")) {
+                mgmt = (CollectionManagementService) sub1.getService("CollectionManagementService", "1.0");
+                try (final Collection sub2 = mgmt.createCollection("sub2")) {
+                    // needed to ensure that sub2 is closed
+                }
+            }
         }
     }
 
     @AfterClass
-    public static void closeDB() throws XMLDBException, LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    public static void closeDB() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         TestUtils.cleanupDB();
     }
 }

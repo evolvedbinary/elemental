@@ -59,7 +59,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
@@ -325,18 +324,19 @@ public class XMLDBRestoreTest {
 
     private void checkMediaType(final XmldbURI collectionUri, final DocInfo backupDocInfo) throws XMLDBException {
         final Collection collection = DatabaseManager.getCollection(XmldbURI.create(getBaseUri()).append(collectionUri).toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        final Resource resource = collection.getResource(backupDocInfo.name);
-        if (backupDocInfo.storageType == StorageType.XML) {
-            assertTrue(resource instanceof XMLResource);
-        } else {
-            assertTrue(resource instanceof BinaryResource);
-        }
-        if (backupDocInfo.mediaType != null) {
-            assertEquals(backupDocInfo.mediaType, ((EXistResource) resource).getMediaType());
-        } else if (backupDocInfo.storageType == StorageType.XML) {
-            assertEquals(MediaType.APPLICATION_XML, ((EXistResource) resource).getMediaType());
-        } else {
-            assertEquals(MediaType.APPLICATION_OCTET_STREAM, ((EXistResource) resource).getMediaType());
+        try (final EXistResource resource = (EXistResource) collection.getResource(backupDocInfo.name)) {
+            if (backupDocInfo.storageType == StorageType.XML) {
+                assertTrue(resource instanceof XMLResource);
+            } else {
+                assertTrue(resource instanceof BinaryResource);
+            }
+            if (backupDocInfo.mediaType != null) {
+                assertEquals(backupDocInfo.mediaType, ((EXistResource) resource).getMediaType());
+            } else if (backupDocInfo.storageType == StorageType.XML) {
+                assertEquals(MediaType.APPLICATION_XML, ((EXistResource) resource).getMediaType());
+            } else {
+                assertEquals(MediaType.APPLICATION_OCTET_STREAM, ((EXistResource) resource).getMediaType());
+            }
         }
     }
 

@@ -50,6 +50,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.memtree.ElementImpl;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -59,7 +60,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.junit.*;
@@ -129,10 +130,9 @@ public class InspectModuleTest {
 
     @Ignore("https://github.com/eXist-db/exist/issues/1386")
     @Test
-    public void xqDoc_withAtSignInline() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_withAtSignInline() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final String query =
@@ -140,35 +140,36 @@ public class InspectModuleTest {
                     "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                     "/function[@name eq \"x:fun1\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("Some description.", descriptions.item(0).getFirstChild().getTextContent());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("Some description.", descriptions.item(0).getFirstChild().getTextContent());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(0, arguments.getLength());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(0, arguments.getLength());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("taxonomy[@type = \"reign\"]", returns.item(0).getFirstChild().getTextContent());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("taxonomy[@type = \"reign\"]", returns.item(0).getFirstChild().getTextContent());
+            }
 
             transaction.commit();
         }
     }
 
     @Test
-    public void xqDoc_withParamsAndReturn() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_withParamsAndReturn() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try( final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final String query =
@@ -176,36 +177,37 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun2\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("Some other description.", descriptions.item(0).getFirstChild().getNodeValue());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("Some other description.", descriptions.item(0).getFirstChild().getNodeValue());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(2, arguments.getLength());
-            assertEquals("first parameter", arguments.item(0).getFirstChild().getNodeValue());
-            assertEquals("second parameter", arguments.item(1).getFirstChild().getNodeValue());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(2, arguments.getLength());
+                assertEquals("first parameter", arguments.item(0).getFirstChild().getNodeValue());
+                assertEquals("second parameter", arguments.item(1).getFirstChild().getNodeValue());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("our result", returns.item(0).getFirstChild().getNodeValue());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("our result", returns.item(0).getFirstChild().getNodeValue());
+            }
 
             transaction.commit();
         }
     }
 
     @Test
-    public void xqDoc_multilineDesciption() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_multilineDesciption() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -214,34 +216,35 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun3\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("This is a multiline description and therefore\n spans multiple\n lines.", descriptions.item(0).getFirstChild().getNodeValue());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("This is a multiline description and therefore\n spans multiple\n lines.", descriptions.item(0).getFirstChild().getNodeValue());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(0, arguments.getLength());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(0, arguments.getLength());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+            }
 
             transaction.commit();
         }
     }
 
     @Test
-    public void xqDoc_onAnnotatedFunction() throws PermissionDeniedException, XPathException, EXistException {
+    public void xqDoc_onAnnotatedFunction() throws PermissionDeniedException, XPathException, EXistException, IOException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        final XQuery xqueryService = pool.getXQueryService();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -250,31 +253,33 @@ public class InspectModuleTest {
                             "inspect:inspect-module(xs:anyURI(\"xmldb:exist://" + TEST_COLLECTION.append(TEST_MODULE).toCollectionPathURI() + "\"))\n" +
                             "/function[@name eq \"x:fun4\"]";
 
-            final Sequence result = xqueryService.execute(broker, query, null);
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence result = queryResult.result;
 
-            assertNotNull(result);
-            assertEquals(1, result.getItemCount());
-            final Item item1 = result.itemAt(0);
-            assertTrue(item1 instanceof ElementImpl);
+                assertNotNull(result);
+                assertEquals(1, result.getItemCount());
+                final Item item1 = result.itemAt(0);
+                assertTrue(item1 instanceof ElementImpl);
 
-            final Element function = (Element)item1;
+                final Element function = (Element)item1;
 
-            final NodeList descriptions = function.getElementsByTagName("description");
-            assertEquals(1, descriptions.getLength());
-            assertEquals("An annotated function.", descriptions.item(0).getFirstChild().getNodeValue());
+                final NodeList descriptions = function.getElementsByTagName("description");
+                assertEquals(1, descriptions.getLength());
+                assertEquals("An annotated function.", descriptions.item(0).getFirstChild().getNodeValue());
 
-            final NodeList annotations = function.getElementsByTagName("annotation");
-            assertEquals(2, annotations.getLength());
-            assertEquals("public", ((Element)annotations.item(0)).getAttribute("name"));
-            assertEquals("x:path", ((Element)annotations.item(1)).getAttribute("name"));
-            assertEquals("/x/y/z", annotations.item(1).getFirstChild().getFirstChild().getNodeValue());
+                final NodeList annotations = function.getElementsByTagName("annotation");
+                assertEquals(2, annotations.getLength());
+                assertEquals("public", ((Element)annotations.item(0)).getAttribute("name"));
+                assertEquals("x:path", ((Element)annotations.item(1)).getAttribute("name"));
+                assertEquals("/x/y/z", annotations.item(1).getFirstChild().getFirstChild().getNodeValue());
 
-            final NodeList arguments = function.getElementsByTagName("argument");
-            assertEquals(0, arguments.getLength());
+                final NodeList arguments = function.getElementsByTagName("argument");
+                assertEquals(0, arguments.getLength());
 
-            final NodeList returns = function.getElementsByTagName("returns");
-            assertEquals(1, returns.getLength());
-            assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+                final NodeList returns = function.getElementsByTagName("returns");
+                assertEquals(1, returns.getLength());
+                assertEquals("another result", returns.item(0).getFirstChild().getNodeValue());
+            }
 
             transaction.commit();
         }

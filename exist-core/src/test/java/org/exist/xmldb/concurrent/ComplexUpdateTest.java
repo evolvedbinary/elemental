@@ -45,10 +45,10 @@
  */
 package org.exist.xmldb.concurrent;
 
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.action.ComplexUpdateAction;
 import org.junit.Before;
-import org.xmldb.api.modules.XMLResource;
 
 import java.util.Arrays;
 import java.util.List;
@@ -63,10 +63,10 @@ public class ComplexUpdateTest extends AbstractConcurrentTest {
 	
 	@Before
 	public void setUp() throws Exception {
-        final XMLResource res = (XMLResource)getTestCollection().createResource("R01.xml", "XMLResource");
-        res.setContent(XML);
-        getTestCollection().storeResource(res);
-        getTestCollection().close();
+        try (final EXistResource res = (EXistResource) getTestCollection().createResource("R01.xml", "XMLResource")) {
+            res.setContent(XML);
+            getTestCollection().storeResource(res);
+        }
 	}
 
     @Override

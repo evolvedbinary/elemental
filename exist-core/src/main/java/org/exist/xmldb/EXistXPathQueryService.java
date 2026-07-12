@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,7 +45,6 @@
  */
 package org.exist.xmldb;
 
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
@@ -55,7 +78,7 @@ public interface EXistXPathQueryService extends XPathQueryService {
      *
      * @throws XMLDBException if an error occurs whilst executing the query
      */
-    ResourceSet query(XMLResource res, String query)
+    EXistResourceSet query(XMLResource res, String query)
             throws XMLDBException;
 
     /**
@@ -73,7 +96,7 @@ public interface EXistXPathQueryService extends XPathQueryService {
      *
      * @throws XMLDBException if an error occurs whilst executing the query
      */
-    ResourceSet query(XMLResource res, String query, String sortExpr)
+    EXistResourceSet query(XMLResource res, String query, String sortExpr)
             throws XMLDBException;
 
     /**
@@ -89,7 +112,7 @@ public interface EXistXPathQueryService extends XPathQueryService {
      *
      * @throws XMLDBException if an error occurs whilst executing the query
      */
-    ResourceSet query(String query, String sortExpr)
+    EXistResourceSet query(String query, String sortExpr)
             throws XMLDBException;
 
     /**
@@ -101,7 +124,7 @@ public interface EXistXPathQueryService extends XPathQueryService {
      *
      * @throws XMLDBException if an error occurs whilst executing the stored query
      */
-    ResourceSet executeStoredQuery(String uri) throws XMLDBException;
+    EXistResourceSet executeStoredQuery(String uri) throws XMLDBException;
 
     /**
      * Declare an external XPath variable and assign a value to it.

@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,9 +47,10 @@ package org.exist.xmldb.concurrent.action;
 
 import java.util.Random;
 
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XPathQueryService;
 import org.xmldb.api.modules.XUpdateQueryService;
@@ -71,32 +96,39 @@ public class TextUpdateAction extends Action {
 
 	@Override
 	public boolean execute() throws XMLDBException {
-		final Collection col = DatabaseManager.getCollection(collectionPath, "admin", "");
-		final XUpdateQueryService service = (XUpdateQueryService)
-			col.getService("XUpdateQueryService", "1.0");
-		
-		// append a new section
-		long mods = service.update(APPEND);
-		assertEquals(1, mods);
-		
-		// update paragraph content
-		String updateText = Integer.toString(rand.nextInt()) + " &amp; " + Integer.toString(rand.nextInt());
-		final String update = UPDATE_START + updateText + UPDATE_END;
-		mods = service.update(update);
-		
-		assertEquals(1, mods);
-		
-		// query for section
-		final XPathQueryService query = (XPathQueryService) col.getService("XPathQueryService", "1.0");
-		ResourceSet result = query.query("/article/section/para/text()");
-		assertEquals(1, result.getSize());
-		updateText = result.getResource(0).getContent().toString();
-		result = query.query("/article/section/para[. = '" + updateText + "']");
-		assertEquals(1, result.getSize());
-		result.getResource(0).getContent();
-		
-		mods = service.update(REMOVE);
-		assertEquals(1, mods);
+		try (final Collection col = DatabaseManager.getCollection(collectionPath, "admin", "")) {
+			final XUpdateQueryService service = (XUpdateQueryService) col.getService("XUpdateQueryService", "1.0");
+
+			// append a new section
+			long mods = service.update(APPEND);
+			assertEquals(1, mods);
+
+			// update paragraph content
+			String updateText = Integer.toString(rand.nextInt()) + " &amp; " + Integer.toString(rand.nextInt());
+			final String update = UPDATE_START + updateText + UPDATE_END;
+			mods = service.update(update);
+
+			assertEquals(1, mods);
+
+			// query for section
+			final XPathQueryService query = (XPathQueryService) col.getService("XPathQueryService", "1.0");
+			try (final EXistResourceSet result = (EXistResourceSet) query.query("/article/section/para/text()")) {
+				assertEquals(1, result.getSize());
+				try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+					updateText = resource.getContent().toString();
+				}
+			}
+
+			try (final EXistResourceSet result = (EXistResourceSet) query.query("/article/section/para[. = '" + updateText + "']")) {
+				assertEquals(1, result.getSize());
+				try (final EXistResource resource = (EXistResource) result.getResource(0)) {
+					resource.getContent();
+				}
+			}
+
+			mods = service.update(REMOVE);
+			assertEquals(1, mods);
+		}
 		return true;
 	}
 }

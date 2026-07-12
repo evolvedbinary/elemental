@@ -62,7 +62,10 @@ import org.exist.util.crypto.digest.MessageDigest;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.xml.sax.InputSource;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.*;
+import org.xmldb.api.base.ErrorCodes;
+import org.xmldb.api.base.Resource;
+import org.xmldb.api.base.Service;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
 

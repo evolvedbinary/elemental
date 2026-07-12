@@ -52,6 +52,7 @@ import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
@@ -62,7 +63,7 @@ import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
@@ -116,7 +117,7 @@ public abstract class AbstractUpdateTest {
 
     protected abstract void doUpdate(final DBBroker broker, final TransactionManager transact, final MutableDocumentSet docs)  throws ParserConfigurationException, IOException, SAXException, LockException, XPathException, PermissionDeniedException, EXistException;
 
-    private void read(final BrokerPool pool) throws EXistException, PermissionDeniedException, SAXException, XPathException {
+    private void read(final BrokerPool pool) throws EXistException, PermissionDeniedException, SAXException, XPathException, IOException {
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
             final Serializer serializer = broker.borrowSerializer();
@@ -127,11 +128,13 @@ public abstract class AbstractUpdateTest {
             } finally {
                 broker.returnSerializer(serializer);
             }
-            
-            final XQuery xquery = pool.getXQueryService();
-            final Sequence seq = xquery.execute(broker, "/products/product[last()]", null);
-            for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                Item next = i.nextItem();
+
+            final String query = "/products/product[last()]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                    final Item next = i.nextItem();
+                }
             }
         }
     }

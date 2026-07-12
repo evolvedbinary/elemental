@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -53,23 +77,24 @@ public class CollectionTriggerTest {
 
         //create /db/testCollectionTrigger/srcCollection
         final EXistCollectionManagementService colMgmtSrv = (EXistCollectionManagementService)testCollection.getService("CollectionManagementService", "1.0");
-        final Collection srcCollection = colMgmtSrv.createCollection("col1");
+        try (final Collection srcCollection = colMgmtSrv.createCollection("col1")) {
 
-        final XmldbURI baseUri = XmldbURI.create(testCollection.getName());
-        final XmldbURI srcUri = XmldbURI.create(srcCollection.getName());
-        final XmldbURI newDest = XmldbURI.create("moved");
+            final XmldbURI baseUri = XmldbURI.create(testCollection.getName());
+            final XmldbURI srcUri = XmldbURI.create(srcCollection.getName());
+            final XmldbURI newDest = XmldbURI.create("moved");
 
-        //perform the move
-        colMgmtSrv.move(srcUri, baseUri, newDest);
+            //perform the move
+            colMgmtSrv.move(srcUri, baseUri, newDest);
 
 
-        //get the trigger and check its count
-        CountingCollectionTrigger.CountingCollectionTriggerState triggerState = CountingCollectionTrigger.CountingCollectionTriggerState.getInstance();
+            //get the trigger and check its count
+            CountingCollectionTrigger.CountingCollectionTriggerState triggerState = CountingCollectionTrigger.CountingCollectionTriggerState.getInstance();
 
-        //trigger move methods should have only been
-        //invoked once as we only moved one resource
-        assertEquals(1, triggerState.getBeforeMove());
-        assertEquals(1, triggerState.getAfterMove());
+            //trigger move methods should have only been
+            //invoked once as we only moved one resource
+            assertEquals(1, triggerState.getBeforeMove());
+            assertEquals(1, triggerState.getAfterMove());
+        }
     }
 
     @Before
@@ -84,7 +109,10 @@ public class CollectionTriggerTest {
 
     @After
     public void removeTestCollection() throws XMLDBException {
-        rootSrv.removeCollection(XmldbURI.create(testCollection.getName()));
+        final XmldbURI testCollectionUri = XmldbURI.create(testCollection.getName());
+        testCollection.close();
+        testCollection = null;
+        rootSrv.removeCollection(testCollectionUri);
     }
 
     /** just start the DB and create the test collection */

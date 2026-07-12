@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -33,8 +57,10 @@ import static org.exist.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.*;
-import org.xmldb.api.modules.*;
+import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.modules.CollectionManagementService;
+import org.xmldb.api.modules.XPathQueryService;
 
 
 public class CopyMoveTest {
@@ -46,30 +72,37 @@ public class CopyMoveTest {
 
     @Test
     public void copyResourceChangeName() throws XMLDBException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        XMLResource original = (XMLResource) testCollection.createResource("original", XMLResource.RESOURCE_TYPE);
-        original.setContent("<sample/>");
-        testCollection.storeResource(original);
-        EXistCollectionManagementService cms = (EXistCollectionManagementService) testCollection.getService("CollectionManagementService", "1.0");
-        cms.copyResource("original", "", "duplicate");
-        assertEquals(2, testCollection.getResourceCount());
-        XMLResource duplicate = (XMLResource) testCollection.getResource("duplicate");
-        assertNotNull(duplicate);
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            try (final EXistResource original = (EXistResource) testCollection.createResource("original", "XMLResource")) {
+                original.setContent("<sample/>");
+                testCollection.storeResource(original);
+            }
+            final EXistCollectionManagementService cms = (EXistCollectionManagementService) testCollection.getService("CollectionManagementService", "1.0");
+            cms.copyResource("original", "", "duplicate");
+            assertEquals(2, testCollection.getResourceCount());
+            try (final EXistResource duplicate = (EXistResource) testCollection.getResource("duplicate")) {
+                assertNotNull(duplicate);
+            }
+        }
     }
 
     @Test
     public void queryCopiedResource() throws XMLDBException {
-        Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
-        XMLResource original = (XMLResource) testCollection.createResource("original", XMLResource.RESOURCE_TYPE);
-        original.setContent("<sample/>");
-        testCollection.storeResource(original);
-        EXistCollectionManagementService cms = (EXistCollectionManagementService) testCollection.getService("CollectionManagementService", "1.0");
-        cms.copyResource("original", "", "duplicate");
-        XMLResource duplicate = (XMLResource) testCollection.getResource("duplicate");
-        assertNotNull(duplicate);
-        XPathQueryService xq = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
-        ResourceSet rs = xq.queryResource("duplicate", "/sample");
-        assertEquals(1, rs.getSize());
+        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
+            try (final EXistResource original = (EXistResource)testCollection.createResource("original", "XMLResource")) {
+                original.setContent("<sample/>");
+                testCollection.storeResource(original);
+            }
+            final EXistCollectionManagementService cms = (EXistCollectionManagementService) testCollection.getService("CollectionManagementService", "1.0");
+            cms.copyResource("original", "", "duplicate");
+            try (final EXistResource duplicate = (EXistResource) testCollection.getResource("duplicate")) {
+                assertNotNull(duplicate);
+            }
+            final XPathQueryService xq = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
+            try (final EXistResourceSet rs = (EXistResourceSet) xq.queryResource("duplicate", "/sample")) {
+                assertEquals(1, rs.getSize());
+            }
+        }
     }
     
     @Test
@@ -81,55 +114,61 @@ public class CopyMoveTest {
         final String resourceURL = collectionURL + "/" + originalResource;
         
         //get collection & services
-        EXistCollection col = (EXistCollection)DatabaseManager.getCollection(collectionURL);
-        EXistCollectionManagementService service = (EXistCollectionManagementService) col.getService("CollectionManagementService", "1.0");
-        UserManagementService ums = (UserManagementService)DatabaseManager.getCollection(collectionURL, ADMIN_DB_USER, ADMIN_DB_PWD).getService("UserManagementService", "1.0");
-        
-        //store xml document
-        XMLResource original = (XMLResource) col.createResource(originalResource, XMLResource.RESOURCE_TYPE);
-        original.setContent("<sample/>");
-        col.storeResource(original);
+        try (final EXistCollection col = (EXistCollection)DatabaseManager.getCollection(collectionURL)) {
+            final EXistCollectionManagementService service = (EXistCollectionManagementService) col.getService("CollectionManagementService", "1.0");
+            final UserManagementService ums = (UserManagementService) DatabaseManager.getCollection(collectionURL, ADMIN_DB_USER, ADMIN_DB_PWD).getService("UserManagementService", "1.0");
 
-        //get original resource
-        Resource orgnRes = col.getResource(originalResource);
+            //store xml document
+            try (final EXistResource original = (EXistResource)col.createResource(originalResource, "XMLResource")) {
+                original.setContent("<sample/>");
+                col.storeResource(original);
+            }
 
-        //check permission before copy
-        Permission prm = ums.getPermissions(orgnRes);
-        assertEquals("rw-r--r--", prm.toString());
-        
-        //copy
-        service.copyResource(XmldbURI.create(resourceURL), col.getPathURI(), XmldbURI.create(copyResource));
+            //get original resource
+            try (final EXistResource orgnRes = (EXistResource) col.getResource(originalResource)) {
 
-        //check permission after copy
-        prm = ums.getPermissions(orgnRes);
-        assertEquals("rw-r--r--", prm.toString());
+                //check permission before copy
+                Permission prm = ums.getPermissions(orgnRes);
+                assertEquals("rw-r--r--", prm.toString());
 
-        //get copy resource
-        Resource copyRes = col.getResource(copyResource);
-        
-        //change permission on copy
-        Account admin = ums.getAccount(ADMIN_DB_USER);
-        ums.chown(copyRes, admin, admin.getPrimaryGroup());
-        ums.chmod(copyRes, "rwx--x---");
-        
-        //check permission of copy
-        prm = ums.getPermissions(copyRes);
-        assertEquals("rwx--x---", prm.toString());
 
-        //check permission of original
-        prm = ums.getPermissions(orgnRes);
-        assertEquals("rw-r--r--", prm.toString());
+                //copy
+                service.copyResource(XmldbURI.create(resourceURL), col.getPathURI(), XmldbURI.create(copyResource));
+
+                //check permission after copy
+                prm = ums.getPermissions(orgnRes);
+                assertEquals("rw-r--r--", prm.toString());
+
+                //get copy resource
+                try (final EXistResource copyRes = (EXistResource) col.getResource(copyResource)) {
+
+                    //change permission on copy
+                    final Account admin = ums.getAccount(ADMIN_DB_USER);
+                    ums.chown(copyRes, admin, admin.getPrimaryGroup());
+                    ums.chmod(copyRes, "rwx--x---");
+
+                    //check permission of copy
+                    prm = ums.getPermissions(copyRes);
+                    assertEquals("rwx--x---", prm.toString());
+                }
+
+                //check permission of original
+                prm = ums.getPermissions(orgnRes);
+                assertEquals("rw-r--r--", prm.toString());
+            }
+        }
     }
 
     @Before
     public void setUp() throws Exception {
         final CollectionManagementService cms = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
-        final Collection testCollection = cms.createCollection(TEST_COLLECTION);
-        final UserManagementService ums = (UserManagementService) testCollection.getService("UserManagementService", "1.0");
-        // change ownership to guest
-        final Account guest = ums.getAccount(GUEST_DB_USER);
-        ums.chown(guest, guest.getPrimaryGroup());
-        ums.chmod("rwxr-xr-x");
+        try (final Collection testCollection = cms.createCollection(TEST_COLLECTION)) {
+            final UserManagementService ums = (UserManagementService) testCollection.getService("UserManagementService", "1.0");
+            // change ownership to guest
+            final Account guest = ums.getAccount(GUEST_DB_USER);
+            ums.chown(guest, guest.getPrimaryGroup());
+            ums.chmod("rwxr-xr-x");
+        }
     }
 
     @After

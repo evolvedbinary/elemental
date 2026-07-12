@@ -52,6 +52,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -66,10 +67,10 @@ import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.value.Sequence;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 
+import org.exist.xquery.value.Sequence;
 import org.junit.After;
 import org.junit.Test;
 
@@ -90,7 +91,7 @@ import static org.junit.Assert.assertNotNull;
  */
 public class ConstructedNodesRecoveryTest {
 
-	private final static String xquery =
+	private final static String query =
 		"declare variable $categories := \n" +
 		"	<categories>\n" +
 		"		<category uid=\"1\">Fruit</category>\n" +
@@ -259,20 +260,14 @@ public class ConstructedNodesRecoveryTest {
 	        createTempChildCollection(broker, transact, "testchild2");
             
             //execute an xquery
-	        XQuery service = pool.getXQueryService();
-	        assertNotNull(service);
-	        
-	        CompiledXQuery compiled = service.compile(new XQueryContext(pool), new StringSource(xquery));
-	        assertNotNull(compiled);
-	        
-	        Sequence result = service.execute(broker, compiled, null);
-	        assertNotNull(result);
-	       
-	        assertEquals(expectedResults.length, result.getItemCount());
-	        
-	        for(int i = 0; i < result.getItemCount(); i++)
-			{
-				assertEquals(expectedResults[i], (String)result.itemAt(i).getStringValue());
+			final Source source = new StringSource(query);
+			try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, false, null, null, null, null, null)) {
+				final Sequence result = queryResult.result;
+				assertEquals(expectedResults.length, result.getItemCount());
+
+				for (int i = 0; i < result.getItemCount(); i++) {
+					assertEquals(expectedResults[i], result.itemAt(i).getStringValue());
+				}
 			}
 	        
 	        //read the first test document

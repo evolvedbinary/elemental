@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -27,6 +51,8 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.util.LockException;
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
@@ -35,8 +61,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XPathQueryService;
@@ -60,15 +84,9 @@ public class AnnotationsTest {
         // testCollection.removeResource( testCollection .getResource(file_name));
         TestUtils.cleanupDB();
     }
-
-    private Collection getTestCollection() throws XMLDBException {
-        return DatabaseManager.getCollection("xmldb:exist:///db/test", "admin", "");
-    }
-
     
     @Test
     public void annotation() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -81,16 +99,17 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        final ResourceSet result = service.query(query);
-        
-        assertEquals(1, result.getSize());
-        Resource res = result.getIterator().nextResource();
-        assertEquals(TEST_VALUE_CONSTANT, res.getContent());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(1, result.getSize());
+
+            try (final EXistResource res = (EXistResource) result.getIterator().nextResource()) {
+                assertEquals(TEST_VALUE_CONSTANT, res.getContent());
+            }
+        }
     }
     
     @Test
     public void annotationWithLiterals() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -103,16 +122,17 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        final ResourceSet result = service.query(query);
-        
-        assertEquals(1, result.getSize());
-        Resource res = result.getIterator().nextResource();
-        assertEquals(TEST_VALUE_CONSTANT, res.getContent());
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            assertEquals(1, result.getSize());
+
+            try (final EXistResource res = (EXistResource) result.getIterator().nextResource()) {
+                assertEquals(TEST_VALUE_CONSTANT, res.getContent());
+            }
+        }
     }
     
     @Test(expected = XMLDBException.class)
     public void annotationInXMLNamespaceFails() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -125,12 +145,13 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        service.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
     
     @Test(expected = XMLDBException.class)
     public void annotationInXMLSchemaNamespaceFails() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -143,12 +164,13 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        service.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
     
     @Test(expected = XMLDBException.class)
     public void annotationInXMLSchemaInstanceNamespaceFails() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -161,12 +183,13 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        service.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
     
     @Test(expected = XMLDBException.class)
     public void annotationInXPathFunctionsNamespaceFails() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -179,12 +202,13 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        service.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
     
     @Test(expected = XMLDBException.class)
     public void annotationInXPathFunctionsMathNamespaceFails() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -197,12 +221,13 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        service.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
     
     @Test(expected = XMLDBException.class)
     public void annotationInXQueryOptionsNamespaceFails() throws XMLDBException {
-        
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -215,12 +240,15 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        service.query(query);
+        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+            // needed to ensure that result is closed
+        }
     }
    
     private XPathQueryService getQueryService() throws XMLDBException {
-        Collection testCollection = getTestCollection();       
-        XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
-        return service;
+        try (final Collection testCollection = DatabaseManager.getCollection("xmldb:exist:///db/test", "admin", "")) {
+            final XPathQueryService service = (XPathQueryService) testCollection.getService("XPathQueryService", "1.0");
+            return service;
+        }
     }
 }

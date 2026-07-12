@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,10 +48,11 @@ package org.exist.xquery.functions.util;
 import org.exist.EXistException;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -37,6 +62,8 @@ import org.xmlunit.diff.Diff;
 
 import javax.xml.transform.Source;
 
+import java.io.IOException;
+
 import static org.junit.Assert.*;
 
 public class ParseHtmlTest {
@@ -45,12 +72,12 @@ public class ParseHtmlTest {
     public static final ExistEmbeddedServer server = new ExistEmbeddedServer(true, true);
 
     @Test
-    public void parseHtml() throws EXistException, PermissionDeniedException, XPathException {
+    public void parseHtml() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query = "util:parse-html(\"<p>hello <img src='1.jpg'></p>\")";
 
-        final XQuery xquery = server.getBrokerPool().getXQueryService();
-        try (final DBBroker broker = server.getBrokerPool().getBroker()) {
-            final Sequence result = xquery.execute(broker, query, null);
+        try (final DBBroker broker = server.getBrokerPool().getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertTrue(result.itemAt(0) instanceof DocumentImpl);
 

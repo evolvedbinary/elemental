@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,11 +45,11 @@
  */
 package org.exist.xmldb.concurrent.action;
 
+import org.exist.xmldb.EXistResource;
+import org.exist.xmldb.EXistResourceSet;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 import org.xmldb.api.modules.XUpdateQueryService;
 
@@ -91,33 +115,42 @@ public class ComplexUpdateAction extends Action {
 
 	@Override
 	public boolean execute() throws XMLDBException {
-		final Collection col = DatabaseManager.getCollection(collectionPath, "admin", "");
-		for(int i = 0; i < repeat; i++) {
-			query(col, i); 
-			col.close();
-			
-			update(col, sessionUpdate);
-			// The following update will fail
-			final String versionUpdate =
-				"<xu:modifications xmlns:xu=\"http://www.xmldb.org/xupdate\" version=\"1.0\">" +
-				"<xu:update select=\"//USER-SESSION-DATA[1]/@version\">" + (i + 1) +
-				"</xu:update></xu:modifications>";
-			update(col, versionUpdate);
-			update(col, statusUpdate);
+		try (final Collection col = DatabaseManager.getCollection(collectionPath, "admin", "")) {
+			for (int i = 0; i < repeat; i++) {
+				query(col, i);
+				col.close();
+
+				update(col, sessionUpdate);
+				// The following update will fail
+				final String versionUpdate =
+					"<xu:modifications xmlns:xu=\"http://www.xmldb.org/xupdate\" version=\"1.0\">" +
+						"<xu:update select=\"//USER-SESSION-DATA[1]/@version\">" + (i + 1) +
+						"</xu:update></xu:modifications>";
+				update(col, versionUpdate);
+				update(col, statusUpdate);
+			}
 		}
 		return true;
 	}
 
 	private void query(final Collection col, final int repeat) throws XMLDBException {
 		final XPathQueryService service = (XPathQueryService)col.getService("XPathQueryService", "1.0");
-		ResourceSet r = service.query("//USER-SESSION-DATA");
-		assertEquals(1, r.getSize());
-		for(long i = 0; i < r.getSize(); i++) {
-			XMLResource res = (XMLResource)r.getResource(i);
+
+		try (final EXistResourceSet r = (EXistResourceSet) service.query("//USER-SESSION-DATA")) {
+			assertEquals(1, r.getSize());
+			for (long i = 0; i < r.getSize(); i++) {
+				try (final EXistResource res = (EXistResource) r.getResource(i)) {
+					// needed to ensure that res is closed.
+				}
+			}
 		}
-		r = service.query("string(//USER-SESSION-DATA[1]/@version)");
-		assertEquals(1, r.getSize());
-		assertEquals(repeat, Integer.parseInt(r.getResource(0).getContent().toString()));
+
+		try (final EXistResourceSet r = (EXistResourceSet) service.query("string(//USER-SESSION-DATA[1]/@version)")) {
+			assertEquals(1, r.getSize());
+			try (final EXistResource resource = (EXistResource) r.getResource(0)) {
+				assertEquals(repeat, Integer.parseInt(resource.getContent().toString()));
+			}
+		}
 	}
 
 	private void update(final Collection col, final String xupdate) throws XMLDBException {

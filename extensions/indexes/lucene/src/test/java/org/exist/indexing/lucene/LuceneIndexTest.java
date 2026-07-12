@@ -51,10 +51,16 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.*;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.exist.EXistException;
 import org.exist.Indexer;
 import org.exist.TestUtils;
@@ -69,6 +75,7 @@ import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.indexing.OrderedValuesIndex;
 import org.exist.indexing.QNamedKeysIndex;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
@@ -76,12 +83,15 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
-import org.exist.util.*;
+import org.exist.util.Configuration;
+import org.exist.util.InputStreamSupplierInputSource;
+import org.exist.util.LockException;
+import org.exist.util.Occurrences;
+import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.XQueryContext;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
@@ -295,27 +305,40 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { attrQN }, "center", 1);
             checkIndex(docs, broker, new QName[] { attrQN }, "right", 1);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "/section[ft:query(p, 'content')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "/section[ft:query(p, 'content')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/section[ft:query(p/@rend, 'center')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/section[ft:query(p/@rend, 'center')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/section[ft:query(hi, 'just')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/section[ft:query(hi, 'just')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/section[ft:query(p/*, 'just')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/section[ft:query(p/*, 'just')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/section[ft:query(head/*, 'just')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/section[ft:query(head/*, 'just')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
         }
     }
 
@@ -375,15 +398,12 @@ public class LuceneIndexTest {
             // nested <text> should be ignored and not indexed by match="/TEI/text"
             checkIndex(docs, broker, new QName[]{new QName("text")}, "nested", 0);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-
-            String[]  searchTerms = {
+            final String[] searchTerms = {
                     "Buick", "Cadillac", "Dodge", "Ford",
                     "ABuick", "ACadillac", "ADodge", "AFord",
             };
 
-            String[]  queryTemplates = {
+            final String[] queryTemplates = {
                     "//.[ft:query(title, '%s')]",
             // Field query with != attribute predicate: <text field="non-En" match="//title[@xml:lang != 'En']"/>:
                     "//.[ft:query-field('not-equals-Sa-Ltn', '%s')]",
@@ -393,7 +413,7 @@ public class LuceneIndexTest {
                     "//.[ft:query-field('eq-Sa-Ltn', '%s')]",
             };
 
-            int[][] resultCounts = {
+            final int[][] resultCounts = {
                     {1, 0, 0, 0 },
                     {0, 0, 1, 0 },
                     {0, 1, 1, 1 },
@@ -401,13 +421,15 @@ public class LuceneIndexTest {
             };
 
             for (int qi = 0; qi < queryTemplates.length; ++qi) {
-                int[] resultCount = resultCounts[qi];
-                for (int ri=0; ri < searchTerms.length; ++ri) {
-                    String query = String.format(queryTemplates[qi], searchTerms[ri]);
-                    Sequence seq = xquery.execute(broker, query, null);
-                    assertNotNull(seq);
-                    int expected = resultCount[ri % resultCount.length];
-                    assertEquals(query, expected, seq.getItemCount());
+                final int[] resultCount = resultCounts[qi];
+                for (int ri = 0; ri < searchTerms.length; ++ri) {
+                    final String query = String.format(queryTemplates[qi], searchTerms[ri]);
+                    try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                        final Sequence seq = queryResult.result;
+                        assertNotNull(seq);
+                        final int expected = resultCount[ri % resultCount.length];
+                        assertEquals(query, expected, seq.getItemCount());
+                    }
                 }
             }
         }
@@ -422,19 +444,26 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { new QName("a") }, "x", 1);
             checkIndex(docs, broker, new QName[] { new QName("c") }, "x", 1);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "/test[ft:query(a, 'x')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "/test[ft:query(a, 'x')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/test[ft:query(.//c, 'x')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/test[ft:query(.//c, 'x')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/test[ft:query(b, 'x')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/test[ft:query(b, 'x')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
         }
     }
 
@@ -452,67 +481,110 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { new QName("p") }, "ignore", 0);
             checkIndex(docs, broker, new QName[]{new QName("p")}, "warnings", 1);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "/article[ft:query(head, 'title')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "/article[ft:query(head, 'title')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'highlighted')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(p, 'highlighted')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'mixed')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(p, 'mixed')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'mix')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(p, 'mix')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'dangerous')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(p, 'dangerous')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'ous')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(p, 'ous')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'danger')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(p, 'danger')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(p, 'note')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(p, 'note')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'highlighted')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(., 'highlighted')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'mixed')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(., 'mixed')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'dangerous')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(., 'dangerous')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'warnings')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/article[ft:query(., 'warnings')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'danger')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(., 'danger')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'note')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(., 'note')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/article[ft:query(., 'ignore')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/article[ft:query(., 'ignore')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
         }
     }
 
@@ -524,32 +596,38 @@ public class LuceneIndexTest {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction()) {
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-
-            Sequence seq = xquery.execute(broker, "for $a in ft:query((//b|//c), 'AAA') order by ft:score($a) descending return xs:string($a)", null);
-            assertNotNull(seq);
-            assertEquals(5, seq.getItemCount());
-            assertEquals("AAA on b2", seq.itemAt(0).getStringValue());
-            assertEquals("AAA on c1", seq.itemAt(1).getStringValue());
-            assertEquals("AAA on b3", seq.itemAt(2).getStringValue());
-            assertEquals("AAA on b1", seq.itemAt(3).getStringValue());
-            assertEquals("AAA on c2", seq.itemAt(4).getStringValue());
+            String query = "for $a in ft:query((//b|//c), 'AAA') order by ft:score($a) descending return xs:string($a)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(5, seq.getItemCount());
+                assertEquals("AAA on b2", seq.itemAt(0).getStringValue());
+                assertEquals("AAA on c1", seq.itemAt(1).getStringValue());
+                assertEquals("AAA on b3", seq.itemAt(2).getStringValue());
+                assertEquals("AAA on b1", seq.itemAt(3).getStringValue());
+                assertEquals("AAA on c2", seq.itemAt(4).getStringValue());
+            }
 
             // path: /a/b
-            seq = xquery.execute(broker, "for $a in ft:query(/a/b, 'AAA') order by ft:score($a) descending return xs:string($a)", null);
-            assertNotNull(seq);
-            assertEquals(2, seq.getItemCount());
-            assertEquals("AAA on b2", seq.itemAt(0).getStringValue());
-            assertEquals("AAA on b1", seq.itemAt(1).getStringValue());
+            query = "for $a in ft:query(/a/b, 'AAA') order by ft:score($a) descending return xs:string($a)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(2, seq.getItemCount());
+                assertEquals("AAA on b2", seq.itemAt(0).getStringValue());
+                assertEquals("AAA on b1", seq.itemAt(1).getStringValue());
+            }
 
-            seq = xquery.execute(broker, "for $a in ft:query(//@att, 'att') order by ft:score($a) descending return xs:string($a)", null);
-            assertNotNull(seq);
-            assertEquals(4, seq.getItemCount());
-            assertEquals("att on b2", seq.itemAt(0).getStringValue());
-            assertEquals("att on b3", seq.itemAt(1).getStringValue());
-            assertEquals("att on b1", seq.itemAt(2).getStringValue());
-            assertEquals("att on c1", seq.itemAt(3).getStringValue());
+            query = "for $a in ft:query(//@att, 'att') order by ft:score($a) descending return xs:string($a)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(4, seq.getItemCount());
+                assertEquals("att on b2", seq.itemAt(0).getStringValue());
+                assertEquals("att on b3", seq.itemAt(1).getStringValue());
+                assertEquals("att on b1", seq.itemAt(2).getStringValue());
+                assertEquals("att on c1", seq.itemAt(3).getStringValue());
+            }
 
 
             // modify with xupdate and check if boosts are updated accordingly
@@ -575,161 +653,226 @@ public class LuceneIndexTest {
             proc.reset();
             transact.commit(transaction);
 
-            seq = xquery.execute(broker, "for $a in ft:query((//b|//c), 'AAA') order by ft:score($a) descending return xs:string($a)", null);
-            assertNotNull(seq);
-            assertEquals(5, seq.getItemCount());
-            assertEquals("AAA on b2", seq.itemAt(0).getStringValue());
-            assertEquals("AAA on c2", seq.itemAt(1).getStringValue());
-            assertEquals("AAA on b3", seq.itemAt(2).getStringValue());
-            assertEquals("AAA on b1", seq.itemAt(3).getStringValue());
-            assertEquals("AAA on c1", seq.itemAt(4).getStringValue());
+            query = "for $a in ft:query((//b|//c), 'AAA') order by ft:score($a) descending return xs:string($a)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(5, seq.getItemCount());
+                assertEquals("AAA on b2", seq.itemAt(0).getStringValue());
+                assertEquals("AAA on c2", seq.itemAt(1).getStringValue());
+                assertEquals("AAA on b3", seq.itemAt(2).getStringValue());
+                assertEquals("AAA on b1", seq.itemAt(3).getStringValue());
+                assertEquals("AAA on c1", seq.itemAt(4).getStringValue());
+            }
 
         }
     }
 
     @Test
-    public void boosts() throws EXistException, CollectionConfigurationException, PermissionDeniedException, SAXException, TriggerException, LockException, IOException, XPathException {
+    public void boosts() throws EXistException, CollectionConfigurationException, PermissionDeniedException, SAXException, LockException, IOException, XPathException {
         configureAndStore(COLLECTION_CONFIG6, XML6, "test.xml");
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "for $a in ft:query((//b|//c), 'AAA') " +
-                    "order by ft:score($a) descending return $a/local-name(.)", null);
-            assertNotNull(seq);
-            assertEquals(3, seq.getItemCount());
-            assertEquals("c", seq.getStringValue());
+            final String query = "for $a in ft:query((//b|//c), 'AAA') order by ft:score($a) descending return $a/local-name(.)";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(3, seq.getItemCount());
+                assertEquals("c", seq.getStringValue());
+            }
         }
     }
 
     @Test
-    public void queryTranslation() throws EXistException, CollectionConfigurationException, PermissionDeniedException, SAXException, TriggerException, LockException, IOException, XPathException {
+    public void queryTranslation() throws EXistException, CollectionConfigurationException, PermissionDeniedException, SAXException, LockException, IOException, XPathException {
         configureAndStore(COLLECTION_CONFIG1, XML7, "test.xml");
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
+            final String query =
+                    "declare variable $q external;\n" +
+                    "ft:query(//p, parse-xml($q)/query)";
 
-            final XQueryContext context = new XQueryContext(broker.getBrokerPool());
-            final CompiledXQuery compiled = xquery.compile(context, "declare variable $q external; " +
-                    "ft:query(//p, parse-xml($q)/query)");
+            ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true, "<query><term>heiterkeit</term></query>");
+            };
 
-            context.declareVariable("q", true, "<query><term>heiterkeit</term></query>");
-            Sequence seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                    "<query>" +
-                            "   <bool>" +
-                            "       <term>heiterkeit</term><term>blablabla</term>" +
-                            "   </bool>" +
-                            "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <bool>" +
+                        "       <term>heiterkeit</term><term>blablabla</term>" +
+                        "   </bool>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                    "<query>" +
-                            "   <bool>" +
-                            "       <term occur='should'>heiterkeit</term><term occur='should'>blablabla</term>" +
-                            "   </bool>" +
-                            "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <bool>" +
+                        "       <term occur='should'>heiterkeit</term><term occur='should'>blablabla</term>" +
+                        "   </bool>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <bool>" +
-                "       <term occur='must'>heiterkeit</term><term occur='must'>blablabla</term>" +
-                "   </bool>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <bool>" +
+                        "       <term occur='must'>heiterkeit</term><term occur='must'>blablabla</term>" +
+                        "   </bool>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <bool>" +
-                "       <term occur='must'>heiterkeit</term><term occur='not'>herzen</term>" +
-                "   </bool>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <bool>" +
+                        "       <term occur='must'>heiterkeit</term><term occur='not'>herzen</term>" +
+                        "   </bool>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <bool>" +
-                "       <phrase occur='must'>wunderbare heiterkeit</phrase><term occur='must'>herzen</term>" +
-                "   </bool>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                      "<query>" +
+                        "   <bool>" +
+                        "       <phrase occur='must'>wunderbare heiterkeit</phrase><term occur='must'>herzen</term>" +
+                        "   </bool>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                    "<query>" +
-                    "   <phrase slop='5'>heiterkeit seele eingenommen</phrase>" +
-                    "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <phrase slop='5'>heiterkeit seele eingenommen</phrase>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             // phrase with wildcards
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <phrase slop='5'><term>heiter*</term><term>se?nnnle*</term></phrase>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <phrase slop='5'><term>heiter*</term><term>se?nnnle*</term></phrase>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <wildcard>?eiter*</wildcard>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <wildcard>?eiter*</wildcard>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <fuzzy max-edits='2'>selee</fuzzy>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <fuzzy max-edits='2'>selee</fuzzy>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <bool>" +
-                "       <fuzzy occur='must' max-edits='2'>selee</fuzzy>" +
-                "       <wildcard occur='should'>bla*</wildcard>" +
-                "   </bool>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <bool>" +
+                        "       <fuzzy occur='must' max-edits='2'>selee</fuzzy>" +
+                        "       <wildcard occur='should'>bla*</wildcard>" +
+                        "   </bool>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <regex>heit.*keit</regex>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <regex>heit.*keit</regex>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            context.declareVariable("q", true,
-                "<query>" +
-                "   <phrase><term>wunderbare</term><regex>heit.*keit</regex></phrase>" +
-                "</query>");
-            seq = xquery.execute(broker, compiled, null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            setupXqueryContextPreExecution = xqueryContext -> {
+                xqueryContext.declareVariable("q", true,
+                        "<query>" +
+                        "   <phrase><term>wunderbare</term><regex>heit.*keit</regex></phrase>" +
+                        "</query>"
+                );
+            };
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, setupXqueryContextPreExecution, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
         }
     }
 
@@ -742,19 +885,26 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { new QName("head") }, "TITLE", 1);
             checkIndex(docs, broker, new QName[] { new QName("p") }, "uppercase", 1);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "/section[ft:query(p, 'UPPERCASE')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "/section[ft:query(p, 'UPPERCASE')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/section[ft:query(head, 'TITLE')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            query = "/section[ft:query(head, 'TITLE')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
-            seq = xquery.execute(broker, "/section[ft:query(head, 'title')]", null);
-            assertNotNull(seq);
-            assertEquals(0, seq.getItemCount());
+            query = "/section[ft:query(head, 'title')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(0, seq.getItemCount());
+            }
         }
     }
 
@@ -762,26 +912,31 @@ public class LuceneIndexTest {
     public void MultiTermQueryRewriteMethod() throws EXistException, CollectionConfigurationException, PermissionDeniedException, SAXException, TriggerException, LockException, IOException, XPathException {
         configureAndStore(COLLECTION_CONFIG8, XML9, "test.xml");
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+
+            String query = "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
             " for $expr in (\"au*\", \"ha*\", \"ma*\", \"za*\", \"ya*\", \"ra*\", \"qa*\")" +
             " let $query := <query><wildcard>{$expr}</wildcard></query>" +
             " return for $hit in //tei:p[ft:query(., $query)]" +
-            " return util:expand($hit)//exist:match", null);
-            assertNotNull(seq);
-            assertEquals(10, seq.getItemCount());
-            assertEquals("aus", seq.itemAt(0).getStringValue());
+            " return util:expand($hit)//exist:match";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(10, seq.getItemCount());
+                assertEquals("aus", seq.itemAt(0).getStringValue());
+            }
 
-	    seq = xquery.execute(broker, "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
-            " for $expr in (\"ha*\", \"ma*\")" +
-            " let $query := <query><wildcard>{$expr}</wildcard></query>" +
-            " return for $hit in //tei:p[ft:query(., $query)]" +
-            " return util:expand($hit)//exist:match", null);
-	    assertNotNull(seq);
-            assertEquals(2 , seq.getItemCount());
-            assertEquals("haus", seq.itemAt(0).getStringValue());
+            query = "declare namespace tei=\"http://www.tei-c.org/ns/1.0\";" +
+                " for $expr in (\"ha*\", \"ma*\")" +
+                " let $query := <query><wildcard>{$expr}</wildcard></query>" +
+                " return for $hit in //tei:p[ft:query(., $query)]" +
+                " return util:expand($hit)//exist:match";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(2, seq.getItemCount());
+                assertEquals("haus", seq.itemAt(0).getStringValue());
+            }
 
         }
     }
@@ -806,30 +961,37 @@ public class LuceneIndexTest {
         configureAndStore(COLLECTION_CONFIG1, SAMPLES.getShakespeareXmlSampleNames());
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             try(final Txn transaction = transact.beginTransaction()) {
-                Sequence seq = xquery.execute(broker, "//LINE[ft:query(., 'bark')]", null);
-                assertNotNull(seq);
-                assertEquals(6, seq.getItemCount());
+                String query = "//LINE[ft:query(., 'bark')]";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertNotNull(seq);
+                    assertEquals(6, seq.getItemCount());
+                }
 
                 root.removeXMLResource(transaction, broker, XmldbURI.create("r_and_j.xml"));
                 transact.commit(transaction);
 
-                seq = xquery.execute(broker, "//LINE[ft:query(., 'bark')]", null);
-                assertNotNull(seq);
-                assertEquals(3, seq.getItemCount());
+                query = "//LINE[ft:query(., 'bark')]";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertNotNull(seq);
+                    assertEquals(3, seq.getItemCount());
+                }
             }
 
             try(final Txn transaction = transact.beginTransaction()) {
                 root.removeXMLResource(transaction, broker, XmldbURI.create("hamlet.xml"));
                 transact.commit(transaction);
 
-                Sequence seq = xquery.execute(broker, "//LINE[ft:query(., 'bark')]", null);
-                assertNotNull(seq);
-                assertEquals(1, seq.getItemCount());
+                String query = "//LINE[ft:query(., 'bark')]";
+                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                    final Sequence seq = queryResult.result;
+                    assertNotNull(seq);
+                    assertEquals(1, seq.getItemCount());
+                }
             }
         }
     }
@@ -839,14 +1001,15 @@ public class LuceneIndexTest {
         final DocumentSet docs = configureAndStore(COLLECTION_CONFIG1, SAMPLES.getShakespeareXmlSampleNames());
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//SPEECH[ft:query(LINE, 'love')]", null);
-            assertNotNull(seq);
-            assertEquals(166, seq.getItemCount());
+            String query = "//SPEECH[ft:query(LINE, 'love')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(166, seq.getItemCount());
+            }
 
             broker.removeCollection(transaction, root);
 
@@ -902,11 +1065,12 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { new QName("item") }, null, 5);
             checkIndex(docs, broker, new QName[] { new QName("condition") }, null, 2);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//item[ft:query(description, 'chair')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "//item[ft:query(description, 'chair')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             final XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);
@@ -981,11 +1145,12 @@ public class LuceneIndexTest {
             assertEquals("chair", occur[0].getTerm());
             checkIndex(docs, broker, new QName[] { new QName("item") }, null, 5);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//item[ft:query(description, 'chair')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "//item[ft:query(description, 'chair')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             // Append to root node
             final XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
@@ -1146,11 +1311,12 @@ public class LuceneIndexTest {
             assertEquals("chair", occur[0].getTerm());
             checkIndex(docs, broker, new QName[] { new QName("item") }, null, 5);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//item[ft:query(description, 'chair')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "//item[ft:query(description, 'chair')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             // Update element content
             final XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
@@ -1224,11 +1390,12 @@ public class LuceneIndexTest {
             assertEquals("chair", occur[0].getTerm());
             checkIndex(docs, broker, new QName[] { new QName("item") }, null, 5);
 
-            final XQuery xquery = pool.getXQueryService();
-            assertNotNull(xquery);
-            Sequence seq = xquery.execute(broker, "//item[ft:query(description, 'chair')]", null);
-            assertNotNull(seq);
-            assertEquals(1, seq.getItemCount());
+            String query = "//item[ft:query(description, 'chair')]";
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+                final Sequence seq = queryResult.result;
+                assertNotNull(seq);
+                assertEquals(1, seq.getItemCount());
+            }
 
             final XUpdateProcessor proc = new XUpdateProcessor(broker, docs);
             assertNotNull(proc);

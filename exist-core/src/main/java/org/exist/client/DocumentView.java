@@ -73,7 +73,6 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -87,6 +86,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.security.Account;
 import org.exist.storage.ElementIndex;
 import org.exist.util.ProgressIndicator;
+import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.UserManagementService;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.util.URIUtils;
@@ -105,25 +105,26 @@ class DocumentView extends JFrame {
 
     private static final long serialVersionUID = 1L;
 
-    protected InteractiveClient client;
-    private XmldbURI resourceName;
-    protected Resource resource;
-    protected Collection collection;
-    protected boolean readOnly = false;
-    protected RSyntaxTextArea text;
-    protected RTextScrollPane textScrollPane;
-    protected JButton saveButton;
-    protected JButton saveAsButton;
-    protected JTextField statusMessage;
-    protected JTextField positionDisplay;
-    protected JProgressBar progress;
-    protected JPopupMenu popup;
-    protected Properties properties;
+    private final InteractiveClient client;
+    private final XmldbURI resourceName;
+    private EXistResource resource;
+    private boolean ownsResource;
+    private final Collection collection;
+    private boolean readOnly = false;
+    private RSyntaxTextArea text;
+    private RTextScrollPane textScrollPane;
+    private JButton saveButton;
+    private JButton saveAsButton;
+    private JTextField statusMessage;
+    private JTextField positionDisplay;
+    private JProgressBar progress;
+    private Properties properties;
 
-    public DocumentView(InteractiveClient client, XmldbURI resourceName, Resource resource, Properties properties) throws XMLDBException {
+    public DocumentView(final InteractiveClient client, final XmldbURI resourceName, final Resource resource, final Properties properties) throws XMLDBException {
         super(URIUtils.urlDecodeUtf8(resourceName.lastSegment()));
         this.resourceName = resourceName;
-        this.resource = resource;
+        this.resource = (EXistResource) resource;
+        this.ownsResource = false;
         this.client = client;
         this.setIconImage(InteractiveClient.getElementalIcon(getClass()).getImage());
         this.collection = client.getCollection();
@@ -149,7 +150,7 @@ class DocumentView extends JFrame {
 
             // lock the resource for editing
             final UserManagementService service = (UserManagementService)
-                    client.current.getService("UserManagementService", "1.0"); //$NON-NLS-1$ //$NON-NLS-2$
+                    client.getCollection().getService("UserManagementService", "1.0"); //$NON-NLS-1$ //$NON-NLS-2$
             final Account user = service.getAccount(properties.getProperty("user")); //$NON-NLS-1$
             final String lockOwner = service.hasUserLock(resource);
             if (lockOwner != null) {
@@ -216,6 +217,13 @@ class DocumentView extends JFrame {
 
     private void close() {
         unlockView();
+        if (this.ownsResource) {
+            try {
+                this.resource.close();
+            } catch (final XMLDBException e) {
+                // no-op
+            }
+        }
     }
 
     private void unlockView() {
@@ -409,10 +417,10 @@ class DocumentView extends JFrame {
                     progress.setVisible(true);
 
                     //Create a new resource as named, set the content, store the resource
-                    XMLResource result = null;
-                    result = (XMLResource) collection.createResource(URIUtils.encodeXmldbUriFor(nameres).toString(), XMLResource.RESOURCE_TYPE);
-                    result.setContent(text.getText());
-                    collection.storeResource(result);
+                    try (final EXistResource result = (EXistResource) collection.createResource(URIUtils.encodeXmldbUriFor(nameres).toString(), XMLResource.RESOURCE_TYPE)) {
+                        result.setContent(text.getText());
+                        collection.storeResource(result);
+                    }
                     client.reloadCollection();    //reload the client collection
                     if (collection instanceof Observable) {
                         ((Observable) collection).deleteObservers();
@@ -464,7 +472,15 @@ class DocumentView extends JFrame {
         unlockView();
 
         //Reload the resource
-        this.resource = client.retrieve(resourceName, properties.getProperty(OutputKeys.INDENT, "yes")); //$NON-NLS-1$
+        if (this.ownsResource) {
+            try {
+                this.resource.close();
+            } catch (final XMLDBException e) {
+                // no-op
+            }
+        }
+        this.resource = (EXistResource) client.retrieve(resourceName, properties.getProperty(OutputKeys.INDENT, "yes")); //$NON-NLS-1$
+        this.ownsResource = true;
 
         //View and lock the resource
         viewDocument();

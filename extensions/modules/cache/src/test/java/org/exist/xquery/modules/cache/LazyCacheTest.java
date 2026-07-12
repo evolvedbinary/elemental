@@ -47,6 +47,7 @@ package org.exist.xquery.modules.cache;
 
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -54,10 +55,11 @@ import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.Configuration;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.value.Sequence;
+import org.exist.xquery.XQueryUtil;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -81,7 +83,7 @@ public class LazyCacheTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void putOnLazilyCreatedCache() throws XPathException, PermissionDeniedException, EXistException {
+    public void putOnLazilyCreatedCache() throws XPathException, PermissionDeniedException, EXistException, IOException {
         // 1. check that the CacheModule was configured from the conf file correctly
         final Configuration configuration = existEmbeddedServer.getBrokerPool().getConfiguration();
         final Map<String, Map<String, List<Object>>> modulesParameters = (Map<String, Map<String, List<Object>>>) configuration.getProperty(XQueryContext.PROPERTY_MODULE_PARAMETERS);
@@ -91,26 +93,28 @@ public class LazyCacheTest {
         assertEquals("true", enableLazyCreation.get(0).toString());
 
         // 2. try and put on a cache that can be lazing created (due to conf file setting)
-        Sequence result = executeQuery("cache:put('lazy-foo', 'bar', 'baz1')");
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        try (final XQueryUtil.QueryResult queryResult = executeQuery("cache:put('lazy-foo', 'bar', 'baz1')")) {
+            assertNotNull(queryResult.result);
+            assertTrue(queryResult.result.isEmpty());
+        }
 
-        result = executeQuery("cache:put('lazy-foo', 'bar', 'baz2')");
-        assertNotNull(result);
-        assertEquals(1, result.getItemCount());
-        assertEquals("baz1", result.itemAt(0).getStringValue());
+        try (final XQueryUtil.QueryResult queryResult = executeQuery("cache:put('lazy-foo', 'bar', 'baz2')")) {
+            assertNotNull(queryResult.result);
+            assertEquals(1, queryResult.result.getItemCount());
+            assertEquals("baz1", queryResult.result.itemAt(0).getStringValue());
+        }
     }
 
-    private static Sequence executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException {
+    private static XQueryUtil.QueryResult executeQuery(final String query) throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = brokerPool.getBroker();
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
-            final Sequence result = brokerPool.getXQueryService().execute(broker, query, null);
+            final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null);
 
             transaction.commit();
 
-            return result;
+            return queryResult;
         }
     }
 }

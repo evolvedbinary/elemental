@@ -58,7 +58,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.CollectionManagementService;
 
 import static org.junit.Assert.*;
 
@@ -88,19 +87,18 @@ public abstract class AbstractConcurrentTest {
     public final void startupDb() throws Exception {
         final Collection rootCol = existXmldbEmbeddedServer.getRoot();
         assertNotNull(rootCol);
+
         final IndexQueryService idxConf = (IndexQueryService) rootCol.getService("IndexQueryService", "1.0");
         idxConf.configureCollection(COLLECTION_CONFIG);
-        testCol = rootCol.getChildCollection(getTestCollectionName());
-        if (testCol != null) {
-            CollectionManagementService mgr = DBUtils.getCollectionManagementService(rootCol);
-            mgr.removeCollection(getTestCollectionName());
-        }
+
         testCol = DBUtils.addCollection(rootCol, getTestCollectionName());
         assertNotNull(testCol);
     }
 
     @After
     public final void tearDownDb() throws XMLDBException {
+        testCol.close();
+
         final Collection rootCol = existXmldbEmbeddedServer.getRoot();
         DBUtils.removeCollection(rootCol, getTestCollectionName());
 
