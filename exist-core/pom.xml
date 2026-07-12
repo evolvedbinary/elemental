@@ -1237,11 +1237,15 @@
                                 <include>src/test/java/org/exist/xmldb/concurrent/action/ValueAppendAction.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/action/XQueryAction.java</include>
                                 <include>src/test/java/org/exist/xmldb/concurrent/action/XQueryUpdateAction.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/AbstractCachedResult.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/CachedQueryResult.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</include>
                                 <include>src/test/java/org/exist/xmlrpc/MimeTypeTest.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/QueryResultCache.java</include>
                                 <include>src/test/java/org/exist/xmlrpc/QuerySessionTest.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcAPI.java</include>
                                 <include>src/main/java/org/exist/xmlrpc/RpcConnection.java</include>
+                                <include>src/main/java/org/exist/xmlrpc/XmldbRequestProcessorFactory.java</include>
                                 <include>src/test/java/org/exist/xmlrpc/XmlRpcTest.java</include>
                                 <include>src/main/java/org/exist/xqj/Marshaller.java</include>
                                 <include>src/test/java/org/exist/xqj/MarshallerTest.java</include>
@@ -2140,15 +2144,19 @@
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/action/ValueAppendAction.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/action/XQueryAction.java</exclude>
                                 <exclude>src/test/java/org/exist/xmldb/concurrent/action/XQueryUpdateAction.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/AbstractCachedResult.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ACEAiderSerializer.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperParser.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ArrayWrapperSerializer.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/CachedQueryResult.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/ExistRpcTypeFactory.java</exclude>
                                 <exclude>src/test/java/org/exist/xmlrpc/MimeTypeTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/QueryResultCache.java</exclude>
                                 <exclude>src/test/java/org/exist/xmlrpc/QuerySessionTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcAPI.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/RpcConnection.java</exclude>
+                                <exclude>src/main/java/org/exist/xmlrpc/XmldbRequestProcessorFactory.java</exclude>
                                 <exclude>src/main/java/org/exist/xmlrpc/XmlRpcExtensionConstants.java</exclude>
                                 <exclude>src/test/java/org/exist/xmlrpc/XmlRpcTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xqj/Marshaller.java</exclude>
