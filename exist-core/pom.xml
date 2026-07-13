@@ -778,6 +778,9 @@
                                 <include>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformITTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/AccountMetadataFunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/securitymanager/SecurityManagerTestUtil.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/system/GetMainModuleLoadPathTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/system/GetModuleLoadPath.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/system/GetModuleLoadPathTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
@@ -2445,6 +2448,9 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AbstractSessionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/session/AttributeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/system/GetMainModuleLoadPathTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/system/GetModuleLoadPath.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/system/GetModuleLoadPathTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/system/GetRunningXQueriesTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/GetUptime.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/system/Restore.java</exclude>
