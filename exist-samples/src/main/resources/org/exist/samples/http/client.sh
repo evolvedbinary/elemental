@@ -28,7 +28,6 @@
 #
 # Author: Wolfgang Meier
 #
-# $Id$
 
 url=http://localhost:8080/exist/rest
 

@@ -654,14 +654,14 @@ public interface Context {
      *
      * @return DBBroker instance
      */
-    DBBroker getBroker();
+    @Nullable DBBroker getBroker();
 
     /**
      * Get the subject which executes the current query.
      *
      * @return subject
      */
-    Subject getSubject();
+    @Nullable Subject getSubject();
 
     /**
      * Get the document builder currently used for creating temporary document fragments.

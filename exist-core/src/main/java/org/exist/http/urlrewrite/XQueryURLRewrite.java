@@ -53,7 +53,6 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
-import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.http.Descriptor;
@@ -66,7 +65,7 @@ import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.security.internal.web.HttpAccount;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
@@ -504,11 +503,15 @@ public class XQueryURLRewrite extends HttpServlet {
 
         try (final DBBroker broker = pool.get(Optional.ofNullable(user))) {
 
-            if (model.getSourceInfo().source instanceof DBSource) {
-                ((DBSource) model.getSourceInfo().source).validate(Permission.EXECUTE);
+            try {
+                if (!model.getSourceInfo().source.getPermissions().validate(broker.getCurrentSubject(), Permission.EXECUTE)) {
+                    throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have read access to resource '" + model.sourceInfo.source.pathOrShortIdentifier() + "'.");
+                }
+            } catch (final IOException e) {
+                throw new PermissionDeniedException("Subject '" + broker.getCurrentSubject().getName() + "' does not have read access to resource '" + model.sourceInfo.source.pathOrShortIdentifier() + "'.", e);
             }
 
-            if (model.getSourceInfo().source.isValid(broker) != Source.Validity.VALID) {
+            if (model.getSourceInfo().source.isValid() != Source.Validity.VALID) {
                 urlCache.remove(url);
                 return null;
             }
@@ -770,7 +773,8 @@ public class XQueryURLRewrite extends HttpServlet {
             }
 
             final String controllerPath = controllerDoc.getCollection().getURI().getRawCollectionPath();
-            return new SourceInfo(new DBSource(broker, (BinaryDocument) controllerDoc, true), "xmldb:exist://" + controllerPath, controllerPath.substring(locationUri.getCollectionPath().length()));
+            final Source source = DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), controllerDoc, true, false);
+            return new SourceInfo(source, "xmldb:exist://" + controllerPath, controllerPath.substring(locationUri.getCollectionPath().length()));
 
         } catch (final URISyntaxException e) {
             LOG.warn("Bad URI for base path: {}", e.getMessage(), e);
@@ -918,8 +922,8 @@ public class XQueryURLRewrite extends HttpServlet {
                         throw new ServletException("XQuery resource: " + query + " is not an XQuery or " +
                                 "declares a wrong mime-type");
                     }
-                    sourceInfo = new SourceInfo(new DBSource(broker, (BinaryDocument) sourceDoc, true),
-                            locationUri.toString());
+                    final Source source = DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), sourceDoc, true, false);
+                    sourceInfo = new SourceInfo(source, locationUri.toString());
                 } catch (final PermissionDeniedException e) {
                     throw new ServletException("permission denied to read module source from " + query);
                 }

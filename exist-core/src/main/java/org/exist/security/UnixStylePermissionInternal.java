@@ -429,13 +429,6 @@ public abstract class UnixStylePermissionInternal extends AbstractUnixStylePermi
         return String.valueOf(ch);
     }
 
-    /**
-     * Check if user has the requested mode for this resource.
-     *
-     * @param user The user
-     * @param mode The requested mode
-     * @return true if user has the requested mode
-     */
     @Override
     public boolean validate(final Subject user, final int mode) {
 

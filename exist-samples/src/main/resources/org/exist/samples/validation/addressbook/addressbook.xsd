@@ -22,7 +22,6 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<!-- $Id$ -->
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://jmvanel.free.fr/xsd/addressBook" xmlns="http://jmvanel.free.fr/xsd/addressBook" elementFormDefault="qualified">
     <xsd:attribute name="uselessAttribute" type="xsd:string"/>
     <xsd:complexType name="record">

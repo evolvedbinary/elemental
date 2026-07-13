@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -23,10 +47,14 @@ package org.exist.source;
 
 
 import com.googlecode.junittoolbox.ParallelRunner;
+import org.exist.EXistException;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
+import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.txn.TransactionManager;
+import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,6 +63,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
@@ -200,243 +229,345 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getSourceFromXmldb_noContext() throws IOException, PermissionDeniedException {
+    public void getSourceFromXmldb_noContext() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = null;
         final String location = "xmldb:exist:///db/library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
-        expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location)).times(2);
         expect(mockBinDoc.getLastModified()).andReturn(123456789l);
+        /*expect*/ mockTxn.commit();
         /*expect*/ mockLockedDoc.close();
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(location), ((DBSource)libSource).getDocumentPath());
+        assertTrue(libSource instanceof DbUriSource);
+        assertEquals(XmldbURI.create(location), ((DbUriSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getSourceFromXmldb() throws IOException, PermissionDeniedException {
+    public void getSourceFromXmldb() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = "xmldb:exist:///db";
         final String location = "library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
-        expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location)).times(2);
         expect(mockBinDoc.getLastModified()).andReturn(123456789l);
+        /*expect*/ mockTxn.commit();
         /*expect*/ mockLockedDoc.close();
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc);
+        replay(mockBrokerPool, mockBroker,mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(contextPath).append(location), ((DBSource)libSource).getDocumentPath());
+        assertTrue(libSource instanceof DbUriSource);
+        assertEquals(XmldbURI.create(contextPath).append(location), ((DbUriSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc);
+        verify(mockBrokerPool, mockBroker,mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getNonExistentSourceFromXmldb_noContext() throws IOException, PermissionDeniedException {
+    public void getNonExistentSourceFromXmldb_noContext() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = null;
         final String location = "xmldb:exist:///db/library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(null);
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertNull(libSource);
 
-        verify(mockBroker);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
     }
 
     @Test
-    public void getNonExistentSourceFromXmldb() throws IOException, PermissionDeniedException {
+    public void getNonExistentSourceFromXmldb() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = "xmldb:exist:///db";
         final String location = "library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(null);
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertNull(libSource);
 
-        verify(mockBroker);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
     }
 
     @Test
-    public void getSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException {
+    public void getSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = null;
         final String location = "xmldb:exist://embedded-eXist-server/db/library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
-        expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location)).times(2);
         expect(mockBinDoc.getLastModified()).andReturn(123456789l);
+        /*expect*/ mockTxn.commit();
         /*expect*/ mockLockedDoc.close();
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(location), ((DBSource)libSource).getDocumentPath());
+        assertTrue(libSource instanceof DbUriSource);
+        assertEquals(XmldbURI.create(location), ((DbUriSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException {
+    public void getSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = "xmldb:exist://embedded-eXist-server/db";
         final String location = "library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
-        expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location)).times(2);
         expect(mockBinDoc.getLastModified()).andReturn(123456789l);
+        /*expect*/ mockTxn.commit();
         /*expect*/ mockLockedDoc.close();
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(contextPath).append(location), ((DBSource)libSource).getDocumentPath());
+        assertTrue(libSource instanceof DbUriSource);
+        assertEquals(XmldbURI.create(contextPath).append(location), ((DbUriSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getNonExistentSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException {
+    public void getNonExistentSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = null;
         final String location = "xmldb:exist://embedded-eXist-server/db/library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(null);
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertNull(libSource);
 
-        verify(mockBroker);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
     }
 
     @Test
-    public void getNonExistentSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException {
+    public void getNonExistentSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = "xmldb:exist://embedded-eXist-server/db";
         final String location = "library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(null);
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertNull(libSource);
 
-        verify(mockBroker);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
     }
 
     @Test
-    public void getSourceFromDb() throws IOException, PermissionDeniedException {
+    public void getSourceFromDb() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = "/db";
         final String location = "library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
-        expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location)).times(2);
         expect(mockBinDoc.getLastModified()).andReturn(123456789l);
+        /*expect*/ mockTxn.commit();
         /*expect*/ mockLockedDoc.close();
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(contextPath).append(location), ((DBSource)libSource).getDocumentPath());
+        assertTrue(libSource instanceof DbUriSource);
+        assertEquals(XmldbURI.create(contextPath).append(location), ((DbUriSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getSourceFromDb_noContext() throws IOException, PermissionDeniedException {
+    public void getSourceFromDb_noContext() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = null;
         final String location = "/db/library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
-        expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location)).times(2);
         expect(mockBinDoc.getLastModified()).andReturn(123456789l);
+        /*expect*/ mockTxn.commit();
         /*expect*/ mockLockedDoc.close();
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(location), ((DBSource)libSource).getDocumentPath());
+        assertTrue(libSource instanceof DbUriSource);
+        assertEquals(XmldbURI.create(location), ((DbUriSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getNonExistentSourceFromDb() throws IOException, PermissionDeniedException {
+    public void getNonExistentSourceFromDb() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = "/db";
         final String location = "library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(null);
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertNull(libSource);
 
-        verify(mockBroker);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
     }
 
     @Test
-    public void getNonExistentSourceFromDb_noContext() throws IOException, PermissionDeniedException {
+    public void getNonExistentSourceFromDb_noContext() throws IOException, PermissionDeniedException, EXistException {
         final String contextPath = null;
         final String location = "/db/library.xqm";
 
+        final BrokerPool mockBrokerPool = createMock(BrokerPool.class);
         final DBBroker mockBroker = createMock(DBBroker.class);
+        final TransactionManager mockTransactionManager = createMock(TransactionManager.class);
+        final Txn mockTxn = createMock(Txn.class);
+        expect(mockBroker.getBrokerPool()).andReturn(mockBrokerPool);
+        expect(mockBrokerPool.get(Optional.empty())).andReturn(mockBroker);
+        expect(mockBrokerPool.getTransactionManager()).andReturn(mockTransactionManager);
+        expect(mockTransactionManager.beginTransaction()).andReturn(mockTxn);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(null);
+        /*expect*/ mockTxn.close();
+        /*expect*/ mockBroker.close();
 
-        replay(mockBroker);
+        replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertNull(libSource);
 
-        verify(mockBroker);
+        verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn);
     }
 
     @Test

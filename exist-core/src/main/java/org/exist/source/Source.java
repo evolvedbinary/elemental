@@ -50,11 +50,8 @@ import java.io.Reader;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-import org.exist.EXistException;
 import org.exist.dom.QName;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.Subject;
-import org.exist.storage.DBBroker;
+import org.exist.security.Permission;
 
 import javax.annotation.Nullable;
 
@@ -70,8 +67,7 @@ public interface Source {
 
     enum Validity {
         VALID,
-        INVALID,
-        UNKNOWN
+        INVALID
     }
 
     /**
@@ -98,32 +94,10 @@ public interface Source {
     
     /**
      * Is this source object still valid?
-     * 
-     * Returns {@link Validity#UNKNOWN} if the validity of
-     * the source cannot be determined.
-     * 
-     * The {@link DBBroker} parameter is required by
-     * some implementations as they have to read
-     * resources from the database.
-     * 
-     * @param broker the broker
+     *
      * @return Validity of the source object
      */
-    Validity isValid(DBBroker broker);
-    
-    /**
-     * Checks if the source object is still valid
-     * by comparing it to another version of the
-     * same source. It depends on the concrete
-     * implementation how the sources are compared.
-     * 
-     * Use this method if {@link #isValid(DBBroker)}
-     * return {@link Validity#UNKNOWN}.
-     * 
-     * @param other source
-     * @return Validity of the other source object
-     */
-    Validity isValid(Source other);
+    Validity isValid();
     
     /**
      * Returns a {@link Reader} to read the contents
@@ -160,17 +134,14 @@ public interface Source {
     @Nullable Charset getEncoding() throws IOException;
 
     /**
-     * Check: has subject requested permissions for this resource?
+     * Get the permissions on the resource backing this source.
      *
-     * @param subject The subject
-     * @param perm The requested permissions
-     * @throws PermissionDeniedException if user has not sufficient rights
+     * @return the permissions on the resource backing this source.
      * @throws EXistException if an error occurs acessing the database
      *
-     * @deprecated These security checks only apply to {@link DBSource} and should be done by the caller
+     * @throws IOException if the permissions cannot be retrieved.
      */
-    @Deprecated
-    void validate(Subject subject, int perm) throws PermissionDeniedException, EXistException;
+    Permission getPermissions() throws IOException;
 
     /**
      * Check if the source is an XQuery module. If it is, return a QName containing

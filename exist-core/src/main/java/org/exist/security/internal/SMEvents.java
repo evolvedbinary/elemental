@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,29 +48,31 @@ package org.exist.security.internal;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
+import org.exist.EXistException;
 import org.exist.config.Configurable;
 import org.exist.config.Configuration;
 import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.LockedDocument;
 import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
 import org.exist.security.Subject;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ProcessMonitor;
-import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.Sequence;
+
+import javax.annotation.Nullable;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -57,6 +83,8 @@ public class SMEvents implements Configurable {
 	
     public final static String NAMESPACE_URI = "http://exist-db.org/security/events";
     public final static String PREFIX = "sec-ev"; //security-events //secev //sev
+
+	private static final Logger LOG = LogManager.getLogger(SMEvents.class);
 
 	@ConfigurationFieldAsAttribute("script-uri")
 	protected String scriptURI = "";
@@ -134,8 +162,7 @@ public class SMEvents implements Configurable {
     	    		call.eval(contextSequence, null);
         		}
             } catch(final XPathException e) {
-            	//XXX: log
-            	e.printStackTrace();
+            	LOG.error(e.getMessage(), e);
             } finally {
             	if (pm != null) {
             		context.getProfiler().traceQueryEnd(context);
@@ -147,30 +174,22 @@ public class SMEvents implements Configurable {
             }
             
         } catch (final Exception e) {
-        	//XXX: log
-        	e.printStackTrace();
+        	LOG.error(e.getMessage(), e);
         }
  	}
 	
-	private Source getQuerySource(DBBroker broker, String scriptURI, String script) {
-		if(scriptURI != null) {
-
+	private @Nullable Source getQuerySource(final DBBroker broker, final String scriptURI, final String script) {
+		if (scriptURI != null) {
 			final XmldbURI pathUri = XmldbURI.create(scriptURI);
-        	try(final LockedDocument lockedResource = broker.getXMLResource(pathUri, LockMode.READ_LOCK)) {
-				if (lockedResource != null) {
-					return new DBSource(broker, (BinaryDocument)lockedResource.getDocument(), true);
-				}
-        	} catch (final PermissionDeniedException e) {
-        		//XXX: log
-				e.printStackTrace();
+        	try {
+				return DbUriSource.from(broker.getBrokerPool(), broker.getCurrentSubject(), pathUri, true, false);
+			} catch (final DbUriSource.NoSuchDocumentException e) {
+				return null;
+			} catch (final EXistException | PermissionDeniedException e) {
+				LOG.error(e.getMessage(), e);
 			}
 
-//			try {
-//				querySource = SourceFactory.getSource(broker, null, scriptURI, false);
-//			} catch(Exception e) {
-//				//LOG.error(e);
-//			}
-		} else if(script != null && !script.isEmpty()) {
+		} else if (script != null && !script.isEmpty()) {
 			return new StringSource(script);
 		}
 	

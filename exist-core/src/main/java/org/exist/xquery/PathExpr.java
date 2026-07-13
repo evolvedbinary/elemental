@@ -51,7 +51,6 @@ import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.*;
-import org.xmldb.api.base.CompiledExpression;
 
 import java.io.Writer;
 import java.util.ArrayList;
@@ -66,8 +65,7 @@ import java.util.List;
  * @author perig
  * @author ljo
  */
-public class PathExpr extends AbstractExpression implements CompiledXQuery,
-        CompiledExpression, RewritableExpression {
+public class PathExpr extends AbstractExpression implements CompiledXQuery, RewritableExpression {
 
     protected final static Logger LOG = LogManager.getLogger(PathExpr.class);
 

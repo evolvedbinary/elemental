@@ -46,6 +46,8 @@
 package org.exist.storage.serializers;
 
 import com.evolvedbinary.j8fu.function.ConsumerE;
+import com.evolvedbinary.j8fu.tuple.Tuple2;
+import com.evolvedbinary.j8fu.tuple.Tuple3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
@@ -54,12 +56,13 @@ import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.SAXAdapter;
-import org.exist.security.Permission;
+import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import com.evolvedbinary.j8fu.Either;
+import org.exist.storage.lock.Lock;
 import org.exist.util.XMLReaderPool;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
@@ -73,13 +76,13 @@ import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.Type;
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import xyz.elemental.mediatype.MediaType;
 
-import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
@@ -97,6 +100,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringTokenizer;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -296,37 +300,178 @@ public class XIncludeFilter implements Receiver {
         if (href == null) {
             throw new SAXException("No href attribute found in XInclude include element");
         }
+
         // save some settings
         DocumentImpl prevDoc = document;
         boolean createContainerElements = serializer.createContainerElements;
         serializer.createContainerElements = false;
 
-        //The following comments are the basis for possible external documents
+        final Either<ResourceError, Tuple3<@Nullable Map<String, String>, @Nullable XmldbURI, @Nullable MaybeLockedDocument>> errorOrXincludeDocAndParams = getXincludeDoc(href);
+        if (errorOrXincludeDocAndParams.isLeft()) {
+            final ResourceError resourceError = errorOrXincludeDocAndParams.left().get();
+            return Optional.of(resourceError);
+        }
+
+        final Source source;
+        final XmldbURI sourceUri;
+        @Nullable final Sequence contextSeq;
+        @Nullable final Map<String, String> params;
+
+        final Tuple3<@Nullable Map<String, String>, @Nullable XmldbURI, @Nullable MaybeLockedDocument> xincludeDocAndParams = errorOrXincludeDocAndParams.right().get();
+        try {
+            @Nullable final Document xincludeDoc;
+            if (xincludeDocAndParams._3 != null) {
+                xincludeDoc = xincludeDocAndParams._3.getDocument();
+            } else {
+                xincludeDoc = null;
+            }
+            @Nullable final XmldbURI xincludeDocUri = xincludeDocAndParams._2;
+            params = xincludeDocAndParams._1;
+
+            /* if document has not been found and xpointer is
+             * null, throw an exception. If xpointer != null
+             * we retry below and interpret docName as
+             * a collection.
+             */
+            if (xincludeDoc == null && xpointer == null) {
+                return Optional.of(new ResourceError("document " + xincludeDocUri + " not found"));
+            }
+
+            /* Check if the document is a stored XQuery */
+            final boolean xqueryDoc;
+            if (xincludeDoc instanceof BinaryDocument) {
+                xqueryDoc = MediaType.APPLICATION_XQUERY.equals(((BinaryDocument) xincludeDoc).getMediaType());
+            } else {
+                xqueryDoc = false;
+            }
+
+            if (xpointer == null && !xqueryDoc && xincludeDoc != null) {
+                // no xpointer found - just serialize the doc
+                if (xincludeDoc instanceof DocumentImpl) {
+                    serializer.serializeToReceiver((DocumentImpl) xincludeDoc, false);
+                } else {
+                    serializer.serializeToReceiver((org.exist.dom.memtree.DocumentImpl) xincludeDoc, false);
+                }
+                // restore settings
+                document = prevDoc;
+                serializer.createContainerElements = createContainerElements;
+
+                return Optional.empty();
+            }
+
+            if (xpointer == null) {
+                source = DbUriSource.from(serializer.broker.getBrokerPool(), serializer.broker.getCurrentSubject(), (BinaryDocument) xincludeDoc, true, false);
+                sourceUri = ((DocumentImpl) xincludeDoc).getURI();
+            } else {
+                try {
+                    xpointer = checkNamespaces(xpointer);
+                } catch (final IllegalArgumentException e) {
+                    LOG.warn("XPointer error: {}", e.getMessage(), e);
+                    throw new SAXException("Error while processing XInclude expression: " + e.getMessage(), e);
+                }
+                source = new StringSource(xpointer);
+                sourceUri = xincludeDocUri;
+            }
+
+            if (xincludeDoc instanceof org.exist.dom.memtree.DocumentImpl) {
+                contextSeq = (org.exist.dom.memtree.DocumentImpl) xincludeDoc;
+            } else {
+                contextSeq = null;
+            }
+
+        } finally {
+            if (xincludeDocAndParams._3 != null) {
+                final MaybeLockedDocument maybeLockedDocument = xincludeDocAndParams._3;
+                maybeLockedDocument.close();
+            }
+        }
+
+
+        // process the xpointer or the stored XQuery
+        try {
+            final String xpointerCopy = xpointer;
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+                if (namespaces != null) {
+                    xqueryContext.declareNamespaces(namespaces);
+                }
+                xqueryContext.declareNamespace("xinclude", Namespaces.XINCLUDE_NS);
+
+                // Setup the HTTP context if known
+                if (serializer.httpContext != null) {
+                    xqueryContext.setHttpContext(serializer.httpContext);
+                }
+
+                if (xpointerCopy != null) {
+                    xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ sourceUri });
+                }
+            };
+
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+                if (document != null) {
+                    xqueryContext.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
+                    xqueryContext.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
+                }
+
+                // pass parameters as variables
+                if (params != null) {
+                    for (final Map.Entry<String, String> entry : params.entrySet()) {
+                        xqueryContext.declareVariable(entry.getKey(), true, entry.getValue());
+                    }
+                }
+            };
+
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(serializer.broker, source, xpointer != null, true, contextSeq, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
+
+                final Sequence seq = queryResult.result;
+
+                if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("XPointer found: {}", seq.getItemCount());
+                    }
+
+                    NodeValue node;
+                    for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
+                        node = (NodeValue) i.nextItem();
+                        serializer.serializeToReceiver(node, false);
+                    }
+                } else {
+                    String val;
+                    for (int i = 0; i < seq.getItemCount(); i++) {
+                        val = seq.itemAt(i).getStringValue();
+                        characters(val);
+                    }
+                }
+            }
+
+        } catch (final XPathException | IOException | PermissionDeniedException e) {
+            LOG.warn("XPointer error: {}", e.getMessage(), e);
+            throw new SAXException("Error while processing XInclude expression: " + e.getMessage(), e);
+        }
+
+        // restore settings
+        document = prevDoc;
+        serializer.createContainerElements = createContainerElements;
+
+        return Optional.empty();
+    }
+
+    private Either<ResourceError, Tuple3<@Nullable Map<String, String>, @Nullable XmldbURI, @Nullable MaybeLockedDocument>> getXincludeDoc(final String href) throws SAXException {
+        // parse the href attribute
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("found href=\"{}\"", href);
+        }
+
         XmldbURI docUri = null;
         try {
             docUri = XmldbURI.xmldbUriFor(href);
-            /*
-               if(!stylesheetUri.toCollectionPathURI().equals(stylesheetUri)) {
-                   externalUri = stylesheetUri.getXmldbURI();
-               }
-               */
         } catch (final URISyntaxException e) {
-            //could be an external URI!
+            // no-op... could be an external URI!
         }
 
-        // parse the href attribute
-        LOG.debug("found href=\"{}\"", href);
-        //String xpointer = null;
-        //String docName = href;
-
-        final Map<String, String> params;
-        DocumentImpl doc = null;
-        org.exist.dom.memtree.DocumentImpl memtreeDoc = null;
-        boolean xqueryDoc = false;
-
+        @Nullable final Map<String, String> params;
         if (docUri != null) {
             final String fragment = docUri.getFragment();
-            if (!(fragment == null || fragment.length() == 0)) {
+            if (!(fragment == null || fragment.isEmpty())) {
                 throw new SAXException("Fragment identifiers must not be used in an xinclude href attribute. To specify an xpointer, use the xpointer attribute.");
             }
 
@@ -358,163 +503,84 @@ public class XIncludeFilter implements Receiver {
 
             // retrieve the document
             try {
-                doc = serializer.broker.getResource(docUri, Permission.READ);
+                return Either.Right(Tuple(params, docUri, MaybeLockedDocument.of(serializer.broker.getXMLResource(docUri, Lock.LockMode.READ_LOCK))));
             } catch (final PermissionDeniedException e) {
-                return Optional.of(new ResourceError("Permission denied to read XInclude'd resource", e));
-            }
-
-            /* Check if the document is a stored XQuery */
-            if (doc != null && doc.getResourceType() == DocumentImpl.BINARY_FILE) {
-                xqueryDoc = MediaType.APPLICATION_XQUERY.equals(doc.getMediaType());
+                return Either.Left(new ResourceError("Permission denied to read XInclude'd resource", e));
             }
         } else {
             params = null;
         }
 
         // The document could not be found: check if it points to an external resource
-        if (docUri == null || (doc == null && !docUri.isAbsolute())) {
-            try {
-                URI externalUri = new URI(href);
-                final String scheme = externalUri.getScheme();
-                // If the URI has no scheme specified,
-                // we have to check if it is a relative path, and if yes, try to
-                // interpret it relative to the moduleLoadPath property of the current
-                // XQuery context.
-                if (scheme == null && moduleLoadPath != null) {
-                    final String path = externalUri.getSchemeSpecificPart();
-                    Path f = Paths.get(path);
-                    if (!f.isAbsolute()) {
-                        if (moduleLoadPath.startsWith(XmldbURI.XMLDB_URI_PREFIX)) {
-                            final XmldbURI parentUri = XmldbURI.create(moduleLoadPath);
-                            docUri = parentUri.append(path);
-                            doc = (DocumentImpl) serializer.broker.getXMLResource(docUri);
-                            if (doc != null && !doc.getPermissions().validate(serializer.broker.getCurrentSubject(), Permission.READ)) {
-                                throw new PermissionDeniedException("Permission denied to read XInclude'd resource");
-                            }
-                        } else {
-                            f = Paths.get(moduleLoadPath, path);
-                            externalUri = f.toUri();
-                        }
-                    }
-                }
-                if (doc == null) {
-                    final Either<ResourceError, org.exist.dom.memtree.DocumentImpl> external = parseExternal(externalUri);
-                    if (external.isLeft()) {
-                        return Optional.of(external.left().get());
+        try {
+            URI externalUri = new URI(href);
+            final String scheme = externalUri.getScheme();
+            // If the URI has no scheme specified,
+            // we have to check if it is a relative path, and if yes, try to
+            // interpret it relative to the moduleLoadPath property of the current
+            // XQuery context.
+            if (scheme == null && moduleLoadPath != null) {
+                final String path = externalUri.getSchemeSpecificPart();
+                Path f = Paths.get(path);
+                if (!f.isAbsolute()) {
+                    if (moduleLoadPath.startsWith(XmldbURI.XMLDB_URI_PREFIX)) {
+                        final XmldbURI parentUri = XmldbURI.create(moduleLoadPath);
+                        docUri = parentUri.append(path);
+                        return Either.Right(Tuple(params, docUri, MaybeLockedDocument.of(serializer.broker.getXMLResource(docUri, Lock.LockMode.READ_LOCK))));
                     } else {
-                        memtreeDoc = external.right().get();
+                        f = Paths.get(moduleLoadPath, path);
+                        externalUri = f.toUri();
                     }
                 }
-            } catch (final PermissionDeniedException e) {
-                return Optional.of(new ResourceError("Permission denied on XInclude'd resource", e));
-            } catch (final ParserConfigurationException | URISyntaxException e) {
-                throw new SAXException("XInclude: failed to parse document at URI: " + href + ": " + e.getMessage(), e);
             }
+
+            final Either<ResourceError, org.exist.dom.memtree.DocumentImpl> external = parseExternal(externalUri);
+            final Tuple2<Map<String, String>, XmldbURI> paramsAndDocUri = Tuple(params, docUri);
+            return external.map(doc -> paramsAndDocUri.before(MaybeLockedDocument.of(doc)));
+
+        } catch (final PermissionDeniedException e) {
+            return Either.Left(new ResourceError("Permission denied on XInclude'd resource", e));
+        } catch (final ParserConfigurationException | URISyntaxException e) {
+            throw new SAXException("XInclude: failed to parse document at URI: " + href + ": " + e.getMessage(), e);
+        }
+    }
+
+    private static class MaybeLockedDocument implements AutoCloseable {
+        private final Either<org.exist.dom.memtree.DocumentImpl, org.exist.dom.persistent.LockedDocument> document;
+
+        private MaybeLockedDocument(final org.exist.dom.memtree.DocumentImpl memtreeDoc) {
+            this.document = Either.Left(memtreeDoc);
         }
 
-        /* if document has not been found and xpointer is
-               * null, throw an exception. If xpointer != null
-               * we retry below and interpret docName as
-               * a collection.
-               */
-        if (doc == null && memtreeDoc == null && xpointer == null) {
-            return Optional.of(new ResourceError("document " + docUri + " not found"));
+        private MaybeLockedDocument(final org.exist.dom.persistent.LockedDocument lockedDocument) {
+            this.document = Either.Right(lockedDocument);
         }
 
-        if (xpointer == null && !xqueryDoc) {
-            // no xpointer found - just serialize the doc
+        public static @Nullable MaybeLockedDocument of(final org.exist.dom.memtree.DocumentImpl memtreeDoc) {
             if (memtreeDoc == null) {
-                serializer.serializeToReceiver(doc, false);
-            } else {
-                serializer.serializeToReceiver(memtreeDoc, false);
+                return null;
             }
-        } else {
-            // process the xpointer or the stored XQuery
-            try {
-                Source source = null;
-                if (xpointer == null) {
-                    source = new DBSource(serializer.broker, (BinaryDocument) doc, true);
-                } else {
-                    xpointer = checkNamespaces(xpointer);
-                    source = new StringSource(xpointer);
-                }
+            return new MaybeLockedDocument(memtreeDoc);
+        }
 
-                final String xpointerCopy = xpointer;
-                final DocumentImpl docCopy = doc;
-                final XmldbURI docUriCopy = docUri;
-                final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
-                    if (namespaces != null) {
-                        xqueryContext.declareNamespaces(namespaces);
-                    }
-                    xqueryContext.declareNamespace("xinclude", Namespaces.XINCLUDE_NS);
+        public static @Nullable MaybeLockedDocument of(final org.exist.dom.persistent.LockedDocument lockedDocument) {
+            if (lockedDocument == null) {
+                return null;
+            }
+            return new MaybeLockedDocument(lockedDocument);
+        }
 
-                    // Setup the HTTP context if known
-                    if (serializer.httpContext != null) {
-                        xqueryContext.setHttpContext(serializer.httpContext);
-                    }
+        public Document getDocument() {
+            return document.fold(memtreeDoc -> memtreeDoc, LockedDocument::getDocument);
+        }
 
-                    if (xpointerCopy != null) {
-                        if (docCopy != null) {
-                            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ docCopy.getURI() });
-                        } else if (docUriCopy != null) {
-                            xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ docUriCopy });
-                        }
-                    }
-                };
-
-                final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
-                    //TODO: change these to putting the XmldbURI in, but we need to warn users!
-                    if (document != null) {
-                        xqueryContext.declareVariable("xinclude:current-doc", true, document.getFileURI().toString());
-                        xqueryContext.declareVariable("xinclude:current-collection", true, document.getCollection().getURI().toString());
-                    }
-
-                    // pass parameters as variables
-                    if (params != null) {
-                        for (final Map.Entry<String, String> entry : params.entrySet()) {
-                            xqueryContext.declareVariable(entry.getKey(), true, entry.getValue());
-                        }
-                    }
-                };
-
-                Sequence contextSeq = null;
-                if (memtreeDoc != null) {
-                    contextSeq = memtreeDoc;
-                }
-
-                try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(serializer.broker, source, xpointer != null, true, contextSeq, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null)) {
-
-                    final Sequence seq = queryResult.result;
-
-                    if (Type.subTypeOf(seq.getItemType(), Type.NODE)) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("XPointer found: {}", seq.getItemCount());
-                        }
-
-                        NodeValue node;
-                        for (final SequenceIterator i = seq.iterate(); i.hasNext(); ) {
-                            node = (NodeValue) i.nextItem();
-                            serializer.serializeToReceiver(node, false);
-                        }
-                    } else {
-                        String val;
-                        for (int i = 0; i < seq.getItemCount(); i++) {
-                            val = seq.itemAt(i).getStringValue();
-                            characters(val);
-                        }
-                    }
-                }
-
-            } catch (final XPathException | IOException | PermissionDeniedException e) {
-                LOG.warn("XPointer error: {}", e.getMessage(), e);
-                throw new SAXException("Error while processing XInclude expression: " + e.getMessage(), e);
+        @Override
+        public void close() {
+            if (this.document.isRight()) {
+                final LockedDocument lockedDocument = this.document.right().get();
+                lockedDocument.close();
             }
         }
-        // restore settings
-        document = prevDoc;
-        serializer.createContainerElements = createContainerElements;
-
-        return Optional.empty();
     }
 
     private Either<ResourceError, org.exist.dom.memtree.DocumentImpl> parseExternal(final URI externalUri) throws ParserConfigurationException, SAXException {
@@ -529,7 +595,7 @@ public class XIncludeFilter implements Receiver {
 
             // we use eXist's in-memory DOM implementation
             final XMLReaderPool parserPool = serializer.broker.getBrokerPool().getParserPool();
-            XMLReader reader = null;
+            @Nullable XMLReader reader = null;
             try (final InputStream is = con.getInputStream()) {
                 final InputSource src = new InputSource(is);
 
@@ -564,7 +630,7 @@ public class XIncludeFilter implements Receiver {
      * Process xmlns() schema. We process these here, because namespace mappings should
      * already been known when parsing the xpointer() expression.
      */
-    private String checkNamespaces(String xpointer) throws XPathException {
+    private String checkNamespaces(String xpointer) throws IllegalArgumentException {
         int p0;
         while ((p0 = xpointer.indexOf("xmlns(")) != Constants.STRING_NOT_FOUND) {
             if (p0 < 0) {
@@ -572,13 +638,13 @@ public class XIncludeFilter implements Receiver {
             }
             final int p1 = xpointer.indexOf(')', p0 + 6);
             if (p1 < 0) {
-                throw new XPathException((Expression) null, "expected ) for xmlns()");
+                throw new IllegalArgumentException("expected ) for xmlns()");
             }
             final String mapping = xpointer.substring(p0 + 6, p1);
             xpointer = xpointer.substring(0, p0) + xpointer.substring(p1 + 1);
             final StringTokenizer tok = new StringTokenizer(mapping, "= \t\n");
             if (tok.countTokens() < 2) {
-                throw new XPathException((Expression) null, "expected prefix=namespace mapping in " + mapping);
+                throw new IllegalArgumentException("expected prefix=namespace mapping in " + mapping);
             }
             final String prefix = tok.nextToken();
             final String namespaceURI = tok.nextToken();

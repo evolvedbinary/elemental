@@ -70,6 +70,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.security.internal.RealmImpl;
 import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.source.URLSource;
@@ -578,7 +579,7 @@ public class RESTServer {
                 try {
                     if (xquery_mime_type.equals(resource.getMediaType())) {
                         // Execute the XQuery
-                        executeXQuery(broker, transaction, resource, request, response,
+                        executeXQuery(broker, transaction, lockedDocument, request, response,
                                 outputProperties, servletPath.toString(), pathInfo);
                     } else if (xproc_mime_type.equals(resource.getMediaType())) {
                         // Execute the XProc
@@ -745,7 +746,7 @@ public class RESTServer {
                     try {
                         if (xquery_mime_type.equals(resource.getMediaType())) {
                             // Execute the XQuery
-                            executeXQuery(broker, transaction, resource, request, response,
+                            executeXQuery(broker, transaction, lockedDocument, request, response,
                                     outputProperties, servletPath.toString(), pathInfo);
                         } else {
                             // Execute the XProc
@@ -1267,7 +1268,7 @@ public class RESTServer {
         final Properties outputProperties = new Properties(defaultOutputKeysProperties);
         try {
             // Execute the XQuery
-            executeXQuery(broker, transaction, resource, request, response,
+            executeXQuery(broker, transaction, lockedDocument, request, response,
                     outputProperties, servletPath.toString(), pathInfo);
         } catch (final XPathException e) {
             writeXPathExceptionHtml(response, HttpServletResponse.SC_BAD_REQUEST, UTF_8.name(), null, path.toString(), e);
@@ -1386,10 +1387,12 @@ public class RESTServer {
             @Nullable final Item contextItem = extractContextItem(contextItemParam);
             final Sequence contextSequence = contextItem != null ? new ValueSequence(contextItem) : null;
 
-            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+            @Nullable XQueryUtil.QueryResult queryResult = null;
+            try {
+                queryResult = XQueryUtil.query(broker, source, true, contextSequence, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution);
 
                 // special header to indicate that the query is not returned from cache
-                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found {} in {}ms.", queryResult.result.getItemCount(), queryResult.executionTime);
@@ -1404,6 +1407,11 @@ public class RESTServer {
                 }
 
                 writeResults(response, broker, transaction, queryResult, howmany, start, typed, outputProperties, wrap);
+            } finally {
+                if (!cache && queryResult != null) {
+                    // NOTE(AR) we can only close the query result if we are not caching it for reuse in the sessionManager, otherwise it has to be closed when it is later removed from the sessionManager
+                    queryResult.close();
+                }
             }
 
         } catch (final IOException e) {
@@ -1575,41 +1583,64 @@ public class RESTServer {
     /**
      * Directly execute an XQuery stored as a binary document in the database.
      *
-     * @throws PermissionDeniedException
+     * NOTE The document will be unlocked after query compilation (only if compilation succeeds).
+     *
+     * @param broker the database broker.
+     * @param transaction the database transaction.
+     * @param lockedQueryDocument the locked document holding the query to be executed.
+     * @param request the HTTP request.
+     * @param response the HTTP response.
+     * @param outputProperties any serialization properties.
+     * @param servletPath the path to the servlet.
+     * @param pathInfo the path.
+     *
+     * @throws XPathException if an error occurs during query compilation or execution.
+     * @throws BadRequestException if the request had a problem.
+     * @throws PermissionDeniedException if the calling user does not have sufficient permissions.
      */
-    private void executeXQuery(final DBBroker broker, final Txn transaction, final DocumentImpl resource,
+    private void executeXQuery(final DBBroker broker, final Txn transaction, final LockedDocument lockedQueryDocument,
             final HttpServletRequest request, final HttpServletResponse response,
             final Properties outputProperties, final String servletPath, final String pathInfo)
             throws XPathException, BadRequestException, PermissionDeniedException {
 
-        final Source source = new DBSource(broker, (BinaryDocument) resource, true);
+        final DocumentImpl resource = lockedQueryDocument.getDocument();
+        final DbStoreSource source = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, true);
 
         final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
             xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(resource.getCollection().getURI()).toString());
             xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{ resource.getCollection().getURI() });
         };
 
-        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
-            final HttpRequestWrapper reqw = declareVariables(xqueryContext, null, request, response);
-            reqw.setServletPath(servletPath);
-            reqw.setPathInfo(pathInfo);
-            DebuggeeFactory.checkForDebugRequest(request, xqueryContext);
-        };
+        try {
+            // NOTE(AR) compilationResult will be cleaned up by the try-with-resources wrapped XQueryUtil.execute(...); at present between here and there no exceptions can occur
+            final XQueryUtil.CompilationResult compilationResult = XQueryUtil.compile(broker, source, false, true, setupXqueryContextPreCompilation);
 
-        final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> setupXqueryContextPostExecution = (xqueryContext, queryResult) -> {
-            // Pass last modified date to the HTTP response
-            HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
-        };
+            // NOTE(AR) query is now compiled so we can release the LockedDocument eagerly
+            lockedQueryDocument.close();
 
-        try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
-            // Special header to indicate whether the compiled query is returned from the cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
+                final HttpRequestWrapper reqw = declareVariables(xqueryContext, null, request, response);
+                reqw.setServletPath(servletPath);
+                reqw.setPathInfo(pathInfo);
+                DebuggeeFactory.checkForDebugRequest(request, xqueryContext);
+            };
 
-            final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
-            writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, wrap);
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> setupXqueryContextPostExecution = (xqueryContext, queryResult) -> {
+                // Pass last modified date to the HTTP response
+                HTTPUtils.addLastModifiedHeader(queryResult.result, xqueryContext);
+            };
+
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.execute(broker, compilationResult, null, outputProperties, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
+                // Special header to indicate whether the compiled query is returned from the cache
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+
+                final boolean wrap = "yes".equals(outputProperties.getProperty("_wrap"));
+                writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, wrap);
+            }
+
         } catch (final IOException e) {
-            throw new BadRequestException("Failed to read query from " + resource.getURI(), e);
+            throw new BadRequestException("Failed to read query from: " + source.getDocumentPath(), e);
         }
     }
 
@@ -1663,7 +1694,7 @@ public class RESTServer {
         try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
             // special header to indicate that the query is not returned from cache
-            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+            response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
             writeResults(response, broker, transaction, queryResult, -1, 1, false, outputProperties, false);
         } catch (final IOException e) {

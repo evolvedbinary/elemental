@@ -51,12 +51,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.collections.Collection;
-import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.*;
+import org.exist.source.BinarySource;
+import org.exist.source.ClassLoaderSource;
+import org.exist.source.DbUriSource;
+import org.exist.source.Source;
+import org.exist.source.SourceFactory;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
@@ -159,7 +162,7 @@ public class Scan extends BasicFunction {
                                 throw new XPathException(this, "XQuery resource: " + uri + " is not an XQuery or " +
                                         "declares a wrong mime-type");
                             }
-                            source = new DBSource(context.getBroker(), (BinaryDocument) doc, false);
+                            source = DbUriSource.from(context.getBroker().getBrokerPool(), context.getBroker().getCurrentSubject(), doc, false, false);
                             name = doc.getFileURI().toString();
                         }
                     } catch (LockException e) {

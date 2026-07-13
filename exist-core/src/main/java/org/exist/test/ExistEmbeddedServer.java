@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -24,9 +48,11 @@ package org.exist.test;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
+import org.exist.repo.AutoDeploymentTrigger;
 import org.exist.start.Classpath;
 import org.exist.start.EXistClassLoader;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.BrokerPoolConstants;
 import org.exist.storage.journal.Journal;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
@@ -39,11 +65,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
-import static org.exist.repo.AutoDeploymentTrigger.AUTODEPLOY_PROPERTY;
 
 /**
  * Exist embedded Server Rule for JUnit.
@@ -54,14 +79,14 @@ public class ExistEmbeddedServer extends ExternalResource {
 
     public static final String USE_TEMPORARY_STORAGE_PROPERTY = "exist.use-temporary-storage";
 
-    private final Optional<String> instanceName;
-    private final Optional<Path> configFile;
-    private final Optional<Properties> configProperties;
+    private final String instanceName;
+    private final Path home;
+    private @Nullable final Path configFile;
+    private final Properties configProperties;
     private final boolean useTemporaryStorage;
     private final boolean disableAutoDeploy;
-    private Optional<Path> temporaryStorage = Optional.empty();
+    private @Nullable Path temporaryStorage = null;
 
-    private String prevAutoDeploy = "off";
     private BrokerPool pool = null;
 
     public ExistEmbeddedServer() {
@@ -97,9 +122,10 @@ public class ExistEmbeddedServer extends ExternalResource {
     }
 
     public ExistEmbeddedServer(@Nullable final String instanceName, @Nullable final Path configFile, @Nullable final Properties configProperties, final boolean disableAutoDeploy, final boolean useTemporaryStorage) {
-        this.instanceName = Optional.ofNullable(instanceName);
-        this.configFile = Optional.ofNullable(configFile);
-        this.configProperties = Optional.ofNullable(configProperties);
+        this.instanceName = instanceName != null ? instanceName : BrokerPool.DEFAULT_INSTANCE_NAME;
+        this.home = Paths.get(System.getProperty("exist.home", System.getProperty("user.dir")));
+        this.configFile = configFile != null ? configFile : ConfigurationHelper.lookup("conf.xml", Optional.of(home));
+        this.configProperties = configProperties != null ? configProperties : new Properties();
         this.disableAutoDeploy = disableAutoDeploy;
         this.useTemporaryStorage = useTemporaryStorage;
 
@@ -118,43 +144,41 @@ public class ExistEmbeddedServer extends ExternalResource {
     public void startDb() throws DatabaseConfigurationException, EXistException, IOException {
         if(pool == null) {
 
-            if(disableAutoDeploy) {
-                this.prevAutoDeploy = System.getProperty(AUTODEPLOY_PROPERTY, "off");
-                System.setProperty(AUTODEPLOY_PROPERTY, "off");
-            }
-
-            final String name = instanceName.orElse(BrokerPool.DEFAULT_INSTANCE_NAME);
-
-            final Optional<Path> home = Optional.ofNullable(System.getProperty("exist.home", System.getProperty("user.dir"))).map(Paths::get);
-            final Path confFile = configFile.orElseGet(() -> ConfigurationHelper.lookup("conf.xml", home));
-
             final Configuration config;
-            if(confFile.isAbsolute() && Files.exists(confFile)) {
-                //TODO(AR) is this correct?
-                config = new Configuration(confFile.toAbsolutePath().toString());
+            if(configFile.isAbsolute() && Files.exists(configFile)) {
+                config = new Configuration(configFile.toAbsolutePath().toString());
             } else {
-                config = new Configuration(FileUtils.fileName(confFile), home);
+                config = new Configuration(FileUtils.fileName(configFile), Optional.of(home));
             }
-
-            // override any specified config properties
-            configProperties.ifPresent(properties -> {
-                for (final Map.Entry<Object, Object> configProperty : properties.entrySet()) {
-                    config.setProperty(configProperty.getKey().toString(), configProperty.getValue());
-                }
-            });
 
             final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
             if (useTemporaryStorage || propUseTemporaryStorage) {
-                if (!temporaryStorage.isPresent()) {
-                    this.temporaryStorage = Optional.of(Files.createTempDirectory("org.exist.test.ExistEmbeddedServer"));
+                if (temporaryStorage == null) {
+                    this.temporaryStorage = Files.createTempDirectory("org.exist.test.ExistEmbeddedServer");
                 }
-                config.setProperty(BrokerPool.PROPERTY_DATA_DIR, temporaryStorage.get());
-                config.setProperty(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, temporaryStorage.get());
-                LOG.info("Using temporary storage location: {}", temporaryStorage.get().toAbsolutePath().toString());
+                configProperties.put(BrokerPool.PROPERTY_DATA_DIR, temporaryStorage);
+                configProperties.put(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, temporaryStorage);
+                LOG.info("Using temporary storage location: {}", temporaryStorage.toAbsolutePath().toString());
             }
 
-            BrokerPool.configure(name, 1, 5, config, Optional.empty());
-            this.pool = BrokerPool.getInstance(name);
+            // override any specified config properties
+            for (final Map.Entry<Object, Object> configProperty : configProperties.entrySet()) {
+                config.setProperty(configProperty.getKey().toString(), configProperty.getValue());
+            }
+
+            if (disableAutoDeploy) {
+                // remove auto deploy from config if present
+                final List<Configuration.StartupTriggerConfig> configuredStartupTriggers = (List<Configuration.StartupTriggerConfig>) config.getProperty(BrokerPoolConstants.PROPERTY_STARTUP_TRIGGERS);
+                for (final Configuration.StartupTriggerConfig configuredStartupTrigger : configuredStartupTriggers) {
+                    if (AutoDeploymentTrigger.class.getName().equals(configuredStartupTrigger.getClazz())) {
+                        configuredStartupTriggers.remove(configuredStartupTrigger);
+                        break;
+                    }
+                }
+            }
+
+            BrokerPool.configure(instanceName, 1, 5, config, Optional.empty());
+            this.pool = BrokerPool.getInstance(instanceName);
         } else {
             throw new IllegalStateException("ExistEmbeddedServer already running");
         }
@@ -164,7 +188,7 @@ public class ExistEmbeddedServer extends ExternalResource {
         return pool;
     }
 
-    public Optional<Path> getTemporaryStorage() {
+    public @Nullable Path getTemporaryStorage() {
         return temporaryStorage;
     }
 
@@ -200,14 +224,9 @@ public class ExistEmbeddedServer extends ExternalResource {
             pool = null;
 
             final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
-            if((useTemporaryStorage || propUseTemporaryStorage) && temporaryStorage.isPresent() && clearTemporaryStorage) {
-                FileUtils.deleteQuietly(temporaryStorage.get());
-                temporaryStorage = Optional.empty();
-            }
-
-            if(disableAutoDeploy) {
-                //set the autodeploy trigger enablement back to how it was before this test class
-                System.setProperty(AUTODEPLOY_PROPERTY, this.prevAutoDeploy);
+            if((useTemporaryStorage || propUseTemporaryStorage) && temporaryStorage != null && clearTemporaryStorage) {
+                FileUtils.deleteQuietly(temporaryStorage);
+                temporaryStorage = null;
             }
 
         } else {

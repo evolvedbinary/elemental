@@ -346,67 +346,71 @@ public class LockTable {
 
             // optimistic read
             long stamp = entriesLock.tryOptimisticRead();
-            Entry local = entries.get(key);
-            // if count is equal to 1 we can just remove from the list rather than decrementing
-            if (local.count == 1) {
-                final long writeStamp = entriesLock.tryConvertToWriteLock(stamp);
-                if (writeStamp != 0L) {
-                    try {
-                        entries.remove(local);
-                        local.count--;
+            @Nullable Entry local = entries.get(key);
+            if (local != null) {
+                // if count is equal to 1 we can just remove from the list rather than decrementing
+                if (local.count == 1) {
+                    final long writeStamp = entriesLock.tryConvertToWriteLock(stamp);
+                    if (writeStamp != 0L) {
+                        try {
+                            entries.remove(local);
+                            local.count--;
+                            return local;
+                        } finally {
+                            entriesLock.unlockWrite(writeStamp);
+                        }
+                    }
+                } else {
+                    if (entriesLock.validate(stamp)) {
+
+                        // do the unmerge bit
+                        if (local.stackTraces != null) {
+                            local.stackTraces.remove(local.stackTraces.size() - 1);
+                        }
+                        local.count = local.count - 1;
+
+                        //done
                         return local;
-                    } finally {
-                        entriesLock.unlockWrite(writeStamp);
                     }
-                }
-            } else {
-                if (entriesLock.validate(stamp)) {
-
-                    // do the unmerge bit
-                    if (local.stackTraces != null) {
-                        local.stackTraces.remove(local.stackTraces.size() - 1);
-                    }
-                    local.count = local.count - 1;
-
-                    //done
-                    return local;
                 }
             }
 
-
             // otherwise... pessimistic read
-            boolean mustRemove;
+            boolean mustRemove = false;
             stamp = entriesLock.readLock();
             try {
 
                 local = entries.get(key);
 
-                // if count is equal to 1 we can just remove from the list rather than decrementing
-                if (local.count == 1) {
+                if (local != null) {
+                    // if count is equal to 1 we can just remove from the list rather than decrementing
+                    if (local.count == 1) {
 
-                    final long writeStamp = entriesLock.tryConvertToWriteLock(stamp);
-                    if (writeStamp != 0L) {
-                        stamp = writeStamp;  // NOTE: this causes the write lock to be released in the finally further down
-                        entries.remove(local);
-                        local.count--;
+                        final long writeStamp = entriesLock.tryConvertToWriteLock(stamp);
+                        if (writeStamp != 0L) {
+                            stamp = writeStamp;  // NOTE: this causes the write lock to be released in the finally further down
+                            entries.remove(local);
+                            local.count--;
+                            return local;
+                        }
+
+                    } else {
+                        // do the unmerge bit
+                        if (local.stackTraces != null) {
+                            local.stackTraces.remove(local.stackTraces.size() - 1);
+                        }
+                        local.count = local.count - 1;
+
+                        //done
                         return local;
                     }
 
-                } else {
-                    // do the unmerge bit
-                    if (local.stackTraces != null) {
-                        local.stackTraces.remove(local.stackTraces.size() - 1);
-                    }
-                    local.count = local.count - 1;
-
-                    //done
-                    return local;
+                    mustRemove = true;
                 }
-
-                mustRemove = true;
             } finally {
                 entriesLock.unlock(stamp);
             }
+
 
             // unable to remove by tryConvertToWriteLock above, so directly acquire write lock
             if (mustRemove) {

@@ -32,6 +32,7 @@
  */
 package org.exist.xquery.modules.sql;
 
+import com.evolvedbinary.j8fu.function.BiConsumerE;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.Source;
@@ -40,8 +41,10 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.Holder;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.modules.ModuleUtils;
 import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.Sequence;
@@ -52,8 +55,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.exist.xquery.XQueryUtil.executeQuery;
-import static org.exist.xquery.XQueryUtil.withCompiledQuery;
 import static org.junit.Assert.*;
 
 public class ConnectionPoolIT {
@@ -73,27 +74,26 @@ public class ConnectionPoolIT {
         try (final DBBroker broker = pool.getBroker();
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
-            final XQueryContext escapedMainQueryContext = withCompiledQuery(broker, mainQuerySource, mainCompiledQuery -> {
-                final XQueryContext mainQueryContext = mainCompiledQuery.getContext();
+            // will hold the number of open connections once the query has finished executing
+            final Holder<Integer> connectionsCountHolder = new Holder<>();
+            final BiConsumerE<XQueryContext, XQueryUtil.QueryResult, XPathException> postExecutionContext = (xqueryContext, result) -> {
+                final int connectionsCount = ModuleUtils.readContextMap(xqueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
+                connectionsCountHolder.value = connectionsCount;
+            };
 
-                // execute the query
-                final Sequence result = executeQuery(broker, mainCompiledQuery);
-
-
+            // execute query
+            try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, mainQuerySource, false, null, null, null, null, postExecutionContext)) {
                 // check that the handle for the sql connection that was created was valid
+                final Sequence result = queryResult.result;
                 assertEquals(1, result.getItemCount());
                 assertTrue(result.itemAt(0) instanceof IntegerValue);
                 assertEquals(Type.LONG, result.itemAt(0).getType());
                 final long connectionHandle = result.itemAt(0).toJavaObject(long.class);
-                assertFalse(connectionHandle == 0);
+                assertNotEquals(0, connectionHandle);
+            }
 
-                // intentionally escape the context from the lambda
-                return mainQueryContext;
-            });
-
-            // check the connections map is empty
-            final int connectionsCount = ModuleUtils.readContextMap(escapedMainQueryContext, SQLModule.CONNECTIONS_CONTEXTVAR, Map::size);
-            assertEquals(0, connectionsCount);
+            // now the query has finished executing and been reset, check the connections map is empty
+            assertEquals(0, connectionsCountHolder.value.intValue());
 
             transaction.commit();
         }

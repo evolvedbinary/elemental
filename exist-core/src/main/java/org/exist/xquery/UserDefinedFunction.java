@@ -315,7 +315,12 @@ public class UserDefinedFunction extends Function implements Cloneable {
         return closureVariables;
     }
 
-    protected Sequence[] getCurrentArguments() {
+	/**
+	 * Get the current arguments to the user defined function.
+	 *
+	 * @return the current arguments.
+	 */
+    public Sequence[] getCurrentArguments() {
         return currentArguments;
     }
 }

@@ -54,16 +54,14 @@ import com.evolvedbinary.j8fu.function.ConsumerE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
-import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
+import org.exist.source.DbUriSource;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -175,24 +173,22 @@ public class UserXQueryJob extends UserJob {
         }
 
         try (final DBBroker broker = pool.get(Optional.of(user))) {
-            if(xqueryResource.indexOf(':') > 0) {
+            if (xqueryResource.indexOf(':') > 0) {
                 final Source source = SourceFactory.getSource(broker, "", xqueryResource, true);
-                if(source != null) {
-                    executeXQuery(pool,  broker, source, params);
+                if (source != null) {
+                    executeXQuery(pool, broker, source, params);
                     return;
                 }
             } else {
                 final XmldbURI pathUri = XmldbURI.create(xqueryResource);
-                try(final LockedDocument lockedResource = broker.getXMLResource(pathUri, LockMode.READ_LOCK)) {
-                    if (lockedResource != null) {
-                        final Source source = new DBSource(broker, (BinaryDocument) lockedResource.getDocument(), true);
-                        executeXQuery(pool, broker, source, params);
-                        return;
-                    }
-                }
+                final Source source = DbUriSource.from(pool, pathUri, true, false);
+                executeXQuery(pool, broker, source, params);
+                return;
             }
 
             LOG.warn("XQuery User Job not found: {}, job not scheduled", xqueryResource);
+        } catch (final DbUriSource.NoSuchDocumentException e) {
+            abort("Could not load XQuery: " + e.getMessage());
         } catch(final EXistException ee) {
             abort("Could not get DBBroker!");
         } catch(final PermissionDeniedException pde) {
@@ -207,8 +203,8 @@ public class UserXQueryJob extends UserJob {
     private void executeXQuery(final BrokerPool pool, final DBBroker broker, final Source source, final Properties params) throws PermissionDeniedException, XPathException, JobExecutionException {
 
         final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
-            if (source instanceof DBSource) {
-                final XmldbURI collectionUri = ((DBSource) source).getDocumentPath().removeLastSegment();
+            if (source instanceof DbStoreSource) {
+                final XmldbURI collectionUri = ((DbStoreSource) source).getDocumentPath().removeLastSegment();
                 xqueryContext.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI.append(collectionUri.getCollectionPath()).toString());
                 xqueryContext.setStaticallyKnownDocuments(new XmldbURI[]{collectionUri});
             }
