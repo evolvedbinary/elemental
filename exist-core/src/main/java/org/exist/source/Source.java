@@ -137,7 +137,6 @@ public interface Source {
      * Get the permissions on the resource backing this source.
      *
      * @return the permissions on the resource backing this source.
-     * @throws EXistException if an error occurs acessing the database
      *
      * @throws IOException if the permissions cannot be retrieved.
      */
