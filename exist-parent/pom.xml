@@ -100,7 +100,7 @@
         <jline.version>3.30.6</jline.version>
         <lz4-java.version>1.10.2</lz4-java.version>
         <jetty.version>11.0.26</jetty.version>
-        <log4j.version>2.25.2</log4j.version>
+        <log4j.version>2.26.1</log4j.version>
         <lucene.version>4.10.4</lucene.version>
         <nekohtml.version>2.1.3</nekohtml.version>
         <saxon.version>9.9.1-8</saxon.version>
@@ -109,7 +109,7 @@
         <xmlunit.version>2.11.0</xmlunit.version>
         <junit.version>4.13.2</junit.version>
         <easymock.version>5.6.0</easymock.version>
-        <assertj.version>3.27.6</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <awaitility.version>4.3.0</awaitility.version>
         <junit.toolbox.version>2.4</junit.toolbox.version>
         <hamcrest.version>3.0</hamcrest.version>
