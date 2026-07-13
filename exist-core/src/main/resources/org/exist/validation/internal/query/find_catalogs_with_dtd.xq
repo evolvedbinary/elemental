@@ -52,8 +52,6 @@
 
     Returns:
     Sequence of document-uris.
-
-    $Id$    
 :)
 declare namespace ctlg = "urn:oasis:names:tc:entity:xmlns:xml:catalog";
 

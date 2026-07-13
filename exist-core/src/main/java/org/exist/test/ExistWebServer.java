@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -28,14 +52,17 @@ import org.exist.TestUtils;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.jetty.JettyStart;
 import org.exist.security.PermissionDeniedException;
+import org.exist.storage.BrokerPool;
+import org.exist.storage.journal.Journal;
 import org.exist.util.FileUtils;
 import org.exist.util.LockException;
 import org.junit.rules.ExternalResource;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.Properties;
 
 import static org.exist.util.IPUtil.nextFreePort;
 import static org.junit.Assert.fail;
@@ -50,11 +77,8 @@ public class ExistWebServer extends ExternalResource {
 
     public static final String USE_TEMPORARY_STORAGE_PROPERTY = "exist.use-temporary-storage";
 
-    private static final String CONFIG_PROP_FILES = "org.exist.db-connection.files";
-    private static final String CONFIG_PROP_JOURNAL_DIR = "org.exist.db-connection.recovery.journal-dir";
-
     private static final String PROP_JETTY_PORT = "jetty.port";
-    private static final String PROP_JETTY_SECURE_PORT = "jetty.secure.port";
+    private static final String PROP_JETTY_SECURE_PORT = "jetty.httpConfig.securePort";
     private static final String PROP_JETTY_SSL_PORT = "jetty.ssl.port";
 
     private static final int MIN_RANDOM_PORT = 49152;
@@ -62,13 +86,13 @@ public class ExistWebServer extends ExternalResource {
     private static final int MAX_RANDOM_PORT_ATTEMPTS = 10;
 
     private JettyStart server = null;
-    private String prevAutoDeploy = "off";
 
     private final boolean useRandomPort;
     private final boolean cleanupDbOnShutdown;
+    private final Properties configProperties;
     private final boolean disableAutoDeploy;
     private final boolean useTemporaryStorage;
-    private Optional<Path> temporaryStorage = Optional.empty();
+    private @Nullable Path temporaryStorage = null;
     private final boolean jettyStandaloneMode;
 
     public ExistWebServer() {
@@ -92,8 +116,13 @@ public class ExistWebServer extends ExternalResource {
     }
 
     public ExistWebServer(final boolean useRandomPort, final boolean cleanupDbOnShutdown, final boolean disableAutoDeploy, final boolean useTemporaryStorage, final boolean jettyStandaloneMode) {
+        this(useRandomPort, cleanupDbOnShutdown, null, disableAutoDeploy, useTemporaryStorage, jettyStandaloneMode);
+    }
+
+    public ExistWebServer(final boolean useRandomPort, final boolean cleanupDbOnShutdown, @Nullable final Properties configProperties, final boolean disableAutoDeploy, final boolean useTemporaryStorage, final boolean jettyStandaloneMode) {
         this.useRandomPort = useRandomPort;
         this.cleanupDbOnShutdown = cleanupDbOnShutdown;
+        this.configProperties = configProperties != null ? configProperties : new Properties();
         this.disableAutoDeploy = disableAutoDeploy;
         this.useTemporaryStorage = useTemporaryStorage;
         this.jettyStandaloneMode = jettyStandaloneMode;
@@ -109,37 +138,36 @@ public class ExistWebServer extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        if(disableAutoDeploy) {
-            this.prevAutoDeploy = System.getProperty(AUTODEPLOY_PROPERTY, "off");
-            System.setProperty(AUTODEPLOY_PROPERTY, "off");
-        }
-
         if (server == null) {
             final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
-            if(useTemporaryStorage || propUseTemporaryStorage) {
-                this.temporaryStorage = Optional.of(Files.createTempDirectory("org.exist.test.ExistWebServer"));
-                final String absTemporaryStorage = temporaryStorage.get().toAbsolutePath().toString();
-                System.setProperty(CONFIG_PROP_FILES, absTemporaryStorage);
-                System.setProperty(CONFIG_PROP_JOURNAL_DIR, absTemporaryStorage);
-                LOG.info("Using temporary storage location: {}", absTemporaryStorage);
-            }
-
-            if(useRandomPort) {
-                synchronized(ExistWebServer.class) {
-                    System.setProperty(PROP_JETTY_PORT, Integer.toString(nextFreePort(MIN_RANDOM_PORT, MAX_RANDOM_PORT, MAX_RANDOM_PORT_ATTEMPTS)));
-                    System.setProperty(PROP_JETTY_SECURE_PORT, Integer.toString(nextFreePort(MIN_RANDOM_PORT, MAX_RANDOM_PORT, MAX_RANDOM_PORT_ATTEMPTS)));
-                    System.setProperty(PROP_JETTY_SSL_PORT, Integer.toString(nextFreePort(MIN_RANDOM_PORT, MAX_RANDOM_PORT, MAX_RANDOM_PORT_ATTEMPTS)));
-
-                    server = new JettyStart();
-                    server.run(jettyStandaloneMode);
+            if (useTemporaryStorage || propUseTemporaryStorage) {
+                if (temporaryStorage == null) {
+                    this.temporaryStorage = Files.createTempDirectory("org.exist.test.ExistWebServer");
                 }
-            } else {
-                server = new JettyStart();
-                server.run();
+                configProperties.put(BrokerPool.PROPERTY_DATA_DIR, temporaryStorage);
+                configProperties.put(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, temporaryStorage);
+                LOG.info("Using temporary storage location: {}", temporaryStorage.toAbsolutePath().toString());
             }
+
+            final Properties jettyConfigProperties = new Properties();
+            if(useRandomPort) {
+                jettyConfigProperties.setProperty(PROP_JETTY_PORT, Integer.toString(nextFreePort(MIN_RANDOM_PORT, MAX_RANDOM_PORT, MAX_RANDOM_PORT_ATTEMPTS)));
+                jettyConfigProperties.setProperty(PROP_JETTY_SECURE_PORT, Integer.toString(nextFreePort(MIN_RANDOM_PORT, MAX_RANDOM_PORT, MAX_RANDOM_PORT_ATTEMPTS)));
+                jettyConfigProperties.setProperty(PROP_JETTY_SSL_PORT, Integer.toString(nextFreePort(MIN_RANDOM_PORT, MAX_RANDOM_PORT, MAX_RANDOM_PORT_ATTEMPTS)));
+            }
+
+            if (disableAutoDeploy) {
+                // NOTE(AR) will be processed in JettyStart
+                configProperties.setProperty(AUTODEPLOY_PROPERTY, "off");
+            }
+
+            server = new JettyStart(configProperties, jettyConfigProperties);
+            server.run(jettyStandaloneMode);
+
         } else {
             throw new IllegalStateException("ExistWebServer already running");
         }
+
         super.before();
     }
 
@@ -170,27 +198,12 @@ public class ExistWebServer extends ExternalResource {
             server = null;
 
             final boolean propUseTemporaryStorage = Boolean.parseBoolean(System.getProperty(USE_TEMPORARY_STORAGE_PROPERTY, "false"));
-            if((useTemporaryStorage || propUseTemporaryStorage) && temporaryStorage.isPresent()) {
-                FileUtils.deleteQuietly(temporaryStorage.get());
-                temporaryStorage = Optional.empty();
-                System.clearProperty(CONFIG_PROP_JOURNAL_DIR);
-                System.clearProperty(CONFIG_PROP_FILES);
-            }
-
-            if(useRandomPort) {
-                synchronized (ExistWebServer.class) {
-                    System.clearProperty(PROP_JETTY_SSL_PORT);
-                    System.clearProperty(PROP_JETTY_SECURE_PORT);
-                    System.clearProperty(PROP_JETTY_PORT);
-                }
+            if((useTemporaryStorage || propUseTemporaryStorage) && temporaryStorage != null) {
+                FileUtils.deleteQuietly(temporaryStorage);
+                temporaryStorage = null;
             }
         } else {
             throw new IllegalStateException("ExistWebServer already stopped");
-        }
-
-        if(disableAutoDeploy) {
-            //set the autodeploy trigger enablement back to how it was before this test class
-            System.setProperty(AUTODEPLOY_PROPERTY, this.prevAutoDeploy);
         }
 
         super.after();

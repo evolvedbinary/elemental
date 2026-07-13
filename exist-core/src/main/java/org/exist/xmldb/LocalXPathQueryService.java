@@ -51,11 +51,14 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.debuggee.Debuggee;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock.LockMode;
@@ -64,9 +67,7 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.xmldb.function.LocalXmldbFunction;
-import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.AnyURIValue;
@@ -77,6 +78,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.modules.XMLResource;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
@@ -87,7 +89,6 @@ import org.exist.dom.persistent.ExtArrayNodeSet;
 import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
-import org.exist.security.Permission;
 import com.evolvedbinary.j8fu.Either;
 
 import javax.annotation.Nullable;
@@ -184,7 +185,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     private EXistResourceSet doQuery(final DBBroker broker, final Txn transaction, final String query, final XmldbURI[] docs, final Sequence contextSet, final String sortExpr) throws XMLDBException {
-        final Either<XPathException, CompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
+        final Either<XPathException, LocalCompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
         if(maybeExpr.isLeft()) {
             final XPathException e = maybeExpr.left().get();
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -217,34 +218,27 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     private EXistResourceSet execute(final DBBroker broker, final Txn transaction, XmldbURI[] docs, final Sequence contextSet, final CompiledExpression expression, final String sortExpr) throws XMLDBException {
-        final CompiledXQuery expr = (CompiledXQuery) expression;
-        final XQueryContext context = expr.getContext();
+        if (!(expression instanceof LocalCompiledExpression)) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "LocalXPathQueryService#execute requires a LocalCompiledExpression");
+        }
+        final LocalCompiledExpression localCompiledExpression = (LocalCompiledExpression) expression;
+        final XQueryUtil.CompilationResult compilationResult = localCompiledExpression.getCompilationResult();
+
+        final ConsumerE<XQueryContext, XPathException> preExecutionContext = xqueryContext -> {
+            xqueryContext.setStaticallyKnownDocuments(docs);
+            if (lockedDocuments != null) {
+                xqueryContext.setProtectedDocs(lockedDocuments);
+            }
+            setupContext(compilationResult.source, xqueryContext);
+            declareVariables(xqueryContext);
+        };
 
         boolean queryResultOwnershipTransferred = false;
         @Nullable XQueryUtil.QueryResult queryResult = null;
         try {
-            context.setStaticallyKnownDocuments(docs);
-            if (lockedDocuments != null) {
-                context.setProtectedDocs(lockedDocuments);
-            }
-            setupContext(null, context);
-            declareVariables(context);
-
-            final XQuery xquery = brokerPool.getXQueryService();
-
-            final long executionStarted = System.currentTimeMillis();
-            @Nullable final Sequence result = xquery.execute(broker, expr, null, contextSet, properties, true);
-            final long executionFinished = System.currentTimeMillis();
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("Query took {} ms.", executionFinished - executionStarted);
-            }
-
-            if (result == null) {
-                return null;
-            }
-
-            queryResult = new XQueryUtil.QueryResult(expr.getSource(), null, expr, context, -1, executionFinished - executionStarted, result);
+            // TODO(AR) does reset context need to be called on the result? it was previously (note the 'true' param) -> xquery.execute(broker, expr, null, contextSet, properties, true);
+            // NOTE(AR) queryResult takes ownership of compilationResult
+            queryResult = XQueryUtil.execute(broker, compilationResult, contextSet, properties, preExecutionContext, null);
 
             final Properties resourceSetProperties = new Properties(properties);
             resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
@@ -260,11 +254,11 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 
         } finally {
             if (!queryResultOwnershipTransferred) {
-                // NOTE(AR) we are returning null or an exception was raised, and so we still own the queryResult and we must therefore close it
+                // NOTE(AR) we are returning null or an exception was raised, and so we still own the queryResult or compilationResult and we must therefore close it
                 if (queryResult != null) {
                     queryResult.close();
                 } else {
-                    context.runCleanupTasks();
+                    compilationResult.close();
                 }
             }
         }
@@ -277,72 +271,90 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 	
     @Override
     public EXistResourceSet executeStoredQuery(final String uri) throws XMLDBException {
-        return execute((broker, transaction) -> {
-            final DocumentImpl resource = broker.getResource(new XmldbURI(uri), Permission.READ | Permission.EXECUTE);
-            if (resource == null) {
-                throw new XMLDBException(ErrorCodes.INVALID_URI, "No stored XQuery exists at: " + uri);
+        return withDb((broker, transaction) -> {
+
+            final Either<XPathException, LocalCompiledExpression> maybeExpr;
+
+            try (final LockedDocument lockedResource = broker.getXMLResource(new XmldbURI(uri), LockMode.READ_LOCK)) {
+                if (lockedResource == null) {
+                    throw new XMLDBException(ErrorCodes.INVALID_URI, "No stored XQuery exists at: " + uri);
+                }
+                final DocumentImpl resource = lockedResource.getDocument();
+                if (!(resource instanceof BinaryDocument)) {
+                    throw new XMLDBException(ErrorCodes.INVALID_URI, "Document is not an XQuery: " + uri);
+                }
+
+                final Source dbSource = new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, false);
+                maybeExpr = compileAndCheck(broker, transaction, dbSource);
             }
-            return new DBSource(broker.getBrokerPool(), (BinaryDocument) resource, false);
+
+            // NOTE(AR) query is now compiled so we can release the LockedDocument eagerly above
+            if (maybeExpr.isLeft()) {
+                final XPathException e = maybeExpr.left().get();
+                throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+            } else {
+                return execute(broker, transaction, null, null, maybeExpr.right().get(), null);
+            }
         });
     }
 
     private EXistResourceSet execute(final LocalXmldbFunction<Source> sourceOp) throws XMLDBException {
         return withDb((broker, transaction) -> {
-
             final Source source = sourceOp.apply(broker, transaction);
-            final XmldbURI[] docs = new XmldbURI[]{ XmldbURI.create(collection.getName(broker, transaction)) };
-
-            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
-                xqueryContext.setStaticallyKnownDocuments(docs);
-                try {
-                    setupContext(source, xqueryContext);
-                } catch (final XMLDBException e) {
-                    throw new XPathException(e);
-                }
-            };
-
-            final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = this::declareVariables;
-
-            boolean queryResultOwnershipTransferred = false;
-            @Nullable XQueryUtil.QueryResult queryResult = null;
-            try {
-                queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
-
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("Query took {} ms.", queryResult.executionTime);
-                }
-
-                if (queryResult.result == null) {
-                    return null;
-                }
-
-                final Properties resourceSetProperties = new Properties(properties);
-                resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
-
-                // NOTE(AR) LocalResourceSet takes ownership of QueryResult sequence! So it is responsible to call `QueryResult#close()` when it is finished with it
-                final EXistResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, null);
-                queryResultOwnershipTransferred = true;
-                return resourceSet;
-
-            } catch (final XPathException e) {
-                if (e.getCause() instanceof XMLDBException) {
-                    throw (XMLDBException) e.getCause();
-                }
-                throw e;
-
-            } finally {
-                if (queryResult != null && !queryResultOwnershipTransferred) {
-                    // NOTE(AR) we are returning null or an exception was raised, and so we still own the queryResult and we must therefore close it
-                    queryResult.close();
-                }
-            }
+            return execute(broker, transaction, source);
         });
+    }
+
+    private EXistResourceSet execute(final DBBroker broker, final Txn transaction, final Source source) throws XMLDBException, XPathException, PermissionDeniedException, IOException {
+
+        final XmldbURI[] docs = new XmldbURI[]{ XmldbURI.create(collection.getName(broker, transaction)) };
+
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreCompilation = xqueryContext -> {
+            xqueryContext.setStaticallyKnownDocuments(docs);
+            setupContext(source, xqueryContext);
+        };
+
+        final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = this::declareVariables;
+
+        boolean queryResultOwnershipTransferred = false;
+        @Nullable XQueryUtil.QueryResult queryResult = null;
+        try {
+            queryResult = XQueryUtil.query(broker, source, true, null, null, setupXqueryContextPreCompilation, setupXqueryContextPreExecution, null);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Query took {} ms.", queryResult.executionTime);
+            }
+
+            if (queryResult.result == null) {
+                return null;
+            }
+
+            final Properties resourceSetProperties = new Properties(properties);
+            resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
+
+            // NOTE(AR) LocalResourceSet takes ownership of QueryResult sequence! So it is responsible to call `QueryResult#close()` when it is finished with it
+            final EXistResourceSet resourceSet = new LocalResourceSet(user, brokerPool, collection, resourceSetProperties, queryResult, null);
+            queryResultOwnershipTransferred = true;
+            return resourceSet;
+
+        } catch (final XPathException | PermissionDeniedException | IOException e) {
+            if (e.getCause() instanceof XMLDBException) {
+                throw (XMLDBException) e.getCause();
+            }
+            throw e;
+
+        } finally {
+            if (queryResult != null && !queryResultOwnershipTransferred) {
+                // NOTE(AR) we are returning null or an exception was raised, and so we still own the queryResult and we must therefore close it
+                queryResult.close();
+            }
+        }
     }
 
     @Override
     public CompiledExpression compile(final String query) throws XMLDBException {
         return withDb((broker, transaction) -> {
-            final Either<XPathException, CompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
+            final Either<XPathException, LocalCompiledExpression> maybeExpr = compileAndCheck(broker, transaction, query);
             if(maybeExpr.isLeft()) {
                 final XPathException e = maybeExpr.left().get();
                 throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -354,7 +366,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 
     @Override
     public CompiledExpression compileAndCheck(final String query) throws XMLDBException, XPathException {
-    	final Either<XPathException, CompiledExpression> result = withDb((broker, transaction) -> compileAndCheck(broker, transaction, query));
+    	final Either<XPathException, LocalCompiledExpression> result = withDb((broker, transaction) -> compileAndCheck(broker, transaction, query));
         if(result.isLeft()) {
             throw result.left().get();
         } else {
@@ -362,21 +374,25 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         }
     }
 
-    private Either<XPathException, CompiledExpression> compileAndCheck(final DBBroker broker, final Txn transaction, final String query) throws XMLDBException {
-        final long start = System.currentTimeMillis();
-        final XQuery xquery = broker.getBrokerPool().getXQueryService();
-        final XQueryContext context = new XQueryContext(broker.getBrokerPool());
+    private Either<XPathException, LocalCompiledExpression> compileAndCheck(final DBBroker broker, final Txn transaction, final String query) throws XMLDBException {
+        final Source source = new StringSource(query);
+        return compileAndCheck(broker, transaction, source);
+    }
+
+    private Either<XPathException, LocalCompiledExpression> compileAndCheck(final DBBroker broker, final Txn transaction, final Source source) throws XMLDBException {
+        final ConsumerE<XQueryContext, XPathException> preCompilationContext = xqueryContext -> setupContext(source, xqueryContext);
 
         try {
-            setupContext(null, context);
-            final CompiledExpression expr = xquery.compile(context, query);
-            if(LOG.isDebugEnabled()) {
-                LOG.debug("compilation took {}", System.currentTimeMillis() - start);
+            final XQueryUtil.CompilationResult compilationResult = XQueryUtil.compile(broker, source, false, true, preCompilationContext);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Compilation took {}ms", compilationResult.compilationTime);
             }
-            return Either.Right(expr);
+
+            final LocalCompiledExpression compiledExpression = new LocalCompiledExpression(compilationResult);
+            return Either.Right(compiledExpression);
         } catch (final PermissionDeniedException e) {
             throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, e.getMessage(), e);
-        } catch(final IllegalArgumentException e) {
+        } catch(final IOException e) {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         } catch(final XPathException e) {
             return Either.Left(e);
@@ -395,19 +411,15 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
         });
     }
 
-    protected void setupContext(final Source source, final XQueryContext context) throws XMLDBException, XPathException {
-        try {
-            context.setBaseURI(new AnyURIValue(properties.getProperty("base-uri", collection.getPath())));
-        } catch(final XPathException e) {
-            throw new XMLDBException(ErrorCodes.INVALID_URI,"Invalid base uri",e);
-        }
+    protected void setupContext(final Source source, final XQueryContext context) throws XPathException {
+        context.setBaseURI(new AnyURIValue(properties.getProperty("base-uri", collection.getPath())));
 
-        if(moduleLoadPath != null) {
+        if (moduleLoadPath != null) {
             context.setModuleLoadPath(moduleLoadPath);
         } else if (source != null) {
             String modulePath = null;
-            if (source instanceof DBSource) {
-                modulePath = ((DBSource) source).getDocumentPath().removeLastSegment().toString();
+            if (source instanceof DbStoreSource) {
+                modulePath = ((DbStoreSource) source).getDocumentPath().removeLastSegment().toString();
             } else if (source instanceof FileSource) {
                 modulePath = ((FileSource) source).getPath().getParent().toString();
             }
@@ -541,7 +553,10 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
 
     @Override
     public void dump(final CompiledExpression expression, final Writer writer) throws XMLDBException {
-        final CompiledXQuery expr = (CompiledXQuery)expression;
-        expr.dump(writer);
+        if (!(expression instanceof LocalCompiledExpression)) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "LocalXPathQueryService#dump requires a LocalCompiledExpression");
+        }
+        final LocalCompiledExpression localCompiledExpression = (LocalCompiledExpression) expression;
+        localCompiledExpression.getCompilationResult().dump(writer);
     }
 }

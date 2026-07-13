@@ -47,11 +47,13 @@ package org.exist.http;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.xquery.XQueryUtil;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,6 +65,15 @@ public class SessionManager {
 
     private static final Logger LOG = LogManager.getLogger(SessionManager.class);
     private static final long TIMEOUT = 120_000;  // ms (e.g. 2 minutes)
+
+    private static final RemovalListener<Integer, QueryAndResult> REMOVAL_LISTENER = (sessionId, queryAndResult, removalCause) -> {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Removing cached query result for session: {}", sessionId);
+        }
+
+        // NOTE(AR) make sure to release any resources still held by the query result and potentially send it back to the query pool for reuse
+        queryAndResult.result.close();
+    };
 
     private final AtomicInteger sessionIdCounter = new AtomicInteger();
     private final Cache<Integer, QueryAndResult> cache;
@@ -78,12 +89,10 @@ public class SessionManager {
     }
 
     public SessionManager() {
-        final Caffeine<Object, Object> cacheBuilder = Caffeine.newBuilder()
-                .expireAfterAccess(TIMEOUT, TimeUnit.MILLISECONDS);
-        if(LOG.isDebugEnabled()) {
-            cacheBuilder.removalListener((key, value, cause) -> LOG.debug("Removing cached query result for session: {}", key));
-        }
-        cache = cacheBuilder.build();
+        this.cache = Caffeine.newBuilder()
+                .expireAfterAccess(TIMEOUT, TimeUnit.MILLISECONDS)
+                .removalListener(REMOVAL_LISTENER)
+                .build();
     }
 
     public int add(final String query, final XQueryUtil.QueryResult result) {
@@ -92,7 +101,7 @@ public class SessionManager {
         return sessionId;
     }
 
-    public XQueryUtil.QueryResult get(final String query, final int sessionId) {
+    public @Nullable XQueryUtil.QueryResult get(final String query, final int sessionId) {
         if (sessionId < 0 || sessionId >= sessionIdCounter.get()) {
             return null; // out of scope
         }

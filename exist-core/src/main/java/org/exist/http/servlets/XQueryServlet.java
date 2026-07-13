@@ -421,17 +421,13 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 //                System.out.println("path="+path);
                 if(descriptor.allowSource(path)) {
 
-                    if (source instanceof DBSource) {
-                        try {
-                            ((DBSource) source).validate(user, Permission.READ);
-                        } catch (final PermissionDeniedException e) {
-                            if (getDefaultUser().equals(user)) {
-                                getAuthenticator().sendChallenge(request, response);
-                            } else {
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. (no read access)");
-                            }
-                            return;
+                    if (!source.getPermissions().validate(user, Permission.READ)) {
+                        if (getDefaultUser().equals(user)) {
+                            getAuthenticator().sendChallenge(request, response);
+                        } else {
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. (no read access)");
                         }
+                        return;
                     }
                     
 					//Show the source of the XQuery
@@ -512,7 +508,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, source, true, null, outputProperties, null, setupXqueryContextPreExecution, setupXqueryContextPostExecution)) {
 
                 // special header to indicate that the query is not returned from cache
-                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.QueryResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
+                response.setHeader(XQUERY_CACHED_RESPONSE_HEADER, queryResult.compilationTime == XQueryUtil.CompilationResult.RETRIEVED_CACHED_COMPILED_QUERY ? "true" : "false");
 
                 final String mediaType = outputProperties.getProperty(OutputKeys.MEDIA_TYPE);
                 if (mediaType != null) {

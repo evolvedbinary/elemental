@@ -61,7 +61,7 @@ import org.exist.collections.Collection;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
-import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.source.StringSource;
@@ -364,8 +364,8 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
                 context.prepareForReuse();
             }
 
-            if (query instanceof DBSource) {
-                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + ((DBSource)query).getDocumentPath().removeLastSegment().toString());
+            if (query instanceof DbStoreSource) {
+                context.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI_PREFIX + ((DbStoreSource) query).getDocumentPath().removeLastSegment().toString());
             }
 
         	//compile the XQuery

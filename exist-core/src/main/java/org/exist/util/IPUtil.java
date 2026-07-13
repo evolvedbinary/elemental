@@ -46,7 +46,7 @@ import java.util.Random;
 public class IPUtil {
 
     @GuardedBy("class")
-    private static final Random random = new Random();
+    private static final Random RANDOM = new Random();
 
     /**
      * Attempts to get the next random free IP port in the range {@code from} and {@code to}.
@@ -72,7 +72,7 @@ public class IPUtil {
     }
 
     private synchronized static int random(final int min, final int max) {
-        return random.nextInt((max - min) + 1) + min;
+        return RANDOM.nextInt((max - min) + 1) + min;
     }
 
     private static boolean isLocalPortFree(final int port) {

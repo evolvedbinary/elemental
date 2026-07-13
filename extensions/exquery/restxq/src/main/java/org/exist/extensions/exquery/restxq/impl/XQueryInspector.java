@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.exist.extensions.exquery.restxq.impl.adapters.AnnotationAdapter;
-import org.exist.source.DBSource;
+import org.exist.source.DbStoreSource;
 import org.exist.source.Source;
 import org.exist.xquery.Annotation;
 import org.exist.xquery.CompiledXQuery;
@@ -50,6 +50,8 @@ import org.exquery.restxq.ResourceFunction;
 import org.exquery.restxq.RestXqService;
 import org.exquery.restxq.impl.ResourceFunctionFactory;
 import org.exquery.restxq.impl.annotation.RestAnnotationFactory;
+
+import javax.annotation.Nullable;
 
 /**
  *
@@ -114,29 +116,28 @@ class XQueryInspector {
     }
     
     private static void getDependencies(final XQueryContext xqyCtx, final Map<String, Set<String>> dependencies) {
-        
-        final String xqueryUri = getDbUri(xqyCtx.getSource());
-        Set<String> depSet = dependencies.get(xqueryUri);
-        if(depSet == null) {
+        @Nullable final String dbXqueryUri = getDbUri(xqyCtx.getSource());
+        @Nullable Set<String> depSet = dependencies.get(dbXqueryUri);
+        if (depSet == null) {
         
             final Iterator<Module> itModule = xqyCtx.getModules();
             while(itModule.hasNext()) {
                 final Module module = itModule.next();
                 if(module instanceof ExternalModule extModule) {
                     final Source source = extModule.getSource();
-                    if(source instanceof DBSource) {
-                        final String moduleUri = getDbUri(source);
+                    @Nullable final String dbModuleUri = getDbUri(source);
+                    if (dbModuleUri != null) {
                         if(depSet == null) {
                             depSet = new HashSet<>();
                         }
-                        depSet.add(moduleUri);
+                        depSet.add(dbModuleUri);
                         
                         /*
                          * must merge map here as recursive function
                          * can cause problems with recursive
                          * module imports m1 -> m2 -> m2 -> m1
                          */
-                        dependencies.put(xqueryUri, depSet);
+                        dependencies.put(dbXqueryUri, depSet);
                     }
 
                     getDependencies(extModule.getContext(), dependencies);
@@ -145,11 +146,10 @@ class XQueryInspector {
         }
     }
     
-    private static String getDbUri(final Source source) {
-        if(source != null && source instanceof DBSource) {
+    private static @Nullable String getDbUri(final Source source) {
+        if (source instanceof DbStoreSource) {
             return source.path();
-        } else {
-            return null;
         }
+        return null;
     }
 }

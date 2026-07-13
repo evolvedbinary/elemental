@@ -47,7 +47,6 @@ package org.exist.xquery;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,29 +55,18 @@ import java.util.Map;
 import io.lacuna.bifurcan.IMap;
 import org.exist.dom.memtree.AttrImpl;
 import org.exist.dom.persistent.AVLTreeNodeSet;
-import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.memtree.DocumentBuilderReceiver;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.dom.memtree.NodeImpl;
-import org.exist.numbering.NodeId;
-import org.exist.security.PermissionDeniedException;
-import org.exist.storage.DBBroker;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SerializerPool;
-import org.exist.xmldb.LocalXMLResource;
-import org.exist.xmldb.RemoteXMLResource;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.functions.array.ArrayType;
 import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
-import org.xmldb.api.base.ResourceIterator;
-import org.xmldb.api.base.ResourceSet;
-import org.xmldb.api.base.XMLDBException;
-import org.xmldb.api.modules.XMLResource;
 
 import javax.annotation.Nullable;
 
@@ -680,23 +668,6 @@ public class XPathUtil {
         } else if (obj instanceof Sequence) {
             return (Sequence) obj;
 
-        } else if (obj instanceof ResourceSet) {
-            final Sequence seq = new AVLTreeNodeSet();
-            try {
-                final DBBroker broker = context.getBroker();
-                for (final ResourceIterator it = ((ResourceSet) obj).getIterator(); it.hasMoreResources();) {
-                    try (final XMLResource xres = (XMLResource) it.nextResource()) {
-                        seq.add(getNode(broker, xres, expression));
-                    }
-                }
-            } catch (final XMLDBException xe) {
-                throw new XPathException(expression, "Failed to convert ResourceSet to node: " + xe.getMessage());
-            }
-            return seq;
-
-        } else if (obj instanceof XMLResource) {
-            return getNode(context.getBroker(), (XMLResource) obj, expression);
-
         } else if (obj instanceof Node) {
             context.pushDocumentContext();
             final DOMStreamer streamer = (DOMStreamer) SerializerPool.getInstance().borrowObject(DOMStreamer.class);
@@ -905,50 +876,5 @@ public class XPathUtil {
             result.addAll(seq);
         }
         return result;
-    }
-
-    /**
-     * Converts an XMLResource into a NodeProxy.
-     *
-     * @param broker The DBBroker to use to access the database
-     * @param xres The XMLResource to convert
-     * @return A NodeProxy for accessing the content represented by xres
-     * @throws XPathException if an XMLDBException is encountered
-     */
-    public static final NodeProxy getNode(DBBroker broker, XMLResource xres) throws XPathException {
-        return getNode(broker, xres, null);
-    }
-
-    /**
-     * Converts an XMLResource into a NodeProxy.
-     *
-     * @param broker The DBBroker to use to access the database
-     * @param xres The XMLResource to convert
-     * @param expression the expression from which the resource derives
-     * @return A NodeProxy for accessing the content represented by xres
-     * @throws XPathException if an XMLDBException is encountered
-     */
-    public static final NodeProxy getNode(final DBBroker broker, final XMLResource xres, final Expression expression) throws XPathException {
-        if (xres instanceof LocalXMLResource lres) {
-            try {
-                return lres.getNode();
-            } catch (final XMLDBException xe) {
-                throw new XPathException(expression, "Failed to convert LocalXMLResource to node: " + xe.getMessage());
-            }
-        }
-
-        DocumentImpl document;
-        try {
-            document = broker.getCollection(XmldbURI.xmldbUriFor(xres.getParentCollection().getName())).getDocument(broker, XmldbURI.xmldbUriFor(xres.getDocumentId()));
-        } catch (final URISyntaxException xe) {
-            throw new XPathException(expression, xe);
-        } catch (final XMLDBException xe) {
-            throw new XPathException(expression, "Failed to get document for RemoteXMLResource: " + xe.getMessage());
-        } catch (final PermissionDeniedException pde) {
-            throw new XPathException(expression, "Failed to get document: " + pde.getMessage());
-        }
-        final NodeId nodeId = broker.getBrokerPool().getNodeFactory().createFromString(((RemoteXMLResource) xres).getNodeId());
-        return new NodeProxy(null, document, nodeId);
-
     }
 }

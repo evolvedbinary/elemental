@@ -177,18 +177,10 @@ public class XmldbBinariesTest extends AbstractBinariesTest<EXistResourceSet, Re
                 final XQueryService xqueryService = colRoot.getService(XQueryService.class);
 
                 final CompiledExpression compiledExpression = xqueryService.compile(query);
-                final EXistResourceSet results = (EXistResourceSet) xqueryService.execute(compiledExpression);
-
-
-                    try {
-    //                    compiledExpression.reset();  // shows the ordering issue with binary values (see comment below)
-
-                        consumer.accept(results);
-                    } finally {
-                        //the following calls cause the streams of any binary result values to be closed, so if we did so before we are finished with the results, serialization would fail.
-                        results.clear();
-                        compiledExpression.reset();
-                    }
+                try (final EXistResourceSet results = (EXistResourceSet) xqueryService.execute(compiledExpression)) {
+//                    compiledExpression.reset();  // shows the ordering issue with binary values (see comment below)
+                    consumer.accept(results);
+                }
             } finally {
                 colRoot.close();
             }

@@ -22,7 +22,6 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<!-- $Id$ -->
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <uri name="http://jmvanel.free.fr/xsd/addressBook" uri="addressbook.xsd"/>
 </catalog>

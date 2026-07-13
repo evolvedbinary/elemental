@@ -330,7 +330,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         });
     }
 
-    public String getPath() throws XMLDBException {
+    String getPath() {
         return path.toString();
     }
 
@@ -745,13 +745,8 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         //No port ;-)
         //No context ;-)
         //accessor.append(getContext());
-        try {
-            //TODO : cache it when constructed
-            return XmldbURI.create(accessor.toString(), getPath());
-        } catch(final XMLDBException e) {
-            //TODO : should never happen
-            return null;
-        }
+
+        return XmldbURI.create(accessor.toString(), getPath());
     }
 
     /**

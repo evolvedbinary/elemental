@@ -258,11 +258,11 @@ public interface Permission {
     void setSticky(boolean sticky) throws PermissionDeniedException;
 
     /**
-     *  Check  if user has the requested mode for this resource.
+     * Check if user has the requested mode for this resource.
      *
-     *@param  user  The user
-     *@param  mode  The requested mode
-     *@return       true if user has the requested mode
+     * @param user  The user
+     * @param mode  The requested mode
+     * @return true if user has the requested mode
      */
     boolean validate(Subject user, int mode);
 
