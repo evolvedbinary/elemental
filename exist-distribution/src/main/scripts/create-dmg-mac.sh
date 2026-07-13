@@ -37,9 +37,14 @@ if [[ -f "${output_dmg}" ]]; then
     rm -v "${output_dmg}"
 fi
 
+# Make sure that pipx is installed
+if ! python3 -m pip show pipx > /dev/null 2>&1; then
+  yes | python3 -m pip install --user pipx && python3 -m pipx ensurepath && source ~/.bashrc
+fi
+
 # Make sure that dmgbuild is installed
-if ! pip show dmgbuild > /dev/null 2>&1; then
-  yes | pip install dmgbuild
+if ! python3 -m pipx list | grep dmgbuild > /dev/null 2>&1; then
+  yes | python3 -m pipx install dmgbuild
 fi
 
 set -e
