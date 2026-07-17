@@ -89,7 +89,7 @@ This section details concrete steps for creating and publishing product releases
 
 ### Preparing a Product Release
 
-Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.11.0.
+Once development on a new stable version is complete, the following steps will prepare the version for release. For purposes of illustration, we will assume we are preparing the stable release of version 6.11.1.
 You will require a system with:
 * macOS
 * JDK 8
@@ -172,7 +172,7 @@ You will require a system with:
      </activeProfiles>
     ```
 
-3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone (e.g. `elemental-6.11.0`).
+3.  Merge any outstanding PRs that have been reviewed and accepted for the milestone (e.g. `elemental-6.11.1`).
 
 4.  Make sure that you have the HEAD of `origin/main` (or `upstream` if you are on a fork).
 
@@ -190,8 +190,8 @@ You will require a system with:
     [INFO] Executing: /bin/sh -c cd /Users/aretter/code/evolvedbinary/elemental.maven && git status
     [INFO] Working directory: /Users/aretter/code/evolvedbinary/elemental.maven
     [INFO] Checking dependencies and plugins for snapshots ...
-    What is the release version for "Elemental"? (xyz.elemental:elemental) 6.11.0: :
-    What is SCM release tag or label for "Elemental"? (xyz.elemental:elemental) elemental-6.11.0: :
+    What is the release version for "Elemental"? (xyz.elemental:elemental) 6.11.1: :
+    What is SCM release tag or label for "Elemental"? (xyz.elemental:elemental) elemental-6.11.1: :
     What is the new development version for "Elemental"? (xyz.elemental:elemental) 6.12.0-SNAPSHOT: :
     ```
 
@@ -202,7 +202,7 @@ You will require a system with:
 
 7.  Update the stable branch (`gold`) of Elemental to reflect the latest release:
     ```bash
-    $ git push origin elemental-6.11.0:gold
+    $ git push origin elemental-6.11.1:gold
     ```
 
 #### Publishing/Promoting the Product Release
@@ -216,7 +216,7 @@ You will require a system with:
 
 5. Visit the GitHub releases page [https://github.com/evolvedbinary/elemental/releases](https://github.com/evolvedbinary/elemental/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
 
-6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.11.0`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
+6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.11.1`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
 
 7. Tweet about it using the `elemental` Twitter account.
 
