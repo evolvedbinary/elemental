@@ -216,21 +216,25 @@ You will require a system with:
 
 5. Visit the GitHub releases page [https://github.com/evolvedbinary/elemental/releases](https://github.com/evolvedbinary/elemental/releases) and create a new release, enter the tag you previously created and link the release notes from the blog.
 
-6. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.11.1`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
+6. Update the Elemental website pages with the latest release information:
+	1. https://github.com/evolvedbinary/elemental-website/blob/main/src/includes/quickstart-downloads.njk
+	2. https://github.com/evolvedbinary/elemental-website/blob/main/src/pages/downloads.njk
 
-7. Tweet about it using the `elemental` Twitter account.
+7. Send an email to the `Elemental` mailing list announcing the release with a title similar to `[ANN] Release of Elemental 6.11.1`, copy and paste the release notes from the blog into the email and reformat appropriately (see past emails).
 
-8. Post it to the [LinkedIn Elemental group](https://www.linkedin.com/groups/10070373/)
+8. Tweet about it using the `elemental` Twitter account.
 
-9. Post a message about the release to the Elemental #community Slack channel.
+9. Post it to the [LinkedIn Elemental group](https://www.linkedin.com/groups/10070373/)
 
-10. Post a message about the release to the XML.com #general Slack channel.
+10. Post a message about the release to the Elemental #community Slack channel.
 
-11. Submit a news item to XML.com - [https://www.xml.com/news/submit-news-item/](https://www.xml.com/news/submit-news-item/).
+11. Post a message about the release to the XML.com #general Slack channel.
 
-12. Update the Wikipedia page with the new version details - [https://en.wikipedia.org/wiki/Elemental](https://en.wikipedia.org/wiki/Elemental).
+12. Submit a news item to XML.com - [https://www.xml.com/news/submit-news-item/](https://www.xml.com/news/submit-news-item/).
 
-13. Go to GitHub and move all issues and PRs which are still open for the release milestone to the next release milestone. Close the release milestone.
+13. Update the Wikipedia page with the new version details - [https://en.wikipedia.org/wiki/Elemental](https://en.wikipedia.org/wiki/Elemental).
+
+14. Go to GitHub and move all issues and PRs which are still open for the release milestone to the next release milestone. Close the release milestone.
 
 
 ### Releasing to Homebrew
