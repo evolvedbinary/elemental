@@ -41,7 +41,7 @@ do
 key="$1"
 
 case $key in
-    clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|license-check|license-format|dependency-check|dependency-security-check|format-poms)
+    clean|quick|quick-archives|quick-docker|quick-archives-docker|quick-install|test|site|site-it|license-check|license-format|dependency-check|dependency-security-check|format-poms)
     TARGET="$1"
     shift
     ;;
@@ -74,6 +74,7 @@ function print-useage() {
   echo -e "\tquick-install - A distribution directory, and installs Maven Artifacts to your local Maven repository"
   echo -e "\ttest - Runs the test suite"
   echo -e "\tsite - Runs the test suite and produces a Maven Site in target/site/ that details the results"
+  echo -e "\tsite-it - Runs the test suite (including Failsafe integration tests) and produces a Maven Site in target/site/ that details the results"
   echo -e "\tlicence-check - Checks that all source files have the correct license header"
   echo -e "\tlicence-format - Adds the correct license header to any source files that are missing it"
   echo -e "\tdependency-check - Checks that all modules have correctly declared their dependencies"
@@ -145,6 +146,12 @@ if [ "${TARGET}" == "test" ]; then
 fi
 
 if [ "${TARGET}" == "site" ]; then
+  CMD="${BASE_CMD} clean site -Ddependency-check.skip=true"
+  $CMD
+  exit 0;
+fi
+
+if [ "${TARGET}" == "site-it" ]; then
   CMD="${BASE_CMD} clean verify site -Ddependency-check.skip=true"
   $CMD
   exit 0;
