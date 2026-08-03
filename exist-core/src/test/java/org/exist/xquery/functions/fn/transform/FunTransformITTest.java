@@ -21,6 +21,8 @@
 package org.exist.xquery.functions.fn.transform;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
+import org.apache.logging.log4j.Logger;
+import org.easymock.Capture;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
@@ -49,9 +51,17 @@ import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.Source;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.easymock.EasyMock.capture;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.newCapture;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.*;
 
 /**
@@ -245,6 +255,50 @@ public class FunTransformITTest {
         // Attribute reference
         expected = Input.fromString("<mixed i=\"j\" x=\"y\"/>").build();
         expectQuery(IDENTITY_MIXED_XSLT_QUERY_5, expected);
+    }
+
+    @Test
+    public void xslMessageIsLogged() throws EXistException, PermissionDeniedException, IOException, XPathException {
+
+        // set a mock logger so we can capture the log output for our test
+        final Logger mockLogger = createMock(Logger.class);
+        Transform.setLogger(mockLogger);
+
+        // expectations
+        final Capture<String> formatPattern = newCapture();
+        final Capture<String> startTagCapture = newCapture();
+        final Capture<String> logMessageCapture = newCapture();
+        mockLogger.info(capture(formatPattern), capture(startTagCapture), capture(logMessageCapture));
+
+        // reset mock state before test
+        replay(mockLogger);
+
+        // execute test
+        final String query =
+            "fn:transform(map {\n" +
+            "  \"stylesheet-text\": '<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"2.0\">\n" +
+            "    <xsl:template match=\"/\">\n" +
+            "      <xsl:message>Hello from XSLT</xsl:message>\n" +
+            "    </xsl:template>\n" +
+            "  </xsl:stylesheet>',\n" +
+            "  \"source-node\": document { <in/> }\n" +
+            "})?output";
+
+        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            assertNotNull(queryResult.result);
+        }
+
+        // verify our expectations
+        verify(mockLogger);
+
+        // check our assertions about the log message
+        final String startTag = startTagCapture.getValue();
+        final String message = logMessageCapture.getValue();
+
+        assertEquals("<xsl:message terminate=\"false\" sourceLine=\"3\" sourceColumn=\"20\">", startTag);
+        assertEquals("Hello from XSLT", message);
     }
 
     private static void expectQuery(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException, IOException {

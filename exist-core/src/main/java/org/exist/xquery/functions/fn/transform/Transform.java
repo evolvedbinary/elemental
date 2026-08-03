@@ -53,6 +53,9 @@ import net.sf.saxon.om.StructuredQName;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.serialize.SerializationProperties;
 import net.sf.saxon.trans.UncheckedXPathException;
+
+import java.io.IOException;
+import java.io.StringWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
@@ -67,8 +70,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.xml.transform.ErrorListener;
 import javax.xml.transform.Source;
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import java.net.URI;
@@ -79,6 +84,7 @@ import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.util.StringUtil.isNullOrEmpty;
+import static org.exist.util.StringUtil.notNullOrEmpty;
 import static org.exist.xquery.functions.fn.transform.Options.Option.*;
 
 /**
@@ -104,7 +110,7 @@ import static org.exist.xquery.functions.fn.transform.Options.Option.*;
  */
 public class Transform {
 
-    private static final Logger LOGGER =  LogManager.getLogger(org.exist.xquery.functions.fn.transform.Transform.class);
+    private static Logger LOGGER =  LogManager.getLogger(org.exist.xquery.functions.fn.transform.Transform.class);
     private static final org.exist.xquery.functions.fn.transform.Transform.ErrorListenerLog4jAdapter ERROR_LISTENER = new Transform.ErrorListenerLog4jAdapter(Transform.LOGGER);
 
     final Convert.ToSaxon toSaxon = new Convert.ToSaxon() {
@@ -161,6 +167,7 @@ public class Transform {
                 }
 
                 final Xslt30Transformer xslt30Transformer = xsltExecutable.load30();
+                xslt30Transformer.setMessageListener(new XsltMessageListener(context.getBroker().getBrokerPool().getSaxonProcessor(), getLogger()));
 
                 options.initialMode.ifPresent(qNameValue -> xslt30Transformer.setInitialMode(Convert.ToSaxon.of(qNameValue.getQName())));
                 xslt30Transformer.setInitialTemplateParameters(options.templateParams, false);
@@ -464,6 +471,19 @@ public class Transform {
         return sourceNode.map(NodeValue::getNode).map(node -> new DOMSource(node, baseURI.getStringValue()));
     }
 
+    /**
+     * Designed to be package-protected accessible so that we can observe logging in tests.
+     *
+     * @param logger the logger to use in testing.
+     */
+    static void setLogger(final Logger logger) {
+        LOGGER = logger;
+    }
+
+    private Logger getLogger() {
+        return LOGGER;
+    }
+
     private static class ErrorListenerLog4jAdapter implements ErrorListener {
         private final Logger logger;
 
@@ -530,6 +550,57 @@ public class Transform {
 
         public PendingException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    private static class XsltMessageListener implements MessageListener {
+
+        private final Processor processor;
+        private final Logger logger;
+
+        public XsltMessageListener(final Processor processor, final Logger logger) {
+            this.processor = processor;
+            this.logger = logger;
+        }
+
+        @Override
+        public void message(final XdmNode content, final boolean terminate, final SourceLocator locator) {
+
+            try (final StringWriter writer = new StringWriter()) {
+                final Serializer serializer = processor.newSerializer();
+                serializer.setOutputProperty(Serializer.Property.OMIT_XML_DECLARATION, "yes");
+                serializer.setOutputWriter(writer);
+                serializer.serializeNode(content);
+
+                @Nullable final String source;
+                final int sourceLine;
+                final int sourceColumn;
+                if (locator != null) {
+                    source = locator.getSystemId();
+                    sourceLine = locator.getLineNumber();
+                    sourceColumn = locator.getColumnNumber();
+                } else {
+                    source = null;
+                    sourceLine = -1;
+                    sourceColumn = -1;
+                }
+
+                final StringBuilder tag = new StringBuilder("<xsl:message terminate=\"" + terminate + "\"");
+                if (notNullOrEmpty(source)) {
+                    tag.append(" source=\"").append(source).append("\"");
+                }
+                if (sourceLine != -1) {
+                    tag.append(" sourceLine=\"").append(sourceLine).append("\"");
+                    tag.append(" sourceColumn=\"").append(sourceColumn).append("\"");
+                }
+                tag.append(">");
+
+                logger.info("{}{}</xsl:message>", tag.toString(), writer.toString());
+            } catch (final SaxonApiException e) {
+                logger.error("Unable to serialize xsl:message content", e);
+            } catch (final IOException e) {
+                logger.error("Unable to close xsl:message writer", e);
+            }
         }
     }
 }
