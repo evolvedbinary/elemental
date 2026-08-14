@@ -277,7 +277,7 @@ public class XPathQueryTest {
     }
 
     @After
-    public void teadDown() throws XMLDBException {
+    public void tearDown() throws XMLDBException {
         testCollection.close();
     }
 

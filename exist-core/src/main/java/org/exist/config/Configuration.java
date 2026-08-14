@@ -54,6 +54,8 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.w3c.dom.Element;
 
+import javax.annotation.Nullable;
+
 /**
  * Configuration interface provide methods to read settings.
  * 
@@ -101,7 +103,7 @@ public interface Configuration {
      * @param property to get the value for
      * @return String value of the requested property
      */
-    String getProperty(String property);
+    @Nullable String getProperty(String property);
 
     /**
      * Return property map value.
@@ -118,7 +120,7 @@ public interface Configuration {
      * @return property integer value
      *
      */
-    Integer getPropertyInteger(String property);
+    @Nullable Integer getPropertyInteger(String property);
 
     /**
      * Return property long value.
@@ -127,7 +129,7 @@ public interface Configuration {
      * @return property long value
      *
      */
-    Long getPropertyLong(String property);
+    @Nullable Long getPropertyLong(String property);
 
     /**
      * Return property boolean value.
@@ -136,7 +138,7 @@ public interface Configuration {
      * @return property boolean value
      * 
      */
-    Boolean getPropertyBoolean(String property);
+    @Nullable Boolean getPropertyBoolean(String property);
 
     /**
      * Keep at internal map object associated with key.
