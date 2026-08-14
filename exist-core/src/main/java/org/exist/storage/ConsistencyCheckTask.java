@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -45,6 +69,8 @@ import org.exist.xquery.Expression;
 import org.exist.xquery.TerminatedException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.util.PropertiesUtil.getBooleanOrYesNoProperty;
+import static org.exist.util.PropertiesUtil.getPositiveIntegerProperty;
 
 public class ConsistencyCheckTask implements SystemTask {
 
@@ -85,7 +111,7 @@ public class ConsistencyCheckTask implements SystemTask {
 
     @Override
     public void configure(final Configuration config, final Properties properties) throws EXistException {
-        exportDir = properties.getProperty(OUTPUT_PROP_NAME, "export");
+        this.exportDir = properties.getProperty(OUTPUT_PROP_NAME, "export");
         Path dir = Paths.get(exportDir);
         if (!dir.isAbsolute()) {
             dir = ((Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR)).resolve(exportDir);
@@ -97,33 +123,24 @@ public class ConsistencyCheckTask implements SystemTask {
             throw new EXistException("Unable to create export directory: " + exportDir, ioe);
         }
 
-        exportDir = dir.toAbsolutePath().toString();
+        this.exportDir = dir.toAbsolutePath().toString();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Using output directory {}", exportDir);
         }
 
-        final String backup = properties.getProperty(BACKUP_PROP_NAME, "no");
-        createBackup = backup.equalsIgnoreCase("YES");
+        this.createBackup = getBooleanOrYesNoProperty(properties, BACKUP_PROP_NAME, false);
+        this.createZip = getBooleanOrYesNoProperty(properties, ZIP_PROP_NAME, true);
+        this.incremental = getBooleanOrYesNoProperty(properties, INCREMENTAL_PROP_NAME, false);
+        this.incrementalCheck = getBooleanOrYesNoProperty(properties, INCREMENTAL_CHECK_PROP_NAME, true);
 
-        final String zip = properties.getProperty(ZIP_PROP_NAME, "yes");
-        createZip = zip.equalsIgnoreCase("YES");
-        
-        final String inc = properties.getProperty(INCREMENTAL_PROP_NAME, "no");
-        incremental = inc.equalsIgnoreCase("YES");
-
-        final String incCheck = properties.getProperty(INCREMENTAL_CHECK_PROP_NAME, "yes");
-        incrementalCheck = incCheck.equalsIgnoreCase("YES");
-
-        final String max = properties.getProperty(MAX_PROP_NAME, "5");
         try {
-            maxInc = Integer.parseInt(max);
+            this.maxInc = getPositiveIntegerProperty(properties, MAX_PROP_NAME, 5);
         } catch (final NumberFormatException e) {
-            throw new EXistException("Parameter 'max' has to be an integer");
+            throw new EXistException("Parameter 'max' has to be an integer: " + e.getMessage());
         }
 
-        final String check = properties.getProperty(CHECK_DOCS_PROP_NAME, "no");
-        checkDocs = check.equalsIgnoreCase("YES");
+        this.checkDocs = getBooleanOrYesNoProperty(properties, CHECK_DOCS_PROP_NAME, false);
     }
 
     @Override

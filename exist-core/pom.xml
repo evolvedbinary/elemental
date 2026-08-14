@@ -759,6 +759,7 @@
                                 <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
+                                <include>src/main/java/org/exist/util/PropertiesUtil.java</include>
                                 <include>src/main/java/org/exist/util/StringUtil.java</include>
                                 <include>src/main/java/org/exist/util/io/AbstractContentFile.java</include>
                                 <include>src/test/java/org/exist/util/serializer/SAXSerializerTest.java</include>
@@ -1073,6 +1074,7 @@
                                 <include>src/test/java/org/exist/storage/CollectionTest.java</include>
                                 <include>src/test/java/org/exist/storage/ConcurrentBrokerPoolTest.java</include>
                                 <include>src/test/java/org/exist/storage/ConcurrentStoreTest.java</include>
+                                <include>src/main/java/org/exist/storage/ConsistencyCheckTask.java</include>
                                 <include>src/test/java/org/exist/storage/CopyCollectionRecoveryTest.java</include>
                                 <include>src/test/java/org/exist/storage/CopyResourceRecoveryTest.java</include>
                                 <include>src/test/java/org/exist/storage/CopyResourceTest.java</include>
@@ -1930,6 +1932,7 @@
                                 <exclude>src/test/java/org/exist/storage/CollectionTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/ConcurrentBrokerPoolTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/ConcurrentStoreTest.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/ConsistencyCheckTask.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/CopyCollectionRecoveryTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/CopyResourceRecoveryTest.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/CopyResourceTest.java</exclude>
@@ -2072,6 +2075,7 @@
                                 <exclude>src/main/java/org/exist/util/MimeType.java</exclude>
                                 <exclude>src/main/java/org/exist/util/OSUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/ParametersExtractor.java</exclude>
+                                <exclude>src/main/java/org/exist/util/PropertiesUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/StringUtil.java</exclude>
                                 <exclude>src/main/java/org/exist/util/UTF8.java</exclude>
                                 <exclude>src/main/java/org/exist/util/XMLFilenameFilter.java</exclude>

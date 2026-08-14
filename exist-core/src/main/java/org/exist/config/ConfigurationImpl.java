@@ -56,7 +56,12 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
+
+import static org.exist.util.PropertiesUtil.getBooleanOrYesNoProperty;
+import static org.exist.util.PropertiesUtil.getIntegerProperty;
+import static org.exist.util.PropertiesUtil.getLongProperty;
 
 /**
  * configuration -&gt; element
@@ -185,7 +190,7 @@ public class ConfigurationImpl implements Configuration {
     }
 
     @Override
-    public String getProperty(String name) {
+    public @Nullable String getProperty(final String name) {
         
         cache();
         
@@ -200,10 +205,11 @@ public class ConfigurationImpl implements Configuration {
 //        return null;
     }
 
-    public String getProperty(String name, String default_property) {
-        final String property = getProperty(name);
-        
-        if (property == null) return default_property;
+    public String getProperty(final String name, final String defaultProperty) {
+        @Nullable final String property = getProperty(name);
+        if (property == null) {
+            return defaultProperty;
+        }
         
         return property;
     }
@@ -280,7 +286,7 @@ public class ConfigurationImpl implements Configuration {
     }
 
     @Override
-    public boolean hasProperty(String name) {
+    public boolean hasProperty(final String name) {
         cache();
         
         return props.containsKey(name);
@@ -290,78 +296,34 @@ public class ConfigurationImpl implements Configuration {
 //        return (getElementsByTagName(name).getLength() == 1);
     }
 
-    public Object getRuntimeProperty(String name) {
+    public Object getRuntimeProperty(final String name) {
         return runtimeProperties.get(name);
     }
 
-    public boolean hasRuntimeProperty(String name) {
+    public boolean hasRuntimeProperty(final String name) {
         return runtimeProperties.containsKey(name);
     }
 
-    public void setRuntimeProperty(String name, Object obj) {
+    public void setRuntimeProperty(final String name, final Object obj) {
         runtimeProperties.put(name, obj);
     }
 
     @Override
-    public Boolean getPropertyBoolean(final String name) {
-        final String value = getProperty(name);
-        if(value == null) {
-            return null;
-        }
-        return switch (value.toLowerCase()) {
-            case "yes", "true" -> true;
-            case "no", "false" -> false;
-            default -> null;
-        };
-    }
-
-    public Boolean getPropertyBoolean(String name, boolean defaultValue) {
-        Boolean value = getPropertyBoolean(name);
-        if(value == null) return defaultValue;
-
-        return value;
+    public @Nullable Boolean getPropertyBoolean(final String name) {
+        cache();
+        return getBooleanOrYesNoProperty(props, name);
     }
 
     @Override
-    public Integer getPropertyInteger(final String name) {
-        final String value = getProperty(name);
-        if (value == null) {
-            return null;
-        }
-        return Integer.valueOf(value);
-    }
-
-    public Integer getPropertyInteger(final String name, final Integer defaultValue, final boolean positive) {
-        final String value = getProperty(name);
-        if (value == null) {
-            return defaultValue;
-        }
-        final int result = Integer.parseInt(value);
-        if ((positive) && (result < 0)) {
-            return defaultValue;
-        }
-        return result;
+    public @Nullable Integer getPropertyInteger(final String name) {
+        cache();
+        return getIntegerProperty(props, name);
     }
 
     @Override
-    public Long getPropertyLong(final String name) {
-        final String value = getProperty(name);
-        if (value == null) {
-            return null;
-        }
-        return Long.valueOf(value);
-    }
-
-    public Long getPropertyLong(final String name, final Long defaultValue, final boolean positive) {
-        final String value = getProperty(name);
-        if (value == null) {
-            return defaultValue;
-        }
-        final long result = Long.parseLong(value);
-        if ((positive) && (result < 0)) {
-            return defaultValue;
-        }
-        return result;
+    public @Nullable Long getPropertyLong(final String name) {
+        cache();
+        return getLongProperty(props, name);
     }
 
     public Integer getPropertyMegabytes(String name, Integer defaultValue) {
