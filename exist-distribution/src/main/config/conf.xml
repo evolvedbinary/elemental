@@ -645,7 +645,7 @@
             Run a consistency check on the database. This will detect inconsistencies
             or corruptions in documents or the collection store. The task can also
             be used to create automatic backups. The backup routine is faster than
-            the one in the standard backup tool and it tries to export as much data
+            the one in the standard backup tool, and it tries to export as much data
             as possible, even if parts of the collection tree are destroyed.
 
             If errors are detected during the consistency check, the job will
@@ -656,11 +656,33 @@
             org.exist.management.tasks:type=SanityReport
 
             Parameters:
-                output  The output directory used by the job. The path is interpreted
-                        relative to the data directory (WEB-INF/data).
+                output              The output directory used by the job. The
+                                    path is interpreted relative to the data
+                                    directory.
 
-                backup  Set to "yes" to create a backup whenever the job runs, not just
-                        when it detects errors.
+                backup              Set to "yes" to create a backup whenever
+                                    the job runs, and not just when it detects
+                                    errors.
+
+                zip                 Set to "yes" to create a zipped backup
+                                    file, or "no" to create a directory
+                                    containing the unzipped backup.
+
+                incremental         Set to "yes" to allow incremental backups,
+                                    or "no" to ensure that a full backup is
+                                    always created.
+
+                incremental-check   Set to "yes" to perform a consistency check
+                                    on incremental backups, or "no" to only
+                                    perform a consistency check on full
+                                    backups.
+
+                incremental-max     The maximum number of incremental backups
+                                    to create between each full backup.
+
+                check-documents     Set to "yes" to perform more exhaustive
+                                    consistency checks on each document. This
+                                    can be a slow process.
         -->
         <!--
         <job type="system" name="check1" 
@@ -668,9 +690,11 @@
             cron-trigger="0 0 * * * ?">
             <parameter name="output" value="export"/>
             <parameter name="backup" value="yes"/>
+            <parameter name="zip" value="yes"/>
             <parameter name="incremental" value="no"/>
-            <parameter name="incremental-check" value="no"/>
-            <parameter name="max" value="2"/>
+            <parameter name="incremental-check" value="yes"/>
+            <parameter name="incremental-max" value="5"/>
+            <parameter name="check-documents" value="no"/>
         </job>
         -->
         
