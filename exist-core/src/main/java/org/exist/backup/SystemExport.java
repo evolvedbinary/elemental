@@ -184,28 +184,27 @@ public class SystemExport {
         return (export(targetDir, incremental, -1, zip, errorList));
     }
 
-
     /**
-     * Export the contents of the database, trying to preserve as much data as possible. To be effective, this method should be used in combination
-     * with class {@link ConsistencyCheck}.
+     * Export the contents of the database, trying to preserve as much data as possible.
+     * To be effective, this method should be used in combination with {@link ConsistencyCheck}.
      *
-     * @param targetDir   the output directory or file to which data will be written. Output will be written to a zip file if target ends with
-     *                    .zip.
-     * @param incremental DOCUMENT ME!
-     * @param maxInc      DOCUMENT ME!
-     * @param zip         DOCUMENT ME!
-     * @param errorList   a list of {@link ErrorReport} objects as returned by methods in {@link ConsistencyCheck}.
-     * @return DOCUMENT ME!
+     * @param outputPath the output directory where the backup will be written.
+     * @param incremental true if an incremental backup should be attempted, otherwise a full backup is performed.
+     * @param incrementalMax the maximum number of incremental backups allowed between each full backup, ignored if a full backup is requested.
+     * @param zip true to write the backup to a zip file, otherwise false to write the backup to a folder.
+     * @param errorList a list to capture {@link ErrorReport} objects as returned by methods in {@link ConsistencyCheck}.
+     *
+     * @return the path to the new backup file or folder.
      */
-    public Path export(final String targetDir, boolean incremental, final int maxInc, final boolean zip, final List<ErrorReport> errorList) {
+    public Path export(final String outputPath, boolean incremental, final int incrementalMax, final boolean zip, final List<ErrorReport> errorList) {
         Path backupFile = null;
 
         try {
-            final BackupDirectory directory = new BackupDirectory(targetDir);
+            final BackupDirectory backupDirectory = new BackupDirectory(outputPath);
             BackupDescriptor prevBackup = null;
 
             if (incremental) {
-                prevBackup = directory.lastBackupFile();
+                prevBackup = backupDirectory.lastBackupFile();
                 LOG.info("Creating incremental backup. Prev backup: {}", (prevBackup == null) ? "none" : prevBackup.getSymbolicPath());
             }
 
@@ -224,7 +223,7 @@ public class SystemExport {
                         try {
                             seqNr = Integer.parseInt(seqNrStr);
 
-                            if (seqNr == maxInc) {
+                            if (seqNr == incrementalMax) {
                                 seqNr = 1;
                                 incremental = false;
                                 prevBackup = null;
@@ -245,7 +244,7 @@ public class SystemExport {
             } catch (final XPathException e) {
             }
 
-            backupFile = directory.createBackup(incremental && (prevBackup != null), zip);
+            backupFile = backupDirectory.createBackup(incremental && (prevBackup != null), zip);
 
             final FunctionE<Path, BackupWriter, IOException> fWriter;
             if (zip) {
