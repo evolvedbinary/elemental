@@ -71,5 +71,8 @@ public interface DatabaseMXBean extends PerInstanceMBean {
 
     long getUptime();
 
+    String getElementalHome();
+
+    @Deprecated
     String getExistHome();
 }

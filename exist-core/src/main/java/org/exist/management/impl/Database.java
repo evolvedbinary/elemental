@@ -145,8 +145,13 @@ public class Database implements DatabaseMXBean {
     }
 
     @Override
+    public String getElementalHome() {
+        return pool.getConfiguration().getElementalHome().map(p -> p.toAbsolutePath().toString()).orElse(null);
+    }
+
+    @Override
     public String getExistHome() {
-        return pool.getConfiguration().getExistHome().map(p -> p.toAbsolutePath().toString()).orElse(null);
+        return getElementalHome();
     }
 
     public String printStackTrace(final Thread thread) {

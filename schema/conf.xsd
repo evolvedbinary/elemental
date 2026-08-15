@@ -964,8 +964,8 @@
                                                 The Java classname of a parser which implements org.xml.sax.XMLReader
                                                 and is capable of parsing HTML and emitting an XML Sax Stream.
                                                 <p/>
-                                                Whichever library you use for this, it must be present on the classpath
-                                                perhaps the best way to do this is to place it into $EXIST_HOME/lib/user
+                                                Whichever library you use for this, it must be present on the classpath.
+                                                See $ELEMENTAL_HOME/lib
                                                 <p/>
                                                 Examples include:
                                                 - org.codelibs.nekohtml.parsers.SAXParser
@@ -1338,8 +1338,8 @@
                         <xs:attribute name="configuration-file" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>
-                                    If `configuration-file` is a relative filename, it is relative to $EXIST_HOME/etc
-                                    (this is the same directory as the eXist-db configuration file `conf.xml`)
+                                    If `configuration-file` is a relative filename, it is relative to $ELEMENTAL_HOME/etc
+                                    (this is the same directory as the Elemental configuration file `conf.xml`)
                                     `configuration-file` may also be an absolute filename.
                                 </xs:documentation>
                             </xs:annotation>

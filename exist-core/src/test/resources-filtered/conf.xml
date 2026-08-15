@@ -47,10 +47,9 @@
 
 -->
 <!--
-    This is the central configuration file for the database. If the database
-    is running in a servlet-context, the configuration file will be read from
-    the WEB-INF directory of the web application. Otherwise, the configuration
-    is read from the directory specified by the exist.home system property.
+    This is the central configuration file for the database.
+    By default, the configuration file will be read from $ELEMENTAL_HOME/etc/conf.xml.
+    Otherwise, the configuration is read from the directory specified by the elemental.home system property.
     
     Structure of this xml document:
     
@@ -689,7 +688,7 @@
                 and is capable of parsing HTML and emitting an XML Sax Stream.
 
                 Whichever library you use for this, it must be present on the classpath
-                perhaps the best way to do this is to place it into $EXIST_HOME/lib/user
+                See $ELEMENTAL_HOME/lib
 
                 Examples include:
                     - org.codelibs.nekohtml.parsers.SAXParser
@@ -868,7 +867,7 @@
             Specify the location of one or more catalog files. Catalogs are 
             used to resolve external entities in XML documents.
             
-            "${WEBAPP_HOME}" and "${EXIST_HOME}" can be used as magic string. 
+            "${WEBAPP_HOME}" and "${ELEMENTAL_HOME}" can be used as magic string.
         -->
         <entity-resolver>
             <catalog uri="${project.build.testOutputDirectory}/org/exist/validation/catalog.xml"/>
@@ -957,8 +956,8 @@
 
     <!-- 
         Load this configuration into Saxon
-        If `configuration-file` is a relative filename, it is relative to $EXIST_HOME/etc
-        (this is the same directory as the eXist-db configuration file `conf.xml`)
+        If `configuration-file` is a relative filename, it is relative to $ELEMENTAL_HOME/etc
+        (this is the same directory as the Elemental configuration file `conf.xml`)
         `configuration-file` may also be an absolute filename.
 
     -->

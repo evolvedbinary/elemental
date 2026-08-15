@@ -2163,7 +2163,7 @@ public class InteractiveClient {
         this.path = options.setCol.orElse(XmldbURI.ROOT_COLLECTION_URI);
 
         // get Elemental home
-        final Optional<Path> home = ConfigurationHelper.getExistHome();
+        final Optional<Path> home = ConfigurationHelper.getElementalHome();
 
         // get default configuration filename from the driver class and set it in properties
         final Optional<Path> configFile = applyDefaultConfig(home);

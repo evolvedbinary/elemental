@@ -94,11 +94,9 @@ public class SyncTask implements SystemTask {
     @Override
     public void configure(final Configuration config, final Properties properties) throws EXistException {
         this.diskSpaceMin = 1024L * 1024L * config.getProperty(BrokerPool.DISK_SPACE_MIN_PROPERTY, BrokerPool.DEFAULT_DISK_SPACE_MIN);
-
-        // fixme! - Shouldn't it be data dir AND journal dir we check
-        // rather than EXIST_HOME? /ljo
-        dataDir = (Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        this.dataDir = (Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
         LOG.info("Using DATA_DIR: {}. Minimal disk space required for database to continue operations: {}mb", dataDir.toAbsolutePath().toString(), diskSpaceMin / 1024 / 1024);
+
         final long space = FileUtils.measureFileStore(dataDir, FileStore::getUsableSpace);
         LOG.info("Usable space on partition containing DATA_DIR: {}: {}mb", dataDir.toAbsolutePath().toString(), space / 1024 / 1024);
     }

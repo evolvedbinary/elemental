@@ -129,7 +129,7 @@ public class Sync extends BasicFunction {
                             new FunctionParameterSequenceType("collection", Type.STRING, Cardinality.EXACTLY_ONE,
                                     "Absolute path to the collection to synchronize to disk."),
                             new FunctionParameterSequenceType("targetPath", Type.ITEM, Cardinality.EXACTLY_ONE,
-                                    "The path or URI to the target directory. Relative paths resolve against EXIST_HOME."),
+                                    "The path or URI to the target directory. Relative paths resolve against ELEMENTAL_HOME."),
                             new FunctionParameterSequenceType("dateTimeOrOptionsMap", Type.ITEM, Cardinality.ZERO_OR_ONE,
                                     "Options as map(*). The available settings are:" +
                                             "\"" + PRUNE_OPT + "\": delete any file/dir that does not correspond to a doc/collection in the DB. " +
@@ -257,7 +257,7 @@ public class Sync extends BasicFunction {
             if (p.isAbsolute()) {
                 targetDir = p;
             } else {
-                final Optional<Path> home = context.getBroker().getConfiguration().getExistHome();
+                final Optional<Path> home = context.getBroker().getConfiguration().getElementalHome();
                 targetDir = FileUtils.resolve(home, target);
             }
 

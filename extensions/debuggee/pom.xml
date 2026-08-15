@@ -187,7 +187,8 @@
                     <systemPropertyVariables>
                         <java.locale.providers>CLDR,SPI</java.locale.providers>
                         <log4j.configurationFile>${project.build.testOutputDirectory}/log4j2.xml</log4j.configurationFile>
-                        <exist.jetty.standalone.webapp.dir>${project.build.testOutputDirectory}/standalone-webapp</exist.jetty.standalone.webapp.dir>
+                        <elemental.configurationFile>${project.build.testOutputDirectory}/conf.xml</elemental.configurationFile>
+                        <elemental.jetty.standalone.webapp.dir>${project.build.testOutputDirectory}/standalone-webapp</elemental.jetty.standalone.webapp.dir>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

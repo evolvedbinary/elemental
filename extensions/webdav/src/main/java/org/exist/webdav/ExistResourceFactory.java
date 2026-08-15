@@ -109,9 +109,9 @@ public class ExistResourceFactory implements ResourceFactory {
         }
 
         try {
-            // 2) try and find overridden config relative to EXIST_HOME/etc
-            final Optional<Path> eXistHome = brokerPool.getConfiguration().getExistHome();
-            final Path config = FileUtils.resolve(eXistHome, "etc").resolve("webdav.properties");
+            // 2) try and find overridden config relative to ELEMENTAL_HOME/etc
+            final Optional<Path> elementalHome = brokerPool.getConfiguration().getElementalHome();
+            final Path config = FileUtils.resolve(elementalHome, "etc").resolve("webdav.properties");
 
             // Read from file if existent
             if (Files.isReadable(config)) {

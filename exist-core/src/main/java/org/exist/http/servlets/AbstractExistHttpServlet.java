@@ -143,7 +143,7 @@ public abstract class AbstractExistHttpServlet extends HttpServlet {
                     )
                     .orElse(Optional.ofNullable(config.getServletContext().getRealPath("/")).map(Paths::get));
 
-            getLog().info("EXistServlet: exist.home={}", dbHome.map(Path::toString).orElse("null"));
+            getLog().info("EXistServlet: elemental.home={}", dbHome.map(Path::toString).orElse("null"));
 
             final Path cf = dbHome.map(h -> h.resolve(confFile)).orElse(Paths.get(confFile));
             getLog().info("Reading configuration from {}", cf.toAbsolutePath().toString());

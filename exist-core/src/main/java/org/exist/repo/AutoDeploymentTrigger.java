@@ -100,7 +100,7 @@ public class AutoDeploymentTrigger implements StartupTrigger {
             if (dir != null) {
                 autodeployDir = Paths.get(dir);
             } else {
-                final Optional<Path> homeDir = sysBroker.getConfiguration().getExistHome();
+                final Optional<Path> homeDir = sysBroker.getConfiguration().getElementalHome();
                 autodeployDir = FileUtils.resolve(homeDir, AUTODEPLOY_DIRECTORY);
             }
         }

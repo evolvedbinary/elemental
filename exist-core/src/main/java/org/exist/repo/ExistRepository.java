@@ -122,7 +122,7 @@ public class ExistRepository extends Observable implements BrokerPoolService {
     @Override
     public void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
         if (!Files.exists(expathDir) && brokerPool != null) {
-            moveOldRepo(brokerPool.getConfiguration().getExistHome(), expathDir);
+            moveOldRepo(brokerPool.getConfiguration().getElementalHome(), expathDir);
         }
         try {
             Files.createDirectories(expathDir);
@@ -376,7 +376,7 @@ public class ExistRepository extends Observable implements BrokerPoolService {
         final Path expathDir = dataDir.resolve(EXPATH_REPO_DIR_NAME);
 
         if(!Files.exists(expathDir)) {
-            moveOldRepo(config.getExistHome(), expathDir);
+            moveOldRepo(config.getElementalHome(), expathDir);
         }
         Files.createDirectories(expathDir);
         return expathDir;

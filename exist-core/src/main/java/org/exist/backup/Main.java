@@ -227,7 +227,7 @@ public class Main {
         }
 
         // load MediaTypeResolver
-        final Optional<Path> existHome = ConfigurationHelper.getExistHome();
+        final Optional<Path> existHome = ConfigurationHelper.getElementalHome();
         @Nullable final Path applicationConfigDir = existHome.map(p -> p.resolve("etc")).filter(Files::exists).orElse(null);
         @Nullable final MediaTypeResolver mediaTypeResolver = MediaTypeUtil.newMediaTypeResolver(applicationConfigDir);
 

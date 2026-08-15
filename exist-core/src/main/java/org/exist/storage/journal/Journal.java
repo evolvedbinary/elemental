@@ -275,7 +275,7 @@ public final class Journal implements Closeable {
         if (logDir.isPresent()) {
             Path f = logDir.get();
             if (!f.isAbsolute()) {
-                f = configuration.getExistHome()
+                f = configuration.getElementalHome()
                         .map(h -> Optional.of(h.resolve(logDir.get())))
                         .orElse(configuration.getConfigFilePath().map(p -> p.getParent().resolve(logDir.get())))
                         .orElse(f);
