@@ -111,7 +111,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -126,39 +125,32 @@ import static org.exist.util.io.ContentFilePool.PROPERTY_IN_MEMORY_SIZE;
 import static org.exist.util.io.VirtualTempPath.DEFAULT_IN_MEMORY_SIZE;
 
 
-public class Configuration implements ErrorHandler
-{
-    private final static Logger       LOG            = LogManager.getLogger(Configuration.class); //Logger
-    protected Optional<Path>          configFilePath = Optional.empty();
-    protected Optional<Path>          existHome      = Optional.empty();
-
-    protected DocumentBuilder         builder        = null;
-    protected HashMap<String, Object> config         = new HashMap<>(); //Configuration
-
+public class Configuration implements ErrorHandler {
+    public final static String BINARY_CACHE_CLASS_PROPERTY = "binary.cache.class";
     private static final String PRP_DETAILS = "{}: {}";
+    private static final Logger LOG = LogManager.getLogger(Configuration.class); //Logger
     private static final String XQUERY_CONFIGURATION_ELEMENT_NAME = "xquery";
     private static final String XQUERY_BUILTIN_MODULES_CONFIGURATION_MODULES_ELEMENT_NAME = "builtin-modules";
     private static final String XQUERY_BUILTIN_MODULES_CONFIGURATION_MODULE_ELEMENT_NAME = "module";
-    
-    public final static String BINARY_CACHE_CLASS_PROPERTY = "binary.cache.class";
-    
+
+    private final Map<String, Object> config = new HashMap<>(); //Configuration
+
+    protected Optional<Path> configFilePath = Optional.empty();
+    protected Optional<Path> elementalHome = Optional.empty();
+
     public Configuration() throws DatabaseConfigurationException {
         this(DatabaseImpl.CONF_XML, Optional.empty());
     }
 
-
-    public Configuration(final String configFilename) throws DatabaseConfigurationException {
+    public Configuration(@Nullable final String configFilename) throws DatabaseConfigurationException {
         this(configFilename, Optional.empty());
     }
 
-
-    public Configuration(String configFilename, Optional<Path> existHomeDirname) throws DatabaseConfigurationException {
+    public Configuration(@Nullable String configFilename, Optional<Path> elementalHomeDirname)
+        throws DatabaseConfigurationException {
         InputStream is = null;
         try {
-
-            existHomeDirname = existHomeDirname.map(Path::normalize);
-
-            if(configFilename == null) {
+            if (configFilename == null) {
                 // Default file name
                 configFilename = DatabaseImpl.CONF_XML;
             }
@@ -189,32 +181,35 @@ public class Configuration implements ErrorHandler
                 LOG.debug(e);
             }
 
+            elementalHomeDirname = elementalHomeDirname.map(Path::normalize);
+
             // otherwise, secondly try to read configuration from file. Guess the
             // location if necessary
-            if(is == null) {
-                existHome = existHomeDirname.map(Optional::of).orElse(ConfigurationHelper.getExistHome(configFilename));
+            if (is == null) {
+                elementalHome = elementalHomeDirname.map(Optional::of)
+                    .orElse(ConfigurationHelper.getElementalHome(configFilename));
 
-                if(!existHome.isPresent()) {
+                if (!elementalHome.isPresent()) {
 
-                    // EB: try to create existHome based on location of config file
+                    // EB: try to create elementalHome based on location of config file
                     // when config file points to absolute file location
                     final Path absoluteConfigFile = Paths.get(configFilename);
 
                     if(absoluteConfigFile.isAbsolute() && Files.exists(absoluteConfigFile) && Files.isReadable(absoluteConfigFile)) {
-                        existHome = Optional.of(absoluteConfigFile.getParent());
+                        elementalHome = Optional.of(absoluteConfigFile.getParent());
                         configFilename = FileUtils.fileName(absoluteConfigFile);
                     }
                 }
 
                 Path configFile = Paths.get(configFilename);
 
-                if(!configFile.isAbsolute() && existHome.isPresent()) {
+                if (!configFile.isAbsolute() && elementalHome.isPresent()) {
 
-                    // try the passed or constructed existHome first
-                    configFile = existHome.get().resolve(configFilename);
+                    // try the passed or constructed elementalHome first
+                    configFile = elementalHome.get().resolve(configFilename);
 
                     if (!Files.exists(configFile)) {
-                        configFile = existHome.get().resolve(Main.CONFIG_DIR_NAME).resolve(configFilename);
+                        configFile = elementalHome.get().resolve(Main.CONFIG_DIR_NAME).resolve(configFilename);
                     }
                 }
 
@@ -232,11 +227,10 @@ public class Configuration implements ErrorHandler
 
             LOG.info("Reading configuration from file {}", configFilePath.map(Path::toString).orElse("Unknown"));
 
-            // set dbHome to parent of the conf file found, to resolve relative
-            // path from conf file
-            existHomeDirname = configFilePath.map(Path::getParent);
+            // set dbHome to parent of the conf file found, to resolve relative path from conf file
+            final Optional<Path> elementalHomePath = configFilePath.map(Path::getParent);
 
-            loadConfigFile(is, existHomeDirname);
+            loadConfigFile(is, elementalHomePath);
 
         } catch (final SAXException | IOException | ParserConfigurationException e) {
             LOG.error("Error while reading config file: {}", configFilename, e);
@@ -244,21 +238,19 @@ public class Configuration implements ErrorHandler
         }
     }
 
-    public Configuration(final InputStream config, final Optional<Path> existHomePath) throws DatabaseConfigurationException {
+    public Configuration(final InputStream config, final Optional<Path> elementalHome) throws DatabaseConfigurationException {
         try {
-            this.existHome = existHomePath;
-            loadConfigFile(config, existHome);
+            this.elementalHome = elementalHome;
+            loadConfigFile(config, elementalHome);
         } catch (final SAXException | IOException | ParserConfigurationException e) {
             LOG.error("Error while reading config file: {}", e.getMessage(), e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
         }
     }
 
-    private void loadConfigFile(final InputStream is, final Optional<Path> existHomePath) throws ParserConfigurationException, IOException, SAXException, DatabaseConfigurationException {
-
+    private void loadConfigFile(final InputStream is, final Optional<Path> elementalHomePath) throws ParserConfigurationException, IOException, SAXException, DatabaseConfigurationException {
         // initialize xml parser
-        // we use eXist's in-memory DOM implementation to work
-        // around a bug in Xerces
+        // we use eXist's in-memory DOM implementation to work around a bug in Xerces
         final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
         factory.setNamespaceAware(true);
 
@@ -280,7 +272,7 @@ public class Configuration implements ErrorHandler
         //indexer settings
         final NodeList indexers = doc.getElementsByTagName(Indexer.CONFIGURATION_ELEMENT_NAME);
         if(indexers.getLength() > 0) {
-            configureIndexer(existHomePath, doc, (Element)indexers.item( 0 ) );
+            configureIndexer(elementalHomePath, doc, (Element)indexers.item( 0 ) );
         }
 
         //scheduler settings
@@ -292,7 +284,7 @@ public class Configuration implements ErrorHandler
         //db connection settings
         final NodeList dbcon = doc.getElementsByTagName(BrokerPool.CONFIGURATION_CONNECTION_ELEMENT_NAME);
         if(dbcon.getLength() > 0) {
-            configureBackend(existHomePath, (Element)dbcon.item(0));
+            configureBackend(elementalHomePath, (Element)dbcon.item(0));
         }
 
         // lock-table settings
@@ -346,7 +338,7 @@ public class Configuration implements ErrorHandler
         //Validation
         final NodeList validations = doc.getElementsByTagName(XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME);
         if(validations.getLength() > 0) {
-            configureValidation(existHomePath, (Element)validations.item(0));
+            configureValidation(elementalHomePath, (Element)validations.item(0));
         }
 
         //RPC server
@@ -1520,6 +1512,9 @@ public class Configuration implements ErrorHandler
                     if (uri.indexOf("${WEBAPP_HOME}") != -1) {
                         uri = uri.replaceAll("\\$\\{WEBAPP_HOME\\}", webappHome.toUri().toString());
                     }
+                    if (uri.indexOf("${ELEMENTAL_HOME}") != -1) {
+                        uri = uri.replaceAll("\\$\\{ELEMENTAL_HOME\\}", dbHome.toString());
+                    }
                     if (uri.indexOf("${EXIST_HOME}") != -1) {
                         uri = uri.replaceAll("\\$\\{EXIST_HOME\\}", dbHome.toString());
                     }
@@ -1632,9 +1627,25 @@ public class Configuration implements ErrorHandler
         return configFilePath;
     }
 
+    /**
+     * Get the value of ELEMENTAL_HOME.
+     *
+     * @return the path to ELEMENTAL_HOME.
+     */
+    public Optional<Path> getElementalHome() {
+        return elementalHome;
+    }
 
+    /**
+     * Get the value of ELEMENTAL_HOME.
+     *
+     * @return the path to ELEMENTAL_HOME.
+     *
+     * @deprecated use {@link #getElementalHome()} ()}.
+     */
+    @Deprecated
     public Optional<Path> getExistHome() {
-        return existHome;
+        return getElementalHome();
     }
 
 
@@ -1649,7 +1660,6 @@ public class Configuration implements ErrorHandler
     public boolean hasProperty(final String name) {
         return config.containsKey(name);
     }
-
 
     public void setProperty(final String name, final Object obj) {
         config.put(name, obj);

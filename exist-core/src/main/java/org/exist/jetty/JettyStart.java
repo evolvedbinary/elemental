@@ -69,7 +69,6 @@ import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.FileUtils;
 import org.exist.util.OSUtil;
-import org.exist.util.SingleInstanceConfiguration;
 import org.exist.util.SystemExitCodes;
 import org.exist.validation.XmlLibraryChecker;
 import org.exist.xmldb.DatabaseImpl;
@@ -191,7 +190,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
     public synchronized void run(final boolean standalone) {
         final String jettyHome = Optional.ofNullable(System.getProperty(JETTY_HOME_PROP))
                 .orElseGet(() -> {
-                    final Optional<Path> home = ConfigurationHelper.getExistHome();
+                    final Optional<Path> home = ConfigurationHelper.getElementalHome();
                     final Path toolsJetty = FileUtils.resolve(home, "tools").resolve("jetty");
                     final String jettyPath = toolsJetty.toAbsolutePath().toString();
                     System.setProperty(JETTY_HOME_PROP, jettyPath);
@@ -275,16 +274,17 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             logger.info("[Elemental Build: {}]", SystemProperties.getInstance().getSystemProperty("product-build", "unknown"));
             logger.info("[Elemental Git commit: {}]", SystemProperties.getInstance().getSystemProperty("git-commit", "unknown"));
             logger.info("[Elemental Git commit timestamp: {}]", SystemProperties.getInstance().getSystemProperty("git-commit-timestamp", "unknown"));
-            logger.info("[Elemental Home: {}]", System.getProperty("exist.home", "unknown"));
+            logger.info("[Elemental Home: {}]", System.getProperty("elemental.home", System.getProperty("exist.home", "unknown")));
 
             // configure the database instance
-            SingleInstanceConfiguration config;
+            final String configFilename;
             if (args.length == 2) {
-                config = new SingleInstanceConfiguration(args[1]);
+                configFilename = args[1];
             } else {
-                config = new SingleInstanceConfiguration();
+                configFilename = "conf.xml";
             }
-            final String elementalConfigPath = config.getConfigFilePath()
+            final Configuration configuration = new Configuration(configFilename);
+            final String elementalConfigPath = configuration.getConfigFilePath()
                 .map(Path::normalize).map(Path::toAbsolutePath).map(Path::toString)
                 .orElse("<UNKNOWN>");
             logger.info("[Elemental Configuration: {}]", elementalConfigPath);
@@ -301,7 +301,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
                 final Object additionalElementalConfigPropertyValue = additionalElementalConfigProperty.getValue();
                 if (AUTODEPLOY_PROPERTY.equals(additionalElementalConfigPropertyKey) && "off".equals(additionalElementalConfigPropertyValue)) {
                     // remove auto deploy from config if present
-                    final List<Configuration.StartupTriggerConfig> configuredStartupTriggers = (List<Configuration.StartupTriggerConfig>) config.getProperty(BrokerPoolConstants.PROPERTY_STARTUP_TRIGGERS);
+                    final List<Configuration.StartupTriggerConfig> configuredStartupTriggers = (List<Configuration.StartupTriggerConfig>) configuration.getProperty(BrokerPoolConstants.PROPERTY_STARTUP_TRIGGERS);
                     for (final Configuration.StartupTriggerConfig configuredStartupTrigger : configuredStartupTriggers) {
                         if (AutoDeploymentTrigger.class.getName().equals(configuredStartupTrigger.getClazz())) {
                             configuredStartupTriggers.remove(configuredStartupTrigger);
@@ -310,11 +310,11 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
                     }
 
                 } else {
-                    config.setProperty(additionalElementalConfigPropertyKey.toString(), additionalElementalConfigPropertyValue);
+                    configuration.setProperty(additionalElementalConfigPropertyKey.toString(), additionalElementalConfigPropertyValue);
                 }
             }
 
-            BrokerPool.configure(1, 5, config, Optional.ofNullable(observer));
+            BrokerPool.configure(1, 5, configuration, Optional.ofNullable(observer));
 
             // register the XMLDB driver
             final Database xmldb = new DatabaseImpl();

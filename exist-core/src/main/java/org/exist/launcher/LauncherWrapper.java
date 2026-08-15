@@ -156,7 +156,7 @@ public class LauncherWrapper {
         System.out.println(buf.toString());
 
         final ProcessBuilder pb = new ProcessBuilder(args);
-        final Optional<Path> home = ConfigurationHelper.getExistHome();
+        final Optional<Path> home = ConfigurationHelper.getElementalHome();
         pb.directory(home.orElse(Paths.get(".")).toFile());
         pb.redirectErrorStream(true);
         pb.inheritIO();
@@ -194,16 +194,16 @@ public class LauncherWrapper {
         final Properties sysProps = System.getProperties();
         for (final Map.Entry<Object, Object> entry : sysProps.entrySet()) {
             final String key = entry.getKey().toString();
-            if (key.startsWith("exist.") || key.startsWith("log4j.") || key.startsWith("jetty.") || key.startsWith("app.")) {
+            if (key.startsWith("elemental.") || key.startsWith("exist.") || key.startsWith("log4j.") || key.startsWith("jetty.") || key.startsWith("app.")) {
                 args.add("-D" + key + "=" + entry.getValue().toString());
-                if (key.equals("exist.home")) {
+                if (key.equals("elemental.home") || key.equals("exist.home")) {
                     foundExistHomeSysProp = true;
                 }
             }
         }
 
         if (!foundExistHomeSysProp) {
-            args.add("-Dexist.home=\".\"");
+            args.add("-Delemental.home=\".\"");
         }
 
         if (command.equals(LAUNCHER) && "mac os x".equals(OS)) {

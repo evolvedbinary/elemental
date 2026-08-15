@@ -615,7 +615,7 @@ public class NativeBroker extends DBBroker {
         try {
 
             // 1) try and load from etc/ dir
-            final Path fInitCollectionConfig = pool.getConfiguration().getExistHome()
+            final Path fInitCollectionConfig = pool.getConfiguration().getElementalHome()
                     .map(h -> h.resolve("etc").resolve(INIT_COLLECTION_CONFIG))
                     .orElse(Paths.get("etc").resolve(INIT_COLLECTION_CONFIG));
             if (Files.exists(fInitCollectionConfig)) {

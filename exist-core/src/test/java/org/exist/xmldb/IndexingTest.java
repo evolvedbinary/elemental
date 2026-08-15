@@ -103,7 +103,6 @@ public class IndexingTest {
     private static String username = "admin";
     private static String password = ""; // <<<
     private static String name = "test.xml";
-    private String EXIST_HOME = ""; // <<<
     private int effectiveSiblingCount;
     @SuppressWarnings("unused")
     private int effectiveDepth;

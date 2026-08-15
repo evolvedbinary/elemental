@@ -113,6 +113,7 @@
                                 <include>pom.xml</include>
                                 <include>src/main/java/org/exist/start/CompatibleJavaVersionCheck.java</include>
                                 <include>src/test/java/org/exist/start/CompatibleJavaVersionCheckTest.java</include>
+                                <include>src/main/java/org/exist/start/LatestFileResolver.java</include>
                             </includes>
                         </licenseSet>
 
@@ -127,6 +128,7 @@
                                 <exclude>src/main/java/org/exist/start/Classpath.java</exclude>
                                 <exclude>src/main/java/org/exist/start/CompatibleJavaVersionCheck.java</exclude>
                                 <exclude>src/test/java/org/exist/start/CompatibleJavaVersionCheckTest.java</exclude>
+                                <exclude>src/main/java/org/exist/start/LatestFileResolver.java</exclude>
                                 <exclude>src/main/java/org/exist/start/Main.java</exclude>
                                 <exclude>src/main/java/org/exist/start/Version.java</exclude>
                             </excludes>

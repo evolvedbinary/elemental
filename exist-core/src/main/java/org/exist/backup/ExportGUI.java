@@ -115,10 +115,10 @@ public class ExportGUI extends javax.swing.JFrame {
     public ExportGUI() {
         super("Consistency Check and Repair");
         initComponents();
-        final String existHome = System.getProperty("exist.home", "./");
+        final String existHome = System.getProperty("elemental.home", System.getProperty("exist.home", "./"));
         final Path home = Paths.get(existHome).normalize();
         dbConfig.setText(
-                Optional.ofNullable(System.getProperty("exist.configurationFile")).map(Paths::get)
+                Optional.ofNullable(System.getProperty("elemental.configurationFile", System.getProperty("exist.configurationFile"))).map(Paths::get)
                         .orElse(home.resolve("etc").resolve("conf.xml"))
                         .toAbsolutePath().toString());
         outputDir.setText(home.resolve("export").toAbsolutePath().toString());
@@ -423,7 +423,7 @@ public class ExportGUI extends javax.swing.JFrame {
         final JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        chooser.setSelectedFile(Optional.ofNullable(System.getProperty("exist.configurationFile"))
+        chooser.setSelectedFile(Optional.ofNullable(System.getProperty("elemental.configurationFile", System.getProperty("exist.configurationFile")))
                 .map(Paths::get)
                 .orElse(dir.resolve("etc").resolve("conf.xml"))
                 .toFile());

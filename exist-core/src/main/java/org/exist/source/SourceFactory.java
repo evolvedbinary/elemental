@@ -340,11 +340,11 @@ public class SourceFactory {
 
         if (source == null) {
             /*
-             * Lastly we try to load it using EXIST_HOME as the reference point
+             * Lastly we try to load it using ELEMENTAL_HOME as the reference point
              */
             Path p8 = null;
             try {
-                p8 = FileUtils.resolve(BrokerPool.getInstance().getConfiguration().getExistHome(), locationPath);
+                p8 = FileUtils.resolve(BrokerPool.getInstance().getConfiguration().getElementalHome(), locationPath);
                 if (Files.isReadable(p8)) {
                     locationPath = p8.toUri().toASCIIString();
                     source = new FileSource(p8, checkXQEncoding);

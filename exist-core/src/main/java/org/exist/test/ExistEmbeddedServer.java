@@ -123,7 +123,7 @@ public class ExistEmbeddedServer extends ExternalResource {
 
     public ExistEmbeddedServer(@Nullable final String instanceName, @Nullable final Path configFile, @Nullable final Properties configProperties, final boolean disableAutoDeploy, final boolean useTemporaryStorage) {
         this.instanceName = instanceName != null ? instanceName : BrokerPool.DEFAULT_INSTANCE_NAME;
-        this.home = Paths.get(System.getProperty("exist.home", System.getProperty("user.dir")));
+        this.home = Paths.get(System.getProperty("elemental.home", System.getProperty("exist.home", System.getProperty("user.dir"))));
         this.configFile = configFile != null ? configFile : ConfigurationHelper.lookup("conf.xml", Optional.of(home));
         this.configProperties = configProperties != null ? configProperties : new Properties();
         this.disableAutoDeploy = disableAutoDeploy;

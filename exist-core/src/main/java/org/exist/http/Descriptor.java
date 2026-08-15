@@ -51,7 +51,6 @@ import org.exist.Namespaces;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.ExistSAXParserFactory;
-import org.exist.util.SingleInstanceConfiguration;
 import org.exist.xquery.Expression;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -104,6 +103,7 @@ public class Descriptor implements ErrorHandler {
     private boolean requestsFiltered;
     private String allowSourceList[] = null;    //Array of xql files to allow source to be viewed
     private String mapList[][] = null;                    //Array of Mappings
+    private String webappDir;
 
     /**
      * Descriptor Constructor.
@@ -140,6 +140,8 @@ public class Descriptor implements ErrorHandler {
                     return;
                 }
             }
+
+            this.webappDir = ConfigurationHelper.getElementalHome().map(elementalHome -> elementalHome.resolve("etc")).map(etc -> etc.resolve("webapp")).orElseGet(() -> Paths.get(".")).normalize().toAbsolutePath().toString().replace('\\', '/');
 
             // initialize xml parser
             // we use eXist's in-memory DOM implementation to work
@@ -234,8 +236,8 @@ public class Descriptor implements ErrorHandler {
                 LOG.warn("Error element 'xquery' requires an attribute 'path'");
                 return;
             }
-            path = path.replaceAll("\\$\\{WEBAPP_HOME\\}",
-                    SingleInstanceConfiguration.getWebappHome().orElse(Paths.get(".")).toAbsolutePath().toString().replace('\\', '/'));
+
+            path = path.replaceAll("\\$\\{WEBAPP_HOME\\}", webappDir);
 
             //store the path
             allowSourceList[i] = path;
@@ -270,16 +272,14 @@ public class Descriptor implements ErrorHandler {
                 LOG.warn("Error element 'map' requires an attribute 'path' or an attribute 'pattern'");
                 return;
             }
-            path = path.replaceAll("\\$\\{WEBAPP_HOME\\}",
-                    SingleInstanceConfiguration.getWebappHome().orElse(Paths.get(".")).toAbsolutePath().toString().replace('\\', '/'));
+            path = path.replaceAll("\\$\\{WEBAPP_HOME\\}", webappDir);
 
             //must be a view to map to
             if (view.isEmpty()) {
                 LOG.warn("Error element 'map' requires an attribute 'view'");
                 return;
             }
-            view = view.replaceAll("\\$\\{WEBAPP_HOME\\}",
-                    SingleInstanceConfiguration.getWebappHome().orElse(Paths.get(".")).toAbsolutePath().toString().replace('\\', '/'));
+            view = view.replaceAll("\\$\\{WEBAPP_HOME\\}", webappDir);
 
             //store what to map from
            /* if(path != null)
