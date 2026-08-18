@@ -679,6 +679,13 @@
                 incremental-max     The maximum number of incremental backups
                                     to create between each full backup.
 
+                full-max            The maximum number of full backups to keep
+                                    on disk before creating a new backup erases
+                                    the oldest backup. Set to -1 to create
+                                    unlimited full backups. If a full backup
+                                    is removed, any incremental backups for
+                                    that full backup will also be removed.
+
                 check-documents     Set to "yes" to perform more exhaustive
                                     consistency checks on each document. This
                                     can be a slow process.
@@ -693,6 +700,7 @@
             <parameter name="incremental" value="no"/>
             <parameter name="incremental-check" value="yes"/>
             <parameter name="incremental-max" value="5"/>
+            <parameter name="full-max" value="-1"/>
             <parameter name="check-documents" value="no"/>
         </job>
         -->

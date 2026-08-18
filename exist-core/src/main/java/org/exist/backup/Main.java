@@ -73,6 +73,7 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.prefs.Preferences;
 
+import static org.exist.backup.BackupDescriptor.BACKUP_PROPERTIES;
 import static org.exist.util.ArgumentUtil.getBool;
 import static org.exist.util.ArgumentUtil.getOpt;
 import static se.softhouse.jargo.Arguments.*;
@@ -161,15 +162,15 @@ public class Main {
 
     private static Properties loadProperties() {
         try {
-            final Properties properties = ConfigurationHelper.loadProperties("backup.properties", Main.class);
+            final Properties properties = ConfigurationHelper.loadProperties(BACKUP_PROPERTIES, Main.class);
             if (properties != null) {
                 return properties;
             }
 
-            System.err.println("WARN - Unable to find backup.properties");
+            System.err.println("WARN - Unable to find " + BACKUP_PROPERTIES);
 
         } catch (final IOException e) {
-            System.err.println("WARN - Unable to load backup.properties: " + e.getMessage());
+            System.err.println("WARN - Unable to load " + BACKUP_PROPERTIES + ": " + e.getMessage());
         }
 
         // return new empty properties

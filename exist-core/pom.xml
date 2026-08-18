@@ -808,9 +808,11 @@
                                 <include>src/test/java/org/exist/TestDataGenerator.java</include>
                                 <include>src/main/java/org/exist/TestUtils.java</include>
                                 <include>src/main/java/org/exist/backup/Backup.java</include>
+                                <include>src/main/java/org/exist/backup/BackupDirectory.java</include>
                                 <include>src/main/java/org/exist/backup/CreateBackupDialog.java</include>
                                 <include>src/test/java/org/exist/backup/DeepEmbeddedBackupRestoreTest.java</include>
                                 <include>src/main/java/org/exist/backup/ExportGUI.java</include>
+                                <include>src/main/java/org/exist/backup/FileSystemWriter.java</include>
                                 <include>src/main/java/org/exist/backup/Main.java</include>
                                 <include>src/main/java/org/exist/backup/Restore.java</include>
                                 <include>src/test/java/org/exist/backup/RestoreAppsTest.java</include>
@@ -1637,9 +1639,11 @@
                                 <exclude>src/test/java/org/exist/TestDataGenerator.java</exclude>
                                 <exclude>src/main/java/org/exist/TestUtils.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/Backup.java</exclude>
+                                <exclude>src/main/java/org/exist/backup/BackupDirectory.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/CreateBackupDialog.java</exclude>
                                 <exclude>src/test/java/org/exist/backup/DeepEmbeddedBackupRestoreTest.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/ExportGUI.java</exclude>
+                                <exclude>src/main/java/org/exist/backup/FileSystemWriter.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/Main.java</exclude>
                                 <exclude>src/main/java/org/exist/backup/Restore.java</exclude>
                                 <exclude>src/test/java/org/exist/backup/RestoreAppsTest.java</exclude>
