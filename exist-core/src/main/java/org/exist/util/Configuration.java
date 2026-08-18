@@ -1317,12 +1317,12 @@ public class Configuration implements ErrorHandler {
         }
     }
 
-    private void configureRpcServer(final Element validation) throws DatabaseConfigurationException {
-        configureElement(validation, "content-file", element ->
+    private void configureRpcServer(final Element rpcServer) throws DatabaseConfigurationException {
+        configureElement(rpcServer, "content-file", element ->
             configureProperty(element, "in-memory-size", PROPERTY_IN_MEMORY_SIZE, Configuration::asInteger, DEFAULT_IN_MEMORY_SIZE)
         );
-        configureElement(validation, "content-file-pool", element -> {
-            configureProperty(element, "size", ContentFilePool.PROPERTY_POOL_SIZE, Configuration::asInteger, -1);
+        configureElement(rpcServer, "content-file-pool", element -> {
+            configureProperty(element, "size", ContentFilePool.PROPERTY_POOL_SIZE, Configuration::asInteger, 10);
             configureProperty(element, "max-idle", ContentFilePool.PROPERTY_POOL_MAX_IDLE, Configuration::asInteger, 5);
         });
     }

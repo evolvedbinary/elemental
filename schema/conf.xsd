@@ -628,7 +628,7 @@
                 <xs:element name="indexer">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="modules">
+                            <xs:element name="modules" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="module" maxOccurs="unbounded">
@@ -687,7 +687,7 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="index">
+                            <xs:element name="index" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="create" minOccurs="0" maxOccurs="unbounded">
@@ -765,7 +765,7 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="scheduler">
+                <xs:element name="scheduler" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="job" minOccurs="0" maxOccurs="unbounded">
@@ -1199,7 +1199,7 @@
                 <xs:element name="xquery">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="builtin-modules">
+                            <xs:element name="builtin-modules" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="module" maxOccurs="unbounded">
@@ -1328,7 +1328,7 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="saxon">
+                <xs:element name="saxon" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>
                             Load this configuration into Saxon
