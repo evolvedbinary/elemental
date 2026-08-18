@@ -56,6 +56,8 @@ import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static org.exist.backup.BackupDescriptor.BACKUP_PROPERTIES;
+
 
 /**
  * Implementation of BackupWriter that writes to a zip file.
@@ -152,7 +154,7 @@ public class ZipWriter implements BackupWriter
         if( dataWritten ) {
             throw( new IOException( "Backup properties need to be set before any backup data is written" ) );
         }
-        final ZipEntry entry = new ZipEntry( "backup.properties" );
+        final ZipEntry entry = new ZipEntry(BACKUP_PROPERTIES);
         out.putNextEntry( entry );
         try {
             properties.store(out, "Backup properties");

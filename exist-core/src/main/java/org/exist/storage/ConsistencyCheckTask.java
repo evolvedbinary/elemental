@@ -72,6 +72,7 @@ import javax.annotation.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.util.PropertiesUtil.getBooleanOrYesNoProperty;
+import static org.exist.util.PropertiesUtil.getIntegerProperty;
 import static org.exist.util.PropertiesUtil.getPositiveIntegerProperty;
 
 public class ConsistencyCheckTask implements SystemTask {
@@ -85,6 +86,7 @@ public class ConsistencyCheckTask implements SystemTask {
     private boolean incremental = false;
     private boolean incrementalCheck = false;
     private int incrementalMax = -1;
+    private int fullMax = -1;
     private boolean checkDocuments = false;
 
     private Path lastExportedBackup = null;
@@ -98,6 +100,7 @@ public class ConsistencyCheckTask implements SystemTask {
     public final static String INCREMENTAL_CHECK_PROP_NAME = "incremental-check";
     public final static String INCREMENTAL_MAX_PROP_NAME = "incremental-max";
     @Deprecated public final static String LEGACY_INCREMENTAL_MAX_PROP_NAME = "max";
+    public final static String FULL_MAX_PROP_NAME = "full-max";
     public final static String CHECK_DOCS_PROP_NAME = "check-documents";
 
     private final static LoggingCallback logCallback = new LoggingCallback();
@@ -146,6 +149,12 @@ public class ConsistencyCheckTask implements SystemTask {
             }
         } catch (final NumberFormatException e) {
             throw new EXistException("Parameter 'incremental-max' has to be a positive integer: " + e.getMessage());
+        }
+
+        try {
+            this.fullMax = getIntegerProperty(properties, FULL_MAX_PROP_NAME, -1);
+        } catch (final NumberFormatException e) {
+            throw new EXistException("Parameter 'full-max' has to be an integer: " + e.getMessage());
         }
 
         this.checkDocuments = getBooleanOrYesNoProperty(properties, CHECK_DOCS_PROP_NAME, false);
@@ -204,7 +213,7 @@ public class ConsistencyCheckTask implements SystemTask {
                 LOG.info("Starting backup...");
 
                 final SystemExport sysexport = new SystemExport(broker, transaction, logCallback, monitor, false);
-                lastExportedBackup = sysexport.export(outputDir, incremental, incrementalMax, createZip, errors);
+                lastExportedBackup = sysexport.export(outputDir, incremental, incrementalMax, fullMax, createZip, errors);
                 agentInstance.changeStatus(brokerPool, new TaskStatus(TaskStatus.Status.RUNNING_BACKUP));
 
                 if (lastExportedBackup != null) {

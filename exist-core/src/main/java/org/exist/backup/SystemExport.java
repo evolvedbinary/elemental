@@ -95,6 +95,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.NamespaceSupport;
 import xyz.elemental.mediatype.MediaType;
 
+import javax.annotation.Nullable;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.OutputKeys;
@@ -106,6 +107,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.util.PropertiesUtil.getIntegerProperty;
 
 
 /**
@@ -178,7 +180,7 @@ public class SystemExport {
     }
 
     public Path export(final String targetDir, final boolean incremental, final boolean zip, final List<ErrorReport> errorList) {
-        return (export(targetDir, incremental, -1, zip, errorList));
+        return (export(targetDir, incremental, -1, -1, zip, errorList));
     }
 
     /**
@@ -188,12 +190,14 @@ public class SystemExport {
      * @param outputPath the output directory where the backup will be written.
      * @param incremental true if an incremental backup should be attempted, otherwise a full backup is performed.
      * @param incrementalMax the maximum number of incremental backups allowed between each full backup, ignored if a full backup is requested.
+     * @param fullMax The maximum number of full backups to keep on disk before creating a new backup erases the oldest backup.
+     *                Set to -1 to create unlimited full backups. If a full backup is removed, any incremental backups for that full backup will also be removed.
      * @param zip true to write the backup to a zip file, otherwise false to write the backup to a folder.
      * @param errorList a list to capture {@link ErrorReport} objects as returned by methods in {@link ConsistencyCheck}.
      *
      * @return the path to the new backup file or folder.
      */
-    public Path export(final String outputPath, boolean incremental, final int incrementalMax, final boolean zip, final List<ErrorReport> errorList) {
+    public Path export(final String outputPath, boolean incremental, final int incrementalMax, final int fullMax, final boolean zip, final List<ErrorReport> errorList) {
         Path backupFile = null;
 
         try {
@@ -215,12 +219,10 @@ public class SystemExport {
                     final Properties prevProp = prevBackup.getProperties();
 
                     if (prevProp != null) {
-                        final String seqNrStr = prevProp.getProperty(BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, "1");
-
                         try {
-                            seqNr = Integer.parseInt(seqNrStr);
+                            seqNr = getIntegerProperty(prevProp, BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, 1);
 
-                            if (seqNr == incrementalMax) {
+                            if (seqNr > incrementalMax) {
                                 seqNr = 1;
                                 incremental = false;
                                 prevBackup = null;
@@ -262,6 +264,20 @@ public class SystemExport {
                 broker.getCollectionsFailsafe(transaction, cb);
 
                 exportOrphans(output, cb.getDocs(), errorList);
+            }
+
+            try {
+                if (fullMax != -1 && backupDirectory.countFullBackups() > fullMax) {
+                    // There now more full backups than allowed, so delete the oldest full backup and any associated incremental backups
+                    @Nullable final List<Path> oldestFullBackupFiles = backupDirectory.getOldestFullBackup();
+                    if (oldestFullBackupFiles != null) {
+                        for (final Path oldestFullBackupFile : oldestFullBackupFiles) {
+                            FileUtils.deleteQuietly(oldestFullBackupFile);
+                        }
+                    }
+                }
+            } catch (final IOException e) {
+                LOG.error("Unable to remove oldest backup: " + e.getMessage(), e);
             }
 
             return backupFile;

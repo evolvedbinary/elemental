@@ -51,8 +51,11 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -79,6 +82,7 @@ import org.exist.storage.txn.Txn;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
 
 import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.FileUtils;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
@@ -199,6 +203,70 @@ public class SystemExportImportTest {
             transaction.commit();
         }
 	}
+
+    @Test
+    public void exportBackupFullMax() throws EXistException, IOException, PermissionDeniedException, SAXException, ParserConfigurationException, AuthenticationException, URISyntaxException, XMLDBException, InterruptedException {
+        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+            final Txn transaction = pool.getTransactionManager().beginTransaction()) {
+
+            final Collection test = broker.getCollection(TEST_COLLECTION_URI);
+            assertNotNull(test);
+
+            final SystemExport sysexport = new SystemExport(broker, transaction, null, null, direct);
+            final String backupDir = temporaryFolder.newFolder().getAbsolutePath();
+
+            final int maxFullBackups = 3;
+            final int maxIncBackups = 2;
+
+            // create maxFullBackups and maxIncBackups
+            final List<Path> fullBackups = new ArrayList<>();
+            final List<Path> incBackups = new ArrayList<>();
+            for (int i = 0 ; i < maxFullBackups; i++) {
+                final Path fullBackup = sysexport.export(backupDir, true, maxIncBackups, maxFullBackups, zip, null);
+                Files.exists(fullBackup);
+                assertTrue(FileUtils.fileName(fullBackup).startsWith("full"));
+                fullBackups.add(fullBackup);
+
+                Thread.sleep(1000);  // NOTE(AR) needed as filenames for backups only have a 1 second precision
+
+                for (int j = 0 ; j < maxIncBackups; j++) {
+                    final Path incBackup = sysexport.export(backupDir, true, maxIncBackups, maxFullBackups, zip, null);
+                    Files.exists(incBackup);
+                    assertTrue(FileUtils.fileName(incBackup).startsWith("inc"));
+                    incBackups.add(incBackup);
+
+                    Thread.sleep(1000);  // NOTE(AR) needed as filenames for backups only have a 1 second precision
+                }
+            }
+
+            // now try to exceed maxFullBackups by creating another full backup
+            final Path fullBackup = sysexport.export(backupDir, true, maxIncBackups, maxFullBackups, zip, null);
+            Files.exists(fullBackup);
+            assertTrue(FileUtils.fileName(fullBackup).startsWith("full"));
+            fullBackups.add(fullBackup);
+
+            // as we have exceeded the maxFullBackups, the first full backup and its subsequent incremental backups should have been deleted
+            for (int i = 0; i < fullBackups.size(); i++) {
+                final boolean fullBackupExists = Files.exists(fullBackups.get(i));
+                if (i == 0) {
+                    assertFalse(fullBackupExists);
+                } else {
+                    assertTrue(fullBackupExists);
+                }
+            }
+            for (int j = 0; j < fullBackups.size(); j++) {
+                final boolean incBackupExists = Files.exists(incBackups.get(j));
+                if (j < maxIncBackups) {
+                    assertFalse(incBackupExists);
+                } else {
+                    assertTrue(incBackupExists);
+                }
+            }
+
+            transaction.commit();
+        }
+    }
 
 	private DocumentImpl getDoc(final DBBroker broker, final Collection col, final XmldbURI uri) throws PermissionDeniedException {
         final DocumentImpl doc = col.getDocument(broker, uri);
