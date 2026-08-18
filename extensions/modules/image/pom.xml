@@ -159,6 +159,7 @@
 
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 

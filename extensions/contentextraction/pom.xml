@@ -212,6 +212,7 @@
                     <skipSystemScope>true</skipSystemScope>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -227,6 +228,31 @@
                                 <ignoredUnusedDeclaredDependency>org.apache.tika:tika-parsers-standard-package</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.junit.vintage:junit-vintage-engine:jar</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>xml-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>validate-test-conf</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>validate</goal>
+                        </goals>
+                        <configuration>
+                            <validationSets>
+                                <validationSet>
+                                    <validating>true</validating>
+                                    <dir>${project.build.testOutputDirectory}</dir>
+                                    <includes>
+                                        <include>conf.xml</include>
+                                    </includes>
+                                </validationSet>
+                            </validationSets>
                         </configuration>
                     </execution>
                 </executions>
