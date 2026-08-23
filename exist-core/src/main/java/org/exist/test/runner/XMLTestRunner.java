@@ -86,8 +86,8 @@ import static javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING;
 import static org.exist.util.StringUtil.notNullOrEmptyOrWs;
 
 /**
- * A JUnit test runner which can run the XML formatter XQuery tests
- * using $EXIST_HOME/src/org/exist/xquery/lib/test.xq.
+ * A JUnit test runner which can run the XML formatted XQuery tests
+ * using exist-core/src/main/resources/org/exist/xquery/lib/test.xq.
  *
  * @author Adam Retter
  */

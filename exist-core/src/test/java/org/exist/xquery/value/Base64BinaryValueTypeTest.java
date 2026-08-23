@@ -99,7 +99,7 @@ public class Base64BinaryValueTypeTest {
 
     @Test
     public void verify_validBase64_passes_large_string() throws XPathException, IOException, URISyntaxException {
-        Optional<Path> home = ConfigurationHelper.getExistHome();
+        Optional<Path> home = ConfigurationHelper.getElementalHome();
         Path binaryFile = Paths.get(getClass().getResource("logo.png").toURI());
 
         final String base64data;

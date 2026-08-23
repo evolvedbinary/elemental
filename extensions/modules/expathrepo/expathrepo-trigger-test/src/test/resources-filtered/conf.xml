@@ -46,7 +46,7 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<exist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="${project.basedir}/../../../schema/conf.xsd">
+<exist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="${project.basedir}/../../../../schema/conf.xsd">
 
     <db-connection cacheSize="256M" checkMaxCacheSize="true" collectionCache="64M" database="native"
         files="${basedir}/target/test-data" pageSize="4096" nodesBuffer="1000" cacheShrinkThreshold="10000"
@@ -88,19 +88,10 @@
     </binary-manager>
 
     <indexer caseSensitive="yes" index-depth="5" preserve-whitespace-mixed-content="no"
-        suppress-whitespace="none">
-
-        <modules>
-
-            <!-- Module under test! -->
-            <module id="spatial-index" connectionTimeout="10000" flushAfter="300" class="org.exist.indexing.spatial.GMLHSQLIndex"/>
-
-        </modules>
-
-    </indexer>
+        suppress-whitespace="none"/>
 
     <parser>
-        <html-to-xml class="org.cyberneko.html.parsers.SAXParser">
+        <html-to-xml class="org.codelibs.nekohtml.parsers.SAXParser">
             <properties>
                 <property name="http://cyberneko.org/html/properties/names/elems" value="match"/>
                 <property name="http://cyberneko.org/html/properties/names/attrs" value="no-change"/>
@@ -124,20 +115,15 @@
 
     <xquery enable-java-binding="no" disable-deprecated-functions="no" 
             enable-query-rewriting="yes" backwardCompatible="no" 
-            enforce-index-use="always"
+            enforce-index-use="strict"
             raise-error-on-failed-retrieval="no">
 
         <builtin-modules>
 
-            <!-- Module under test! -->
-            <module uri="http://exist-db.org/xquery/spatial" class="org.exist.xquery.modules.spatial.SpatialModule" />
+            <!-- Module under test -->
+            <module uri="https://my-organisation.com/exist-db/ns/app/my-java-module" class="org.exist.repo.ExampleModule"/>
 
-            <!-- dependencies needed for tests -->
-            <module uri="http://exist-db.org/xquery/util" class="org.exist.xquery.functions.util.UtilModule">
-                <parameter name="evalDisabled" value="true"/>
-            </module>
-
-        </builtin-modules>
+       </builtin-modules>
 
     </xquery>
 

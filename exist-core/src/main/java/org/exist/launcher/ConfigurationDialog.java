@@ -622,7 +622,7 @@ public class ConfigurationDialog extends JDialog {
         final Optional<Path> currentDir = Optional.ofNullable(dataDir.getText())
                 .map(d -> Optional.of(Paths.get(d)))
                 .filter(md -> md.map(Files::exists).orElse(false))
-                .orElse(ConfigurationHelper.getExistHome());
+                .orElse(ConfigurationHelper.getElementalHome());
 
         final JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(false);

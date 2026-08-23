@@ -190,7 +190,7 @@
                 <xs:element name="indexer">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="modules">
+                            <xs:element name="modules" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="module" maxOccurs="unbounded">
@@ -213,7 +213,7 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="index">
+                            <xs:element name="index" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="create" minOccurs="0"
@@ -246,7 +246,7 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="scheduler">
+                <xs:element name="scheduler" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="job" minOccurs="0" maxOccurs="unbounded">
@@ -326,7 +326,24 @@
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="class" use="required" type="xs:string"/>
+                                    <xs:attribute name="class" use="required" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                The Java classname of a parser which implements org.xml.sax.XMLReader
+                                                and is capable of parsing HTML and emitting an XML Sax Stream.
+                                                <p/>
+                                                Whichever library you use for this, it must be present on the classpath.
+                                                See $ELEMENTAL_HOME/lib
+                                                <p/>
+                                                Examples include:
+                                                - org.codelibs.nekohtml.parsers.SAXParser
+                                                The Cyber NekoHTML parser from https://sourceforge.net/projects/nekohtml/
+                                                <p/>
+                                                - org.ccil.cowan.tagsoup.Parser
+                                                The TagSoup parser from http://home.ccil.org/~cowan/XML/tagsoup/
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -406,7 +423,7 @@
                 <xs:element name="xquery">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="builtin-modules">
+                            <xs:element name="builtin-modules" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="module" maxOccurs="unbounded">
@@ -441,9 +458,32 @@
                 </xs:element>
                 <xs:element name="xupdate">
                     <xs:complexType>
-                        <xs:attribute name="allowed-fragmentation" type="xs:integer" default="5"/>
-                        <xs:attribute name="enable-consistency-checks" type="yes_no" default="no"/>
-                        <xs:attribute name="growth-factor" type="xs:integer" default="20"/>
+                        <xs:attribute name="allowed-fragmentation" type="xs:integer" default="5">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Defines the maximum number of page splits allowed within a document
+                                    before a defragmentation run will be triggered.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="enable-consistency-checks" type="yes_no" default="no">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    For debugging only. If the parameter is set to "yes", a consistency
+                                    check will be run on every modified document after every XUpdate
+                                    request. It checks if the persistent DOM is complete and all
+                                    pointers in the structural index point to valid storage addresses
+                                    containing valid nodes.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="growth-factor" type="xs:integer" default="20">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    TODO
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="rpc-server">

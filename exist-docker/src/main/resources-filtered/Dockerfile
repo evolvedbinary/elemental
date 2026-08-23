@@ -139,12 +139,11 @@ LABEL org.label-schema.build-date=${project.build.outputTimestamp} \
 EXPOSE 8080 8443
 
 ENV ELEMENTAL_HOME="/elemental"
-ENV EXIST_HOME="/elemental"
 ENV CLASSPATH="/elemental/lib/${elemental.uber.jar.filename}"
 
 ENV JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk"
 
-ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${ELEMENTAL_SERVER_CACHE_MEM}M -Dorg.exist.db-connection.pool.max=${ELEMENTAL_SERVER_MAX_BROKER} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Dexist.home=/elemental -Dexist.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Dexist.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+Use${JVM_GC}GC -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE} -XX:+ExitOnOutOfMemoryError ${ADDITIONAL_JAVA_TOOL_OPTIONS}"
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true -Dorg.exist.db-connection.cacheSize=${ELEMENTAL_SERVER_CACHE_MEM}M -Dorg.exist.db-connection.pool.max=${ELEMENTAL_SERVER_MAX_BROKER} -Dlog4j.configurationFile=/elemental/etc/log4j2.xml -Delemental.home=/elemental -Delemental.configurationFile=/elemental/etc/conf.xml -Djetty.home=/elemental -Delemental.jetty.config=/elemental/etc/jetty/standard.enabled-jetty-configs -XX:+Use${JVM_GC}GC -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:MaxRAMPercentage=${JVM_MAX_RAM_PERCENTAGE} -XX:+ExitOnOutOfMemoryError ${ADDITIONAL_JAVA_TOOL_OPTIONS}"
 
 ENV PATH="/usr/lib/jvm/java-1.8-openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 

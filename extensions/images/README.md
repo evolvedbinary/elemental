@@ -11,20 +11,7 @@ Rendered images can be cached on a file system path.
 Installation
 ------------
 
-Get the Java Advanced Imaging jars for your platform from
-
-https://www.oracle.com/technetwork/java/javasebusiness/downloads/java-archive-downloads-java-client-419417.html 
-
-Please choose the CLASSPATH installation bundle. Open the downloaded archive and 
-copy the contents of the lib/ folder to $EXIST_HOME/lib/user.
-
-- If you are on MacOSX, you can just extract the jai_codec.jar and jai_core.jar files from the Linux CLASSPATH installation bundle and place these in $EXIST_HOME/lib/user
-
-You should now be able to compile the servlet from EXIST_HOME with
-
-./build.sh -f extensions/images/build.xml
-
-Next, you need to register the servlet in EXIST_HOME/webapp/WEB-INF/web.xml as follows:
+Next, you need to register the servlet in ELEMENTAL_HOME/etc/webapp/WEB-INF/web.xml as follows:
 
 <servlet>
 	<servlet-name>ScaleImageJAI</servlet-name>
@@ -43,7 +30,7 @@ Next, you need to register the servlet in EXIST_HOME/webapp/WEB-INF/web.xml as f
 
 where "output-dir" should point to an existing directory on your server. To use 
 the servlet from Elemental, make sure your 
-EXIST_HOME/webapp/WEB-INF/controller-config.xml has a mapping:
+ELEMENTAL_HOME/etc/webapp/WEB-INF/controller-config.xml has a mapping:
 
 <forward pattern="/images" servlet="ScaleImageJAI"/>
 

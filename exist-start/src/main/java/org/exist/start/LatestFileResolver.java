@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -30,6 +54,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.exist.start.Main.LEGACY_PROP_EXIST_START_DEBUG;
+import static org.exist.start.Main.PROP_ELEMENTAL_START_DEBUG;
+
 /**
  * This class uses regex pattern matching to find the latest version of a
  * particular jar file. 
@@ -51,7 +78,7 @@ public class LatestFileResolver {
 
     // Set debug mode for each file resolver instance based on whether or
     // not the system was started with debugging turned on.
-    private static boolean _debug = Boolean.getBoolean("exist.start.debug");
+    private static boolean _DEBUG =  Boolean.parseBoolean(System.getProperty(PROP_ELEMENTAL_START_DEBUG, System.getProperty(LEGACY_PROP_EXIST_START_DEBUG, "false")));
             
     /**
      * If the passed file name contains a %latest% token,
@@ -98,7 +125,7 @@ public class LatestFileResolver {
 
         if (!jars.isEmpty()) {
             final String actualFileName = jars.get(0).toAbsolutePath().toString();
-            if (_debug) {
+            if (_DEBUG) {
                 System.err.println(
                     "Found match: " + actualFileName
                     + " for jar file pattern: " + filename
@@ -106,7 +133,7 @@ public class LatestFileResolver {
             }
             return actualFileName;
         } else {
-            if (_debug) {
+            if (_DEBUG) {
                 System.err.println(
                     "WARN: No latest version found for JAR file: '"
                     + filename + "'"

@@ -78,7 +78,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A JUnit test runner which can run the XQuery tests (XQSuite)
- * using $EXIST_HOME/src/org/exist/xquery/lib/xqsuite/xqsuite.xql.
+ * using exist-core/src/main/resources/org/exist/xquery/lib/xqsuite/xqsuite.xql.
  *
  * @author Adam Retter
  */
@@ -100,7 +100,7 @@ public class XQueryTestRunner extends AbstractTestRunner {
     }
 
     private static Configuration getConfiguration() throws DatabaseConfigurationException {
-        final Optional<Path> home = Optional.ofNullable(System.getProperty("exist.home", System.getProperty("user.dir"))).map(Paths::get);
+        final Optional<Path> home = Optional.ofNullable(System.getProperty("elemental.home", System.getProperty("exist.home", System.getProperty("user.dir")))).map(Paths::get);
         final Path confFile = ConfigurationHelper.lookup("conf.xml", home);
 
         if (confFile.isAbsolute() && Files.exists(confFile)) {

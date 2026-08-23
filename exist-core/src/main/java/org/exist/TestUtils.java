@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -165,17 +189,17 @@ public class TestUtils {
     }
 
     /**
-     * Get the EXIST_HOME directory
+     * Get the ELEMENTAL_HOME directory
      *
-     * @return The absolute path to the EXIST_HOME folder
+     * @return The absolute path to the ELEMENTAL_HOME folder
      *   or {@link Optional#empty()}
      */
-    public static Optional<Path> getEXistHome() {
-        return ConfigurationHelper.getExistHome().map(Path::toAbsolutePath);
+    public static Optional<Path> getElementalHome() {
+        return ConfigurationHelper.getElementalHome().map(Path::toAbsolutePath);
     }
 
     /**
-     * Get a file from within the EXIST_HOME directory.
+     * Get a file from within the ELEMENTAL_HOME directory.
      *
      * @param fileName Just the name of the file.
      *
@@ -183,8 +207,8 @@ public class TestUtils {
      *
      * @throws IOException if an IO error occurs.
      */
-    public static Optional<Path> getExistHomeFile(final String fileName) throws IOException {
-        final Path path = getEXistHome().orElseGet(() -> Paths.get(".")).resolve(fileName);
+    public static Optional<Path> getElementalHomeFile(final String fileName) throws IOException {
+        final Path path = getElementalHome().orElseGet(() -> Paths.get(".")).resolve(fileName);
         if(Files.exists(path)) {
             return Optional.of(path);
         } else {

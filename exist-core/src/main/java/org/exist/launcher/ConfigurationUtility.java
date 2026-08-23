@@ -78,8 +78,8 @@ public class ConfigurationUtility {
 
     /**
      * We try to resolve any config file relative to an Elemental
-     * config file indicated by the System Property {@link org.exist.util.ConfigurationHelper#PROP_EXIST_CONFIGURATION_FILE},
-     * if such a file does not exist, then we try and resolve it from the user.home or EXIST_HOME.
+     * config file indicated by the System Property {@link org.exist.util.ConfigurationHelper#PROP_ELEMENTAL_CONFIGURATION_FILE},
+     * if such a file does not exist, then we try and resolve it from the user.home or ELEMENTAL_HOME.
      *
      * @param configFileName the name/relative path of the config file to lookup
      * @param shouldExist if the file should already exist
@@ -89,7 +89,7 @@ public class ConfigurationUtility {
     public static Path lookup(final String configFileName, final boolean shouldExist) {
         return org.exist.util.ConfigurationHelper.getFromSystemProperty()
                 .filter(Files::exists)
-                .map(existConfigFile -> existConfigFile.resolveSibling(configFileName))
+                .map(elementalConfigFile -> elementalConfigFile.resolveSibling(configFileName))
                 .filter(f -> !shouldExist || Files.exists(f))
                 .orElseGet(() -> org.exist.util.ConfigurationHelper.lookup(configFileName));
     }

@@ -3,7 +3,7 @@
     This is the Web-application Descriptor file.
     If the database is running in a servlet-context, the descriptor file will
     be read from the WEB-INF directory of the web application. Otherwise, the descriptor
-    is read from the directory specified by the exist.home system property.
+    is read from the directory specified by the elemental.home system property.
 -->
 
 
@@ -27,10 +27,9 @@
             BEWARE the security consequences of enabling this for your queries!
             
             REST XQuery paths (EXistServlet/RESTServer) start from the db location e.g. /db/mycollection/myquery.xql
-            FileSystem XQuery paths (XQueryServlet) start from the root filesystem location e.g. $EXIST_HOME/webapp/myapp/myquery.xql
-            and end with a .xql suffix. However ${WEBAPP_HOME} may be used for convenience to represent eXist's webapp folder without
+            FileSystem XQuery paths (XQueryServlet) start from the root filesystem location e.g. ELEMENTAL_HOME/etc/webapp/myapp/myquery.xql
+            and end with a .xql suffix. However ${WEBAPP_HOME} may be used for convenience to represent the webapp folder without
             the need to know the specific path.
-            Cocoon XQuery Paths (XQueryGenerator) are not yet supported!
         -->
 
         <!-- Allow viewing of Source for eXist XQuery examples (XQueryGenerator) -->

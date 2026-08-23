@@ -789,7 +789,7 @@ public abstract class AbstractRecoverTest {
     }
 
     protected Path resolveTestFile(final String fileName) throws IOException {
-        final Path path = TestUtils.getEXistHome().orElseGet(() -> Paths.get(".")).resolve(fileName);
+        final Path path = TestUtils.getElementalHome().orElseGet(() -> Paths.get(".")).resolve(fileName);
         if(!Files.exists(path)) {
             throw new IOException("No such test file: " + path.toAbsolutePath().toString());
         }

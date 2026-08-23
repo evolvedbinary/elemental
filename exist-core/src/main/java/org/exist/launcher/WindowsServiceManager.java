@@ -102,13 +102,13 @@ class WindowsServiceManager implements ServiceManager {
 
     WindowsServiceManager() {
         this.prunsrvExe = new LazyValE<>(() ->
-            OptionalUtil.toRight(() -> new ServiceManagerException("Could not detect EXIST_HOME when trying to find Procrun exe"), ConfigurationHelper.getExistHome())
+            OptionalUtil.toRight(() -> new ServiceManagerException("Could not detect ELEMENTAL_HOME when trying to find Procrun exe"), ConfigurationHelper.getElementalHome())
                 .map(base -> base.resolve("bin").resolve(PROCRUN_SRV_EXE))
                 .flatMap(exe -> Files.exists(exe) ? Right(exe) : Left(new ServiceManagerException("Could not find Procrun at: " + exe)))
                 .flatMap(exe -> Files.isExecutable(exe) ? Right(exe) : Left(new ServiceManagerException("Procrun is not executable at: " + exe)))
         );
 
-        this.existHome = ConfigurationHelper.getExistHome().orElse(Paths.get("."));
+        this.existHome = ConfigurationHelper.getElementalHome().orElse(Paths.get("."));
     }
 
     @Override
