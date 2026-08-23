@@ -59,7 +59,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
@@ -72,11 +72,11 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -170,8 +170,8 @@ public class Indexer2Test {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
+    @RegisterExtension
+    public static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(
             propertiesBuilder()
                 .put(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT, true)
                 .set(Indexer.PROPERTY_SUPPRESS_WHITESPACE, "none")
@@ -179,7 +179,7 @@ public class Indexer2Test {
             true,
             false);
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, LockException, AuthenticationException {
         storeDoc();
     }

@@ -46,7 +46,8 @@
 package org.exist.backup;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,10 +55,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -79,20 +80,18 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
-import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
-
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.exist.util.FileUtils;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
@@ -101,33 +100,22 @@ import xyz.elemental.mediatype.MediaType;
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-@RunWith(Parameterized.class)
 public class SystemExportImportTest {
 
-    @Parameters(name = "{0} zip:{2}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-                {"direct", true, false},
-                {"non-direct", false, false},
-                {"direct", true, true},
-                {"non-direct", false, true}
-        });
+    static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of("direct", true, false),
+                Arguments.of("non-direct", false, false),
+                Arguments.of("direct", true, true),
+                Arguments.of("non-direct", false, true)
+        );
     }
 
-    @Parameter
-    public String apiName;
+    @RegisterExtension
+    static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(true, true);
 
-    @Parameter(value = 1)
-    public boolean direct;
-
-    @Parameter(value = 2)
-    public boolean zip;
-
-    @ClassRule
-    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @TempDir
+    static Path tempDir;
 
     private static String COLLECTION_CONFIG =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
@@ -156,8 +144,9 @@ public class SystemExportImportTest {
 
     private static String BINARY = "test";
 
-    @Test
-    public void exportImport() throws EXistException, IOException, PermissionDeniedException, SAXException, ParserConfigurationException, AuthenticationException, URISyntaxException, XMLDBException {
+    @ParameterizedTest(name = "{0} zip:{2}")
+    @MethodSource("data")
+    public void exportImport(final String apiName, final boolean direct, final boolean zip) throws EXistException, IOException, PermissionDeniedException, SAXException, ParserConfigurationException, AuthenticationException, URISyntaxException, XMLDBException {
         Path file;
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
@@ -167,7 +156,7 @@ public class SystemExportImportTest {
             assertNotNull(test);
 
             final SystemExport sysexport = new SystemExport(broker, transaction, null, null, direct);
-            final String backupDir = temporaryFolder.newFolder().getAbsolutePath();
+            final String backupDir = Files.createTempDirectory(tempDir, "system-export").toAbsolutePath().toString();
             file = sysexport.export(backupDir, false, zip, null);
 
             transaction.commit();
@@ -202,10 +191,12 @@ public class SystemExportImportTest {
 
             transaction.commit();
         }
-	}
+    }
 
-    @Test
-    public void exportBackupFullMax() throws EXistException, IOException, PermissionDeniedException, SAXException, ParserConfigurationException, AuthenticationException, URISyntaxException, XMLDBException, InterruptedException {
+
+    @ParameterizedTest(name = "{0} zip:{2}")
+    @MethodSource("data")
+    public void exportBackupFullMax(final String apiName, final boolean direct, final boolean zip) throws EXistException, IOException, PermissionDeniedException, SAXException, ParserConfigurationException, AuthenticationException, URISyntaxException, XMLDBException, InterruptedException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
@@ -214,7 +205,7 @@ public class SystemExportImportTest {
             assertNotNull(test);
 
             final SystemExport sysexport = new SystemExport(broker, transaction, null, null, direct);
-            final String backupDir = temporaryFolder.newFolder().getAbsolutePath();
+            final String backupDir = Files.createTempDirectory(tempDir, "export-backup-full-max").toAbsolutePath().toString();
 
             final int maxFullBackups = 3;
             final int maxIncBackups = 2;
@@ -306,7 +297,7 @@ public class SystemExportImportTest {
         }
     }
 
-	@BeforeClass
+ @BeforeAll
     public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
 

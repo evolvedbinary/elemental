@@ -26,11 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.googlecode.junittoolbox.ParallelParameterized;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test case - given a sort() method and an algorithm via a checker, do a variety
@@ -46,38 +45,33 @@ import org.junit.runners.Parameterized.Parameters;
  * @author http://www.users.bigpond.com/pmurray
  * 
  */
-@RunWith(ParallelParameterized.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class SortTest {
 
-    @Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        final List<Object[]> parameters = new ArrayList<>();
+    static java.util.stream.Stream<Arguments> data() {
+        final List<Arguments> parameters = new ArrayList<>();
         for (final SortingAlgorithmTester s : SortingAlgorithmTester.allSorters()) {
             for (final SortMethodChecker c : SortMethodChecker.allCheckers(s)) {
                 final String name = s.getClass().getSimpleName() + ": " + c.getClass().getSimpleName();
-                parameters.add(new Object[]{name, c});
+                parameters.add(Arguments.of(name, c));
             }
         }
 
-        return parameters;
+        return parameters.stream();
     }
 
-	private final Random rnd = new Random();
+    private final Random rnd = new Random();
 
-    @Parameter
-    public String sortTestName;
-
-    @Parameter(value = 1)
-    public SortMethodChecker checker;
-
-	@Test
-	public void singleElement() throws Exception {
+	@ParameterizedTest(name = "{0} singleElement")
+	@MethodSource("data")
+	public void singleElement(final String sortTestName, final SortMethodChecker checker) throws Exception {
 		checker.init(getConstantIntArray(1));
 		checker.sort();
 	}
 
-	@Test
-	public void random() throws Exception {
+	@ParameterizedTest(name = "{0} random")
+	@MethodSource("data")
+	public void random(final String sortTestName, final SortMethodChecker checker) throws Exception {
 		for (int i = 0; i < 10; i++) {
 			checker.init(getRandomIntArray(100));
 			checker.sort();
@@ -85,29 +79,33 @@ public class SortTest {
 		}
 	}
 
-	@Test
-	public void constant() throws Exception {
+	@ParameterizedTest(name = "{0} constant")
+	@MethodSource("data")
+	public void constant(final String sortTestName, final SortMethodChecker checker) throws Exception {
 		checker.init(getConstantIntArray(100));
 		checker.sort();
 		checker.check();
 	}
 
-	@Test
-	public void ascending() throws Exception {
+	@ParameterizedTest(name = "{0} ascending")
+	@MethodSource("data")
+	public void ascending(final String sortTestName, final SortMethodChecker checker) throws Exception {
 		checker.init(getAscendingIntArray(100));
 		checker.sort();
 		checker.check();
 	}
 
-	@Test
-	public void descending() throws Exception {
+	@ParameterizedTest(name = "{0} descending")
+	@MethodSource("data")
+	public void descending(final String sortTestName, final SortMethodChecker checker) throws Exception {
 		checker.init(getDescendingIntArray(100));
 		checker.sort();
 		checker.check();
 	}
 
-	@Test
-	public void sortSubsection1() throws Exception {
+	@ParameterizedTest(name = "{0} sortSubsection1")
+	@MethodSource("data")
+	public void sortSubsection1(final String sortTestName, final SortMethodChecker checker) throws Exception {
 
 		for (int i = 0; i < 1000; i += 100) {
 			int[] a = new int[1000];
@@ -132,10 +130,11 @@ public class SortTest {
 		}
 	}
 
-    @Test
-	public void sortSubsection2() throws Exception {
-		for (int i = 0; i < 1000; i += 100) {
-			int[] a = new int[1000];
+    @ParameterizedTest(name = "{0} sortSubsection2")
+    @MethodSource("data")
+    public void sortSubsection2(final String sortTestName, final SortMethodChecker checker) throws Exception {
+        for (int i = 0; i < 1000; i += 100) {
+            int[] a = new int[1000];
 
 			for (int ii = 0; ii < 1000; ii++) {
 				a[ii] = (ii >= i && ii < i + 100) ? rnd.nextInt(1000) : ii;
@@ -156,8 +155,9 @@ public class SortTest {
 		}
 	}
 
-    @Test
-	public void sortSubsection3() throws Exception {
+    @ParameterizedTest(name = "{0} sortSubsection3")
+    @MethodSource("data")
+    public void sortSubsection3(final String sortTestName, final SortMethodChecker checker) throws Exception {
 
 		for (int i = 0; i < 1000; i += 100) {
 			int[] a = new int[1000];

@@ -46,17 +46,16 @@
 package org.exist.backup;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
+import org.exist.http.RESTTest;
 import org.exist.xmldb.AbstractRestoreServiceTaskListener;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistRestoreService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
@@ -73,44 +72,35 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Source;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class XMLDBBackupTest {
-
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+public class XMLDBBackupTest extends RESTTest {
     private static final String PORT_PLACEHOLDER = "${PORT}";
 
     private static final String COLLECTION_NAME = "test-xmldb-backup-restore";
 
-    @ClassRule
-    public static final TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    Path tempDir;
 
-    @Parameterized.Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {
-                { "local (classic)", XmldbURI.EMBEDDED_SERVER_URI.toString(), false },
-                { "remote (classic)", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc", false },
-                { "local (dedup)", XmldbURI.EMBEDDED_SERVER_URI.toString(), false },
-                { "remote (dedup)", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc", true },
-        });
+    static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of("local (classic)", XmldbURI.EMBEDDED_SERVER_URI.toString(), false),
+                Arguments.of("remote (classic)", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc", false),
+                Arguments.of("local (dedup)", XmldbURI.EMBEDDED_SERVER_URI.toString(), false),
+                Arguments.of("remote (dedup)", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc", true)
+        );
     }
 
-    @Parameterized.Parameter
-    public String apiName;
-
-    @Parameterized.Parameter(value = 1)
-    public String baseUri;
-
-    @Parameterized.Parameter(value = 2)
-    public boolean deduplicateBlobs;
+    private String apiName;
+    private String baseUri;
+    private boolean deduplicateBlobs;
 
     private static final String DOC1_NAME = "doc1.xml";
     private final String doc1Content = "<timestamp>" + System.nanoTime() + "</timestamp>";
@@ -120,17 +110,25 @@ public class XMLDBBackupTest {
     private static final String BIN_DOC2_NAME = "doc2.bin";
     private final String binDoc2Content = Long.toString(System.nanoTime());
 
-    private final String getBaseUri() {
+    private String getBaseUri() {
         return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
     }
 
-    @Test
-    public void backupRestore() throws XMLDBException, SAXException, IOException, URISyntaxException, ParserConfigurationException {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void backupRestore(final String apiName, final String baseUri, final boolean deduplicateBlobs) throws XMLDBException, SAXException, IOException, URISyntaxException, ParserConfigurationException {
+        // assign parameters to fields for helper methods
+        this.apiName = apiName;
+        this.baseUri = baseUri;
+        this.deduplicateBlobs = deduplicateBlobs;
+
+        // prepare test collection
+        beforeEachSetup();
+
         final XmldbURI collectionUri = XmldbURI.create(getBaseUri()).append("/db").append(COLLECTION_NAME);
-        final String backupFilename = "test-xmldb-backup-" + System.currentTimeMillis() + ".zip";
 
         // backup the collection
-        final Path backupFile = backup(backupFilename, collectionUri);
+        final Path backupFile = backup("test-xmldb-backup-" + System.currentTimeMillis() + ".zip", collectionUri, tempDir, deduplicateBlobs);
 
         // delete the collection
         deleteCollection(collectionUri);
@@ -150,7 +148,7 @@ public class XMLDBBackupTest {
                 .withTest(actual)
                 .checkForIdentical()
                 .build();
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
 
         try (final EXistResource binDoc1 = (EXistResource) testCollection.getResource(BIN_DOC1_NAME)) {
@@ -162,8 +160,8 @@ public class XMLDBBackupTest {
         }
     }
 
-    private Path backup(final String filename, final XmldbURI collectionUri) throws IOException, XMLDBException, SAXException {
-        final Path backupFile = tempFolder.newFile(filename).toPath();
+    private Path backup(final String filename, final XmldbURI collectionUri, final Path tempDir, final boolean deduplicateBlobs) throws IOException, XMLDBException, SAXException {
+        final Path backupFile = Files.createFile(tempDir.resolve(filename));
         final Backup backup = new Backup(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD,
                 backupFile,
                 collectionUri,
@@ -186,8 +184,8 @@ public class XMLDBBackupTest {
         colService.removeCollection(collectionUri.lastSegment().toString());
     }
 
-    @Before
-    public void before() throws XMLDBException {
+    // not annotated: invoked manually from the parameterized test with params initialized
+    void beforeEachSetup() throws XMLDBException {
         final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         final CollectionManagementService colService = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
         final Collection testCollection = colService.createCollection(COLLECTION_NAME);

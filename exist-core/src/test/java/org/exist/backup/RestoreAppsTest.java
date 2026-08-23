@@ -52,12 +52,12 @@ import org.exist.repo.ExistRepository;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.expath.pkg.repo.*;
 import org.expath.pkg.repo.tui.BatchUserInteraction;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -70,15 +70,15 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RestoreAppsTest {
 
-    @ClassRule
-    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    static Path tempDir;
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(true, true);
 
     private static final String REPO_XML_APP =
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -257,9 +257,9 @@ public class RestoreAppsTest {
     private Path export(BrokerPool pool) throws IOException, EXistException {
         Path backup;
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
-                final Txn transaction = pool.getTransactionManager().beginTransaction()) {
+             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             SystemExport export = new SystemExport(broker, transaction, null, null, false);
-            String backupDir = temporaryFolder.newFolder().getAbsolutePath();
+            String backupDir = Files.createTempDirectory(tempDir, "backup").toAbsolutePath().toString();
             backup = export.export(backupDir, false, true, null);
 
             transaction.commit();
@@ -276,7 +276,7 @@ public class RestoreAppsTest {
                 "   <title>Backup Test App</title>\n" +
                 "   <dependency processor=\"http://exist-db.org\" semver-min=\"5.0.0-RC8\"/>\n" +
                 "</package>";
-        Path xarFile = temporaryFolder.newFile().toPath();
+        Path xarFile = Files.createTempFile(tempDir, "pkg", ".xar");
         try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(xarFile, StandardOpenOption.WRITE))) {
             ZipEntry entry = new ZipEntry("expath-pkg.xml");
             zos.putNextEntry(entry);

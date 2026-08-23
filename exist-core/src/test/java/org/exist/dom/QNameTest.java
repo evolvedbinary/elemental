@@ -22,13 +22,13 @@
 
 package org.exist.dom;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.xml.XMLConstants;
 
 import static org.exist.dom.QName.Validity.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>

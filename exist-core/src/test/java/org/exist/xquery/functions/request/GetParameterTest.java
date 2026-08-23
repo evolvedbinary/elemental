@@ -46,7 +46,7 @@
 package org.exist.xquery.functions.request;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,9 +63,9 @@ import org.exist.http.RESTTest;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.UserManagementService;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -91,9 +91,9 @@ public class GetParameterTest extends RESTTest {
     private static Collection root;
 
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws XMLDBException {
-        root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
+        root = DatabaseManager.getCollection(getXmlrpcRootUri(), "admin", "");
         try (final EXistResource res = (EXistResource) root.createResource(XQUERY_FILENAME, BinaryResource.RESOURCE_TYPE)) {
             res.setMediaType(MediaType.APPLICATION_XQUERY);
             res.setContent(XQUERY);
@@ -103,7 +103,7 @@ public class GetParameterTest extends RESTTest {
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws XMLDBException {
         try (final EXistResource res = (EXistResource) root.getResource(XQUERY_FILENAME)) {
             root.removeResource(res);

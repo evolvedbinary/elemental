@@ -54,15 +54,15 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.XMLDBException;
@@ -75,7 +75,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test that creates a deep and Wide Collection hierarchy
@@ -86,11 +86,11 @@ import static org.junit.Assert.*;
  */
 public class DeepEmbeddedBackupRestoreTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(true, true);
 
-    @ClassRule
-    public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    static Path tempDir;
 
     private static final String EOL = "\n";
     private static final long XXHASH64_SEED = 0x79742bc8;
@@ -98,7 +98,7 @@ public class DeepEmbeddedBackupRestoreTest {
     private final XXHashFactory xxHashFactory = XXHashFactory.fastestJavaInstance();
     private final XXHash64 hash64 = xxHashFactory.hash64();
 
-    @BeforeClass
+    @BeforeAll
     public static void registerXmldbDatabaseDriver() throws XMLDBException {
         final DatabaseImpl databaseImpl = new DatabaseImpl();
         DatabaseManager.registerDatabase(databaseImpl);
@@ -111,7 +111,7 @@ public class DeepEmbeddedBackupRestoreTest {
         assertFalse(collectionsAndDocs.collectionUris.isEmpty());
         assertFalse(collectionsAndDocs.documentInfos.isEmpty());
 
-        final Path backupDir = temporaryFolder.newFolder("exist-EmbeddedBackupRestoreWithAppsTest").toPath();
+        final Path backupDir = Files.createTempDirectory(tempDir, "exist-EmbeddedBackupRestoreWithAppsTest");
         final Properties backupProperties = new Properties();
 
         final Backup backup = new Backup(
@@ -139,7 +139,7 @@ public class DeepEmbeddedBackupRestoreTest {
 
             final byte[] documentData = Files.readAllBytes(documentPath);
             final long documentHash = hash64.hash(documentData, 0, documentData.length, XXHASH64_SEED);
-            assertEquals("Expected hash '" + documentInfo.hash + "' for document '" + documentPath.toAbsolutePath() + "' but found '" + documentHash + "'", documentInfo.hash, documentHash);
+            assertEquals(documentInfo.hash, documentHash, "Expected hash '" + documentInfo.hash + "' for document '" + documentPath.toAbsolutePath() + "' but found '" + documentHash + "'");
         }
     }
 

@@ -59,13 +59,14 @@ import javax.xml.transform.OutputKeys;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.QName;
 import org.exist.security.Account;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.jupiter.ExistXmldbEmbeddedServerExtension;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.SAXSerializer;
-import org.junit.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.TestUtils.GUEST_DB_USER;
@@ -86,22 +87,22 @@ import org.xmldb.api.modules.XPathQueryService;
 import static org.exist.samples.Samples.SAMPLES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 public class ResourceTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    static final ExistXmldbEmbeddedServerExtension existEmbeddedServer = new ExistXmldbEmbeddedServerExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testResource";
 
-    @BeforeClass
+    @BeforeAll
     public static void prepareXmldbJoinTransactions() {
         System.setProperty(PROP_JOIN_TRANSACTION_IF_PRESENT, "true");
     }
 
-    @AfterClass
+    @AfterAll
     public static void releaseXmldbJoinTransactions() {
         System.clearProperty(PROP_JOIN_TRANSACTION_IF_PRESENT);
     }
@@ -390,7 +391,7 @@ public class ResourceTest {
                     + "</test>";
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws XMLDBException, IOException {
         //create a test collection
         final CollectionManagementService cms = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");
@@ -415,7 +416,7 @@ public class ResourceTest {
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws XMLDBException {
         //delete the test collection
         final CollectionManagementService cms = (CollectionManagementService) existEmbeddedServer.getRoot().getService("CollectionManagementService", "1.0");

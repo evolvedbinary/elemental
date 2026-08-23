@@ -56,14 +56,14 @@ import java.io.IOException;
 import org.exist.http.RESTTest;
 import org.exist.xmldb.EXistResource;
 import org.hamcrest.Matcher;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.test.XmlStringDiffMatcher.hasSimilarXml;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -85,9 +85,9 @@ public class PatchTest extends RESTTest {
     private static EXistResource xml;
     private static EXistResource bin;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws XMLDBException {
-        root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
+        root = DatabaseManager.getCollection(getXmlrpcRootUri(), "admin", "");
         UserManagementService ums = (UserManagementService)root.getService("UserManagementService", "1.0");
 
         bin = (EXistResource) root.createResource(XQUERY_FILENAME, BinaryResource.RESOURCE_TYPE);
@@ -107,7 +107,7 @@ public class PatchTest extends RESTTest {
         ums.chmod(xml, 0777);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws XMLDBException {
         try {
             root.removeResource(bin);

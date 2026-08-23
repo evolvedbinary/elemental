@@ -50,7 +50,10 @@ import java.util.Optional;
 import java.util.Properties;
 import javax.xml.transform.OutputKeys;
 
-import com.googlecode.junittoolbox.ParallelRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.EXistException;
 
@@ -62,7 +65,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
@@ -73,9 +76,7 @@ import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import static org.junit.jupiter.api.Assertions.*;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -84,11 +85,11 @@ import xyz.elemental.mediatype.MediaType;
  * 
  * @author wolf
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class DOMIndexerTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(true, true);
 
     private final static String XML =
         "<?xml version=\"1.0\"?>" +

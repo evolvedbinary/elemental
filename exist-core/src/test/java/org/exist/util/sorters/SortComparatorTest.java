@@ -22,15 +22,14 @@
 package org.exist.util.sorters;
 
 import org.exist.util.sorters.ComparatorChecker.SortOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 /**
  * Test case - given a sort() method and an algorithm via a checker, do a variety
@@ -46,30 +45,23 @@ import java.util.Random;
  * @author http://www.users.bigpond.com/pmurray
  * 
  */
-@RunWith(Parameterized.class)
 public class SortComparatorTest {
 
-    @Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        final List<Object[]> parameters = new ArrayList<>();
+    public static Stream<Arguments> data() {
+        final List<Arguments> parameters = new ArrayList<>();
         for (final SortingAlgorithmTester s : SortingAlgorithmTester.allSorters()) {
             final String name = s.getClass().getSimpleName() + ": " + PlainArrayChecker.class.getSimpleName();
-            parameters.add(new Object[]{name, new PlainArrayChecker(s)});
+            parameters.add(Arguments.of(name, new PlainArrayChecker(s)));
         }
-
-        return parameters;
+        return parameters.stream();
     }
 
     private final Random rnd = new Random();
 
-    @Parameter
-    public String sortTestName;
 
-    @Parameter(value = 1)
-    public ComparatorChecker checker;
-
-	@Test
-	public void comparatorAscending() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void comparatorAscending(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 10; i++) {
 			checker.init(getRandomIntArray(100));
 			checker.sort(SortOrder.ASCENDING);
@@ -77,8 +69,9 @@ public class SortComparatorTest {
 		}
 	}
 
-	@Test
-	public void comparatorDescending() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void comparatorDescending(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 10; i++) {
 			checker.init(getRandomIntArray(100));
 			checker.sort(SortOrder.DESCENDING);
@@ -86,22 +79,25 @@ public class SortComparatorTest {
 		}
 	}
 
-	@Test
-	public void badComparatorUnstable() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void badComparatorUnstable(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 10; i++) {
 			checker.init(getRandomIntArray(100));
 			checker.sort(SortOrder.UNSTABLE);
 		}
 	}
 
-	@Test
-	public void badComparatorRandom() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void badComparatorRandom(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		checker.init(getRandomIntArray(100));
 		checker.sort(SortOrder.RANDOM);
 	}
 
-	@Test
-	public void sortSubsection1asc() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void sortSubsection1asc(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 1000; i += 100) {
 			int[] a = new int[1000];
 
@@ -124,8 +120,9 @@ public class SortComparatorTest {
 		}
 	}
 
-	@Test
-	public void sortSubsection2asc() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void sortSubsection2asc(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 1000; i += 100) {
 			int[] a = new int[1000];
 
@@ -147,8 +144,9 @@ public class SortComparatorTest {
 		}
 	}
 
-	@Test
-	public void sortSubsection1desc() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void sortSubsection1desc(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 1000; i += 100) {
 			int[] a = new int[1000];
 
@@ -172,8 +170,9 @@ public class SortComparatorTest {
 		}
 	}
 
-	@Test
-	public void sortSubsection2desc() throws Exception {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("data")
+	public void sortSubsection2desc(final String sortTestName, final ComparatorChecker checker) throws Exception {
 		for (int i = 0; i < 1000; i += 100) {
 			int[] a = new int[1000];
 

@@ -71,8 +71,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.test.ExistWebServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
@@ -87,9 +86,9 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
 import javax.xml.transform.Source;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
@@ -98,11 +97,11 @@ import xyz.elemental.mediatype.MediaType;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * A test case for accessing a remote server via REST-Style Web API.
@@ -110,10 +109,10 @@ import static org.junit.Assume.assumeThat;
  * @author Pierrick Brihaye</a>
  */
 //@RunWith(ParallelRunner.class)    // TODO(AR) when running in parallel a deadlock is encountered... this needs to be resolved!
-public class RESTServiceTest {
+public class RESTServiceTest extends RESTTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(true, true);
 
     private static final String XML_DATA = "<test>"
             + "<para>\u00E4\u00E4\u00FC\u00FC\u00F6\u00F6\u00C4\u00C4\u00D6\u00D6\u00DC\u00DC</para>"
@@ -330,10 +329,7 @@ public class RESTServiceTest {
         return getServerUri() + XmldbURI.ROOT_COLLECTION + "/test//../test/A-Za-z0-9_~!$&'()*+,;=@%20%23%25%27%2F%3F%5B%5Däöü.xml";
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
-
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws PermissionDeniedException, IOException, TriggerException {
         credentials = Base64.encodeBase64String("admin:".getBytes(UTF_8));
         badCredentials = Base64.encodeBase64String("johndoe:this pw should fail".getBytes(UTF_8));
@@ -481,7 +477,7 @@ public class RESTServiceTest {
 
     @Test
     public void testPutPlus() throws IOException {
-        assumeThat("Requires non-Windows platform", System.getProperty("os.name").toLowerCase(), not(containsString("win")));
+        assumeTrue(!System.getProperty("os.name").toLowerCase().contains("win"), "Requires non-Windows platform");
 
         HttpResponse response = doPutWithAuth(getResourceUriPlus(), ContentType.APPLICATION_XML.getMimeType(), XML_DATA);
         int resultStatusCode = response.getStatusLine()
@@ -1461,5 +1457,44 @@ public class RESTServiceTest {
             contentType = contentType.substring(0, semicolon).trim();
         }
         assertEquals("Server returned content type: " + contentType, expectedContentType, contentType);
+    }
+
+    // --- JUnit 4 compatibility helpers (message-first overloads) -------------
+    // These adapters preserve existing message-first calls while we migrate to Jupiter.
+
+    private static void assertEquals(final String message, final int expected, final int actual) {
+        org.junit.jupiter.api.Assertions.assertEquals(expected, actual, message);
+    }
+
+    private static void assertEquals(final String message, final String expected, final String actual) {
+        org.junit.jupiter.api.Assertions.assertEquals(expected, actual, message);
+    }
+
+    private static void assertEquals(final int expected, final int actual) {
+        org.junit.jupiter.api.Assertions.assertEquals(expected, actual);
+    }
+
+    private static void assertEquals(final boolean expected, final boolean actual) {
+        org.junit.jupiter.api.Assertions.assertEquals(expected, actual);
+    }
+
+    private static void assertEquals(final String expected, final String actual) {
+        org.junit.jupiter.api.Assertions.assertEquals(expected, actual);
+    }
+
+    private static void assertTrue(final String message, final boolean condition) {
+        org.junit.jupiter.api.Assertions.assertTrue(condition, message);
+    }
+
+    private static void assertTrue(final boolean condition) {
+        org.junit.jupiter.api.Assertions.assertTrue(condition);
+    }
+
+    private static void assertFalse(final String message, final boolean condition) {
+        org.junit.jupiter.api.Assertions.assertFalse(condition, message);
+    }
+
+    private static void assertFalse(final boolean condition) {
+        org.junit.jupiter.api.Assertions.assertFalse(condition);
     }
 }

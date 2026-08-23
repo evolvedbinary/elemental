@@ -50,9 +50,11 @@ import java.util.Optional;
 
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.jupiter.ExistEmbeddedServerExtension;
 import org.exist.util.*;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.EXistException;
 import org.exist.xmldb.XmldbURI;
@@ -66,7 +68,7 @@ import xyz.elemental.mediatype.StorageType;
 import xyz.elemental.mediatype.impl.MediaTypeImpl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -75,7 +77,7 @@ import static org.junit.Assert.*;
 public class StoreBinaryTest {
 
     @Test
-    public void check_MimeType_is_preserved() throws EXistException, PermissionDeniedException, LockException, IOException, SAXException, DatabaseConfigurationException {
+    void check_MimeType_is_preserved() throws EXistException, PermissionDeniedException, LockException, IOException, SAXException, DatabaseConfigurationException {
 
         final String xqueryMimeType = MediaType.APPLICATION_XQUERY;
         final String xqueryFilename = "script.xql";
@@ -100,11 +102,11 @@ public class StoreBinaryTest {
         assertEquals(xqueryMimeType, binaryDoc.getMediaType());
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    static final ExistEmbeddedServerExtension existEmbeddedServer = new ExistEmbeddedServerExtension(true, true);
 
-    @After
-    public void removeTestResources() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+    @AfterEach
+    void removeTestResources() throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));

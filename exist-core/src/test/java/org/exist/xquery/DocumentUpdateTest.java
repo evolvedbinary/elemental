@@ -45,25 +45,25 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.jupiter.ExistXmldbEmbeddedServerExtension;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DocumentUpdateTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    static final ExistXmldbEmbeddedServerExtension existEmbeddedServer = new ExistXmldbEmbeddedServerExtension(false, true, true);
 
 	private static final String TEST_COLLECTION_NAME = "testup";
     private Collection testCollection;
@@ -192,8 +192,8 @@ public class DocumentUpdateTest {
         }
     }
 
-    @Before
-    public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         final CollectionManagementService service =
             (CollectionManagementService) existEmbeddedServer.getRoot().getService(
                 "CollectionManagementService",
@@ -202,8 +202,8 @@ public class DocumentUpdateTest {
         assertNotNull(testCollection);
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         testCollection.close();
         final CollectionManagementService service =
             (CollectionManagementService) existEmbeddedServer.getRoot().getService(

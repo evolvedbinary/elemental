@@ -22,20 +22,20 @@
 
 package org.exist.dom.memtree;
 
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.dom.QName;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Text;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class TextImplTest {
 
     @Test
@@ -260,7 +260,7 @@ public class TextImplTest {
         assertEquals("goodbyeworld", text2.getTextContent());
     }
 
-    @Test(expected=DOMException.class)
+    @Test
     public void insertData_pastEnd() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
@@ -276,7 +276,7 @@ public class TextImplTest {
         final Text text = (Text) doc.getDocumentElement().getFirstChild();
         assertEquals("hello", text.getTextContent());
 
-        text.insertData(10, "world");
+        assertThrows(DOMException.class, () -> text.insertData(10, "world"));
     }
 
     @Test
@@ -406,7 +406,7 @@ public class TextImplTest {
         assertEquals("goodbyworld", text2.getTextContent());
     }
 
-    @Test(expected=DOMException.class)
+    @Test
     public void replaceData_pastEnd() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
@@ -422,7 +422,7 @@ public class TextImplTest {
         final Text text = (Text) doc.getDocumentElement().getFirstChild();
         assertEquals("hello", text.getTextContent());
 
-        text.insertData(10, "world");
+        assertThrows(DOMException.class, () -> text.insertData(10, "world"));
     }
 
     @Test
