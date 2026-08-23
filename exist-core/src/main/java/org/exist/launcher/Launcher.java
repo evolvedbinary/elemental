@@ -160,10 +160,10 @@ public class Launcher extends Observable implements Observer {
 
         captureConsole();
 
-        // try and figure out exist home dir
-        final Optional<Path> existHomeDir = getFromSysPropOrEnv(Main.PROP_EXIST_HOME, Main.ENV_EXIST_HOME).map(Paths::get);
+        // try and figure out elemental home dir
+        final Optional<Path> elementalHomeDir = getFromSysPropOrEnv(Main.PROP_ELEMENTAL_HOME, Main.ENV_ELEMENTAL_HOME).or(() -> getFromSysPropOrEnv(Main.LEGACY_PROP_EXIST_HOME, Main.LEGACY_ENV_EXIST_HOME)).map(Paths::get);
 
-        this.jettyConfig = getJettyConfig(existHomeDir);
+        this.jettyConfig = getJettyConfig(elementalHomeDir);
 
         this.serviceManager = ServiceManagerFactory.getServiceManager();
 
@@ -759,7 +759,7 @@ public class Launcher extends Observable implements Observer {
 
     private Path getJettyConfig(final Optional<Path> existHomeDir) {
 
-        Optional<Path> existJettyConfigFile = getFromSysPropOrEnv(Main.PROP_EXIST_JETTY_CONFIG, Main.ENV_EXIST_JETTY_CONFIG).map(Paths::get);
+        Optional<Path> existJettyConfigFile = getFromSysPropOrEnv(Main.PROP_ELEMENTAL_JETTY_CONFIG, Main.ENV_ELEMENTAL_JETTY_CONFIG).or(() -> getFromSysPropOrEnv(Main.LEGACY_PROP_EXIST_JETTY_CONFIG, Main.LEGACY_ENV_EXIST_JETTY_CONFIG)).map(Paths::get);
         if (!existJettyConfigFile.isPresent()) {
             final Optional<Path> jettyHomeDir = getFromSysPropOrEnv(Main.PROP_JETTY_HOME, Main.ENV_JETTY_HOME).map(Paths::get);
 
@@ -772,7 +772,7 @@ public class Launcher extends Observable implements Observer {
             }
 
             if (!existJettyConfigFile.isPresent()) {
-                showMessageAndExit("Error Occurred", "ERROR: jetty config file could not be found! Make sure to set exist.jetty.config or EXIST_JETTY_CONFIG.", true);
+                showMessageAndExit("Error Occurred", "ERROR: jetty config file could not be found! Make sure to set elemental.jetty.config or ELEMENTAL_JETTY_CONFIG.", true);
                 System.exit(SystemExitCodes.CATCH_ALL_GENERAL_ERROR_EXIT_CODE);
             }
         }
@@ -888,7 +888,7 @@ public class Launcher extends Observable implements Observer {
                 return;
             }
             final Desktop desktop = Desktop.getDesktop();
-            final Optional<Path> home = ConfigurationHelper.getExistHome();
+            final Optional<Path> home = ConfigurationHelper.getElementalHome();
 
             final Path logFile = FileUtils.resolve(home, "logs/elemental.log");
 

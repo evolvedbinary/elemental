@@ -271,7 +271,7 @@ public class Configuration implements ErrorHandler {
     private final Map<String, Object> config = new HashMap<>(); //Configuration
 
     protected Optional<Path> configFilePath = Optional.empty();
-    protected Optional<Path> existHome = Optional.empty();
+    protected Optional<Path> elementalHome = Optional.empty();
 
     public Configuration() throws DatabaseConfigurationException {
         this(DatabaseImpl.CONF_XML, Optional.empty());
@@ -281,7 +281,7 @@ public class Configuration implements ErrorHandler {
         this(configFilename, Optional.empty());
     }
 
-    public Configuration(@Nullable String configFilename, Optional<Path> existHomeDirname)
+    public Configuration(@Nullable String configFilename, Optional<Path> elementalHomeDirname)
         throws DatabaseConfigurationException {
         InputStream is = null;
         try {
@@ -316,35 +316,35 @@ public class Configuration implements ErrorHandler {
                 LOG.debug(e);
             }
 
-            existHomeDirname = existHomeDirname.map(Path::normalize);
+            elementalHomeDirname = elementalHomeDirname.map(Path::normalize);
 
             // otherwise, secondly try to read configuration from file. Guess the
             // location if necessary
             if (is == null) {
-                existHome = existHomeDirname.map(Optional::of)
-                    .orElse(ConfigurationHelper.getExistHome(configFilename));
+                elementalHome = elementalHomeDirname.map(Optional::of)
+                    .orElse(ConfigurationHelper.getElementalHome(configFilename));
 
-                if (existHome.isEmpty()) {
+                if (elementalHome.isEmpty()) {
 
-                    // EB: try to create existHome based on location of config file
+                    // EB: try to create elementalHome based on location of config file
                     // when config file points to absolute file location
                     final Path absoluteConfigFile = Paths.get(configFilename);
 
                     if (absoluteConfigFile.isAbsolute() && Files.exists(absoluteConfigFile) && Files.isReadable(absoluteConfigFile)) {
-                        existHome = Optional.of(absoluteConfigFile.getParent());
+                        elementalHome = Optional.of(absoluteConfigFile.getParent());
                         configFilename = FileUtils.fileName(absoluteConfigFile);
                     }
                 }
 
                 Path configFile = Paths.get(configFilename);
 
-                if (!configFile.isAbsolute() && existHome.isPresent()) {
+                if (!configFile.isAbsolute() && elementalHome.isPresent()) {
 
-                    // try the passed or constructed existHome first
-                    configFile = existHome.get().resolve(configFilename);
+                    // try the passed or constructed elementalHome first
+                    configFile = elementalHome.get().resolve(configFilename);
 
                     if (!Files.exists(configFile)) {
-                        configFile = existHome.get().resolve(Main.CONFIG_DIR_NAME).resolve(configFilename);
+                        configFile = elementalHome.get().resolve(Main.CONFIG_DIR_NAME).resolve(configFilename);
                     }
                 }
 
@@ -358,11 +358,10 @@ public class Configuration implements ErrorHandler {
 
             LOG.info("Reading configuration from file {}", configFilePath.map(Path::toString).orElse("Unknown"));
 
-            // set dbHome to parent of the conf file found, to resolve relative
-            // path from conf file
-            final Optional<Path> existHomePath = configFilePath.map(Path::getParent);
+            // set dbHome to parent of the conf file found, to resolve relative path from conf file
+            final Optional<Path> elementalHomePath = configFilePath.map(Path::getParent);
 
-            loadConfigFile(is, existHomePath);
+            loadConfigFile(is, elementalHomePath);
 
         } catch (final SAXException | IOException | ParserConfigurationException e) {
             LOG.error("Error while reading config file: {}", configFilename, e);
@@ -370,20 +369,19 @@ public class Configuration implements ErrorHandler {
         }
     }
 
-    public Configuration(final InputStream config, final Optional<Path> existHome) throws DatabaseConfigurationException {
+    public Configuration(final InputStream config, final Optional<Path> elementalHome) throws DatabaseConfigurationException {
         try {
-            this.existHome = existHome;
-            loadConfigFile(config, existHome);
+            this.elementalHome = elementalHome;
+            loadConfigFile(config, elementalHome);
         } catch (final SAXException | IOException | ParserConfigurationException e) {
             LOG.error("Error while reading config file: {}", e.getMessage(), e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
         }
     }
 
-    private void loadConfigFile(final InputStream is, final Optional<Path> existHomePath) throws ParserConfigurationException, IOException, SAXException, DatabaseConfigurationException {
+    private void loadConfigFile(final InputStream is, final Optional<Path> elementalHomePath) throws ParserConfigurationException, IOException, SAXException, DatabaseConfigurationException {
         // initialize xml parser
-        // we use eXist's in-memory DOM implementation to work
-        // around a bug in Xerces
+        // we use eXist's in-memory DOM implementation to work around a bug in Xerces
         final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
         factory.setNamespaceAware(true);
 
@@ -407,7 +405,7 @@ public class Configuration implements ErrorHandler {
         //scheduler settings
         configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
         //db connection settings
-        configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(existHomePath, element));
+        configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(elementalHomePath, element));
         // lock-table settings
         configureElement(doc, "lock-manager", this::configureLockManager);
         // repository settings
@@ -427,7 +425,7 @@ public class Configuration implements ErrorHandler {
         // XQuery settings
         configureElement(doc, XQUERY_CONFIGURATION_ELEMENT_NAME, this::configureXQuery);
         // Validation
-        configureElement(doc, XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME, element -> configureValidation(existHomePath, element));
+        configureElement(doc, XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME, element -> configureValidation(elementalHomePath, element));
         // RPC server
         configureElement(doc, "rpc-server", this::configureRpcServer);
     }
@@ -1290,6 +1288,8 @@ public class Configuration implements ErrorHandler {
                 // Substitute string, creating an uri from a local file
                 if (uriAttributeValue.contains("${WEBAPP_HOME}")) {
                     uri = uriAttributeValue.replace("${WEBAPP_HOME}", webappHome.toUri().toString());
+                } else if (uriAttributeValue.contains("${ELEMENTAL_HOME}")) {
+                    uri = uriAttributeValue.replace("${ELEMENTAL_HOME}", dbHome.toString());
                 } else if (uriAttributeValue.contains("${EXIST_HOME}")) {
                     uri = uriAttributeValue.replace("${EXIST_HOME}", dbHome.toString());
                 } else {
@@ -1317,12 +1317,12 @@ public class Configuration implements ErrorHandler {
         }
     }
 
-    private void configureRpcServer(final Element validation) throws DatabaseConfigurationException {
-        configureElement(validation, "content-file", element ->
+    private void configureRpcServer(final Element rpcServer) throws DatabaseConfigurationException {
+        configureElement(rpcServer, "content-file", element ->
             configureProperty(element, "in-memory-size", PROPERTY_IN_MEMORY_SIZE, Configuration::asInteger, DEFAULT_IN_MEMORY_SIZE)
         );
-        configureElement(validation, "content-file-pool", element -> {
-            configureProperty(element, "size", ContentFilePool.PROPERTY_POOL_SIZE, Configuration::asInteger, -1);
+        configureElement(rpcServer, "content-file-pool", element -> {
+            configureProperty(element, "size", ContentFilePool.PROPERTY_POOL_SIZE, Configuration::asInteger, 10);
             configureProperty(element, "max-idle", ContentFilePool.PROPERTY_POOL_MAX_IDLE, Configuration::asInteger, 5);
         });
     }
@@ -1406,8 +1406,25 @@ public class Configuration implements ErrorHandler {
         return configFilePath;
     }
 
+    /**
+     * Get the value of ELEMENTAL_HOME.
+     *
+     * @return the path to ELEMENTAL_HOME.
+     */
+    public Optional<Path> getElementalHome() {
+        return elementalHome;
+    }
+
+    /**
+     * Get the value of ELEMENTAL_HOME.
+     *
+     * @return the path to ELEMENTAL_HOME.
+     *
+     * @deprecated use {@link #getElementalHome()} ()}.
+     */
+    @Deprecated
     public Optional<Path> getExistHome() {
-        return existHome;
+        return getElementalHome();
     }
 
     public Object getProperty(final String name) {

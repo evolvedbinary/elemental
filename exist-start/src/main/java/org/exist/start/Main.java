@@ -97,23 +97,38 @@ public class Main {
 
     public static final String CONFIG_DIR_NAME = "etc";
 
-    private static final String PROP_EXIST_START_DEBUG = "exist.start.debug";
-    public static final String PROP_EXIST_JETTY_CONFIG = "exist.jetty.config";
-    public static final String PROP_EXIST_HOME = "exist.home";
+    static final String PROP_ELEMENTAL_START_DEBUG = "elemental.start.debug";
+    @Deprecated
+    static final String LEGACY_PROP_EXIST_START_DEBUG = "exist.start.debug";
+
+    public static final String PROP_ELEMENTAL_JETTY_CONFIG = "elemental.jetty.config";
+    @Deprecated
+    public static final String LEGACY_PROP_EXIST_JETTY_CONFIG = "exist.jetty.config";
+
+    public static final String PROP_ELEMENTAL_HOME = "elemental.home";
+    @Deprecated
+    public static final String LEGACY_PROP_EXIST_HOME = "exist.home";
+
     public static final String PROP_JETTY_HOME = "jetty.home";
     private static final String PROP_LOG4J_CONFIGURATION_FILE = "log4j.configurationFile";
     private static final String PROP_JUL_MANAGER = "java.util.logging.manager";
     private static final String PROP_JAVA_TEMP_DIR = "java.io.tmpdir";
 
-    public static final String ENV_EXIST_JETTY_CONFIG = "EXIST_JETTY_CONFIG";
-    public static final String ENV_EXIST_HOME = "EXIST_HOME";
+    public static final String ENV_ELEMENTAL_JETTY_CONFIG = "ELEMENTAL_JETTY_CONFIG";
+    @Deprecated
+    public static final String LEGACY_ENV_EXIST_JETTY_CONFIG = "EXIST_JETTY_CONFIG";
+
+    public static final String ENV_ELEMENTAL_HOME = "ELEMENTAL_HOME";
+    @Deprecated
+    public static final String LEGACY_ENV_EXIST_HOME = "EXIST_HOME";
+
     public static final String ENV_JETTY_HOME = "JETTY_HOME";
 
 
     private static Main exist;
 
     private String _mode = "jetty";
-    private boolean _debug = Boolean.getBoolean(PROP_EXIST_START_DEBUG);
+    private final boolean _debug = Boolean.parseBoolean(System.getProperty(PROP_ELEMENTAL_START_DEBUG, System.getProperty(LEGACY_PROP_EXIST_START_DEBUG, "false")));
 
     public static void main(final String[] args) {
         try {
@@ -242,15 +257,15 @@ public class Main {
             System.err.println("mode=" + _mode);
         }
 
-        // try and figure out exist home dir
-        final Optional<Path> existHomeDir = getFromSysPropOrEnv(PROP_EXIST_HOME, ENV_EXIST_HOME).map(Paths::get);
+        // try and figure out Elemental home dir
+        final Optional<Path> elementalHomeDir = getFromSysPropOrEnv(PROP_ELEMENTAL_HOME, ENV_ELEMENTAL_HOME).or(() -> getFromSysPropOrEnv(LEGACY_PROP_EXIST_HOME, LEGACY_ENV_EXIST_HOME)).map(Paths::get);
 
         // try to find Jetty
         if ("jetty".equals(_mode) || "standalone".equals(_mode)) {
             final Optional<Path> jettyHomeDir = getFromSysPropOrEnv(PROP_JETTY_HOME, ENV_JETTY_HOME).map(Paths::get);
 
-            Optional<Path> existJettyConfigFile = getFromSysPropOrEnv(PROP_EXIST_JETTY_CONFIG, ENV_EXIST_JETTY_CONFIG).map(Paths::get);
-            if (!existJettyConfigFile.isPresent()) {
+            Optional<Path> elementalJettyConfigFile = getFromSysPropOrEnv(PROP_ELEMENTAL_JETTY_CONFIG, ENV_ELEMENTAL_JETTY_CONFIG).or(() -> getFromSysPropOrEnv(LEGACY_PROP_EXIST_JETTY_CONFIG, LEGACY_ENV_EXIST_JETTY_CONFIG)).map(Paths::get);
+            if (!elementalJettyConfigFile.isPresent()) {
                 final String config;
                 if ("jetty".equals(_mode)) {
                     config = STANDARD_ENABLED_JETTY_CONFIGS;
@@ -259,21 +274,21 @@ public class Main {
                 }
 
                 if (jettyHomeDir.isPresent() && Files.exists(jettyHomeDir.get().resolve(CONFIG_DIR_NAME))) {
-                    existJettyConfigFile = jettyHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve(config));
+                    elementalJettyConfigFile = jettyHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve(config));
                 }
 
-                if (existHomeDir.isPresent() && Files.exists(existHomeDir.get().resolve(CONFIG_DIR_NAME))) {
-                    existJettyConfigFile = existHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve(config));
+                if (elementalHomeDir.isPresent() && Files.exists(elementalHomeDir.get().resolve(CONFIG_DIR_NAME))) {
+                    elementalJettyConfigFile = elementalHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve(config));
                 }
 
-                if (!existJettyConfigFile.isPresent()) {
-                    System.err.println("ERROR: jetty config file could not be found! Make sure to set exist.jetty.config or EXIST_JETTY_CONFIG.");
+                if (!elementalJettyConfigFile.isPresent()) {
+                    System.err.println("ERROR: jetty config file could not be found! Make sure to set elemental.jetty.config or ELEMENTAL_JETTY_CONFIG.");
                     System.err.flush();
                     throw new StartException(ERROR_CODE_NO_JETTY_CONFIG);
                 }
             }
             final String[] jettyStartArgs = new String[1 + args.length];
-            jettyStartArgs[0] = existJettyConfigFile.get().toAbsolutePath().toString();
+            jettyStartArgs[0] = elementalJettyConfigFile.get().toAbsolutePath().toString();
             System.arraycopy(args, 0, jettyStartArgs, 1, args.length);
             args = jettyStartArgs;
         }
@@ -281,8 +296,8 @@ public class Main {
         // find log4j2.xml
         Optional<Path> log4jConfigurationFile = Optional.ofNullable(System.getProperty(PROP_LOG4J_CONFIGURATION_FILE)).map(Paths::get);
         if (!log4jConfigurationFile.isPresent()) {
-            if (existHomeDir.isPresent() && Files.exists(existHomeDir.get().resolve(CONFIG_DIR_NAME))) {
-                log4jConfigurationFile = existHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve("log4j2.xml"));
+            if (elementalHomeDir.isPresent() && Files.exists(elementalHomeDir.get().resolve(CONFIG_DIR_NAME))) {
+                log4jConfigurationFile = elementalHomeDir.map(f -> f.resolve(CONFIG_DIR_NAME).resolve("log4j2.xml"));
             }
         }
 
@@ -396,7 +411,7 @@ public class Main {
     /**
      * Copied from {@link org.exist.util.FileUtils#list(Path, Predicate)}
      * as org.exist.start is compiled into a separate Jar and doesn't have
-     * the rest of eXist available on the classpath
+     * the rest of Elemental available on the classpath
      */
     static List<Path> list(final Path directory, final Predicate<Path> filter) throws IOException {
         try(final Stream<Path> entries = Files.list(directory).filter(filter)) {
@@ -407,7 +422,7 @@ public class Main {
     /**
      * Copied from {@link org.exist.util.FileUtils#fileName(Path)}
      * as org.exist.start is compiled into a separate Jar and doesn't have
-     * the rest of eXist available on the classpath
+     * the rest of Elemental available on the classpath
      */
     static String fileName(final Path path) {
         return path.getFileName().toString();

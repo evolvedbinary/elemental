@@ -960,10 +960,10 @@
                         <systemProperties>
                             <systemProperty>file.encoding=UTF-8</systemProperty>
                             <systemProperty>log4j.configurationFile=@BASEDIR@/etc/log4j2.xml</systemProperty>
-                            <systemProperty>exist.home=@BASEDIR@</systemProperty>
-                            <systemProperty>exist.configurationFile=@BASEDIR@/etc/conf.xml</systemProperty>
+                            <systemProperty>elemental.home=@BASEDIR@</systemProperty>
+                            <systemProperty>elemental.configurationFile=@BASEDIR@/etc/conf.xml</systemProperty>
                             <systemProperty>jetty.home=@BASEDIR@</systemProperty>
-                            <systemProperty>exist.jetty.config=@BASEDIR@/etc/jetty/standard.enabled-jetty-configs</systemProperty>
+                            <systemProperty>elemental.jetty.config=@BASEDIR@/etc/jetty/standard.enabled-jetty-configs</systemProperty>
                         </systemProperties>
                     </defaultJvmSettings>
                     <licenseHeaderFile>elemental-LGPL-21-ONLY-license.txt</licenseHeaderFile>
@@ -1255,10 +1255,10 @@
                                 <option>-Dfile.encoding=UTF-8</option>
                                 <option>-Dlog4j.configurationFile=$APP_ROOT/Contents/Resources/etc/log4j2.xml</option>
                                 <option>-Dapp.repo=$APP_ROOT/Contents/Java</option>
-                                <option>-Dexist.home=$APP_ROOT/Contents/Resources</option>
-                                <option>-Dexist.configurationFile=$APP_ROOT/Contents/Resources/etc/conf.xml</option>
+                                <option>-Delemental.home=$APP_ROOT/Contents/Resources</option>
+                                <option>-Delemental.configurationFile=$APP_ROOT/Contents/Resources/etc/conf.xml</option>
                                 <option>-Djetty.home=$APP_ROOT/Contents/Resources</option>
-                                <option>-Dexist.jetty.config=$APP_ROOT/Contents/Resources/etc/jetty/standard.enabled-jetty-configs</option>
+                                <option>-Delemental.jetty.config=$APP_ROOT/Contents/Resources/etc/jetty/standard.enabled-jetty-configs</option>
                                 <option>-Xdock:name=Elemental</option>
                                 <option>-Dapple.laf.useScreenMenuBar=true</option>
                             </options>

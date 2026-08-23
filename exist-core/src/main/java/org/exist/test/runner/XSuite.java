@@ -80,8 +80,8 @@ import static com.evolvedbinary.j8fu.Either.Right;
  * Using <code>XSuite</code> as a runner allows you to manually
  * build a suite containing tests from both:
  *
- * 1. XQSuite - as defined in $EXIST_HOME/src/org/exist/xquery/lib/xqsuite/xqsuite.xql
- * 2. XML Test - as defined in $EXIST_HOME/src/org/exist/xquery/lib/test.xq
+ * 1. XQSuite - as defined in exist-core/src/main/resources/org/exist/xquery/lib/xqsuite/xqsuite.xql
+ * 2. XML Test - as defined in exist-core/src/main/resources/org/exist/xquery/lib/test.xq
  *
  * To use it, annotate a class
  * with <code>@RunWith(XSuite.class)</code> and <code>@XSuiteClasses({"extensions/my-extension/src/test/xquery", ...})</code>.

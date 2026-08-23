@@ -748,7 +748,7 @@ public class Deployment {
         final ConsumerE<XQueryContext, XPathException> setupXqueryContextPreExecution = xqueryContext -> {
             xqueryContext.declareVariable("dir", true, tempDir.toAbsolutePath().toString());
 
-            final Optional<Path> home = broker.getConfiguration().getExistHome();
+            final Optional<Path> home = broker.getConfiguration().getElementalHome();
             if (home.isPresent()) {
                 xqueryContext.declareVariable("home", true, home.get().toAbsolutePath().toString());
             }

@@ -105,6 +105,7 @@
         <jaxb.api.version>4.0.4</jaxb.api.version>
         <jaxb.impl.version>4.0.6</jaxb.impl.version>
         <slf4j.version>2.0.17</slf4j.version>
+        <saxon.version>9.9.1-8</saxon.version>
 
         <!-- Surefire parallel configuration -->
         <surefire.forkCount>1C</surefire.forkCount>
@@ -128,6 +129,12 @@
                 <groupId>org.jspecify</groupId>
                 <artifactId>jspecify</artifactId>
                 <version>1.0.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.sf.saxon</groupId>
+                <artifactId>Saxon-HE</artifactId>
+                <version>${saxon.version}</version>
             </dependency>
 
             <dependency>
@@ -223,6 +230,21 @@
                     <groupId>org.jvnet.jaxb</groupId>
                     <artifactId>jaxb-maven-plugin</artifactId>
                     <version>4.0.12</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>xml-maven-plugin</artifactId>
+                    <version>1.2.0</version>
+                    <configuration>
+                        <transformerFactory>net.sf.saxon.TransformerFactoryImpl</transformerFactory>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>net.sf.saxon</groupId>
+                            <artifactId>Saxon-HE</artifactId>
+                            <version>${saxon.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
