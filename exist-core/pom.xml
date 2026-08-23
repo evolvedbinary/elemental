@@ -277,12 +277,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.exist-db.thirdparty.javax.xml.xquery</groupId>
-            <artifactId>xqjri</artifactId>
-            <version>20080114-133351</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
             <version>${jline.version}</version>

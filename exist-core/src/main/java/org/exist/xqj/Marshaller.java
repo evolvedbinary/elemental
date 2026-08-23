@@ -71,8 +71,6 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.xquery.XQException;
-import javax.xml.xquery.XQItemType;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -494,27 +492,6 @@ public class Marshaller {
         }
     }
 
-    public static Item streamToDOM(XMLStreamReader parser, XQItemType type) throws XMLStreamException, XQException {
-        if (type.getBaseType() == XQItemType.XQITEMKIND_DOCUMENT_ELEMENT ||
-                type.getBaseType() == XQItemType.XQITEMKIND_DOCUMENT_SCHEMA_ELEMENT)
-            {return streamToDOM(Type.DOCUMENT, parser, null);}
-        else
-            {return streamToDOM(Type.ELEMENT, parser, null);}
-    }
-
-    /**
-     * Creates an Item from a streamed representation.
-     *
-     * @param rootType the type of the root node
-     * @param parser Parser to read xml elements from
-     * @return item the item
-     *
-     * @throws XMLStreamException if an error occurs during streaming.
-     */
-    public static Item streamToDOM(int rootType, XMLStreamReader parser) throws XMLStreamException {
-        return streamToDOM(rootType, parser, null);
-    }
-
     /**
      * Creates an Item from a streamed representation.
      *
@@ -576,29 +553,6 @@ public class Marshaller {
         else
             {return (NodeImpl) builder.getDocument().getFirstChild();}
     }
-    
-    
-    
-    /**
-     * Creates an Item from a streamed representation.
-     *
-     * @param reader the reader.
-     * @param type the type of the item.
-     * @return item the result item
-     *
-     * @throws XMLStreamException if an error occurs during streaming.
-     * @throws XQException if any other error occurs.
-     */
-    public static Item streamToDOM(Reader reader, XQItemType type) throws XMLStreamException, XQException {
-    	final XMLInputFactory factory = XMLInputFactory.newInstance();
-        factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
-        factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
-        final XMLStreamReader parser = factory.createXMLStreamReader(reader);
-        
-        return streamToDOM(parser, type);
-    }
-    
-    
     
     /**
      * Creates a node from a string representation.
