@@ -1265,7 +1265,7 @@ public class InteractiveClient {
             consoleOut("Sort-by = " + sortBy);
         }
 
-        final EXistXPathQueryService service = (EXistXPathQueryService) getCollection().getService("EXistXPathQueryService", "1.0");
+        final EXistXPathQueryService service = (EXistXPathQueryService) getCollection().getService("XPathQueryService", "1.0");
         service.setProperty(OutputKeys.INDENT, properties.getProperty(INDENT));
         service.setProperty(OutputKeys.ENCODING, properties.getProperty(ENCODING));
 
