@@ -45,8 +45,8 @@
  */
 package org.exist.util.sorters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.exist.dom.persistent.NodeProxy;
 
@@ -73,6 +73,7 @@ class NodeProxyByIdChecker extends NodeProxyChecker {
 	 * It asserts the ascending ordering of an NodeProxy array
 	 * based on NodeId
 	 */
+    @Override
 	void check(int lo, int hi) {
 		for (int i = lo; i < hi; i++) {
 			assertTrue(((SortTestNodeProxy) a[i]).getNodeId().i <= ((SortTestNodeProxy) a[i + 1])
@@ -84,7 +85,8 @@ class NodeProxyByIdChecker extends NodeProxyChecker {
 	 * It asserts the ascending ordering of a NodeProxy array
 	 * based on the NodeIds
 	 */
-	void init(int[] values) throws Exception {
+    @Override
+	void init(int[] values) {
 		a = new NodeProxy[values.length];
 		for (int i = 0; i < values.length; i++) {
 			a[i] = new SortTestNodeProxy(values[i], -rnd.nextInt(1000));
@@ -95,14 +97,16 @@ class NodeProxyByIdChecker extends NodeProxyChecker {
 	 * This method invokes sort routine on selected sorter
 	 * based on NodeId from NodeProxy elements
 	 */
-	void sort(int lo, int hi) throws Exception {
+    @Override
+	void sort(int lo, int hi) {
 		sorter.sortByNodeId(a, lo, hi);
 	}
 
 	/**
 	 * This method asserts single values
 	 */
+    @Override
 	void checkValue(int idx, int v) {
-		assertEquals("@" + idx, v, ((SortTestNodeProxy) a[idx]).getNodeId().i);
+		assertEquals(v, ((SortTestNodeProxy) a[idx]).getNodeId().i, "@" + idx);
 	}
 }

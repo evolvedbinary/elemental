@@ -33,22 +33,21 @@
 package org.exist.storage.txn;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.exist.EXistException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class TxnTest {
+@Execution(ExecutionMode.CONCURRENT)
+class TxnTest {
 
     final TransactionManagerTestHelper helper = new TransactionManagerTestHelper();
 
     @Test
-    public void commitTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void commitTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(false);
 
         final Txn transaction = transact.beginTransaction();
@@ -67,7 +66,7 @@ public class TxnTest {
     }
 
     @Test
-    public void commitAndCloseTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void commitAndCloseTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(true);
 
         final Txn transaction = transact.beginTransaction();
@@ -87,7 +86,7 @@ public class TxnTest {
     }
 
     @Test
-    public void abortTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void abortTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(false);
 
         final Txn transaction = transact.beginTransaction();
@@ -106,7 +105,7 @@ public class TxnTest {
     }
 
     @Test
-    public void abortAndCloseTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void abortAndCloseTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(true);
 
         final Txn transaction = transact.beginTransaction();
@@ -126,7 +125,7 @@ public class TxnTest {
     }
 
     @Test
-    public void repeatedAbortOnlyAbortsTransactionOnce() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void repeatedAbortOnlyAbortsTransactionOnce() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(false);
 
         final Txn transaction = transact.beginTransaction();
@@ -148,7 +147,7 @@ public class TxnTest {
     }
 
     @Test
-    public void closeWithoutCommitAbortsTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void closeWithoutCommitAbortsTransaction() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(true);
 
         final Txn transaction = transact.beginTransaction();
@@ -167,7 +166,7 @@ public class TxnTest {
     }
 
     @Test
-    public void repeatedCloseWithoutCommitOnlyAbortsTransactionOnce() throws NoSuchFieldException, IllegalAccessException, EXistException {
+    void repeatedCloseWithoutCommitOnlyAbortsTransactionOnce() throws NoSuchFieldException, IllegalAccessException, EXistException {
         final TransactionManager transact = helper.createTestableTransactionManager(true);
 
         final Txn transaction = transact.beginTransaction();

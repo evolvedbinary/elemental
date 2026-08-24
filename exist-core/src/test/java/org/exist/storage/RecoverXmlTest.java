@@ -39,12 +39,14 @@ import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.journal.Journal;
 import org.exist.storage.txn.Txn;
-import org.exist.util.*;
+import org.exist.util.FileInputSource;
+import org.exist.util.LockException;
+import org.exist.util.MimeType;
+import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
@@ -53,6 +55,8 @@ import org.xmlunit.diff.Diff;
 import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.Source;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -62,31 +66,31 @@ import java.util.Random;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RecoverXmlTest extends AbstractRecoverTest {
 
-    @ClassRule
-    public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
+
     private static Path testFile1 = null;
     private static Path testFile2 = null;
 
-    @BeforeClass
-    public static void storeTempXmlDocs() throws IOException {
-        testFile1 = temporaryFolder.getRoot().toPath().resolve("RecoverXmlTest.doc1.xml");
+    @BeforeAll
+    static void storeTempXmlDocs() throws IOException {
+        testFile1 = TEMPORARY_FOLDER.toPath().resolve("RecoverXmlTest.doc1.xml");
         Files.write(testFile1, Arrays.asList("<?xml version=\"1.0\" encoding=\"UTF-8\"?><element1>text1</element1>"), CREATE_NEW);
 
-        testFile2 = temporaryFolder.getRoot().toPath().resolve("RecoverXmlTest.doc2.xml");
+        testFile2 = TEMPORARY_FOLDER.toPath().resolve("RecoverXmlTest.doc2.xml");
         Files.write(testFile2, Arrays.asList("<?xml version=\"1.0\" encoding=\"UTF-8\"?><element2>text2</element2>"), CREATE_NEW);
     }
 
     @Test
-    public void storeLargeAndLoad() throws LockException, SAXException, PermissionDeniedException, EXistException,
-            IOException, DatabaseConfigurationException, InterruptedException {
+    void storeLargeAndLoad() throws LockException, SAXException, PermissionDeniedException, EXistException, {
         // generate a string filled with random a-z characters which is larger than the journal buffer
         final byte[] buf = new byte[Journal.BUFFER_SIZE * 3]; // 3 * the journal buffer size
         final Random random = new Random();
@@ -103,7 +107,7 @@ public class RecoverXmlTest extends AbstractRecoverTest {
         store(COMMIT, source, "large.xml");
         flushJournal();
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
 
         BrokerPool.FORCE_CORRUPTION = false;
         read(MUST_EXIST, source, "large.xml");
@@ -152,7 +156,7 @@ public class RecoverXmlTest extends AbstractRecoverTest {
                 .checkForIdentical()
                 .build();
 
-        assertFalse("XML identical: " + diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), "XML identical: " + diff.toString());
     }
 
     private final String readAll(final Reader reader) throws IOException {
@@ -186,6 +190,6 @@ public class RecoverXmlTest extends AbstractRecoverTest {
                 .checkForIdentical()
                 .build();
 
-        assertFalse("XML identical: " + diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), "XML identical: " + diff.toString());
     }
 }

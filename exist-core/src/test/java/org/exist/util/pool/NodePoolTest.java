@@ -44,20 +44,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.util.pool;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 import org.exist.dom.persistent.NodeImpl;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NodePoolTest {
+class NodePoolTest {
 
     /**
      * Make sure the NodePool doesn't grow beyond its bounds.
      */
     @Test
-    public void testPool() {
+    void pool() {
         NodePool pool = NodePool.getInstance();
         NodeImpl nodes[] = new NodeImpl[100];
 

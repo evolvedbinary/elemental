@@ -34,13 +34,13 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.mock;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class XPathUtilTest {
+class XPathUtilTest {
 
     @Test
-    public void listStringsToSequenceStrings() throws XPathException {
+    void listStringsToSequenceStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
 
         final List<String> strings = Arrays.asList("hello", "goodbye");
@@ -56,7 +56,7 @@ public class XPathUtilTest {
     }
 
     @Test
-    public void arrayStringsToSequenceStrings() throws XPathException {
+    void arrayStringsToSequenceStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
 
         final String[] strings = { "hello", "goodbye" };
@@ -72,7 +72,7 @@ public class XPathUtilTest {
     }
 
     @Test
-    public void listListStringsToSequenceStrings() throws XPathException {
+    void listListStringsToSequenceStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
 
         final List<List<String>> list = Arrays.asList(
@@ -94,7 +94,7 @@ public class XPathUtilTest {
     }
 
     @Test
-    public void arrayArrayStringsToSequenceStrings() throws XPathException {
+    void arrayArrayStringsToSequenceStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
 
         final Object[] array = new Object[2];
@@ -115,7 +115,7 @@ public class XPathUtilTest {
     }
 
     @Test
-    public void arrayWrapperStringsToArrayStrings() throws XPathException {
+    void arrayWrapperStringsToArrayStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
 
@@ -137,7 +137,7 @@ public class XPathUtilTest {
     }
 
     @Test
-    public void arrayArrayWrapperStringsToArrayStrings() throws XPathException {
+    void arrayArrayWrapperStringsToArrayStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
 
@@ -165,7 +165,7 @@ public class XPathUtilTest {
     }
 
     @Test
-    public void arrayArrayWrapperStringSequenceToArrayStrings() throws XPathException {
+    void arrayArrayWrapperStringSequenceToArrayStrings() throws XPathException {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
 

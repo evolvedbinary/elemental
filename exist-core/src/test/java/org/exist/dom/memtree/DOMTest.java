@@ -45,45 +45,40 @@
  */
 package org.exist.dom.memtree;
 
-import java.io.IOException;
 import java.io.StringReader;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
-import javax.xml.transform.TransformerException;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.QName;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.serializer.DOMSerializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.AttributesImpl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author wolf
  */
-@RunWith(ParallelRunner.class)
-public class DOMTest {
+@Execution(ExecutionMode.CONCURRENT)
+class DOMTest {
 
     private final static String XML =
             "<test count=\"1\" value=\"5543\" xmlns:x=\"http://foo.org\" xmlns=\"http://bla.org\"><x:title id=\"s1\">My title</x:title><paragraph>First paragraph</paragraph>"
                     + "<section><title>subsection</title></section></test>";
 
     @Test
-    public void documentBuilder() throws ParserConfigurationException, SAXException, IOException, TransformerException {
+    void documentBuilder() throws ParserConfigurationException, SAXException, IOException, TransformerException {
         DocumentBuilderReceiver receiver = new DocumentBuilderReceiver();
         SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
         factory.setNamespaceAware(true);
@@ -103,7 +98,7 @@ public class DOMTest {
     }
 
     @Test
-    public void getChildNodes1() {
+    void getChildNodes1() {
         MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("top", null, null), null);
@@ -118,7 +113,7 @@ public class DOMTest {
     }
 
     @Test
-    public void getChildNodes2() {
+    void getChildNodes2() {
         MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("top", null, null), null);
@@ -136,7 +131,7 @@ public class DOMTest {
     }
 
     @Test
-    public void getElementsByTagName() {
+    void getElementsByTagName() {
         MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("xquery", null, null), null);
@@ -180,19 +175,19 @@ public class DOMTest {
         DocumentImpl doc = builder.getDocument();
 
         Node nXQuery = doc.getFirstChild();
-        assertTrue(nXQuery.getNodeType() == Node.ELEMENT_NODE);
-        assertTrue(nXQuery.getLocalName().equals("xquery"));
+        assertEquals(Node.ELEMENT_NODE, nXQuery.getNodeType());
+        assertEquals("xquery", nXQuery.getLocalName());
 
         Node nBuiltinModules = nXQuery.getFirstChild();
-        assertTrue(nBuiltinModules.getNodeType() == Node.ELEMENT_NODE);
-        assertTrue(nBuiltinModules.getLocalName().equals("builtin-modules"));
+        assertEquals(Node.ELEMENT_NODE, nBuiltinModules.getNodeType());
+        assertEquals("builtin-modules", nBuiltinModules.getLocalName());
 
         NodeList nlModules = nBuiltinModules.getChildNodes();
         for (int i = 0; i < nlModules.getLength(); i++) {
             Node nModule = nlModules.item(i);
 
-            assertTrue(nModule.getNodeType() == Node.ELEMENT_NODE);
-            assertTrue(nModule.getLocalName().equals("module"));
+            assertEquals(Node.ELEMENT_NODE, nModule.getNodeType());
+            assertEquals("module", nModule.getLocalName());
 
             Element eModule = (Element) nModule;
             NodeList nlParameter = eModule.getElementsByTagName("parameter");

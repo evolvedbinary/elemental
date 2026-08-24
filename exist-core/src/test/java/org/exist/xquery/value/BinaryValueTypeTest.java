@@ -27,17 +27,18 @@ import java.util.function.BiFunction;
 
 import org.exist.util.io.Base64OutputStream;
 import org.exist.xquery.XPathException;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  * @author <a href="mailto:adam@existsolutions.com">Adam Retter</a>
  */
-public class BinaryValueTypeTest {
+class BinaryValueTypeTest {
 
     @Test
-    public void verifyAndFormat_does_trim() throws XPathException {
+    void verifyAndFormat_does_trim() throws XPathException {
         final String testValue = " HELLO \r\n";
         final BinaryValueType<Base64OutputStream> binaryValueType = new TestableBinaryValueType<>(Type.BASE64_BINARY, Base64OutputStream::new);
         final String result = binaryValueType.verifyAndFormatString(testValue);
@@ -46,7 +47,7 @@ public class BinaryValueTypeTest {
     }
 
     @Test
-    public void verifyAndFormat_replaces_whiteSpace() throws XPathException {
+    void verifyAndFormat_replaces_whiteSpace() throws XPathException {
         final String testValue = "HELLO WO RLD";
 
         final BinaryValueType<Base64OutputStream> binaryValueType = new TestableBinaryValueType<>(Type.BASE64_BINARY, Base64OutputStream::new);

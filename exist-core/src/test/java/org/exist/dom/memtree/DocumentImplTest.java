@@ -49,8 +49,8 @@ import com.googlecode.junittoolbox.ParallelRunner;
 import org.apache.xerces.dom.AttrNSImpl;
 import org.exist.Namespaces;
 import org.exist.util.ExistSAXParserFactory;
+import org.junit.jupiter.api.Test;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.*;
 import org.xml.sax.*;
@@ -62,13 +62,13 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Retter <adam@evolvedbinary.com>
  */
-@RunWith(ParallelRunner.class)
-public class DocumentImplTest {
+@Execution(ExecutionMode.CONCURRENT)
+class DocumentImplTest {
 
     private static final String DOC_WITH_NAMESPACES =
             "<repo:meta xmlns=\"http://exist-db.org/xquery/repo\" xmlns:repo=\"http://exist-db.org/xquery/repo\">\n" +
@@ -76,7 +76,7 @@ public class DocumentImplTest {
             "</repo:meta>";
 
     @Test
-    public void checkNamespaces_xerces() throws IOException, ParserConfigurationException, SAXException {
+    void checkNamespaces_xerces() throws IOException, ParserConfigurationException, SAXException {
         final Document doc;
         try(final InputStream is = new UnsynchronizedByteArrayInputStream(DOC_WITH_NAMESPACES.getBytes(UTF_8))) {
             doc = parseXerces(is);
@@ -90,16 +90,16 @@ public class DocumentImplTest {
 
         final Attr attr1 = (Attr)attrs.item(index++);
         assertEquals(Node.ATTRIBUTE_NODE, attr1.getNodeType());
-        assertTrue(attr1 instanceof AttrNSImpl);
+        assertInstanceOf(AttrNSImpl.class, attr1);
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr1.getNamespaceURI());
-        assertEquals(null, attr1.getPrefix());
+        assertNull(attr1.getPrefix());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr1.getLocalName());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr1.getNodeName());
         assertEquals("http://exist-db.org/xquery/repo", attr1.getValue());
 
         final Attr attr2 = (Attr)attrs.item(index++);
         assertEquals(Node.ATTRIBUTE_NODE, attr2.getNodeType());
-        assertTrue(attr2 instanceof AttrNSImpl);
+        assertInstanceOf(AttrNSImpl.class, attr2);
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr2.getNamespaceURI());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr2.getPrefix());
         assertEquals("repo", attr2.getLocalName());
@@ -109,7 +109,7 @@ public class DocumentImplTest {
     }
 
     @Test
-    public void checkNamespaces_saxon() throws IOException, ParserConfigurationException, SAXException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    void checkNamespaces_saxon() throws IOException, ParserConfigurationException, SAXException, IllegalAccessException, InstantiationException, ClassNotFoundException {
         final Document doc;
         try(final InputStream is = new UnsynchronizedByteArrayInputStream(DOC_WITH_NAMESPACES.getBytes(UTF_8))) {
             doc = parseSaxon(is);
@@ -132,7 +132,7 @@ public class DocumentImplTest {
         final Attr attr2 = (Attr)attrs.item(index++);
         assertEquals(Node.ATTRIBUTE_NODE, attr2.getNodeType());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr2.getNamespaceURI());
-        assertEquals(null, attr2.getPrefix());
+        assertNull(attr2.getPrefix());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr2.getLocalName());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr2.getNodeName());
         assertEquals("http://exist-db.org/xquery/repo", attr2.getValue());
@@ -147,7 +147,7 @@ public class DocumentImplTest {
     }
 
     @Test
-    public void checkNamespaces_exist() throws IOException, SAXException, ParserConfigurationException {
+    void checkNamespaces_exist() throws IOException, SAXException, ParserConfigurationException {
         final DocumentImpl doc;
         try(final InputStream is = new UnsynchronizedByteArrayInputStream(DOC_WITH_NAMESPACES.getBytes(UTF_8))) {
             doc = parseExist(is);
@@ -161,16 +161,16 @@ public class DocumentImplTest {
 
         final Attr attr1 = (Attr)attrs.item(index++);
         assertEquals(NodeImpl.NAMESPACE_NODE, attr1.getNodeType());
-        assertTrue(attr1 instanceof NamespaceNode);
+        assertInstanceOf(NamespaceNode.class, attr1);
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr1.getNamespaceURI());
-        assertEquals(null, attr1.getPrefix());
+        assertNull(attr1.getPrefix());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr1.getLocalName());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr1.getNodeName());
         assertEquals("http://exist-db.org/xquery/repo", attr1.getValue());
 
         final Attr attr2 = (Attr)attrs.item(index++);
         assertEquals(NodeImpl.NAMESPACE_NODE, attr2.getNodeType());
-        assertTrue(attr2 instanceof NamespaceNode);
+        assertInstanceOf(NamespaceNode.class, attr2);
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, attr2.getNamespaceURI());
         assertEquals(XMLConstants.XMLNS_ATTRIBUTE, attr2.getPrefix());
         assertEquals("repo", attr2.getLocalName());
@@ -179,7 +179,7 @@ public class DocumentImplTest {
     }
 
     @Test
-    public void testGetInScopePrefix() throws IOException, ParserConfigurationException, SAXException {
+    void getInScopePrefix() throws IOException, ParserConfigurationException, SAXException {
         final MemTreeBuilder memtreeBuilder = new MemTreeBuilder();
         final DocumentBuilderReceiver documentBuilderReceiver = new DocumentBuilderReceiver(memtreeBuilder, true);
 
@@ -196,7 +196,7 @@ public class DocumentImplTest {
         }
 
         final Document document = memtreeBuilder.getDocument();
-        assertTrue(document instanceof DocumentImpl);
+        assertInstanceOf(DocumentImpl.class, document);
         final DocumentImpl documentImpl = (DocumentImpl) document;
 
         final int lastNodeNumber = documentImpl.getLastNode();

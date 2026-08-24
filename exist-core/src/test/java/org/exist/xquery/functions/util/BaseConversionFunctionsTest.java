@@ -22,25 +22,25 @@
 package org.exist.xquery.functions.util;
 
 import org.easymock.EasyMock;
-import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-public class BaseConversionFunctionsTest {
+class BaseConversionFunctionsTest {
 
     /**
      * Test of eval method, of class PermissionsFunctions.
      */
     @Test
-    public void intToOctal() throws XPathException {
+    void intToOctal() throws XPathException {
        final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
        final BaseConversionFunctions baseConversionFunctions = new BaseConversionFunctions(mckContext, BaseConversionFunctions.FNS_INT_TO_OCTAL);
@@ -53,9 +53,9 @@ public class BaseConversionFunctionsTest {
        assertEquals(1, result.getItemCount());
        assertEquals("0777", result.itemAt(0).toString());
     }
-    
+
     @Test
-    public void octalToInt() throws XPathException {
+    void octalToInt() throws XPathException {
        final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
        final BaseConversionFunctions baseConversionFunctions = new BaseConversionFunctions(mckContext, BaseConversionFunctions.FNS_OCTAL_TO_INT);

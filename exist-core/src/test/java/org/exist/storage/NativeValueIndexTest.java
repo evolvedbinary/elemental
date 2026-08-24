@@ -24,30 +24,24 @@ package org.exist.storage;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.AtomicValue;
 import org.exist.xquery.value.Type;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
-import java.util.Arrays;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@CsvSource({
+    "xs:string," + Type.STRING,
+    "xs:int," + Type.INT
+})
 public class NativeValueIndexTest {
 
-    @Parameterized.Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {
-                { "xs:string", Type.STRING },
-                { "xs:int", Type.INT }
-        });
-    }
-
-    @Parameterized.Parameter
+    @Parameter(0)
     public String typeName;
-
-    @Parameterized.Parameter(value = 1)
+    @Parameter(1)
     public int type;
 
     @Test

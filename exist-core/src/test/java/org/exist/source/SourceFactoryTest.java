@@ -50,29 +50,26 @@ import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.EXistException;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.LockedDocument;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Optional;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(ParallelRunner.class)
-public class SourceFactoryTest {
+@Execution(ExecutionMode.CONCURRENT)
+class SourceFactoryTest {
 
     @Test
-    public void getSourceFromFile_contextAbsoluteFileUrl_locationAbsoluteUrl() throws IOException, PermissionDeniedException, URISyntaxException {
+    void getSourceFromFile_contextAbsoluteFileUrl_locationAbsoluteUrl() throws IOException, PermissionDeniedException, URISyntaxException {
         final URL mainUrl = getClass().getResource("main.xq");
         final String contextPath = mainUrl.toString();
         final URL libraryUrl = getClass().getResource("library.xqm");
@@ -80,12 +77,12 @@ public class SourceFactoryTest {
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof FileSource);
+        assertInstanceOf(FileSource.class, source);
         assertEquals(new java.io.File(libraryUrl.toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
-    public void getSourceFromFile_contextAbsoluteFile_locationAbsoluteFile() throws IOException, PermissionDeniedException, URISyntaxException {
+    void getSourceFromFile_contextAbsoluteFile_locationAbsoluteFile() throws IOException, PermissionDeniedException, URISyntaxException {
         final URL mainUrl = getClass().getResource("main.xq");
         final String contextPath = Paths.get(mainUrl.toURI()).toAbsolutePath().toString();
         final URL libraryUrl = getClass().getResource("library.xqm");
@@ -93,36 +90,36 @@ public class SourceFactoryTest {
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof FileSource);
+        assertInstanceOf(FileSource.class, source);
         assertEquals(new java.io.File(libraryUrl.toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
-    public void getSourceFromFile_contextAbsoluteFileUrl_locationRelative() throws IOException, PermissionDeniedException, URISyntaxException {
+    void getSourceFromFile_contextAbsoluteFileUrl_locationRelative() throws IOException, PermissionDeniedException, URISyntaxException {
         final URL mainUrl = getClass().getResource("main.xq");
         final String contextPath = mainUrl.toString();
         final String location = "library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof FileSource);
+        assertInstanceOf(FileSource.class, source);
         assertEquals(new java.io.File(getClass().getResource("library.xqm").toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
-    public void getSourceFromFile_contextAbsoluteFile_locationRelative() throws IOException, PermissionDeniedException, URISyntaxException {
+    void getSourceFromFile_contextAbsoluteFile_locationRelative() throws IOException, PermissionDeniedException, URISyntaxException {
         final URL mainUrl = getClass().getResource("main.xq");
         final String contextPath = Paths.get(mainUrl.toURI()).toAbsolutePath().toString();
         final String location = "library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof FileSource);
+        assertInstanceOf(FileSource.class, source);
         assertEquals(new java.io.File(getClass().getResource("library.xqm").toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
-    public void getSourceFromFile_contextAbsoluteDir_locationRelative() throws IOException, PermissionDeniedException, URISyntaxException {
+    void getSourceFromFile_contextAbsoluteDir_locationRelative() throws IOException, PermissionDeniedException, URISyntaxException {
         final URL mainUrl = getClass().getResource("main.xq");
         final String contextPath = Paths.get(mainUrl.toURI()).getParent().toString();
         //final String contextPath = mainParent.substring(0, mainParent.lastIndexOf('/'));
@@ -130,106 +127,106 @@ public class SourceFactoryTest {
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof FileSource);
+        assertInstanceOf(FileSource.class, source);
         assertEquals(Paths.get(getClass().getResource("library.xqm").toURI()).toString(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextAbsoluteFileUrl_locationRelative() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextAbsoluteFileUrl_locationRelative() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source/main.xq";
         final String location = "library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, source);
         assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextAbsoluteFileUrl_locationAbsoluteUrl() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextAbsoluteFileUrl_locationAbsoluteUrl() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source/main.xq";
         final String location = "resource:org/exist/source/library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, source);
         assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextAbsoluteFileUrl_locationRelativeUrl() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextAbsoluteFileUrl_locationRelativeUrl() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source/main.xq";
         final String location = "library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, source);
         assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextAbsoluteFileUrl_locationRelativeUrl_basedOnSource() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextAbsoluteFileUrl_locationRelativeUrl_basedOnSource() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source/main.xq";
         final String location = "library.xqm";
 
         final Source mainSource = SourceFactory.getSource(null, "", contextPath, false);
-        assertTrue(mainSource instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, mainSource);
 
         final Source relativeSource = SourceFactory.getSource(null, ((ClassLoaderSource)mainSource).getSource(), location, false);
 
-        assertTrue(relativeSource instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, relativeSource);
         assertEquals(getClass().getResource(location).getFile(), relativeSource.path());
     }
 
     @Test
-    public void getSourceFromResource_contextFolderUrl_locationRelative() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextFolderUrl_locationRelative() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source";
         final String location = "library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, source);
         assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextFolderUrl_locationAbsoluteUrl() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextFolderUrl_locationAbsoluteUrl() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source";
         final String location = "resource:org/exist/source/library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, source);
         assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextFolderUrl_locationRelativeUrl() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextFolderUrl_locationRelativeUrl() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source";
         final String location = "library.xqm";
 
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
-        assertTrue(source instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, source);
         assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
-    public void getSourceFromResource_contextFolderUrl_locationRelativeUrl_basedOnSource() throws IOException, PermissionDeniedException {
+    void getSourceFromResource_contextFolderUrl_locationRelativeUrl_basedOnSource() throws IOException, PermissionDeniedException {
         final String contextPath = "resource:org/exist/source";
         final String location = "library.xqm";
 
         final Source mainSource = SourceFactory.getSource(null, "", contextPath, false);
-        assertTrue(mainSource instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, mainSource);
 
         final Source relativeSource = SourceFactory.getSource(null, ((ClassLoaderSource)mainSource).getSource(), location, false);
 
-        assertTrue(relativeSource instanceof ClassLoaderSource);
+        assertInstanceOf(ClassLoaderSource.class, relativeSource);
         assertEquals(getClass().getResource(location).getFile(), relativeSource.path());
     }
 
     @Test
-    public void getSourceFromXmldb_noContext() throws IOException, PermissionDeniedException, EXistException {
+    void getSourceFromXmldb_noContext() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "xmldb:exist:///db/library.xqm";
 
@@ -254,14 +251,14 @@ public class SourceFactoryTest {
         replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DbUriSource);
-        assertEquals(XmldbURI.create(location), ((DbUriSource)libSource).getDocumentPath());
+        assertInstanceOf(DbUriSource.class, libSource);
+        assertEquals(XmldbURI.create(location), ((DBUriSource)libSource).getDocumentPath());
 
         verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getSourceFromXmldb() throws IOException, PermissionDeniedException, EXistException {
+    void getSourceFromXmldb() throws IOException, PermissionDeniedException {
         final String contextPath = "xmldb:exist:///db";
         final String location = "library.xqm";
 
@@ -286,14 +283,14 @@ public class SourceFactoryTest {
         replay(mockBrokerPool, mockBroker,mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DbUriSource);
+        assertInstanceOf(DbUriSource.class, libSource);
         assertEquals(XmldbURI.create(contextPath).append(location), ((DbUriSource)libSource).getDocumentPath());
 
         verify(mockBrokerPool, mockBroker,mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getNonExistentSourceFromXmldb_noContext() throws IOException, PermissionDeniedException, EXistException {
+    void getNonExistentSourceFromXmldb_noContext() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "xmldb:exist:///db/library.xqm";
 
@@ -318,7 +315,7 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getNonExistentSourceFromXmldb() throws IOException, PermissionDeniedException, EXistException {
+    void getNonExistentSourceFromXmldb() throws IOException, PermissionDeniedException {
         final String contextPath = "xmldb:exist:///db";
         final String location = "library.xqm";
 
@@ -343,7 +340,7 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException, EXistException {
+    void getSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "xmldb:exist://embedded-eXist-server/db/library.xqm";
 
@@ -368,14 +365,14 @@ public class SourceFactoryTest {
         replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DbUriSource);
+        assertInstanceOf(DbUriSource.class, libSource);
         assertEquals(XmldbURI.create(location), ((DbUriSource)libSource).getDocumentPath());
 
         verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException, EXistException {
+    void getSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException {
         final String contextPath = "xmldb:exist://embedded-eXist-server/db";
         final String location = "library.xqm";
 
@@ -400,14 +397,14 @@ public class SourceFactoryTest {
         replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DbUriSource);
+        assertInstanceOf(DbUriSource.class, libSource);
         assertEquals(XmldbURI.create(contextPath).append(location), ((DbUriSource)libSource).getDocumentPath());
 
         verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getNonExistentSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException, EXistException {
+    void getNonExistentSourceFromXmldbEmbedded_noContext() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "xmldb:exist://embedded-eXist-server/db/library.xqm";
 
@@ -432,7 +429,7 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getNonExistentSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException, EXistException {
+    void getNonExistentSourceFromXmldbEmbedded() throws IOException, PermissionDeniedException {
         final String contextPath = "xmldb:exist://embedded-eXist-server/db";
         final String location = "library.xqm";
 
@@ -457,7 +454,7 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getSourceFromDb() throws IOException, PermissionDeniedException, EXistException {
+    void getSourceFromDb() throws IOException, PermissionDeniedException {
         final String contextPath = "/db";
         final String location = "library.xqm";
 
@@ -482,14 +479,14 @@ public class SourceFactoryTest {
         replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DbUriSource);
+        assertInstanceOf(DbUriSource.class, libSource);
         assertEquals(XmldbURI.create(contextPath).append(location), ((DbUriSource)libSource).getDocumentPath());
 
         verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getSourceFromDb_noContext() throws IOException, PermissionDeniedException, EXistException {
+    void getSourceFromDb_noContext() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "/db/library.xqm";
 
@@ -514,14 +511,14 @@ public class SourceFactoryTest {
         replay(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
-        assertTrue(libSource instanceof DbUriSource);
+        assertInstanceOf(DbUriSource.class, libSource);
         assertEquals(XmldbURI.create(location), ((DbUriSource)libSource).getDocumentPath());
 
         verify(mockBrokerPool, mockBroker, mockTransactionManager, mockTxn, mockLockedDoc, mockBinDoc);
     }
 
     @Test
-    public void getNonExistentSourceFromDb() throws IOException, PermissionDeniedException, EXistException {
+    void getNonExistentSourceFromDb() throws IOException, PermissionDeniedException {
         final String contextPath = "/db";
         final String location = "library.xqm";
 
@@ -546,7 +543,7 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getNonExistentSourceFromDb_noContext() throws IOException, PermissionDeniedException, EXistException {
+    void getNonExistentSourceFromDb_noContext() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "/db/library.xqm";
 
@@ -571,7 +568,7 @@ public class SourceFactoryTest {
     }
 
     @Test
-    public void getSource_justFilename() throws IOException, PermissionDeniedException {
+    void getSource_justFilename() throws IOException, PermissionDeniedException {
         final String contextPath = null;
         final String location = "library.xqm";
 

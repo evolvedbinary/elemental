@@ -22,31 +22,37 @@
 package org.exist.xquery.value;
 
 import org.exist.xquery.XPathException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  *
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-public class LongTest {
-    
-    @Test(expected=XPathException.class)
-    public void testOver() throws XPathException {
-        new IntegerValue("9223372036854775808", Type.LONG);
-    }
-    
+class LongTest {
+
     @Test
-    public void testPositiveLimit() throws XPathException {
+    void over() {
+        assertThrows(XPathException.class, () -> {
+            new IntegerValue("9223372036854775808", Type.LONG);
+        });
+    }
+
+    @Test
+    void positiveLimit() throws XPathException {
         new IntegerValue("9223372036854775807", Type.LONG);
     }
-    
+
     @Test
-    public void testNegativeLimit() throws XPathException {
+    void negativeLimit() throws XPathException {
         new IntegerValue("-9223372036854775808", Type.LONG);
     }
-    
-    @Test(expected=XPathException.class)
-    public void testUnder() throws XPathException {
-        new IntegerValue("-9223372036854775809", Type.LONG);
+
+    @Test
+    void under() {
+        assertThrows(XPathException.class, () -> {
+            new IntegerValue("-9223372036854775809", Type.LONG);
+        });
     }   
 }

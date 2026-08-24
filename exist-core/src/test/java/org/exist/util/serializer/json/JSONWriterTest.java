@@ -49,7 +49,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.util.serializer.SAXSerializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -57,7 +57,9 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXResult;
 import java.io.IOException;
@@ -65,25 +67,26 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Created by aretter on 16/05/2017.
  */
-public class JSONWriterTest {
+class JSONWriterTest {
 
     private static final String EOL = System.getProperty("line.separator");
     private static final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
     static {
         documentBuilderFactory.setIgnoringElementContentWhitespace(false);
     }
+
     private static final TransformerFactory transformerFactory;
     static {
         transformerFactory = TransformerFactory.newInstance("net.sf.saxon.TransformerFactoryImpl", null);
     }
 
     @Test
-    public void whitespaceTextNodes() throws IOException, TransformerException, ParserConfigurationException, SAXException {
+    void whitespaceTextNodes() throws IOException, TransformerException, ParserConfigurationException, SAXException {
 
         final Node xmlDoc = parseXml(
                 "<a z='99'>" + EOL +
@@ -111,7 +114,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void ignoreWhitespaceTextNodes() throws IOException, TransformerException, ParserConfigurationException, SAXException {
+    void ignoreWhitespaceTextNodes() throws IOException, TransformerException, ParserConfigurationException, SAXException {
 
         final Node xmlDoc = parseXml(
                 "<a z='99'>" + EOL +
@@ -140,7 +143,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void serializesMixedContent_whenAttrsPresent() throws IOException, TransformerException, ParserConfigurationException, SAXException {
+    void serializesMixedContent_whenAttrsPresent() throws IOException, TransformerException, ParserConfigurationException, SAXException {
         final Node xmlDoc = parseXml(
                 "<a x='y' xx='yy'>" + EOL +
                             "\tbefore-b" + EOL +
@@ -166,7 +169,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void serializesMixedContent() throws IOException, TransformerException, ParserConfigurationException, SAXException {
+    void serializesMixedContent() throws IOException, TransformerException, ParserConfigurationException, SAXException {
         final Node xmlDoc = parseXml(
                 "<a>" + EOL +
                             "\tbefore-b" + EOL +

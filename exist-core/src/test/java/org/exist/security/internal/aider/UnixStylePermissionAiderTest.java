@@ -24,18 +24,16 @@ package org.exist.security.internal.aider;
 import java.util.List;
 import java.util.ArrayList;
 import org.exist.security.Permission;
-import org.exist.security.PermissionDeniedException;
 import org.exist.util.SyntaxException;
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author <a href="mailto:adam@existsolutions.com">Adam Retter</a>
  */
-public class UnixStylePermissionAiderTest {
+class UnixStylePermissionAiderTest {
 
     public class SecurityTestPair {
 
@@ -47,9 +45,9 @@ public class UnixStylePermissionAiderTest {
         public String permissionString;
         public int permission;
     }
-    
+
     @Test
-    public void setUid_roundtrip() throws PermissionDeniedException {
+    void setUid_roundtrip() throws PermissionDeniedException {
         Permission permission = new UnixStylePermissionAider(0555);
         assertFalse(permission.isSetUid());
         permission.setSetUid(true);
@@ -62,9 +60,9 @@ public class UnixStylePermissionAiderTest {
         assertFalse(permission.isSetUid());
         assertEquals(0555, permission.getMode());
     }
-    
+
     @Test
-    public void setGid_roundtrip() throws PermissionDeniedException {
+    void setGid_roundtrip() throws PermissionDeniedException {
         Permission permission = new UnixStylePermissionAider(0555);
         assertFalse(permission.isSetGid());
         permission.setSetGid(true);
@@ -77,9 +75,9 @@ public class UnixStylePermissionAiderTest {
         assertFalse(permission.isSetGid());
         assertEquals(0555, permission.getMode());
     }
-    
+
     @Test
-    public void setSticky_roundtrip() throws PermissionDeniedException {
+    void setSticky_roundtrip() throws PermissionDeniedException {
         Permission permission = new UnixStylePermissionAider(0555);
         assertFalse(permission.isSticky());
         permission.setSticky(true);
@@ -94,7 +92,7 @@ public class UnixStylePermissionAiderTest {
     }
 
     @Test
-    public void fromString_toString() throws SyntaxException {
+    void fromString_toString() throws SyntaxException {
 
         final List<SecurityTestPair> securityTestPairs = new ArrayList<SecurityTestPair>();
         securityTestPairs.add(new SecurityTestPair("rwxrwxrwx", 0777));
@@ -120,13 +118,15 @@ public class UnixStylePermissionAiderTest {
         }
     }
 
-    @Test(expected=SyntaxException.class)
-    public void fromStringInvalidSyntax_tooShort() throws SyntaxException{
-       UnixStylePermissionAider.fromString("rwx");
+    @Test
+    void fromStringInvalidSyntax_tooShort(){
+        assertThrows(SyntaxException.class, () ->
+            UnixStylePermissionAider.fromString("rwx"));
     };
 
-    @Test(expected=SyntaxException.class)
-    public void fromStringInvalidSyntax_invalidChars() throws SyntaxException{
-       UnixStylePermissionAider.fromString("rwurwurwu");
+    @Test
+    void fromStringInvalidSyntax_invalidChars(){
+        assertThrows(SyntaxException.class, () ->
+            UnixStylePermissionAider.fromString("rwurwurwu"));
     };
 }

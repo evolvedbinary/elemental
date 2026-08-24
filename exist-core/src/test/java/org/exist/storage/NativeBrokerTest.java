@@ -28,19 +28,19 @@ import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
-import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
-public class NativeBrokerTest {
+class NativeBrokerTest {
 
     /**
      * When copying a Collection (/db/test/source) where
@@ -51,7 +51,7 @@ public class NativeBrokerTest {
      * we should be allowed to copy the Collection.
      */
     @Test
-    public void copyCollection_noDescendants_toNonExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
+    void copyCollection_noDescendants_toNonExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
@@ -113,55 +113,40 @@ public class NativeBrokerTest {
      * and we DO NOT have execute+write access on /db/test
      * we should NOT be allowed to copy the Collection.
      */
-    @Test(expected = PermissionDeniedException.class)
-    public void copyCollection_noDescendants_toNonExistingDest_cannotWriteDest() throws LockException, PermissionDeniedException {
+    @Test
+    void copyCollection_noDescendants_toNonExistingDest_cannotWriteDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
-
         final Collection srcCollection = EasyMock.createStrictMock(Collection.class);
         final Permission srcPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection destCollection = EasyMock.createStrictMock(Collection.class);
         final Permission destPermissions = EasyMock.createStrictMock(Permission.class);
-
-        final Collection newDestCollection = null; //EasyMock.createMock(Collection.class);
-
+        final Collection newDestCollection = null;
         final NativeBroker broker = EasyMock.createMockBuilder(NativeBroker.class)
-                .addMockedMethod("getCollection")
-                .addMockedMethod("getCurrentSubject")
-                .createStrictMock();
-
+                    .addMockedMethod("getCollection")
+                    .addMockedMethod("getCurrentSubject")
+                    .createStrictMock();
         final Subject subject = EasyMock.createStrictMock(Subject.class);
-
-
-        //grant EXECUTE and READ permissions on the src
         expect(srcCollection.getPermissionsNoLock()).andReturn(srcPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(srcPermissions.validate(subject, Permission.EXECUTE | Permission.READ)).andReturn(true);
-
-        //grant EXECUTE and WRITE permission on the dest
         expect(destCollection.getURI()).andReturn(dest);
         final Capture<XmldbURI> newDestURICapture = newCapture();
         expect(broker.getCollection(capture(newDestURICapture))).andReturn(newDestCollection);
         expect(destCollection.getPermissionsNoLock()).andReturn(destPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(destPermissions.validate(subject, Permission.EXECUTE | Permission.WRITE)).andReturn(false);
-
-        //expectations for exception that should be thrown
         expect(srcCollection.getURI()).andReturn(src);
         expect(destCollection.getURI()).andReturn(dest);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(subject.getName()).andReturn("Fake user");
-
-        //test below
         replay(subject, destCollection, destPermissions, srcCollection, srcPermissions, broker);
-
-        //run the test
         broker.checkPermissionsForCopy(srcCollection, destCollection, newName);
+        assertThrows(PermissionDeniedException.class, () ->
 
-        //not actually called, but here for showing intention
-        verify(subject, destCollection, destPermissions, srcCollection, srcPermissions, broker);
+            //not actually called, but here for showing intention
+            verify(subject, destCollection, destPermissions, srcCollection, srcPermissions, broker));
     }
 
     /**
@@ -175,7 +160,7 @@ public class NativeBrokerTest {
      * we should be allowed to copy the Collection.
      */
     @Test
-    public void copyCollection_oneSubDoc_toNonExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
+    void copyCollection_oneSubDoc_toNonExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
@@ -242,9 +227,9 @@ public class NativeBrokerTest {
      * and we have execute+write access on /db/test
      * we should be allowed to copy the Collection.
      */
-    @Ignore
+    @Disabled
     @Test
-    public void copyCollection_oneSubDoc_oneSubColl_toNonExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
+    void copyCollection_oneSubDoc_oneSubColl_toNonExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
@@ -329,7 +314,7 @@ public class NativeBrokerTest {
      * we should be allowed to copy the content of the Collection.
      */
     @Test
-    public void copyCollection_noDescendants_toExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
+    void copyCollection_noDescendants_toExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
@@ -392,63 +377,45 @@ public class NativeBrokerTest {
      * and we DO NOT have execute+write access on /db/test
      * we should NOT be allowed to copy the content of the Collection.
      */
-    @Test(expected = PermissionDeniedException.class)
-    public void copyCollection_noDescendants_toExistingDest_cannotWriteDest() throws LockException, PermissionDeniedException {
+    @Test
+    void copyCollection_noDescendants_toExistingDest_cannotWriteDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
-
         final Collection srcCollection = EasyMock.createStrictMock(Collection.class);
         final Permission srcPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection destCollection = EasyMock.createStrictMock(Collection.class);
         final Permission destPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection newDestCollection = EasyMock.createStrictMock(Collection.class);
         final Permission newDestPermissions = EasyMock.createStrictMock(Permission.class);
-
-
         final NativeBroker broker = EasyMock.createMockBuilder(NativeBroker.class)
-                .addMockedMethod("getCollection")
-                .addMockedMethod("getCurrentSubject")
-                .createStrictMock();
-
+                    .addMockedMethod("getCollection")
+                    .addMockedMethod("getCurrentSubject")
+                    .createStrictMock();
         final Subject subject = EasyMock.createStrictMock(Subject.class);
-
-        //grant EXECUTE and READ permissions on the src
         expect(srcCollection.getPermissionsNoLock()).andReturn(srcPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(srcPermissions.validate(subject, Permission.EXECUTE | Permission.READ)).andReturn(true);
-
-        //grant EXECUTE and WRITE permission on the dest
         expect(destCollection.getURI()).andReturn(dest);
         final Capture<XmldbURI> newDestURICapture = newCapture();
         expect(broker.getCollection(capture(newDestURICapture))).andReturn(newDestCollection);
         expect(destCollection.getPermissionsNoLock()).andReturn(destPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(destPermissions.validate(subject, Permission.EXECUTE | Permission.WRITE)).andReturn(false);
-
-        //expectations for exception that should be thrown
         expect(srcCollection.getURI()).andReturn(src);
         expect(destCollection.getURI()).andReturn(dest);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(subject.getName()).andReturn("Fake user");
-
-        //no sub-documents
         expect(srcCollection.iterator(broker)).andReturn(Collections.emptyIterator());
-
-        //no sub-collections
         expect(srcCollection.collectionIterator(broker)).andReturn(Collections.emptyIterator());
-
-        //test below
         replay(newDestPermissions, newDestCollection, destCollection, destPermissions, srcCollection, srcPermissions, subject, broker);
-
-        //run the test
         broker.checkPermissionsForCopy(srcCollection, destCollection, newName);
-
         verify(newDestPermissions, newDestCollection, destCollection, destPermissions, srcCollection, srcPermissions, subject, broker);
+        XmldbURI append = dest.append(newName);
+        XmldbURI value = newDestURICapture.getValue();
+        assertThrows(PermissionDeniedException.class, () ->
 
-        assertEquals(dest.append(newName), newDestURICapture.getValue());
+            assertEquals(append, value));
     }
 
     /**
@@ -460,35 +427,25 @@ public class NativeBrokerTest {
      * but DO NOT have execute+write access on /db/test/dest
      * we should NOT be allowed to copy the content of the Collection.
      */
-    @Test(expected = PermissionDeniedException.class)
-    public void copyCollection_noDescendants_toExistingDest_cannotWriteNewDest() throws LockException, PermissionDeniedException {
+    @Test
+    void copyCollection_noDescendants_toExistingDest_cannotWriteNewDest() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
-
         final Collection srcCollection = EasyMock.createStrictMock(Collection.class);
         final Permission srcPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection destCollection = EasyMock.createStrictMock(Collection.class);
         final Permission destPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection newDestCollection = EasyMock.createStrictMock(Collection.class);
         final Permission newDestPermissions = EasyMock.createStrictMock(Permission.class);
-
-
         final NativeBroker broker = EasyMock.createMockBuilder(NativeBroker.class)
-                .addMockedMethod("getCollection")
-                .addMockedMethod("getCurrentSubject")
-                .createStrictMock();
-
+                    .addMockedMethod("getCollection")
+                    .addMockedMethod("getCurrentSubject")
+                    .createStrictMock();
         final Subject subject = EasyMock.createStrictMock(Subject.class);
-
-        //grant EXECUTE and READ permissions on the src
         expect(srcCollection.getPermissionsNoLock()).andReturn(srcPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(srcPermissions.validate(subject, Permission.EXECUTE | Permission.READ)).andReturn(true);
-
-        //grant EXECUTE and WRITE permission on the dest
         expect(destCollection.getURI()).andReturn(dest);
         final Capture<XmldbURI> newDestURICapture = newCapture();
         expect(broker.getCollection(capture(newDestURICapture))).andReturn(newDestCollection);
@@ -498,28 +455,20 @@ public class NativeBrokerTest {
         expect(newDestCollection.getPermissionsNoLock()).andReturn(newDestPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(newDestPermissions.validate(subject, Permission.EXECUTE | Permission.WRITE)).andReturn(false);
-
-        //expectations for exception that should be thrown
         expect(srcCollection.getURI()).andReturn(src);
         expect(newDestCollection.getURI()).andReturn(dest.append(newName));
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(subject.getName()).andReturn("Fake user");
-
-        //no sub-documents
         expect(srcCollection.iterator(broker)).andReturn(Collections.emptyIterator());
-
-        //no sub-collections
         expect(srcCollection.collectionIterator(broker)).andReturn(Collections.emptyIterator());
-
-        //test below
         replay(newDestPermissions, newDestCollection, destCollection, destPermissions, srcCollection, srcPermissions, subject, broker);
-
-        //run the test
         broker.checkPermissionsForCopy(srcCollection, destCollection, newName);
-
         verify(newDestPermissions, newDestCollection, destCollection, destPermissions, srcCollection, srcPermissions, subject, broker);
+        XmldbURI append = dest.append(newName);
+        XmldbURI value = newDestURICapture.getValue();
+        assertThrows(PermissionDeniedException.class, () ->
 
-        assertEquals(dest.append(newName), newDestURICapture.getValue());
+            assertEquals(append, value));
     }
 
 
@@ -534,7 +483,7 @@ public class NativeBrokerTest {
      * we should be allowed to copy the content of the Collection.
      */
     @Test
-    public void copyCollection_oneSubDoc_toExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
+    void copyCollection_oneSubDoc_toExistingDest_canWriteDest() throws LockException, PermissionDeniedException {
 
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
@@ -606,38 +555,27 @@ public class NativeBrokerTest {
      * and we have execute+write access on /db/test and /db/test/dest
      * we should NOT be allowed to copy the content of the Collection.
      */
-    @Test(expected=PermissionDeniedException.class)
-    public void copyCollection_oneSubDoc_toExistingDest_cannotReadSubDoc() throws LockException, PermissionDeniedException {
-
+    @Test
+    void copyCollection_oneSubDoc_toExistingDest_cannotReadSubDoc() throws LockException, PermissionDeniedException {
         final XmldbURI src = XmldbURI.create("/db/test/source");
         final XmldbURI dest = XmldbURI.create("/db/test");
         final XmldbURI newName = XmldbURI.create("dest");
-
         final Collection srcCollection = EasyMock.createStrictMock(Collection.class);
         final Permission srcPermissions = EasyMock.createStrictMock(Permission.class);
-
         final DocumentImpl srcSubDocument = EasyMock.createStrictMock(DocumentImpl.class);
         final Permission srcSubDocumentPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection destCollection = EasyMock.createStrictMock(Collection.class);
         final Permission destPermissions = EasyMock.createStrictMock(Permission.class);
-
         final Collection newDestCollection = EasyMock.createStrictMock(Collection.class);
         final Permission newDestPermissions = EasyMock.createStrictMock(Permission.class);
-
         final NativeBroker broker = EasyMock.createMockBuilder(NativeBroker.class)
-                .addMockedMethod("getCollection")
-                .addMockedMethod("getCurrentSubject")
-                .createStrictMock();
-
+                    .addMockedMethod("getCollection")
+                    .addMockedMethod("getCurrentSubject")
+                    .createStrictMock();
         final Subject subject = EasyMock.createStrictMock(Subject.class);
-
-        //grant EXECUTE and READ permissions on the src
         expect(srcCollection.getPermissionsNoLock()).andReturn(srcPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(srcPermissions.validate(subject, Permission.EXECUTE | Permission.READ)).andReturn(true);
-
-        //grant EXECUTE and WRITE permission on the dest
         expect(destCollection.getURI()).andReturn(dest);
         final Capture<XmldbURI> newDestURICapture = newCapture();
         expect(broker.getCollection(capture(newDestURICapture))).andReturn(newDestCollection);
@@ -647,31 +585,23 @@ public class NativeBrokerTest {
         expect(newDestCollection.getPermissionsNoLock()).andReturn(newDestPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(newDestPermissions.validate(subject, Permission.EXECUTE | Permission.WRITE)).andReturn(true);
-
-        //one sub-document with READ permission
         expect(srcCollection.iteratorNoLock(broker)).andReturn(new ArrayIterator<>(srcSubDocument));
         expect(srcSubDocument.getPermissions()).andReturn(srcSubDocumentPermissions);
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(srcSubDocumentPermissions.validate(subject, Permission.READ)).andReturn(false);
-
-        //expectations for exception that should be thrown
         expect(srcCollection.getURI()).andReturn(src);
         expect(srcSubDocument.getURI()).andReturn(src.append(newName).append("someSubDocument.xml"));
         expect(broker.getCurrentSubject()).andReturn(subject);
         expect(subject.getName()).andReturn("Fake user");
-
-        //no sub-collections
         expect(srcCollection.collectionIteratorNoLock(broker)).andReturn(Collections.emptyIterator());
-
-        //test below
         replay(newDestPermissions, newDestCollection, srcSubDocumentPermissions, srcSubDocument, destCollection, destPermissions, srcCollection, srcPermissions, subject, broker);
-
-        //run the test
         broker.checkPermissionsForCopy(srcCollection, destCollection, newName);
-
         verify(newDestPermissions, newDestCollection, srcSubDocumentPermissions, srcSubDocument, destCollection, destPermissions, srcCollection, srcPermissions, subject, broker);
+        XmldbURI append = dest.append(newName);
+        XmldbURI value = newDestURICapture.getValue();
+        assertThrows(PermissionDeniedException.class, () ->
 
-        assertEquals(dest.append(newName), newDestURICapture.getValue());
+            assertEquals(append, value));
     }
 
     private static String expectedPath(final Path folder, final XmldbURI xmldbUri) {

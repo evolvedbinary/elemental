@@ -32,6 +32,7 @@
  */
 package org.exist.storage;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,33 +48,31 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.FileInputSource;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RecoverBinaryTest extends AbstractRecoverTest {
 
-    @ClassRule
-    public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir public static File TEMPORARY_FOLDER;
     private static Path testFile1 = null;
     private static Path testFile2 = null;
 
-    @BeforeClass
-    public static void storeTempBinaryDocs() throws IOException {
-        testFile1 = temporaryFolder.getRoot().toPath().resolve("blob1.bin");
+    @BeforeAll
+    static void storeTempBinaryDocs() throws IOException {
+        testFile1 = TEMPORARY_FOLDER.toPath().resolve("blob1.bin");
         Files.write(testFile1, Arrays.asList("blob1"), CREATE_NEW);
 
-        testFile2 = temporaryFolder.getRoot().toPath().resolve("blob2.bin");
+        testFile2 = TEMPORARY_FOLDER.toPath().resolve("blob2.bin");
         Files.write(testFile2, Arrays.asList("blob2"), CREATE_NEW);
     }
 

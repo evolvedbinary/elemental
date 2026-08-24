@@ -24,25 +24,23 @@ package org.exist.dom.persistent;
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.easymock.EasyMock;
 import org.exist.numbering.DLN;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.DOMException;
 
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class TextImplTest {
+@Execution(ExecutionMode.CONCURRENT)
+class TextImplTest {
 
     @Test
-    public void isSameNode_sameText() {
+    void isSameNode_sameText() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
         expect(doc.getDocId()).andReturn(21).times(2);
 
@@ -58,7 +56,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void isSameNode_differentText() {
+    void isSameNode_differentText() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
 
         replay(doc);
@@ -77,7 +75,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void isSameNode_differentTextDifferentDoc() {
+    void isSameNode_differentTextDifferentDoc() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
         expect(doc.getDocId()).andReturn(21);
 
@@ -100,7 +98,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void isSameNode_nonText() {
+    void isSameNode_nonText() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
 
         replay(doc);
@@ -119,7 +117,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData() {
+    void setData() {
         final TextImpl text = new TextImpl("helloworld");
         assertEquals("helloworld", text.getTextContent());
 
@@ -128,7 +126,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData_empty() {
+    void setData_empty() {
         final TextImpl text = new TextImpl("helloworld");
         assertEquals("helloworld", text.getTextContent());
 
@@ -137,7 +135,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData_shrink() {
+    void setData_shrink() {
         final TextImpl text = new TextImpl("helloworld");
         assertEquals("helloworld", text.getTextContent());
 
@@ -146,7 +144,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData_expand() {
+    void setData_expand() {
         final TextImpl text = new TextImpl("helloworld");
         assertEquals("helloworld", text.getTextContent());
 
@@ -155,7 +153,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void appendData() {
+    void appendData() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -164,7 +162,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void appendData_empty() {
+    void appendData_empty() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -173,7 +171,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void insertData_start() {
+    void insertData_start() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -182,7 +180,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void insertData_middle() {
+    void insertData_middle() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -191,7 +189,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void insertData_end() {
+    void insertData_end() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -199,16 +197,17 @@ public class TextImplTest {
         assertEquals("helloworld", text.getTextContent());
     }
 
-    @Test(expected=DOMException.class)
-    public void insertData_pastEnd() {
+    @Test
+    void insertData_pastEnd() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
+        assertThrows(DOMException.class, () ->
 
-        text.insertData(10, "world");
+            text.insertData(10, "world"));
     }
 
     @Test
-    public void insertData_empty() {
+    void insertData_empty() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -217,7 +216,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_shrink() {
+    void replaceData_shrink() {
         final TextImpl text = new TextImpl("helloworld");
         assertEquals("helloworld", text.getTextContent());
 
@@ -226,7 +225,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_start() {
+    void replaceData_start() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -235,7 +234,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_middle() {
+    void replaceData_middle() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -244,7 +243,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_end() {
+    void replaceData_end() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -252,16 +251,17 @@ public class TextImplTest {
         assertEquals("hellworld", text.getTextContent());
     }
 
-    @Test(expected=DOMException.class)
-    public void replaceData_pastEnd() {
+    @Test
+    void replaceData_pastEnd() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
+        assertThrows(DOMException.class, () ->
 
-        text.insertData(10, "world");
+            text.insertData(10, "world"));
     }
 
     @Test
-    public void replaceData_empty() {
+    void replaceData_empty() {
         final TextImpl text = new TextImpl("hello");
         assertEquals("hello", text.getTextContent());
 
@@ -270,7 +270,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_longArg() {
+    void replaceData_longArg() {
         final TextImpl text = new TextImpl("1230 North Ave. Dallas, Texas 98551");
         assertEquals("1230 North Ave. Dallas, Texas 98551", text.getTextContent());
 
@@ -279,7 +279,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_untilEnd() {
+    void replaceData_untilEnd() {
         final TextImpl text = new TextImpl("1230 North Ave. Dallas, Texas 98551");
         assertEquals("1230 North Ave. Dallas, Texas 98551", text.getTextContent());
 

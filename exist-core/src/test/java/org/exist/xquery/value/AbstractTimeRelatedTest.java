@@ -23,20 +23,20 @@ package org.exist.xquery.value;
 
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.XPathException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractTimeRelatedTest {
 
-    @BeforeClass
-    public static void setUp() throws Exception {
+    @BeforeAll
+    public static void setUp() {
         TimeUtils.getInstance().overrideLocalTimezoneOffset(-5 * 60 * 60 * 1000);
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
+    @AfterAll
+    public static void tearDown() {
         TimeUtils.getInstance().resetLocalTimezoneOffset();
     }
 
@@ -65,7 +65,7 @@ public abstract class AbstractTimeRelatedTest {
         return new DayTimeDurationValue(TimeUtils.getInstance().getLocalTimezoneOffsetMillis());
     }
 
-    protected String getLocalTimezoneOffset() throws XPathException {
+    protected String getLocalTimezoneOffset() {
         final int offset = (int) (TimeUtils.getInstance().getLocalTimezoneOffsetMillis() / 60000L);
         final int hours = offset / 60;
         final int minutes = offset % 60;

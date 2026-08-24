@@ -34,23 +34,23 @@ package org.exist.storage.lock;
 
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Tests for Document Locks
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class DocumentLocksTest {
+class DocumentLocksTest {
 
     private static final int CONCURRENCY_LEVEL = Runtime.getRuntime().availableProcessors() * 3;
 
@@ -62,7 +62,7 @@ public class DocumentLocksTest {
      * a read lock at the same time
      */
     @Test
-    public void multipleReaders() throws LockException, InterruptedException, ExecutionException {
+    void multipleReaders() throws LockException, InterruptedException, ExecutionException {
         final int numberOfThreads = CONCURRENCY_LEVEL;
         final XmldbURI docUri = XmldbURI.create("/db/x/y/z/1.xml");
 
@@ -106,7 +106,7 @@ public class DocumentLocksTest {
      * holds the write lock when the second thread attempts to acquire it
      */
     @Test
-    public void singleWriter() throws LockException, InterruptedException, ExecutionException {
+    void singleWriter() throws LockException, InterruptedException, ExecutionException {
         final int numberOfThreads = CONCURRENCY_LEVEL;
         final XmldbURI docUri = XmldbURI.create("/db/x/y/z/1.xml");
 
@@ -115,9 +115,9 @@ public class DocumentLocksTest {
         final AtomicReference firstWriteHolder = new AtomicReference();
         final AtomicReference lastWriteHolder = new AtomicReference();
 
-        final Callable<Void> callable1 = new Callable<Void>() {
+        final Callable<Void> callable1 = new Callable<>() {
             @Override
-            public Void call() throws Exception {
+            public Void call() throws LockException, InterruptedException {
                 try (final ManagedDocumentLock documentLock = lockManager.acquireDocumentWriteLock(docUri)) {
                     thread2StartLatch.countDown();
                     firstWriteHolder.compareAndSet(null, this);
@@ -133,9 +133,9 @@ public class DocumentLocksTest {
             }
         };
 
-        final Callable<Void> callable2 = new Callable<Void>() {
+        final Callable<Void> callable2 = new Callable<>() {
             @Override
-            public Void call() throws Exception {
+            public Void call() throws LockException, InterruptedException {
                 thread2StartLatch.await();
                 try (final ManagedDocumentLock documentLock = lockManager.acquireDocumentWriteLock(docUri)) {
                     firstWriteHolder.compareAndSet(null, this);

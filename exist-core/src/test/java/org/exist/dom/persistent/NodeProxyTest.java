@@ -23,15 +23,15 @@
 package org.exist.dom.persistent;
 
 import org.exist.xquery.value.SequenceIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NodeProxyTest {
+class NodeProxyTest {
 
     @Test
-    public void iterate_loop() {
+    void iterate_loop() {
         final NodeProxy mockNodeProxy = new NodeProxy(null, null, null, Node.ELEMENT_NODE, -1);
 
         final SequenceIterator it = mockNodeProxy.iterate();
@@ -45,7 +45,7 @@ public class NodeProxyTest {
     }
 
     @Test
-    public void iterate_skip_loop() {
+    void iterate_skip_loop() {
         final NodeProxy mockNodeProxy = new NodeProxy(null, null, null, Node.ELEMENT_NODE, -1);
         final SequenceIterator it = mockNodeProxy.iterate();
 
@@ -65,7 +65,7 @@ public class NodeProxyTest {
     }
 
     @Test
-    public void iterate_loop_skip_loop() {
+    void iterate_loop_skip_loop() {
         final NodeProxy mockNodeProxy = new NodeProxy(null, null, null, Node.ELEMENT_NODE, -1);
         final SequenceIterator it = mockNodeProxy.iterate();
 

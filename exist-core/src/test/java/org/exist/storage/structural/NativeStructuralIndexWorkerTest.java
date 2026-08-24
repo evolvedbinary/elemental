@@ -25,7 +25,7 @@ import com.googlecode.junittoolbox.ParallelRunner;
 import org.easymock.EasyMock;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.DocumentSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
@@ -33,16 +33,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class NativeStructuralIndexWorkerTest {
+@Execution(ExecutionMode.CONCURRENT)
+class NativeStructuralIndexWorkerTest {
 
     @Test
-    public void getDocIdRanges_singleContiguous() {
+    void getDocIdRanges_singleContiguous() {
         final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
 
         final DocumentSet docs = documentIdSet(Arrays.asList(1,2,3,4,5,6));
@@ -56,7 +56,7 @@ public class NativeStructuralIndexWorkerTest {
     }
 
     @Test
-    public void getDocIdRanges_multipleContiguous() {
+    void getDocIdRanges_multipleContiguous() {
         final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
 
         final DocumentSet docs = documentIdSet(Arrays.asList(1,2,3,4,5,6, 88,89, 3,4,5,6, 77, 10,11,12));
@@ -82,7 +82,7 @@ public class NativeStructuralIndexWorkerTest {
     }
 
     @Test
-    public void getDocIdRanges_singleId() {
+    void getDocIdRanges_singleId() {
         final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574));
@@ -96,7 +96,7 @@ public class NativeStructuralIndexWorkerTest {
     }
 
     @Test
-    public void getDocIdRanges_singleId_followed_by_continguousIds() {
+    void getDocIdRanges_singleId_followed_by_continguousIds() {
         final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574, 11,12,13,14,15));
@@ -113,7 +113,7 @@ public class NativeStructuralIndexWorkerTest {
     }
 
     @Test
-    public void getDocIdRanges_contiguousIds_followed_by_single() {
+    void getDocIdRanges_contiguousIds_followed_by_single() {
         final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
 
         final DocumentSet docs = documentIdSet(Arrays.asList(11,12,13,14,15, 6574));
@@ -130,7 +130,7 @@ public class NativeStructuralIndexWorkerTest {
     }
 
     @Test
-    public void getDocIdRanges_multiple_singleIds() {
+    void getDocIdRanges_multiple_singleIds() {
         final NativeStructuralIndexWorker indexWorker = new NativeStructuralIndexWorker(null);
 
         final DocumentSet docs = documentIdSet(Arrays.asList(6574, 200, 12, 24));

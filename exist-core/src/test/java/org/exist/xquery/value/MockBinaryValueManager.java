@@ -21,11 +21,10 @@
  */
 package org.exist.xquery.value;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Assertions;
 
 /**
  *
@@ -46,17 +45,15 @@ public class MockBinaryValueManager implements BinaryValueManager {
             List<BinaryValue> removable = null;
             for(final Iterator<BinaryValue> iterator = values.iterator(); iterator.hasNext();) {
                 final BinaryValue bv = iterator.next();
-                try {
+                Assertions.assertDoesNotThrow(() -> {
                     if (predicate.test(bv)) {
                         bv.close();
-                        if(removable == null) {
+                        if (removable == null) {
                             removable = new ArrayList<>();
                         }
                         removable.add(bv);
                     }
-                } catch (final IOException e) {
-                    fail(e.getMessage());
-                }
+                });
             }
 
             if(removable != null) {

@@ -21,20 +21,23 @@
  */
 package org.exist.config;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
 import java.io.InputStream;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.util.ExistSAXParserFactory;
+import org.junit.jupiter.api.Test;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -44,8 +47,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-@RunWith(ParallelRunner.class)
-public class ConfigurableTest {
+@Execution(ExecutionMode.CONCURRENT)
+class ConfigurableTest {
 
 	String config1 = "<instance xmlns='http://exist-db.org/Configuration' " +
 			"valueString=\"a\" " +
@@ -76,9 +79,9 @@ public class ConfigurableTest {
 			"<spice name='berbere'/>" +
 			
 			"</instance>";
-	
-	@Test
-	public void simple() throws Exception {
+
+    @Test
+    void simple() throws ConfigurationException {
 		InputStream is = new UnsynchronizedByteArrayInputStream(config1.getBytes(UTF_8));
         
         Configuration config = Configurator.parse(is);
@@ -88,8 +91,8 @@ public class ConfigurableTest {
         assertEquals("a", object.some);
         
         assertEquals(Integer.valueOf(5), object.someInteger);
-        assertTrue(object.simpleInteger == 5);
-        assertTrue(object.defaultInteger == 3);
+        assertEquals(5, object.simpleInteger);
+        assertEquals(3, object.defaultInteger);
 
         assertTrue(object.someboolean);
 
@@ -101,8 +104,8 @@ public class ConfigurableTest {
         assertEquals("berbere", object.spices.get(1).name);
 	}
 
-	@Test
-	public void subelement() throws Exception {
+    @Test
+    void subelement() throws ParserConfigurationException, SAXException, IOException {
 		InputStream is = new UnsynchronizedByteArrayInputStream(config2.getBytes(UTF_8));
 		
         // initialize xml parser
@@ -125,9 +128,9 @@ public class ConfigurableTest {
         
         assertEquals(Integer.valueOf(5), object.someInteger);
 	}
-	
-	@Test
-	public void notSimple() throws Exception {
+
+    @Test
+    void notSimple() throws ConfigurationException {
 		InputStream is = new UnsynchronizedByteArrayInputStream(config3.getBytes(UTF_8));
         
         Configuration config = Configurator.parse(is);
@@ -137,8 +140,8 @@ public class ConfigurableTest {
         assertEquals("a", object.some);
         
         assertEquals(Integer.valueOf(5), object.someInteger);
-        assertTrue(object.simpleInteger == 5);
-        assertTrue(object.defaultInteger == 3);
+        assertEquals(5, object.simpleInteger);
+        assertEquals(3, object.defaultInteger);
 
         assertTrue(object.someboolean);
 

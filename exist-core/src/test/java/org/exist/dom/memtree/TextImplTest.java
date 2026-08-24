@@ -24,22 +24,23 @@ package org.exist.dom.memtree;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.dom.QName;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Text;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class TextImplTest {
+@Execution(ExecutionMode.CONCURRENT)
+class TextImplTest {
 
     @Test
-    public void setData() {
+    void setData() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -62,7 +63,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData_empty() {
+    void setData_empty() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -85,7 +86,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData_shrink() {
+    void setData_shrink() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -108,7 +109,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void setData_expand() {
+    void setData_expand() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -131,7 +132,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void appendData() {
+    void appendData() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -157,7 +158,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void appendData_empty() {
+    void appendData_empty() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -183,7 +184,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void insertData_start() {
+    void insertData_start() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -209,7 +210,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void insertData_middle() {
+    void insertData_middle() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -235,7 +236,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void insertData_end() {
+    void insertData_end() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -260,8 +261,8 @@ public class TextImplTest {
         assertEquals("goodbyeworld", text2.getTextContent());
     }
 
-    @Test(expected=DOMException.class)
-    public void insertData_pastEnd() {
+    @Test
+    void insertData_pastEnd() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -271,16 +272,16 @@ public class TextImplTest {
         builder.endElement();
         builder.endElement();
         builder.endDocument();
-
         final Document doc = builder.getDocument();
         final Text text = (Text) doc.getDocumentElement().getFirstChild();
         assertEquals("hello", text.getTextContent());
+        assertThrows(DOMException.class, () ->
 
-        text.insertData(10, "world");
+            text.insertData(10, "world"));
     }
 
     @Test
-    public void insertData_empty() {
+    void insertData_empty() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -306,7 +307,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_shrink() {
+    void replaceData_shrink() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -329,7 +330,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_start() {
+    void replaceData_start() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -355,7 +356,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_middle() {
+    void replaceData_middle() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -381,7 +382,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_end() {
+    void replaceData_end() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -406,8 +407,8 @@ public class TextImplTest {
         assertEquals("goodbyworld", text2.getTextContent());
     }
 
-    @Test(expected=DOMException.class)
-    public void replaceData_pastEnd() {
+    @Test
+    void replaceData_pastEnd() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -417,16 +418,16 @@ public class TextImplTest {
         builder.endElement();
         builder.endElement();
         builder.endDocument();
-
         final Document doc = builder.getDocument();
         final Text text = (Text) doc.getDocumentElement().getFirstChild();
         assertEquals("hello", text.getTextContent());
+        assertThrows(DOMException.class, () ->
 
-        text.insertData(10, "world");
+            text.insertData(10, "world"));
     }
 
     @Test
-    public void replaceData_empty() {
+    void replaceData_empty() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("p", null, null), null);
@@ -452,7 +453,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_longArg() {
+    void replaceData_longArg() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("address", null, null), null);
@@ -469,7 +470,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void replaceData_untilEnd() {
+    void replaceData_untilEnd() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("address", null, null), null);
@@ -486,7 +487,7 @@ public class TextImplTest {
     }
 
     @Test
-    public void deleteData() {
+    void deleteData() {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         builder.startElement(new QName("address", null, null), null);

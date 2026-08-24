@@ -34,19 +34,19 @@ package org.exist.xquery.value;
 
 import io.lacuna.bifurcan.IMap;
 import io.lacuna.bifurcan.LinearMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
 import static org.exist.xquery.functions.map.MapType.newLinearMap;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests to demonstrate Bifurcan Map behaviour
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class BifurcanMapTest {
+class BifurcanMapTest {
 
     /**
      * Reproduces the XQSuite Test `mt:immutable-remove-then-remove()` from `maps.xql`:
@@ -63,7 +63,7 @@ public class BifurcanMapTest {
      * </code>
      */
     @Test
-    public void immutableRemoveThenRemove() {
+    void immutableRemoveThenRemove() {
 
         /*
           1. Create the initial map: `map { 1: true(), 2: true() }`
@@ -136,7 +136,7 @@ public class BifurcanMapTest {
     }
 
     @Test
-    public void bifurcanImmutableRemoveThenRemove() {
+    void bifurcanImmutableRemoveThenRemove() {
 
         /*
           1. Create the initial map: `map { 1: true(), 2: true() }`
@@ -151,7 +151,7 @@ public class BifurcanMapTest {
           2. Remove the entry in the initial map with key `2`: `let $removed := map:remove(..., 2)`
          */
         IMap<Integer, Boolean> removed = map.linear();  // create a transient map for modifications
-        assertFalse(removed == map);
+        assertNotSame(removed, map);
         removed = removed.remove(2);
         removed = removed.forked();  // make the map immutable
         checkMapIsForked(removed);
@@ -165,7 +165,7 @@ public class BifurcanMapTest {
          4. Remove the entry in the removed map with key `1`: `let $result := map:remove($removed, 1)`
          */
         IMap<Integer, Boolean> result = removed.linear();  // create a transient map for modifications
-        assertFalse(result == removed);
+        assertNotSame(result, removed);
         result = result.remove(1);
         result = result.forked();  // make the map immutable
         checkMapIsForked(result);

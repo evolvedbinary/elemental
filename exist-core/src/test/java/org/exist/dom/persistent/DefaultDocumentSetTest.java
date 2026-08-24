@@ -47,7 +47,7 @@ package org.exist.dom.persistent;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.collections.Collection;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Iterator;
@@ -56,17 +56,17 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class DefaultDocumentSetTest {
+@Execution(ExecutionMode.CONCURRENT)
+class DefaultDocumentSetTest {
 
     @Test
-    public void contains_leftRight() {
+    void contains_leftRight() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -97,7 +97,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void contains_nonOptimized_leftRight() {
+    void contains_nonOptimized_leftRight() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -123,7 +123,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void contains_nonOptimized_rightLeft() {
+    void contains_nonOptimized_rightLeft() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -151,7 +151,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void contains_noMatch() {
+    void contains_noMatch() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -179,7 +179,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void contains_nonOptimized_noMatch_leftRight() {
+    void contains_nonOptimized_noMatch_leftRight() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -204,7 +204,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void contains_nonOptimized_noMatch_rightLeft() {
+    void contains_nonOptimized_noMatch_rightLeft() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -228,7 +228,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void contains_emptySet() {
+    void contains_emptySet() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -253,7 +253,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void equalDocs() {
+    void equalDocs() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -286,7 +286,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void equalDocs_noMatch() {
+    void equalDocs_noMatch() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -317,7 +317,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void equalDocs_nonOptimized() {
+    void equalDocs_nonOptimized() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -345,7 +345,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void equalDocs_nonOptimized_noMatch() {
+    void equalDocs_nonOptimized_noMatch() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);
@@ -371,7 +371,7 @@ public class DefaultDocumentSetTest {
     }
 
     @Test
-    public void equalDocs_emptySet() {
+    void equalDocs_emptySet() {
         final Collection col = mockCollection(1);
 
         final DocumentImpl doc1 = mockDoc(col, 1);

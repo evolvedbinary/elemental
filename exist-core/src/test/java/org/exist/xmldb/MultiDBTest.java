@@ -47,11 +47,10 @@ package org.exist.xmldb;
 
 import org.exist.TestUtils;
 import org.exist.util.io.InputStreamUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
@@ -61,6 +60,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -86,7 +86,7 @@ public class MultiDBTest {
             "</exist>";
 
     @Test
-    public void store() throws XMLDBException, IOException {
+    void store() throws XMLDBException, IOException {
         for (int i = 0; i < INSTANCE_COUNT; i++) {
             try (final Collection root = DatabaseManager.getCollection("xmldb:test" + i + "://" + XmldbURI.ROOT_COLLECTION, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
                 final CollectionManagementService service = root.getService(CollectionManagementService.class);
@@ -121,16 +121,16 @@ public class MultiDBTest {
         }
     }
 
-    @ClassRule
-    public static TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
+    @TempDir
+    public static File TEMP_FOLDER;
 
-    @Before
-    public void setUp() throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException, XMLDBException {
 
         // initialize database drivers
         final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
         for (int i = 0; i < INSTANCE_COUNT; i++) {
-            final Path dir = TEMP_FOLDER.newFolder("db" + i).toPath();
+            final Path dir = Files.createDirectories(TEMP_FOLDER.toPath().resolve("db" + i));
             final Path conf = dir.resolve("conf.xml");
 
             try (final OutputStream os = Files.newOutputStream(conf)) {
@@ -145,8 +145,8 @@ public class MultiDBTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         for (int i = 0; i < INSTANCE_COUNT; i++) {
             try (final Collection root = DatabaseManager.getCollection("xmldb:test" + i + "://" + XmldbURI.ROOT_COLLECTION, "admin", "")) {
                 final CollectionManagementService service = root.getService(CollectionManagementService.class);

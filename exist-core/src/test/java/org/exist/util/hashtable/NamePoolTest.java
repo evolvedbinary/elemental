@@ -23,15 +23,15 @@ package org.exist.util.hashtable;
 
 import org.exist.dom.QName;
 import org.exist.storage.ElementValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class NamePoolTest {
+class NamePoolTest {
 
     @Test
-    public void getSharedNameIdentical() throws Exception {
+    void getSharedNameIdentical() {
         NamePool pool = new NamePool();
         QName q1 = new QName("n1", "http://exist-db.org", "x");
         QName q2 = new QName("n1", "http://exist-db.org", "x");
@@ -41,7 +41,7 @@ public class NamePoolTest {
     }
 
     @Test
-    public void getSharedNameDifferentNamespace() throws Exception {
+    void getSharedNameDifferentNamespace() {
         NamePool pool = new NamePool();
         QName q1 = new QName("n1", "http://exist-db.COM", "x");
         QName q2 = new QName("n1", "http://exist-db.org", "x");
@@ -51,7 +51,7 @@ public class NamePoolTest {
     }
 
     @Test
-    public void getSharedNameDifferentPrefix() throws Exception {
+    void getSharedNameDifferentPrefix() {
         NamePool pool = new NamePool();
         QName q1 = new QName("n1", "http://exist-db.org", "x");
         QName q2 = new QName("n2", "http://exist-db.org", "x");
@@ -61,7 +61,7 @@ public class NamePoolTest {
     }
 
     @Test
-    public void getSharedNameDifferentType() throws Exception {
+    void getSharedNameDifferentType() {
         NamePool pool = new NamePool();
         QName q1 = new QName("n1", "http://exist-db.org", "x", ElementValue.ELEMENT);
         QName q2 = new QName("n1", "http://exist-db.org", "x", ElementValue.ATTRIBUTE);

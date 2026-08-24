@@ -24,6 +24,7 @@ package org.exist.util;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,22 +34,22 @@ import static org.assertj.core.api.Assertions.*;
 
 class ConfigurationTest {
     @Test
-    void testConfigurationConstructors() throws Exception {
+    void configurationConstructors() {
         assertThatNoException().isThrownBy(Configuration::new);
         assertThatNoException().isThrownBy(() -> new Configuration(null));
     }
 
     @Test
-    void testConfigurationConstructorWithClasspathConf(@TempDir Path existHomeDir) throws Exception {
+    void configurationConstructorWithClasspathConf(@TempDir Path existHomeDir) {
         assertThatNoException().isThrownBy(() -> new Configuration("conf.xml"));
         assertThatNoException().isThrownBy(() -> new Configuration("conf.xml", Optional.empty()));
         assertThatNoException().isThrownBy(() -> new Configuration("conf.xml", Optional.of(existHomeDir)));
     }
 
     @Test
-    void testConfigurationConstructorWithAbsoluteConf(@TempDir Path existHomeDir) throws Exception {
+    void configurationConstructorWithAbsoluteConf(@TempDir Path existHomeDir) throws IOException {
         final Path conf = existHomeDir.resolve("test-conf.xml");
-        try (InputStream in = getClass().getResourceAsStream("/conf.xml")) {
+        try (final InputStream in = getClass().getResourceAsStream("/conf.xml")) {
             Files.copy(in, conf);
         }
         assertThatNoException().isThrownBy(() -> new Configuration(conf.toString(), Optional.of(existHomeDir)));

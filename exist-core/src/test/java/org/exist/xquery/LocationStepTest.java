@@ -22,15 +22,15 @@
 package org.exist.xquery;
 
 import org.exist.xquery.util.ExpressionDumper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-public class LocationStepTest {
+class LocationStepTest {
 
     @Test
-    public void insertPredicateNoPrevious() {
+    void insertPredicateNoPrevious() {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(Expression.EXPRESSION_ID_INVALID);
 
@@ -57,7 +57,7 @@ public class LocationStepTest {
     }
 
     @Test
-    public void insertPredicateInMiddleOddFirst() {
+    void insertPredicateInMiddleOddFirst() {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(Expression.EXPRESSION_ID_INVALID);
 
@@ -79,7 +79,7 @@ public class LocationStepTest {
     }
 
     @Test
-    public void insertPredicateInMiddleOddSecond() {
+    void insertPredicateInMiddleOddSecond() {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(Expression.EXPRESSION_ID_INVALID);
 
@@ -101,7 +101,7 @@ public class LocationStepTest {
     }
 
     @Test
-    public void insertPredicateInMiddleEvenFirst() {
+    void insertPredicateInMiddleEvenFirst() {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(Expression.EXPRESSION_ID_INVALID);
 
@@ -125,7 +125,7 @@ public class LocationStepTest {
     }
 
     @Test
-    public void insertPredicateInMiddleEvenSecond() {
+    void insertPredicateInMiddleEvenSecond() {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(Expression.EXPRESSION_ID_INVALID);
 
@@ -149,7 +149,7 @@ public class LocationStepTest {
     }
 
     @Test
-    public void insertPredicateInMiddleEvenThird() {
+    void insertPredicateInMiddleEvenThird() {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(Expression.EXPRESSION_ID_INVALID);
 

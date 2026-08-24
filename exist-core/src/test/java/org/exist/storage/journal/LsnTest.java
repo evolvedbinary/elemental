@@ -32,19 +32,18 @@
  */
 package org.exist.storage.journal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class LsnTest {
+class LsnTest {
 
     @Test
-    public void compareTo() {
+    void compareTo() {
         assertEquals(0, Lsn.LSN_INVALID.compareTo(Lsn.LSN_INVALID));
         assertEquals(-1, Lsn.LSN_INVALID.compareTo(new Lsn((short)0, 0)));
         assertEquals(1, new Lsn((short)0, 0).compareTo(Lsn.LSN_INVALID));
@@ -70,13 +69,13 @@ public class LsnTest {
     }
 
     @Test
-    public void equalsTo() {
-        assertTrue(Lsn.LSN_INVALID.equals(Lsn.LSN_INVALID));
-        assertTrue(Lsn.LSN_INVALID.equals(new Lsn((short)-1, -1)));
-        assertTrue(new Lsn((short)-1, -1).equals(Lsn.LSN_INVALID));
+    void equalsTo() {
+        assertEquals(Lsn.LSN_INVALID, Lsn.LSN_INVALID);
+        assertEquals(Lsn.LSN_INVALID, new Lsn((short) -1, -1));
+        assertEquals(Lsn.LSN_INVALID, new Lsn((short) -1, -1));
 
-        assertFalse(new Lsn((short)0, 0).equals(Lsn.LSN_INVALID));
-        assertFalse(Lsn.LSN_INVALID.equals(new Lsn((short)0, 0)));
+        assertNotEquals(Lsn.LSN_INVALID, new Lsn((short) 0, 0));
+        assertNotEquals(Lsn.LSN_INVALID, new Lsn((short) 0, 0));
     }
 
 }

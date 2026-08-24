@@ -47,24 +47,26 @@ package org.exist.util.serializer;
 
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.QName;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import javax.xml.transform.TransformerException;
 
-public class HTML5WriterTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class HTML5WriterTest {
 
     private HTML5Writer writer;
     private StringBuilderWriter targetWriter;
-    
-    @Before
-    public void setUp() throws Exception {
+
+    @BeforeEach
+    void setUp() {
         targetWriter = new StringBuilderWriter();
         writer = new HTML5Writer(targetWriter);
     }
 
     @Test
-    public void testAttributeWithBooleanValue() throws Exception {
+    void attributeWithBooleanValue() throws QName.IllegalQNameException, TransformerException {
         final String expected = "<!DOCTYPE html>\n<input checked>";
         final QName elQName = new QName("input");
         writer.startElement(elQName);
@@ -76,7 +78,7 @@ public class HTML5WriterTest {
     }
 
     @Test
-    public void testAttributeWithNonBooleanValue() throws Exception {
+    void attributeWithNonBooleanValue() throws QName.IllegalQNameException, TransformerException {
         final String expected = "<!DOCTYPE html>\n<input name=\"name\">";
         final QName elQName = new QName("input");
         writer.startElement(elQName);
@@ -88,7 +90,7 @@ public class HTML5WriterTest {
     }
 
     @Test
-    public void testAttributeQNameWithBooleanValue() throws Exception {
+    void attributeQNameWithBooleanValue() throws QName.IllegalQNameException, TransformerException {
         final String expected = "<!DOCTYPE html>\n<input checked>";
         final QName elQName = new QName("input");
         final QName attrQName = new QName("checked");
@@ -101,7 +103,7 @@ public class HTML5WriterTest {
     }
 
     @Test
-    public void testAttributeQNameWithNonBooleanValue() throws Exception {
+    void attributeQNameWithNonBooleanValue() throws QName.IllegalQNameException, TransformerException {
         final String expected = "<!DOCTYPE html>\n<input name=\"name\">";
         final QName elQName = new QName("input");
         final QName attrQName = new QName("name");

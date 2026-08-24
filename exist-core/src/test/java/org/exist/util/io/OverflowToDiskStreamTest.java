@@ -45,8 +45,8 @@
  */
 package org.exist.util.io;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,27 +57,25 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:patrick@reini.net">Patrick Reinhart</a>
  */
-public class OverflowToDiskStreamTest {
+class OverflowToDiskStreamTest {
     private MemoryContents memoryContents;
     private OutputStreamSupplier overflowStreamSupplier;
     private OverflowToDiskStream overflowToDiskStream;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         memoryContents = createMock(MemoryContents.class);
         overflowStreamSupplier = createMock(OutputStreamSupplier.class);
         overflowToDiskStream = new OverflowToDiskStream(5, memoryContents, overflowStreamSupplier);
     }
 
     @Test
-    public void writeSingleByte() throws IOException {
+    void writeSingleByte() throws IOException {
         TestOutputStream testOutput = new TestOutputStream();
 
         expect(memoryContents.writeAtEnd(aryEq(new byte[]{'1'}), eq(0), eq(1))).andReturn(1);
@@ -105,21 +103,21 @@ public class OverflowToDiskStreamTest {
     }
 
     @Test
-    public void close() throws IOException {
+    void close() throws IOException {
         replay(memoryContents, overflowStreamSupplier);
 
         overflowToDiskStream.close();
     }
 
     @Test
-    public void flush() throws IOException {
+    void flush() throws IOException {
         replay(memoryContents, overflowStreamSupplier);
 
         overflowToDiskStream.flush();
     }
 
     @Test
-    public void writeByteArray() throws IOException {
+    void writeByteArray() throws IOException {
         byte[] buf = new byte[]{'1', '2', '3', '4', '5', '6', '7', '8', '9'};
         TestOutputStream testOutput = new TestOutputStream();
 
@@ -148,7 +146,7 @@ public class OverflowToDiskStreamTest {
         private int flushCount;
 
         public void assertClosedContent(byte[] expected, int expectedFlushes) {
-            assertTrue("Stream not closed", closed);
+            assertTrue(closed, "Stream not closed");
             assertEquals(expectedFlushes, flushCount);
             assertArrayEquals(expected, toByteArray());
         }

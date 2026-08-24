@@ -26,17 +26,18 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.StringValue;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  * @author aretter
  */
-public class BinaryToStringTest {
+class BinaryToStringTest {
 
     @Test
-    public void roundtrip() throws XPathException {
+    void roundtrip() throws XPathException {
         final String value = "hello world";
         final String encoding = "UTF-8";
 

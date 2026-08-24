@@ -52,18 +52,17 @@ import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.security.Subject;
 import org.exist.util.MapUtil;
-import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
+import org.junit.jupiter.api.Test;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.easymock.EasyMock.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
@@ -71,8 +70,8 @@ import java.util.Map;
 /**
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class IdFunctionTest {
+@Execution(ExecutionMode.CONCURRENT)
+class IdFunctionTest {
 
     private static final Map<String, String> NS_CONTEXT = MapUtil.hashMap(
         Tuple("sm", "http://exist-db.org/xquery/securitymanager")
@@ -83,7 +82,7 @@ public class IdFunctionTest {
      * when real and effective users are different
      */
     @Test
-    public void differingRealAndEffectiveUsers() throws XPathException {
+    void differingRealAndEffectiveUsers() throws XPathException {
         final XQueryContext mckContext = createMockBuilder(XQueryContext.class)
                 .addMockedMethod("pushDocumentContext")
                 .addMockedMethod("getDocumentBuilder", new Class[0])
@@ -129,7 +128,7 @@ public class IdFunctionTest {
      * when real and effective users are the same
      */
     @Test
-    public void sameRealAndEffectiveUsers() throws XPathException {
+    void sameRealAndEffectiveUsers() throws XPathException {
         final XQueryContext mckContext = createMockBuilder(XQueryContext.class)
                 .addMockedMethod("pushDocumentContext")
                 .addMockedMethod("getDocumentBuilder", new Class[0])
@@ -175,7 +174,7 @@ public class IdFunctionTest {
      * without setUid.
      */
     @Test
-    public void differingByGroupRealAndEffectiveUsers() throws XPathException {
+    void differingByGroupRealAndEffectiveUsers() throws XPathException {
         final XQueryContext mckContext = createMockBuilder(XQueryContext.class)
                 .addMockedMethod("pushDocumentContext")
                 .addMockedMethod("getDocumentBuilder", new Class[0])

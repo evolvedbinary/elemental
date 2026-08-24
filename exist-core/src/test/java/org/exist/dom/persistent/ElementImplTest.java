@@ -24,21 +24,21 @@ package org.exist.dom.persistent;
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.easymock.EasyMock;
 import org.exist.numbering.DLN;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Created by aretter on 25/04/2017.
  */
-@RunWith(ParallelRunner.class)
-public class ElementImplTest {
+@Execution(ExecutionMode.CONCURRENT)
+class ElementImplTest {
 
     @Test
-    public void isSameNode_sameElement() {
+    void isSameNode_sameElement() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
         expect(doc.getDocId()).andReturn(21).times(2);
 
@@ -54,7 +54,7 @@ public class ElementImplTest {
     }
 
     @Test
-    public void isSameNode_differentText() {
+    void isSameNode_differentText() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
 
         replay(doc);
@@ -73,7 +73,7 @@ public class ElementImplTest {
     }
 
     @Test
-    public void isSameNode_differentTextDifferentDoc() {
+    void isSameNode_differentTextDifferentDoc() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
         expect(doc.getDocId()).andReturn(21);
 
@@ -96,7 +96,7 @@ public class ElementImplTest {
     }
 
     @Test
-    public void isSameNode_nonText() {
+    void isSameNode_nonText() {
         final DocumentImpl doc = EasyMock.createMock(DocumentImpl.class);
 
         replay(doc);

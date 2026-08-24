@@ -45,22 +45,20 @@
  */
 package org.exist.storage.io;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-
-public class VariableByteStreamTest {
+class VariableByteStreamTest {
 
     private final static int SIZE = 1000;
     
 	private long[] values = new long[1000 * 3];
 
-	@Before
-	public void setUp() {
+    @BeforeEach
+    void setUp() {
 		Random rand = new Random(System.currentTimeMillis()); 
 		for(int i = 0; i < SIZE * 3; i++) {
 			values[i++] = rand.nextInt();
@@ -69,8 +67,8 @@ public class VariableByteStreamTest {
 		}
 	}
 
-	@Test
-	public void inOutLong() throws IOException {
+    @Test
+    void inOutLong() throws IOException {
 		VariableByteArrayOutputStream os = new VariableByteArrayOutputStream();
 		for(int i = 0; i < SIZE * 3; i++) {
 			os.writeLong(values[i++]);
@@ -93,8 +91,8 @@ public class VariableByteStreamTest {
 		}
 	}
 
-	@Test
-	public void copyTo() throws IOException {
+    @Test
+    void copyTo() throws IOException {
 		Random rand = new Random(System.currentTimeMillis());
 		int valuesWritten = 0;
 		int dataLen = 0;

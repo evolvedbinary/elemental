@@ -25,25 +25,25 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.util.io.CachingFilterInputStream;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xquery.XPathException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author <a href="mailto:adam@existsolutions.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class BinaryValueFromInputStreamTest {
+@Execution(ExecutionMode.CONCURRENT)
+class BinaryValueFromInputStreamTest {
 
     @Test
-    public void getInputStream() throws XPathException, IOException {
+    void getInputStream() throws XPathException, IOException {
         final byte[] testData = "test data".getBytes();
 
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
@@ -61,7 +61,7 @@ public class BinaryValueFromInputStreamTest {
     }
 
     @Test
-    public void repeated_getInputStream_sameUnderlyingCache() throws XPathException, IOException {
+    void repeated_getInputStream_sameUnderlyingCache() throws XPathException, IOException {
         final byte[] testData = "test data".getBytes();
 
         BinaryValue binaryValue1 = null;
@@ -101,42 +101,43 @@ public class BinaryValueFromInputStreamTest {
         }
     }
 
-    @Test(expected = IOException.class)
-    public void filter_withoutIncrementReferenceCountFails() throws IOException, XPathException {
+    @Test
+    void filter_withoutIncrementReferenceCountFails() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
-
         final byte[] testData = "test data".getBytes();
+        assertThrows(IOException.class, () -> {
 
-        try (final InputStream bais = new UnsynchronizedByteArrayInputStream(testData)) {
-            final BinaryValue binaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
-            final InputStream bvis = binaryValue.getInputStream();
+            try (final InputStream bais = new UnsynchronizedByteArrayInputStream(testData)) {
+                final BinaryValue binaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
+                final InputStream bvis = binaryValue.getInputStream();
 
-            // create a filter over the first BinaryValue, with no reference count increment
-            final InputStream fis = new BinaryValueFilteringInputStream(bvis, false);
-            final BinaryValue filteredBinaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis, null);
+                // create a filter over the first BinaryValue, with no reference count increment
+                final InputStream fis = new BinaryValueFilteringInputStream(bvis, false);
+                final BinaryValue filteredBinaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis, null);
 
-            // we now destroy the filtered binary value, just as it would be if it went out of scope from popLocalVariables#popLocalVariables.
-            // It should close the original binary value, as we have not incremented the reference count!
-            filteredBinaryValue.close();
-            assertTrue(filteredBinaryValue.isClosed());
-            fis.close();
-            bvis.close();
-            assertTrue(binaryValue.isClosed());
+                // we now destroy the filtered binary value, just as it would be if it went out of scope from popLocalVariables#popLocalVariables.
+                // It should close the original binary value, as we have not incremented the reference count!
+                filteredBinaryValue.close();
+                assertTrue(filteredBinaryValue.isClosed());
+                fis.close();
+                bvis.close();
+                assertTrue(binaryValue.isClosed());
 
-            // we should not be able to read from the origin binary value!
-            try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
+                // we should not be able to read from the origin binary value!
+                try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
 
-                // this should throw an IOException
-                binaryValue.streamBinaryTo(baos);
+                    // this should throw an IOException
+                    binaryValue.streamBinaryTo(baos);
+                }
+
+            } finally {
+                binaryValueManager.runCleanupTasks();
             }
-
-        } finally {
-            binaryValueManager.runCleanupTasks();
-        }
+        });
     }
 
     @Test
-    public void filter_withIncrementReferenceCount() throws IOException, XPathException {
+    void filter_withIncrementReferenceCount() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final byte[] testData = "test data".getBytes();
@@ -173,47 +174,48 @@ public class BinaryValueFromInputStreamTest {
         }
     }
 
-    @Test(expected = IOException.class)
-    public void multiFilter_withoutIncrementReferenceCountFails() throws IOException, XPathException {
+    @Test
+    void multiFilter_withoutIncrementReferenceCountFails() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
-
         final byte[] testData = "test data".getBytes();
+        assertThrows(IOException.class, () -> {
 
-        try (final InputStream bais = new UnsynchronizedByteArrayInputStream(testData)) {
-            final BinaryValue binaryValue1 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
-            final InputStream bvis1 = binaryValue1.getInputStream();
+            try (final InputStream bais = new UnsynchronizedByteArrayInputStream(testData)) {
+                final BinaryValue binaryValue1 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
+                final InputStream bvis1 = binaryValue1.getInputStream();
 
-            final BinaryValue binaryValue2 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
-            final InputStream bvis2 = binaryValue2.getInputStream();
+                final BinaryValue binaryValue2 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
+                final InputStream bvis2 = binaryValue2.getInputStream();
 
-            // create a filter over both BinaryValues, with no reference count increment
-            final InputStream fis = new MultiBinaryValueFilteringInputStream(new InputStream[]{bvis1, bvis2}, false);
-            final BinaryValue filteredBinaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis, null);
+                // create a filter over both BinaryValues, with no reference count increment
+                final InputStream fis = new MultiBinaryValueFilteringInputStream(new InputStream[]{bvis1, bvis2}, false);
+                final BinaryValue filteredBinaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis, null);
 
-            // we now destroy the filtered binary value, just as it would be if it went out of scope from popLocalVariables#popLocalVariables.
-            // It should close the original binary values, as we have not incremented the reference counts!
-            filteredBinaryValue.close();
-            assertTrue(filteredBinaryValue.isClosed());
-            fis.close();
-            bvis2.close();
-            assertTrue(binaryValue2.isClosed());
-            bvis1.close();
-            assertTrue(binaryValue1.isClosed());
+                // we now destroy the filtered binary value, just as it would be if it went out of scope from popLocalVariables#popLocalVariables.
+                // It should close the original binary values, as we have not incremented the reference counts!
+                filteredBinaryValue.close();
+                assertTrue(filteredBinaryValue.isClosed());
+                fis.close();
+                bvis2.close();
+                assertTrue(binaryValue2.isClosed());
+                bvis1.close();
+                assertTrue(binaryValue1.isClosed());
 
-            // we should not be able to read from the origin binary value!
-            try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
+                // we should not be able to read from the origin binary value!
+                try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
 
-                // this should throw an IOException
-                binaryValue1.streamBinaryTo(baos);
+                    // this should throw an IOException
+                    binaryValue1.streamBinaryTo(baos);
+                }
+
+            } finally {
+                binaryValueManager.runCleanupTasks();
             }
-
-        } finally {
-            binaryValueManager.runCleanupTasks();
-        }
+        });
     }
 
     @Test
-    public void multiFilter_withIncrementReferenceCount() throws IOException, XPathException {
+    void multiFilter_withIncrementReferenceCount() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final byte[] testData1 = "test data".getBytes();
@@ -268,51 +270,52 @@ public class BinaryValueFromInputStreamTest {
         }
     }
 
-    @Test(expected = IOException.class)
-    public void filterFilter_withoutIncrementReferenceCountFails() throws IOException, XPathException {
+    @Test
+    void filterFilter_withoutIncrementReferenceCountFails() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
-
         final byte[] testData = "test data".getBytes();
+        assertThrows(IOException.class, () -> {
 
-        try (final InputStream bais = new UnsynchronizedByteArrayInputStream(testData)) {
-            final BinaryValue binaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
-            final InputStream bvis = binaryValue.getInputStream();
+            try (final InputStream bais = new UnsynchronizedByteArrayInputStream(testData)) {
+                final BinaryValue binaryValue = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), bais, null);
+                final InputStream bvis = binaryValue.getInputStream();
 
-            // create a filter over the first BinaryValue, with no reference count increment
-            final InputStream fis1 = new BinaryValueFilteringInputStream(bvis, false);
-            final BinaryValue filteredBinaryValue1 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis1, null);
+                // create a filter over the first BinaryValue, with no reference count increment
+                final InputStream fis1 = new BinaryValueFilteringInputStream(bvis, false);
+                final BinaryValue filteredBinaryValue1 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis1, null);
 
-            // create a second filter over the first filter, with no reference count increment
-            final InputStream fbvis = filteredBinaryValue1.getInputStream();
-            final InputStream fis2 = new BinaryValueFilteringInputStream(fbvis, false);
-            final BinaryValue filteredBinaryValue2 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis2, null);
+                // create a second filter over the first filter, with no reference count increment
+                final InputStream fbvis = filteredBinaryValue1.getInputStream();
+                final InputStream fis2 = new BinaryValueFilteringInputStream(fbvis, false);
+                final BinaryValue filteredBinaryValue2 = BinaryValueFromInputStream.getInstance(binaryValueManager, new Base64BinaryValueType(), fis2, null);
 
-            // we now destroy the second filtered binary value, just as it would if it went out of scope from popLocalVariables#popLocalVariables.
-            // It should close the first filtered binary value and original binary value, as we have not incremented the reference counts!
-            filteredBinaryValue2.close();
-            fis2.close();
-            fbvis.close();
-            assertTrue(filteredBinaryValue2.isClosed());
-            assertTrue(filteredBinaryValue1.isClosed());
+                // we now destroy the second filtered binary value, just as it would if it went out of scope from popLocalVariables#popLocalVariables.
+                // It should close the first filtered binary value and original binary value, as we have not incremented the reference counts!
+                filteredBinaryValue2.close();
+                fis2.close();
+                fbvis.close();
+                assertTrue(filteredBinaryValue2.isClosed());
+                assertTrue(filteredBinaryValue1.isClosed());
 
-            fis1.close();
-            bvis.close();
-            assertTrue(binaryValue.isClosed());
+                fis1.close();
+                bvis.close();
+                assertTrue(binaryValue.isClosed());
 
-            // we should not be able to read from the first filtered binary value!
-            try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
+                // we should not be able to read from the first filtered binary value!
+                try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
 
-                // this should throw an IOException
-                filteredBinaryValue1.streamBinaryTo(baos);
+                    // this should throw an IOException
+                    filteredBinaryValue1.streamBinaryTo(baos);
+                }
+
+            } finally {
+                binaryValueManager.runCleanupTasks();
             }
-
-        } finally {
-            binaryValueManager.runCleanupTasks();
-        }
+        });
     }
 
     @Test
-    public void filterFilter_withIncrementReferenceCount() throws IOException, XPathException {
+    void filterFilter_withIncrementReferenceCount() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final byte[] testData = "test data".getBytes();
@@ -368,7 +371,7 @@ public class BinaryValueFromInputStreamTest {
     }
 
     @Test
-    public void multiFilterFilter_withIncrementReferenceCount() throws IOException, XPathException {
+    void multiFilterFilter_withIncrementReferenceCount() throws IOException, XPathException {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final byte[] testData = "test data".getBytes();

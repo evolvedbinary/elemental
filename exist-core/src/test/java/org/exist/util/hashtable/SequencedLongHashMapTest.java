@@ -23,16 +23,16 @@ package org.exist.util.hashtable;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class SequencedLongHashMapTest {
+class SequencedLongHashMapTest {
 
-	@Test
-	public void sequenceProperty() {
+    @Test
+    void sequenceProperty() {
 		final SequencedLongHashMap<Integer> map = new SequencedLongHashMap<>();
 
 		map.put(1, 2);
@@ -65,8 +65,8 @@ public class SequencedLongHashMapTest {
 		assertFalse(vi.hasNext());
 	}
 
-	@Test
-	public void sequencedMap2() {
+    @Test
+    void sequencedMap2() {
 		final long[] l = { 10, 100, 50, 250, 100, 15, 35, 250, 100, 65, 45, 50, 65, 80, 90, 70, 250, 100 };
 		final long[] expected = { 15, 35, 45, 50, 65, 80, 90, 70, 250, 100 };
 
@@ -86,29 +86,29 @@ public class SequencedLongHashMapTest {
 		}
 	}
 
-	@Test
-	public void zeroKeys() {
+    @Test
+    void zeroKeys() {
 		final SequencedLongHashMap<String> map = new SequencedLongHashMap<>();
 		LongIterator iterator = map.iterator();
-		assertFalse("empty collection should have no keys", iterator.hasNext());
+		assertFalse(iterator.hasNext(), "empty collection should have no keys");
 	}
 
-	@Test
-	public void getNothing() {
+    @Test
+    void getNothing() {
 		final SequencedLongHashMap<Integer> map = new SequencedLongHashMap<>();
-		assertNull("empty collection should have no values",
-				map.get(12345));
+		assertNull(map.get(12345),
+				"empty collection should have no values");
 	}
 
-	@Test
-	public void valuePut() {
+    @Test
+    void valuePut() {
 		final SequencedLongHashMap<Integer> map = new SequencedLongHashMap<>();
 		map.put(12345, 54321);
 		assertEquals(54321, (int)map.get(12345));
 	}
 
-	@Test
-	public void valueMultiplePut() {
+    @Test
+    void valueMultiplePut() {
 		final SequencedLongHashMap<Integer> map = new SequencedLongHashMap<>();
 
 		for (int i = 0; i < 10; i++) {
@@ -129,8 +129,8 @@ public class SequencedLongHashMapTest {
 	}
 
 
-	@Test
-	public void putAndRemove() {
+    @Test
+    void putAndRemove() {
 		final SequencedLongHashMap<Integer> map = new SequencedLongHashMap<>();
 
 		for (int i = 0; i < 10; i++) {
@@ -153,8 +153,8 @@ public class SequencedLongHashMapTest {
 		}
 	}
 
-	@Test
-	public void putDuplicates() {
+    @Test
+    void putDuplicates() {
 		final SequencedLongHashMap<Integer> map = new SequencedLongHashMap<>();
 
 		for (int i = 0; i < 10; i++)
@@ -166,17 +166,17 @@ public class SequencedLongHashMapTest {
 		for (final LongIterator ki = map.iterator(); ki.hasNext();) {
 			final long k = ki.nextLong();
 			final int kk = (int)k;
-			assertFalse("Key " + kk + " appears only once", test[kk]);
+			assertFalse(test[kk], "Key " + kk + " appears only once");
 			test[kk] = true;
 		}
 
 		for (int i = 0; i < 10; i++) {
-			assertTrue("key " + i + " appeared once", test[i]);
+			assertTrue(test[i], "key " + i + " appeared once");
 		}
 	}
 
-	@Test
-	public void expandable() {
+    @Test
+    void expandable() {
 		final SequencedLongHashMap<String> table = new SequencedLongHashMap<>(2);
 
 		for (int i = 0; i < 8; i++) {

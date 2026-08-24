@@ -46,16 +46,16 @@
 package org.exist.util;
 
 import org.easymock.EasyMock;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LeasableTest {
+class LeasableTest {
 
 
     @Test
-    public void fromCloseable() {
+    void fromCloseable() {
         AutoCloseable autoCloseable = EasyMock.mock(AutoCloseable.class);
 
         Leasable<AutoCloseable> leasable = Leasable.fromCloseable(autoCloseable);

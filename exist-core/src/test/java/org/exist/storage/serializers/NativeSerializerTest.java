@@ -50,7 +50,7 @@ import static org.exist.Namespaces.EXIST_NS_PREFIX;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NativeSerializerTest {
+class NativeSerializerTest {
 
     private static final int DEFAULT_START = 1;
     private static final long DEFAULT_COMPILATION_TIME = 0;
@@ -68,7 +68,7 @@ public class NativeSerializerTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
-    public void serializeInteger(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+    void serializeInteger(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
         final Sequence sequence = new ValueSequence();
         sequence.add(new IntegerValue(123));
         sequence.add(new IntegerValue(456));
@@ -78,7 +78,7 @@ public class NativeSerializerTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
-    public void serializeText(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+    void serializeText(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         final int text1Id = builder.characters("hello");
@@ -95,7 +95,7 @@ public class NativeSerializerTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
-    public void serializeArray(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+    void serializeArray(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
 
@@ -114,7 +114,7 @@ public class NativeSerializerTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
-    public void serializeMap(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+    void serializeMap(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
         final XQueryContext mockContext = mock(XQueryContext.class);
         expect(mockContext.nextExpressionId()).andReturn(1).anyTimes();
 
@@ -133,7 +133,7 @@ public class NativeSerializerTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_WRAPPED,NOT_TYPED", "WRAPPED,NOT_TYPED", "NOT_WRAPPED,TYPED", "WRAPPED,TYPED"})
-    public void serializeMixed(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
+    void serializeMixed(final Wrapped wrapped, final Typed typed) throws SAXException, XPathException, IOException {
         final MemTreeBuilder builder = new MemTreeBuilder();
         builder.startDocument();
         final int text1Id = builder.characters("hello");

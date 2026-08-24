@@ -45,8 +45,8 @@
  */
 package org.exist.util.sorters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Comparator;
 
@@ -73,6 +73,7 @@ class PlainArrayChecker extends ComparatorChecker {
 	/**
 	 * It asserts the ascending ordering of an Integer array
 	 */
+    @Override
 	void check(int lo, int hi) {
 		for (int i = lo; i < hi; i++) {
 			assertTrue(a[i].intValue() <= a[i + 1].intValue());
@@ -82,8 +83,8 @@ class PlainArrayChecker extends ComparatorChecker {
 	/**
 	 * It loads an input int array into the internal Integer one
 	 */
+    @Override
 	void init(int[] values)
-		throws Exception
 	{
 		a = new Integer[values.length];
 		for (int i = 0; i < values.length; i++) {
@@ -95,6 +96,7 @@ class PlainArrayChecker extends ComparatorChecker {
 	/**
 	 * It returns the length of the array to be used on assertion
 	 */
+    @Override
 	int getLength() {
 		return a.length;
 	}
@@ -102,9 +104,8 @@ class PlainArrayChecker extends ComparatorChecker {
 	/**
 	 * This method invokes sort routine on selected sorter
 	 */
-	void sort(int lo, int hi)
-		throws Exception
-	{
+    @Override
+	void sort(int lo, int hi) {
 		sorter.sort(a, lo, hi);
 	}
 
@@ -112,26 +113,25 @@ class PlainArrayChecker extends ComparatorChecker {
 	 * This method invokes sort routine with a given
 	 * comparator on selected sorter
 	 */
-	void sort(SortOrder sortOrder, int lo, int hi)
-		throws Exception
-	{
+    @Override
+	void sort(SortOrder sortOrder, int lo, int hi) {
 		sorter.sort(a, getComparator(sortOrder), lo, hi);
 	}
 
 	/**
 	 * This method asserts single values
 	 */
+    @Override
 	void checkValue(int idx, int v) {
-		assertEquals("@" + idx, v, a[idx].intValue());
+		assertEquals(v, a[idx].intValue(), "@" + idx);
 	}
 
 	/**
 	 * It asserts the ascending ordering of an Integer array
 	 * given an specific comparator
 	 */
-	void check(SortOrder sortOrder, int lo, int hi)
-		throws Exception
-	{
+    @Override
+	void check(SortOrder sortOrder, int lo, int hi) {
 		Comparator<Integer> c = getComparator(sortOrder);
 		for (int i = lo; i < hi; i++) {
 			assertTrue(c.compare(a[i], a[i + 1]) <= 0);

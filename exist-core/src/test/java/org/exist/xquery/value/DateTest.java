@@ -45,32 +45,38 @@
  */
 package org.exist.xquery.value;
 
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.XPathException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  *	note: some of these tests rely on local timezone override to -05:00, done in super.setUp()
  *
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class DateTest extends AbstractTimeRelatedTest {
 
-	@Test(expected = XPathException.class)
-	public void create1() throws XPathException {
-		new DateValue("2005-10-11T10:00:00Z");
+	@Test
+	public void create1() {
+        assertThrows(XPathException.class, () ->
+		    new DateValue("2005-10-11T10:00:00Z")
+        );
 	}
 
-	@Test(expected = XPathException.class)
-	public void create2() throws XPathException {
-		new DateValue("10:00:00Z");
+	@Test
+	public void create2() {
+        assertThrows(XPathException.class, () ->
+		    new DateValue("10:00:00Z")
+        );
 	}
 
 	@Test
@@ -125,6 +131,7 @@ public class DateTest extends AbstractTimeRelatedTest {
 	public void convert2() throws XPathException {
 		AbstractDateTimeValue v1 = new DateValue("2005-10-11");
 		AtomicValue v2 = v1.convertTo(Type.DATE);
+        assertNotNull(v2);
 		assertDateEquals(v1, v2);
 		assertEquals(Sequence.EMPTY_SEQUENCE, ((AbstractDateTimeValue) v2).getTimezone());
 	}
@@ -140,6 +147,7 @@ public class DateTest extends AbstractTimeRelatedTest {
 	public void convert4() throws XPathException {
 		AbstractDateTimeValue v1 = new DateValue("2005-10-11");
 		AtomicValue v2 = v1.convertTo(Type.DATE_TIME);
+        assertNotNull(v2);
 		assertDateEquals(new DateTimeValue("2005-10-11T00:00:00"), v2);
 		assertEquals(Sequence.EMPTY_SEQUENCE, ((AbstractDateTimeValue) v2).getTimezone());
 	}
@@ -218,22 +226,28 @@ public class DateTest extends AbstractTimeRelatedTest {
 		assertEquals("2002-03-06-10:00", v2.getTrimmedCalendar().toXMLFormat());
 	}
 
-    @Test(expected = XPathException.class)
+    @Test
 	public void adjustedToTimezone5() throws XPathException {
         AbstractDateTimeValue v1 = new DateValue("2002-03-07+01:00");
-        v1.adjustedToTimezone(new DayTimeDurationValue("-PT15H"));
+        assertThrows(XPathException.class, () ->
+            v1.adjustedToTimezone(new DayTimeDurationValue("-PT15H"))
+        );
 	}
 
-    @Test(expected = XPathException.class)
+    @Test
 	public void adjustedToTimezone6() throws XPathException {
         AbstractDateTimeValue v1 = new DateValue("2002-03-07+01:00");
-        v1.adjustedToTimezone(new DayTimeDurationValue("PT14H01M"));
+        assertThrows(XPathException.class, () ->
+            v1.adjustedToTimezone(new DayTimeDurationValue("PT14H01M"))
+        );
 	}
 
-    @Test(expected = XPathException.class)
+    @Test
 	public void adjustedToTimezone7() throws XPathException {
         AbstractDateTimeValue v1 = new DateValue("2002-03-07+01:00");
-        v1.adjustedToTimezone(new DayTimeDurationValue("PT8H4S"));
+        assertThrows(XPathException.class, () ->
+            v1.adjustedToTimezone(new DayTimeDurationValue("PT8H4S"))
+        );
 	}
 
     @Test

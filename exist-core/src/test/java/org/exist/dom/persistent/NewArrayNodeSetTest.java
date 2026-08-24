@@ -24,15 +24,15 @@ package org.exist.dom.persistent;
 
 import org.exist.xquery.Constants;
 import org.exist.xquery.value.SequenceIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NewArrayNodeSetTest {
+class NewArrayNodeSetTest {
 
     @Test
-    public void iterate_loop() {
+    void iterate_loop() {
         final NewArrayNodeSet newArrayNodeSet = mockNewArrayNodeSet(99);
 
         final SequenceIterator it = newArrayNodeSet.iterate();
@@ -46,7 +46,7 @@ public class NewArrayNodeSetTest {
     }
 
     @Test
-    public void iterate_skip_loop() {
+    void iterate_skip_loop() {
         final NewArrayNodeSet newArrayNodeSet = mockNewArrayNodeSet(99);
         final SequenceIterator it = newArrayNodeSet.iterate();
 
@@ -66,7 +66,7 @@ public class NewArrayNodeSetTest {
     }
 
     @Test
-    public void iterate_loop_skip_loop() {
+    void iterate_loop_skip_loop() {
         final NewArrayNodeSet newArrayNodeSet = mockNewArrayNodeSet(99);
         final SequenceIterator it = newArrayNodeSet.iterate();
 

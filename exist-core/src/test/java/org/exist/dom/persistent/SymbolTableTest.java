@@ -57,17 +57,18 @@ import java.nio.file.Path;
 
 import org.exist.storage.io.VariableByteOutput;
 import org.exist.util.Configuration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class SymbolTableTest {
+@Execution(ExecutionMode.CONCURRENT)
+class SymbolTableTest {
 
     private final SymbolTable createSymbolTable(final Path dir) throws BrokerPoolServiceException {
         final SymbolTable symbolTable = new SymbolTable();
@@ -82,48 +83,49 @@ public class SymbolTableTest {
     }
 
     @Test
-    public void getName_returns_empty_string_when_id_is_zero() throws IOException, BrokerPoolServiceException {
+    void getName_returns_empty_string_when_id_is_zero() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         assertEquals("", symbolTable.getName((short)0));
         symbolTable.close();
     }
 
     @Test
-    public void getNameSpace_returns_empty_string_when_id_is_zero() throws IOException, BrokerPoolServiceException {
+    void getNameSpace_returns_empty_string_when_id_is_zero() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         assertEquals("", symbolTable.getNamespace((short)0));
     }
 
     @Test
-    public void geMimeType_returns_empty_string_when_id_is_zero() throws IOException, BrokerPoolServiceException {
+    void geMimeType_returns_empty_string_when_id_is_zero() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         assertEquals("", symbolTable.getMimeType((short)0));
         symbolTable.close();
     }
-    
-    @Test(expected=IllegalArgumentException.class)
-    public void getSymbol_for_localName_throws_exception_when_name_is_empty_string() throws IOException, BrokerPoolServiceException {
+
+    @Test
+    void getSymbol_for_localName_throws_exception_when_name_is_empty_string() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         symbolTable.getSymbol("");
-        symbolTable.close();
+        assertThrows(IllegalArgumentException.class, () ->
+            symbolTable.close());
     }
 
     @Test
-    public void getNSSymbol_returns_zero_when_namespace_is_null() throws IOException, BrokerPoolServiceException {
+    void getNSSymbol_returns_zero_when_namespace_is_null() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         assertEquals(0, symbolTable.getNSSymbol(null));
         symbolTable.close();
     }
 
     @Test
-    public void getNSSymbol_returns_zero_when_namespace_is_empty_string() throws IOException, BrokerPoolServiceException {
+    void getNSSymbol_returns_zero_when_namespace_is_empty_string() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         assertEquals(0, symbolTable.getNSSymbol(""));
         symbolTable.close();
     }
 
     @Test
-    public void localName_ids_are_stable() throws IOException, BrokerPoolServiceException {
+    void localName_ids_are_stable() throws IOException, BrokerPoolServiceException {
         final Path tmpDir = createTempDir();
         SymbolTable symbolTable = createSymbolTable(tmpDir);
         final String localName = "some-name";
@@ -138,7 +140,7 @@ public class SymbolTableTest {
     }
 
     @Test
-    public void namespace_ids_are_stable() throws IOException, BrokerPoolServiceException {
+    void namespace_ids_are_stable() throws IOException, BrokerPoolServiceException {
         final Path tmpDir = createTempDir();
         SymbolTable symbolTable = createSymbolTable(tmpDir);
         final String namespace = "http://something/or/other";
@@ -153,7 +155,7 @@ public class SymbolTableTest {
     }
 
     @Test
-    public void mimetype_ids_are_stable() throws IOException, BrokerPoolServiceException {
+    void mimetype_ids_are_stable() throws IOException, BrokerPoolServiceException {
         final Path tmpDir = createTempDir();
         SymbolTable symbolTable = createSymbolTable(tmpDir);
         final String mimetype = "something/other";
@@ -168,7 +170,7 @@ public class SymbolTableTest {
     }
 
     @Test
-    public void write_and_read_are_balanced() throws IOException, BrokerPoolServiceException {
+    void write_and_read_are_balanced() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         symbolTable.getSymbol("some-name");
 
@@ -205,7 +207,7 @@ public class SymbolTableTest {
     }
 
     @Test
-    public void readLegacyFormat() throws IOException, BrokerPoolServiceException {
+    void readLegacyFormat() throws IOException, BrokerPoolServiceException {
         final SymbolTable symbolTable = createSymbolTable(createTempDir());
         VariableByteInput mockIs = createMock(VariableByteInput.class);
 

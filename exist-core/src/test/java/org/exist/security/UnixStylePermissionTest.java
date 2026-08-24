@@ -45,7 +45,6 @@
  */
 package org.exist.security;
 
-import java.io.IOException;
 import java.util.Random;
 
 import static org.easymock.EasyMock.expect;
@@ -58,11 +57,10 @@ import org.exist.security.internal.RealmImpl;
 import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutput;
-import org.exist.util.SyntaxException;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.runner.RunWith;
 
 /**
@@ -70,11 +68,11 @@ import org.junit.runner.RunWith;
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
 @SuppressWarnings("OctalInteger")
-@RunWith(ParallelRunner.class)
-public class UnixStylePermissionTest {
+@Execution(ExecutionMode.CONCURRENT)
+class UnixStylePermissionTest {
 
     @Test
-    public void writeRead_roundtrip() throws IOException {
+    void writeRead_roundtrip() throws IOException {
 
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -108,7 +106,7 @@ public class UnixStylePermissionTest {
      * granted to the owner, then we can read the resource
      */
     @Test
-    public void validate_can_read_WhenOwnerWithRead() {
+    void validate_can_read_WhenOwnerWithRead() {
 
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -138,7 +136,7 @@ public class UnixStylePermissionTest {
      * then we cannot read the resource
      */
     @Test
-    public void validate_cant_read_WhenOwnerWithoutRead() {
+    void validate_cant_read_WhenOwnerWithoutRead() {
         
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -169,7 +167,7 @@ public class UnixStylePermissionTest {
      * is in a group that has read permission on the resource
      */
     @Test
-    public void validate_cant_read_WhenOwnerWithoutRead_and_OwnerInGroupWithRead() {
+    void validate_cant_read_WhenOwnerWithoutRead_and_OwnerInGroupWithRead() {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
@@ -200,7 +198,7 @@ public class UnixStylePermissionTest {
      * have read permission on the resource
      */
     @Test
-    public void validate_cant_read_WhenNotOwner_and_InGroupWithoutRead_and_OtherCanRead() {
+    void validate_cant_read_WhenNotOwner_and_InGroupWithoutRead_and_OtherCanRead() {
 
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -226,7 +224,7 @@ public class UnixStylePermissionTest {
         assertFalse(isValid);
     }
 
-     /**
+    /**
      * Tests that if we are not the owner of a resource
      * but are in the group for the resource and that group
      * has read permission,
@@ -234,7 +232,7 @@ public class UnixStylePermissionTest {
      * have read permission on the resource
      */
     @Test
-    public void validate_can_read_WhenNotOwner_and_InGroupWithRead() {
+    void validate_can_read_WhenNotOwner_and_InGroupWithRead() {
 
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -261,7 +259,7 @@ public class UnixStylePermissionTest {
     }
 
     @Test
-    public void validate_can_read_WhenNotOwner_and_NotInGroup_and_OtherWithRead() {
+    void validate_can_read_WhenNotOwner_and_NotInGroup_and_OtherWithRead() {
 
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -288,7 +286,7 @@ public class UnixStylePermissionTest {
     }
 
     @Test
-    public void validate_cant_write_WhenNotOwner_and_NotInGroup_and_OtherWithoutWrite() {
+    void validate_cant_write_WhenNotOwner_and_NotInGroup_and_OtherWithoutWrite() {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
         final int ownerId = RealmImpl.SYSTEM_ACCOUNT_ID;
@@ -315,7 +313,7 @@ public class UnixStylePermissionTest {
     }
 
     @Test
-    public void permission_toString() {
+    void permission_toString() {
         
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
@@ -389,11 +387,11 @@ public class UnixStylePermissionTest {
     private void assertTestSafeExecutable(final int inputMode, final int expectedMode) {
         final int permission = UnixStylePermission.safeSetExecutable(inputMode);
         final String message = Integer.toOctalString(expectedMode) + "<>" + Integer.toOctalString(permission);
-        assertEquals(message, expectedMode, permission);
+        assertEquals(expectedMode, permission, message);
     }
 
     @Test
-    public void testSafeSetExecutable() {
+    void safeSetExecutable() {
         assertTestSafeExecutable(0100, 0100);
         assertTestSafeExecutable(0110, 0110);
         assertTestSafeExecutable(0111, 0111);
@@ -441,7 +439,7 @@ public class UnixStylePermissionTest {
     }
 
     @Test
-    public void permission_setFromModeString_existSymbolic() throws SyntaxException, PermissionDeniedException {
+    void permission_setFromModeString_existSymbolic() throws SyntaxException, PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
@@ -463,9 +461,9 @@ public class UnixStylePermissionTest {
         permission.setMode("user=-read,-write,-execute,group=-read,-write,-execute,other=-read,-write,-execute");
         assertEquals(0, permission.getMode());
     }
-    
+
     @Test
-    public void setUid_roundtrip() throws PermissionDeniedException {
+    void setUid_roundtrip() throws PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
         final int ownerGroupId = new Random().nextInt(SecurityManagerImpl.MAX_GROUP_ID);
@@ -482,9 +480,9 @@ public class UnixStylePermissionTest {
         assertFalse(permission.isSetUid());
         assertEquals(0555, permission.getMode());
     }
-    
+
     @Test
-    public void setGid_roundtrip() throws PermissionDeniedException {
+    void setGid_roundtrip() throws PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
         final int ownerGroupId = new Random().nextInt(SecurityManagerImpl.MAX_GROUP_ID);
@@ -501,9 +499,9 @@ public class UnixStylePermissionTest {
         assertFalse(permission.isSetGid());
         assertEquals(0555, permission.getMode());
     }
-    
+
     @Test
-    public void setSticky_roundtrip() throws PermissionDeniedException {
+    void setSticky_roundtrip() throws PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
         final int ownerGroupId = new Random().nextInt(SecurityManagerImpl.MAX_GROUP_ID);
@@ -520,9 +518,9 @@ public class UnixStylePermissionTest {
         assertFalse(permission.isSticky());
         assertEquals(0555, permission.getMode());
     }
-    
+
     @Test
-    public void permission_setFromModeString_unixSymbolic() throws SyntaxException, PermissionDeniedException {
+    void permission_setFromModeString_unixSymbolic() throws SyntaxException, PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
@@ -588,7 +586,7 @@ public class UnixStylePermissionTest {
     }
 
     @Test
-    public void permission_setFromModeString_simpleSymbolic() throws SyntaxException, PermissionDeniedException {
+    void permission_setFromModeString_simpleSymbolic() throws SyntaxException, PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
         final int ownerId = new Random().nextInt(SecurityManagerImpl.MAX_USER_ID);
@@ -648,7 +646,7 @@ public class UnixStylePermissionTest {
     }
 
     @Test
-    public void permission_setMode_roundtrip() throws PermissionDeniedException {
+    void permission_setMode_roundtrip() throws PermissionDeniedException {
         final SecurityManager mockSecurityManager = EasyMock.createMock(SecurityManager.class);
 
         final Permission permission = new TestableUnixStylePermissionWithCurrentSubject(mockSecurityManager, 1, 1, 0);

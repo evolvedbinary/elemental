@@ -29,18 +29,18 @@ import static org.easymock.EasyMock.verify;
 import org.exist.Database;
 import org.exist.config.Configuration;
 import org.exist.security.internal.SecurityManagerImpl;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author aretter
  */
-public class AccountTest {
+class AccountTest {
 
-    @Ignore
+    @Disabled
     @Test
-    public void testGroupFallback() throws NoSuchMethodException, PermissionDeniedException {
+    void groupFallback() throws NoSuchMethodException, PermissionDeniedException {
 
 //        final String mockRealmId = "mock";
         final String testAccountName = "testUser";

@@ -21,17 +21,17 @@
  */
 package org.exist.numbering;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-public class DLNBaseTest {
+class DLNBaseTest {
 
     @Test
-    public void DLNByteArrayConstructor_roundTrip() {
+    void DLNByteArrayConstructor_roundTrip() {
         final DLNBase dlnBase = new DLNBase();
 
         for(int i = 0; i < 100; i++) {
@@ -48,7 +48,7 @@ public class DLNBaseTest {
 
             final DLN reconstructedDln = new DLN(dlnBase.units(), data, 0);
 
-            assertTrue(dlnBase.equals(reconstructedDln));
+            assertEquals(dlnBase, reconstructedDln);
         }
     }
 }

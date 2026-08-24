@@ -45,19 +45,21 @@
  */
 package org.exist.xquery.value;
 
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.XPathException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class DurationTest extends AbstractTimeRelatedTest {
 
     @Test
@@ -90,6 +92,7 @@ public class DurationTest extends AbstractTimeRelatedTest {
     public void convert1() throws XPathException {
         final DurationValue dv = new DurationValue("P1Y2M3DT1H2M3S");
         final YearMonthDurationValue ymdv = (YearMonthDurationValue) dv.convertTo(Type.YEAR_MONTH_DURATION);
+        assertNotNull(ymdv);
         assertEquals("P1Y2M", ymdv.getStringValue());
     }
 
@@ -97,6 +100,7 @@ public class DurationTest extends AbstractTimeRelatedTest {
     public void convert2() throws XPathException {
         final DurationValue dv = new DurationValue("P1Y2M3DT1H2M3S");
         final DayTimeDurationValue dtdv = (DayTimeDurationValue) dv.convertTo(Type.DAY_TIME_DURATION);
+        assertNotNull(dtdv);
         assertEquals("P3DT1H2M3S", dtdv.getStringValue());
     }
 
@@ -104,6 +108,7 @@ public class DurationTest extends AbstractTimeRelatedTest {
     public void convert3() throws XPathException {
         final DurationValue dv = new DurationValue("P1Y2M3DT1H2M3.5S");
         final DayTimeDurationValue dtdv = (DayTimeDurationValue) dv.convertTo(Type.DAY_TIME_DURATION);
+        assertNotNull(dtdv);
         assertEquals("P3DT1H2M3.5S", dtdv.getStringValue());
     }
 
@@ -184,10 +189,12 @@ public class DurationTest extends AbstractTimeRelatedTest {
         assertFalse(dv1.compareTo(null, Comparison.EQ, dv2));
     }
 
-    @Test(expected = XPathException.class)
+    @Test
     public void compareFail1() throws XPathException {
         final DurationValue dv = new DurationValue("P1Y2M3DT4H5M6S");
-        dv.compareTo(null, Comparison.LT, dv);
+        assertThrows(XPathException.class, () ->
+            dv.compareTo(null, Comparison.LT, dv)
+        );
     }
 
     @Test

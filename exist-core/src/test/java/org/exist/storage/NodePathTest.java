@@ -46,14 +46,14 @@
 package org.exist.storage;
 
 import org.exist.dom.QName;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class NodePathTest {
+class NodePathTest {
 
     @Test
-    public void basicPaths() {
+    void basicPaths() {
         NodePath path = new NodePath(null, "/a/b/c", false);
 
         assertFalse(path.match(new NodePath(null, "/a/b")));
@@ -77,7 +77,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void wildcards() {
+    void wildcards() {
         NodePath path = new NodePath(null, "/a//c", false);
 
         assertTrue(path.match(new NodePath(null, "/a/b/c")));
@@ -108,7 +108,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void appendFromEmpty() {
+    void appendFromEmpty() {
         NodePath path = new NodePath();
         path.append(new NodePath(null, "/a/b/c/d"));
         assertEquals("/a/b/c/d", path.toString());
@@ -123,7 +123,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void appendFromNonEmpty() {
+    void appendFromNonEmpty() {
         NodePath path = new NodePath(null, "/a");
         assertEquals("/a", path.toString());
         path.append(new NodePath(null, "/1/2/3"));
@@ -145,13 +145,13 @@ public class NodePathTest {
     }
 
     @Test
-    public void largerComponentsBuffer() {
+    void largerComponentsBuffer() {
         final NodePath path = new NodePath(null, "/a");
         assertEquals(NodePath.DEFAULT_NODE_PATH_SIZE, path.componentsSize());
     }
 
     @Test
-    public void reset() {
+    void reset() {
         // simple allocation of DEFAULT_NODE_PATH_SIZE and then reset: size of components should remain at DEFAULT_NODE_PATH_SIZE
         NodePath path = new NodePath(null, "/a");
         path.reset();
@@ -182,7 +182,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void appendAllocationStrategy() {
+    void appendAllocationStrategy() {
         // `expected` has less occupied components than DEFAULT_NODE_PATH_SIZE, `actual` has no components, when appending `expected` to `actual` then `actual` should have less occupied components than DEFAULT_NODE_PATH_SIZE
         StringBuilder strPath = new StringBuilder();
         for (int i = 0; i < NodePath.DEFAULT_NODE_PATH_SIZE - 1; i++) {
@@ -245,7 +245,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void addComponentAllocationStrategy() throws QName.IllegalQNameException {
+    void addComponentAllocationStrategy() throws QName.IllegalQNameException {
         // `expected` has less occupied components than DEFAULT_NODE_PATH_SIZE, `actual` has no components, when appending `expected` to `actual` then `actual` should have less occupied components than DEFAULT_NODE_PATH_SIZE
         StringBuilder strPath = new StringBuilder();
         for (int i = 0; i < NodePath.DEFAULT_NODE_PATH_SIZE - 1; i++) {
@@ -302,7 +302,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void equalsAfterResetAndAppend() {
+    void equalsAfterResetAndAppend() {
         final String strPath = "/a/b/c";
 
         final NodePath expected = new NodePath(null, strPath);
@@ -351,7 +351,7 @@ public class NodePathTest {
     }
 
     @Test
-    public void equalsAfterResetAndAddComponent() throws QName.IllegalQNameException {
+    void equalsAfterResetAndAddComponent() throws QName.IllegalQNameException {
         final String strPath = "/a/b/c";
 
         final NodePath expected = new NodePath(null, strPath);

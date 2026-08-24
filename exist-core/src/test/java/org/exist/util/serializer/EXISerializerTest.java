@@ -29,67 +29,70 @@ import static org.easymock.EasyMock.matches;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
+import com.siemens.ct.exi.core.exceptions.EXIException;
 import org.easymock.Capture;
 import org.exist.dom.QName;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.Attributes;
 
 import com.siemens.ct.exi.main.api.sax.SAXEncoder;
+import org.xml.sax.SAXException;
 
-public class EXISerializerTest {
+class EXISerializerTest {
 
 	private EXISerializer serializer;
 	private OutputStream mockOutputStream;
 	private SAXEncoder mockEncoder;
-	
-	@Before
-	public void setUp() throws Exception {
+
+    @BeforeEach
+    void setUp() throws EXIException, IOException {
 		mockOutputStream = createMock(OutputStream.class);
 		serializer = new EXISerializer(mockOutputStream);
 		mockEncoder = createMock(SAXEncoder.class);
 		serializer.setEncoder(mockEncoder);
 	}
-	
-	@Test
-	public void testStartDocument() throws Exception {
+
+    @Test
+    void startDocument() throws SAXException {
 		mockEncoder.startDocument();
 		replay(mockEncoder);
 		serializer.startDocument();
 		verify(mockEncoder);
 	}
-	
-	@Test
-	public void testEndDocument() throws Exception {
+
+    @Test
+    void endDocument() throws SAXException {
 		mockEncoder.endDocument();
 		replay(mockEncoder);
 		serializer.endDocument();
 		verify(mockEncoder);
 	}
-	
-	@Test
-	public void testStartPrefixMapping() throws Exception {
+
+    @Test
+    void startPrefixMapping() throws SAXException {
 		mockEncoder.startPrefixMapping("prefix", "uri");
 		replay(mockEncoder);
 		serializer.startPrefixMapping("prefix", "uri");
 		verify(mockEncoder);
 	}
-	
-	@Test
-	public void testEndPrefixMapping() throws Exception {
+
+    @Test
+    void endPrefixMapping() throws SAXException {
 		mockEncoder.endPrefixMapping("prefix");
 		replay(mockEncoder);
 		serializer.endPrefixMapping("prefix");
 		verify(mockEncoder);
 	}
-	
-	@Test
-	public void testStartElement() throws Exception {
+
+    @Test
+    void startElement() throws SAXException {
 		QName testQName = new QName("local", "uri", "prefix");
 		AttrList testAttrList = new AttrList();
 		testAttrList.addAttribute(new QName("local", "uri"), "value");
@@ -103,18 +106,18 @@ public class EXISerializerTest {
 		assertEquals("uri", capturedAttributeList.get(0).getURI(0));
 		assertEquals("value", capturedAttributeList.get(0).getValue(0));
 	}
-	
-	@Test
-	public void testEndElement() throws Exception {
+
+    @Test
+    void endElement() throws SAXException {
 		QName testQName = new QName("local", "uri", "prefix");
 		mockEncoder.endElement(matches("uri"), matches("local"), (String)isNull());
 		replay(mockEncoder);
 		serializer.endElement(testQName);
 		verify(mockEncoder);
 	}
-	
-	@Test
-	public void testCharacters() throws Exception {
+
+    @Test
+    void characters() throws SAXException {
 		String testString = "test";
 		CharSequence testSeq = testString;
 		mockEncoder.characters(aryEq(testString.toCharArray()), eq(0), eq(testString.length()));

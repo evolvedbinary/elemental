@@ -26,17 +26,18 @@ import org.exist.xquery.value.Item;
 import org.easymock.EasyMock;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
-import org.junit.Test;
-import static org.junit.Assert.assertNull;
+import org.junit.jupiter.api.Test;
+
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.anyObject;
 
 /**
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-public class DeferredFunctionCallTest {
+class DeferredFunctionCallTest {
 
     /**
      * resetState() make be called on the UserDefinedFunction of a DeferredFunctionCall
@@ -54,7 +55,7 @@ public class DeferredFunctionCallTest {
      */
     
     @Test
-    public void ensure_argumentsToDeferredFunctionCall_AreNotLost_AfterReset_And_BeforeEval() throws XPathException {
+    void ensure_argumentsToDeferredFunctionCall_AreNotLost_AfterReset_And_BeforeEval() throws XPathException {
         
         //mocks for FunctionCall constructor
         XQueryContext mockContext = EasyMock.createNiceMock(XQueryContext.class);

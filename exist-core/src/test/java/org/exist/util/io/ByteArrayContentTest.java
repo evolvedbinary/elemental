@@ -45,51 +45,51 @@
  */
 package org.exist.util.io;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the {@link ByteArrayContent} implementation.
  *
  * @author <a href="mailto:patrick@reini.net">Patrick Reinhart</a>
  */
-public class ByteArrayContentTest {
+class ByteArrayContentTest {
     private ByteArrayContent content;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         content = ByteArrayContent.of(ContentFile.ContentFileType.UNKNOWN, "test data");
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testOfNullString() {
-        ByteArrayContent.of(ContentFile.ContentFileType.UNKNOWN, (String) null);
+    @Test
+    void ofNullString() {
+        assertThrows(NullPointerException.class, () ->
+            ByteArrayContent.of(ContentFile.ContentFileType.UNKNOWN, (String) null));
     }
 
     @Test
-    public void testOfNullBytes() {
+    void ofNullBytes() {
         content = ByteArrayContent.of(ContentFile.ContentFileType.UNKNOWN, (byte[]) null);
         assertEquals(0, content.size());
         assertArrayEquals(new byte[0], content.getBytes());
     }
 
     @Test
-    public void testClose() {
+    void close() {
         content.close();
         assertEquals(0, content.size());
         assertArrayEquals(new byte[0], content.getBytes());
     }
 
     @Test
-    public void testGetBytes() {
+    void getBytes() {
         assertArrayEquals("test data".getBytes(), content.getBytes());
     }
 
     @Test
-    public void testSize() {
+    void size() {
         assertEquals(9, content.size());
     }
 }

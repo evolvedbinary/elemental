@@ -24,21 +24,19 @@ package org.exist.storage;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 
-import org.exist.EXistException;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.exist.storage.btree.Value;
 import org.exist.xquery.value.DecimalValue;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 
-public class ValueIndexFactoryTest {
+class ValueIndexFactoryTest {
 
-    @Ignore
+    @Disabled
     @Test
-    public void negativeNumbersComparison() {
+    void negativeNumbersComparison() {
 
         // -8.6...
         final ByteBuffer data1 = encode(-8.612328);
@@ -54,11 +52,11 @@ public class ValueIndexFactoryTest {
         assertTrue(data1.compareTo(data2) <= -1);
 
         // -8.6 < 1.0
-        assertEquals("v1 < v2", -1, new Value(data1.array()).compareTo(new Value(data2.array())));
+        assertEquals(-1, new Value(data1.array()).compareTo(new Value(data2.array())), "v1 < v2");
     }
 
     @Test
-    public void numbersComparison() {
+    void numbersComparison() {
 
         // -8.6...
         final ByteBuffer data1 = encode(8.612328);
@@ -74,12 +72,12 @@ public class ValueIndexFactoryTest {
         assertTrue(data1.compareTo(data2) >= 1);
 
         // -8.6 < 1.0
-        assertEquals("v1 < v2", 1, new Value(data1.array()).compareTo(new Value(data2.array())));
+        assertEquals(1, new Value(data1.array()).compareTo(new Value(data2.array())), "v1 < v2");
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void negativeNumbersComparison2() {
+    void negativeNumbersComparison2() {
 
         // -8.6...
         final ByteBuffer data1 = encode(8.612328);
@@ -95,17 +93,17 @@ public class ValueIndexFactoryTest {
         assertTrue(data1.compareTo(data2) >= 1);
 
         // -8.6 < 1.0
-        assertEquals("v1 < v2", 1, new Value(data1.array()).compareTo(new Value(data2.array())));
+        assertEquals(1, new Value(data1.array()).compareTo(new Value(data2.array())), "v1 < v2");
     }
 
     @Test
-    public void roundTripDecimal() throws EXistException {
+    void roundTripDecimal() throws EXistException {
         BigDecimal dec = new BigDecimal("123456789123456789123456789123456789.123456789123456789123456789");
 
         byte data[] = ValueIndexFactory.serialize(new DecimalValue(dec), 0);
 
         Indexable value = ValueIndexFactory.deserialize(data, 0, data.length);
-        assertTrue(value instanceof DecimalValue);
+        assertInstanceOf(DecimalValue.class, value);
 
         assertEquals(dec, ((DecimalValue)value).getValue());
     }

@@ -45,33 +45,28 @@
  */
 package org.exist.util;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.util.serializer.DOMSerializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
-import static org.junit.Assert.assertNotNull;
 import static org.exist.samples.Samples.SAMPLES;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author wolf
  *
  */
-public class DOMSerializerTest {
+class DOMSerializerTest {
 
-	@Test
-	public void serialize() throws ParserConfigurationException, IOException, SAXException, TransformerException, URISyntaxException {
+    @Test
+    void serialize() throws ParserConfigurationException, IOException, SAXException, TransformerException, URISyntaxException {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		assertNotNull(factory);
 		factory.setNamespaceAware(true);

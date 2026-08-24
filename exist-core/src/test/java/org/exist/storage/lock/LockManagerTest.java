@@ -36,53 +36,50 @@ import com.evolvedbinary.j8fu.function.RunnableE;
 import net.jcip.annotations.ThreadSafe;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 import uk.ac.ic.doc.slurp.multilock.MultiLock;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests to ensure the correct behaviour of the LockManager
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@CsvSource({
+    "Collection single-writer/multi-reader,false",
+    "Collection multi-writer/multi-reader,true"
+})
 public class LockManagerTest {
 
     private static final int CONCURRENCY_LEVEL = 100;
     private static String previousLockEventsState = null;
     private static String previousPathsMultiWriterState = null;
 
-    @Parameterized.Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {
-                { "Collection single-writer/multi-reader", false},
-                { "Collection multi-writer/multi-reader", true }
-        });
-    }
-
-    @Parameterized.Parameter
+    @Parameter(0)
     public String apiName;
-
-    @Parameterized.Parameter(value = 1)
+    @Parameter(1)
     public boolean enablePathsMultiWriterState;
 
-    @Before
-    public void enableLockEventsState() {
+    @BeforeEach
+    void enableLockEventsState() {
         previousLockEventsState = System.setProperty(LockTable.PROP_DISABLE, "false");
         previousPathsMultiWriterState = System.setProperty(LockManager.PROP_ENABLE_PATHS_MULTI_WRITER, Boolean.toString(enablePathsMultiWriterState));
     }
 
-    @After
-    public void restoreLockEventsState() {
+    @AfterEach
+    void restoreLockEventsState() {
         restorePreviousPropertyState(LockTable.PROP_DISABLE, previousLockEventsState);
         restorePreviousPropertyState(LockManager.PROP_ENABLE_PATHS_MULTI_WRITER, previousPathsMultiWriterState);
     }
@@ -105,17 +102,17 @@ public class LockManagerTest {
         final MultiLock dbLock2 = lockManager.getPathLock("/db");
         assertNotNull(dbLock2);
 
-        assertTrue(dbLock1 == dbLock2);
+        assertSame(dbLock1, dbLock2);
 
         final MultiLock abcLock = lockManager.getPathLock("/db/a/b/c");
         assertNotNull(abcLock);
-        assertFalse(dbLock1 == abcLock);
+        assertNotSame(dbLock1, abcLock);
 
         final MultiLock defLock = lockManager.getPathLock("/db/d/e/f");
         assertNotNull(defLock);
-        assertFalse(dbLock1 == defLock);
+        assertNotSame(dbLock1, defLock);
 
-        assertFalse(abcLock == defLock);
+        assertNotSame(abcLock, defLock);
     }
 
     /**
@@ -597,17 +594,17 @@ public class LockManagerTest {
         final MultiLock doc1Lock2 = lockManager.getDocumentLock("/db/1.xml");
         assertNotNull(doc1Lock2);
 
-        assertTrue(doc1Lock1 == doc1Lock2);
+        assertSame(doc1Lock1, doc1Lock2);
 
         final MultiLock doc2Lock = lockManager.getDocumentLock("/db/a/b/c/2.xml");
         assertNotNull(doc2Lock);
-        assertFalse(doc1Lock1 == doc2Lock);
+        assertNotSame(doc1Lock1, doc2Lock);
 
         final MultiLock doc3Lock = lockManager.getDocumentLock("/db/d/e/f/3.xml");
         assertNotNull(doc3Lock);
-        assertFalse(doc1Lock1 == doc3Lock);
+        assertNotSame(doc1Lock1, doc3Lock);
 
-        assertFalse(doc2Lock == doc3Lock);
+        assertNotSame(doc2Lock, doc3Lock);
     }
 
     /**
@@ -692,17 +689,17 @@ public class LockManagerTest {
         final ReentrantLock btree1Lock2 = lockManager.getBTreeLock("btree1.dbx");
         assertNotNull(btree1Lock2);
 
-        assertTrue(btree1Lock1 == btree1Lock2);
+        assertSame(btree1Lock1, btree1Lock2);
 
         final ReentrantLock btree2Lock = lockManager.getBTreeLock("btree2.dbx");
         assertNotNull(btree2Lock);
-        assertFalse(btree1Lock1 == btree2Lock);
+        assertNotSame(btree1Lock1, btree2Lock);
 
         final ReentrantLock btree3Lock = lockManager.getBTreeLock("btree3.dbx");
         assertNotNull(btree3Lock);
-        assertFalse(btree1Lock1 == btree3Lock);
+        assertNotSame(btree1Lock1, btree3Lock);
 
-        assertFalse(btree2Lock == btree3Lock);
+        assertNotSame(btree2Lock, btree3Lock);
     }
 
     /**

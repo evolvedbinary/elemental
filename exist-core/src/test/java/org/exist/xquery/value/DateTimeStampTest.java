@@ -46,34 +46,40 @@
 package org.exist.xquery.value;
 
 import org.exist.xquery.XPathException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DateTimeStampTest extends AbstractTimeRelatedTest {
+class DateTimeStampTest extends AbstractTimeRelatedTest {
 
 
-    @Test(expected = XPathException.class)
-    public void constructWithoutTimeZone() throws XPathException {
-        new DateTimeStampValue("2005-10-11T10:00:00");
+    @Test
+    void constructWithoutTimeZone() {
+        assertThrows(XPathException.class, () -> {
+            new DateTimeStampValue("2005-10-11T10:00:00");
+        });
     }
 
     @Test
-    public void convertDateTimeWithTimeZoneToDateTimeStamp() throws XPathException {
+    void convertDateTimeWithTimeZoneToDateTimeStamp() throws XPathException {
         final DateTimeValue dateTimeValue = new DateTimeValue("2005-10-11T10:00:00Z");
         final AtomicValue value = dateTimeValue.convertTo(Type.DATE_TIME_STAMP);
         assertEquals(DateTimeStampValue.class, value.getClass());
     }
 
-    @Test(expected = XPathException.class)
-    public void convertDateTimeWithoutTimeZoneToDateTimeStamp() throws XPathException {
+    @Test
+    void convertDateTimeWithoutTimeZoneToDateTimeStamp() throws XPathException {
         final DateTimeValue dateTimeValue = new DateTimeValue("2005-10-11T10:00:00");
         final AtomicValue value = dateTimeValue.convertTo(Type.DATE_TIME_STAMP);
-        assertEquals(DateTimeStampValue.class, value.getClass());
+        Class x = DateTimeStampValue.class;
+        Class class1 = value.getClass();
+        assertThrows(XPathException.class, () ->
+            assertEquals(x, class1));
     }
 
-    @Test()
-    public void getTimezone() throws XPathException {
+    @Test
+    void getTimezone() throws XPathException {
         final DateTimeStampValue value = new DateTimeStampValue("2005-10-11T10:00:00+10:00");
         assertEquals(10 * 60, value.calendar.getTimezone());
     }

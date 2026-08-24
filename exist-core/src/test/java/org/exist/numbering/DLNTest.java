@@ -22,16 +22,16 @@
 package org.exist.numbering;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(ParallelRunner.class)
-public class DLNTest {
+@Execution(ExecutionMode.CONCURRENT)
+class DLNTest {
 
     private class TestItem implements Comparable<TestItem> {
         int id;
@@ -58,7 +58,7 @@ public class DLNTest {
     private final static int ITEMS_TO_TEST = 10000;
 
     @Test
-    public void singleId() {
+    void singleId() {
         Random rand = new Random();
         TestItem items[] = new TestItem[ITEMS_TO_TEST];
         for (int i = 0; i < ITEMS_TO_TEST; i++) {
@@ -71,7 +71,7 @@ public class DLNTest {
         Arrays.sort(items);
 
         for (int i = 0; i < ITEMS_TO_TEST; i++) {
-            assertEquals("Item: " + i, items[i].id, ((DLN)items[i].dln).getLevelId(0));
+            assertEquals(items[i].id, ((DLN)items[i].dln).getLevelId(0), "Item: " + i);
             if (i + 1 < ITEMS_TO_TEST)
                 assertTrue(items[i].id <= items[i + 1].id);
             if (i > 0)
@@ -80,7 +80,7 @@ public class DLNTest {
     }
 
     @Test
-    public void sort() {
+    void sort() {
         Random rand = new Random();
         DLN items[] = new DLN[ITEMS_TO_TEST];
         for (int i = 0; i < ITEMS_TO_TEST; i++) {
@@ -93,7 +93,7 @@ public class DLNTest {
     }
 
     @Test
-    public void create() {
+    void create() {
         DLN dln = new DLN();
         for (int i = 1; i < 500000; i++) {
             dln.incrementLevelId();
@@ -102,7 +102,7 @@ public class DLNTest {
     }
 
     @Test
-    public void levelIds() {
+    void levelIds() {
         DLN dln = new DLN("1.33.56.2.98.1.27");;
         assertEquals("1.33.56.2.98.1.27", dln.toString());
         
@@ -159,7 +159,7 @@ public class DLNTest {
     }
 
     @Test
-    public void relations() {
+    void relations() {
     	DLN root = new DLN("1.3");
     	DLN descendant = new DLN("1.3.1");
 
@@ -167,7 +167,7 @@ public class DLNTest {
 
     	assertTrue(descendant.isChildOf(root));
 
-    	assertTrue(root.equals(descendant.getParentId()));
+        assertEquals(root, descendant.getParentId());
     	
     	descendant = new DLN("1.3.2.5.6");
     	assertTrue(descendant.isDescendantOf(root));
@@ -190,7 +190,7 @@ public class DLNTest {
 
     	assertTrue(descendant.isChildOf(root));
 
-    	assertTrue(root.equals(descendant.getParentId()));
+        assertEquals(root, descendant.getParentId());
     	
     	descendant = new DLN("1.3.2.5.6.7777.1");
     	assertTrue(descendant.isDescendantOf(root));
@@ -217,7 +217,7 @@ public class DLNTest {
     	descendant.incrementLevelId();
     	assertEquals("1.3.1/1.2", descendant.toString());
 
-    	assertTrue(root.equals(descendant.getParentId()));
+        assertEquals(root, descendant.getParentId());
     	
     	descendant = new DLN("1.3.1/1.2.2");
     	assertFalse(descendant.isChildOf(root));
@@ -248,7 +248,7 @@ public class DLNTest {
     }
 
     @Test
-    public void insertion() {
+    void insertion() {
         DLN left = new DLN("1.1"); 
         DLN right = (DLN) left.insertNode(null);
         assertEquals("1.2", right.toString());

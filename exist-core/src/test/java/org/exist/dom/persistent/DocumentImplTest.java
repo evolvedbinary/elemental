@@ -23,32 +23,36 @@ package org.exist.dom.persistent;
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.Database;
-import org.exist.security.*;
+import org.exist.security.Group;
+import org.exist.security.Permission;
+import org.exist.security.Subject;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.RealmImpl;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.junit.jupiter.api.Test;
 import org.easymock.EasyMock;
 
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  *
  * @author aretter
  */
-@RunWith(ParallelRunner.class)
-public class DocumentImplTest {
+@Execution(ExecutionMode.CONCURRENT)
+class DocumentImplTest {
 
     @Test
-    public void copyOf_updates_metadata_created_and_lastModified() throws PermissionDeniedException {
+    void copyOf_updates_metadata_created_and_lastModified() throws PermissionDeniedException {
         BrokerPool mockBrokerPool = EasyMock.createMock(BrokerPool.class);
         Database mockDatabase = EasyMock.createMock(Database.class);
         DBBroker mockBroker = EasyMock.createMock(DBBroker.class);
@@ -87,7 +91,7 @@ public class DocumentImplTest {
     }
 
     @Test
-    public void isSameNode_sameDoc() {
+    void isSameNode_sameDoc() {
         final BrokerPool mockBrokerPool = EasyMock.createMock(BrokerPool.class);
         final Database mockDatabase = EasyMock.createMock(Database.class);
         final DBBroker mockBroker = EasyMock.createMock(DBBroker.class);
@@ -115,7 +119,7 @@ public class DocumentImplTest {
     }
 
     @Test
-    public void isSameNode_differentDoc() {
+    void isSameNode_differentDoc() {
         final BrokerPool mockBrokerPool = EasyMock.createMock(BrokerPool.class);
         final Database mockDatabase = EasyMock.createMock(Database.class);
         final DBBroker mockBroker = EasyMock.createMock(DBBroker.class);
@@ -146,7 +150,7 @@ public class DocumentImplTest {
     }
 
     @Test
-    public void isSameNode_nonDoc() {
+    void isSameNode_nonDoc() {
         final BrokerPool mockBrokerPool = EasyMock.createMock(BrokerPool.class);
         final Database mockDatabase = EasyMock.createMock(Database.class);
         final DBBroker mockBroker = EasyMock.createMock(DBBroker.class);

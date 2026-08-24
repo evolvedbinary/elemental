@@ -21,8 +21,6 @@
  */
 package org.exist.xquery;
 
-import antlr.RecognitionException;
-import antlr.TokenStreamException;
 import org.exist.dom.QName;
 import org.exist.xquery.parser.XQueryAST;
 import org.exist.xquery.parser.XQueryLexer;
@@ -32,18 +30,16 @@ import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:gabriele@strumenta.com">Gabriele Tomassetti</a>
  */
-public class CountExpressionTest {
+class CountExpressionTest {
 
     @Test
-    public void countTest() throws RecognitionException, XPathException, TokenStreamException, QName.IllegalQNameException {
+    void countTest() throws RecognitionException, XPathException, TokenStreamException, QName.IllegalQNameException {
         final String query = "xquery version \"3.1\";\n" +
                 "for $p in $products\n" +
                 "order by $p/sales descending\n" +
@@ -78,8 +74,8 @@ public class CountExpressionTest {
         assertEquals(XQueryParser.LITERAL_count, ast.getNextSibling().getFirstChild().getNextSibling().getNextSibling().getType());
         // rank variable binding
         assertEquals(XQueryParser.VARIABLE_BINDING, ast.getNextSibling().getFirstChild().getNextSibling().getNextSibling().getFirstChild().getType());
-        assertTrue(((ForExpr)expr.getFirst()).returnExpr instanceof OrderByClause);
-        assertTrue(((OrderByClause)(((ForExpr)expr.getFirst()).returnExpr)).returnExpr instanceof CountClause);
+        assertInstanceOf(OrderByClause.class, ((ForExpr) expr.getFirst()).returnExpr);
+        assertInstanceOf(CountClause.class, ((OrderByClause) (((ForExpr) expr.getFirst()).returnExpr)).returnExpr);
         assertEquals(new QName("rank"), ((CountClause)((OrderByClause)(((ForExpr)expr.getFirst()).returnExpr)).returnExpr).varName);
     }
 }

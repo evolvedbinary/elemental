@@ -25,19 +25,19 @@ package org.exist.xquery.value;
 import org.exist.xquery.Expression;
 import org.exist.xquery.OrderSpec;
 import org.exist.xquery.XPathException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class OrderedValueSequenceTest {
+class OrderedValueSequenceTest {
 
     @Test
-    public void iterate_loop() throws XPathException {
+    void iterate_loop() throws XPathException {
         final OrderedValueSequence orderedValueSequence = mockOrderedValueSequence(99);
 
         final SequenceIterator it = orderedValueSequence.iterate();
@@ -51,7 +51,7 @@ public class OrderedValueSequenceTest {
     }
 
     @Test
-    public void iterate_skip_loop() throws XPathException {
+    void iterate_skip_loop() throws XPathException {
         final OrderedValueSequence orderedValueSequence = mockOrderedValueSequence(99);
         final SequenceIterator it = orderedValueSequence.iterate();
 
@@ -71,7 +71,7 @@ public class OrderedValueSequenceTest {
     }
 
     @Test
-    public void iterate_loop_skip_loop() throws XPathException {
+    void iterate_loop_skip_loop() throws XPathException {
         final OrderedValueSequence orderedValueSequence = mockOrderedValueSequence(99);
         final SequenceIterator it = orderedValueSequence.iterate();
 

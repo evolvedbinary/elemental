@@ -23,7 +23,6 @@ package org.exist.util.serializer;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.QName;
 import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXException;
 
 import javax.xml.transform.OutputKeys;
 import java.util.Properties;
@@ -37,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class SAXSerializerTest {
+class SAXSerializerTest {
 
     private static final Properties OUTPUT_PROPERTIES = new Properties();
     static {
@@ -46,7 +45,7 @@ public class SAXSerializerTest {
     }
 
     @Test
-    public void coalesceNamespacePrefixesFromStrings() throws SAXException {
+    void coalesceNamespacePrefixesFromStrings() throws SAXException {
         try (final StringBuilderWriter writer = new StringBuilderWriter()) {
             final SAXSerializer saxSerializer = new SAXSerializer(writer, OUTPUT_PROPERTIES);
 
@@ -77,7 +76,7 @@ public class SAXSerializerTest {
     }
 
     @Test
-    public void coalesceNamespacePrefixesFromQName() throws SAXException {
+    void coalesceNamespacePrefixesFromQName() throws SAXException {
         try (final StringBuilderWriter writer = new StringBuilderWriter()) {
             final SAXSerializer saxSerializer = new SAXSerializer(writer, OUTPUT_PROPERTIES);
 

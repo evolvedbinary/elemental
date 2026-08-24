@@ -42,11 +42,11 @@
  */
 package org.exist.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CodePointStringTest {
+class CodePointStringTest {
 
     /**
      * Equivalent to &#110000;
@@ -59,7 +59,7 @@ public class CodePointStringTest {
     private final static String UNDEFINED_110001 = String.valueOf(Character.toChars(110001));
 
     @Test
-    public void roundtrip() {
+    void roundtrip() {
         String str = "abcdef";
         CodePointString cps = new CodePointString(str);
         assertEquals(6, cps.length());
@@ -77,7 +77,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void replaceFirst() {
+    void replaceFirst() {
         String str = "abc";
         CodePointString cps = new CodePointString(str);
         assertEquals("zbc", cps.replaceFirst('a', 'z').toString());
@@ -111,7 +111,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void replaceAll() {
+    void replaceAll() {
         String str = "abc";
         CodePointString cps = new CodePointString(str);
         assertEquals("zbc", cps.replaceAll('a', 'z').toString());
@@ -177,7 +177,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void indexOf() {
+    void indexOf() {
         assertEquals(-1, new CodePointString().indexOf("a".codePointAt(0)));
         assertEquals(-1, new CodePointString().indexOf("z".codePointAt(0)));
         assertEquals(-1, new CodePointString("abcdefghijklmnopqrstuvwxy0123456789").indexOf("z".codePointAt(0)));
@@ -191,7 +191,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void append() {
+    void append() {
         CodePointString cps = new CodePointString()
                 .append("a".codePointAt(0));
         assertEquals(1, cps.length());
@@ -221,7 +221,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void appendCodePointString() {
+    void appendCodePointString() {
         CodePointString cps = new CodePointString()
                 .append(new CodePointString("a"));
         assertEquals(1, cps.length());
@@ -246,7 +246,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void ltrim() {
+    void ltrim() {
         CodePointString cps = new CodePointString("");
         cps = cps.leftTrim('0');
         assertEquals(0, cps.length());
@@ -293,7 +293,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void rtrim() {
+    void rtrim() {
         CodePointString cps = new CodePointString("");
         cps = cps.rightTrim('0');
         assertEquals(0, cps.length());
@@ -340,7 +340,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void transform() {
+    void transform() {
         CodePointString cps = new CodePointString("abcdef");
         cps = cps.transform('b', 'e', '0');
         assertEquals(6, cps.length());
@@ -364,7 +364,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void leftPad() {
+    void leftPad() {
         CodePointString cps = new CodePointString();
         cps = cps.leftPad('a', 0);
         assertEquals(0, cps.length());
@@ -386,7 +386,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void rightPad() {
+    void rightPad() {
         CodePointString cps = new CodePointString();
         cps = cps.rightPad('a', 0);
         assertEquals(0, cps.length());
@@ -408,7 +408,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void insert() {
+    void insert() {
         CodePointString cps = new CodePointString();
         cps = cps.insert(0, 'a');
         assertEquals(1, cps.length());
@@ -450,7 +450,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void insertMulti() {
+    void insertMulti() {
         CodePointString cps = new CodePointString();
         cps = cps.insert(new int[0], 'a');
         assertEquals(0, cps.length());
@@ -527,7 +527,7 @@ public class CodePointStringTest {
     }
 
     @Test
-    public void removeFirst() {
+    void removeFirst() {
         CodePointString cps = new CodePointString();
         cps = cps.removeFirst('0');
         assertEquals(0, cps.length());

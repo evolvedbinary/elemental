@@ -21,15 +21,15 @@
  */
 package org.exist.client.security;
 
-import org.exist.security.PermissionDeniedException;
 import org.exist.security.internal.aider.UnixStylePermissionAider;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
 
-public class BasicPermissionsTableModelTest {
-    
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class BasicPermissionsTableModelTest {
+
     @Test
-    public void getMode() throws PermissionDeniedException {
+    void getMode() throws PermissionDeniedException {
         
         final int modes[] = {
             0,

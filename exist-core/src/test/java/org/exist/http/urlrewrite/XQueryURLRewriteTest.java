@@ -52,12 +52,11 @@ import com.googlecode.junittoolbox.ParallelRunner;
 import org.easymock.EasyMock;
 import jakarta.servlet.http.HttpServletRequest;
 import org.exist.http.urlrewrite.XQueryURLRewrite.RequestWrapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import xyz.elemental.mediatype.MediaType;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
@@ -66,11 +65,11 @@ import static org.easymock.EasyMock.verify;
  *
  * @author aretter
  */
-@RunWith(ParallelRunner.class)
-public class XQueryURLRewriteTest
+@Execution(ExecutionMode.CONCURRENT)
+class XQueryURLRewriteTest
 {
     @Test
-    public void adjustPathForSourceLookup_fullXmldbUri() {
+    void adjustPathForSourceLookup_fullXmldbUri() {
         XQueryURLRewrite rewriter = new XQueryURLRewrite();
 
 
@@ -79,11 +78,11 @@ public class XQueryURLRewriteTest
 
         String adjustedPath = rewriter.adjustPathForSourceLookup(basePath, path);
 
-        assertEquals(adjustedPath, "blog/entries/some-entry.xml?edit");
+        assertEquals("blog/entries/some-entry.xml?edit", adjustedPath);
     }
 
     @Test
-    public void adjustPathForSourceLookup_dbUri() {
+    void adjustPathForSourceLookup_dbUri() {
         XQueryURLRewrite rewriter = new XQueryURLRewrite();
 
 
@@ -92,11 +91,11 @@ public class XQueryURLRewriteTest
 
         String adjustedPath = rewriter.adjustPathForSourceLookup(basePath, path);
 
-        assertEquals(adjustedPath, "adamretter.org.uk/blog/entries/some-entry.xml?edit");
+        assertEquals("adamretter.org.uk/blog/entries/some-entry.xml?edit", adjustedPath);
     }
 
     @Test
-    public void adjustPathForSourceLookup_fsUri() {
+    void adjustPathForSourceLookup_fsUri() {
         XQueryURLRewrite rewriter = new XQueryURLRewrite();
 
 
@@ -105,11 +104,11 @@ public class XQueryURLRewriteTest
 
         String adjustedPath = rewriter.adjustPathForSourceLookup(basePath, path);
 
-        assertEquals(adjustedPath, "xquery/functions.xql");
+        assertEquals("xquery/functions.xql", adjustedPath);
     }
 
     @Test
-    public void requestWrapper_copiesRequestParams() {
+    void requestWrapper_copiesRequestParams() {
 
         final Map<String, String[]> testParameterMap = new HashMap<String, String[]>();
         testParameterMap.put("paramName1", new String[] {"value1", "value1.1"});
@@ -136,7 +135,7 @@ public class XQueryURLRewriteTest
     }
 
     @Test
-    public void requestWrapper_addsParamAftercopiesRequestParams() {
+    void requestWrapper_addsParamAftercopiesRequestParams() {
 
         final Map<String, String[]> testParameterMap = new HashMap<String, String[]>();
         testParameterMap.put("paramName1", new String[] {"value1", "value1.1"});

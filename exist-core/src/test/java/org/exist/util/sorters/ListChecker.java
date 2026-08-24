@@ -45,11 +45,11 @@
  */
 package org.exist.util.sorters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 
-import java.util.ArrayList;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Check sort(List).
@@ -70,11 +70,12 @@ class ListChecker extends SortMethodChecker {
 		super(sorter);
 	}
 
-	List<Integer> a;
+	IntList a;
 
 	/**
 	 * It asserts the ascending ordering of an Integer List
 	 */
+    @Override
 	void check(int lo, int hi) {
 		for (int i = lo; i < hi; i++) {
 			assertTrue(a.get(i).intValue() <= a.get(i + 1).intValue());
@@ -84,6 +85,7 @@ class ListChecker extends SortMethodChecker {
 	/**
 	 * It returns the length of the list to be used on assertion
 	 */
+    @Override
 	int getLength() {
 		return a.size();
 	}
@@ -91,24 +93,27 @@ class ListChecker extends SortMethodChecker {
 	/**
 	 * It loads an input int array into the internal Integer list
 	 */
-	void init(int[] values) throws Exception {
-		a = new ArrayList<Integer>(values.length);
+    @Override
+	void init(int[] values) {
+		a = new IntArrayList(values.length);
 		for (int i = 0; i < values.length; i++) {
-			a.add(Integer.valueOf(values[i]));
+			a.add(values[i]);
 		}
 	}
 
 	/**
 	 * This method invokes sort routine on selected sorter
 	 */
-	void sort(int lo, int hi) throws Exception {
+    @Override
+	void sort(int lo, int hi) {
 		sorter.sort(a, lo, hi);
 	}
 
 	/**
 	 * This method asserts single values
 	 */
+    @Override
 	void checkValue(int idx, int v) {
-		assertEquals("@" + idx, v, a.get(idx).intValue());
+		assertEquals(v, a.get(idx).intValue(), "@" + idx);
 	}
 }

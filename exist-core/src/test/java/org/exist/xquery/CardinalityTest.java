@@ -45,20 +45,18 @@
  */
 package org.exist.xquery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.exist.xquery.Cardinality.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class CardinalityTest {
+class CardinalityTest {
 
     @Test
-    public void atLeastOne() {
+    void atLeastOne() {
         assertFalse(EMPTY_SEQUENCE.atLeastOne());
         assertFalse(ZERO_OR_ONE.atLeastOne());
         assertTrue(ONE_OR_MORE.atLeastOne());
@@ -66,7 +64,7 @@ public class CardinalityTest {
     }
 
     @Test
-    public void atMostOne() {
+    void atMostOne() {
         assertTrue(EMPTY_SEQUENCE.atMostOne());
         assertTrue(ZERO_OR_ONE.atMostOne());
         assertFalse(ONE_OR_MORE.atMostOne());
@@ -74,7 +72,7 @@ public class CardinalityTest {
     }
 
     @Test
-    public void isSubCardinalityOrEqualOf() {
+    void isSubCardinalityOrEqualOf() {
         isSubCardinalityOrEqualOf(EMPTY_SEQUENCE, EMPTY_SEQUENCE);
         notSubCardinalityOrEqualOf(EMPTY_SEQUENCE, EXACTLY_ONE);
         isSubCardinalityOrEqualOf(EMPTY_SEQUENCE, ZERO_OR_ONE);
@@ -107,17 +105,17 @@ public class CardinalityTest {
     }
 
     private static void isSubCardinalityOrEqualOf(final Cardinality subject, final Cardinality test) {
-        assertTrue(subject.name() + ".isSubCardinalityOrEqualOf(" + test.name() + ") == false, expected true",
-                subject.isSubCardinalityOrEqualOf(test));
+        assertTrue(subject.isSubCardinalityOrEqualOf(test),
+                subject.name() + ".isSubCardinalityOrEqualOf(" + test.name() + ") == false, expected true");
     }
 
     private static void notSubCardinalityOrEqualOf(final Cardinality subject, final Cardinality test) {
-        assertFalse(subject.name() + ".isSubCardinalityOrEqualOf(" + test.name() + ") == true, expected false",
-                subject.isSubCardinalityOrEqualOf(test));
+        assertFalse(subject.isSubCardinalityOrEqualOf(test),
+                subject.name() + ".isSubCardinalityOrEqualOf(" + test.name() + ") == true, expected false");
     }
 
     @Test
-    public void isSuperCardinalityOf() {
+    void isSuperCardinalityOf() {
         isSuperCardinalityOrEqualOf(EMPTY_SEQUENCE, EMPTY_SEQUENCE);
         notSuperCardinalityOrEqualOf(EMPTY_SEQUENCE, EXACTLY_ONE);
         notSuperCardinalityOrEqualOf(EMPTY_SEQUENCE, ZERO_OR_ONE);
@@ -150,17 +148,17 @@ public class CardinalityTest {
     }
 
     private static void isSuperCardinalityOrEqualOf(final Cardinality subject, final Cardinality test) {
-        assertTrue(subject.name() + ".isSuperCardinalityOrEqualOf(" + test.name() + ") == false, expected true",
-                subject.isSuperCardinalityOrEqualOf(test));
+        assertTrue(subject.isSuperCardinalityOrEqualOf(test),
+                subject.name() + ".isSuperCardinalityOrEqualOf(" + test.name() + ") == false, expected true");
     }
 
     private static void notSuperCardinalityOrEqualOf(final Cardinality subject, final Cardinality test) {
-        assertFalse(subject.name() + ".isSuperCardinalityOrEqualOf(" + test.name() + ") == true, expected false",
-                subject.isSuperCardinalityOrEqualOf(test));
+        assertFalse(subject.isSuperCardinalityOrEqualOf(test),
+                subject.name() + ".isSuperCardinalityOrEqualOf(" + test.name() + ") == true, expected false");
     }
 
     @Test
-    public void superCardinalityOf() {
+    void superCardinalityOf() {
         assertEquals(EMPTY_SEQUENCE, Cardinality.superCardinalityOf(EMPTY_SEQUENCE, EMPTY_SEQUENCE));
         assertEquals(ZERO_OR_ONE, Cardinality.superCardinalityOf(EMPTY_SEQUENCE, EXACTLY_ONE));
         assertEquals(ZERO_OR_ONE, Cardinality.superCardinalityOf(EMPTY_SEQUENCE, ZERO_OR_ONE));

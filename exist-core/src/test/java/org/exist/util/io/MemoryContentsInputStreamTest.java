@@ -23,10 +23,8 @@
 package org.exist.util.io;
 
 import org.easymock.IArgumentMatcher;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.easymock.EasyMock.aryEq;
 import static org.easymock.EasyMock.createMock;
@@ -35,23 +33,23 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.reportMatcher;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:patrick@reini.net">Patrick Reinhart</a>
  */
-public class MemoryContentsInputStreamTest {
+class MemoryContentsInputStreamTest {
     private MemoryContents memoryContents;
     private MemoryContentsInputStream inputStream;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         memoryContents = createMock(MemoryContents.class);
         inputStream = new MemoryContentsInputStream(memoryContents);
     }
 
     @Test
-    public void available() throws IOException {
+    void available() throws IOException {
         expect(memoryContents.size()).andReturn(1L + Integer.MAX_VALUE);
         expect(memoryContents.size()).andReturn(1235L);
         expect(memoryContents.size()).andReturn(1L);
@@ -66,7 +64,7 @@ public class MemoryContentsInputStreamTest {
     }
 
     @Test
-    public void readSingleByte() throws IOException {
+    void readSingleByte() throws IOException {
         expect(memoryContents.read(write('a'), eq(0L), eq(0), eq(1))).andReturn(1);
         expect(memoryContents.read(write('b'), eq(1L), eq(0), eq(1))).andReturn(0);
         expect(memoryContents.read(write('c'), eq(1L), eq(0), eq(1))).andReturn(-1);
@@ -81,7 +79,7 @@ public class MemoryContentsInputStreamTest {
     }
 
     @Test
-    public void readByteArray() throws IOException {
+    void readByteArray() throws IOException {
         byte[] buf = new byte[20];
 
         expect(memoryContents.read(aryEq(buf), eq(0L), eq(1), eq(10))).andReturn(9);
@@ -99,7 +97,7 @@ public class MemoryContentsInputStreamTest {
     }
 
     @Test
-    public void skip() throws IOException {
+    void skip() throws IOException {
         expect(memoryContents.size()).andReturn(10L);
         expect(memoryContents.size()).andReturn(50L);
 

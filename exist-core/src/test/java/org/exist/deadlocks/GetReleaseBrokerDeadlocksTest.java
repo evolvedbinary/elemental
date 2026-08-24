@@ -45,7 +45,7 @@
  */
 package org.exist.deadlocks;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
 import java.util.Optional;
@@ -59,71 +59,68 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
 import org.exist.xquery.FunctionFactory;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-public class GetReleaseBrokerDeadlocksTest {
+class GetReleaseBrokerDeadlocksTest {
 
 	private static final Logger LOG = LogManager.getLogger(GetReleaseBrokerDeadlocksTest.class);
 	
 	private static Random rd = new Random();
 
-	@Test
-	@Ignore
-	public void exterServiceMode() {
-		try { 
-	        Configuration config = new Configuration();
-	        config.setProperty(FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS, Boolean.FALSE);
-	        BrokerPool.configure(1, 5, config);
-	        
-	        Database db = BrokerPool.getInstance();
-	        
-	        Thread thread = new Thread(db.getThreadGroup(), new EnterServiceMode());
+    @Test
+    @Disabled
+    void exterServiceMode() {
+        Assertions.assertDoesNotThrow(() -> {
+            Configuration config = new Configuration();
+            config.setProperty(FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS, Boolean.FALSE);
+            BrokerPool.configure(1, 5, config);
 
-	        try(final DBBroker broker = db.getBroker()) {
-	        	thread.start();
-		        Thread.sleep(1000);
-	        }
-	        
-	        Thread.sleep(1000);
-	        
-	        assertFalse(thread.isAlive());
-	        
-		} catch (Exception e) {
-			fail(e.getMessage());
-		}
+            Database db = BrokerPool.getInstance();
+
+            Thread thread = new Thread(db.getThreadGroup(), new EnterServiceMode());
+
+            try (final DBBroker broker = db.getBroker()) {
+                thread.start();
+                Thread.sleep(1000);
+            }
+
+            Thread.sleep(1000);
+
+            assertFalse(thread.isAlive());
+
+        });
 	}
 	
 	class EnterServiceMode implements Runnable {
 
 		@Override
 		public void run() {
-	        try {
-	        	BrokerPool db = BrokerPool.getInstance();
-				
-	        	Subject subject = db.getSecurityManager().getSystemSubject();
-				try {
-					db.enterServiceMode(subject);
-					
-					//do something
-					Thread.sleep(100);
-				} finally {
-					db.exitServiceMode(subject);
-				}
-				
-			} catch (Exception e) {
-				fail(e.getMessage());
-			}
+            Assertions.assertDoesNotThrow(() -> {
+                BrokerPool db = BrokerPool.getInstance();
+
+                Subject subject = db.getSecurityManager().getSystemSubject();
+                try {
+                    db.enterServiceMode(subject);
+
+                    //do something
+                    Thread.sleep(100);
+                } finally {
+                    db.exitServiceMode(subject);
+                }
+
+            });
 		}
 	}
 
-	@Test
-	@Ignore
-	public void testingGetReleaseCycle() {
+    @Test
+    @Disabled
+    void testingGetReleaseCycle() {
 		boolean debug = false;
 		try { 
 	        Configuration config = new Configuration();

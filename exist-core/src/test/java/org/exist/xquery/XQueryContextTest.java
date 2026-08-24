@@ -24,24 +24,23 @@ package org.exist.xquery;
 import org.exist.storage.DBBroker;
 import org.exist.security.Subject;
 import org.exist.xquery.value.BinaryValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.easymock.EasyMock;
 
 import javax.xml.XMLConstants;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class XQueryContextTest {
+class XQueryContextTest {
     private static final List<String> INITIAL_NAMESPACES = Arrays.asList(
             "err", "fn", "xdt", "dbgp", "local", "xsi", "exist", "java", "exerr", "xml", "xs");
 
     @Test
-    public void prepareForExecution_setsUserFromSession() {
+    void prepareForExecution_setsUserFromSession() {
 
         //partial mock context
         XQueryContext context = EasyMock.createMockBuilder(XQueryContext.class)
@@ -73,7 +72,7 @@ public class XQueryContextTest {
      * between reuse of the context
      */
     @Test
-    public void cleanUp_BinaryValueInstances() throws NoSuchFieldException, IllegalAccessException, IOException {
+    void cleanUp_BinaryValueInstances() throws NoSuchFieldException, IllegalAccessException, IOException {
         final XQueryContext context = new XQueryContext();
         final XQueryWatchDog mockWatchdog = createMock(XQueryWatchDog.class);
         context.setWatchDog(mockWatchdog);
@@ -179,7 +178,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testDeclareNamespace () throws XPathException {
+    void declareNamespace() throws XPathException {
         final XQueryContext context = new XQueryContext();
         context.declareNamespace("first", "ns/a");
         context.declareNamespace("second", "ns/b");
@@ -189,8 +188,9 @@ public class XQueryContextTest {
         expected.addAll(Arrays.asList("first", "second", "third"));
         assertEquals(expected,  context.staticNamespaces.keySet());
     }
+
     @Test
-    public void testReDeclareNamespaceAllowed () throws XPathException {
+    void reDeclareNamespaceAllowed() throws XPathException {
         final XQueryContext context = new XQueryContext();
         final String nsAllowedToBeRebound = "xs";
         assertEquals("http://www.w3.org/2001/XMLSchema",
@@ -202,8 +202,9 @@ public class XQueryContextTest {
         assertEquals(expected,  context.staticNamespaces.keySet());
         assertEquals("schemaless",  context.staticNamespaces.get(nsAllowedToBeRebound));
     }
+
     @Test
-    public void testReDeclareNamespaceNullNull () throws XPathException {
+    void reDeclareNamespaceNullNull() throws XPathException {
         final XQueryContext context = new XQueryContext();
         context.declareNamespace(null, null);
         final Set<String> expected = new HashSet<>(INITIAL_NAMESPACES);
@@ -211,7 +212,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testDeclareNamespaceEmptyPrefix () throws XPathException {
+    void declareNamespaceEmptyPrefix() throws XPathException {
         final XQueryContext context = new XQueryContext();
         context.declareNamespace("", "default");
         final Set<String> expected = new HashSet<>(INITIAL_NAMESPACES);
@@ -221,7 +222,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testDeclareNamespaceNullPrefix () throws XPathException {
+    void declareNamespaceNullPrefix() throws XPathException {
         final XQueryContext context = new XQueryContext();
         context.declareNamespace(null, "default");
         final Set<String> expected = new HashSet<>(INITIAL_NAMESPACES);
@@ -231,7 +232,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testReDeclareNamespaceEmptyPrefixFail () throws XPathException {
+    void reDeclareNamespaceEmptyPrefixFail() throws XPathException {
         final XQueryContext context = new XQueryContext();
         context.declareNamespace("", "default");
         // context.declareNamespace("", "");
@@ -247,7 +248,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testReDeclareNamespaceEmptyPrefixSuccess () throws XPathException {
+    void reDeclareNamespaceEmptyPrefixSuccess() throws XPathException {
         final XQueryContext context = new XQueryContext();
         context.declareNamespace("mutable", "ns/initial");
         context.declareNamespace("mutable", "");
@@ -257,7 +258,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testReDeclareNamespaceForbidden () {
+    void reDeclareNamespaceForbidden() {
         try {
             final XQueryContext context = new XQueryContext();
             context.declareNamespace("xml", "html");
@@ -268,7 +269,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testReDeclareNamespaceForbiddenEmpty () {
+    void reDeclareNamespaceForbiddenEmpty() {
         try {
             final XQueryContext context = new XQueryContext();
             context.declareNamespace("xml", "");
@@ -279,7 +280,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testReDeclareNamespaceForbiddenNull () {
+    void reDeclareNamespaceForbiddenNull() {
         try {
             final XQueryContext context = new XQueryContext();
             context.declareNamespace("xml", null);
@@ -290,7 +291,7 @@ public class XQueryContextTest {
     }
 
     @Test
-    public void testXmlNsProtected () {
+    void xmlNsProtected() {
         try {
             final XQueryContext context = new XQueryContext();
             context.declareNamespace("test", XMLConstants.XML_NS_URI);

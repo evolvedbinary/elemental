@@ -45,8 +45,8 @@
  */
 package org.exist.util.sorters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * check sort(Object[], int[])
@@ -74,6 +74,7 @@ class ObjectAndIntArrayChecker extends SortMethodChecker {
 	 * It asserts the ascending ordering of an Integer array
 	 * given an specific comparator
 	 */
+    @Override
 	void check(int lo, int hi) {
 		for (int i = lo; i < hi; i++) {
 			assertTrue(a[i].intValue() <= a[i + 1].intValue());
@@ -85,6 +86,7 @@ class ObjectAndIntArrayChecker extends SortMethodChecker {
 	/**
 	 * It returns the length of the array to be used on assertion
 	 */
+    @Override
 	int getLength() {
 		return a.length;
 	}
@@ -93,7 +95,8 @@ class ObjectAndIntArrayChecker extends SortMethodChecker {
 	 * It loads an input int array into the internal
 	 * Integer and int ones
 	 */
-	void init(int[] values) throws Exception {
+    @Override
+	void init(int[] values) {
 		a = new Integer[values.length];
 		b = new int[values.length];
 		for (int i = 0; i < values.length; i++) {
@@ -105,15 +108,17 @@ class ObjectAndIntArrayChecker extends SortMethodChecker {
 	/**
 	 * This method invokes sort routine on selected sorter
 	 */
-	void sort(int lo, int hi) throws Exception {
+    @Override
+	void sort(int lo, int hi) {
 		sorter.sort(a, lo, hi, b);
 	}
 
 	/**
 	 * This method asserts single values
 	 */
+    @Override
 	void checkValue(int idx, int v) {
-		assertEquals("@" + idx, v, a[idx].intValue());
-		assertEquals("@" + idx, v, b[idx]);
+		assertEquals(v, a[idx].intValue(), "@" + idx);
+		assertEquals(v, b[idx], "@" + idx);
 	}
 }

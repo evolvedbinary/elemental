@@ -27,22 +27,24 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.runner.RunWith;
 
 /**
  *
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
-public class PermissionsFunctionModeConversionTest {
+@Execution(ExecutionMode.CONCURRENT)
+class PermissionsFunctionModeConversionTest {
 
     /**
      * Test of eval method, of class PermissionsFunctions.
      */
     @Test
-    public void modeToOctal() throws XPathException {
+    void modeToOctal() throws XPathException {
        final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
        final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
@@ -55,21 +57,21 @@ public class PermissionsFunctionModeConversionTest {
        assertEquals(1, result.getItemCount());
        assertEquals("0750", result.itemAt(0).toString());
     }
-    
-    @Test(expected=XPathException.class)
-    public void modeToOctal_invalidMode() throws XPathException {
-       final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
-       final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
-       Sequence args[] = {
-           new StringValue("invalid")
-       };
-       
-       permissionsFunctions.eval(args, null);
-    }
-    
     @Test
-    public void octalToMode() throws XPathException {
+    void modeToOctal_invalidMode() {
+        final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+        final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
+        Sequence args[] = {
+                    new StringValue("invalid")
+            };
+        assertThrows(XPathException.class, () ->
+
+            permissionsFunctions.eval(args, null));
+    }
+
+    @Test
+    void octalToMode() throws XPathException {
        final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
        final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_OCTAL_TO_MODE);

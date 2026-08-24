@@ -21,8 +21,6 @@
  */
 package org.exist.xquery;
 
-import antlr.RecognitionException;
-import antlr.TokenStreamException;
 import org.exist.xquery.parser.XQueryAST;
 import org.exist.xquery.parser.XQueryLexer;
 import org.exist.xquery.parser.XQueryParser;
@@ -32,16 +30,16 @@ import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="gabriele@strumenta.com">Gabriele Tomassetti</a>
  */
-public class ReservedNamesConflictTest {
+class ReservedNamesConflictTest {
 
     @Test
-    public void reservedNamesIssueTest() throws RecognitionException, XPathException, TokenStreamException {
+    void reservedNamesIssueTest() throws RecognitionException, XPathException, TokenStreamException {
         final String query = "xquery version \"3.1\";\n" +
                 "<foo copy-namespaces=\"bar\"/>,\n" +
                 "<foo empty-sequence=\"bar\"/>,\n" +
