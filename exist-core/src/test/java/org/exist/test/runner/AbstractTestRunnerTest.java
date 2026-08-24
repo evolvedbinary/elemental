@@ -34,19 +34,19 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AbstractTestRunnerTest {
     @Test
-     void testCheckDescriptionNull() {
+     void checkDescriptionNull() {
         final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () ->  checkDescription(this, null));
         assertEquals(this + " description is null", iae.getMessage());
     }
 
     @Test
-     void testCheckDescriptionEmpty() {
+     void checkDescriptionEmpty() {
         final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () ->  checkDescription(this, ""));
         assertEquals(this + " description is empty", iae.getMessage());
     }
 
     @Test
-     void testCheckDescriptionStartsWithBrace() {
+     void checkDescriptionStartsWithBrace() {
         final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () ->  checkDescription(this, "(bla)"));
         assertEquals(this + " description '(bla)' starts with '('", iae.getMessage());
     }
@@ -57,7 +57,7 @@ class AbstractTestRunnerTest {
     }
 
     @Test
-    void testRun() {
+    void run() {
         final AbstractTestRunner runner = new AbstractTestRunner(null, false) {
             @Override
             public void run(final RunNotifier notifier) {

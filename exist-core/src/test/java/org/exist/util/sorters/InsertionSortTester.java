@@ -22,19 +22,19 @@
 
 package org.exist.util.sorters;
 
-import java.util.Comparator;
-import java.util.List;
-
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.util.InsertionSort;
 
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * Interface to the insertion sort methods.
- *
+ * <p>
  * This work was undertaken as part of the development of the taxonomic
  * repository at http://biodiversity.org.au . See <A
  * href="ghw-at-anbg.gov.au">Greg&nbsp;Whitbread</A> for further details.
- * 
+ *
  * @author pmurray@bigpond.com
  * @author pmurray@anbg.gov.au
  * @author https://sourceforge.net/users/paulmurray
@@ -43,58 +43,49 @@ import org.exist.util.InsertionSort;
  */
 
 class InsertionSortTester extends SortingAlgorithmTester {
-	public <C extends Comparable<? super C>> void invokeSort(C[] a, int lo, int hi)
-		throws Exception
-	{
-		InsertionSort.sort(a, lo, hi);
-	}
+    @Override
+    public <C extends Comparable<? super C>> void invokeSort(C[] a, int lo, int hi) {
+        InsertionSort.sort(a, lo, hi);
+    }
 
-	public <C> void invokeSort(C a[], Comparator<C> c, int lo, int hi)
-		throws Exception
-	{
-		InsertionSort.sort(a, c, lo, hi);
-	}
+    @Override
+    public <C> void invokeSort(C a[], Comparator<C> c, int lo, int hi) {
+        InsertionSort.sort(a, c, lo, hi);
+    }
 
-	public <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi)
-		throws Exception
-	{
-		InsertionSort.sort(a, lo, hi);
-	}
+    @Override
+    public <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi) {
+        InsertionSort.sort(a, lo, hi);
+    }
 
-	public <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi, int[] b)
-		throws Exception
-	{
-		InsertionSort.sort(a, lo, hi, b);
-	}
+    @Override
+    public <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi, int[] b) {
+        InsertionSort.sort(a, lo, hi, b);
+    }
 
-	public <C> void sort(C[] a, Comparator<C> c, int lo,
-			int hi)
-		throws Exception
-	{
-		InsertionSort.sort(a, c, lo, hi);
-	}
+    @Override
+    public <C> void sort(C[] a, Comparator<C> c, int lo,
+                         int hi) {
+        InsertionSort.sort(a, c, lo, hi);
+    }
 
-	public <C extends Comparable<? super C>> void sort(List<C> a, int lo, int hi)
-		throws Exception
-	{
-		InsertionSort.sort(a, lo, hi);
-	}
+    @Override
+    public <C extends Comparable<? super C>> void sort(List<C> a, int lo, int hi) {
+        InsertionSort.sort(a, lo, hi);
+    }
 
-	public void sort(int lo, int hi, NodeProxy[] a)
-		throws Exception
-	{
-		sort(a, lo, hi);
-	}
+    @Override
+    public void sort(int lo, int hi, NodeProxy[] a) {
+        sort(a, lo, hi);
+    }
 
-	public void sort(long[] a, int lo, int hi, Object[] b)
-		throws Exception
-	{
-		InsertionSort.sort(a, lo, hi, b);
-	}
+    @Override
+    public void sort(long[] a, int lo, int hi, Object[] b) {
+        InsertionSort.sort(a, lo, hi, b);
+    }
 
-	public void sortByNodeId(NodeProxy[] a, int lo, int hi)
-		throws Exception
-	{
-		InsertionSort.sortByNodeId(a, lo, hi);
-	}
+    @Override
+    public void sortByNodeId(NodeProxy[] a, int lo, int hi) {
+        InsertionSort.sortByNodeId(a, lo, hi);
+    }
 }

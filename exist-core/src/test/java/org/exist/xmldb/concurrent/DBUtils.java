@@ -77,7 +77,7 @@ public class DBUtils {
      * @param wordList
      * @return File
      */
-    public static Path generateXMLFile(final int elementCnt, final int attrCnt, final String[] wordList) throws Exception {
+    public static Path generateXMLFile(final int elementCnt, final int attrCnt, final String[] wordList) throws IOException {
         return generateXMLFile(elementCnt, attrCnt, wordList, false);
     }
 
@@ -88,7 +88,7 @@ public class DBUtils {
      * @param namespaces
      * @return File
      */
-    public static Path generateXMLFile(final int elementCnt, final int attrCnt, final String[] wordList, final boolean namespaces) throws Exception {
+    public static Path generateXMLFile(final int elementCnt, final int attrCnt, final String[] wordList, final boolean namespaces) throws IOException {
         return generateXMLFile(3, elementCnt, attrCnt, wordList, namespaces);
     }
 
@@ -100,7 +100,7 @@ public class DBUtils {
      * @param namespaces
      * @return File
      */
-    public static Path generateXMLFile(final int depth, final int elementCnt, final int attrCnt, final String[] wordList, final boolean namespaces) throws Exception {
+    public static Path generateXMLFile(final int depth, final int elementCnt, final int attrCnt, final String[] wordList, final boolean namespaces) throws IOException {
         final Path file = Files.createTempFile(Thread.currentThread().getName(), ".xml");
         if (Files.exists(file) && !Files.isWritable(file)) {
             throw new IllegalArgumentException("Cannot write to output file " + file.toAbsolutePath());

@@ -60,14 +60,14 @@ class CachedContentFileTest {
     }
 
     @Test
-    void testGetResult() {
+    void getResult() {
         replay(contentFile, contentFileConsumer);
         assertThat(cachedContentFile.getResult()).isEqualTo(contentFile);
         assertThat(cachedContentFileNoContent.getResult()).isNull();
     }
 
     @Test
-    void testDoClose() {
+    void doClose() {
         contentFile.close();
         contentFileConsumer.accept(contentFile);
         replay(contentFile, contentFileConsumer);

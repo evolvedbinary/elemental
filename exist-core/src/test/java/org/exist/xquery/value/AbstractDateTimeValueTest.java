@@ -42,7 +42,7 @@ class AbstractDateTimeValueTest {
     }
 
     @Test
-    void testConversionPreference() throws XPathException {
+    void conversionPreference() throws XPathException {
         assertEquals(0, dateValue.conversionPreference(DateValue.class));
         assertEquals(1, dateValue.conversionPreference(XMLGregorianCalendar.class));
         assertEquals(2, dateValue.conversionPreference(GregorianCalendar.class));
@@ -51,7 +51,7 @@ class AbstractDateTimeValueTest {
     }
 
     @Test
-    void testToJavaObject() throws XPathException {
+    void toJavaObject() throws XPathException {
         assertEquals(dateValue, dateValue.toJavaObject(Object.class));
         assertEquals(dateValue, dateValue.toJavaObject(DateValue.class));
         final XMLGregorianCalendar xmlGregorianCalendar = dateValue.toJavaObject(XMLGregorianCalendar.class);

@@ -42,35 +42,35 @@ class QueryResultCacheTest {
     }
 
     @Test
-    void testGet() {
+    void get() {
         assertThat(cache.get(-1)).isNull();
         assertThat(cache.get(0)).isSameAs(cachedResult);
         assertThat(cache.get(1)).isNull();
     }
 
     @Test
-    void testGetResult() {
+    void getResult() {
         assertThat(cache.getResult(-1)).isNull();
         assertThat(cache.getResult(0)).isNull();
         assertThat(cache.getResult(1)).isNull();
     }
 
     @Test
-    void testGetSerializedResult() {
+    void getSerializedResult() {
         assertThat(cache.getSerializedResult(-1)).isNull();
         assertThat(cache.getSerializedResult(0)).isNull();
         assertThat(cache.getSerializedResult(1)).isNull();
     }
 
     @Test
-    void testGetCachedContentFile() {
+    void getCachedContentFile() {
         assertThat(cache.getCachedContentFile(-1)).isNull();
         assertThat(cache.getCachedContentFile(0)).isNull();
         assertThat(cache.getCachedContentFile(1)).isNull();
     }
 
     @Test
-    void testRemove() throws InterruptedException {
+    void remove() throws InterruptedException {
         assertThatNoException().isThrownBy(() ->  cache.remove(-1));
         assertThatNoException().isThrownBy(() ->  cache.remove(0));
 
@@ -79,7 +79,7 @@ class QueryResultCacheTest {
     }
 
     @Test
-    void testRemoveWithHashCode() throws InterruptedException {
+    void removeWithHashCode() throws InterruptedException {
         assertThatNoException().isThrownBy(() ->  cache.remove(-1, 0));
         assertThatNoException().isThrownBy(() ->  cache.remove(0, 0));
         assertThat(cachedResult.getResult()).isZero();

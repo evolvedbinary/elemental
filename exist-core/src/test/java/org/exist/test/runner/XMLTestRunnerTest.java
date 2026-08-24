@@ -64,7 +64,7 @@ class XMLTestRunnerTest {
     }
 
     @Test
-    void testGetDescription() {
+    void getDescription() {
         final Description description = runner.getDescription();
         assertNotNull(description);
         assertTrue(description.isSuite());

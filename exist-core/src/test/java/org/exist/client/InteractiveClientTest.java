@@ -105,7 +105,7 @@ class InteractiveClientTest {
     void setUp() throws URISyntaxException {
         client = new InteractiveClient(CommandlineOptions.parse(new String[0])) {
             @Override
-            protected void connect() throws Exception {
+            protected void connect() {
                 setCollection(collection);
             }
         };
@@ -295,7 +295,7 @@ class InteractiveClientTest {
     }
 
     @Test
-    void runInteractive() throws Exception {
+    void runInteractive() throws XMLDBException, URISyntaxException {
         client = new InteractiveClient(CommandlineOptions.parse(new String[0])) {
             @Override
             ClientFrame createClientFrame() {
@@ -303,7 +303,7 @@ class InteractiveClientTest {
             }
 
             @Override
-            protected void connect() throws Exception {
+            protected void connect() {
                 setCollection(collection);
             }
 

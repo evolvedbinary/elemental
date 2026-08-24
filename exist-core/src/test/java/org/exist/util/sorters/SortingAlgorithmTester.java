@@ -41,31 +41,26 @@ import org.exist.dom.persistent.NodeProxy;
  * 
  */
 public abstract class SortingAlgorithmTester {
-	abstract <C extends Comparable<? super C>> void invokeSort(C[] a, int lo, int hi)
-		throws Exception;
+	abstract <C extends Comparable<? super C>> void invokeSort(C[] a, int lo, int hi);
 	
-	abstract <C> void invokeSort(C a[], Comparator<C> c, int lo, int hi)
-		throws Exception;
+	abstract <C> void invokeSort(C a[], Comparator<C> c, int lo, int hi);
 
-	abstract <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi)
-		throws Exception;
+	abstract <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi);
 
-	abstract <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi, int[] b)
-		throws Exception;
+	abstract <C extends Comparable<? super C>> void sort(C[] a, int lo, int hi, int[] b);
 
 	abstract <C> void sort(C[] a, Comparator<C> c,
-			int lo, int hi) throws Exception;
+			int lo, int hi);
 
-	abstract <C extends Comparable<? super C>> void sort(List<C> a, int lo, int hi)
-		throws Exception;
+	abstract <C extends Comparable<? super C>> void sort(List<C> a, int lo, int hi);
 
 	// This one must change its parameters so some Java compilers do not
 	// get fooled
-	abstract void sort(int lo, int hi,NodeProxy[] a) throws Exception;
+	abstract void sort(int lo, int hi,NodeProxy[] a);
 
-	abstract void sortByNodeId(NodeProxy[] a, int lo, int hi) throws Exception;
+	abstract void sortByNodeId(NodeProxy[] a, int lo, int hi);
 
-	abstract void sort(long[] a, int lo, int hi, Object b[]) throws Exception;
+	abstract void sort(long[] a, int lo, int hi, Object b[]);
 
 	public static SortingAlgorithmTester[] allSorters() {
 		return new SortingAlgorithmTester[] {

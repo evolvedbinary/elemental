@@ -46,15 +46,15 @@ public abstract class ComparatorChecker extends SortMethodChecker {
 		super(sorter);
 	}
 
-	abstract void check(SortOrder sortOrder, int lo, int hi) throws Exception;
+	abstract void check(SortOrder sortOrder, int lo, int hi);
 
-	abstract void sort(SortOrder sortOrder, int lo, int hi) throws Exception;
+	abstract void sort(SortOrder sortOrder, int lo, int hi);
 
-	void sort(SortOrder sortOrder) throws Exception {
+	void sort(SortOrder sortOrder) {
 		sort(sortOrder, 0, getLength() - 1);
 	}
 
-	void check(SortOrder sortOrder) throws Exception {
+	void check(SortOrder sortOrder) {
 		check(sortOrder, 0, getLength() - 1);
 	}
 }

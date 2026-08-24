@@ -65,25 +65,25 @@ class ContentFilePoolTest {
     }
 
     @Test
-    void testReturnNullObject() {
+    void returnNullObject() {
         assertThatNoException().isThrownBy(()-> pool.returnObject(null));
     }
 
     @Test
-    void testBorrowAndReturnObject() {
+    void borrowAndReturnObject() {
         final ContentFile contentFile = pool.borrowObject();
         assertThat(contentFile).isInstanceOf(VirtualTempPath.class);
         assertThatNoException().isThrownBy(()-> pool.returnObject(contentFile));
     }
 
     @Test
-    void testBorrowExhausted() {
+    void borrowExhausted() {
         assertThat(pool.borrowObject()).isNotNull();
         assertThatIllegalStateException().isThrownBy(pool::borrowObject);
     }
 
     @Test
-    void testReturnNonBorrowedObject() {
+    void returnNonBorrowedObject() {
         reset(contentFile);
         contentFile.close();
         replay(contentFile);

@@ -45,26 +45,26 @@ public abstract class SortMethodChecker {
 		this.sorter = sorter;
 	}
 
-	abstract void checkValue(int idx, int v) throws Exception;
+	abstract void checkValue(int idx, int v);
 
 	public String toString() {
 		return getClass().getSimpleName() + " "
 			+ sorter.getClass().getSimpleName();
 	}
 
-	abstract void init(int[] values) throws Exception;
+	abstract void init(int[] values);
 
-	abstract int getLength() throws Exception;
+	abstract int getLength();
 
-	abstract void sort(int lo, int hi) throws Exception;
+	abstract void sort(int lo, int hi);
 
-	abstract void check(int lo, int hi) throws Exception;
+	abstract void check(int lo, int hi);
 
-	void sort() throws Exception {
+	void sort() {
 		sort(0, getLength() - 1);
 	}
 
-	void check() throws Exception {
+	void check() {
 		check(0, getLength() - 1);
 	}
 
