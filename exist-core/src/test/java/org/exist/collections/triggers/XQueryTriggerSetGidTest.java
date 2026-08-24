@@ -56,15 +56,15 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -76,16 +76,16 @@ import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_C
 import static org.exist.collections.CollectionConfigurationManager.CONFIG_COLLECTION_URI;
 import static org.exist.security.SecurityManager.*;
 import static org.exist.test.Util.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class XQueryTriggerSetGidTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer EXIST_EMBEDDED_SERVER = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EXIST_EMBEDDED_SERVER = new EmbeddedDatabaseExtension(true, true);
 
 	private final static XmldbURI TEST_COLLECTION_URI = XmldbURI.create("/db/testXQueryTriggerSetGid");
     private final static XmldbURI TEST_TRIGGER_COLLECTION_URI = TEST_COLLECTION_URI.append("triggered");
@@ -125,9 +125,8 @@ public class XQueryTriggerSetGidTest {
     private final static String TRIGGERING_DOCUMENT_CONTENT =
 		  "<test/>";
 
-    @BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = EXIST_EMBEDDED_SERVER.getBrokerPool();
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
                 final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -173,8 +172,7 @@ public class XQueryTriggerSetGidTest {
     }
 
     @Test
-    public void triggerSetGid() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, XPathException {
-        final BrokerPool pool = EXIST_EMBEDDED_SERVER.getBrokerPool();
+    void triggerSetGid(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, XPathException {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
              final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getGuestSubject()))) {  // NOTE: "guest" user
 

@@ -45,7 +45,10 @@
  */
 package org.exist.xquery;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.security.PermissionDeniedException;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
@@ -53,13 +56,16 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.lock.ManagedCollectionLock;
+import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
+import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.*;
 import org.junit.ClassRule;
+import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
@@ -71,12 +77,12 @@ import java.util.Optional;
  */
 public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, IOException> {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Override
-    protected void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws Exception {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    protected void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws IOException {
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
             final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -90,12 +96,14 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
             }
 
             transaction.commit();
+        } catch (final PermissionDeniedException | EXistException | LockException | SAXException e) {
+            throw new IOException(e);
         }
     }
 
     @Override
-    protected void removeCollection(final XmldbURI collectionUri) throws Exception {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    protected void removeCollection(final XmldbURI collectionUri) throws IOException {
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
             final Txn transaction = brokerPool.getTransactionManager().beginTransaction();
             final Collection collection = broker.openCollection(collectionUri, Lock.LockMode.WRITE_LOCK)) {
@@ -104,13 +112,15 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
             }
 
             transaction.commit();
+        } catch (final PermissionDeniedException | EXistException | SAXException e) {
+            throw new IOException(e);
         }
     }
 
     @Override
-    protected QueryResultAccessor<Sequence, IOException> executeXQuery(final String query) throws Exception {
+    protected QueryResultAccessor<Sequence, IOException> executeXQuery(final String query) throws IOException {
         final Source source = new StringSource(query);
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         final XQueryPool pool = brokerPool.getXQueryPool();
         final XQuery xquery = brokerPool.getXQueryService();
 
@@ -152,6 +162,8 @@ public class EmbeddedBinariesTest extends AbstractBinariesTest<Sequence, Item, I
                     }
                 }
             };
+        } catch (final PermissionDeniedException | XPathException | EXistException e) {
+            throw new IOException(e);
         }
     }
 

@@ -47,102 +47,99 @@ package org.exist.storage;
 
 import org.exist.EXistException;
 import org.exist.security.Subject;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xmldb.LocalCollection;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Rule;
-import org.junit.Test;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class BrokerPoolTest {
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void noPrivilegeEscalationThroughBrokerRelease() throws EXistException {
+    void noPrivilegeEscalationThroughBrokerRelease() throws EXistException {
         //take a broker with the guest user
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final Subject guestUser = pool.getSecurityManager().getGuestSubject();
         try(final DBBroker broker1 = pool.get(Optional.of(guestUser))) {
 
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), guestUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(guestUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
 
             //take a broker with the system user
             final Subject sysUser = pool.getSecurityManager().getSystemSubject();
             try (final DBBroker broker2 = pool.get(Optional.of(sysUser))) {
-                assertEquals("Expected `SYSTEM` user, but was: " + broker2.getCurrentSubject().getName(), sysUser.getId(), broker2.getCurrentSubject().getId());
+                assertEquals(sysUser.getId(), broker2.getCurrentSubject().getId(), "Expected `SYSTEM` user, but was: " + broker2.getCurrentSubject().getName());
             }
 
             //ensure that after releasing the broker, the user has been returned to the guest user
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), guestUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(guestUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
         }
     }
 
     @Test
-    public void privilegeStableWhenSubjectNull() throws EXistException {
+    void privilegeStableWhenSubjectNull() throws EXistException {
         //take a broker with the SYSTEM user
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final Subject sysUser = pool.getSecurityManager().getSystemSubject();
         try(final DBBroker broker1 = pool.get(Optional.of(sysUser))) {
 
-            assertEquals("Expected `SYSTEM` user, but was: " + broker1.getCurrentSubject().getName(), sysUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(sysUser.getId(), broker1.getCurrentSubject().getId(), "Expected `SYSTEM` user, but was: " + broker1.getCurrentSubject().getName());
 
             //take a broker without changing the user
             try (final DBBroker broker2 = pool.getBroker()) {
-                assertEquals("Expected `SYSTEM` user, but was: " + broker2.getCurrentSubject().getName(), sysUser.getId(), broker2.getCurrentSubject().getId());
+                assertEquals(sysUser.getId(), broker2.getCurrentSubject().getId(), "Expected `SYSTEM` user, but was: " + broker2.getCurrentSubject().getName());
             }
 
             //ensure that after releasing the broker, the user is still the SYSTEM user
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), sysUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(sysUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
         }
     }
 
     @Test
-    public void guestDefaultPriviledge() throws EXistException {
+    void guestDefaultPriviledge() throws EXistException {
         //take a broker with default perms
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         try(final DBBroker broker1 = pool.getBroker()) {
 
             final Subject guestUser = pool.getSecurityManager().getGuestSubject();
 
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), guestUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(guestUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
 
             //take a broker without changing the user
             try (final DBBroker broker2 = pool.getBroker()) {
-                assertEquals("Expected `guest` user, but was: " + broker2.getCurrentSubject().getName(), guestUser.getId(), broker2.getCurrentSubject().getId());
+                assertEquals(guestUser.getId(), broker2.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker2.getCurrentSubject().getName());
             }
 
             //ensure that after releasing the broker, the user is still the SYSTEM user
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), guestUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(guestUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
         }
     }
 
     @Test
-    public void noPrivilegeEscalationThroughBrokerRelease_xmldb() throws EXistException, XMLDBException {
+    void noPrivilegeEscalationThroughBrokerRelease_xmldb() throws EXistException, XMLDBException {
         //take a broker with the guest user
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final Subject guestUser = pool.getSecurityManager().getGuestSubject();
         try(final DBBroker broker1 = pool.get(Optional.of(guestUser))) {
 
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), guestUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(guestUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
 
             //perform an XML:DB operation as the SYSTEM user
             final Subject sysUser = pool.getSecurityManager().getSystemSubject();
             new LocalCollection(sysUser, pool, XmldbURI.ROOT_COLLECTION_URI);
 
             //ensure that after releasing the broker, the user has been returned to the guest user
-            assertEquals("Expected `guest` user, but was: " + broker1.getCurrentSubject().getName(), guestUser.getId(), broker1.getCurrentSubject().getId());
+            assertEquals(guestUser.getId(), broker1.getCurrentSubject().getId(), "Expected `guest` user, but was: " + broker1.getCurrentSubject().getName());
         }
     }
 
@@ -152,8 +149,8 @@ public class BrokerPoolTest {
      * been released.
      */
     @Test
-    public void canReleaseWhenSaturated() throws InterruptedException, ExecutionException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void canReleaseWhenSaturated() throws InterruptedException, ExecutionException {
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final int maxBrokers = pool.getMax();
 
         // test requires at least 2 leasedBrokers to prove the issue

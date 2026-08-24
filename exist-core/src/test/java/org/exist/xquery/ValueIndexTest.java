@@ -50,13 +50,13 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceIterator;
@@ -68,16 +68,16 @@ import org.xmldb.api.modules.XUpdateQueryService;
 
 import javax.annotation.Nullable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author wolf
  */
 public class ValueIndexTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     protected static final String ITEMS_FILENAME = "items.xml";
     protected URL ITEMS_FILE = getClass().getResource(ITEMS_FILENAME);
@@ -128,18 +128,18 @@ public class ValueIndexTest {
     
     private Collection testCollection;
 
-    @Before
-    public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
-        final CollectionManagementService service = existEmbeddedServer.getRoot()
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot()
                 .getService(CollectionManagementService.class);
         testCollection = service.createCollection("test");
         assertNotNull(testCollection);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         testCollection.close();
-        final CollectionManagementService service = existEmbeddedServer.getRoot()
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot()
                 .getService(CollectionManagementService.class);
         service.removeCollection("test");
         testCollection = null;
@@ -154,7 +154,7 @@ public class ValueIndexTest {
 	}
 
     @Test
-    public void strings() throws XMLDBException, URISyntaxException {
+    void strings() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_PATH);
         storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         queryResourceV(ITEMS_FILENAME, "//item[@id = 'i2']", 1);
@@ -185,7 +185,7 @@ public class ValueIndexTest {
     }
 
     @Test
-    public void strFunctions() throws XMLDBException {
+    void strFunctions() throws XMLDBException {
         configureCollection(CONFIG_PATH);
         try (XMLResource resource = testCollection.createResource("mondial-test.xml", XMLResource.class)) {
             resource.setContent(CITY);
@@ -214,18 +214,18 @@ public class ValueIndexTest {
         queryResourceV("mondial-test.xml", "//city[matches(name, '^lin$', 'i')]", 0);
     }
 
-	/*
+    /*
      * Bugfix
      *
      * These following two tests were put in place to demonstrate bugs in how the index matching functions work,
      * as a precursor to a fix, which was committed 2/3/2010. The issue was that the 2nd parameter
-	 * to the string matching functions was incorrectly interpreted as a regex, which causd an exception
-	 * to be thrown if the string included characters that have special meaning in a regex, eg. '*' for contains.
-	 *
-	 * andrzej@chaeron.com
+     * to the string matching functions was incorrectly interpreted as a regex, which causd an exception
+     * to be thrown if the string included characters that have special meaning in a regex, eg. '*' for contains.
+     *
+     * andrzej@chaeron.com
      */
     @Test
-	public void pathIndexStringMatchingFunctions() throws XMLDBException {
+    void pathIndexStringMatchingFunctions() throws XMLDBException {
         configureCollection(CONFIG_PATH);
         try (final XMLResource resource = testCollection.createResource("mondial-test.xml", XMLResource.class)) {
             resource.setContent(CITY);
@@ -235,10 +235,10 @@ public class ValueIndexTest {
         queryResourceV("mondial-test.xml", "//city[ starts-with( name, '^*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ contains( name, '^*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ ends-with( name, '^*' ) ]", 0);
-	}    
+	}
 
     @Test
-	public void pathIndexStringMatchingFunctions2() throws XMLDBException {
+    void pathIndexStringMatchingFunctions2() throws XMLDBException {
         configureCollection(CONFIG_PATH);
         try (final XMLResource resource = testCollection.createResource("mondial-test.xml", XMLResource.class)) {
             resource.setContent(CITY);
@@ -248,19 +248,19 @@ public class ValueIndexTest {
         queryResourceV("mondial-test.xml", "//city[ starts-with( name, '(*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ contains( name, '*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ ends-with( name, '(*' ) ]", 0);
-	}    
+	}
 
-	/*
+    /*
      * Bugfix
      *
      * These following two tests were put in place to test a bug fix for QName matching functions, which was committed 2/19/2010. The issue was that the 2nd parameter
-	 * to the string matching functions was incorrectly interpreted as a regex, for QName indexes, which causd an exception
-	 * to be thrown if the string included characters that have special meaning in a regex, eg. '*' for contains.
-	 *
-	 * andrzej@chaeron.com
+     * to the string matching functions was incorrectly interpreted as a regex, for QName indexes, which causd an exception
+     * to be thrown if the string included characters that have special meaning in a regex, eg. '*' for contains.
+     *
+     * andrzej@chaeron.com
      */
     @Test
-	public void qnameIndexStringMatchingFunctions() throws XMLDBException {
+    void qnameIndexStringMatchingFunctions() throws XMLDBException {
         configureCollection( CONFIG_QNAME );
         try (final XMLResource resource = testCollection.createResource("mondial-test.xml", XMLResource.class)) {
             resource.setContent(CITY);
@@ -270,10 +270,10 @@ public class ValueIndexTest {
         queryResourceV("mondial-test.xml", "//city[ starts-with( name, '^*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ contains( name, '^*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ ends-with( name, '^*' ) ]", 0);
-	}    
+	}
 
     @Test
-	public void qnameIndexStringMatchingFunctions2() throws XMLDBException {
+    void qnameIndexStringMatchingFunctions2() throws XMLDBException {
         configureCollection( CONFIG_QNAME );
         try (final XMLResource resource = testCollection.createResource("mondial-test.xml", XMLResource.class)) {
             resource.setContent(CITY);
@@ -283,10 +283,10 @@ public class ValueIndexTest {
         queryResourceV("mondial-test.xml", "//city[ starts-with( name, '(*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ contains( name, '*' ) ]", 0);
         queryResourceV("mondial-test.xml", "//city[ ends-with( name, '(*' ) ]", 0);
-	}    
+	}
 
     @Test
-    public void strFunctionsQName() throws XMLDBException {
+    void strFunctionsQName() throws XMLDBException {
         configureCollection(CONFIG_QNAME);
         try (final XMLResource resource = testCollection.createResource("mondial-test.xml", XMLResource.class)) {
             resource.setContent(CITY);
@@ -316,7 +316,7 @@ public class ValueIndexTest {
     }
 
     @Test
-    public void qnameIndex() throws XMLDBException, URISyntaxException {
+    void qnameIndex() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_QNAME);
         storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[stock = 10] })", 1);
@@ -332,7 +332,7 @@ public class ValueIndexTest {
     }
 
     @Test
-    public void indexScan() throws XMLDBException, URISyntaxException {
+    void indexScan() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_PATH);
         final XPathQueryService service = testCollection.getService(XPathQueryService.class);
 
@@ -373,7 +373,7 @@ public class ValueIndexTest {
     }
 
     @Test
-    public void updates() throws Exception {
+    void updates() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_PATH);
         storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         for (int i = 100; i <= 150; i++) {
@@ -394,18 +394,18 @@ public class ValueIndexTest {
 
             final XUpdateQueryService update = testCollection.getService(XUpdateQueryService.class);
             long mods = update.updateResource(ITEMS_FILENAME, append);
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
 
             queryResourceV(ITEMS_FILENAME, "//item[price = 55.50]", 1);
             queryResourceV(ITEMS_FILENAME, "//item[@id = 'i" + i + "']",1);
             mods = update.updateResource(ITEMS_FILENAME, remove);
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
             queryResourceV(ITEMS_FILENAME, "//item[itemno = " + i + "]", 0);
         }
     }
 
     @Test
-    public void updatesQName() throws Exception {
+    void updatesQName() throws XMLDBException, URISyntaxException {
         configureCollection(CONFIG_QNAME);
         storeXMLFile(ITEMS_FILENAME, ITEMS_FILE);
         for (int i = 100; i <= 150; i++) {
@@ -426,13 +426,13 @@ public class ValueIndexTest {
             
             final XUpdateQueryService update = testCollection.getService(XUpdateQueryService.class);
             long mods = update.updateResource(ITEMS_FILENAME, append);
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
 
             queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[price = 55.50] })", 1);
             queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[@id = 'i" + i + "']})",1);
             queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[itemno = " + i + "] })", 1);
             mods = update.updateResource(ITEMS_FILENAME, remove);
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
             queryResourceV(ITEMS_FILENAME, "//((#exist:optimize#) { item[itemno = " + i + "] })", 0);
         }
     }
@@ -454,7 +454,7 @@ public class ValueIndexTest {
         if (message == null) {
             assertEquals(expected, result.getSize());
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }

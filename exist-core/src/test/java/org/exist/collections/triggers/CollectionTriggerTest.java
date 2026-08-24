@@ -48,24 +48,29 @@ package org.exist.collections.triggers;
 import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.LockException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.exist.xmldb.EXistCollectionManagementService;
 import org.exist.xmldb.IndexQueryService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.XMLDBException;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class CollectionTriggerTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testCollectionTrigger";
     private static Collection testCollection;
@@ -73,7 +78,7 @@ public class CollectionTriggerTest {
 
 
     @Test
-    public void move() throws XMLDBException, EXistException, PermissionDeniedException {
+    void move() throws XMLDBException, EXistException, PermissionDeniedException {
 
         //create /db/testCollectionTrigger/srcCollection
         final EXistCollectionManagementService colMgmtSrv = testCollection.getService(EXistCollectionManagementService.class);
@@ -97,8 +102,8 @@ public class CollectionTriggerTest {
         }
     }
 
-    @Before
-    public void createTestCollection() throws XMLDBException {
+    @BeforeEach
+    void createTestCollection() throws XMLDBException {
         //create a test collection
         testCollection = rootSrv.createCollection(TEST_COLLECTION);
 
@@ -107,8 +112,8 @@ public class CollectionTriggerTest {
         idxConf.configureCollection(COLLECTION_CONFIG);
     }
 
-    @After
-    public void removeTestCollection() throws XMLDBException {
+    @AfterEach
+    void removeTestCollection() throws XMLDBException {
         final XmldbURI testCollectionUri = XmldbURI.create(testCollection.getName());
         testCollection.close();
         testCollection = null;
@@ -116,13 +121,13 @@ public class CollectionTriggerTest {
     }
 
     /** just start the DB and create the test collection */
-    @BeforeClass
-    public static void startDB() throws XMLDBException {
-        rootSrv = existEmbeddedServer.getRoot().getService(EXistCollectionManagementService.class);
+    @BeforeAll
+    static void startDB() throws XMLDBException {
+        rootSrv = XMLDB_EMBEDDED_DATABASE.getRoot().getService(EXistCollectionManagementService.class);
     }
 
-    @AfterClass
-    public static void shutdownDB() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterAll
+    static void shutdownDB() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         TestUtils.cleanupDB();
         testCollection = null;
         rootSrv = null;

@@ -22,8 +22,8 @@
 
 package org.exist.security;
 
-import org.exist.test.ExistWebServer;
-import org.junit.ClassRule;
+import org.exist.test.DatabaseWebServerExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -35,17 +35,17 @@ import org.xmldb.api.base.XMLDBException;
  */
 public class RemoteSecurityManagerRoundtripTest extends AbstractSecurityManagerRoundtripTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     @Override
     protected Collection getRoot() throws XMLDBException {
-        final String baseUri = "xmldb:exist://localhost:" + Integer.toString(existWebServer.getPort()) + "/xmlrpc";
+        final String baseUri = "xmldb:exist://localhost:" + Integer.toString(DATABASE_WEB_SERVER.getPort()) + "/xmlrpc";
         return DatabaseManager.getCollection(baseUri + "/db", "admin", "");
     }
 
     @Override
     protected void restartServer() {
-        existWebServer.restart();
+        DATABASE_WEB_SERVER.restart();
     }
 }

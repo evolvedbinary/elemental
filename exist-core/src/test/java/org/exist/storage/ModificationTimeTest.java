@@ -52,17 +52,17 @@ import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.StorageType;
@@ -86,13 +86,13 @@ public class ModificationTimeTest {
      * have been updated afterwards.
      */
     @Test
-    public void check_if_modification_time_is_updated_binary() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
+    void check_if_modification_time_is_updated_binary() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
 
         final String mediaType = MediaType.APPLICATION_OCTET_STREAM;
         final String filename = "data.dat";
         final String data = "some data";
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             BinaryDocument binaryDoc = storeBinary(broker, transaction, filename, data, mediaType);
@@ -119,8 +119,8 @@ public class ModificationTimeTest {
      * have been updated afterwards.
      */
     @Test
-    public void check_if_modification_time_is_updated_xml() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void check_if_modification_time_is_updated_xml() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             storeXML(broker, transaction, XML_FILENAME, VALID_XML);
@@ -143,8 +143,8 @@ public class ModificationTimeTest {
      * the resource's modification time should be the same afterwards.
      */
     @Test
-    public void check_if_modification_time_is_not_updated_on_parse_error() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void check_if_modification_time_is_not_updated_on_parse_error() throws EXistException, InterruptedException, PermissionDeniedException, LockException, IOException, SAXException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -169,8 +169,8 @@ public class ModificationTimeTest {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private BinaryDocument storeBinary(final DBBroker broker, final Txn transaction, final String name,  final String data, final String mimeType) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final Collection root = broker.getOrCreateCollection(transaction, TEST_COLLECTION_URI);

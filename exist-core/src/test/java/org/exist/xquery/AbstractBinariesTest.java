@@ -24,9 +24,12 @@ package org.exist.xquery;
 
 import com.evolvedbinary.j8fu.function.Consumer2E;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,9 +37,7 @@ import java.util.Random;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for accessing binaries using XQuery via various APIs.
@@ -51,16 +52,16 @@ public abstract class AbstractBinariesTest<T, U, E extends Exception> {
     protected static final String BIN1_FILENAME = "1.bin";
     protected static final byte[] BIN1_CONTENT = "1234567890".getBytes(UTF_8);
 
-    @ClassRule
-    public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    public void setup() throws E {
         storeBinaryFile(TEST_COLLECTION.append(BIN1_FILENAME), BIN1_CONTENT);
     }
 
-    @After
-    public void cleanup() throws Exception {
+    @AfterEach
+    public void cleanup() throws E {
         removeCollection(TEST_COLLECTION);
     }
 
@@ -68,7 +69,7 @@ public abstract class AbstractBinariesTest<T, U, E extends Exception> {
      * {@see https://github.com/eXist-db/exist/issues/790#error-case-1}
      */
     @Test
-    public void serializeBinary() throws Exception {
+    public void serializeBinary() {
         final String query = "import module namespace util = \"http://exist-db.org/xquery/util\";\n" +
                 "util:binary-doc('" + TEST_COLLECTION.append(BIN1_FILENAME).toString() + "')";
 
@@ -90,7 +91,7 @@ public abstract class AbstractBinariesTest<T, U, E extends Exception> {
     }
 
     protected Path createTemporaryFile(final byte[] data) throws IOException {
-        final Path f = temporaryFolder.newFile().toPath();
+        final Path f = File.createTempFile("junit", null, TEMPORARY_FOLDER).toPath();
         Files.write(f, data);
         return f;
     }
@@ -98,9 +99,9 @@ public abstract class AbstractBinariesTest<T, U, E extends Exception> {
     @FunctionalInterface interface QueryResultAccessor<T, E extends Exception> extends Consumer2E<Consumer2E<T, AssertionError, E>, AssertionError, E> {
     }
 
-    protected abstract void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws Exception;
-    protected abstract void removeCollection(final XmldbURI collectionUri) throws Exception;
-    protected abstract QueryResultAccessor<T, E> executeXQuery(final String query) throws Exception;
+    protected abstract void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws E;
+    protected abstract void removeCollection(final XmldbURI collectionUri) throws E;
+    protected abstract QueryResultAccessor<T, E> executeXQuery(final String query) throws E;
     protected abstract long size(T results) throws E;
     protected abstract U item(T results, int index) throws E;
     protected abstract boolean isBinaryType(U item) throws E;

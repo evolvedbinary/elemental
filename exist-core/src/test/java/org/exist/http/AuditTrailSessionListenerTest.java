@@ -45,25 +45,26 @@
  */
 package org.exist.http;
 
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
+import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -75,13 +76,13 @@ import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@RunWith(ParallelRunner.class)
-public class AuditTrailSessionListenerTest {
+@Execution(ExecutionMode.CONCURRENT)
+class AuditTrailSessionListenerTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_COLLECTION = XmldbURI.create("/db/test");
     private static final String CREATE_SCRIPT = "session-create.xq";
@@ -94,7 +95,7 @@ public class AuditTrailSessionListenerTest {
      * on the XQuery document when creating a session
      */
     @Test
-    public void sessionCreated() throws EXistException, PermissionDeniedException {
+    void sessionCreated(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final HttpSessionEvent httpSessionEvent = createMock(HttpSessionEvent.class);
         final HttpSession httpSession = createMock(HttpSession.class);
         expect(httpSessionEvent.getSession()).andReturn(httpSession);
@@ -108,7 +109,7 @@ public class AuditTrailSessionListenerTest {
         verify(httpSessionEvent, httpSession);
 
         final XmldbURI docUri = XmldbURI.create(CREATE_SCRIPT_PATH);
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().getBroker();
+        try(final DBBroker broker = pool.getBroker();
                 final LockedDocument lockedResource = broker.getXMLResource(docUri, Lock.LockMode.NO_LOCK)) {
 
             // ensure that AuditTrailSessionListener released the lock
@@ -123,7 +124,7 @@ public class AuditTrailSessionListenerTest {
      * on the XQuery document when destroying a session
      */
     @Test
-    public void sessionDestroyed() throws EXistException, PermissionDeniedException {
+    void sessionDestroyed(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final HttpSessionEvent httpSessionEvent = createMock(HttpSessionEvent.class);
         final HttpSession httpSession = createMock(HttpSession.class);
         expect(httpSessionEvent.getSession()).andReturn(httpSession);
@@ -137,7 +138,7 @@ public class AuditTrailSessionListenerTest {
         verify(httpSessionEvent, httpSession);
 
         final XmldbURI docUri = XmldbURI.create(DESTROYED_SCRIPT_PATH);
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().getBroker();
+        try(final DBBroker broker = pool.getBroker();
                 final LockedDocument lockedResource = broker.getXMLResource(docUri, Lock.LockMode.NO_LOCK)) {
 
             // ensure that AuditTrailSessionListener released the lock
@@ -147,16 +148,16 @@ public class AuditTrailSessionListenerTest {
         }
     }
 
-    @BeforeClass
-    public static void setup() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
-        storeScripts();
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
+        storeScripts(pool);
         System.setProperty(AuditTrailSessionListener.REGISTER_CREATE_XQUERY_SCRIPT_PROPERTY, CREATE_SCRIPT_PATH);
         System.setProperty(AuditTrailSessionListener.REGISTER_DESTROY_XQUERY_SCRIPT_PROPERTY, DESTROYED_SCRIPT_PATH);
     }
 
-    private static void storeScripts() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()));
-                final Txn transaction = existEmbeddedServer.getBrokerPool().getTransactionManager().beginTransaction()) {
+    private static void storeScripts(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
             final Collection testCollection = broker.getOrCreateCollection(transaction, TEST_COLLECTION);
             final MediaType xqueryMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().fromString(MediaType.APPLICATION_XQUERY);
@@ -167,16 +168,16 @@ public class AuditTrailSessionListenerTest {
         }
     }
 
-    @AfterClass
-    public static void teardown() throws TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterAll
+    static void teardown(final BrokerPool pool) throws TriggerException, PermissionDeniedException, EXistException, IOException {
         System.clearProperty(AuditTrailSessionListener.REGISTER_CREATE_XQUERY_SCRIPT_PROPERTY);
         System.clearProperty(AuditTrailSessionListener.REGISTER_DESTROY_XQUERY_SCRIPT_PROPERTY);
-        removeScripts();
+        removeScripts(pool);
     }
 
-    private static void removeScripts() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        try(final DBBroker broker = existEmbeddedServer.getBrokerPool().get(Optional.of(existEmbeddedServer.getBrokerPool().getSecurityManager().getSystemSubject()));
-                final Txn transaction = existEmbeddedServer.getBrokerPool().getTransactionManager().beginTransaction()) {
+    private static void removeScripts(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             final Collection testCollection = broker.getCollection(TEST_COLLECTION);
             if(testCollection != null) {
                 broker.removeCollection(transaction, testCollection);

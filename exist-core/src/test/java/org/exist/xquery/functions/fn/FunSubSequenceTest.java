@@ -46,13 +46,13 @@
 package org.exist.xquery.functions.fn;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -60,192 +60,192 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class FunSubSequenceTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static Collection test = null;
     private static final String SIMPLE_XML_FILENAME = "simple.xml";
     private static final String SIMPLE_XML = "<nums><i>1</i><i>2</i><i>3</i><i>4</i></nums>";
 
     @Test
-    public void all_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 1)")) {
+    void all_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 1)")) {
             assertEquals("(1,2,3,4,5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void all_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 1, 5)")) {
+    void all_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 1, 5)")) {
             assertEquals("(1,2,3,4,5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void firstItem_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1), 1)")) {
+    void firstItem_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1), 1)")) {
             assertEquals("(1)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void firstItem_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 1, 1)")) {
+    void firstItem_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 1, 1)")) {
             assertEquals("(1)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void midItem_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 2, 1)")) {
+    void midItem_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 2, 1)")) {
             assertEquals("(2)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void midItems_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 3, 2)")) {
+    void midItems_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 3, 2)")) {
             assertEquals("(3,4)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void lastItem_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 5)")) {
+    void lastItem_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 5)")) {
             assertEquals("(5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void lastItem_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 5, 1)")) {
+    void lastItem_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 5, 1)")) {
             assertEquals("(5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void allButFirst_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 2)")) {
+    void allButFirst_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 2)")) {
             assertEquals("(2,3,4,5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void allButFirst_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 2, 4)")) {
+    void allButFirst_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 2, 4)")) {
             assertEquals("(2,3,4,5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void allButLast_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 1, 4)")) {
+    void allButLast_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 1, 4)")) {
             assertEquals("(1,2,3,4)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void outOfRange_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 7)")) {
+    void outOfRange_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 7)")) {
             assertEquals("()", asSequenceStr(result));
         }
     }
 
     @Test
-    public void outOfRange_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 7, 4)")) {
+    void outOfRange_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 7, 4)")) {
             assertEquals("()", asSequenceStr(result));
         }
     }
 
     @Test
-    public void zeroStartingLoc_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 0)")) {
+    void zeroStartingLoc_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 0)")) {
             assertEquals("(1,2,3,4,5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void zeroStartingLocToMid_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 0, 3)")) {
+    void zeroStartingLocToMid_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 0, 3)")) {
             assertEquals("(1,2)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void zeroStartingLocToEnd_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), 0, 5)")) {
+    void zeroStartingLocToEnd_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), 0, 5)")) {
             assertEquals("(1,2,3,4)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void negativeStartingLoc_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), -2)")) {
+    void negativeStartingLoc_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), -2)")) {
             assertEquals("(1,2,3,4,5)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void negativeStartingLoc_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 5), -2, 5)")) {
+    void negativeStartingLoc_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 5), -2, 5)")) {
             assertEquals("(1,2)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void smallPartOfLargeRange_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 3000000000), 2999999995)")) {
+    void smallPartOfLargeRange_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 3000000000), 2999999995)")) {
             assertEquals("(2999999995,2999999996,2999999997,2999999998,2999999999,3000000000)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void smallPartOfLargeRange_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence((1 to 3000000000), 2999999995, 5)")) {
+    void smallPartOfLargeRange_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence((1 to 3000000000), 2999999995, 5)")) {
             assertEquals("(2999999995,2999999996,2999999997,2999999998,2999999999)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void largeRange_arity2() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:count(fn:subsequence((1 to 3000000000), -2147483649))")) {
+    void largeRange_arity2() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:count(fn:subsequence((1 to 3000000000), -2147483649))")) {
             assertEquals("(3000000000)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void largeRange_arity3() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:count(fn:subsequence((1 to 3000000000), 1, 3000000000))")) {
+    void largeRange_arity3() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:count(fn:subsequence((1 to 3000000000), 1, 3000000000))")) {
             assertEquals("(3000000000)", asSequenceStr(result));
         }
     }
 
     @Test
-    public void persistentSupsequence_toInMemory() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:subsequence(doc('" + TestConstants.TEST_COLLECTION_URI.getCollectionPath() + "/" + SIMPLE_XML_FILENAME + "')/nums/i, 2, 2)//text()")) {
+    void persistentSupsequence_toInMemory() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:subsequence(doc('" + TestConstants.TEST_COLLECTION_URI.getCollectionPath() + "/" + SIMPLE_XML_FILENAME + "')/nums/i, 2, 2)//text()")) {
             assertEquals("(2,3)", asSequenceStr(result));
         }
     }
 
-    @BeforeClass
-    public static void setup() throws XMLDBException {
-        test = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), TestConstants.TEST_COLLECTION_URI.lastSegment().toString());
+    @BeforeAll
+    static void setup() throws XMLDBException {
+        test = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), TestConstants.TEST_COLLECTION_URI.lastSegment().toString());
         try (final Resource resource = test.createResource(SIMPLE_XML_FILENAME, XMLResource.class)) {
             resource.setContent(SIMPLE_XML);
             test.storeResource(resource);
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws XMLDBException {
+    @AfterAll
+    static void cleanup() throws XMLDBException {
         test.close();
-        final CollectionManagementService collectionManagementService = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService collectionManagementService = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         collectionManagementService.removeCollection(test.getName());
     }
 

@@ -32,7 +32,7 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 
@@ -48,12 +48,12 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.samples.Samples.SAMPLES;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test for deadlocks when moving resources from one collection to another. Uses
@@ -68,19 +68,19 @@ public class MoveResourceTest {
     private static final int DELAY = 10;  // milliseconds
     private static final long TIMEOUT = 5 * 60 * 1000;  // milliseconds
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private static String getXmlRpcUri() {
-        return "http://localhost:" + existWebServer.getPort() + "/xmlrpc";
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/xmlrpc";
     }
 
     private static String getRestUri() {
-        return "http://localhost:" + existWebServer.getPort();
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort();
     }
 
     @Test
-    public void testMove() throws InterruptedException, ExecutionException {
+    void move() throws InterruptedException, ExecutionException {
 
         final List<Callable<Boolean>> tasks = new ArrayList<>();
         tasks.add(new MoveThread(50));
@@ -217,7 +217,7 @@ public class MoveResourceTest {
             for (int i = 0; i < iterations; i++) {
                 final HttpResponse response = executor.execute(request).returnResponse();
 
-                assertEquals(response.getStatusLine().toString(), HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode(), response.getStatusLine().toString());
 
                 Thread.sleep(DELAY);
             }

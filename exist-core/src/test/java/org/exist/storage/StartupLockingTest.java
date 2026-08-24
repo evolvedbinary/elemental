@@ -24,24 +24,22 @@ package org.exist.storage;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import net.jcip.annotations.ThreadSafe;
-import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.collections.triggers.TriggerException;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.LockTable;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.Rule;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Simple test that Starts the database and checks that no Collection Locks are still held
@@ -61,18 +59,18 @@ public class StartupLockingTest {
 
     private static LockTable lockTable;
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-    @Before
-    public void addListener() {
-        lockTable = existEmbeddedServer.getBrokerPool().getLockManager().getLockTable();
+    @BeforeEach
+    void addListener() {
+        lockTable = embeddedDatabase.getBrokerPool().getLockManager().getLockTable();
         lockTable.registerListener(lockCountListener);
         while(!lockCountListener.isRegistered()) {}
     }
 
-    @After
-    public void removeListener() {
+    @AfterEach
+    void removeListener() {
         if (lockCountListener.isRegistered()) {
             lockTable.deregisterListener(lockCountListener);
             while (lockCountListener.isRegistered()) {}
@@ -88,7 +86,7 @@ public class StartupLockingTest {
      *   2) A bug has been introduced in {@link org.exist.storage.lock.LockManager}
      */
     @Test
-    public void noCollectionLocksAfterStartup() throws InterruptedException {
+    void noCollectionLocksAfterStartup() throws InterruptedException {
         lockTable.deregisterListener(lockCountListener);
 
         // wait for the listener to be deregistered
@@ -108,7 +106,7 @@ public class StartupLockingTest {
      * as before the call was made
      */
     @Test
-    public void getOrCreateCollectionDoesNotGainLocks() throws InterruptedException, EXistException, PermissionDeniedException, IOException, TriggerException {
+    void getOrCreateCollectionDoesNotGainLocks() throws InterruptedException, EXistException, PermissionDeniedException, IOException, TriggerException {
         lockTable.deregisterListener(lockCountListener);
 
         // wait for the listener to be deregistered
@@ -117,7 +115,7 @@ public class StartupLockingTest {
         final Tuple2<Long, Long> preLockCount = lockCountListener.getlockCount();
 
         lockTable.registerListener(lockCountListener);
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

@@ -45,6 +45,7 @@
  */
 package org.exist.xquery;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.http.HttpEntity;
@@ -56,14 +57,13 @@ import org.apache.http.entity.ContentType;
 import org.exist.http.rest.Query;
 import org.exist.http.rest.Result;
 import org.exist.http.rest.Value;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
@@ -79,23 +79,23 @@ import static org.apache.http.HttpStatus.SC_OK;
 import static org.exist.TestUtils.ADMIN_DB_PWD;
 import static org.exist.TestUtils.ADMIN_DB_USER;
 import static org.exist.http.rest.YesNo.YES;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Exception> {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private static Executor executor = null;
 
-    @BeforeClass
-    public static void setupExecutor() {
+    @BeforeAll
+    static void setupExecutor() {
          executor = Executor.newInstance()
-                .auth(new HttpHost("localhost", existWebServer.getPort()), ADMIN_DB_USER, ADMIN_DB_PWD)
-                .authPreemptive(new HttpHost("localhost", existWebServer.getPort()));
+                .auth(new HttpHost("localhost", DATABASE_WEB_SERVER.getPort()), ADMIN_DB_USER, ADMIN_DB_PWD)
+                .authPreemptive(new HttpHost("localhost", DATABASE_WEB_SERVER.getPort()));
     }
 
     /**
@@ -104,7 +104,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Except
      * response:stream is used to return Base64 encoded binary.
      */
     @Test
-    public void streamBinarySax() throws JAXBException, IOException {
+    void streamBinarySax() throws IOException {
         final String query = "import module namespace util = \"http://exist-db.org/xquery/util\";\n" +
                 "import module namespace response = \"http://exist-db.org/xquery/response\";\n" +
                 "let $bin := util:binary-doc('" + TEST_COLLECTION.append(BIN1_FILENAME).toString() + "')\n" +
@@ -126,7 +126,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Except
      * response:stream-binary is used to return raw binary.
      */
     @Test
-    public void streamBinaryRaw() throws JAXBException, IOException {
+    void streamBinaryRaw() throws IOException {
         final String query = "import module namespace util = \"http://exist-db.org/xquery/util\";\n" +
                 "import module namespace response = \"http://exist-db.org/xquery/response\";\n" +
                 "let $bin := util:binary-doc('" + TEST_COLLECTION.append(BIN1_FILENAME).toString() + "')\n" +
@@ -143,33 +143,33 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Except
     }
 
     @Override
-    protected void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws Exception {
+    protected void storeBinaryFile(final XmldbURI filePath, final byte[] content) throws IOException {
         final HttpResponse response = executor.execute(Request.Put(getRestUrl() + filePath.toString())
                 .setHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM)
                 .bodyByteArray(content)
         ).returnResponse();
 
-        if(response.getStatusLine().getStatusCode() != SC_CREATED) {
-            throw new Exception("Unable to store binary file: " + filePath);
+        if (response.getStatusLine().getStatusCode() != SC_CREATED) {
+            throw new IOException("Unable to store binary file: " + filePath);
         }
     }
 
     private String getRestUrl() {
-        return "http://localhost:" + existWebServer.getPort() + "/rest";
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/rest";
     }
 
     @Override
-    protected void removeCollection(final XmldbURI collectionUri) throws Exception {
+    protected void removeCollection(final XmldbURI collectionUri) throws IOException {
         final HttpResponse response = executor.execute(Request.Delete(getRestUrl() + collectionUri.toString()))
                 .returnResponse();
 
-        if(response.getStatusLine().getStatusCode() != SC_OK) {
-            throw new Exception("Unable to delete collection: " + collectionUri);
+        if (response.getStatusLine().getStatusCode() != SC_OK) {
+            throw new IOException("Unable to delete collection: " + collectionUri);
         }
     }
 
     @Override
-    protected QueryResultAccessor<Result, Exception> executeXQuery(final String xquery) throws Exception {
+    protected QueryResultAccessor<Result, IOException> executeXQuery(final String xquery) throws IOException {
         final HttpResponse response = postXquery(xquery);
         final HttpEntity entity = response.getEntity();
         try(final InputStream is = entity.getContent()) {
@@ -209,7 +209,7 @@ public class RestBinariesTest extends AbstractBinariesTest<Result, Value, Except
     }
 
     @Override
-    protected long size(final Result result) throws Exception {
+    protected long size(final Result result) {
         return result.getCount();
     }
 

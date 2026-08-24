@@ -45,10 +45,13 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -57,7 +60,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.exist.samples.Samples.SAMPLES;
 
 /**
@@ -91,12 +94,12 @@ public class ShutdownTest {
 	private static final String TEST_QUERY2 = "//user[@id = 'sam']/customer-id[. = '993834']";
 	private static final String TEST_QUERY3 = "//user[email = 'sam@email.com']";
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @Before
-    public void setUp() throws XMLDBException, IOException {
-        final Collection rootCol = existXmldbEmbeddedServer.getRoot();
+    @BeforeEach
+    void setUp() throws XMLDBException, IOException {
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         try (final Collection testCol = DBUtils.addCollection(rootCol, "C1")) {
 
 			try (final InputStream is = SAMPLES.getBiblioSample()) {
@@ -110,20 +113,20 @@ public class ShutdownTest {
 		}
     }
 
-    @After
-    public void tearDown() throws Exception {
-        final Collection rootCol = existXmldbEmbeddedServer.getRoot();
+    @AfterEach
+    void tearDown() throws Exception {
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         DBUtils.removeCollection(rootCol, "C1");
         try (final Resource res = rootCol.getResource("biblio.rdf")) {
 			rootCol.removeResource(res);
 		}
     }
 
-	@Test
-	public void shutdown() throws Exception {
+    @Test
+    void shutdown() throws XMLDBException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		for (int i = 0; i < ITERATIONS; i++) {
-			existXmldbEmbeddedServer.restart();
-			final Collection rootCol = existXmldbEmbeddedServer.getRoot();
+			XMLDB_EMBEDDED_DATABASE.restart();
+			final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
 
 			// after restarting the db, we first try a bunch of queries
 			try (final Collection testCol = rootCol.getChildCollection("C1")) {

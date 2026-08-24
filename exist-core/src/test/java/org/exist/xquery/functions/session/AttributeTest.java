@@ -38,19 +38,19 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.fluent.Request;
 import org.exist.util.UUIDGenerator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AttributeTest extends AbstractSessionTest {
 
     @Test
-    public void getSetAttributeExplicitSessionCreation() throws IOException {
+    void getSetAttributeExplicitSessionCreation() throws IOException {
         // explicitly create a new session
         final Request requestCreateSession = xqueryRequest("session:create()");
         final HttpResponse createSessionResponse = requestCreateSession
@@ -85,7 +85,7 @@ public class AttributeTest extends AbstractSessionTest {
     }
 
     @Test
-    public void getSetAttributeImplicitSessionCreation() throws IOException {
+    void getSetAttributeImplicitSessionCreation() throws IOException {
         // get the value of the attribute named "attr1", and check its value is the empty sequence
         final Request requestGetAttr = xqueryRequest("session:get-attribute('attr1')");
         final HttpResponse getResponse1 = requestGetAttr
@@ -112,7 +112,7 @@ public class AttributeTest extends AbstractSessionTest {
     }
 
     @Test
-    public void getAttributeOnInvalidatedSessionSeparateHttpCalls() throws IOException {
+    void getAttributeOnInvalidatedSessionSeparateHttpCalls() throws IOException {
         // explicitly create a new session
         final Request requestCreateSession = xqueryRequest("session:create()");
         final HttpResponse createSessionResponse = requestCreateSession
@@ -139,7 +139,7 @@ public class AttributeTest extends AbstractSessionTest {
     }
 
     @Test
-    public void getAttributeOnInvalidatedSessionSameHttpCall() throws IOException {
+    void getAttributeOnInvalidatedSessionSameHttpCall() throws IOException {
         // explicitly create a new session
         final Request requestCreateSession = xqueryRequest("session:create()");
         final HttpResponse createSessionResponse = requestCreateSession
@@ -158,7 +158,7 @@ public class AttributeTest extends AbstractSessionTest {
     }
 
     @Test
-    public void setAttributeOnInvalidatedSessionSeparateHttpCalls() throws IOException {
+    void setAttributeOnInvalidatedSessionSeparateHttpCalls() throws IOException {
         // explicitly create a new session
         final Request requestCreateSession = xqueryRequest("session:create()");
         final HttpResponse createSessionResponse = requestCreateSession
@@ -195,7 +195,7 @@ public class AttributeTest extends AbstractSessionTest {
     }
 
     @Test
-    public void setAttributeOnInvalidatedSessionSameHttpCall() throws IOException {
+    void setAttributeOnInvalidatedSessionSameHttpCall() throws IOException {
         // explicitly create a new session
         final Request requestCreateSession = xqueryRequest("session:create()");
         final HttpResponse createSessionResponse = requestCreateSession

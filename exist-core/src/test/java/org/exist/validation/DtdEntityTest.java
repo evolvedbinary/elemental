@@ -46,10 +46,12 @@
 package org.exist.validation;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.*;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 
@@ -60,18 +62,18 @@ import org.xmldb.api.base.XMLDBException;
  */
 public class DtdEntityTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void loadWithEntities() throws XMLDBException {
+    void loadWithEntities() throws XMLDBException {
         final String input = "<a>first empty: &empty; then trade: &trade; </a>";
 
-        try (final Collection col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "entity")) {
-            existEmbeddedServer.storeResource(col, "docname.xml", input.getBytes());
+        try (final Collection col = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "entity")) {
+            XmldbEmbeddedDatabaseExtension.storeResource(col, "docname.xml", input.getBytes());
 
             // should throw XMLDBException
-            ExistXmldbEmbeddedServer.getXMLResource(col, "docname.xml");
+            XmldbEmbeddedDatabaseExtension.getXMLResource(col, "docname.xml");
 
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage().contains("The entity \"empty\" was referenced, but not declared"));
@@ -81,17 +83,18 @@ public class DtdEntityTest {
         fail("Should have thrown XMLDBException");
     }
 
-    @Test @Ignore("Entity resolve bug")
-    public void bugloadWithEntities() throws XMLDBException {
+    @Test
+    @Disabled("Entity resolve bug")
+    void bugloadWithEntities() throws XMLDBException {
         final String input = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 + "<!DOCTYPE procedure PUBLIC \"-//AAAA//DTD Procedure 0.4//EN\" \"aaaa.dtd\" >"
                 + "<a>first empty: &empty; then trade: &trade; </a>";
 
-        try (final Collection col = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "entity")) {
-            existEmbeddedServer.storeResource(col, "docname.xml", input.getBytes(UTF_8));
+        try (final Collection col = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "entity")) {
+            XMLDB_EMBEDDED_DATABASE.storeResource(col, "docname.xml", input.getBytes(UTF_8));
 
             // should throw XMLDBException
-            ExistXmldbEmbeddedServer.getXMLResource(col, "docname.xml");
+            XmldbEmbeddedDatabaseExtension.getXMLResource(col, "docname.xml");
 
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage().contains("The entity \"empty\" was referenced, but not declared"));

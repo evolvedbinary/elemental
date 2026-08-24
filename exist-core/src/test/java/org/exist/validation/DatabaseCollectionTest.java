@@ -48,21 +48,21 @@ package org.exist.validation;
 import org.exist.TestUtils;
 import org.exist.security.Account;
 import org.exist.security.Permission;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 
 import org.exist.xmldb.UserManagementService;
 import org.exist.xmldb.XmldbURI;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *  Created collections needed for validation tests.
@@ -71,15 +71,15 @@ import static org.junit.Assert.assertNotNull;
  */
 public class DatabaseCollectionTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String ROOT_URI = XmldbURI.LOCAL_DB;
     private final static String TEST_COLLECTION = "testValidationDatabaseCollection";
 
-    @Before
-    public void setUp() throws XMLDBException {
-        final CollectionManagementService cms = existServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection test = cms.createCollection(TEST_COLLECTION)) {
             final UserManagementService ums = test.getService(UserManagementService.class);
 
@@ -90,15 +90,15 @@ public class DatabaseCollectionTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
-        final CollectionManagementService cms = existServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION);
     }
-    
+
     @Test
-    public void createCollections() throws XMLDBException {
+    void createCollections() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(ROOT_URI + "/" + TEST_COLLECTION)) {
             final CollectionManagementService service = testCollection.getService(CollectionManagementService.class);
             try (final Collection validationCollection = service.createCollection(TestTools.VALIDATION_HOME_COLLECTION)) {

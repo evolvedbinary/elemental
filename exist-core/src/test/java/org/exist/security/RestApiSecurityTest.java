@@ -55,9 +55,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import xyz.elemental.mediatype.MediaType;
 
 /**
@@ -66,13 +66,13 @@ import xyz.elemental.mediatype.MediaType;
  */
 public class RestApiSecurityTest extends AbstractApiSecurityTest {
 
-    @ClassRule
-    public static ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private final static String baseUri = "/db";
 
     private static String getServerUri() {
-        return "http://localhost:" + existWebServer.getPort() + "/rest";
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/rest";
     }
 
     @Override
@@ -213,7 +213,7 @@ public class RestApiSecurityTest extends AbstractApiSecurityTest {
     }
     
     private Executor getExecutor(final String uid, String pwd) {
-        return Executor.newInstance().authPreemptive(new HttpHost("localhost", existWebServer.getPort())).auth(uid, pwd);
+        return Executor.newInstance().authPreemptive(new HttpHost("localhost", DATABASE_WEB_SERVER.getPort())).auth(uid, pwd);
     }
     
     private String createQueryUri(final String xquery) throws UnsupportedEncodingException {

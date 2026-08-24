@@ -45,21 +45,20 @@
  */
 package org.exist.collections.triggers;
 
-import java.util.Arrays;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -68,29 +67,21 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
 
-import org.junit.runners.Parameterized.Parameters;
-
 /**
  * Test proper configuration of triggers in collection.xconf, in particular if there's
  * only a configuration for the parent collection, but not the child. The trigger should
  * be created with the correct base collection.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@ValueSource(strings = {
+    "/db/triggers",
+    "/db/triggers/sub1",
+    "/db/triggers/sub1/sub2"
+})
 public class TriggerConfigTest {
 
-    private static final Logger LOG = LogManager.getLogger(TriggerConfigTest.class);
-
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
-
-    @Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {
-            { "/db/triggers" },
-            { "/db/triggers/sub1" },
-            { "/db/triggers/sub1/sub2" }
-        });
-    }
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String COLLECTION_CONFIG =
     	"<exist:collection xmlns:exist='http://exist-db.org/collection-config/1.0'>" +
@@ -117,9 +108,9 @@ public class TriggerConfigTest {
     public String testCollection;
 
 
-    @BeforeClass
-    public static void initDB() throws XMLDBException {
-        CollectionManagementService mgmt = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeAll
+    static void initDB() throws XMLDBException {
+        CollectionManagementService mgmt = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCol = mgmt.createCollection("triggers")) {
             mgmt = testCol.getService(CollectionManagementService.class);
             try (final Collection sub1 = mgmt.createCollection("sub1")) {
@@ -130,8 +121,8 @@ public class TriggerConfigTest {
         }
     }
 
-    @After
-    public void cleanDB() throws XMLDBException {
+    @AfterEach
+    void cleanDB() throws XMLDBException {
         try (Collection config = DatabaseManager.getCollection(BASE_URI + "/db/system/config" + testCollection, "admin", "")) {
             if (config != null) {
                 CollectionManagementService mgmt = config.getService(CollectionManagementService.class);
@@ -208,7 +199,7 @@ public class TriggerConfigTest {
 
                 XQueryService qs = root.getService(XQueryService.class);
                 try (final EXistResourceSet result = (EXistResourceSet) qs.query("if (doc-available('" + testCollection + "/messages.xml')) then doc('" + testCollection + "/messages.xml')/events/event[@id = 'STORE-DOCUMENT'] else ()")) {
-                    assertEquals("No trigger should have fired. Configuration was removed", 0, result.getSize());
+                    assertEquals(0, result.getSize(), "No trigger should have fired. Configuration was removed");
                 }
             }
         }

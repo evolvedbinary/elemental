@@ -45,7 +45,6 @@
  */
 package org.exist.dom.persistent;
 
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.EXistException;
 import org.exist.collections.triggers.TriggerException;
 import java.io.IOException;
@@ -68,19 +67,21 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.w3c.dom.DocumentType;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests basic DOM methods like getChildNodes(), getAttribute() ...
@@ -88,7 +89,7 @@ import static org.junit.Assert.assertTrue;
  * @author wolf
  *
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class DocTypeTest {
 
 	public final static Properties OUTPUT_PROPERTIES = new Properties();
@@ -113,8 +114,7 @@ public class DocTypeTest {
 	private static Collection root = null;
 
     @Test
-	public void docType_usingInputSource() throws EXistException, URISyntaxException, LockException, SAXException, PermissionDeniedException, IOException {
-		final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void docType_usingInputSource(final BrokerPool pool) throws EXistException, URISyntaxException, LockException, SAXException, PermissionDeniedException, IOException {
 		final TransactionManager transact = pool.getTransactionManager();
 
 		try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
@@ -141,7 +141,7 @@ public class DocTypeTest {
                 try {
                     serializer.setProperties(OUTPUT_PROPERTIES);
                     final String serialized = serializer.serialize(doc);
-                    assertTrue("Checking for Public Id in output", serialized.contains("-//OASIS//DTD DITA Reference//EN"));
+                    assertTrue(serialized.contains("-//OASIS//DTD DITA Reference//EN"), "Checking for Public Id in output");
                 } finally {
                     broker.returnSerializer(serializer);
                 }
@@ -150,8 +150,7 @@ public class DocTypeTest {
 	}
 
     @Test
-	public void docType_usingString() throws EXistException, PermissionDeniedException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void docType_usingString(final BrokerPool pool) throws EXistException, PermissionDeniedException, SAXException {
 		try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final LockedDocument lockedDoc = broker.getXMLResource(root.getURI().append(XmldbURI.create("test.xml")),LockMode.READ_LOCK)) {
             final DocumentImpl doc = lockedDoc.getDocument();
@@ -166,7 +165,7 @@ public class DocTypeTest {
             try {
                 serializer.setProperties(OUTPUT_PROPERTIES);
                 String serialized = serializer.serialize(doc);
-                assertTrue("Checking for Public Id in output", serialized.contains("-//OASIS//DTD DITA Topic//EN"));
+                assertTrue(serialized.contains("-//OASIS//DTD DITA Topic//EN"), "Checking for Public Id in output");
             } finally {
                 broker.returnSerializer(serializer);
             }
@@ -174,12 +173,11 @@ public class DocTypeTest {
         }
 	}
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-	@BeforeClass
-    public static void setUp() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, DatabaseConfigurationException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void setUp(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, DatabaseConfigurationException {
 	    final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
@@ -196,9 +194,8 @@ public class DocTypeTest {
         }
 	}
 
-    @AfterClass
-    public static void tearDown() throws PermissionDeniedException, IOException, TriggerException, EXistException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterAll
+    static void tearDown(final BrokerPool pool) throws PermissionDeniedException, IOException, TriggerException, EXistException {
 	    final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {

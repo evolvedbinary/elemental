@@ -59,7 +59,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
@@ -69,12 +69,14 @@ import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
-import org.junit.*;
+import org.junit.jupiter.api.Disabled;
 
-import static org.junit.Assert.assertEquals;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests the indexer.
@@ -83,8 +85,8 @@ import xyz.elemental.mediatype.MediaType;
  */
 public class Indexer3Test {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private final static String XML1 =
             "<?xml version=\"1.0\"?>\n" +
@@ -349,8 +351,7 @@ public class Indexer3Test {
                     "return " +
                     "    <result>{$test/k}</result>";
 
-    private void store_suppress_type(final String propValue, final String xml) throws PermissionDeniedException, IOException, EXistException, SAXException, LockException, AuthenticationException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void store_suppress_type(final BrokerPool pool, final String propValue, final String xml) throws PermissionDeniedException, IOException, EXistException, SAXException, LockException, AuthenticationException {
         pool.getConfiguration().setProperty(Indexer.PROPERTY_SUPPRESS_WHITESPACE, propValue);
         // Make sure to keep preserve whitespace mixed content stable even if default changes. fixme! - should test both. /ljo
         boolean propWSMValue = false;
@@ -372,9 +373,8 @@ public class Indexer3Test {
         }
     }
 
-    private String store_and_retrieve_suppress_type(final String type, final String typeXml, final String typeXquery) throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        store_suppress_type(type, typeXml);
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private String store_and_retrieve_suppress_type(final BrokerPool pool, final String type, final String typeXml, final String typeXquery) throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
+        store_suppress_type(pool, type, typeXml);
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final StringBuilderWriter out = new StringBuilderWriter();
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(typeXquery), false, null, null, null, null, null)) {
@@ -394,157 +394,157 @@ public class Indexer3Test {
     }
 
     @Test
-    public void retrieve_suppress_ws_none1() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML1, store_and_retrieve_suppress_type("none", XML1, XQUERY));
+    void retrieve_suppress_ws_none1(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML1, store_and_retrieve_suppress_type(pool, "none", XML1, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_none2() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML2, store_and_retrieve_suppress_type("none", XML2, XQUERY));
+    void retrieve_suppress_ws_none2(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML2, store_and_retrieve_suppress_type(pool, "none", XML2, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_none3() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML3, store_and_retrieve_suppress_type("none", XML3, XQUERY));
+    void retrieve_suppress_ws_none3(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML3, store_and_retrieve_suppress_type(pool, "none", XML3, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_none4() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML4, store_and_retrieve_suppress_type("none", XML4, XQUERY));
+    void retrieve_suppress_ws_none4(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML4, store_and_retrieve_suppress_type(pool, "none", XML4, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_none5() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML5, store_and_retrieve_suppress_type("none", XML5, XQUERY));
+    void retrieve_suppress_ws_none5(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML5, store_and_retrieve_suppress_type(pool, "none", XML5, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_none6() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML6, store_and_retrieve_suppress_type("none", XML6, XQUERY));
+    void retrieve_suppress_ws_none6(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML6, store_and_retrieve_suppress_type(pool, "none", XML6, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_none7() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_NONE_XML7, store_and_retrieve_suppress_type("none", XML7, XQUERY));
+    void retrieve_suppress_ws_none7(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_NONE_XML7, store_and_retrieve_suppress_type(pool, "none", XML7, XQUERY));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void retrieve_suppress_ws_leading1() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML1, store_and_retrieve_suppress_type("leading", XML1, XQUERY));
+    void retrieve_suppress_ws_leading1(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML1, store_and_retrieve_suppress_type(pool, "leading", XML1, XQUERY));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void retrieve_suppress_ws_leading2() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML2, store_and_retrieve_suppress_type("leading", XML2, XQUERY));
+    void retrieve_suppress_ws_leading2(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML2, store_and_retrieve_suppress_type(pool, "leading", XML2, XQUERY));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void retrieve_suppress_ws_leading3() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML3, store_and_retrieve_suppress_type("leading", XML3, XQUERY));
+    void retrieve_suppress_ws_leading3(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML3, store_and_retrieve_suppress_type(pool, "leading", XML3, XQUERY));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void retrieve_suppress_ws_leading4() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML4, store_and_retrieve_suppress_type("leading", XML4, XQUERY));
+    void retrieve_suppress_ws_leading4(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML4, store_and_retrieve_suppress_type(pool, "leading", XML4, XQUERY));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void retrieve_suppress_ws_leading5() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML5, store_and_retrieve_suppress_type("leading", XML5, XQUERY));
-    }
-
-    @Test
-    public void retrieve_suppress_ws_leading6() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML6, store_and_retrieve_suppress_type("leading", XML6, XQUERY));
+    void retrieve_suppress_ws_leading5(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML5, store_and_retrieve_suppress_type(pool, "leading", XML5, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_leading7() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML7, store_and_retrieve_suppress_type("leading", XML7, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_trailing1() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML1, store_and_retrieve_suppress_type("trailing", XML1, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_trailing2() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML2, store_and_retrieve_suppress_type("trailing", XML2, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_trailing3() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML3, store_and_retrieve_suppress_type("trailing", XML3, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_trailing4() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML4, store_and_retrieve_suppress_type("trailing", XML4, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_trailing5() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML5, store_and_retrieve_suppress_type("trailing", XML5, XQUERY));
+    void retrieve_suppress_ws_leading6(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML6, store_and_retrieve_suppress_type(pool, "leading", XML6, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_trailing6() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML6, store_and_retrieve_suppress_type("trailing", XML6, XQUERY));
+    void retrieve_suppress_ws_leading7(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_LEADING_XML7, store_and_retrieve_suppress_type(pool, "leading", XML7, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_trailing1(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML1, store_and_retrieve_suppress_type(pool, "trailing", XML1, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_trailing2(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML2, store_and_retrieve_suppress_type(pool, "trailing", XML2, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_trailing3(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML3, store_and_retrieve_suppress_type(pool, "trailing", XML3, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_trailing4(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML4, store_and_retrieve_suppress_type(pool, "trailing", XML4, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_trailing5(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML5, store_and_retrieve_suppress_type(pool, "trailing", XML5, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_trailing7() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML7, store_and_retrieve_suppress_type("trailing", XML7, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_both1() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML1, store_and_retrieve_suppress_type("both", XML1, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_both2() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML2, store_and_retrieve_suppress_type("both", XML2, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_both3() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML3, store_and_retrieve_suppress_type("both", XML3, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_both4() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML4, store_and_retrieve_suppress_type("both", XML4, XQUERY));
-    }
-
-    @Ignore
-    @Test
-    public void retrieve_suppress_ws_both5() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML5, store_and_retrieve_suppress_type("both", XML5, XQUERY));
+    void retrieve_suppress_ws_trailing6(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML6, store_and_retrieve_suppress_type(pool, "trailing", XML6, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_both6() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML6, store_and_retrieve_suppress_type("both", XML6, XQUERY));
+    void retrieve_suppress_ws_trailing7(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_TRAILING_XML7, store_and_retrieve_suppress_type(pool, "trailing", XML7, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_both1(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML1, store_and_retrieve_suppress_type(pool, "both", XML1, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_both2(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML2, store_and_retrieve_suppress_type(pool, "both", XML2, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_both3(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML3, store_and_retrieve_suppress_type(pool, "both", XML3, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_both4(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML4, store_and_retrieve_suppress_type(pool, "both", XML4, XQUERY));
+    }
+
+    @Disabled
+    @Test
+    void retrieve_suppress_ws_both5(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML5, store_and_retrieve_suppress_type(pool, "both", XML5, XQUERY));
     }
 
     @Test
-    public void retrieve_suppress_ws_both7() throws EXistException, IOException, LockException, AuthenticationException, PermissionDeniedException, SAXException, XPathException {
-        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML7, store_and_retrieve_suppress_type("both", XML7, XQUERY));
+    void retrieve_suppress_ws_both6(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML6, store_and_retrieve_suppress_type(pool, "both", XML6, XQUERY));
+    }
+
+    @Test
+    void retrieve_suppress_ws_both7(final BrokerPool pool) throws LockException, AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException, SAXException {
+        assertEquals(RESULT_SUPPRESS_WS_BOTH_XML7, store_and_retrieve_suppress_type(pool, "both", XML7, XQUERY));
     }
 }

@@ -50,12 +50,14 @@ import org.exist.dom.memtree.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
@@ -64,22 +66,22 @@ import javax.xml.transform.Source;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ParseHtmlTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer server = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void parseHtml() throws EXistException, PermissionDeniedException, XPathException, IOException {
+    void parseHtml(final BrokerPool pool) throws EXistException, PermissionDeniedException, XPathException {
         final String query = "util:parse-html(\"<p>hello <img src='1.jpg'></p>\")";
 
-        try (final DBBroker broker = server.getBrokerPool().getBroker();
+        try (final DBBroker broker = pool.getBroker();
              final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
             final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
-            assertTrue(result.itemAt(0) instanceof DocumentImpl);
+            assertInstanceOf(DocumentImpl.class, result.itemAt(0));
 
             final Source expected = Input.fromString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><HTML><head xmlns=\"http://www.w3.org/1999/xhtml\"/><BODY><p>hello <img src=\"1.jpg\"/></p></BODY></HTML>").build();
             final Source actual = Input.fromDocument((DocumentImpl) result.itemAt(0)).build();
@@ -90,7 +92,7 @@ public class ParseHtmlTest {
                     .checkForIdentical()
                     .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
     }
 }

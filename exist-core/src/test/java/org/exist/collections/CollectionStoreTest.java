@@ -56,14 +56,14 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.DBBroker.PreserveType;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
@@ -77,15 +77,12 @@ import java.nio.file.Files;
 import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CollectionStoreTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_XML_DOC_URI = XmldbURI.create("test.xml");
     private static final String TEST_XML_DOC = "<test>" + System.currentTimeMillis() + "</test>";
@@ -94,8 +91,7 @@ public class CollectionStoreTest {
     private static final String TEST_BIN_DOC = "test " + System.currentTimeMillis();
 
     @Test
-    public void store() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool =  existEmbeddedServer.getBrokerPool();
+    void store(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             try (final Collection col = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI)) {
@@ -118,7 +114,7 @@ public class CollectionStoreTest {
                                 .checkForSimilar()
                                 .build();
 
-                        assertFalse(diff.toString(), diff.hasDifferences());
+                        assertFalse(diff.hasDifferences(), diff.toString());
                     }
                 }
             }
@@ -128,17 +124,16 @@ public class CollectionStoreTest {
     }
 
     @Test
-    public void storeBinary() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        storeBinary(PreserveType.NO_PRESERVE);
+    void storeBinary(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
+        storeBinary(pool, PreserveType.NO_PRESERVE);
     }
 
     @Test
-    public void storeBinary_preserveOnCopy() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        storeBinary(PreserveType.PRESERVE);
+    void storeBinary_preserveOnCopy(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
+        storeBinary(pool, PreserveType.PRESERVE);
     }
 
-    private void storeBinary(final PreserveType preserveOnCopy) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        final BrokerPool pool =  existEmbeddedServer.getBrokerPool();
+    private void storeBinary(final BrokerPool pool, final PreserveType preserveOnCopy) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             try (final Collection col = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI)) {
@@ -158,7 +153,7 @@ public class CollectionStoreTest {
                     col.close();
 
                     if (lockedDoc != null) {
-                        assertTrue(lockedDoc.getDocument() instanceof BinaryDocument);
+                        assertInstanceOf(BinaryDocument.class, lockedDoc.getDocument());
 
                         final BinaryDocument doc = (BinaryDocument)lockedDoc.getDocument();
                         final Try<String, IOException> docContent = broker.withBinaryFile(transaction, doc, is ->

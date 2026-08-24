@@ -59,59 +59,58 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.exist.samples.Samples.SAMPLES;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 public class CopyResourceRecoveryTest {
 
-    @Rule
-    public ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void storeAndRead() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, URISyntaxException {
+    void storeAndRead(final BrokerPool pool) throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, URISyntaxException {
         final String testCollectionName = "copyResource";
         final String subCollection = "storeAndRead";
 
         BrokerPool.FORCE_CORRUPTION = true;
-        store(testCollectionName, subCollection);
+        store(pool, testCollectionName, subCollection);
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
 
         BrokerPool.FORCE_CORRUPTION = false;
-        read(testCollectionName);
+        read(pool, testCollectionName);
     }
 
     @Test
-    public void storeAndReadAborted() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, URISyntaxException {
+    void storeAndReadAborted(final BrokerPool pool) throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, URISyntaxException {
         final String testCollectionName = "copyResource";
         final String subCollection = "storeAndReadAborted";
 
 
         BrokerPool.FORCE_CORRUPTION = true;
-        storeAborted(testCollectionName, subCollection);
+        storeAborted(pool, testCollectionName, subCollection);
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
 
-        readAborted(testCollectionName, subCollection);
+        readAborted(pool, testCollectionName, subCollection);
     }
 
-    private void store(final String testCollectionName, final String subCollection) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void store(final BrokerPool pool, final String testCollectionName, final String subCollection) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -153,13 +152,12 @@ public class CopyResourceRecoveryTest {
         }
     }
 
-    private void read(final String testCollectionName) throws EXistException, PermissionDeniedException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void read(final BrokerPool pool, final String testCollectionName) throws EXistException, PermissionDeniedException, SAXException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             final Serializer serializer = broker.borrowSerializer();
 
 			try(final LockedDocument lockedDoc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append("new_test.xml"), LockMode.READ_LOCK)) {
-				assertNotNull("Document should not be null", lockedDoc);
+				assertNotNull(lockedDoc, "Document should not be null");
 				final String data = serializer.serialize(lockedDoc.getDocument());
 				assertNotNull(data);
             } finally {
@@ -168,8 +166,7 @@ public class CopyResourceRecoveryTest {
 		}
 	}
 
-    private void storeAborted(final String testCollectionName, final String subCollection) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void storeAborted(final BrokerPool pool, final String testCollectionName, final String subCollection) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -211,13 +208,12 @@ public class CopyResourceRecoveryTest {
         }
     }
 
-    private void readAborted(final String testCollectionName, final String subCollection) throws EXistException, PermissionDeniedException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void readAborted(final BrokerPool pool, final String testCollectionName, final String subCollection) throws EXistException, PermissionDeniedException, SAXException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             final Serializer serializer = broker.borrowSerializer();
 
 			try(final LockedDocument lockedDoc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append(subCollection).append("test2.xml"), LockMode.READ_LOCK)) {
-				assertNotNull("Document should not be null", lockedDoc);
+				assertNotNull(lockedDoc, "Document should not be null");
 				final String data = serializer.serialize(lockedDoc.getDocument());
 				assertNotNull(data);
             } finally {
@@ -225,13 +221,13 @@ public class CopyResourceRecoveryTest {
             }
 
 			try(final LockedDocument lockedDoc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append("new_test2.xml"), LockMode.READ_LOCK)) {
-                assertNull("Document should not exist as copy was not committed", lockedDoc);
+                assertNull(lockedDoc, "Document should not exist as copy was not committed");
             }
 		}
 	}
 
-    @After
-    public void cleanup() {
+    @AfterEach
+    void cleanup() {
         BrokerPool.FORCE_CORRUPTION = false;
     }
 }

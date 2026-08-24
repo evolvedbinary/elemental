@@ -48,33 +48,32 @@ package org.exist.xquery;
 import javax.xml.transform.OutputKeys;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for various constructed node operations (in-memory nodes)
  * @author <a href="mailto:adam.retter@devon.gov.uk">Adam Retter</a>
  * @author ljo
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class ConstructedNodesTest {
 
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-	/**
-	 * Iteratively constructs some nodes
-	 */
+    /**
+     * Iteratively constructs some nodes
+     */
     @Test
-	public void iterateConstructNodes() throws XPathException, XMLDBException {
+    void iterateConstructNodes() throws XPathException, XMLDBException {
 		String xquery =
 				"declare variable $categories := \n" +
 				"	<categories>\n" +
@@ -100,7 +99,7 @@ public class ConstructedNodesTest {
 			"<option value=\"4\">Dairy</option>"
 		};
 
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
 			assertEquals(expectedResults.length, result.getSize());
 			for (int i = 0; i < result.getSize(); i++) {
 				try (final Resource resource = result.getResource(i)) {
@@ -109,12 +108,12 @@ public class ConstructedNodesTest {
 			}
 		}
 	}
-	
-	/***
-	 * Test sorting of constructed nodes
-	 */
+
+    /***
+     * Test sorting of constructed nodes
+     */
     @Test
-	public void constructedNodesSort() throws XMLDBException {
+    void constructedNodesSort() throws XMLDBException {
 		String xquery =
 			"declare variable $categories := \n" +
 			"	<categories>\n" +
@@ -134,7 +133,7 @@ public class ConstructedNodesTest {
 				"<category uid=\"1\">Fruit</category>"
 		};
 
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
 			assertEquals(expectedResults.length, result.getSize());
 			for (int i = 0; i < result.getSize(); i++) {
 				try (final Resource resource = result.getResource(i)) {
@@ -143,12 +142,12 @@ public class ConstructedNodesTest {
 			}
 		}
 	}
-	
-	/**
-	 * Test retrieving sorted nodes by position
-	 */
+
+    /**
+     * Test retrieving sorted nodes by position
+     */
     @Test
-	public void constructedNodesPosition() throws XMLDBException {
+    void constructedNodesPosition() throws XMLDBException {
 		String xquery =
 			"declare variable $categories := \n" +
 			"	<categories>\n" +
@@ -167,7 +166,7 @@ public class ConstructedNodesTest {
 				"<category uid=\"1\">Fruit</category>"
 		};
 
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
 			assertEquals(expectedResults.length, result.getSize());
 			for (int i = 0; i < result.getSize(); i++) {
 				try (final Resource resource = result.getResource(i)) {
@@ -176,14 +175,14 @@ public class ConstructedNodesTest {
 			}
 		}
 	}
-	
-	/**
-	 * Test storing constructed (text) nodes
-	 * Tests absence of bug #2646744 which gave err:XPTY0018 for $hello-text-first
-	 * cf org.exist.xquery.XQueryTest.testXPTY0018_mixedsequences_2429093()
-	 */
+
+    /**
+     * Test storing constructed (text) nodes
+     * Tests absence of bug #2646744 which gave err:XPTY0018 for $hello-text-first
+     * cf org.exist.xquery.XQueryTest.testXPTY0018_mixedsequences_2429093()
+     */
     @Test
-	public void constructedTextNodes() throws XMLDBException {
+    void constructedTextNodes() throws XMLDBException {
 		final String xquery =
 			"declare variable $hello-text-first := <a>{ \"hello\" }<b>world</b></a>;\n" +
 			"declare variable $hello-text-last := <a><b>world</b>{ \"hello\" }</a>;\n" +
@@ -194,7 +193,7 @@ public class ConstructedNodesTest {
 				"<a><b>world</b>hello</a>"
 				};
 
-		final XQueryService xpathQueryService = existEmbeddedServer.getRoot().getService(XQueryService.class);
+		final XQueryService xpathQueryService = XMLDB_EMBEDDED_DATABASE.getRoot().getService(XQueryService.class);
 
         final String oki = xpathQueryService.getProperty(OutputKeys.INDENT);
 		xpathQueryService.setProperty(OutputKeys.INDENT, "no");

@@ -572,12 +572,6 @@
             <artifactId>jgrapht-opt</artifactId>
             <version>1.5.2</version>
         </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <!-- scope>test</scope --> <!-- not just test scope, as needed for org.exist.test -->
-        </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
@@ -600,7 +594,10 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -629,11 +626,6 @@
         <dependency>
             <groupId>org.xmlunit</groupId>
             <artifactId>xmlunit-matchers</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.googlecode.junit-toolbox</groupId>
-            <artifactId>junit-toolbox</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -722,6 +714,26 @@
         </testResources>
 
         <plugins>
+
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>6.24.0</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.java.testing.junit5.JUnit5BestPractices</recipe>
+                    </activeRecipes>
+                    <exclusions>exist-core/src/test/java/org/exist/util/io/ByteBufferInputStreamTest.java,exist-core/src/test/java/org/exist/xquery/value/TimeTest.java,exist-core/src/test/java/org/exist/xquery/value/DateTest.java,exist-core/src/test/java/org/exist/xquery/value/DurationTest.java,exist-core/src/test/java/org/exist/xquery/value/DateTimeTest.java,exist-core/src/test/java/org/exist/security/XMLDBSecurityTest.java,exist-core/src/test/java/org/exist/storage/journal/JournalTest.java</exclusions>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-testing-frameworks</artifactId>
+                        <version>3.22.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>

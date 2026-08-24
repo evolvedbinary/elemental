@@ -50,13 +50,13 @@ import org.exist.util.LockException;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.StreamableDigest;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,9 +64,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test expectations to check that the correct entries
@@ -80,17 +78,18 @@ import static org.junit.Assert.assertTrue;
  */
 public class JournalBinaryTest extends AbstractJournalTest<JournalBinaryTest.BinaryDocLocator> {
 
-    @ClassRule
-    public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
+
     private static Path testFile1 = null;
     private static Path testFile2 = null;
 
-    @BeforeClass
-    public static void storeTempBinaryDocs() throws IOException {
-        testFile1 = temporaryFolder.getRoot().toPath().resolve("blob1.bin");
+    @BeforeAll
+    static void storeTempBinaryDocs() throws IOException {
+        testFile1 = TEMPORARY_FOLDER.toPath().resolve("blob1.bin");
         Files.write(testFile1, Arrays.asList("blob1"), CREATE_NEW);
 
-        testFile2 = temporaryFolder.getRoot().toPath().resolve("blob2.bin");
+        testFile2 = TEMPORARY_FOLDER.toPath().resolve("blob2.bin");
         Files.write(testFile2, Arrays.asList("blob2"), CREATE_NEW);
     }
 
@@ -446,7 +445,7 @@ public class JournalBinaryTest extends AbstractJournalTest<JournalBinaryTest.Bin
             final InputSource data, final String dbFilename) throws EXistException, PermissionDeniedException, IOException,
             SAXException, LockException {
 
-        assertTrue(data instanceof FileInputSource);
+        assertInstanceOf(FileInputSource.class, data);
 
         final MediaType binMediaType = broker.getBrokerPool().getMediaTypeService().getMediaTypeResolver().forUnknown();
         broker.storeDocument(transaction, XmldbURI.create(dbFilename), data, binMediaType, collection);

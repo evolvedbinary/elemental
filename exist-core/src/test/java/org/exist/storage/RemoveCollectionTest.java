@@ -54,17 +54,18 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.TestDataGenerator;
-import org.junit.After;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.InputSource;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -79,8 +80,8 @@ import java.util.Optional;
  */
 public class RemoveCollectionTest {
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    // we don't use @RegisterExtension as we want to force corruption in some tests
+    private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     private final static String generateXQ =
             "declare function local:random-sequence($length as xs:integer, $G as map(xs:string, item())) {\n"
@@ -108,7 +109,7 @@ public class RemoveCollectionTest {
     private final static int COUNT = 300;
 
     @Test
-    public void removeCollectionTests() throws PermissionDeniedException, IOException, LockException, CollectionConfigurationException, SAXException, EXistException, DatabaseConfigurationException {
+    void removeCollectionTests() throws PermissionDeniedException, IOException, LockException, CollectionConfigurationException, SAXException, EXistException, DatabaseConfigurationException {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = startDb();
         removeCollection(pool);
@@ -234,7 +235,7 @@ public class RemoveCollectionTest {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
             if (checkResource) {
                 lockedDoc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI.append("hamlet.xml"), LockMode.READ_LOCK);
-                assertNull("Resource should have been removed", lockedDoc);
+                assertNull(lockedDoc, "Resource should have been removed");
             }
 	    } finally {
             if (lockedDoc != null) {
@@ -244,17 +245,17 @@ public class RemoveCollectionTest {
     }
 
     private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException {
-        existEmbeddedServer.startDb();
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.startDb();
+        return embeddedDatabase.getBrokerPool();
     }
 
-    @After
-    public void stopDb() {
-        existEmbeddedServer.stopDb();
+    @AfterEach
+    void stopDb() {
+        embeddedDatabase.stopDb();
     }
 
-    @AfterClass
-    public static void cleanup() {
+    @AfterAll
+    static void cleanup() {
         BrokerPool.FORCE_CORRUPTION = false;
     }
 }

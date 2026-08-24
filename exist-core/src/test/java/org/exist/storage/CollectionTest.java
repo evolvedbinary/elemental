@@ -60,13 +60,14 @@ import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
-import org.junit.Test;
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author wolf
@@ -76,11 +77,11 @@ public class CollectionTest {
     
     private static XmldbURI TEST_COLLECTION_URI = XmldbURI.ROOT_COLLECTION_URI.append("test");
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    // we don't use @RegisterExtension as we want to force corruption in some tests
+    private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void storeRead() throws EXistException, IOException, PermissionDeniedException, BTreeException, DatabaseConfigurationException, TriggerException, LockException {
+    void storeRead() throws EXistException, IOException, PermissionDeniedException, BTreeException, DatabaseConfigurationException, TriggerException, LockException {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = startDb();
 
@@ -123,18 +124,18 @@ public class CollectionTest {
     }
 
     private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException {
-        existEmbeddedServer.startDb();
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.startDb();
+        return embeddedDatabase.getBrokerPool();
     }
 
     private BrokerPool restartDb() throws EXistException, IOException, DatabaseConfigurationException {
-        existEmbeddedServer.restart(false);
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.restart(false);
+        return embeddedDatabase.getBrokerPool();
     }
 
-    @After
-    public void stopDb() {
+    @AfterEach
+    void stopDb() {
         BrokerPool.FORCE_CORRUPTION = false;
-        existEmbeddedServer.stopDb();
+        embeddedDatabase.stopDb();
     }
 }

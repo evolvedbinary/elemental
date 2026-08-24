@@ -45,31 +45,31 @@
  */
 package org.exist.xquery.functions.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XPathQueryService;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Due to limitation of ExistXmldbEmbeddedServer we need to split this test to two files.
- * It's not possible to have two instances of ExistXmldbEmbeddedServer at the same time.
+ * Due to limitation of XmldbEmbeddedDatabaseExtension we need to split this test to two files.
+ * It's not possible to have two instances of XmldbEmbeddedDatabaseExtension at the same time.
  */
 public class DbStoreTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testAnyUri";
 
     @Test
-    public final void simpleTest() throws XMLDBException {
-        final Collection rootCol = existEmbeddedServer.getRoot();
+    final void simpleTest() throws XMLDBException {
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         try (final Collection testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION)) {
             assertNotNull(testCol);
 

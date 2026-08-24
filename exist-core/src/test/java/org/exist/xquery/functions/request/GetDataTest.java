@@ -58,13 +58,14 @@ import java.io.InputStream;
 
 import org.exist.http.RESTTest;
 import org.exist.xmldb.EXistResource;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -76,7 +77,7 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 /**
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-public class GetDataTest extends RESTTest {
+class GetDataTest extends RESTTest {
 
     private final static String CONTAINER_ELEMENT_NAME = "data";
     private final static String XQUERY = wrapInElement("{request:get-data()}");
@@ -88,8 +89,8 @@ public class GetDataTest extends RESTTest {
         return value == null || value.length() == 0 ? "<" + CONTAINER_ELEMENT_NAME + "/>" : "<" + CONTAINER_ELEMENT_NAME + ">" + value + "</" + CONTAINER_ELEMENT_NAME + ">";
     }
 
-    @BeforeClass
-    public static void beforeClass() throws XMLDBException {
+    @BeforeAll
+    static void beforeClass() throws XMLDBException {
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
         try (final BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class)) {
             ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
@@ -100,8 +101,8 @@ public class GetDataTest extends RESTTest {
         }
     }
 
-    @AfterClass
-    public static void afterClass() throws XMLDBException {
+    @AfterAll
+    static void afterClass() throws XMLDBException {
         try (final BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME)) {
             root.removeResource(res);
         }
@@ -112,15 +113,15 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveEmpty() throws IOException {
+    void retrieveEmpty() throws IOException {
         Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
             .addHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM);
 
         testRequest(post, wrapInElement("").getBytes());
     }
-    
+
     @Test
-    public void retrieveBinaryHttp09() throws IOException {
+    void retrieveBinaryHttp09() throws IOException {
         final String testData = "12345";
 
         final Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -132,7 +133,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveBinaryHttp10() throws IOException {
+    void retrieveBinaryHttp10() throws IOException {
         final String testData = "12345";
 
         final Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -143,7 +144,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveBinaryHttp11() throws IOException {
+    void retrieveBinaryHttp11() throws IOException {
         final String testData = "12345";
 
         final Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -154,7 +155,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveBinaryHttp11ChunkedTransferEncoding() throws IOException {
+    void retrieveBinaryHttp11ChunkedTransferEncoding() throws IOException {
         final String testData = "12345";
 
         try (final InputStream is = new UnsynchronizedByteArrayInputStream(testData.getBytes(UTF_8))) {
@@ -167,7 +168,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveXmlHttp09() throws IOException {
+    void retrieveXmlHttp09() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         final Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -179,7 +180,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveXmlHttp10() throws IOException {
+    void retrieveXmlHttp10() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         final Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -190,7 +191,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveXmlHttp11() throws IOException {
+    void retrieveXmlHttp11() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         final Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -201,7 +202,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveXmlHttp11ChunkedTransferEncoding() throws IOException {
+    void retrieveXmlHttp11ChunkedTransferEncoding() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         try (final InputStream is = new UnsynchronizedByteArrayInputStream(testData.getBytes(UTF_8))) {
@@ -214,7 +215,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveMalformedXmlFallbackToString() throws IOException {
+    void retrieveMalformedXmlFallbackToString() throws IOException {
         final String testData = "<a><b></a>";
 
         Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -224,7 +225,7 @@ public class GetDataTest extends RESTTest {
     }
 
     @Test
-    public void retrieveString() throws IOException {
+    void retrieveString() throws IOException {
         final String testData = "12345";
 
         Request post = Request.Post(getCollectionRootUri() + "/" + XQUERY_FILENAME)

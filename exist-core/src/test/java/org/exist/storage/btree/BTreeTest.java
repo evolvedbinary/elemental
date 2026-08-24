@@ -48,16 +48,21 @@ package org.exist.storage.btree;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.EXistException;
 import org.exist.storage.BrokerPool;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.*;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.value.AtomicValue;
 import org.exist.xquery.value.DoubleValue;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,8 +84,8 @@ public class BTreeTest {
     private static final int COUNT = 5000;
 
     @Test
-    public void simpleUpdates() throws DBException, IOException, TerminatedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void simpleUpdates() throws DBException, IOException, TerminatedException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.create((short) -1);
 
@@ -115,8 +120,8 @@ public class BTreeTest {
     }
 
     @Test
-    public void strings() throws DBException, IOException, TerminatedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void strings() throws DBException, IOException, TerminatedException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.create((short) -1);
 
@@ -165,16 +170,16 @@ public class BTreeTest {
             //Testing IndexQuery.LT
             query = new IndexQuery(IndexQuery.LT, new Value(prefixStr));
             btree.query(query, new StringIndexCallback());
-            assertEquals(count, 0);
+            assertEquals(0, count);
         }
     }
 
     @Test
-    public void longStrings() throws DBException, IOException {
+    void longStrings() throws DBException, IOException {
         // Test storage of long keys up to half of the page size (4k)
         final Random rand = new Random(System.currentTimeMillis());
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.setSplitFactor(0.7);
             btree.create((short) -1);
@@ -208,8 +213,8 @@ public class BTreeTest {
     }
 
     @Test
-    public void stringsTruncated() throws DBException, IOException, TerminatedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void stringsTruncated() throws DBException, IOException, TerminatedException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.create((short) -1);
 
@@ -236,8 +241,8 @@ public class BTreeTest {
     }
 
     @Test
-    public void removeStrings() throws DBException, IOException, TerminatedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void removeStrings() throws DBException, IOException, TerminatedException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.create((short) -1);
 
@@ -273,8 +278,8 @@ public class BTreeTest {
     }
 
     @Test
-    public void numbers() throws TerminatedException, DBException, EXistException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void numbers() throws TerminatedException, DBException, EXistException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.create((short) -1);
 
@@ -312,8 +317,8 @@ public class BTreeTest {
     }
 
     @Test
-    public void numbersWithPrefix() throws DBException, EXistException, IOException, TerminatedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void numbersWithPrefix() throws DBException, EXistException, IOException, TerminatedException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final BTree btree = new BTree(pool, BTREE_TEST_FILE_ID, BTREE_TEST_FILE_VERSION, false, pool.getCacheManager(), file)) {
             btree.create((short) -1);
 
@@ -372,20 +377,19 @@ public class BTreeTest {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @Rule
-    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir public File TEMPORARY_FOLDER;
 
-    @Before
-    public void initialize() throws IOException {
-        file = temporaryFolder.newFile("test.dbx").toPath();
+    @BeforeEach
+    void initialize() throws IOException {
+        file = Files.createFile(TEMPORARY_FOLDER.toPath().resolve("test.dbx"));
         assertTrue(Files.exists(file));
     }
 
-    @After
-    public void cleanUp() {
+    @AfterEach
+    void cleanUp() {
         FileUtils.deleteQuietly(file);
     }
 

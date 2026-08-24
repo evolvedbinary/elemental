@@ -56,7 +56,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
@@ -65,7 +65,10 @@ import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.Disabled;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -81,18 +84,15 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class TransformTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_IDS_COLLECTION = XmldbURI.create("/db/transform-ids-test");
 
@@ -237,8 +237,8 @@ public class TransformTest {
      * {@see https://github.com/eXist-db/exist/issues/1506}
      */
     @Test
-    public void keys() throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void keys() throws EXistException, PermissionDeniedException, XPathException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(LIST_OPS_XQUERY), false, null, null, null, null, null)) {
 
@@ -247,7 +247,7 @@ public class TransformTest {
 
             assertEquals(1, sequence.getItemCount());
             final Item item = sequence.itemAt(0);
-            assertTrue(item instanceof Element);
+            assertInstanceOf(Element.class, item);
             final Element dsn_flat = ((Element)item);
             assertEquals("DSN_FLAT", dsn_flat.getNodeName());
 
@@ -260,10 +260,10 @@ public class TransformTest {
         }
     }
 
-    @Ignore("https://github.com/eXist-db/exist/issues/2096")
+    @Disabled("https://github.com/eXist-db/exist/issues/2096")
     @Test
-    public void xslDocument() throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void xslDocument() throws EXistException, PermissionDeniedException, XPathException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(DOCUMENT_XSLT_QUERY), false, null, null, null, null, null)) {
             final Sequence sequence = queryResult.result;
@@ -283,7 +283,7 @@ public class TransformTest {
                     .checkForSimilar()
                     .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
     }
 
@@ -291,7 +291,7 @@ public class TransformTest {
      * {@see https://github.com/eXist-db/exist/issues/1691}
      */
     @Test
-    public void transformReindexTransform() throws XPathException, PermissionDeniedException, EXistException, IOException, LockException {
+    void transformReindexTransform() throws XPathException, PermissionDeniedException, EXistException, IOException, LockException {
         transform1(TEST_SIMPLE_XML_COLLECTION);
         reindex(TEST_SIMPLE_XML_COLLECTION);
         transform1(TEST_SIMPLE_XML_COLLECTION);
@@ -301,7 +301,7 @@ public class TransformTest {
      * {@see https://github.com/eXist-db/exist/issues/1691}
      */
     @Test
-    public void transformReindexTransform_with_comment() throws XPathException, PermissionDeniedException, EXistException, IOException, LockException {
+    void transformReindexTransform_with_comment() throws XPathException, PermissionDeniedException, EXistException, IOException, LockException {
         transform1(TEST_SIMPLE_XML_WITH_COMMENT_COLLECTION);
         reindex(TEST_SIMPLE_XML_WITH_COMMENT_COLLECTION);
         transform1(TEST_SIMPLE_XML_WITH_COMMENT_COLLECTION);
@@ -311,7 +311,7 @@ public class TransformTest {
      * {@see https://github.com/eXist-db/exist/issues/1691}
      */
     @Test
-    public void transformReindexTransform_with_two_comments() throws XPathException, PermissionDeniedException, EXistException, IOException, LockException {
+    void transformReindexTransform_with_two_comments() throws XPathException, PermissionDeniedException, EXistException, IOException, LockException {
         transform1(TEST_SIMPLE_XML_WITH_TWO_COMMENTS_COLLECTION);
         reindex(TEST_SIMPLE_XML_WITH_TWO_COMMENTS_COLLECTION);
         transform1(TEST_SIMPLE_XML_WITH_TWO_COMMENTS_COLLECTION);
@@ -321,14 +321,14 @@ public class TransformTest {
      * {@see https://github.com/eXist-db/exist/issues/1691}
      */
     @Test
-    public void twoNodesCountDescendants() throws EXistException, PermissionDeniedException, XPathException, IOException, LockException {
+    void twoNodesCountDescendants() throws EXistException, PermissionDeniedException, XPathException, IOException, LockException {
         transform_twoNodesCountDescendants();
         reindex(TEST_TWO_NODES_COLLECTION);
         transform_twoNodesCountDescendants();
     }
 
     private static void transform1(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(getCountDescendantsXquery(collectionUri)), false, null, null, null, null, null)) {
             final Sequence sequence = queryResult.result;
@@ -344,12 +344,12 @@ public class TransformTest {
                     .checkForSimilar()
                     .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
     }
 
     private void reindex(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, IOException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             broker.reindexCollection(transaction, collectionUri);
@@ -381,7 +381,7 @@ public class TransformTest {
     }
 
     private static void transform_twoNodesCountDescendants() throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(COUNT_DESCENDANTS_TWO_NODES_QUERY), false, null, null, null, null, null)) {
             final Sequence sequence = queryResult.result;
@@ -397,13 +397,13 @@ public class TransformTest {
                     .checkForSimilar()
                     .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
     }
 
-    @BeforeClass
-    public static void storeResources() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void storeResources() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -461,9 +461,9 @@ public class TransformTest {
         }
     }
 
-    @AfterClass
-    public static void cleanupResources() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterAll
+    static void cleanupResources() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

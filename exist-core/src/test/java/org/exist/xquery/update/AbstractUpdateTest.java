@@ -46,12 +46,12 @@
 package org.exist.xquery.update;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -61,14 +61,14 @@ import org.xmldb.api.modules.XQueryService;
 
 import javax.annotation.Nullable;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
 public abstract class AbstractUpdateTest {
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     // required for updateAttributeInNamespacedElement
     private static final String XCONF =
@@ -82,19 +82,19 @@ public abstract class AbstractUpdateTest {
 
     protected Collection testCollection;
 
-    @Before
-    public void setUp() throws Exception {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection("test");
 
         final IndexQueryService idx = testCollection.getService(IndexQueryService.class);
         idx.configureCollection(XCONF);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws XMLDBException {
         testCollection.close();
-        CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         service.removeCollection("test");
 
         try (final Collection confColl = DatabaseManager.getCollection("xmldb:exist:///db/system/config/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
@@ -143,9 +143,9 @@ public abstract class AbstractUpdateTest {
         final XQueryService service = testCollection.getService(XQueryService.class);
         final EXistResourceSet result = (EXistResourceSet) service.queryResource(resource, query);
         if (message == null) {
-            assertEquals(query, expected, result.getSize());
+            assertEquals(expected, result.getSize(), query);
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }

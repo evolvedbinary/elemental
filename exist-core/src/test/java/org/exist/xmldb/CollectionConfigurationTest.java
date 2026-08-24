@@ -45,21 +45,23 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.*;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
 import org.exist.security.Account;
 
 import static org.exist.TestUtils.*;
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.exist.collections.CollectionConfiguration;
 import org.exist.test.TestConstants;
 import org.exist.xquery.Constants;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -70,8 +72,8 @@ import org.xmldb.api.modules.XPathQueryService;
 
 public class CollectionConfigurationTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testIndexConfiguration";
     
@@ -181,9 +183,9 @@ public class CollectionConfigurationTest {
         + " </index>\n"
         + "</collection>";
 
-    @Before
-    public void setUp() throws Exception {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
 
         try (final Collection testCollection = service.createCollection(TEST_COLLECTION)) {
             final UserManagementService ums = testCollection.getService(UserManagementService.class);
@@ -204,15 +206,15 @@ public class CollectionConfigurationTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @AfterEach
+    void tearDown() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         service.removeCollection(TEST_COLLECTION);
         service.removeCollection(CONF_COLL_URI.toString()); //Removes the collection config collection *manually*
     }
 
     @Test
-    public void collectionConfigurationService1() throws XMLDBException {
+    void collectionConfigurationService1() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             //Configure collection automatically
@@ -254,7 +256,7 @@ public class CollectionConfigurationTest {
    }
 
     @Test
-    public void testCollectionConfigurationService2() throws XMLDBException {
+    void collectionConfigurationService2() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             // Add document....
@@ -319,7 +321,7 @@ public class CollectionConfigurationTest {
     }
 
     @Test
-    public void collectionConfigurationService3() throws XMLDBException {
+    void collectionConfigurationService3() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             //Configure collection *manually*
@@ -425,10 +427,10 @@ public class CollectionConfigurationTest {
                 assertEquals(1, result.getSize());
             }
         }
-   } 
+   }
 
-   @Test
-   public void collectionConfigurationService5() throws XMLDBException {
+    @Test
+    void collectionConfigurationService5() throws XMLDBException {
        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
            //Configure collection *manually*
@@ -478,10 +480,10 @@ public class CollectionConfigurationTest {
                assertEquals(1, result.getSize());
            }
        }
-   } 
+   }
 
-   @Test
-   public void collectionConfigurationService6() throws XMLDBException {
+    @Test
+    void collectionConfigurationService6() throws XMLDBException {
        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
            // Add document....
@@ -563,7 +565,7 @@ public class CollectionConfigurationTest {
 
     /** Check if configurations are properly passed down the collection hierarchy. */
     @Test
-    public void collectionConfigurationService7() throws XMLDBException {
+    void collectionConfigurationService7() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             final CollectionManagementService cms = testCollection.getService(CollectionManagementService.class);
@@ -612,7 +614,7 @@ public class CollectionConfigurationTest {
 
     /** Overwrite configuration in a sub collection */
     @Test
-    public void collectionConfigurationService8() throws XMLDBException {
+    void collectionConfigurationService8() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             final CollectionManagementService cms = testCollection.getService(CollectionManagementService.class);
@@ -658,7 +660,7 @@ public class CollectionConfigurationTest {
 
     /** Overwrite configuration in a sub collection 2 times */
     @Test
-    public void collectionConfigurationService9() throws XMLDBException {
+    void collectionConfigurationService9() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final CollectionManagementService cms = testCollection.getService(CollectionManagementService.class);
 
@@ -746,7 +748,7 @@ public class CollectionConfigurationTest {
 
     /** Remove config document */
     @Test
-    public void collectionConfigurationService10() throws XMLDBException {
+    void collectionConfigurationService10() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             final CollectionManagementService cms = testCollection.getService(CollectionManagementService.class);
@@ -822,7 +824,7 @@ public class CollectionConfigurationTest {
 
     /** Remove config collection */
     @Test
-    public void collectionConfigurationService11() throws XMLDBException {
+    void collectionConfigurationService11() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             final CollectionManagementService cms = testCollection.getService(CollectionManagementService.class);
@@ -895,7 +897,7 @@ public class CollectionConfigurationTest {
    }
 
     @Test
-    public void invalidConfiguration1() throws XMLDBException {
+    void invalidConfiguration1() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             final CollectionManagementService cms = testCollection.getService(CollectionManagementService.class);
@@ -926,8 +928,9 @@ public class CollectionConfigurationTest {
         }
     }
 
-   @Test @Ignore
-   public void rangeIndex1() throws XMLDBException {
+    @Test
+    @Disabled
+    void rangeIndex1() throws XMLDBException {
        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
            //Configure collection automatically
@@ -1086,8 +1089,9 @@ public class CollectionConfigurationTest {
        }
   }   
 
-   @Test @Ignore
-    public void rangeIndex2() throws XMLDBException {
+    @Test
+    @Disabled
+    void rangeIndex2() throws XMLDBException {
        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
            //Configure collection automatically
@@ -1246,8 +1250,9 @@ public class CollectionConfigurationTest {
        }
   }
 
-   @Test @Ignore
-    public void rangeIndex3() throws XMLDBException {
+    @Test
+    @Disabled
+    void rangeIndex3() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             //Configure collection automatically
@@ -1341,8 +1346,9 @@ public class CollectionConfigurationTest {
         }
     }
 
-   @Test @Ignore
-   public void rangeIndexOverAttributes() throws XMLDBException {
+    @Test
+    @Disabled
+    void rangeIndexOverAttributes() throws XMLDBException {
        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
            //Configure collection automatically
@@ -1625,10 +1631,10 @@ public class CollectionConfigurationTest {
                assertEquals(1, result.getSize());
            }
        }
-  }   
+  }
 
-   @Test
-   public void missingRangeIndexes() throws Exception {
+    @Test
+    void missingRangeIndexes() throws XMLDBException {
        try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
            //... then index document
@@ -1649,7 +1655,7 @@ public class CollectionConfigurationTest {
                    throw e;
                }
            }
-           assertTrue("Exception expected : missing index", exceptionThrown);
+           assertTrue(exceptionThrown, "Exception expected : missing index");
 
            exceptionThrown = false;
            try (final EXistResourceSet result = (EXistResourceSet) service.query("/test/d[(# exist:force-index-use #) { . = xs:double(1) }]")) {
@@ -1661,7 +1667,7 @@ public class CollectionConfigurationTest {
                    throw e;
                }
            }
-           assertTrue("Exception expected : missing index", exceptionThrown);
+           assertTrue(exceptionThrown, "Exception expected : missing index");
 
            exceptionThrown = false;
            try (final EXistResourceSet result = (EXistResourceSet) service.query("/test/e[(# exist:force-index-use #) { . = xs:float(1) }]")) {
@@ -1673,7 +1679,7 @@ public class CollectionConfigurationTest {
                    throw e;
                }
            }
-           assertTrue("Exception expected : missing index", exceptionThrown);
+           assertTrue(exceptionThrown, "Exception expected : missing index");
 
            exceptionThrown = false;
            try (final EXistResourceSet result = (EXistResourceSet) service.query("/test/f[(# exist:force-index-use #) { . = true() }]")) {
@@ -1685,7 +1691,7 @@ public class CollectionConfigurationTest {
                    throw e;
                }
            }
-           assertTrue("Exception expected : missing index", exceptionThrown);
+           assertTrue(exceptionThrown, "Exception expected : missing index");
 
            exceptionThrown = false;
            try (final EXistResourceSet result = (EXistResourceSet) service.query("/test/g[(# exist:force-index-use #) { . = 1 }]")) {
@@ -1697,7 +1703,7 @@ public class CollectionConfigurationTest {
                    throw e;
                }
            }
-           assertTrue("Exception expected : missing index", exceptionThrown);
+           assertTrue(exceptionThrown, "Exception expected : missing index");
 
            exceptionThrown = false;
            try (final EXistResourceSet result = (EXistResourceSet) service.query("/test/h[(# exist:force-index-use #) { . = '1' }]")) {
@@ -1709,87 +1715,87 @@ public class CollectionConfigurationTest {
                    throw e;
                }
            }
-           assertTrue("Exception expected : missing index", exceptionThrown);
+           assertTrue(exceptionThrown, "Exception expected : missing index");
        }
   }   
 
-   @Test
-   public void multipleConfigurations00() {
+    @Test
+    void multipleConfigurations00() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_1, CONF_COLL_URI, TEST_CONFIG_NAME_1, true);
    }
 
-   @Test
-   public void multipleConfigurations01() {
+    @Test
+    void multipleConfigurations01() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_1, CONF_COLL_URI, TEST_CONFIG_NAME_2, false);
    }
 
-   @Test
-   public void multipleConfigurations02() {
+    @Test
+    void multipleConfigurations02() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_1, CONF_COLL_URI2, TEST_CONFIG_NAME_1, true);
    }
 
-   @Test
-   public void multipleConfigurations03() {
+    @Test
+    void multipleConfigurations03() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_1, CONF_COLL_URI2, TEST_CONFIG_NAME_2, true);
    }
 
-   @Test
-   public void multipleConfigurations04() {
+    @Test
+    void multipleConfigurations04() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_2, CONF_COLL_URI, TEST_CONFIG_NAME_1, false);
    }
 
-   @Test
-   public void multipleConfigurations05() {
+    @Test
+    void multipleConfigurations05() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_2, CONF_COLL_URI, TEST_CONFIG_NAME_2, true);
    }
 
-   @Test
-   public void multipleConfigurations06() {
+    @Test
+    void multipleConfigurations06() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_2, CONF_COLL_URI2, TEST_CONFIG_NAME_1, true);
    }
 
-   @Test
-   public void multipleConfigurations07() {
+    @Test
+    void multipleConfigurations07() {
        checkStoreConf(CONF_COLL_URI, TEST_CONFIG_NAME_2, CONF_COLL_URI2, TEST_CONFIG_NAME_2, true);
    }
 
-   @Test
-   public void multipleConfigurations08() {          
+    @Test
+    void multipleConfigurations08() {          
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_1, CONF_COLL_URI, TEST_CONFIG_NAME_1, true);
    }
 
-   @Test
-   public void multipleConfigurations09() {
+    @Test
+    void multipleConfigurations09() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_1, CONF_COLL_URI, TEST_CONFIG_NAME_2, true);
    }
 
-   @Test
-   public void multipleConfigurations10() {
+    @Test
+    void multipleConfigurations10() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_1, CONF_COLL_URI2, TEST_CONFIG_NAME_1, true);
    }
 
-   @Test
-   public void multipleConfigurations11() {
+    @Test
+    void multipleConfigurations11() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_1, CONF_COLL_URI2, TEST_CONFIG_NAME_2, false);
    }
 
-   @Test
-   public void multipleConfigurations12() {
+    @Test
+    void multipleConfigurations12() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_2, CONF_COLL_URI, TEST_CONFIG_NAME_1, true);
    }
 
-   @Test
-   public void multipleConfigurations13() {
+    @Test
+    void multipleConfigurations13() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_2, CONF_COLL_URI, TEST_CONFIG_NAME_2, true);
    }
 
-   @Test
-   public void multipleConfigurations14() {
+    @Test
+    void multipleConfigurations14() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_2, CONF_COLL_URI2, TEST_CONFIG_NAME_1, false);
    }
 
-   @Test
-   public void multipleConfigurations15() {
+    @Test
+    void multipleConfigurations15() {
        checkStoreConf(CONF_COLL_URI2, TEST_CONFIG_NAME_2, CONF_COLL_URI2, TEST_CONFIG_NAME_2, true);
    }
   

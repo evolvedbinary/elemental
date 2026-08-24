@@ -53,7 +53,7 @@ import org.xmldb.api.base.XMLDBException;
 /**
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class MemtreeDescendantOrSelfNodeKindTest extends AbstractDescendantOrSelfNodeKindTest {
 
     private String getInMemoryQuery(final String queryPostfix) {
@@ -68,6 +68,6 @@ public class MemtreeDescendantOrSelfNodeKindTest extends AbstractDescendantOrSel
     @Override
     protected EXistResourceSet executeQueryOnDoc(final String docQuery) throws XMLDBException {
         final String query = getInMemoryQuery(docQuery);
-        return existEmbeddedServer.executeQuery(query);
+        return embeddedDatabase.executeQuery(query);
     }
 }

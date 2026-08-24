@@ -49,13 +49,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.TestDataGenerator;
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
@@ -72,31 +71,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
 public class QuerySessionTest {
 
-    @Parameterized.Parameters(name = "{0}")
     public static java.util.Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
             { "local", "xmldb:exist://" },
             { "remote", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc" }
         });
     }
-
-    @Parameterized.Parameter
     public String apiName;
-
-    @Parameterized.Parameter(value = 1)
     public String baseUri;
 
     private boolean storedTestData = false;
 
     private static final Logger LOG = LogManager.getLogger(QuerySessionTest.class);
 
-    @ClassRule
-    public final static ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public final static DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
     private static final String PORT_PLACEHOLDER = "${PORT}";
 
     private final static String generateXQ =
@@ -127,7 +120,7 @@ public class QuerySessionTest {
             "//chapter[@xml:id eq $n]";
 
     private String getBaseUri() {
-        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
+        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(DATABASE_WEB_SERVER.getPort()));
     }
 
     private final static int N_THREADS = 10;
@@ -136,8 +129,10 @@ public class QuerySessionTest {
 
     private final Random random = new Random();
 
-    @Test
-    public void manualRelease() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void manualRelease(String apiName, String baseUri) throws XMLDBException {
+        initQuerySessionTest(apiName, baseUri);
         try (final Collection test = DatabaseManager.getCollection(getBaseUri() + "/db/rpctest", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
 
             final XQueryService service = test.getService(XQueryService.class);
@@ -160,8 +155,10 @@ public class QuerySessionTest {
         }
     }
 
-    @Test
-    public void runTasks() {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void runTasks(String apiName, String baseUri) {
+        initQuerySessionTest(apiName, baseUri);
         final ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
         for (int i = 0; i < 100; i++) {
             executor.submit(new QueryTask(QUERY));
@@ -203,8 +200,8 @@ public class QuerySessionTest {
         }
     }
 
-    @Before
-    public void storeTestData() throws XMLDBException, SAXException {
+    @BeforeEach
+    void storeTestData() throws XMLDBException, SAXException {
         if (!storedTestData) {
             // NOTE(AR) we only need to store the test data once!
             try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
@@ -229,5 +226,10 @@ public class QuerySessionTest {
                 storedTestData = true;
             }
         }
+    }
+
+    public void initQuerySessionTest(String apiName, String baseUri) {
+        this.apiName = apiName;
+        this.baseUri = baseUri;
     }
 }

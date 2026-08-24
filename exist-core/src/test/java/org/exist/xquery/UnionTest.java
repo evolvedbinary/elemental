@@ -45,13 +45,17 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -65,8 +69,8 @@ import org.xmldb.api.modules.XQueryService;
  */
 public class UnionTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION_NAME = "test-pubmed";
     
@@ -108,18 +112,18 @@ public class UnionTest {
     
     private final static String XQUERY = "/PubmedArticleSet/PubmedArticle[MedlineCitation/Article/AuthorList/Author/(ForeName|LastName) = \"Castellano\"]";
 
-    private static Collection testCollection;    
-    
+    private static Collection testCollection;
+
     @Test
-    public void unionInPredicate_withoutIndex() throws XMLDBException {
+    void unionInPredicate_withoutIndex() throws XMLDBException {
          final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
          try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(PUBMED_DOC_NAME, XQUERY)) {
              assertEquals(1, result.getSize());
          }
     }
-    
+
     @Test
-    public void unionInPredicate_withIndex() throws XMLDBException {
+    void unionInPredicate_withIndex() throws XMLDBException {
         storeCollectionConfig();
         
         final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
@@ -129,7 +133,7 @@ public class UnionTest {
     }
 
     @Test
-    public void unionPersistentAndConstructedNodes() throws XMLDBException {
+    void unionPersistentAndConstructedNodes() throws XMLDBException {
         final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
         final String xquery = "doc('" + testCollection.getName() + "/" + PUBMED_DOC_NAME + "')//Language | <a/> | <b/>";
 
@@ -183,9 +187,9 @@ public class UnionTest {
        }
        return testCollection.getService(XQueryService.class);
     }
-    
-    @Before
-    public void clearCollectionConfig() throws XMLDBException {
+
+    @BeforeEach
+    void clearCollectionConfig() throws XMLDBException {
         try (final Collection colDb = testCollection.getParentCollection();
              final Collection colSystem = colDb.getChildCollection("system")) {
 
@@ -220,18 +224,18 @@ public class UnionTest {
         }
     }
 
-    @BeforeClass
-    public static void createTestCollection() throws Exception {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeAll
+    static void createTestCollection() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection(TEST_COLLECTION_NAME);
         assertNotNull(testCollection);
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
+    @AfterAll
+    static void tearDown() throws XMLDBException {
         testCollection.close();
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(
                         CollectionManagementService.class);
         service.removeCollection(TEST_COLLECTION_NAME);
         testCollection = null;

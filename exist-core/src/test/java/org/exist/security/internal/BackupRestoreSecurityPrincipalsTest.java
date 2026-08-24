@@ -53,12 +53,13 @@ import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.BrokerPool;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistRestoreService;
 import org.exist.xmldb.NullRestoreServiceTaskListener;
 import org.exist.xmldb.UserManagementService;
-import org.junit.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
@@ -70,10 +71,10 @@ import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.Assert.assertEquals;
 
 public class BackupRestoreSecurityPrincipalsTest {
 
@@ -83,8 +84,8 @@ public class BackupRestoreSecurityPrincipalsTest {
     private final static String JOE_USER = "joe";
     private final static String JACK_USER = "jack";
 
-    @ClassRule
-    public static ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     /**
      * 1. With an empty database we create three
@@ -93,7 +94,7 @@ public class BackupRestoreSecurityPrincipalsTest {
      * 2. We create a backup of the database which contains
      *    the three users from (1).
      *
-     * 3. We destroy the database, restart the server,
+     * 3. We destroy the database, restart the SERVER,
      *    and start again with a clean database.
      *
      * 4. With an (again) empty database we create two
@@ -116,7 +117,7 @@ public class BackupRestoreSecurityPrincipalsTest {
      * that were owned by them are still correctly owner by them (and not some other user).
      */
     @Test
-    public void restoreConflictingUsername() throws PermissionDeniedException, EXistException, SAXException, IOException, XMLDBException, IllegalAccessException, ClassNotFoundException, InstantiationException {
+    void restoreConflictingUsername() throws PermissionDeniedException, EXistException, SAXException, IOException, XMLDBException, IllegalAccessException, ClassNotFoundException, InstantiationException {
         // creates a database with new users: 'frank(id=11)', 'joe(id=12)', and 'jack(id=13)'
         createInitialUsers(FRANK_USER, JOE_USER, JACK_USER);
 
@@ -124,7 +125,7 @@ public class BackupRestoreSecurityPrincipalsTest {
         final Path backupFile = backupDatabase();
 
         //reset database to empty
-        server.restart(true);
+        XMLDB_EMBEDDED_DATABASE.restart(true);
 
         //create new users: 'frank(id=11)' and 'jack(id=12)'
         createInitialUsers(FRANK_USER, JACK_USER);
@@ -134,7 +135,7 @@ public class BackupRestoreSecurityPrincipalsTest {
             "return\n" +
             "<user id='{$account/@id}' name='{$account/c:name}'/>";
 
-        final XPathQueryService xqs = server.getRoot().getService(XPathQueryService.class);
+        final XPathQueryService xqs = XMLDB_EMBEDDED_DATABASE.getRoot().getService(XPathQueryService.class);
 
         final SecurityManagerImpl sm = (SecurityManagerImpl) BrokerPool.getInstance().getSecurityManager();
 
@@ -154,7 +155,7 @@ public class BackupRestoreSecurityPrincipalsTest {
 
 
         //create a test collection and give everyone access
-        final CollectionManagementService cms = server.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection test = cms.createCollection("test")) {
             final UserManagementService testUms = test.getService(UserManagementService.class);
             testUms.chmod("rwxrwxrwx");
@@ -176,7 +177,7 @@ public class BackupRestoreSecurityPrincipalsTest {
             }
 
             //restore the database backup
-            final EXistRestoreService service = server.getRoot().getService(EXistRestoreService.class);
+            final EXistRestoreService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(EXistRestoreService.class);
             service.restore(backupFile.normalize().toAbsolutePath().toString(), null, new NullRestoreServiceTaskListener(), false);
 
             //check the current user accounts after the restore
@@ -240,7 +241,7 @@ public class BackupRestoreSecurityPrincipalsTest {
     }
 
     private void createUser(final String username, final String password) throws XMLDBException, PermissionDeniedException {
-        final UserManagementService ums = server.getRoot().getService(UserManagementService.class);
+        final UserManagementService ums = XMLDB_EMBEDDED_DATABASE.getRoot().getService(UserManagementService.class);
 
         final Account user = new UserAider(username);
         user.setPassword(password);
@@ -261,7 +262,7 @@ public class BackupRestoreSecurityPrincipalsTest {
     }
 
     private Account getUser(final String username) throws XMLDBException {
-        final UserManagementService ums = server.getRoot().getService(UserManagementService.class);
+        final UserManagementService ums = XMLDB_EMBEDDED_DATABASE.getRoot().getService(UserManagementService.class);
         return ums.getAccount(username);
     }
 }

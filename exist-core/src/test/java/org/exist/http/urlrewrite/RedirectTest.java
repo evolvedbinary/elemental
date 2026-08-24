@@ -26,11 +26,11 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import org.exist.http.AbstractHttpTest;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import xyz.elemental.mediatype.MediaType;
 
 import javax.annotation.Nullable;
@@ -39,7 +39,7 @@ import java.util.function.Function;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.http.urlrewrite.XQueryURLRewrite.XQUERY_CONTROLLER_FILENAME;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -62,61 +62,61 @@ public class RedirectTest extends AbstractHttpTest {
         "    }\n" +
         "  }\n";
 
-    @ClassRule
-    public static final ExistWebServer EXIST_WEB_SERVER = new ExistWebServer(true, false, true, true, false);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension EXIST_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true, false);
 
     @Test
-    public void defaultForGetIsFound() throws IOException {
+    void defaultForGetIsFound() throws IOException {
         testRedirect(Redirect.RedirectType.Found, null, Request::Get);
     }
 
     @Test
-    public void defaultForHeadIsFound() throws IOException {
+    void defaultForHeadIsFound() throws IOException {
         testRedirect(Redirect.RedirectType.Found, null, Request::Head);
     }
 
     @Test
-    public void defaultForPostIsSeeOther() throws IOException {
+    void defaultForPostIsSeeOther() throws IOException {
         testRedirect(Redirect.RedirectType.SeeOther, null, Request::Post);
     }
 
     @Test
-    public void defaultForPatchIsSeeOther() throws IOException {
+    void defaultForPatchIsSeeOther() throws IOException {
         testRedirect(Redirect.RedirectType.SeeOther, null, Request::Patch);
     }
 
     @Test
-    public void defaultForPutIsSeeOther() throws IOException {
+    void defaultForPutIsSeeOther() throws IOException {
         testRedirect(Redirect.RedirectType.SeeOther, null, Request::Put);
     }
 
     @Test
-    public void defaultForDeleteIsSeeOther() throws IOException {
+    void defaultForDeleteIsSeeOther() throws IOException {
         testRedirect(Redirect.RedirectType.SeeOther, null, Request::Delete);
     }
 
     @Test
-    public void movedPermanently() throws IOException {
+    void movedPermanently() throws IOException {
         testGetSendRedirect(Redirect.RedirectType.MovedPermanently);
     }
 
     @Test
-    public void found() throws IOException {
+    void found() throws IOException {
         testGetSendRedirect(Redirect.RedirectType.Found);
     }
 
     @Test
-    public void seeOther() throws IOException {
+    void seeOther() throws IOException {
         testGetSendRedirect(Redirect.RedirectType.SeeOther);
     }
 
     @Test
-    public void temporaryRedirect() throws IOException {
+    void temporaryRedirect() throws IOException {
         testGetSendRedirect(Redirect.RedirectType.TemporaryRedirect);
     }
 
     @Test
-    public void permanentRedirect() throws IOException {
+    void permanentRedirect() throws IOException {
         testGetSendRedirect(Redirect.RedirectType.TemporaryRedirect);
     }
 
@@ -140,8 +140,8 @@ public class RedirectTest extends AbstractHttpTest {
     }
 
 
-    @BeforeClass
-    public static void setup() throws IOException {
+    @BeforeAll
+    static void setup() throws IOException {
         final Request request = Request
             .Put(getRestUri(EXIST_WEB_SERVER) + TEST_COLLECTION + "/" + XQUERY_CONTROLLER_FILENAME)
             .bodyString(TEST_CONTROLLER, ContentType.create(MediaType.APPLICATION_XQUERY));

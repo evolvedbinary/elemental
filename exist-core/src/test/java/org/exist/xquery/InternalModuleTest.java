@@ -48,12 +48,12 @@ package org.exist.xquery;
 import org.exist.dom.QName;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.LocalXMLResource;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.XMLDBException;
 import org.xmlunit.builder.DiffBuilder;
@@ -65,7 +65,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.exist.xquery.InternalModuleTest.TestModuleWithVariables.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -74,15 +74,15 @@ public class InternalModuleTest {
 
     private static final AtomicLong COUNTER = new AtomicLong();
 
-    @Rule
-    public final ExistXmldbEmbeddedServer existServer = new ExistXmldbEmbeddedServer(true, true, true);
+    @RegisterExtension
+    public final XmldbEmbeddedDatabaseExtension xmldbEmbeddedDatabase = new XmldbEmbeddedDatabaseExtension(true, true, true);
 
     private static final String EOL = System.getProperty("line.separator");
 
     @Test
-    public void moduleVariables() throws XMLDBException {
+    void moduleVariables() throws XMLDBException {
         final Source querySource = new StringSource(getModuleVariableQuery("org.exist.xquery.InternalModuleTest$TestModuleWithVariables"));
-        final EXistXQueryService queryService = existServer.getRoot().getService(EXistXQueryService.class);
+        final EXistXQueryService queryService = xmldbEmbeddedDatabase.getRoot().getService(EXistXQueryService.class);
 
         moduleVariablesQuery(queryService, querySource, COUNTER.get());
     }
@@ -94,9 +94,9 @@ public class InternalModuleTest {
      * context) do not cause problems.
      */
     @Test
-    public void reusedModuleVariables() throws XMLDBException {
+    void reusedModuleVariables() throws XMLDBException {
         final Source querySource = new StringSource(getModuleVariableQuery("org.exist.xquery.InternalModuleTest$TestModuleWithVariables"));
-        final EXistXQueryService queryService = existServer.getRoot().getService(EXistXQueryService.class);
+        final EXistXQueryService queryService = xmldbEmbeddedDatabase.getRoot().getService(EXistXQueryService.class);
 
         moduleVariablesQuery(queryService, querySource, COUNTER.get());
         moduleVariablesQuery(queryService, querySource, COUNTER.get());
@@ -108,7 +108,7 @@ public class InternalModuleTest {
      * $response:response variables were removed in eXist-db 5.0.0.
      */
     @Test
-    public void requestResponseSessionVariables_4_x_x_Api() throws XMLDBException {
+    void requestResponseSessionVariables_4_x_x_Api() throws XMLDBException {
         final Source querySource = new StringSource(
                 "document{" + EOL +
                         "  <vars>" + EOL +
@@ -119,13 +119,13 @@ public class InternalModuleTest {
                         "}"
 
         );
-        final EXistXQueryService queryService = existServer.getRoot().getService(EXistXQueryService.class);
+        final EXistXQueryService queryService = xmldbEmbeddedDatabase.getRoot().getService(EXistXQueryService.class);
 
         try {
             requestResponseSessionVariablesQuery_4_x_X_Api(queryService, querySource);
             fail("Expected XQuery error XPST0008");
         } catch (final XMLDBException e) {
-            assertTrue(e.getCause() instanceof XPathException);
+            assertInstanceOf(XPathException.class, e.getCause());
             final XPathException xpe = (XPathException)e.getCause();
             assertEquals(ErrorCodes.XPST0008, xpe.getErrorCode());
         }
@@ -151,7 +151,7 @@ public class InternalModuleTest {
                     .checkForSimilar()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
@@ -186,7 +186,7 @@ public class InternalModuleTest {
                     .checkForSimilar()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }

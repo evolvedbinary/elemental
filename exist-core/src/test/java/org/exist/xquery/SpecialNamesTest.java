@@ -45,42 +45,42 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SpecialNamesTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private Collection testCollection;
 
-    @Before
-    public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(
                 CollectionManagementService.class);
         testCollection = service.createCollection("test");
         assertNotNull(testCollection);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         testCollection.close();
 
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(
                         CollectionManagementService.class);
         service.removeCollection("test");
         testCollection = null;
@@ -93,13 +93,13 @@ public class SpecialNamesTest {
         if (message == null) {
             assertEquals(expected, result.getSize());
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }
 
     @Test
-    public void attributes() throws XMLDBException {
+    void attributes() throws XMLDBException {
         try (final EXistResourceSet result = queryAndAssert("<foo amp='x' lt='x' gt='x' apos='x' quot='x'/>", 1,  null)) {
             // TODO: could check result
         }

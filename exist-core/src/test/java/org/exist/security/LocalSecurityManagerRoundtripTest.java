@@ -22,8 +22,8 @@
 
 package org.exist.security;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.ClassRule;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
@@ -37,18 +37,18 @@ import java.io.IOException;
  */
 public class LocalSecurityManagerRoundtripTest extends AbstractSecurityManagerRoundtripTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Override
     protected Collection getRoot() {
-        return existXmldbEmbeddedServer.getRoot();
+        return XMLDB_EMBEDDED_DATABASE.getRoot();
     }
 
     @Override
     protected void restartServer() throws XMLDBException, IOException {
         try {
-            existXmldbEmbeddedServer.restart();
+            XMLDB_EMBEDDED_DATABASE.restart();
         } catch (final ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e);
         }

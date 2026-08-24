@@ -53,23 +53,24 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests around the ordering of Collections and Documents
@@ -79,8 +80,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class CollectionOrderTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static XmldbURI TEST_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("testCollectionOrder");
 
@@ -95,9 +96,7 @@ public class CollectionOrderTest {
      * Ensures that when iterating over Collections the order of iteration is always the same
      */
     @Test
-    public void collectionOrderIsOldestInsertedFirst() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-
+    void collectionOrderIsOldestInsertedFirst(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
         final List<String> subCollectionNames1 = generateRandomNames(SUB_COLLECTION_COUNT / 2);
         createSubCollections(pool, subCollectionNames1);
 
@@ -121,8 +120,7 @@ public class CollectionOrderTest {
      * and that this persists across restarts of database
      */
     @Test
-    public void collectionOrderIsOldestInsertedFirst_persistedOverRestart() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException, DatabaseConfigurationException {
-        BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void collectionOrderIsOldestInsertedFirst_persistedOverRestart(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException, DatabaseConfigurationException {
         final List<String> subCollectionNames1 = generateRandomNames(SUB_COLLECTION_COUNT);
         createSubCollections(pool, subCollectionNames1);
 
@@ -136,8 +134,8 @@ public class CollectionOrderTest {
         assertOrderOfSubCollections(pool, subsetSubCollectionNames1);
 
         // restart the server to ensure the order is correctly persisted
-        existEmbeddedServer.restart();
-        pool = existEmbeddedServer.getBrokerPool();
+        EMBEDDED_DATABASE.restart();
+        pool = EMBEDDED_DATABASE.getBrokerPool();
 
         // check the order of sub-collections
         assertOrderOfSubCollections(pool, subsetSubCollectionNames1);
@@ -153,8 +151,8 @@ public class CollectionOrderTest {
         assertOrderOfSubCollections(pool, allSubCollectionNames);
 
         // restart the server to ensure the order is correctly persisted
-        existEmbeddedServer.restart();
-        pool = existEmbeddedServer.getBrokerPool();
+        EMBEDDED_DATABASE.restart();
+        pool = EMBEDDED_DATABASE.getBrokerPool();
 
         // check the order of all sub-collections
         assertOrderOfSubCollections(pool, allSubCollectionNames);
@@ -164,9 +162,7 @@ public class CollectionOrderTest {
      * Ensures that when iterating over Documents the order of iteration is always the same
      */
     @Test
-    public void documentOrderIsOldestInsertedFirst() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-
+    void documentOrderIsOldestInsertedFirst(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final List<String> documentNames1 = generateRandomNames(DOCUMENT_COUNT / 2);
         createDocuments(pool, documentNames1);
 
@@ -192,7 +188,7 @@ public class CollectionOrderTest {
 //     */
 //    @Test
 //    public void documentOrderIsOldestInsertedFirst_persistedOverRestart() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, DatabaseConfigurationException {
-//        BrokerPool pool = existEmbeddedServer.getBrokerPool();
+//        BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
 //        final List<String> documentNames1 = generateRandomNames(DOCUMENT_COUNT);
 //        createDocuments(pool, documentNames1);
 //
@@ -206,8 +202,8 @@ public class CollectionOrderTest {
 //        assertOrderOfDocuments(pool, subsetDocumentNames1);
 //
 //        // restart the server to ensure the order is correctly persisted
-//        existEmbeddedServer.restart();
-//        pool = existEmbeddedServer.getBrokerPool();
+//        EMBEDDED_DATABASE.restart();
+//        pool = EMBEDDED_DATABASE.getBrokerPool();
 //
 //        // check the order of documents
 //        assertOrderOfDocuments(pool, subsetDocumentNames1);
@@ -223,8 +219,8 @@ public class CollectionOrderTest {
 //        assertOrderOfDocuments(pool, allDocumentNames);
 //
 //        // restart the server to ensure the order is correctly persisted
-//        existEmbeddedServer.restart();
-//        pool = existEmbeddedServer.getBrokerPool();
+//        EMBEDDED_DATABASE.restart();
+//        pool = EMBEDDED_DATABASE.getBrokerPool();
 //
 //        // check the order of all documents
 //        assertOrderOfDocuments(pool, allDocumentNames);
@@ -308,7 +304,7 @@ public class CollectionOrderTest {
 
                     final String subCollectionName = subCollectionNames.get(idx++);
 
-                    assertEquals("sub-Collection names are not equal at index: " + idx, subCollectionName, subCollection.lastSegment().toString());
+                    assertEquals(subCollectionName, subCollection.lastSegment().toString(), "sub-Collection names are not equal at index: " + idx);
                 }
             }
 
@@ -362,7 +358,7 @@ public class CollectionOrderTest {
 
                     final String documentName = documentNames.get(idx++);
 
-                    assertEquals("Document names are not equal at index: " + idx, documentName, document.getFileURI().lastSegment().toString());
+                    assertEquals(documentName, document.getFileURI().lastSegment().toString(), "Document names are not equal at index: " + idx);
                 }
             }
 
@@ -393,9 +389,8 @@ public class CollectionOrderTest {
         return random.nextInt((maxInc - minInc) + 1) + minInc;
     }
 
-    @Before
-    public void createTestCollection() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void createTestCollection(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             broker.getOrCreateCollection(transaction, TEST_COLLECTION);
@@ -403,9 +398,8 @@ public class CollectionOrderTest {
         }
     }
 
-    @After
-    public void removeTestCollection() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterEach
+    void removeTestCollection(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             try(final Collection testCollection = broker.openCollection(TEST_COLLECTION, Lock.LockMode.WRITE_LOCK)) {

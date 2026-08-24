@@ -56,7 +56,7 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
@@ -67,9 +67,8 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
-import org.junit.After;
-import org.junit.Test;
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
@@ -81,6 +80,8 @@ import org.xmldb.api.modules.XUpdateQueryService;
 import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.parsers.ParserConfigurationException;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Optional;
@@ -91,7 +92,7 @@ import java.util.Optional;
  * @author wolf
  *
  */
-public class UpdateRecoverTest {
+class UpdateRecoverTest {
     
     private static String TEST_XML =
         "<?xml version=\"1.0\"?>" +
@@ -102,11 +103,11 @@ public class UpdateRecoverTest {
         "   </product>" +
         "</products>";
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    // we don't use @RegisterExtension as we want to force corruption in some tests
+    private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void storeAndRead() throws PermissionDeniedException, DatabaseConfigurationException, SAXException, XMLDBException, EXistException, LockException, ParserConfigurationException, XPathException, IOException {
+    void storeAndRead() throws PermissionDeniedException, DatabaseConfigurationException, SAXException, XMLDBException, EXistException, LockException, ParserConfigurationException, XPathException, IOException {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = startDb();
         store(pool);
@@ -118,7 +119,7 @@ public class UpdateRecoverTest {
     }
 
     @Test
-    public void storeAndReadXmldb() throws DatabaseConfigurationException, XMLDBException, EXistException, IOException {
+    void storeAndReadXmldb() throws DatabaseConfigurationException, XMLDBException, EXistException, IOException {
         BrokerPool.FORCE_CORRUPTION = false;
         startDb();
         xmldbStore();
@@ -314,7 +315,7 @@ public class UpdateRecoverTest {
             final Serializer serializer = broker.borrowSerializer();
 
             try(final LockedDocument lockedDoc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append(TestConstants.TEST_XML_URI), LockMode.READ_LOCK);) {
-                assertNotNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/test.xml' should not be null", lockedDoc);
+                assertNotNull(lockedDoc, "Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/test.xml' should not be null");
                 final String data = serializer.serialize(lockedDoc.getDocument());
                 assertNotNull(data);
             } finally {
@@ -465,23 +466,23 @@ public class UpdateRecoverTest {
     }
 
     private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException, XMLDBException {
-        existEmbeddedServer.startDb();
+        embeddedDatabase.startDb();
 
         final Database database = new DatabaseImpl();
         database.setProperty("create-database", "true");
         DatabaseManager.registerDatabase(database);
 
-        return existEmbeddedServer.getBrokerPool();
+        return embeddedDatabase.getBrokerPool();
     }
 
     private BrokerPool restartDb() throws DatabaseConfigurationException, IOException, EXistException {
-        existEmbeddedServer.restart(false);
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.restart(false);
+        return embeddedDatabase.getBrokerPool();
     }
 
-    @After
-    public void stopDb() {
-        existEmbeddedServer.stopDb();
+    @AfterEach
+    void stopDb() {
+        embeddedDatabase.stopDb();
     }
 
 }

@@ -46,28 +46,28 @@
 package org.exist.xquery.functions.fn;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.exist.test.ExistXmldbEmbeddedServer;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  * @author ljo
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class FunLangTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(true, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(true, true, true);
 
     @Test
-    public void testFnLangWithContext() throws XMLDBException {
+    void fnLangWithContext() throws XMLDBException {
 		final String query =
 			"let $doc-frag := " +
 			"<desclist xml:lang=\"en\">" +
@@ -80,7 +80,7 @@ public class FunLangTest {
 			"</desclist>" +
 			"return " +
 			"$doc-frag//desc[lang(\"en-US\")]";
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 			assertEquals(1, result.getSize());
 			try (final Resource resource = result.getResource(0)) {
 				assertEquals("<desc xml:lang=\"en-US\" n=\"1\">\n    <line>The first line of the description.</line>\n</desc>", resource.getContent());
@@ -88,8 +88,8 @@ public class FunLangTest {
 		}
     }
 
-	@Test
-    public void testFnLangWithArgument() throws XMLDBException {
+    @Test
+    void fnLangWithArgument() throws XMLDBException {
 		final String query =
 			"let $doc-frag := " +
 			"<desclist xml:lang=\"en\">" +
@@ -102,16 +102,16 @@ public class FunLangTest {
 			"</desclist>" +
 			"return " +
 			"lang(\"en-US\", $doc-frag//desc[@n eq \"2\"])";
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 			assertEquals(1, result.getSize());
 			try (final Resource resource = result.getResource(0)) {
 				assertEquals("false", resource.getContent());
 			}
 		}
     }
-    
+
     @Test
-    public void testFnLangWithAttributeArgument() throws XMLDBException {
+    void fnLangWithAttributeArgument() throws XMLDBException {
 		final String query =
 			"let $doc-frag := " +
 			"<desclist xml:lang=\"en\">" +
@@ -124,7 +124,7 @@ public class FunLangTest {
 			"</desclist>" +
 			"return " +
 			"lang(\"en-US\", $doc-frag//desc/@n[. eq \"1\"])";
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 			assertEquals(1, result.getSize());
 			try (final Resource resource = result.getResource(0)) {
 				assertEquals("true", resource.getContent());

@@ -62,21 +62,21 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.samples.Samples.SAMPLES;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test recovery after a forced database corruption.
@@ -86,25 +86,25 @@ import static org.junit.Assert.assertNotNull;
  */
 public class Recovery2Test {
 
-    @Rule
-    public ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void storeRead() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, BTreeException, XPathException, URISyntaxException {
+    void storeRead(final BrokerPool pool) throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, SAXException, EXistException, BTreeException, XPathException, URISyntaxException {
 
         BrokerPool.FORCE_CORRUPTION = true;
-        store(existEmbeddedServer.getBrokerPool());
+        store(pool);
 
         // flush journal
-        existEmbeddedServer.getBrokerPool().getJournalManager().get().flush(true, false);
+        pool.getJournalManager().get().flush(true, false);
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
         BrokerPool.FORCE_CORRUPTION = false;
 
-        read(existEmbeddedServer.getBrokerPool());
+        read(pool);
     }
 
-    private void store(final BrokerPool pool) throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, BTreeException, LockException, URISyntaxException {
+    private void store(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, BTreeException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
@@ -139,13 +139,13 @@ public class Recovery2Test {
         }
     }
 
-    private void read(final BrokerPool pool) throws EXistException, DatabaseConfigurationException, PermissionDeniedException, SAXException, IOException {
+    private void read(final BrokerPool pool) throws EXistException, PermissionDeniedException, SAXException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             assertNotNull(broker);
             final Serializer serializer = broker.borrowSerializer();
             
             try(final LockedDocument lockedDoc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append("0d569a0b-2738-4865-8b47-a9f8b821a653.xml"), LockMode.READ_LOCK)) {
-                assertNotNull("Document should not be null", lockedDoc);
+                assertNotNull(lockedDoc, "Document should not be null");
                 String data = serializer.serialize(lockedDoc.getDocument());
                 assertNotNull(data);
             } finally {
@@ -154,8 +154,8 @@ public class Recovery2Test {
         }
     }
 
-    @AfterClass
-    public static void cleanup() {
+    @AfterAll
+    static void cleanup() {
         // restore the flag in-case of a test failure
         BrokerPool.FORCE_CORRUPTION = false;
     }

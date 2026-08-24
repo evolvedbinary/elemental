@@ -45,12 +45,12 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ServiceProviderCache;
 import org.xmldb.api.base.XMLDBException;
@@ -60,31 +60,31 @@ import org.xmldb.api.modules.XQueryService;
 import org.xmldb.api.modules.XUpdateQueryService;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalCollectionTest {
     static Collection testCollection;
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @BeforeClass
-    public static void setup() throws XMLDBException {
-        final CollectionManagementService cms = existEmbeddedServer
+    @BeforeAll
+    static void setup() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE
                 .getRoot()
                 .getService(CollectionManagementService.class);
 
         testCollection = cms.createCollection(TestConstants.TEST_COLLECTION_URI.lastSegment().toString());
     }
 
-    @AfterClass
+    @AfterAll
     public static void cleanup() throws XMLDBException {
         if (testCollection != null) {
             testCollection.close();
             testCollection = null;
         }
-        final CollectionManagementService cms = existEmbeddedServer
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE
                 .getRoot()
                 .getService(CollectionManagementService.class);
 
@@ -92,32 +92,32 @@ public class LocalCollectionTest {
     }
 
     @Test
-    public void getChildCollectionCount() throws XMLDBException {
+    void getChildCollectionCount() throws XMLDBException {
         assertEquals(0, testCollection.getChildCollectionCount());
     }
 
     @Test
-    public void getPropertyWithDefault() throws XMLDBException {
+    void getPropertyWithDefault() throws XMLDBException {
         assertEquals("theDefault", testCollection.getProperty("myProperty", "theDefault"));
     }
 
     @Test
-    public void hasService(){
+    void hasService(){
         assertTrue(testCollection.hasService(XPathQueryService.class));
     }
 
     @Test
-    public void findService(){
+    void findService(){
         assertNotNull(testCollection.findService(XPathQueryService.class).get());
     }
 
     @Test
-    public void getService() throws XMLDBException {
+    void getService() throws XMLDBException {
         assertNotNull(testCollection.getService(XPathQueryService.class));
     }
 
     @Test
-    public void registerProvders() {
+    void registerProvders() {
         LocalCollection localCollection = (LocalCollection)testCollection;
         ServiceProviderCache.ProviderRegistry registry = createMock(ServiceProviderCache.ProviderRegistry.class);
 
@@ -138,30 +138,30 @@ public class LocalCollectionTest {
     }
 
     @Test
-    public void listChildCollections() throws XMLDBException {
+    void listChildCollections() throws XMLDBException {
         assertTrue(testCollection.listChildCollections().isEmpty());
     }
 
     @Test
-    public void getChildCollections() throws XMLDBException {
+    void getChildCollections() throws XMLDBException {
         LocalCollection localCollection = (LocalCollection)testCollection;
         assertArrayEquals(new Collection[0], localCollection.getChildCollections());
     }
 
     @Test
-    public void listResources() throws XMLDBException {
+    void listResources() throws XMLDBException {
         LocalCollection localCollection = (LocalCollection)testCollection;
         assertTrue(localCollection.listResources().isEmpty());
     }
 
     @Test
-    public void getResources() throws XMLDBException {
+    void getResources() throws XMLDBException {
         LocalCollection localCollection = (LocalCollection)testCollection;
         assertArrayEquals(new org.exist.Resource[0], localCollection.getResources());
     }
 
     @Test
-    public void getCreationTime() throws XMLDBException {
+    void getCreationTime() throws XMLDBException {
         assertNotNull(testCollection.getCreationTime());
     }
 }

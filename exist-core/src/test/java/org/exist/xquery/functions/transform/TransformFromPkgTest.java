@@ -45,18 +45,18 @@
  */
 package org.exist.xquery.functions.transform;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -76,11 +76,11 @@ public class TransformFromPkgTest {
         }
     }
 
-    @ClassRule
-    public static ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(true, false, true, getConfigFile());
+    @RegisterExtension
+    public static XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(true, false, true, getConfigFile());
 
     @Test
-    public void transformWithModuleFromPkg() throws XMLDBException {
+    void transformWithModuleFromPkg() throws XMLDBException {
         final String xslt =
                 "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\n" +
                         "    xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n" +
@@ -100,7 +100,7 @@ public class TransformFromPkgTest {
 
         final String xquery = "transform:transform(" + xml + ", " + xslt + ", ())";
 
-        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery(xquery)){
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)){
             assertNotNull(result);
             assertEquals(1, result.getSize());
         }

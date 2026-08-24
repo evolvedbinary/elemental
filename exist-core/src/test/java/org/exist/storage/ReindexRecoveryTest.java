@@ -54,19 +54,19 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -77,26 +77,26 @@ import java.util.Optional;
 /**
  * Test crash recovery after reindexing a collection.
  */
-public class ReindexRecoveryTest {
+class ReindexRecoveryTest {
 
     private static final Logger LOG = LogManager.getLogger(ReindexRecoveryTest.class);
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    // we don't use @RegisterExtension as we want to force corruption in some tests
+    private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void reindexRecoveryTest() throws EXistException, PermissionDeniedException, IOException, DatabaseConfigurationException, LockException, TriggerException {
+    void reindexRecoveryTest() throws EXistException, PermissionDeniedException, IOException, DatabaseConfigurationException, LockException, TriggerException {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = startDb();
         storeDocuments(pool);
 
-        existEmbeddedServer.stopDb(false);
+        embeddedDatabase.stopDb(false);
 
         BrokerPool.FORCE_CORRUPTION = false;
         pool = startDb();
         removeCollection(pool);
 
-        existEmbeddedServer.stopDb(false);
+        embeddedDatabase.stopDb(false);
 
         restart();
     }
@@ -175,22 +175,22 @@ public class ReindexRecoveryTest {
         final BrokerPool pool = startDb();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.READ_LOCK)) {
-            assertNull("Removed collection does still exist", root);
+            assertNull(root, "Removed collection does still exist");
         }
     }
 
     private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException {
-        existEmbeddedServer.startDb();
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.startDb();
+        return embeddedDatabase.getBrokerPool();
     }
 
-    @After
-    public void stopDb() {
-        existEmbeddedServer.stopDb();
+    @AfterEach
+    void stopDb() {
+        embeddedDatabase.stopDb();
     }
 
-    @AfterClass
-    public static void cleanup() {
+    @AfterAll
+    static void cleanup() {
         BrokerPool.FORCE_CORRUPTION = false;
     }
 }

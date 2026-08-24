@@ -48,10 +48,13 @@ package org.exist.xquery;
 import com.evolvedbinary.j8fu.Either;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.storage.BrokerPool;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.XQueryCompilationTest;
 import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.Sequence;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.xml.transform.Source;
 
@@ -69,48 +72,52 @@ import static org.hamcrest.Matchers.equalTo;
  * @author <a href="mailto:juri@existsolutions.com">Juri Leino</a>
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class AbsolutePathTests extends XQueryCompilationTest {
+class AbsolutePathTests extends XQueryCompilationTest {
+
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
+
     @Test
-    public void declaredFunctionAbsoluteSlash() throws EXistException, PermissionDeniedException {
+    void declaredFunctionAbsoluteSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "declare function local:x() { /x }; local:x()";
         final String expectedMessage = "Leading '/' selects nothing, ContextItem is absent in function body";
-        assertXQStaticError(ErrorCodes.XPDY0002, 1,30, expectedMessage, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPDY0002, 1,30, expectedMessage, compileQuery(pool, query));
     }
 
     @Test
-    public void declaredFunctionLoneSlash() throws EXistException, PermissionDeniedException {
+    void declaredFunctionLoneSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "declare function local:x() { / }; local:x()";
         final String expectedMessage = "Leading '/' selects nothing, ContextItem is absent in function body";
-        assertXQStaticError(ErrorCodes.XPDY0002, 1, 30, expectedMessage, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPDY0002, 1, 30, expectedMessage, compileQuery(pool, query));
     }
 
     @Test
-    public void declaredFunctionAbsoluteDoubleSlash() throws EXistException, PermissionDeniedException {
+    void declaredFunctionAbsoluteDoubleSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "declare function local:x() { //x }; local:x()";
         final String expectedMessage = "Leading '//' selects nothing, ContextItem is absent in function body";
-        assertXQStaticError(ErrorCodes.XPDY0002, 1, 30, expectedMessage, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPDY0002, 1, 30, expectedMessage, compileQuery(pool, query));
     }
 
     @Test
-    public void immediateLambdaContainsSlash() throws EXistException, PermissionDeniedException {
+    void immediateLambdaContainsSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "(function() { /x })()";
-        assertXQStaticError(ErrorCodes.XPDY0002, 1, 15, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPDY0002, 1, 15, compileQuery(pool, query));
     }
 
     @Test
-    public void immediateLambdaContainsLoneSlash() throws EXistException, PermissionDeniedException {
+    void immediateLambdaContainsLoneSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "(function() { / })()";
-        assertXQStaticError(ErrorCodes.XPDY0002, 1, 15, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPDY0002, 1, 15, compileQuery(pool, query));
     }
 
     @Test
-    public void immediateLambdaContainsDoubleSlash() throws EXistException, PermissionDeniedException {
+    void immediateLambdaContainsDoubleSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "(function() { //x })()";
-        assertXQStaticError(ErrorCodes.XPDY0002, 1, 15, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPDY0002, 1, 15, compileQuery(pool, query));
     }
 
     @Test
-    public void immediateLambdaWithDocumentAndDoubleSlash() throws EXistException, PermissionDeniedException {
+    void immediateLambdaWithDocumentAndDoubleSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final Source expected = elemSource("<result><x/><x/><x/></result>");
 
         final String query = "let $f := function($d) { $d ! //x }\n" +
@@ -127,7 +134,7 @@ public class AbsolutePathTests extends XQueryCompilationTest {
     }
 
     @Test
-    public void immediateLambdaWithDocumentAndSlash() throws EXistException, PermissionDeniedException {
+    void immediateLambdaWithDocumentAndSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final Source expected = elemSource("<root/>");
 
         final String query = "let $f := function($d) { $d ! /root }\n" +
@@ -143,7 +150,7 @@ public class AbsolutePathTests extends XQueryCompilationTest {
     }
 
     @Test
-    public void immediateLambdaWithDocumentAndLoneSlash() throws EXistException, PermissionDeniedException {
+    void immediateLambdaWithDocumentAndLoneSlash(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final Source expected = docSource("<root/>");
 
         final String query = "let $f := function($d) { $d ! / }\n" +
@@ -159,7 +166,7 @@ public class AbsolutePathTests extends XQueryCompilationTest {
     }
 
     @Test
-    public void topLevelAbsolutePath() throws EXistException, PermissionDeniedException {
+    void topLevelAbsolutePath(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final Sequence expected = new IntegerValue(1);
 
         final String query = "count(//*)";

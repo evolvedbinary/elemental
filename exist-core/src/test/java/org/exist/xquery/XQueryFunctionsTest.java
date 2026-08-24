@@ -45,7 +45,6 @@
  */
 package org.exist.xquery;
 
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -53,12 +52,12 @@ import java.util.Date;
 import java.util.Locale;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -66,7 +65,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for various standard XQuery functions
@@ -83,30 +82,30 @@ import static org.junit.Assert.*;
  * @author gvalentino
  * @author jmvanel
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class XQueryFunctionsTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
     
     private final static String ROOT_COLLECTION_URI = "xmldb:exist:///db";
 
     @Test
-    public void arguments() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare function local:testAnyURI($uri as xs:string) as xs:string { " +
+    void arguments() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare function local:testAnyURI($uri as xs:string) as xs:string { " +
                 "concat('Successfully processed as xs:string : ',$uri) " +
                 "}; " +
                 "let $a := xs:anyURI('http://exist.sourceforge.net/') " +
                 "return local:testAnyURI($a)")) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("Successfully processed as xs:string : http://exist.sourceforge.net/", r);
             }
         }
 
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare function local:testEmpty($blah as xs:string)  as element()* { " +
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare function local:testEmpty($blah as xs:string)  as element()* { " +
                 "for $a in (1,2,3) order by $a " +
                 "return () " +
                 "}; " +
@@ -120,9 +119,9 @@ public class XQueryFunctionsTest {
      * with the rounding value typed xs:integer
      */
     @Test
-    public void roundHtE_INTEGER() throws XMLDBException {
+    void roundHtE_INTEGER() throws XMLDBException {
         String query = "fn:round-half-to-even( xs:integer('1'), 0 )";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("1", r);
@@ -130,7 +129,7 @@ public class XQueryFunctionsTest {
         }
 
         query = "fn:round-half-to-even( xs:integer('6'), -1 )";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("10", r);
@@ -138,7 +137,7 @@ public class XQueryFunctionsTest {
         }
 
         query = "fn:round-half-to-even( xs:integer('5'), -1 )";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("0", r);
@@ -151,7 +150,7 @@ public class XQueryFunctionsTest {
      * with the rounding value typed xs:double
      */
     @Test
-    public void roundHtE_DOUBLE() throws XMLDBException {
+    void roundHtE_DOUBLE() throws XMLDBException {
         /* List of Values to test with Rounding */
         String[] testvalues =
                 {"0.5", "1.5", "2.5", "3.567812E+3", "4.7564E-3", "35612.25"};
@@ -162,7 +161,7 @@ public class XQueryFunctionsTest {
 
         for (int i = 0; i < testvalues.length; i++) {
             final String query = "fn:round-half-to-even( xs:double('" + testvalues[i] + "'), " + precision[i] + " )";
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
                 try (final Resource resource = result.getResource(0)) {
                     final String r = (String) resource.getContent();
                     assertEquals(resultvalues[i], r);
@@ -175,29 +174,29 @@ public class XQueryFunctionsTest {
      * Tests the XQuery-XPath function fn:tokenize()
      */
     @Test
-    public void tokenize() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("count ( tokenize('a/b' , '/') )")) {
+    void tokenize() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("count ( tokenize('a/b' , '/') )")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("count ( tokenize('a/b/' , '/') )")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("count ( tokenize('a/b/' , '/') )")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("3", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("count ( tokenize('' , '/') )")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("count ( tokenize('' , '/') )")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("0", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(
                 "let $res := fn:tokenize('abracadabra', '(ab)|(a)')" +
                         "let $reference := ('', 'r', 'c', 'd', 'r', '')" +
                         "return fn:deep-equal($res, $reference)")) {
@@ -207,30 +206,30 @@ public class XQueryFunctionsTest {
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("tokenize('firstSecondThirdLast', '[A-Z]')")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("tokenize('firstSecondThirdLast', '[A-Z]')")) {
             assertEquals(4, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("first", r);
             }
             try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("econd", r);
             }
             try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("hird", r);
             }
             try (final Resource resource = result.getResource(3)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("ast", r);
             }
         }
     }
 
     @Test
-    public void deepEqual() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
+    void deepEqual() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(
                 "let $res := ('a', 'b')" +
                         "let $reference := ('a', 'b')" +
                         "return fn:deep-equal($res, $reference)")) {
@@ -242,12 +241,12 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void compare() throws XPathException, XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:compare(\"Strasse\", \"Stra\u00DFe\")")) {
+    void compare() throws XPathException, XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:compare(\"Strasse\", \"Stra\u00DFe\")")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("-1", r);
-                //result 	= existEmbeddedServer.executeQuery("fn:compare(\"Strasse\", \"Stra\u00DFe\", \"java:GermanCollator\")");
+                //result 	= XMLDB_EMBEDDED_DATABASE.executeQuery("fn:compare(\"Strasse\", \"Stra\u00DFe\", \"java:GermanCollator\")");
                 //r 		= (String) result.getResource(0).getContent();
                 //assertEquals( "0", r );
             }
@@ -255,48 +254,48 @@ public class XQueryFunctionsTest {
 
         final String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
             "return $a/b[compare(., '+') gt 0]";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void distinctValues() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare variable $c := distinct-values(('a', 'a')); $c")) {
+    void distinctValues() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare variable $c := distinct-values(('a', 'a')); $c")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("a", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare variable $c := distinct-values((<a>a</a>, <b>a</b>)); $c")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare variable $c := distinct-values((<a>a</a>, <b>a</b>)); $c")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("a", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $seq := ('A', 2, 'B', 2) return distinct-values($seq) ")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $seq := ('A', 2, 'B', 2) return distinct-values($seq) ")) {
             assertEquals(3, result.getSize());
         }
 
         final String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[distinct-values(.)]";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void sum() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare variable $c := sum((1, 2)); $c")) {
+    void sum() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare variable $c := sum((1, 2)); $c")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("3", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare variable $c := sum((<a>1</a>, <b>2</b>)); $c")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare variable $c := sum((<a>1</a>, <b>2</b>)); $c")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 //Any untyped atomic values in the sequence are converted to xs:double values ([MK Xpath 2.0], p. 432)
@@ -304,7 +303,7 @@ public class XQueryFunctionsTest {
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("declare variable $c := sum((), 3); $c")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("declare variable $c := sum((), 3); $c")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("3", r);
@@ -313,15 +312,15 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void avg() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg((2, 2))")) {
+    void avg() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg((2, 2))")) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg((<a>2</a>, <b>2</b>))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg((<a>2</a>, <b>2</b>))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 //Any untyped atomic values in the resulting sequence
@@ -331,14 +330,14 @@ public class XQueryFunctionsTest {
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg((3, 4, 5))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg((3, 4, 5))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("4", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg((xdt:yearMonthDuration('P20Y'), xdt:yearMonthDuration('P10M')))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg((xdt:yearMonthDuration('P20Y'), xdt:yearMonthDuration('P10M')))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("P10Y5M", r);
@@ -346,25 +345,25 @@ public class XQueryFunctionsTest {
         }
 
         String message = "";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg((xdt:yearMonthDuration('P20Y') , (3, 4, 5)))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg((xdt:yearMonthDuration('P20Y') , (3, 4, 5)))")) {
             // needed to make sure result is closed
         } catch (XMLDBException e) {
             message = e.getMessage();
         }
         assertTrue(message.contains("FORG0006"));
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg(())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg(())")) {
             assertEquals(0, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg(((xs:float('INF')), xs:float('-INF')))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg(((xs:float('INF')), xs:float('-INF')))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("NaN", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("avg(((3, 4, 5), xs:float('NaN')))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("avg(((3, 4, 5), xs:float('NaN')))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("NaN", r);
@@ -373,33 +372,33 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void min() throws XPathException, XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min((1, 2))")) {
-            try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
-                assertEquals("1", r);
-            }
-        }
-
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min((<a>1</a>, <b>2</b>))")) {
+    void min() throws XPathException, XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min((1, 2))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("1", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min(())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min((<a>1</a>, <b>2</b>))")) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("1", r);
+            }
+        }
+
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min(())")) {
             assertEquals(0, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min((xs:dateTime('2005-12-19T16:22:40.006+01:00'), xs:dateTime('2005-12-19T16:29:40.321+01:00')))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min((xs:dateTime('2005-12-19T16:22:40.006+01:00'), xs:dateTime('2005-12-19T16:29:40.321+01:00')))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("2005-12-19T16:22:40.006+01:00", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min(('a', 'b'))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min(('a', 'b'))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("a", r);
@@ -408,7 +407,7 @@ public class XQueryFunctionsTest {
 
         String message = "";
         try {
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min((xs:dateTime('2005-12-19T16:22:40.006+01:00'), 'a'))")) {
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min((xs:dateTime('2005-12-19T16:22:40.006+01:00'), 'a'))")) {
                 // needed to make sure result is closed
             }
         } catch (XMLDBException e) {
@@ -418,7 +417,7 @@ public class XQueryFunctionsTest {
 
         try {
             message = "";
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery("min(1, 2)")) {
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("min(1, 2)")) {
                 // needed to make sure result is closed
             }
         } catch (XMLDBException e) {
@@ -428,33 +427,34 @@ public class XQueryFunctionsTest {
         assertTrue(message.contains("XPTY0004") | message.contains("FORG0001") | message.contains("FOCH0002"));
     }
 
-    public void max() throws XPathException, XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max((1, 2))")) {
-            try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
-                assertEquals("2", r);
-            }
-        }
-
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max((<a>1</a>, <b>2</b>))")) {
+    @Test
+    void max() throws XPathException, XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max((1, 2))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max(())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max((<a>1</a>, <b>2</b>))")) {
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("2", r);
+            }
+        }
+
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max(())")) {
             assertEquals(0, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max((xs:dateTime('2005-12-19T16:22:40.006+01:00'), xs:dateTime('2005-12-19T16:29:40.321+01:00')))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max((xs:dateTime('2005-12-19T16:22:40.006+01:00'), xs:dateTime('2005-12-19T16:29:40.321+01:00')))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("2005-12-19T16:29:40.321+01:00", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max(('a', 'b'))")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max(('a', 'b'))")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("b", r);
@@ -463,7 +463,7 @@ public class XQueryFunctionsTest {
 
         String message = "";
         try {
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max((xs:dateTime('2005-12-19T16:22:40.006+01:00'), 'a'))")) {
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max((xs:dateTime('2005-12-19T16:22:40.006+01:00'), 'a'))")) {
                 // needed to make sure result is closed
             }
         } catch (XMLDBException e) {
@@ -473,7 +473,7 @@ public class XQueryFunctionsTest {
 
         try {
             message = "";
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery("max(1, 2)")) {
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("max(1, 2)")) {
                 // needed to make sure result is closed
             }
         } catch (XMLDBException e) {
@@ -484,12 +484,32 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void exclusiveLock() throws XMLDBException {
+    void exclusiveLock() throws XMLDBException {
         String query = "let $query1 := (<a/>)\n" +
                 "let $query2 := (2, 3)\n" +
                 "let $a := util:exclusive-lock(//*,($query1, $query2))\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
+            assertEquals(3, result.getSize());
+            try (final Resource resource = result.getResource(0)) {
+                final String r = (String) resource.getContent();
+                assertEquals("<a/>", r);
+            }
+            try (final Resource resource = result.getResource(1)) {
+                final String r = (String) resource.getContent();
+                assertEquals("2", r);
+            }
+            try (final Resource resource = result.getResource(2)) {
+                final String r = (String) resource.getContent();
+                assertEquals("3", r);
+            }
+        }
+
+        query = "let $query1 := (<a/>)\n" +
+                "let $query2 := (2, 3)\n" +
+                "let $a := util:exclusive-lock((),($query1, $query2))\n" +
+                "return $a";
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(3, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 String r = (String) resource.getContent();
@@ -509,45 +529,25 @@ public class XQueryFunctionsTest {
                 "let $query2 := (2, 3)\n" +
                 "let $a := util:exclusive-lock((),($query1, $query2))\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(3, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("<a/>", r);
             }
             try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
             try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
-                assertEquals("3", r);
-            }
-        }
-
-        query = "let $query1 := (<a/>)\n" +
-                "let $query2 := (2, 3)\n" +
-                "let $a := util:exclusive-lock((),($query1, $query2))\n" +
-                "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
-            assertEquals(3, result.getSize());
-            try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
-                assertEquals("<a/>", r);
-            }
-            try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
-                assertEquals("2", r);
-            }
-            try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("3", r);
             }
         }
 
         query = "let $a := util:exclusive-lock(//*,<root/>)\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("<root/>", r);
@@ -555,11 +555,11 @@ public class XQueryFunctionsTest {
         }
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void utilEval1() throws XMLDBException {
+    void utilEval1() throws XMLDBException {
         String query = "<a><b/></a>/util:eval('*')";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
         }
     }
@@ -568,46 +568,46 @@ public class XQueryFunctionsTest {
      * @see {http://sourceforge.net/tracker/index.php?func=detail&aid=1629363&group_id=17691&atid=117691}
      */
     @Test
-    public void utilEval2() throws XMLDBException {
+    void utilEval2() throws XMLDBException {
         String query = "let $context := <item/> " +
                 "return util:eval(\"<result>{$context}</result>\")";
         // TODO check result
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
         }
     }
 
     @Test
-    public void utilEvalForFunction() throws XMLDBException {
+    void utilEvalForFunction() throws XMLDBException {
         String query = "declare function local:home()\n"
                 + "{\n"
                 + "<b>HOME</b>\n"
                 + "};\n"
                 + "util:eval(\"local:home()\")\n";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
         }
     }
 
     @Test
-    public void sharedLock() throws XMLDBException {
+    void sharedLock() throws XMLDBException {
         String query = "let $query1 := (<a/>)\n" +
                 "let $query2 := (2, 3)\n" +
                 "let $a := util:shared-lock(//*,($query1, $query2))\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(3, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("<a/>", r);
             }
             try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
             try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("3", r);
             }
         }
@@ -616,18 +616,18 @@ public class XQueryFunctionsTest {
                 "let $query2 := (2, 3)\n" +
                 "let $a := util:shared-lock((),($query1, $query2))\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(3, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("<a/>", r);
             }
             try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
             try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("3", r);
             }
         }
@@ -636,40 +636,40 @@ public class XQueryFunctionsTest {
                 "let $query2 := (2, 3)\n" +
                 "let $a := util:shared-lock((),($query1, $query2))\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(3, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("<a/>", r);
             }
             try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2", r);
             }
             try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("3", r);
             }
         }
 
         query = "let $a := util:shared-lock(//*,<root/>)\n" +
                 "return $a";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("<root/>", r);
             }
         }
     }
 
     @Test
-    public void encodeForURI() throws XMLDBException {
+    void encodeForURI() throws XMLDBException {
         String string = "http://www.example.com/00/Weather/CA/Los%20Angeles#ocean";
         String expected = "http%3A%2F%2Fwww.example.com%2F00%2FWeather%2FCA%2FLos%2520Angeles%23ocean";
         String query = "encode-for-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
@@ -677,9 +677,9 @@ public class XQueryFunctionsTest {
         string = "~b\u00e9b\u00e9";
         expected = "~b%C3%A9b%C3%A9";
         query = "encode-for-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
@@ -687,28 +687,28 @@ public class XQueryFunctionsTest {
         string = "100% organic";
         expected = "100%25%20organic";
         query = "encode-for-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
 
         query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[encode-for-uri(.) ne '']";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void iriToURI() throws XMLDBException {
+    void iriToURI() throws XMLDBException {
         String string = "http://www.example.com/00/Weather/CA/Los%20Angeles#ocean";
         String expected = "http://www.example.com/00/Weather/CA/Los%20Angeles#ocean";
         String query = "iri-to-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
@@ -716,9 +716,9 @@ public class XQueryFunctionsTest {
         string = "http://www.example.com/~b\u00e9b\u00e9";
         expected = "http://www.example.com/~b%C3%A9b%C3%A9";
         query = "iri-to-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
@@ -726,22 +726,22 @@ public class XQueryFunctionsTest {
         string = "$";
         expected = "$";
         query = "iri-to-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
     }
 
     @Test
-    public void escapeHTMLURI() throws XMLDBException {
+    void escapeHTMLURI() throws XMLDBException {
         String string = "http://www.example.com/00/Weather/CA/Los Angeles#ocean";
         String expected = "http://www.example.com/00/Weather/CA/Los Angeles#ocean";
         String query = "escape-html-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals(expected, r);
             }
         }
@@ -749,7 +749,7 @@ public class XQueryFunctionsTest {
         string = "javascript:if (navigator.browserLanguage == 'fr') window.open('http://www.example.com/~b\u00e9b\u00e9');";
         expected = "javascript:if (navigator.browserLanguage == 'fr') window.open('http://www.example.com/~b%C3%A9b%C3%A9');";
         query = "escape-html-uri(\"" + string + "\")";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 String r = (String) resource.getContent();
                 assertEquals(expected, r);
@@ -757,23 +757,23 @@ public class XQueryFunctionsTest {
         }
 
         query = "escape-html-uri('$')";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("$", r);
             }
         }
 
         query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[escape-html-uri(.) ne '']";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
     public void localName() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b></b></a> return fn:local-name($a)")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b></b></a> return fn:local-name($a)")) {
             try (final Resource resource = result.getResource(0)) {
                 String r = (String) resource.getContent();
                 assertEquals("a", r);
@@ -783,7 +783,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void localName_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:local-name(())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:local-name(())")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("", r);
@@ -793,7 +793,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void localName_emptyElement() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<a>b</a>/fn:local-name(c)")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<a>b</a>/fn:local-name(c)")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("", r);
@@ -803,7 +803,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void localName_emptyText() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<a>b</a>/fn:local-name(text())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<a>b</a>/fn:local-name(text())")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("", r);
@@ -813,7 +813,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void localName_contextItem() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/b/fn:local-name()")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/b/fn:local-name()")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("b", r);
@@ -823,16 +823,16 @@ public class XQueryFunctionsTest {
 
     @Test
     public void localName_contextItem_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/b/c/fn:local-name()")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/b/c/fn:local-name()")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
     public void name() throws XPathException, XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b></b></a> return fn:name($a)")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b></b></a> return fn:name($a)")) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("a", r);
             }
         }
@@ -840,7 +840,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void name_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:name(())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:name(())")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("", r);
@@ -850,7 +850,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void name_emptyElement() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<a>b</a>/fn:name(c)")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<a>b</a>/fn:name(c)")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("", r);
@@ -860,7 +860,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void name_emptyText() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<a>b</a>/fn:local-name(text())")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<a>b</a>/fn:local-name(text())")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("", r);
@@ -870,7 +870,7 @@ public class XQueryFunctionsTest {
 
     @Test
     public void name_contextItem() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/b/fn:name()")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/b/fn:name()")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("b", r);
@@ -880,39 +880,39 @@ public class XQueryFunctionsTest {
 
     @Test
     public void name_contextItem_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/b/c/fn:name()")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/b/c/fn:name()")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
-    public void dateTimeConstructor() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $date := xs:date('2007-05-02+02:00') return dateTime($date, xs:time('15:12:52.421+02:00'))")) {
+    void dateTimeConstructor() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $date := xs:date('2007-05-02+02:00') return dateTime($date, xs:time('15:12:52.421+02:00'))")) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2007-05-02T15:12:52.421+02:00", r);
             }
         }
     }
 
     @Test
-    public void currentDateTime() throws XMLDBException {
+    void currentDateTime() throws XMLDBException {
         //Do not use this test around midnight on the last day of a month ;-)
-        try (final EXistResourceSet result =  existEmbeddedServer.executeQuery("('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')[month-from-dateTime(current-dateTime())]")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')[month-from-dateTime(current-dateTime())]")) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
-                SimpleDateFormat df = new SimpleDateFormat("MMM", new Locale("en", "US"));
-                Date date = new Date();
+                final String r = (String) resource.getContent();
+                final SimpleDateFormat df = new SimpleDateFormat("MMM", new Locale("en", "US"));
+                final Date date = new Date();
                 assertEquals(df.format(date), r);
             }
         }
 
         String query = "declare option exist:current-dateTime '2007-08-23T00:01:02.062+02:00';" +
                 "current-dateTime()";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("2007-08-23T00:01:02.062+02:00", r);
             }
         }
@@ -927,33 +927,33 @@ public class XQueryFunctionsTest {
      * no millesecs available. Special value was returned.
      */
     @Test
-    public void secondsFromDateTime() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("seconds-from-dateTime(xs:dateTime(\"2005-12-22T13:35:21.000\") )")) {
+    void secondsFromDateTime() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("seconds-from-dateTime(xs:dateTime(\"2005-12-22T13:35:21.000\") )")) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("21", r);
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("seconds-from-dateTime(xs:dateTime(\"2005-12-22T13:35:21\") )")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("seconds-from-dateTime(xs:dateTime(\"2005-12-22T13:35:21\") )")) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("21", r);
             }
         }
     }
 
     @Test
-    public void resolveQName() throws XMLDBException {
+    void resolveQName() throws XMLDBException {
         String query = "declare namespace a=\"aes\"; " +
                 "declare namespace n=\"ns1\"; " +
                 "declare variable $d := <c xmlns:x=\"ns1\"><d>x:test</d></c>; " +
                 "for $e in $d/d " +
                 "return fn:resolve-QName($e/text(), $e)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("x:test", r);
             }
         }
@@ -963,48 +963,48 @@ public class XQueryFunctionsTest {
                 "declare variable $d := <c xmlns:x=\"ns1\"><d xmlns:y=\"ns1\">y:test</d></c>; " +
                 "for $e in $d/d " +
                 "return fn:resolve-QName($e/text(), $e)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("y:test", r);
             }
         }
     }
 
     @Test
-    public void namespaceURI() throws XMLDBException {
+    void namespaceURI() throws XMLDBException {
         String query = "let $var := <a xmlns='aaa'/> " +
                 "return " +
                 "$var[fn:namespace-uri() = 'aaa']/fn:namespace-uri()";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("aaa", r);
             }
         }
 
         query = "for $a in <test><a xmlns=\"aaa\"><b><c/></b></a></test>//* " +
                 "return namespace-uri($a)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(result.getSize(), 3);
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("aaa", r);
             }
             try (final Resource resource = result.getResource(1)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("aaa", r);
             }
             try (final Resource resource = result.getResource(2)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("aaa", r);
             }
         }
     }
 
     @Test
-    public void namespaceURI_contextItem() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><exist:b/></a>  return $a/exist:b/fn:namespace-uri()")) {
+    void namespaceURI_contextItem() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><exist:b/></a>  return $a/exist:b/fn:namespace-uri()")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("http://exist.sourceforge.net/NS/exist", r);
@@ -1013,71 +1013,71 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void namespaceURI_contextItem_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/exist:b/c/fn:namespace-uri()")) {
+    void namespaceURI_contextItem_empty() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/exist:b/c/fn:namespace-uri()")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
-    public void prefixFromQName() throws XMLDBException {
+    void prefixFromQName() throws XMLDBException {
         String query = "declare namespace foo = \"http://example.org\"; " +
                 "declare namespace FOO = \"http://example.org\"; " +
                 "fn:prefix-from-QName(xs:QName(\"foo:bar\"))";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("foo", r);
             }
         }
     }
 
     @Test
-    public void stringJoin() throws XMLDBException {
+    void stringJoin() throws XMLDBException {
         String query = "let $s := ('','a','b','') " +
                 "return string-join($s,'/')";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("/a/b/", r);
             }
         }
     }
 
     @Test
-    public void nodeName() throws XMLDBException {
+    void nodeName() throws XMLDBException {
         final String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "for $b in $a/b[fn:node-name(.) = xs:QName('b')] return $b";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void noeName_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("fn:node-name(())")) {
+    void noeName_empty() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("fn:node-name(())")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
-    public void nodeName_emptyElement() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<a>b</a>/fn:node-name(c)")) {
+    void nodeName_emptyElement() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<a>b</a>/fn:node-name(c)")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
-    public void nodeName_emptyText() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<a>b</a>/fn:node-name(text())")) {
+    void nodeName_emptyText() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<a>b</a>/fn:node-name(text())")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
-    public void nodeName_contextItem() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/b/fn:node-name()")) {
+    void nodeName_contextItem() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/b/fn:node-name()")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("b", r);
@@ -1086,27 +1086,27 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void nodeName_contextItem_empty() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("let $a := <a><b/></a> return $a/b/c/fn:node-name()")) {
+    void nodeName_contextItem_empty() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("let $a := <a><b/></a> return $a/b/c/fn:node-name()")) {
             assertEquals(0, result.getSize());
         }
     }
 
     @Test
-    public void data0() throws XMLDBException {
+    void data0() throws XMLDBException {
         final String query = "let $a := <a><b>1</b><b>1</b></a> " +
                 "for $b in $a/b[data() = '1'] return $b";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void data0_atomization() throws XMLDBException {
+    void data0_atomization() throws XMLDBException {
         final String query = "(<a>1<b>2</b>three</a>, <four>4</four>)/data()";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals("12three", resource.getContent().toString());
@@ -1118,20 +1118,20 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void data1() throws XMLDBException {
+    void data1() throws XMLDBException {
         final String query = "let $a := <a><b>1</b><b>1</b></a> " +
                 "for $b in $a/b[data() = '1'] return $b";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void data1_atomization() throws XMLDBException {
+    void data1_atomization() throws XMLDBException {
         final String query = "data((<a>1<b>2</b>three</a>, <four>4</four>, xs:integer(5)))";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(3, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals("12three", resource.getContent().toString());
@@ -1146,65 +1146,65 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void ceiling() throws XMLDBException {
-        String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
+    void ceiling() throws XMLDBException {
+        final String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[abs(ceiling(.))]";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void concat() throws XMLDBException {
-        String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
+    void concat() throws XMLDBException {
+        final String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[concat('+', ., '+') = '+-2+']";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
         }
     }
 
     @Test
-    public void documentURI() throws XMLDBException {
-        String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
+    void documentURI() throws XMLDBException {
+        final String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[empty(document-uri(.))]";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void implicitTimezone() throws XMLDBException {
-        String query = "declare option exist:implicit-timezone 'PT3H';" +
+    void implicitTimezone() throws XMLDBException {
+        final String query = "declare option exist:implicit-timezone 'PT3H';" +
                 "implicit-timezone()";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                String r = (String) resource.getContent();
+                final String r = (String) resource.getContent();
                 assertEquals("PT3H", r);
             }
         }
     }
 
     @Test
-    public void exists() throws XMLDBException {
+    void exists() throws XMLDBException {
         String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[exists(.)]";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
 
     @Test
-    public void floor() throws XMLDBException {
+    void floor() throws XMLDBException {
         String query = "let $a := <a><b>-1</b><b>-2</b></a> " +
                 "return $a/b[abs(floor(.))]";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(2, result.getSize());
         }
     }
@@ -1214,15 +1214,15 @@ public class XQueryFunctionsTest {
      * which should return false, no exception thrown
      */
     @Test
-    public void collectionAvailable1() throws XMLDBException {
+    void collectionAvailable1() throws XMLDBException {
         //remove the test collection if it already exists
         String collectionName = "testCollectionAvailable1";
         String collectionPath = XmldbURI.ROOT_COLLECTION + "/" + collectionName;
         String collectionURI = ROOT_COLLECTION_URI + "/" + collectionName;
 
-        Collection testCollection = existEmbeddedServer.getRoot().getChildCollection(collectionName);
+        Collection testCollection = XMLDB_EMBEDDED_DATABASE.getRoot().getChildCollection(collectionName);
         if (testCollection != null) {
-            CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+            CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
             cms.removeCollection(collectionPath);
         }
 
@@ -1235,15 +1235,15 @@ public class XQueryFunctionsTest {
      * no exception thrown
      */
     @Test
-    public void collectionAvailable2() throws XMLDBException {
+    void collectionAvailable2() throws XMLDBException {
         //add the test collection
         String collectionName = "testCollectionAvailable2";
         String collectionPath = XmldbURI.ROOT_COLLECTION + "/" + collectionName;
         String collectionURI = ROOT_COLLECTION_URI + "/" + collectionName;
 
-        Collection testCollection = existEmbeddedServer.getRoot().getChildCollection(collectionName);
+        Collection testCollection = XMLDB_EMBEDDED_DATABASE.getRoot().getChildCollection(collectionName);
         if (testCollection == null) {
-            CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+            CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
             try (final Collection created = cms.createCollection(collectionPath)) { }
         }
 
@@ -1256,12 +1256,12 @@ public class XQueryFunctionsTest {
         String importXMLDB = "import module namespace xdb=\"http://exist-db.org/xquery/xmldb\";\n";
         String collectionAvailable = "xdb:collection-available('" + collectionPath + "')";
         String query = importXMLDB + collectionAvailable;
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertNotNull(result);
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertNotNull(resource);
-                String content = (String) resource.getContent();
+                final String content = (String) resource.getContent();
                 assertNotNull(content);
                 assertEquals(expectedResult, Boolean.valueOf(content));
             }
@@ -1269,14 +1269,14 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void base64BinaryCast() throws XMLDBException, URISyntaxException {
+    void base64BinaryCast() throws XMLDBException, URISyntaxException {
         final String TEST_BINARY_COLLECTION = "testBinary";
         final String TEST_COLLECTION = "/db/" + TEST_BINARY_COLLECTION;
         final String BINARY_RESOURCE_FILENAME = "logo.png";
         final String XML_RESOURCE_FILENAME = "logo.xml";
 
         //create a test collection
-        CollectionManagementService colService = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        CollectionManagementService colService = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = colService.createCollection(TEST_BINARY_COLLECTION)) {
             assertNotNull(testCollection);
 
@@ -1289,31 +1289,31 @@ public class XQueryFunctionsTest {
             }
 
             //create an XML resource with the logo base64 embedded in it
-            String queryStore = "xquery version \"1.0\";\n\n"
+            final String queryStore = "xquery version \"1.0\";\n\n"
                     + "let $embedded := <logo><image>{util:binary-doc(\"" + TEST_COLLECTION + "/" + BINARY_RESOURCE_FILENAME + "\")}</image></logo> return\n"
                     + "xmldb:store(\"" + TEST_COLLECTION + "\", \"" + XML_RESOURCE_FILENAME + "\", $embedded)";
 
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery(queryStore)) {
-                assertEquals("store, Expect single result", 1, result.getSize());
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(queryStore)) {
+                assertEquals(1, result.getSize(), "store, Expect single result");
                 try (final Resource resource = result.getResource(0)) {
                     assertEquals("Expect stored filename as result", TEST_COLLECTION + "/" + XML_RESOURCE_FILENAME, resource.getContent().toString());
                 }
             }
 
             //retrieve the base64 image from the XML resource and try to cast to xs:base64Binary
-            String queryRetreive = "xquery version \"1.0\";\n\n"
+            final String queryRetreive = "xquery version \"1.0\";\n\n"
                     + "let $image := doc(\"" + TEST_COLLECTION + "/" + XML_RESOURCE_FILENAME + "\")/logo/image return\n"
                     + "$image/text() cast as xs:base64Binary";
 
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery(queryRetreive)) {
+            try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(queryRetreive)) {
                 assertEquals("retreive, Expect single result", 1, result.getSize());
             }
         }
     }
 
     @Test
-    public void defaultLanguage() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("default-language()")) {
+    void defaultLanguage() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("default-language()")) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 final String defaultLanguage = (String) resource.getContent();
@@ -1323,8 +1323,8 @@ public class XQueryFunctionsTest {
     }
 
     @Test
-    public void enclosedExpression() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<abc>{()}{123}</abc>")) {
+    void enclosedExpression() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<abc>{()}{123}</abc>")) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 final String text = (String) resource.getContent();
@@ -1332,7 +1332,7 @@ public class XQueryFunctionsTest {
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<abc>{(), 123}</abc>")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<abc>{(), 123}</abc>")) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 final String text = (String) resource.getContent();
@@ -1340,7 +1340,7 @@ public class XQueryFunctionsTest {
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<abc>{()}123</abc>")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<abc>{()}123</abc>")) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 final String text = (String) resource.getContent();
@@ -1348,7 +1348,7 @@ public class XQueryFunctionsTest {
             }
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("<root>{'time '}{()}{'is: '}{current-time()}</root>")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("<root>{'time '}{()}{'is: '}{current-time()}</root>")) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 final String text = (String) resource.getContent();

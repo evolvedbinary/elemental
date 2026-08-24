@@ -45,16 +45,20 @@
  */
 package org.exist.collections.triggers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.IndexQueryService;
-import org.junit.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -66,8 +70,8 @@ import java.io.IOException;
 
 public class SAXTriggerTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String DOCUMENT1_CONTENT = 
         "<test>"
@@ -103,7 +107,7 @@ public class SAXTriggerTest {
     private final static String testCollection = "/db/triggers";
 
     @Test
-    public void test() throws EXistException, XMLDBException {
+    void test() throws EXistException, XMLDBException {
 
         final BrokerPool db = BrokerPool.getInstance();
         db.registerDocumentTrigger(AnotherTrigger.class);
@@ -124,7 +128,7 @@ public class SAXTriggerTest {
     }
 
     @Test
-    public void saxEventModifications() throws EXistException, XMLDBException {
+    void saxEventModifications() throws EXistException, XMLDBException {
 
         final BrokerPool db = BrokerPool.getInstance();
         db.registerDocumentTrigger(StoreTrigger.class);
@@ -160,8 +164,8 @@ public class SAXTriggerTest {
         }
     }
 
-    @After
-    public void cleanDB() throws XMLDBException {
+    @AfterEach
+    void cleanDB() throws XMLDBException {
         try (final Collection config = DatabaseManager.getCollection(BASE_URI + "/db/system/config" + testCollection, "admin", "")) {
             if (config != null) {
                 CollectionManagementService mgmt = config.getService(CollectionManagementService.class);
@@ -185,9 +189,9 @@ public class SAXTriggerTest {
         }
     }
 
-    @BeforeClass
-    public static void initDB() throws XMLDBException {
-        CollectionManagementService mgmt = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeAll
+    static void initDB() throws XMLDBException {
+        CollectionManagementService mgmt = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCol = mgmt.createCollection("triggers")) {
             mgmt = testCol.getService(CollectionManagementService.class);
             try (final Collection sub1 = mgmt.createCollection("sub1")) {
@@ -199,8 +203,8 @@ public class SAXTriggerTest {
         }
     }
 
-    @AfterClass
-    public static void closeDB() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterAll
+    static void closeDB() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         TestUtils.cleanupDB();
     }
 }

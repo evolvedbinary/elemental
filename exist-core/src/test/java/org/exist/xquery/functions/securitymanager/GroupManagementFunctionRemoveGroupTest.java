@@ -51,15 +51,16 @@ import org.exist.security.SecurityManager;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xquery.XPathException;
-import org.junit.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GroupManagementFunctionRemoveGroupTest {
 
@@ -71,33 +72,32 @@ public class GroupManagementFunctionRemoveGroupTest {
     private static final String OTHER_GROUP1_NAME = "otherGroup";
     private static final String OTHER_GROUP2_NAME = "otherGroup2";
 
-    @Rule
-    public final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteDbaGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
-        extractPermissionDenied(() -> {
-            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.DBA_GROUP).close();
-        });
-    }
-
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteGuestGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
-        extractPermissionDenied(() -> {
-            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.GUEST_GROUP).close();
-        });
-    }
-
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteUnknownGroup() throws XPathException, PermissionDeniedException, EXistException, IOException {
-        extractPermissionDenied(() -> {
-            xqueryRemoveGroup(existWebServer.getBrokerPool(), SecurityManager.UNKNOWN_GROUP).close();
-        });
+    @Test
+    void cannotDeleteDbaGroup(final BrokerPool pool) throws XPathException, PermissionDeniedException, EXistException {
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(() ->
+                xqueryRemoveGroup(pool, SecurityManager.DBA_GROUP).close()));
     }
 
     @Test
-    public void deleteUsersSupplementalGroups() throws PermissionDeniedException, EXistException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void cannotDeleteGuestGroup(final BrokerPool pool) throws XPathException, PermissionDeniedException, EXistException {
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(() ->
+                xqueryRemoveGroup(pool, SecurityManager.GUEST_GROUP).close()));
+    }
+
+    @Test
+    void cannotDeleteUnknownGroup(final BrokerPool pool) throws XPathException, PermissionDeniedException, EXistException {
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(() ->
+                xqueryRemoveGroup(pool, SecurityManager.UNKNOWN_GROUP).close()));
+    }
+
+    @Test
+    void deleteUsersSupplementalGroups(final BrokerPool pool) throws PermissionDeniedException, EXistException {
         final SecurityManager sm = pool.getSecurityManager();
 
         // create user with personal group as primary group
@@ -157,43 +157,39 @@ public class GroupManagementFunctionRemoveGroupTest {
         }
     }
 
-    @Test(expected = PermissionDeniedException.class)
-    public void deleteUsersPersonalPrimaryGroup() throws PermissionDeniedException, EXistException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void deleteUsersPersonalPrimaryGroup(final BrokerPool pool) throws PermissionDeniedException, EXistException {
         final SecurityManager sm = pool.getSecurityManager();
-
-        // create user with personal group as primary group
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            createUser(broker, sm, USER1_NAME, USER1_PWD);
-            transaction.commit();
-        }
-
-        // check that the user is as we expect
-        String user1PrimaryGroup = null;
+                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
+                createUser(broker, sm, USER1_NAME, USER1_PWD);
+                transaction.commit();
+            }
+        final String user1PrimaryGroup;
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            final Account user1 = sm.getAccount(USER1_NAME);
-            user1PrimaryGroup = user1.getPrimaryGroup();
-            assertEquals(USER1_NAME, user1PrimaryGroup);
-            assertArrayEquals(new String[] { USER1_NAME }, user1.getGroups());
+                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
+                final Account user1 = sm.getAccount(USER1_NAME);
+                user1PrimaryGroup = user1.getPrimaryGroup();
+                assertEquals(USER1_NAME, user1PrimaryGroup);
+                assertArrayEquals(new String[]{USER1_NAME}, user1.getGroups());
 
-            transaction.commit();
-        }
+                transaction.commit();
+            }
+        assertThrows(PermissionDeniedException.class, () -> {
 
-        // attempt to remove the primary group of the user
-        try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
-             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
-            sm.deleteGroup(user1PrimaryGroup);
-            fail("Should have received: PermissionDeniedException: Account 'user1' still has 'user1' as their primary group!");
+            // attempt to remove the primary group of the user
+            try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
+                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
+                sm.deleteGroup(user1PrimaryGroup);
+                fail("Should have received: PermissionDeniedException: Account 'user1' still has 'user1' as their primary group!");
 
-            transaction.commit();
-        }
+                transaction.commit();
+            }
+        });
     }
 
     @Test
-    public void deleteUsersSharingPersonalPrimaryGroup() throws PermissionDeniedException, EXistException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void deleteUsersSharingPersonalPrimaryGroup(final BrokerPool pool) throws PermissionDeniedException, EXistException {
         final SecurityManager sm = pool.getSecurityManager();
 
         // create two users which share a primary group

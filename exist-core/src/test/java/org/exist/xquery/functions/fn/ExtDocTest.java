@@ -46,17 +46,16 @@
 package org.exist.xquery.functions.fn;
 
 import com.googlecode.junittoolbox.ParallelParameterized;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.FileUtils;
 
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
@@ -72,18 +71,15 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
-@RunWith(ParallelParameterized.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class ExtDocTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @Parameters(name = "{0}")
     public static java.util.Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"external-doc-ns-1", "<elem1 xmlns:xyz=\"http://xyz\"/>", null},
@@ -92,35 +88,30 @@ public class ExtDocTest {
                 {"external-doc-ns-4", "<abc:elem1 xmlns:abc=\"hello\" xmlns:xyz=\"http://xyz\" xmlns=\"123\"/>", null}
         });
     }
-
-
-    @Parameter
     public String docName;
-
-    @Parameter(value = 1)
     public String docContent;
-
-    @Parameter(value = 2)
     public Path externalDoc;
 
-    @Before
-    public void storeExtDoc() throws IOException {
+    @BeforeEach
+    void storeExtDoc() throws IOException {
         final Path externalDocFile = Files.createTempFile(docName, "xml");
         Files.write(externalDocFile, docContent.getBytes(UTF_8));
         this.externalDoc = externalDocFile;
     }
 
-    @After
-    public void removeExtDoc() {
+    @AfterEach
+    void removeExtDoc() {
         if (externalDoc != null) {
             FileUtils.deleteQuietly(externalDoc);
         }
     }
 
-    @Test
-    public void parse() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void parse(String docName, String docContent, Path externalDoc) throws XMLDBException {
+        initExtDocTest(docName, docContent, externalDoc);
         final URI docUri = externalDoc.toUri();
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(
             "xquery version \"3.1\";\n" +
             "\n" +
             "declare namespace output = \"http://www.w3.org/2010/xslt-xquery-serialization\";" +
@@ -143,7 +134,7 @@ public class ExtDocTest {
                 .checkForSimilar()
                 .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
     }
 }

@@ -57,11 +57,14 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
@@ -72,12 +75,12 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class HistoryTriggerTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static XmldbURI TEST_COLLECTION_URI = XmldbURI.ROOT_COLLECTION_URI.append("test-history-trigger");
     private static XmldbURI TEST_CONFIG_COLLECTION_URI = XmldbURI.CONFIG_COLLECTION_URI.append(TEST_COLLECTION_URI);
@@ -89,9 +92,8 @@ public class HistoryTriggerTest {
             "    </triggers>\n" +
             "</collection>";
 
-    @Before
-    public void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void setup(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -109,9 +111,8 @@ public class HistoryTriggerTest {
         }
     }
 
-    @After
-    public void cleanup() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    @AfterEach
+    void cleanup(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
             final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -136,7 +137,7 @@ public class HistoryTriggerTest {
      * @see <a href="https://github.com/eXist-db/exist/issues/139">History trigger fails #139</a>
      */
     @Test
-    public void storeAndOverwriteByCopy() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException {
+    void storeAndOverwriteByCopy(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException, LockException, SAXException, IOException {
         final XmldbURI testDoc1Name = XmldbURI.create("test_store-and-overwrite-by-copy.xml");
         final String testDoc1Content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 + "<hello>12345</hello>";
@@ -145,7 +146,6 @@ public class HistoryTriggerTest {
         final String testDoc2Content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 + "<other>thing</other>";
 
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -179,14 +179,14 @@ public class HistoryTriggerTest {
     }
 
     @Test
-    public void storeAndOverwrite() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException {
+    void storeAndOverwrite() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException {
         final XmldbURI testDocName = XmldbURI.create("test_store-and-overwrite.xml");
         final String testDocContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 + "<hello>world</hello>";
         final String testDoc2Content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 + "<and>another thing</and>";
 
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -231,7 +231,7 @@ public class HistoryTriggerTest {
                 final Diff diff = DiffBuilder.compare(Input.from(orginalDocContent))
                         .withTest(Input.from(doc))
                         .build();
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
 
                 assertFalse(it.hasNext());
 

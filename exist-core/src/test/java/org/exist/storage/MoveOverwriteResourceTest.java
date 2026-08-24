@@ -46,6 +46,7 @@
 package org.exist.storage;
 
 import org.exist.Database;
+import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.QName;
@@ -55,16 +56,17 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.NodeSelector;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
@@ -73,14 +75,13 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
-
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.storage.ElementValue.ELEMENT;
 
 public class MoveOverwriteResourceTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private final static String XML1 =
             "<?xml version=\"1.0\"?>" +
@@ -112,8 +113,8 @@ public class MoveOverwriteResourceTest {
      * index
      */
     @Test
-    public void moveAndOverwriteXML() throws Exception  {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void moveAndOverwriteXML() throws EXistException, LockException, PermissionDeniedException, IOException, SAXException, DatabaseConfigurationException, QName.IllegalQNameException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final DefaultDocumentSet docs = new DefaultDocumentSet();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             store(broker);
@@ -130,7 +131,7 @@ public class MoveOverwriteResourceTest {
         }
     }
 
-    private void store(final DBBroker broker) throws Exception {
+    private void store(final DBBroker broker) throws PermissionDeniedException, IOException, SAXException, LockException, EXistException {
         try(final Txn transaction = broker.getBrokerPool().getTransactionManager().beginTransaction()) {
             test1 = createCollection(transaction, broker, TEST_COLLECTION_URI);
             test2 = createCollection(transaction, broker, SUB_TEST_COLLECTION_URI);
@@ -150,7 +151,7 @@ public class MoveOverwriteResourceTest {
         return col;
     }
 
-    private void move(final Database db) throws Exception {
+    private void move(final Database db) throws EXistException, DatabaseConfigurationException, PermissionDeniedException, LockException, IOException, TriggerException {
         TestIndex index = new TestIndex();
         try (final DBBroker broker = db.get(Optional.of(db.getSecurityManager().getSystemSubject()))) {
             broker.getBrokerPool().getIndexManager().registerIndex(index);
@@ -173,7 +174,7 @@ public class MoveOverwriteResourceTest {
         assertTrue(index.expectingDocument.isEmpty());
     }
 
-    private void checkIndex(final DBBroker broker, final DocumentSet docs) throws Exception {
+    private void checkIndex(final DBBroker broker, final DocumentSet docs) throws QName.IllegalQNameException {
         final StructuralIndex index = broker.getStructuralIndex();
         final NodeSelector selector = (doc, nodeId) -> new NodeProxy(null, doc, nodeId);
 

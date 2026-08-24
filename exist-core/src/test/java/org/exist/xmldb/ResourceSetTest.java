@@ -45,13 +45,12 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.io.InputStreamUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -60,23 +59,23 @@ import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 
 import java.io.InputStream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.exist.samples.Samples.SAMPLES;
 
 public class ResourceSetTest {
 
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	private final static String TEST_COLLECTION = "testResourceSet";
 
 	private Collection testCollection;
 
-	@Before
-	public void setUp() throws Exception {
-		final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException, IOException {
+		final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
 		testCollection = service.createCollection(TEST_COLLECTION);
 		assertNotNull(testCollection);
 
@@ -95,8 +94,8 @@ public class ResourceSetTest {
 		}
 	}
 
-	@After
-	public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
 		//delete the test collection
 		testCollection.close();
 		try (final Collection parent = testCollection.getParentCollection()) {
@@ -105,9 +104,9 @@ public class ResourceSetTest {
 		}
 	}
 
-	@Ignore
+    @Disabled
     @Test
-	public void intersection1() throws XMLDBException {
+    void intersection1() throws XMLDBException {
 		final String xpathPrefix = "doc('/db/" + TEST_COLLECTION + "/shakes.xsl')/*/*";
 		final String query1 = xpathPrefix + "[position() >= 5 ]";
 		final String query2 = xpathPrefix + "[position() <= 10]";
@@ -117,12 +116,12 @@ public class ResourceSetTest {
 
         try (final EXistResourceSet result1 = (EXistResourceSet) service.query(query1);
 			 final EXistResourceSet result2 = (EXistResourceSet) service.query(query2)) {
-			assertEquals("size of intersection of " + query1 + " and " + query2 + " yields ", expected, ResourceSetHelper.intersection(result1, result2).getSize());
+			assertEquals(expected, ResourceSetHelper.intersection(result1, result2).getSize(), "size of intersection of " + query1 + " and " + query2 + " yields ");
 		}
 	}
 
-	@Test
-	public void intersection2() throws XMLDBException {
+    @Test
+    void intersection2() throws XMLDBException {
 	   	final String xpathPrefix = "doc('/db/" + TEST_COLLECTION + "/hamlet.xml')//LINE";
 		final String query1 = xpathPrefix + "[fn:contains(. , 'funeral')]";		// count=4
 		final String query2 = xpathPrefix + "[fn:contains(. , 'dirge')]";		// count=1, intersection=1
@@ -132,7 +131,7 @@ public class ResourceSetTest {
 
 		try (final EXistResourceSet result1 = (EXistResourceSet) service.query(query1);
 			 final EXistResourceSet result2 = (EXistResourceSet) service.query(query2)) {
-			assertEquals("size of intersection of " + query1 + " and " + query2 + " yields ", expected, ResourceSetHelper.intersection(result1, result2).getSize());
+			assertEquals(expected, ResourceSetHelper.intersection(result1, result2).getSize(), "size of intersection of " + query1 + " and " + query2 + " yields ");
 		}
 	}
 }

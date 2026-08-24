@@ -57,7 +57,7 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
@@ -66,16 +66,14 @@ import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.EXistCollectionManagementService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
@@ -86,33 +84,33 @@ import xyz.elemental.mediatype.MediaType;
 
 public class CopyCollectionRecoveryTest {
 
-    @Rule
-    public ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void storeAndRead() throws EXistException, DatabaseConfigurationException, LockException, PermissionDeniedException, SAXException, IOException {
+    void storeAndRead(final BrokerPool pool) throws EXistException, DatabaseConfigurationException, LockException, PermissionDeniedException, SAXException, IOException {
         BrokerPool.FORCE_CORRUPTION = true;
-        store();
+        store(pool);
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
 
         BrokerPool.FORCE_CORRUPTION = false;
-        read();
+        read(pool);
     }
 
     @Test
-    public void storeAndReadAborted() throws EXistException, DatabaseConfigurationException, LockException, PermissionDeniedException, SAXException, IOException {
+    void storeAndReadAborted(final BrokerPool pool) throws EXistException, DatabaseConfigurationException, LockException, PermissionDeniedException, SAXException, IOException {
         BrokerPool.FORCE_CORRUPTION = true;
-        storeAborted();
+        storeAborted(pool);
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
 
         BrokerPool.FORCE_CORRUPTION = false;
-        readAborted();
+        readAborted(pool);
     }
 
     @Test
-    public void storeAndReadXmldb() throws DatabaseConfigurationException, XMLDBException, EXistException, IOException {
+    void storeAndReadXmldb() throws DatabaseConfigurationException, XMLDBException, EXistException, IOException {
         // initialize xml:db driver
         final Database database = new DatabaseImpl();
         database.setProperty("create-database", "true");
@@ -122,18 +120,18 @@ public class CopyCollectionRecoveryTest {
         BrokerPool.FORCE_CORRUPTION = false;
         xmldbStore();
 
-        existEmbeddedServer.restart();
+        embeddedDatabase.restart();
 
         BrokerPool.FORCE_CORRUPTION = false;
         xmldbRead();
     }
 
-    @Test(expected = PermissionDeniedException.class)
-    public void copyToSubCollection() throws Exception {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @Test
+    void copyToSubCollection(final BrokerPool pool) {
         final TransactionManager transact = pool.getTransactionManager();
-        try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
-            final Txn transaction = transact.beginTransaction()) {
+        assertThrows(PermissionDeniedException.class, () -> {
+            try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+                 final Txn transaction = transact.beginTransaction()) {
 
             try (final Collection src = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI)) {
                 broker.saveCollection(transaction, src);
@@ -142,18 +140,14 @@ public class CopyCollectionRecoveryTest {
                 try (final Collection dst = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI2)) {
                     broker.saveCollection(transaction, dst);
 
-                    broker.copyCollection(transaction, src, dst, src.getURI().lastSegment());
-                }
+                fail("expect PermissionDeniedException: Cannot copy collection '/db/test' to it child collection '/db/test/test2'");
+
+                transaction.commit();
             }
-
-            fail("expect PermissionDeniedException: Cannot copy collection '/db/test' to it child collection '/db/test/test2'");
-
-            transaction.commit();
-        }
+        });
     }
 
-    private void store() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void store(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
@@ -180,12 +174,11 @@ public class CopyCollectionRecoveryTest {
         }
     }
 
-    private void read() throws EXistException, PermissionDeniedException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void read(final BrokerPool pool) throws EXistException, PermissionDeniedException, SAXException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             final Serializer serializer = broker.borrowSerializer();
             try(final LockedDocument lockedDoc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("destination/test3/test.xml"), LockMode.READ_LOCK)) {
-                assertNotNull("Document should not be null", lockedDoc);
+                assertNotNull(lockedDoc, "Document should not be null");
                 serializer.serialize(lockedDoc.getDocument());
             } finally {
                 broker.returnSerializer(serializer);
@@ -193,8 +186,7 @@ public class CopyCollectionRecoveryTest {
         }
     }
 
-    private void storeAborted() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void storeAborted(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -230,12 +222,11 @@ public class CopyCollectionRecoveryTest {
         }
     }
 
-    private void readAborted() throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void readAborted(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             final Serializer serializer = broker.borrowSerializer();
             try(final LockedDocument lockedDoc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("destination/test3/test.xml"), LockMode.READ_LOCK)) {
-                assertNull("Document should not exist as copy was not committed", lockedDoc);
+                assertNull(lockedDoc, "Document should not exist as copy was not committed");
             } finally {
                 broker.returnSerializer(serializer);
             }
@@ -294,8 +285,8 @@ public class CopyCollectionRecoveryTest {
         }
     }
 
-    @After
-    public void cleanup() {
+    @AfterEach
+    void cleanup() {
         BrokerPool.FORCE_CORRUPTION = false;
     }
 }

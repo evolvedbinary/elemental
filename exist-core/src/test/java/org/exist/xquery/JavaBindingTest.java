@@ -26,11 +26,11 @@ import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Type;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
@@ -45,11 +45,7 @@ import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.util.MapUtil.hashMap;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -69,17 +65,16 @@ public class JavaBindingTest {
         }
     }
 
-    @ClassRule
-    public static ExistEmbeddedServer EXIST_EMBEDDED_SERVER = new ExistEmbeddedServer(null, getConfigFile(), null, true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(null, getConfigFile(), null, true, true);
 
     @Test
-    public void callStaticMethod() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethod(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace m = 'java:java.lang.Math';\n" +
             "m:sin(3.2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -96,14 +91,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticMethod() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticMethod(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace m = 'java:java.lang.Math';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('m:sin'), 1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -120,14 +114,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticMethodVarArgs0() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticMethodVarArgs0(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:join'), 1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -144,13 +137,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs1() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs1(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', 'a')"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -167,14 +159,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticMethodVarArgs1() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticMethodVarArgs1(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:join'), 2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -191,13 +182,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs1Sequence() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs1Sequence(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', ('a'))"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -214,13 +204,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs1Array() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs1Array(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', array { 'a' })"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -237,13 +226,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs2() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs2(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', 'a', 'b')"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -260,13 +248,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs2Sequence() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs2Sequence(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', ('a', 'b'))"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -283,13 +270,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs2Array() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs2Array(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', array { 'a', 'b' })"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -306,14 +292,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticMethodVarArgs2() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticMethodVarArgs2(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:join'), 3)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -330,13 +315,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs3() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs3(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', 'a', 'b', 'c')"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -353,13 +337,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs3Sequence() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs3Sequence(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', ('a', 'b', 'c'))"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -376,13 +359,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodVarArgs3Array() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodVarArgs3Array(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:join(',', array { 'a', 'b', 'c' })"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -399,14 +381,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticMethodVarArgs3() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticMethodVarArgs3(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:join'), 4)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -423,13 +404,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodArrayParam() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodArrayParam(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace arys = 'java:java.util.Arrays';\n" +
                 "arys:copyOf(array { 'a', 'b', 'c' }, 2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -446,7 +426,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodArrayParamVarRefExplicitType() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodArrayParamVarRefExplicitType(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace arys = 'java:java.util.Arrays';\n" +
                 "let $a1 as array(xs:string) := array { 'a', 'b', 'c' }\n" +
@@ -454,7 +434,6 @@ public class JavaBindingTest {
                 "arys:copyOf($a1, 2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -471,7 +450,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodArrayParamVarRefImplicitType() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodArrayParamVarRefImplicitType(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace arys = 'java:java.util.Arrays';\n" +
                 "let $a1 := array { 'a', 'b', 'c' }\n" +
@@ -479,7 +458,6 @@ public class JavaBindingTest {
                 "arys:copyOf($a1, 2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -496,13 +474,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodMapParam() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodMapParam(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace collections = 'java:java.util.Collections';\n" +
                 "collections:unmodifiableMap(map { 'a': 1, 'b': 2, 'c': 3 })"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -519,7 +496,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodMapParamVarRefExplicitType() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodMapParamVarRefExplicitType(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace collections = 'java:java.util.Collections';\n" +
                 "let $m1 as map(xs:string, xs:integer) := map { 'a': 1, 'b': 2, 'c': 3 }\n" +
@@ -527,7 +504,6 @@ public class JavaBindingTest {
                 "collections:unmodifiableMap($m1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -544,7 +520,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodMapParamVarRefImplicitType() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodMapParamVarRefImplicitType(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace collections = 'java:java.util.Collections';\n" +
                 "let $m1 := map { 'a': 1, 'b': 2, 'c': 3 }\n" +
@@ -552,7 +528,6 @@ public class JavaBindingTest {
                 "collections:unmodifiableMap($m1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -569,14 +544,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticMethodArrayParam() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticMethodArrayParam(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:valueOf'), 1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -593,7 +567,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callInstanceMethodReturnArray() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callInstanceMethodReturnArray(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "let $jstr := s:new('hello')\n" +
@@ -601,7 +575,6 @@ public class JavaBindingTest {
                 "s:toCharArray($jstr)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -618,14 +591,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableInstanceMethodReturnArray() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableInstanceMethodReturnArray(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:toCharArray'), 1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -642,13 +614,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodFloat() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodFloat(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace m = 'java:java.lang.Math';\n" +
                 "m:next-up(xs:float(1.7))"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -665,13 +636,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticMethodDouble() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticMethodDouble(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace m = 'java:java.lang.Math';\n" +
                 "m:next-up(xs:double(1.7))"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -688,13 +658,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStaticField() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStaticField(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace m = 'java:java.lang.Math';\n" +
                 "m:PI()"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -711,7 +680,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callInstanceField() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callInstanceField(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace holder = 'java:org.exist.util.Holder';\n" +
                 "let $obj := holder:new(fn:true())\n" +
@@ -719,7 +688,6 @@ public class JavaBindingTest {
                 "holder:value($obj)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -736,14 +704,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableStaticField() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableStaticField(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace m = 'java:java.lang.Math';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('m:PI'), 0)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -760,13 +727,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callStringConstructor() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callStringConstructor(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "s:new('hello world')"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -783,13 +749,12 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callListConstructor() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callListConstructor(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace list = 'java:java.util.ArrayList';\n" +
                 "list:new()"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -806,14 +771,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableInstanceMethod() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableInstanceMethod(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:concat'), 2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -830,7 +794,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callInstanceMethod() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callInstanceMethod(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "let $jstr := s:new('hello world')\n" +
@@ -838,7 +802,6 @@ public class JavaBindingTest {
                 "s:concat($jstr, ' everyone')"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -855,14 +818,13 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void functionAvailableConstructor() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void functionAvailableConstructor(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace s = 'java:java.lang.String';\n" +
                 "import module namespace system = 'http://exist-db.org/xquery/system';\n" +
                 "system:function-available(xs:QName('s:new'), 1)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -879,7 +841,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void callVoidMethodReturnThis() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void callVoidMethodReturnThis(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace uspa = 'java:org.exist.security.internal.aider.UnixStylePermissionAider?void=this';\n" +
                 "let $aider := uspa:new()\n" +
@@ -888,7 +850,6 @@ public class JavaBindingTest {
                 "uspa:getOwnerMode($aider2)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -905,7 +866,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void buildJavaList() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void buildJavaList(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
                 "declare namespace list = 'java:java.util.ArrayList';\n" +
             "let $list := list:new()\n" +
@@ -914,7 +875,6 @@ public class JavaBindingTest {
             "fn:string-join((list:get($list, 2), list:get($list, 0), list:get($list, 1)), '.')"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -931,7 +891,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void buildJavaListWithVoidReturnThis() throws EXistException, XPathException, PermissionDeniedException, IOException {
+    void buildJavaListWithVoidReturnThis(final BrokerPool brokerPool) throws EXistException, XPathException, PermissionDeniedException, IOException {
         final StringSource query = new StringSource(
             "declare namespace list = 'java:java.util.ArrayList?void=this';\n" +
                 "let $list := list:new()\n" +
@@ -942,7 +902,6 @@ public class JavaBindingTest {
                 "list:get($list, 0)"
         );
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -959,7 +918,7 @@ public class JavaBindingTest {
     }
 
     @Test
-    public void xqueryKebabCaseToJavaCamelCase() {
+    void xqueryKebabCaseToJavaCamelCase() {
         assertEquals("nextUp", JavaBinding.xqueryKebabCaseToJavaCamelCase("nextUp"));
         assertEquals("nextUp", JavaBinding.xqueryKebabCaseToJavaCamelCase("next-up"));
         assertEquals("otherNextUp", JavaBinding.xqueryKebabCaseToJavaCamelCase("otherNextUp"));

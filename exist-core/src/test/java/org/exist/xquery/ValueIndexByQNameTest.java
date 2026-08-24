@@ -45,7 +45,7 @@
  */
 package org.exist.xquery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.XMLDBException;
 
 import java.net.URISyntaxException;
@@ -53,7 +53,7 @@ import java.net.URISyntaxException;
 /**
  * @author Jean-Marc Vanel http://jmvanel.free.fr/
  */
-public class ValueIndexByQNameTest extends ValueIndexTest {
+class ValueIndexByQNameTest extends ValueIndexTest {
 
     private String config =
     	"<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" + 

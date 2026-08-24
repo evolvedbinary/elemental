@@ -30,15 +30,15 @@ import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -48,8 +48,8 @@ import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AccountMetadataFunctionsTest {
 
@@ -57,8 +57,8 @@ public class AccountMetadataFunctionsTest {
     private static final String USER1_UID = "user1";
     private static final String USER1_PWD = USER1_UID;
 
-    @Rule
-    public final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     /**
      * Creates a new user programmatically and tries to retrieve their name
@@ -67,8 +67,8 @@ public class AccountMetadataFunctionsTest {
      * See: <a href="https://github.com/eXist-db/exist/issues/5904">[BUG] Security Account Metadata is lost</a>
      */
     @Test
-    public void getAccountNameMetadataViaObject() throws PermissionDeniedException, EXistException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void getAccountNameMetadataViaObject() throws PermissionDeniedException, EXistException, XPathException, IOException {
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final SecurityManager sm = pool.getSecurityManager();
 
         // 1. Create user

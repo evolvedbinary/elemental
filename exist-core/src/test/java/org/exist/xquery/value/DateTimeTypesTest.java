@@ -20,30 +20,29 @@
  */
 package org.exist.xquery.value;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.xmldb.api.base.XMLDBException;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class DateTimeTypesTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(true, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension SERVER = new XmldbEmbeddedDatabaseExtension(true, true, true);
 
     @Test
-    public void compareDateTimeWithDateTimeStamp() throws XMLDBException {
-        final String result = server.executeOneValue("xs:dateTime('2024-10-07T09:56:00+01:00') <= current-dateTime()");
+    void compareDateTimeWithDateTimeStamp() throws XMLDBException {
+        final String result = SERVER.executeOneValue("xs:dateTime('2024-10-07T09:56:00+01:00') <= current-dateTime()");
         assertEquals("true", result);
     }
 
     @Test
-    public void compareDateTimeStampWithDateTime() throws XMLDBException {
-        final String result = server.executeOneValue("current-dateTime() <= xs:dateTime('2024-10-07T09:56:00+01:00')");
+    void compareDateTimeStampWithDateTime() throws XMLDBException {
+        final String result = SERVER.executeOneValue("current-dateTime() <= xs:dateTime('2024-10-07T09:56:00+01:00')");
         assertEquals("false", result);
     }
 }

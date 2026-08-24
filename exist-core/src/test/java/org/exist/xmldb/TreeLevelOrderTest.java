@@ -46,9 +46,9 @@
 package org.exist.xmldb;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,8 +61,8 @@ import org.xmldb.api.modules.XQueryService;
 
 import javax.annotation.Nullable;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests the TreeLevelOrder function.
@@ -73,8 +73,8 @@ import static org.junit.Assert.assertTrue;
 
 public class TreeLevelOrderTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension SERVER = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String DOC1_NAME = "survey.xml";
 
@@ -100,7 +100,7 @@ public class TreeLevelOrderTest {
      * </ul>
      */
     @Test
-    public void treeLevelOrder() throws XMLDBException {
+    void treeLevelOrder() throws XMLDBException {
         // create document
         // write document to the database
         store(DOC1, DOC1_NAME);
@@ -112,7 +112,7 @@ public class TreeLevelOrderTest {
             try (final XMLResource resource = (XMLResource) it.nextResource()) {
                 final Node doc = resource.getContentAsDOM();
                 assertNotNull(doc);
-                assertTrue(doc instanceof Document);
+                assertInstanceOf(Document.class, doc);
 
                 //get node using DOM
                 String strTo = null;
@@ -147,7 +147,7 @@ public class TreeLevelOrderTest {
         query.append("$doc := xmldb:store('" + XmldbURI.ROOT_COLLECTION + "', $document, $survey)");
         query.append("return <result/>");
 
-        final XQueryService service = server.getRoot().getService(XQueryService.class);
+        final XQueryService service = SERVER.getRoot().getService(XQueryService.class);
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("survey", xml);
         service.declareVariable("document", document);
@@ -165,7 +165,7 @@ public class TreeLevelOrderTest {
         query.append("let $survey := doc(string-join(('" + XmldbURI.ROOT_COLLECTION + "', $document), '/'))");
         query.append("return $survey");
 
-        final XQueryService service = server.getRoot().getService(XQueryService.class);
+        final XQueryService service = SERVER.getRoot().getService(XQueryService.class);
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("document", document);
         return (EXistResourceSet) service.execute(cQuery);

@@ -48,9 +48,12 @@ package org.exist.xquery;
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -58,19 +61,15 @@ import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import org.junit.BeforeClass;
-import org.junit.AfterClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class DuplicateAttributesTest {
 
     private static final Logger LOG = LogManager.getLogger(DuplicateAttributesTest.class);
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static Collection testCollection;
 
@@ -101,16 +100,18 @@ public class DuplicateAttributesTest {
     /**
      * Add attribute to element which already has an attribute of that name.
      */
-    @Test (expected=XMLDBException.class)
-    public void appendStoredAttrFail() throws XMLDBException {
+    @Test
+    void appendStoredAttrFail() {
         final XQueryService xqs = testCollection.getService(XQueryService.class);
         String query =
             "let $a := \n" +
             "<node attr=\"a\" b=\"c\">{doc(\"/db/test/stored1.xml\")//@attr}</node>" +
             "return $a";
-        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	});
     }
 
     /**
@@ -135,38 +136,42 @@ public class DuplicateAttributesTest {
      * Add constructed in-memory attribute to element which already has an
      * attribute of that name.
      */
-    @Test (expected=XMLDBException.class)
-    public void appendConstrAttr() throws XMLDBException {
+    @Test
+    void appendConstrAttr() {
         final XQueryService xqs = testCollection.getService(XQueryService.class);
         final String query =
             "let $a := <root attr=\"ab\"/>" +
             "let $b := \n" +
             "   <node attr=\"a\" b=\"c\">{$a//@attr}</node>" +
             "return $a";
-        try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
-            // needed to ensure that result is cloded
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
+		    // needed to ensure that result is cloded
+		}
+	});
     }
 
     /**
      * Add attribute to element which already has an
      * attribute of that name (using idref).
      */
-    @Test (expected=XMLDBException.class)
-    public void appendIdref() throws XMLDBException {
+    @Test
+    void appendIdref() {
         final XQueryService xqs = testCollection.getService(XQueryService.class);
         final String query =
             "<results>{fn:idref(('id1', 'id2'), doc('/db/test/docdtd.xml')/IDS)}</results>";
         try (final EXistResourceSet result = (EXistResourceSet) xqs.query(query)) {
-            try (final Resource resource = result.getResource(0)) {
-                resource.getContent();
-            }
+		     assertThrows(XMLDBException.class, () ->
+			    try (final Resource resource = result.getResource(0)) {
+				resource.getContent();
+			    }
+			});
         }
     }
 
-    @BeforeClass
-    public static void setup() throws XMLDBException {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeAll
+    static void setup() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection("test");
         assertNotNull(testCollection);
 
@@ -186,10 +191,10 @@ public class DuplicateAttributesTest {
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws XMLDBException {
+    @AfterAll
+    static void cleanup() throws XMLDBException {
         testCollection.close();
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         service.removeCollection("test");
     }
 }

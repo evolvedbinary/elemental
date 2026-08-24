@@ -46,10 +46,13 @@
 package org.exist.validation;
 
 import com.evolvedbinary.j8fu.function.RunnableE;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -57,7 +60,7 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Switch validation mode yes/no/auto per collection and validate.
@@ -67,8 +70,8 @@ import static org.junit.Assert.*;
  */
 public class CollectionConfigurationValidationModeTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String valid = "<xsd:schema xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"http://jmvanel.free.fr/xsd/addressBook\" elementFormDefault=\"qualified\">" + "<xsd:attribute name=\"uselessAttribute\" type=\"xsd:string\"/>" + "<xsd:complexType name=\"record\">" + "<xsd:sequence>" + "<xsd:element name=\"cname\" type=\"xsd:string\"/>" + "<xsd:element name=\"email\" type=\"xsd:string\"/>" + "</xsd:sequence>" + "</xsd:complexType>" + "<xsd:element name=\"addressBook\">" + "<xsd:complexType>" + "<xsd:sequence>" + "<xsd:element name=\"owner\" type=\"record\"/>" + "<xsd:element name=\"person\" type=\"record\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>" + "</xsd:sequence>" + "</xsd:complexType>" + "</xsd:element>" + "</xsd:schema>";
     private static final String invalid = "<xsd:schema xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"http://jmvanel.free.fr/xsd/addressBook\" elementFormDefault=\"qualified\">" + "<xsd:attribute name=\"uselessAttribute\" type=\"xsd:string\"/>" + "<xsd:complexType name=\"record\">" + "<xsd:sequence>" + "<xsd:elementa name=\"cname\" type=\"xsd:string\"/>" + "<xsd:elementb name=\"email\" type=\"xsd:string\"/>" + "</xsd:sequence>" + "</xsd:complexType>" + "<xsd:element name=\"addressBook\">" + "<xsd:complexType>" + "<xsd:sequence>" + "<xsd:element name=\"owner\" type=\"record\"/>" + "<xsd:element name=\"person\" type=\"record\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>" + "</xsd:sequence>" + "</xsd:complexType>" + "</xsd:element>" + "</xsd:schema>";
@@ -79,22 +82,22 @@ public class CollectionConfigurationValidationModeTest {
     private static final String xconf_no = "<collection xmlns=\"http://exist-db.org/collection-config/1.0\"><validation mode=\"no\"/></collection>";
     private static final String xconf_auto = "<collection xmlns=\"http://exist-db.org/collection-config/1.0\"><validation mode=\"auto\"/></collection>";
 
-    @AfterClass
-    public static void tearDownClass() throws Exception {
+    @AfterAll
+    static void tearDownClass() throws Exception {
         try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
             // needed to close the resource set
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
             // needed to close the resource set
         }
     }
 
     private void createCollection(final String collection) throws XMLDBException {
-        final CollectionManagementService cmservice = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cmservice = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = cmservice.createCollection(collection)) {
             assertNotNull(testCollection);
         }
@@ -105,7 +108,7 @@ public class CollectionConfigurationValidationModeTest {
     }
 
     private void storeCollectionXconf(final String collection, final String document) throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + DEFAULT_COLLECTION_CONFIG_FILE + "\", " + document + ")")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("xmldb:store(\"" + collection + "\", \"" + DEFAULT_COLLECTION_CONFIG_FILE + "\", " + document + ")")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("Store xconf", collection + "/" + DEFAULT_COLLECTION_CONFIG_FILE, r);
@@ -114,7 +117,7 @@ public class CollectionConfigurationValidationModeTest {
     }
 
     private void storeDocument(final String collection, final String name, final String document) throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + name + "\", " + document + ")")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("xmldb:store(\"" + collection + "\", \"" + name + "\", " + document + ")")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("Store doc", collection + "/" + name, r);
@@ -123,7 +126,7 @@ public class CollectionConfigurationValidationModeTest {
     }
 
     @Test
-    public void insertModeFalse() throws XMLDBException {
+    void insertModeFalse() throws XMLDBException {
         createCollection("/db/false");
         storeCollectionXconf("/db/system/config/db/false", xconf_no);
 
@@ -141,7 +144,7 @@ public class CollectionConfigurationValidationModeTest {
     }
 
     @Test
-    public void insertModeTrue() throws XMLDBException {
+    void insertModeTrue() throws XMLDBException {
         createCollection("/db/true");
         storeCollectionXconf("/db/system/config/db/true", xconf_yes);
 
@@ -159,7 +162,7 @@ public class CollectionConfigurationValidationModeTest {
     }
 
     @Test
-    public void insertModeAuto() throws XMLDBException {
+    void insertModeAuto() throws XMLDBException {
         createCollection("/db/auto");
         storeCollectionXconf("/db/system/config/db/auto", xconf_auto);
 
@@ -182,7 +185,7 @@ public class CollectionConfigurationValidationModeTest {
             fail("Should have raised an exception containing the error message: " + expectedExceptionMessage);
         } catch (final XMLDBException ex) {
             final String msg = ex.getMessage();
-            assertTrue(expectedExceptionMessage, msg.contains(expectedExceptionMessage));
+            assertTrue(msg.contains(expectedExceptionMessage), expectedExceptionMessage);
         }
     }
 }

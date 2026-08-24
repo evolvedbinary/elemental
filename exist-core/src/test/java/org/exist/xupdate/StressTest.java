@@ -54,19 +54,19 @@ import org.exist.TestUtils;
 
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.After;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -89,11 +89,11 @@ public class StressTest {
 
     private String[] tags;
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void stressTest() throws XMLDBException {
+    void stressTest() throws XMLDBException {
         insertTags();
         removeTags();
         fetchDb();
@@ -120,13 +120,13 @@ public class StressTest {
                             "</xupdate:modifications>";
 
             final long mods = service.updateResource("test.xml", xupdate);
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
 
             tagsWritten[i] = tag;
 
             final String query = "//" + tagsWritten[rand.nextInt(i + 1)];
             try (final EXistResourceSet result = (EXistResourceSet) xquery.query(query)) {
-                assertEquals(result.getSize(), 1);
+                assertEquals(1, result.getSize());
             }
         }
 
@@ -160,16 +160,16 @@ public class StressTest {
                     final String tag = r.getContent().toString();
 
                     try (final EXistResourceSet result2 = (EXistResourceSet) xquery.query("//" + tag)) {
-                        assertEquals(result2.getSize(), 1);
+                        assertEquals(1, result2.getSize());
                     }
                 }
             }
         }
     }
 
-    @Before
-    public void setUp() throws XMLDBException {
-        final Collection rootCol = existXmldbEmbeddedServer.getRoot();
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         testCol = rootCol.getChildCollection(XmldbURI.ROOT_COLLECTION + "/test");
         if (testCol != null) {
             final CollectionManagementService mgr = DBUtils.getCollectionManagementService(rootCol);
@@ -187,8 +187,8 @@ public class StressTest {
         DBUtils.addXMLResource(testCol, "test.xml", XML);
     }
 
-    @After
-    public void tearDown() throws XMLDBException, LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterEach
+    void tearDown() throws XMLDBException, LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         testCol.close();
 
         TestUtils.cleanupDB();

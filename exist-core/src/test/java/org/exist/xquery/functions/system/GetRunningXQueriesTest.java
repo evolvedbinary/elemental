@@ -45,26 +45,25 @@
  */
 package org.exist.xquery.functions.system;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
+import org.xmldb.api.base.ResourceSet;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 public class GetRunningXQueriesTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void caller() throws XMLDBException {
-        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery("system:get-running-xqueries()")) {
+    void caller() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("system:get-running-xqueries()")) {
             assertNotNull(result);
             try (final Resource resource = result.getResource(0)) {
                 final String resultDoc = (String) resource.getContent();

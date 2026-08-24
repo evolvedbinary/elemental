@@ -45,17 +45,18 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.After;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.security.Account;
 import org.exist.security.Permission;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.exist.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -67,13 +68,13 @@ import org.xmldb.api.modules.XPathQueryService;
 
 public class CopyMoveTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testCopyMove";
 
     @Test
-    public void copyResourceChangeName() throws XMLDBException {
+    void copyResourceChangeName() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             try (final XMLResource original = testCollection.createResource("original", XMLResource.class)) {
                 original.setContent("<sample/>");
@@ -89,7 +90,7 @@ public class CopyMoveTest {
     }
 
     @Test
-    public void queryCopiedResource() throws XMLDBException {
+    void queryCopiedResource() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             try (final XMLResource original = testCollection.createResource("original", XMLResource.class)) {
                 original.setContent("<sample/>");
@@ -106,9 +107,9 @@ public class CopyMoveTest {
             }
         }
     }
-    
+
     @Test
-    public void changePermissionsAfterCopy() throws XMLDBException {
+    void changePermissionsAfterCopy() throws XMLDBException {
         final String collectionURL = XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION;
         final String originalResource = "original.xml";
         final String copyResource = "copy.xml";
@@ -162,9 +163,9 @@ public class CopyMoveTest {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = cms.createCollection(TEST_COLLECTION)) {
             final UserManagementService ums = testCollection.getService(UserManagementService.class);
             // change ownership to guest
@@ -174,10 +175,10 @@ public class CopyMoveTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION);
     }
 }

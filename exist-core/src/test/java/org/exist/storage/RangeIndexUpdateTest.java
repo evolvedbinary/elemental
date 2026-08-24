@@ -57,25 +57,24 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.ClassRule;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Optional;
@@ -115,8 +114,8 @@ public class RangeIndexUpdateTest {
     private static MutableDocumentSet docs;
 
     @Test
-    public void updates() throws EXistException, PermissionDeniedException, XPathException, ParserConfigurationException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void updates() throws EXistException, PermissionDeniedException, XPathException, ParserConfigurationException, IOException, SAXException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction();) {
@@ -201,12 +200,12 @@ public class RangeIndexUpdateTest {
         assertEquals(expectedCount, found);
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @BeforeClass
-    public static void startDB() throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void startDB() throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
 	            final Txn transaction = transact.beginTransaction();

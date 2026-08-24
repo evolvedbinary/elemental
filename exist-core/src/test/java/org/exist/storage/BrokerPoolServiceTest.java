@@ -37,7 +37,9 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.util.DatabaseConfigurationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,15 +48,13 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertTrue;
-
 /**
  * Tests for exercising the BrokerPoolService
  * infrastructure.
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-public class BrokerPoolServiceTest {
+class BrokerPoolServiceTest {
 
     // NOTE: this is a concurrent list because it is shared between the test and the BackgroundJobsBrokerPoolService
     private final List<Future<List<BackgroundJobsBrokerPoolService.TimestampAndId>>> futures = new CopyOnWriteArrayList<>();
@@ -69,22 +69,22 @@ public class BrokerPoolServiceTest {
      * stops.
      */
     @Test
-    public void backgroundJobsShutdownCleanly() throws EXistException, IOException, DatabaseConfigurationException, InterruptedException, ExecutionException {
+    void backgroundJobsShutdownCleanly() throws EXistException, IOException, DatabaseConfigurationException, InterruptedException, ExecutionException {
         // Create and add our BackgroundJobsBrokerPoolService to the BrokerPool
         final BrokerPoolService testBrokerPoolService = new BackgroundJobsBrokerPoolService(futures);
         final Properties configProps = new Properties();
         configProps.put("exist.testBrokerPoolService", testBrokerPoolService);
 
         // run the database
-        final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(configProps, true, true);
-        existEmbeddedServer.startDb();
+        final ExistEmbeddedServer embeddedDatabase = new ExistEmbeddedServer(configProps, true, true);
+        embeddedDatabase.startDb();
         try {
 
             // do nothing for a while (background jobs will be running)
             Thread.sleep(3000);
 
         } finally {
-            existEmbeddedServer.stopDb();
+            embeddedDatabase.stopDb();
         }
 
         // check results
@@ -198,11 +198,11 @@ public class BrokerPoolServiceTest {
             }
 
             @Override
-            public List<TimestampAndId> call() throws Exception {
+            public List<TimestampAndId> call() throws EXistException, InterruptedException {
                 do {
                     final BrokerPool brokerPool = brokerPoolRef.get();
                     if (brokerPool == null) {
-                        throw new Exception("Unable to get BrokerPoolRef");
+                        throw new EXistException("Unable to get BrokerPoolRef");
                     }
 
                     try (final DBBroker broker = brokerPool.getBroker()) {

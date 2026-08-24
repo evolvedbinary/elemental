@@ -46,14 +46,14 @@
 package org.exist.xquery.functions.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -71,21 +71,21 @@ public class ExpandTest {
     private static final String DOC3_CONTENT = "<doc3 foo=\"bar\">doc3</doc3>";
     private static final String DOC4_CONTENT = "<doc4 xmlns:x=\"http://x\" x:foo=\"bar\">doc4</doc4>";
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @BeforeClass
-    public static void setup() throws XMLDBException {
-        try (final Collection expandTestCol = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "expand-test")) {
-            existEmbeddedServer.storeResource(expandTestCol, "doc1.xml", DOC1_CONTENT.getBytes(UTF_8));
-            existEmbeddedServer.storeResource(expandTestCol, "doc2.xml", DOC2_CONTENT.getBytes(UTF_8));
-            existEmbeddedServer.storeResource(expandTestCol, "doc3.xml", DOC3_CONTENT.getBytes(UTF_8));
-            existEmbeddedServer.storeResource(expandTestCol, "doc4.xml", DOC4_CONTENT.getBytes(UTF_8));
+    @BeforeAll
+    static void setup() throws XMLDBException {
+        try (final Collection expandTestCol = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "expand-test")) {
+            XmldbEmbeddedDatabaseExtension.storeResource(expandTestCol, "doc1.xml", DOC1_CONTENT.getBytes(UTF_8));
+            XmldbEmbeddedDatabaseExtension.storeResource(expandTestCol, "doc2.xml", DOC2_CONTENT.getBytes(UTF_8));
+            XmldbEmbeddedDatabaseExtension.storeResource(expandTestCol, "doc3.xml", DOC3_CONTENT.getBytes(UTF_8));
+            XmldbEmbeddedDatabaseExtension.storeResource(expandTestCol, "doc4.xml", DOC4_CONTENT.getBytes(UTF_8));
         }
     }
 
     @Test
-    public void expandWithDefaultNS() throws XMLDBException {
+    void expandWithDefaultNS() throws XMLDBException {
     	final String expected = "<ok xmlns=\"some\">\n    <concept xmlns=\"\"/>\n</ok>";
 
         String query = "" +
@@ -95,7 +95,7 @@ public class ExpandTest {
                 "<ok xmlns='some'>\n" +
                 "{util:expand($doc)}\n" +
                 "</ok>";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals(expected, r);
@@ -109,7 +109,7 @@ public class ExpandTest {
                 "<ok xmlns='some'>\n" +
                 "{$doc}\n" +
                 "</ok>";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals(expected, r);
@@ -118,9 +118,9 @@ public class ExpandTest {
     }
 
     @Test
-    public void expandPersistentDom() throws XMLDBException {
+    void expandPersistentDom() throws XMLDBException {
         final String query = "util:expand(doc('/db/expand-test/doc1.xml'))";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals(DOC1_CONTENT, r);
@@ -129,9 +129,9 @@ public class ExpandTest {
     }
 
     @Test
-    public void expandPersistentDomCommentsFirst() throws XMLDBException {
+    void expandPersistentDomCommentsFirst() throws XMLDBException {
         final String query = "util:expand(doc('/db/expand-test/doc2.xml'))";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals(DOC2_CONTENT, r);
@@ -140,9 +140,9 @@ public class ExpandTest {
     }
 
     @Test
-    public void expandPersistentDomAttr() throws XMLDBException {
+    void expandPersistentDomAttr() throws XMLDBException {
         final String query = "util:expand(doc('/db/expand-test/doc3.xml')/doc3/@foo)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource res = result.getResource(0);
             assertEquals(XML_RESOURCE, res.getResourceType());
             final XMLResource xmlRes = (XMLResource) res;
@@ -155,10 +155,10 @@ public class ExpandTest {
     }
 
     @Test
-    public void expandPersistentDomAttrNs() throws XMLDBException {
+    void expandPersistentDomAttrNs() throws XMLDBException {
         final String query = "declare namespace x = \"http://x\";\n" +
                 "util:expand(doc('/db/expand-test/doc4.xml')/doc4/@x:foo)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource res = result.getResource(0);
             assertEquals(XML_RESOURCE, res.getResourceType());
             final XMLResource xmlRes = (XMLResource) res;

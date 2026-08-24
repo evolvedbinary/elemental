@@ -45,13 +45,13 @@
  */
 package org.exist.xquery.functions.validate;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.Assert.*;
+import org.xmldb.api.base.ResourceSet;
 
 /**
  * Additional tests for the validation:jing() function with RNGs and XSDs
@@ -61,11 +61,11 @@ import static org.junit.Assert.*;
  */
 public class AdditionalJingXsdRngTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void testValidateXSDwithJing() throws XMLDBException {
+    void validateXSDwithJing() throws XMLDBException {
         final String query = "let $v := <doc>\n" +
                 "\t<title>Title</title>\n" +
                 "\t<p>Some paragraph.</p>\n" +
@@ -87,7 +87,7 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("true", r);
@@ -96,7 +96,7 @@ public class AdditionalJingXsdRngTest {
     }
 
     @Test
-    public void testValidateXSDwithJing_invalid() throws XMLDBException {
+    void validateXSDwithJingInvalid() throws XMLDBException {
         final String query = "let $v := <doc>\n" +
                 "\t<title1>Title</title1>\n" +
                 "\t<p>Some paragraph.</p>\n" +
@@ -118,7 +118,7 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("false", r);
@@ -127,7 +127,7 @@ public class AdditionalJingXsdRngTest {
     }
 
     @Test
-    public void testValidateRNGwithJing() throws XMLDBException {
+    void validateRNGwithJing() throws XMLDBException {
         final String query = "let $v := <doc>\n" +
                 "\t<title>Title</title>\n" +
                 "\t<p>Some paragraph.</p>\n" +
@@ -161,7 +161,7 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("true", r);
@@ -170,7 +170,7 @@ public class AdditionalJingXsdRngTest {
     }
 
     @Test
-    public void testValidateRNGwithJing_invalid() throws XMLDBException {
+    void validateRNGwithJingInvalid() throws XMLDBException {
         final String query = "let $v := <doc>\n" +
                 "\t<title1>Title</title1>\n" +
                 "\t<p>Some paragraph.</p>\n" +
@@ -204,7 +204,7 @@ public class AdditionalJingXsdRngTest {
                 "\n" +
                 "\tvalidation:jing($v,$schema)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("false", r);
@@ -213,13 +213,13 @@ public class AdditionalJingXsdRngTest {
     }
 
     @Test
-    @Ignore("Looks good, but memory issue")
-    public void repeatTests() throws XMLDBException {
+    @Disabled("Looks good, but memory issue")
+    void repeatTests() throws XMLDBException {
         for (int i = 0; i < 1000; i++) {
-            testValidateRNGwithJing();
-            testValidateRNGwithJing_invalid();
-            testValidateXSDwithJing();
-            testValidateXSDwithJing_invalid();
+            validateRNGwithJing();
+            validateRNGwithJingInvalid();
+            validateXSDwithJing();
+            validateXSDwithJingInvalid();
         }
     }
 }

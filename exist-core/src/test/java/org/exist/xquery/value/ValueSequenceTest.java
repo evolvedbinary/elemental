@@ -28,19 +28,22 @@ import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeImpl;
 import org.exist.dom.persistent.NodeProxy;
-import org.exist.security.*;
+import org.exist.security.AuthenticationException;
+import org.exist.security.PermissionDeniedException;
+import org.exist.security.Subject;
 import org.exist.security.SecurityManager;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.junit.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.xml.XMLConstants;
-import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.Optional;
 
 /**
  *
@@ -48,11 +51,11 @@ import static org.junit.Assert.assertEquals;
  */
 public class ValueSequenceTest {
 
-    @ClassRule
-    public final static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void sortInDocumentOrder() throws EXistException, PermissionDeniedException, AuthenticationException {
+    void sortInDocumentOrder(final BrokerPool pool) throws EXistException, PermissionDeniedException, AuthenticationException {
         final ValueSequence seq = new ValueSequence(true);
         seq.keepUnOrdered(true);
 
@@ -66,7 +69,6 @@ public class ValueSequenceTest {
             memtree.endElement();
         memtree.endDocument();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final Subject admin = pool.getSecurityManager().authenticate("admin", "");
         try(final DBBroker broker = pool.get(Optional.of(admin))) {
 
@@ -88,7 +90,7 @@ public class ValueSequenceTest {
     }
 
     @Test
-    public void iterate_loop() throws XPathException {
+    void iterate_loop() throws XPathException {
         final ValueSequence valueSequence = mockValueSequence(99);
 
         final SequenceIterator it = valueSequence.iterate();
@@ -102,7 +104,7 @@ public class ValueSequenceTest {
     }
 
     @Test
-    public void iterate_skip_loop() throws XPathException {
+    void iterate_skip_loop() throws XPathException {
         final ValueSequence valueSequence = mockValueSequence(99);
         final SequenceIterator it = valueSequence.iterate();
 
@@ -122,7 +124,7 @@ public class ValueSequenceTest {
     }
 
     @Test
-    public void iterate_loop_skip_loop() throws XPathException {
+    void iterate_loop_skip_loop() throws XPathException {
         final ValueSequence valueSequence = mockValueSequence(99);
         final SequenceIterator it = valueSequence.iterate();
 

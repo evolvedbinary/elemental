@@ -35,36 +35,36 @@ package org.exist.xquery;
 import org.exist.EXistException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.xquery.value.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CastExpressionTest {
 
   private static DBBroker broker;
   private static XQueryContext context;
 
-  @ClassRule
-  public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+  @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-  @BeforeClass
-  public static void setUp() throws DatabaseConfigurationException, EXistException, XPathException {
-    final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void setUp() throws DatabaseConfigurationException, EXistException, XPathException {
+    final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
 
     broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
     context = new XQueryContext(pool);
   }
 
-  @AfterClass
-  public static void tearDown() throws EXistException {
+    @AfterAll
+    static void tearDown() throws EXistException {
     if (broker != null) {
       broker.close();
     }
@@ -72,8 +72,8 @@ public class CastExpressionTest {
     context = null;
   }
 
-  @Test
-  public void numericCast() throws XPathException {
+    @Test
+    void numericCast() throws XPathException {
     CastExpression numericCastExpr;
 
     // Test decimal: xs:numeric(1.0)
@@ -205,8 +205,8 @@ public class CastExpressionTest {
     assertCast(Type.DOUBLE, DoubleValue.class, numericCastExpr);
   }
 
-  @Test
-  public void floatCast() throws XPathException {
+    @Test
+    void floatCast() throws XPathException {
     // Test float: xs:float(1.0)
     CastExpression floatCastExpr;
     floatCastExpr = buildCast(new StringValue("1.0"), Type.FLOAT);
@@ -234,8 +234,8 @@ public class CastExpressionTest {
     assertCast(Type.FLOAT, FloatValue.class, floatCastExpr);
   }
 
-  @Test
-  public void doubleCast() throws XPathException {
+    @Test
+    void doubleCast() throws XPathException {
     // Test double: xs:double(1.0)
     CastExpression doubleCastExpr;
     doubleCastExpr = buildCast(new DoubleValue("1.0e2"), Type.DOUBLE);

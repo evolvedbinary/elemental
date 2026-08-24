@@ -59,7 +59,7 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
@@ -67,11 +67,15 @@ import org.exist.util.StringInputSource;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
@@ -103,19 +107,18 @@ public class CollectionRemovalTest {
     private final static String QUERY1 = "/document/chapter";
     private final static String QUERY2 = "//chapter[title = 'Chapter 1']";
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void failingRemoveCollection()
-            throws XMLDBException, PermissionDeniedException, SAXException, EXistException, IOException, AuthenticationException, LockException {
+    void failingRemoveCollection(final BrokerPool pool) throws XMLDBException, PermissionDeniedException, SAXException, EXistException, IOException, AuthenticationException, LockException {
         doQuery(3);
-        retrieveDoc(TestConstants.TEST_COLLECTION_URI3);
+        retrieveDoc(pool, TestConstants.TEST_COLLECTION_URI3);
 
         boolean caughtPermissionDenied = false;
         try {
-        removeCollection(
-        		org.exist.security.SecurityManager.GUEST_USER,
+        removeCollection(pool,
+                org.exist.security.SecurityManager.GUEST_USER,
         		org.exist.security.SecurityManager.GUEST_USER,
         		TestConstants.TEST_COLLECTION_URI2);
         } catch(final PermissionDeniedException e) {
@@ -126,18 +129,17 @@ public class CollectionRemovalTest {
             fail("Guest user should not have been able to remove the collection");
         }
 
-        retrieveDoc(TestConstants.TEST_COLLECTION_URI3);
-        retrieveDoc(TestConstants.TEST_COLLECTION_URI2);
+        retrieveDoc(pool, TestConstants.TEST_COLLECTION_URI3);
+        retrieveDoc(pool, TestConstants.TEST_COLLECTION_URI2);
         doQuery(3);
     }
 
     @Test
-    public void removeCollection()
-            throws XMLDBException, PermissionDeniedException, SAXException, EXistException, IOException, AuthenticationException, LockException {
+    void removeCollection(final BrokerPool pool) throws XMLDBException, PermissionDeniedException, SAXException, EXistException, IOException, AuthenticationException, LockException {
         doQuery(3);
-        retrieveDoc(TestConstants.TEST_COLLECTION_URI3);
+        retrieveDoc(pool, TestConstants.TEST_COLLECTION_URI3);
 
-        removeCollection(
+        removeCollection(pool,
                 org.exist.security.SecurityManager.DBA_USER,
                 "",
                 TestConstants.TEST_COLLECTION_URI2);
@@ -145,9 +147,8 @@ public class CollectionRemovalTest {
         doQuery(0);
     }
 
-    private void removeCollection(final String user, final String password, final XmldbURI uri)
+    private void removeCollection(final BrokerPool pool, final String user, final String password, final XmldbURI uri)
             throws AuthenticationException, EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().authenticate(user, password)));
             final Txn transaction = transact.beginTransaction();
@@ -157,8 +158,7 @@ public class CollectionRemovalTest {
 		}
     }
 
-    private void retrieveDoc(final XmldbURI uri) throws EXistException, PermissionDeniedException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void retrieveDoc(final BrokerPool pool, final XmldbURI uri) throws EXistException, PermissionDeniedException, SAXException, LockException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Collection test = broker.openCollection(uri, LockMode.READ_LOCK)) {
             assertNotNull(test);
@@ -192,17 +192,17 @@ public class CollectionRemovalTest {
         }
     }
 
-    @BeforeClass
-    public static void startDB() throws DatabaseConfigurationException, EXistException, ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeAll
+    static void startDB() throws DatabaseConfigurationException, EXistException, ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         // initialize XML:DB driver
         final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
         final Database database = (Database) cl.newInstance();
         DatabaseManager.registerDatabase(database);
     }
 
-    @Before
-    public void initDB() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void initDB() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
@@ -244,8 +244,8 @@ public class CollectionRemovalTest {
         }
     }
 
-    @After
-    public void clearDB() throws XMLDBException {
+    @AfterEach
+    void clearDB() throws XMLDBException {
         try (final org.xmldb.api.base.Collection root =
                 DatabaseManager.getCollection("xmldb:exist://" + TestConstants.TEST_COLLECTION_URI.toString(), TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
             final CollectionManagementService service = root.getService(CollectionManagementService.class);

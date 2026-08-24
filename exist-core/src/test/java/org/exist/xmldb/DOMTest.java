@@ -58,10 +58,10 @@ import javax.xml.transform.sax.SAXResult;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -88,25 +88,25 @@ public class DOMTest {
 
 	private static final Logger LOG =  LogManager.getLogger(DOMTest.class);
 
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	private static String name = "test.xml";
-	
-	/** 
-	 * - Storing XML resource from XML string
-	 * - simple XQuery
-	 * - removing resource
-	 * - shutdownDB with the DatabaseInstanceManager
-	 */
-	@Test
-	public void test1() throws XMLDBException {
+
+    /** 
+     * - Storing XML resource from XML string
+     * - simple XQuery
+     * - removing resource
+     * - shutdownDB with the DatabaseInstanceManager
+     */
+    @Test
+    void test1() throws XMLDBException {
 		final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
 		try (final Collection created = cms.createCollection("A")) { } // jmv
 		cms.removeCollection("A");
 		try (final Collection created = cms.createCollection("A")) { }
 
-		try (final Collection coll = existEmbeddedServer.getRoot().getChildCollection("A")) {
+		try (final Collection coll = XMLDB_EMBEDDED_DATABASE.getRoot().getChildCollection("A")) {
 
 			try (final XMLResource r = coll.createResource(name, XMLResource.class)) {
 				r.setContent("<properties><property key=\"type\">Table</property></properties>");
@@ -137,19 +137,19 @@ public class DOMTest {
 	 * - simple access via getContentAsDOM()
 	 * */
 	@Test
-	public void test2() throws XMLDBException, InstantiationException, IllegalAccessException, ClassNotFoundException, ParserConfigurationException, IOException {
+	void test2() throws XMLDBException, InstantiationException, IllegalAccessException, ClassNotFoundException, ParserConfigurationException, IOException {
 
-		try (final XMLResource resource = existEmbeddedServer.getRoot().createResource(name, XMLResource.class)) {
+		try (final XMLResource resource = XMLDB_EMBEDDED_DATABASE.getRoot().createResource(name, XMLResource.class)) {
 			final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder db = dbf.newDocumentBuilder();
 			final Document doc = db.newDocument();
 			final Element rootElem = doc.createElement("element");
 			doc.appendChild(rootElem);
 			resource.setContentAsDOM(doc);
-			existEmbeddedServer.getRoot().storeResource(resource);
+			XMLDB_EMBEDDED_DATABASE.getRoot().storeResource(resource);
 		}
 
-		try (final XMLResource resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name)) {
+		try (final XMLResource resource = (XMLResource) XMLDB_EMBEDDED_DATABASE.getRoot().getResource(name)) {
 			final String s = (String) resource.getContent();
 			assertNotNull(s);
 			final Node content = resource.getContentAsDOM();
@@ -157,17 +157,17 @@ public class DOMTest {
 			assertTrue(content instanceof Document);
 		}
 
-		existEmbeddedServer.restart();
+		XMLDB_EMBEDDED_DATABASE.restart();
 
-		try (final XMLResource resource = (XMLResource) existEmbeddedServer.getRoot().getResource(name)) {
-			existEmbeddedServer.getRoot().removeResource(resource);
+		try (final XMLResource resource = (XMLResource) XMLDB_EMBEDDED_DATABASE.getRoot().getResource(name)) {
+			XMLDB_EMBEDDED_DATABASE.getRoot().removeResource(resource);
 		}
 	}
 	
 	/** like test 2 but add attribute and text as well */
 	@Test
 	public void test3() throws XMLDBException, ParserConfigurationException {
-		final Collection coll = existEmbeddedServer.getRoot();
+		final Collection coll = XMLDB_EMBEDDED_DATABASE.getRoot();
 		try (final XMLResource resource = coll.createResource(name, XMLResource.class)) {
 			final Document doc =
 				DocumentBuilderFactory
@@ -197,19 +197,19 @@ public class DOMTest {
 		}
 	}
 
-	/** like test 3 but uses the DOM as input to an (identity) XSLT transform */
-	@Test
-	public void test4_getContentAsString() throws XMLDBException, ParserConfigurationException, IOException, SAXException, TransformerException {
+    /** like test 3 but uses the DOM as input to an (identity) XSLT transform */
+    @Test
+    void test4_getContentAsString() throws XMLDBException, ParserConfigurationException, IOException, SAXException, TransformerException {
 		_test4(false);
 	}
 
-	@Test
-	public void test4_getContentAsDOM() throws XMLDBException, ParserConfigurationException, IOException, SAXException, TransformerException {
+    @Test
+    void test4_getContentAsDOM() throws XMLDBException, ParserConfigurationException, IOException, SAXException, TransformerException {
 		_test4(true);
 	}
 
 	private void _test4(boolean getContentAsDOM) throws TransformerException, ParserConfigurationException, XMLDBException, IOException, SAXException {
-		final Collection coll = existEmbeddedServer.getRoot();
+		final Collection coll = XMLDB_EMBEDDED_DATABASE.getRoot();
 		try (final XMLResource resource = coll.createResource(name, XMLResource.class)) {
 
 			final Document doc =

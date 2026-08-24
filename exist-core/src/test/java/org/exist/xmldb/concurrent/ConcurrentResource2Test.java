@@ -52,9 +52,10 @@ import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.action.MultiResourcesAction;
 import org.exist.xmldb.concurrent.action.XQueryAction;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.xml.sax.InputSource;
 import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.XMLDBException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,7 +65,7 @@ import java.util.List;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author wolf
@@ -79,8 +80,8 @@ public class ConcurrentResource2Test extends AbstractConcurrentTest {
         "declare default element namespace 'http://www.loc.gov/mods/v3';" +
         "<result>{for $t in distinct-values(collection(\"" + XmldbURI.ROOT_COLLECTION + "\")//mods/subject/topic) order by $t return <topic>{$t}</topic>}</result>";
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws XMLDBException {
         try (final Collection c1 = DBUtils.addCollection(getTestCollection(), "C1-C2")) {
             assertNotNull(c1);
         }

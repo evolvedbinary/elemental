@@ -21,28 +21,28 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.assertNotNull;
-
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:ohumbel@gmail.com">Otmar Humbel</a>
  */
 public class BrokerPoolNoRecoveryTest {
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer =
-            new ExistEmbeddedServer(createConfigProperties(), true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase =
+            new EmbeddedDatabaseExtension(createConfigProperties(), true, true);
 
     @Test
-    public void testSync_Recovery_Disabled() {
-        // For this test it is sufficient to have startDb() called in ExistEmbeddedServer.
+    void syncRecoveryDisabled() {
+        // For this test it is sufficient to have startDb() called in EmbeddedDatabaseExtension.
         // With disabled recovery, this used to fail with a java.util.NoSuchElementException: No value present
-        assertNotNull(existEmbeddedServer.getBrokerPool()); // for Codacy alone
+        assertNotNull(embeddedDatabase.getBrokerPool()); // for Codacy alone
     }
 
     private static Properties createConfigProperties() {

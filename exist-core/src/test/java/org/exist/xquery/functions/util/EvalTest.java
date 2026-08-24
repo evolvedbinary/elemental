@@ -45,14 +45,17 @@
  */
 package org.exist.xquery.functions.util;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.*;
 import org.exist.xquery.ErrorCodes;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.exist.xquery.XPathException;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 
 import org.xmldb.api.base.Collection;
@@ -67,38 +70,38 @@ import xyz.elemental.mediatype.MediaType;
  *
  * @author jim.fuller@webcomposite.com
  */
-//@RunWith(ParallelRunner.class)
+//@Execution(ExecutionMode.CONCURRENT)
 public class EvalTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static Resource invokableQuery;
 
     private final static String INVOKABLE_QUERY_FILENAME = "invokable.xql";
     private final static String INVOKABLE_QUERY_EXTERNAL_VAR_NAME = "some-value";
 
-    @BeforeClass
-    public static void setUp() throws Exception {
-        invokableQuery = existEmbeddedServer.getRoot().createResource(INVOKABLE_QUERY_FILENAME, BinaryResource.class);
+    @BeforeAll
+    static void setUp() throws XMLDBException {
+        invokableQuery = XMLDB_EMBEDDED_DATABASE.getRoot().createResource(INVOKABLE_QUERY_FILENAME, BinaryResource.class);
         invokableQuery.setContent(
             "declare variable $" + INVOKABLE_QUERY_EXTERNAL_VAR_NAME + " external;\n" + "<hello>{$" + INVOKABLE_QUERY_EXTERNAL_VAR_NAME + "}</hello>"
         );
         ((EXistResource) invokableQuery).setMediaType(MediaType.APPLICATION_XQUERY);
-        existEmbeddedServer.getRoot().storeResource(invokableQuery);
+        XMLDB_EMBEDDED_DATABASE.getRoot().storeResource(invokableQuery);
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
-        existEmbeddedServer.getRoot().removeResource(invokableQuery);
+    @AfterAll
+    static void tearDown() throws XMLDBException {
+        XMLDB_EMBEDDED_DATABASE.getRoot().removeResource(invokableQuery);
     }
 
     @Test
-    public void eval() throws XPathException, XMLDBException {
+    void eval() throws XMLDBException {
         final String query = "let $query := 'let $a := 1 return $a'\n" +
                 "return\n" +
                 "util:eval($query)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("1", r);
@@ -107,24 +110,24 @@ public class EvalTest {
     }
 
     @Test
-    public void evalWithExternalVars() throws XPathException, XMLDBException {
+    void evalWithExternalVars() throws XMLDBException {
         final String query = "let $value := 'world' return\n" +
                 "\tutil:eval(xs:anyURI('/db/" + INVOKABLE_QUERY_FILENAME + "'), false(), (xs:QName('" + INVOKABLE_QUERY_EXTERNAL_VAR_NAME + "'), $value))";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 
             final LocalXMLResource res = (LocalXMLResource) result.getResource(0);
             final Node n = res.getContentAsDOM();
-            assertEquals(n.getLocalName(), "hello");
+            assertEquals("hello", n.getLocalName());
             assertEquals("world", n.getFirstChild().getNodeValue());
         }
     }
 
     @Test
-    public void evalwithPI() throws XPathException, XMLDBException {
+    void evalwithPI() throws XMLDBException {
         final String query = "let $query := 'let $a := <test><?pi test?></test> return count($a//processing-instruction())'\n" +
                 "return\n" +
                 "util:eval($query)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("1", r);
@@ -133,12 +136,12 @@ public class EvalTest {
     }
 
     @Test
-    public void evalInline() throws XPathException, XMLDBException {
+    void evalInline() throws XMLDBException {
         final String query = "let $xml := document{<test><a><b/></a></test>}\n" +
                 "let $query := 'count(.//*)'\n" +
                 "return\n" +
                 "util:eval-inline($xml,$query)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("3", r);
@@ -147,7 +150,7 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvalWithContextVariable() throws XPathException, XMLDBException {
+    void evalWithContextVariable() throws XMLDBException {
         final String query = "let $xml := <test><a/><b/></test>\n" +
                 "let $context := <static-context>\n" +
                 "<variable name='xml'>{$xml}</variable>\n" +
@@ -155,7 +158,7 @@ public class EvalTest {
                 "let $query := 'count($xml//*) mod 2 = 0'\n" +
                 "return\n" +
                 "util:eval-with-context($query, $context, false())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("true", r);
@@ -164,7 +167,7 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvalSupplyingContext() throws XPathException, XMLDBException {
+    void evalSupplyingContext() throws XMLDBException {
         final String query = "let $xml := <test><a/></test>\n" +
                 "let $context := <static-context>\n" +
                 "<default-context>{$xml}</default-context>\n" +
@@ -172,7 +175,7 @@ public class EvalTest {
                 "let $query := 'count(.//*) mod 2 = 0'\n" +
                 "return\n" +
                 "util:eval-with-context($query, $context, false())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("true", r);
@@ -181,7 +184,7 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvalSupplyingContextAndVariable() throws XPathException, XMLDBException {
+    void evalSupplyingContextAndVariable() throws XMLDBException {
         final String query = "let $xml := <test><a/></test>\n" +
                 "let $context := <static-context>\n" +
                 "<variable name='xml'>{$xml}</variable>\n" +
@@ -190,7 +193,7 @@ public class EvalTest {
                 "let $query := 'count($xml//*) + count(.//*)'\n" +
                 "return\n" +
                 "util:eval-with-context($query, $context, false())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("3", r);
@@ -199,21 +202,21 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvalSupplyingContextItem() throws XPathException, XMLDBException {
+    void evalSupplyingContextItem() throws XMLDBException {
         final String query = "let $context := 'London'\n" +
                 "let $query := '.'\n" +
                 "return\n" +
                 "util:eval-with-context($query, (), false(), $context)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("London", r);
             }
         }
     }
-    
+
     @Test
-    public void evalInContextWithPreDeclaredNamespace() throws XMLDBException {
+    void evalInContextWithPreDeclaredNamespace() throws XMLDBException {
         createCollection("testEvalInContextWithPreDeclaredNamespace");
         final String query =
             "xquery version \"1.0\";\r\n" +
@@ -222,13 +225,13 @@ public class EvalTest {
             "let $q := \"/db:article\" return\r\n" +
             "util:eval($q)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             // needed to ensure that result is closed
         }
     }
-    
+
     @Test
-    public void evalInContextWithPreDeclaredNamespaceAcrossLocalFunctionBoundary() throws XMLDBException {
+    void evalInContextWithPreDeclaredNamespaceAcrossLocalFunctionBoundary() throws XMLDBException {
         createCollection("testEvalInContextWithPreDeclaredNamespace");
         final String query =
             "xquery version \"1.0\";\r\n" +
@@ -239,14 +242,14 @@ public class EvalTest {
             "};\r\n" +
             "let $q := \"/db:article\" return\r\n" +
             "local:process($q)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             // needed to ensure that result is closed
         }
     }
-    
+
     //should fail with - Error while evaluating expression: /db:article. XPST0081: No namespace defined for prefix db [at line 5, column 9]
-    @Test(expected=XMLDBException.class)
-    public void evalInContextWithPreDeclaredNamespaceAcrossModuleBoundary() throws XMLDBException {
+    @Test
+    void evalInContextWithPreDeclaredNamespaceAcrossModuleBoundary() throws XMLDBException {
         try (final Collection testHome = createCollection("testEvalInContextWithPreDeclaredNamespace")) {
             final String processorModule =
                 "xquery version \"1.0\";\r\n" +
@@ -265,9 +268,11 @@ public class EvalTest {
                     "let $q := \"/db:article\" return\r\n" +
                     "processor:process($q)";
 
-            try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
-                // needed to ensure that result is closed
-            }
+            assertThrows(XMLDBException.class, () ->
+                try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
+                    // needed to ensure that result is closed
+                }
+            });
         }
     }
 
@@ -279,7 +284,7 @@ public class EvalTest {
      * the same query was executed
      */
     @Test
-    public void evalWithMissingVariableReferenceShouldReportTheSameErrorEachTime() throws XMLDBException {
+    void evalWithMissingVariableReferenceShouldReportTheSameErrorEachTime() throws XMLDBException {
         final String testHomeName = "testEvalWithMissingVariableReferenceShouldReportTheSameErrorEachTime";
         try (final Collection testHome = createCollection(testHomeName)) {
 
@@ -308,7 +313,7 @@ public class EvalTest {
                 // needed to ensure that result is closed
             } catch (final XMLDBException e) {
                 final Throwable cause = e.getCause();
-                assertTrue(cause instanceof XPathException);
+                assertInstanceOf(XPathException.class, cause);
                 assertEquals(ErrorCodes.XPDY0002, ((XPathException) cause).getErrorCode());
             }
 
@@ -317,16 +322,16 @@ public class EvalTest {
                 // needed to ensure that result is closed
             } catch (final XMLDBException e) {
                 final Throwable cause = e.getCause();
-                assertTrue(cause instanceof XPathException);
+                assertInstanceOf(XPathException.class, cause);
                 assertEquals(ErrorCodes.XPDY0002, ((XPathException) cause).getErrorCode());
             }
         }
     }
     
     private Collection createCollection(String collectionName) throws XMLDBException {
-        Collection collection = existEmbeddedServer.getRoot().getChildCollection(collectionName);
+        Collection collection = XMLDB_EMBEDDED_DATABASE.getRoot().getChildCollection(collectionName);
         if (collection == null) {
-            CollectionManagementService cmService = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+            CollectionManagementService cmService = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
             try (final Collection created = cmService.createCollection(collectionName)) { }
         }
 
@@ -336,22 +341,22 @@ public class EvalTest {
     }
 
     @Test
-    public void evalAndSerialize() throws XMLDBException {
+    void evalAndSerialize() throws XMLDBException {
         final String query = "let $query := \"<elem1>hello</elem1>\"\n" +
                 "return\n" +
                 "util:eval-and-serialize($query, ())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource r = result.getResource(0);
             assertEquals("<elem1>hello</elem1>", r.getContent());
         }
     }
 
     @Test
-    public void evalAndSerializeDefaultOptions() throws XMLDBException {
+    void evalAndSerializeDefaultOptions() throws XMLDBException {
         String query = "let $query := \"<elem1>hello</elem1>\"\n" +
                 "return\n" +
                 "util:eval-and-serialize($query, map { \"method\": \"adaptive\" })";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource r = result.getResource(0);
             assertEquals("<elem1>hello</elem1>", r.getContent());
         }
@@ -363,54 +368,54 @@ public class EvalTest {
                 "let $query := \"<elem1>hello</elem1>\"\n" +
                 "return\n" +
                 "util:eval-and-serialize($query, map { \"method\": \"adaptive\" })";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource r = result.getResource(0);
             assertEquals("hello", r.getContent());
         }
     }
 
     @Test
-    public void evalAndSerializeJson() throws XMLDBException {
+    void evalAndSerializeJson() throws XMLDBException {
         String query = "let $query := \"<outer><elem1>hello</elem1></outer>\"\n" +
                 "return\n" +
                 "util:eval-and-serialize($query, map { \"method\": \"json\" })";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource r = result.getResource(0);
             assertEquals("{\"elem1\":\"hello\"}", r.getContent());
         }
     }
 
     @Test
-    public void evalAndSerializeAdaptive() throws XMLDBException {
+    void evalAndSerializeAdaptive() throws XMLDBException {
         String query = "let $query := 'map { \"key\": \"value\"}'\n" +
                 "return\n" +
                 "util:eval-and-serialize($query, map { \"method\": \"adaptive\" })";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource r = result.getResource(0);
             assertEquals("map{\"key\":\"value\"}", r.getContent());
         }
     }
 
     @Test
-    public void evalAndSerializeSubsequence() throws XMLDBException {
+    void evalAndSerializeSubsequence() throws XMLDBException {
         final String query = "let $query := \"for $i in (1 to 10) return <i>{$i}</i>\"\n" +
                 "return\n" +
                 "util:eval-and-serialize($query, (), 1, 4)";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             final Resource r = result.getResource(0);
             assertEquals("<i>1</i><i>2</i><i>3</i><i>4</i>", r.getContent());
         }
     }
 
     @Test
-    public void evalErrorInfo() {
+    void evalErrorInfo() {
         final String query = "let $query := \"let $msg := 'some error message'\n" +
                 "let $code := xs:QName('some-error')\n" +
                 "return\n" +
                 "    fn:error($code, $msg)\"\n" +
                 "return\n" +
                 "    util:eval($query, false(), (), false())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 
             fail("Expected XPathException");
 
@@ -421,14 +426,14 @@ public class EvalTest {
     }
 
     @Test
-    public void evalPassErrorInfo() {
+    void evalPassErrorInfo() {
         final String query = "let $query := \"let $msg := 'some error message'\n" +
                 "let $code := xs:QName('some-error')\n" +
                 "return\n" +
                 "    fn:error($code, $msg)\"\n" +
                 "return\n" +
                 "    util:eval($query, false(), (), true())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 
             fail("Expected XPathException");
 

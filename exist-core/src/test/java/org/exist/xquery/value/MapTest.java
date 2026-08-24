@@ -21,26 +21,26 @@
  */
 package org.exist.xquery.value;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MapTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(true, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension SERVER = new XmldbEmbeddedDatabaseExtension(true, true, true);
 
     @Test
-    public void effectiveBooleanValue() {
+    void effectiveBooleanValue() {
         try {
-            final XQueryService queryService = server.getRoot().getService(XQueryService.class);
+            final XQueryService queryService = SERVER.getRoot().getService(XQueryService.class);
             queryService.query("fn:boolean(map{})");
         } catch(final XMLDBException e) {
            final Throwable cause = e.getCause();

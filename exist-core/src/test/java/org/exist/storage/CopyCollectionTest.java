@@ -31,12 +31,17 @@ import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.hamcrest.Matcher;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
@@ -47,8 +52,10 @@ import static org.exist.TestUtils.ADMIN_DB_USER;
 import static org.exist.security.SecurityManager.DBA_GROUP;
 import static org.exist.storage.DBBroker.PreserveType.*;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests to ensure that collection content and attributes
@@ -75,67 +82,67 @@ public class CopyCollectionTest {
 
     private static final int USER2_COL2_MODE = 0744;  // rwxr--r--
 
-    @ClassRule
-    public static final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     /**
      * As the owner copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} to non-existent {@link #USER1_NEW_COL}.
      */
     @Test
-    public void copyToNonExistentAsSelf() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
-        copyCol(user1, NO_PRESERVE, USER1_COL1, USER1_NEW_COL);
-        checkAttributes(USER1_NEW_COL, USER1_NAME, USER1_NAME, USER1_COL1_MODE, not(getCreated(USER1_COL1)));
+    void copyToNonExistentAsSelf(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
+        copyCol(pool, user1, NO_PRESERVE, USER1_COL1, USER1_NEW_COL);
+        checkAttributes(pool, USER1_NEW_COL, USER1_NAME, USER1_NAME, USER1_COL1_MODE, not(getCreated(pool, USER1_COL1)));
     }
 
     /**
      * As the owner copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} already existing {@link #USER1_COL2}.
      */
     @Test
-    public void copyToExistentAsSelf() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
-        copyCol(user1, NO_PRESERVE, USER1_COL1, USER1_COL2);
-        checkAttributes(USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL2_MODE, equalTo(getCreated(USER1_COL2)));
+    void copyToExistentAsSelf(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
+        copyCol(pool, user1, NO_PRESERVE, USER1_COL1, USER1_COL2);
+        checkAttributes(pool, USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL2_MODE, equalTo(getCreated(pool, USER1_COL2)));
     }
 
     /**
      * As a DBA copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} to non-existent {@link #USER1_NEW_COL}.
      */
     @Test
-    public void copyToNonExistentAsDBA() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
-        copyCol(adminUser, NO_PRESERVE, USER1_COL1, USER1_NEW_COL);
-        checkAttributes(USER1_NEW_COL, ADMIN_DB_USER, DBA_GROUP, USER1_COL1_MODE, not(getCreated(USER1_COL1)));
+    void copyToNonExistentAsDBA(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject adminUser = pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
+        copyCol(pool, adminUser, NO_PRESERVE, USER1_COL1, USER1_NEW_COL);
+        checkAttributes(pool, USER1_NEW_COL, ADMIN_DB_USER, DBA_GROUP, USER1_COL1_MODE, not(getCreated(pool, USER1_COL1)));
     }
 
     /**
      * As a DBA copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} already existing {@link #USER1_COL2}.
      */
     @Test
-    public void copyToExistentAsDBA() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
-        copyCol(adminUser, NO_PRESERVE, USER1_COL1, USER1_COL2);
-        checkAttributes(USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL2_MODE, equalTo(getCreated(USER1_COL2)));
+    void copyToExistentAsDBA(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject adminUser = pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
+        copyCol(pool, adminUser, NO_PRESERVE, USER1_COL1, USER1_COL2);
+        checkAttributes(pool, USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL2_MODE, equalTo(getCreated(pool, USER1_COL2)));
     }
 
     /**
      * As some other (non-owner) user copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} to non-existent {@link #USER2_NEW_COL}.
      */
     @Test
-    public void copyToNonExistentAsOther() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        copyCol(user2, NO_PRESERVE, USER1_COL1, USER2_NEW_COL);
-        checkAttributes(USER2_NEW_COL, USER2_NAME, USER2_NAME, USER1_COL1_MODE, not(getCreated(USER1_COL1)));
+    void copyToNonExistentAsOther(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        copyCol(pool, user2, NO_PRESERVE, USER1_COL1, USER2_NEW_COL);
+        checkAttributes(pool, USER2_NEW_COL, USER2_NAME, USER2_NAME, USER1_COL1_MODE, not(getCreated(pool, USER1_COL1)));
     }
 
     /**
      * As some other (non-owner) user copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} already existing {@link #USER2_COL2}.
      */
     @Test
-    public void copyToExistentAsOther() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        copyCol(user2, NO_PRESERVE, USER1_COL1, USER2_COL2);
-        checkAttributes(USER2_COL2, USER2_NAME, USER2_NAME, USER2_COL2_MODE, equalTo(getCreated(USER2_COL2)));
+    void copyToExistentAsOther(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        copyCol(pool, user2, NO_PRESERVE, USER1_COL1, USER2_COL2);
+        checkAttributes(pool, USER2_COL2, USER2_NAME, USER2_NAME, USER2_COL2_MODE, equalTo(getCreated(pool, USER2_COL2)));
     }
 
     /**
@@ -143,10 +150,10 @@ public class CopyCollectionTest {
      * as the owner copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} to non-existent {@link #USER1_NEW_COL}.
      */
     @Test
-    public void copyPreserveToNonExistentAsSelf() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);;
-        copyCol(user1, PRESERVE, USER1_COL1, USER1_NEW_COL);
-        checkAttributes(USER1_NEW_COL, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(getCreated(USER1_COL1)));
+    void copyPreserveToNonExistentAsSelf(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);;
+        copyCol(pool, user1, PRESERVE, USER1_COL1, USER1_NEW_COL);
+        checkAttributes(pool, USER1_NEW_COL, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(getCreated(pool, USER1_COL1)));
     }
 
     /**
@@ -154,11 +161,11 @@ public class CopyCollectionTest {
      * as the owner copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} already existing {@link #USER1_COL2}.
      */
     @Test
-    public void copyPreserveToExistentAsSelf() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user1 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
-        final long originalCol2Created = getCreated(USER1_COL2);
-        copyCol(user1, PRESERVE, USER1_COL1, USER1_COL2);
-        checkAttributes(USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(originalCol2Created));
+    void copyPreserveToExistentAsSelf(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
+        final long originalCol2Created = getCreated(pool, USER1_COL2);
+        copyCol(pool, user1, PRESERVE, USER1_COL1, USER1_COL2);
+        checkAttributes(pool, USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(originalCol2Created));
     }
 
     /**
@@ -166,10 +173,10 @@ public class CopyCollectionTest {
      * as a DBA copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} to non-existent {@link #USER1_NEW_COL}.
      */
     @Test
-    public void copyPreserveToNonExistentAsDBA() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
-        copyCol(adminUser, PRESERVE, USER1_COL1, USER1_NEW_COL);
-        checkAttributes(USER1_NEW_COL, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(getCreated(USER1_COL1)));
+    void copyPreserveToNonExistentAsDBA(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject adminUser = pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
+        copyCol(pool, adminUser, PRESERVE, USER1_COL1, USER1_NEW_COL);
+        checkAttributes(pool, USER1_NEW_COL, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(getCreated(pool, USER1_COL1)));
     }
 
     /**
@@ -177,11 +184,11 @@ public class CopyCollectionTest {
      * as a DBA copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} already existing {@link #USER1_COL2}.
      */
     @Test
-    public void copyPreserveToExistentAsDBA() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject adminUser = existWebServer.getBrokerPool().getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
-        final long originalCol2Created = getCreated(USER1_COL2);
-        copyCol(adminUser, PRESERVE, USER1_COL1, USER1_COL2);
-        checkAttributes(USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(originalCol2Created));
+    void copyPreserveToExistentAsDBA(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject adminUser = pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD);
+        final long originalCol2Created = getCreated(pool, USER1_COL2);
+        copyCol(pool, adminUser, PRESERVE, USER1_COL1, USER1_COL2);
+        checkAttributes(pool, USER1_COL2, USER1_NAME, USER1_NAME, USER1_COL1_MODE, equalTo(originalCol2Created));
     }
 
     /**
@@ -189,10 +196,10 @@ public class CopyCollectionTest {
      * as some other (non-owner) user copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} to non-existent {@link #USER2_NEW_COL}.
      */
     @Test
-    public void copyPreserveToNonExistentAsOther() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        copyCol(user2, PRESERVE, USER1_COL1, USER2_NEW_COL);
-        checkAttributes(USER2_NEW_COL, USER2_NAME, USER2_NAME, USER1_COL1_MODE, equalTo(getCreated(USER1_COL1)));
+    void copyPreserveToNonExistentAsOther(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        copyCol(pool, user2, PRESERVE, USER1_COL1, USER2_NEW_COL);
+        checkAttributes(pool, USER2_NEW_COL, USER2_NAME, USER2_NAME, USER1_COL1_MODE, equalTo(getCreated(pool, USER1_COL1)));
     }
 
     /**
@@ -200,23 +207,22 @@ public class CopyCollectionTest {
      * as some other (non-owner) user copy {@link #USER1_COL1} from {@link TestConstants#TEST_COLLECTION_URI} already existing {@link #USER2_COL2}.
      */
     @Test
-    public void copyPreserveToExistentAsOther() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
-        final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        final long originalCol2Created = getCreated(USER2_COL2);
-        copyCol(user2, PRESERVE, USER1_COL1, USER2_COL2);
-        checkAttributes(USER2_COL2, USER2_NAME, USER2_NAME, USER1_COL1_MODE, equalTo(originalCol2Created));
+    void copyPreserveToExistentAsOther(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, TriggerException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        final long originalCol2Created = getCreated(pool, USER2_COL2);
+        copyCol(pool, user2, PRESERVE, USER1_COL1, USER2_COL2);
+        checkAttributes(pool, USER2_COL2, USER2_NAME, USER2_NAME, USER1_COL1_MODE, equalTo(originalCol2Created));
     }
 
     /**
      * Test copy collection /db/a/b/c/d/e/f/g/h/i/j/k to /db/z/y/x/w/v/u/k
      */
     @Test
-    public void copyDeep() throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
+    void copyDeep(final BrokerPool pool) throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
         final XmldbURI srcUri = XmldbURI.create("/db/a/b/c/d/e/f/g/h/i/j/k");
         final XmldbURI destUri = XmldbURI.create("/db/z/y/x/w/v/u");
         final XmldbURI newName = srcUri.lastSegment();
-
-        final BrokerPool pool = existWebServer.getBrokerPool();
+        
         final TransactionManager transact = pool.getTransactionManager();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = transact.beginTransaction()) {
@@ -272,14 +278,13 @@ public class CopyCollectionTest {
      * this test checks that the sub-collections are correctly preserved.
      */
     @Test
-    public void copyDeepWithSubCollections() throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
+    void copyDeepWithSubCollections(final BrokerPool pool) throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
         final XmldbURI srcUri = XmldbURI.create("/db/a/b/c/d/e/f/g/h/i/j/k");
         final XmldbURI srcSubCol1Uri = srcUri.append("sub-1");
         final XmldbURI srcSubCol2Uri = srcUri.append("sub-2");
         final XmldbURI destUri = XmldbURI.create("/db/z/y/x/w/v/u");
         final XmldbURI newName = srcUri.lastSegment();
 
-        final BrokerPool pool = existWebServer.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = transact.beginTransaction()) {
@@ -358,11 +363,10 @@ public class CopyCollectionTest {
         }
     }
 
-    private void copyCol(final Subject execAsUser, final DBBroker.PreserveType preserve, final XmldbURI srcColName, final XmldbURI destColName) throws EXistException, PermissionDeniedException, LockException, IOException, TriggerException {
+    private void copyCol(final BrokerPool pool, final Subject execAsUser, final DBBroker.PreserveType preserve, final XmldbURI srcColName, final XmldbURI destColName) throws EXistException, PermissionDeniedException, LockException, IOException, TriggerException {
         final XmldbURI src = TEST_COLLECTION_URI.append(srcColName);
         final XmldbURI dest = TEST_COLLECTION_URI.append(destColName);
-
-        final BrokerPool pool = existWebServer.getBrokerPool();
+        
         try (final DBBroker broker = pool.get(Optional.of(execAsUser));
                 final Txn transaction = pool.getTransactionManager().beginTransaction();
                 final Collection srcCol = broker.openCollection(src, LockMode.READ_LOCK);
@@ -387,31 +391,28 @@ public class CopyCollectionTest {
         }
     }
 
-    private long getCreated(final XmldbURI colName) throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    private long getCreated(final BrokerPool pool, final XmldbURI colName) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Collection col = broker.openCollection(TEST_COLLECTION_URI.append(colName), LockMode.READ_LOCK)) {
             return col.getCreated();
         }
     }
 
-    private void checkAttributes(final XmldbURI colName, final String expectedOwner, final String expectedGroup, final int expectedMode, final Matcher<Long> expectedCreated) throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    private void checkAttributes(final BrokerPool pool, final XmldbURI colName, final String expectedOwner, final String expectedGroup, final int expectedMode, final Matcher<Long> expectedCreated) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Collection col = broker.openCollection(TEST_COLLECTION_URI.append(colName), LockMode.READ_LOCK)) {
 
             final Permission permission = col.getPermissions();
-            assertEquals("Owner value was not expected", expectedOwner, permission.getOwner().getName());
-            assertEquals("Group value was not expected", expectedGroup, permission.getGroup().getName());
-            assertEquals("Mode value was not expected", expectedMode, permission.getMode());
+            assertEquals(expectedOwner, permission.getOwner().getName(), "Owner value was not expected");
+            assertEquals(expectedGroup, permission.getGroup().getName(), "Group value was not expected");
+            assertEquals(expectedMode, permission.getMode(), "Mode value was not expected");
 
             assertThat("Created value is not correct", col.getCreated(), expectedCreated);
         }
     }
 
-    @BeforeClass
-    public static void prepareDb() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @BeforeAll
+    static void prepareDb(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final SecurityManager sm = pool.getSecurityManager();
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
@@ -426,9 +427,8 @@ public class CopyCollectionTest {
         }
     }
 
-    @Before
-    public void setup() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @BeforeEach
+    void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
 
         // create user1 resources
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
@@ -465,9 +465,8 @@ public class CopyCollectionTest {
         }
     }
 
-    @After
-    public void teardown() throws EXistException, LockException, TriggerException, PermissionDeniedException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @AfterEach
+    void teardown(final BrokerPool pool) throws EXistException, LockException, TriggerException, PermissionDeniedException, IOException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -482,9 +481,8 @@ public class CopyCollectionTest {
         }
     }
 
-    @AfterClass
-    public static void cleanupDb() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @AfterAll
+    static void cleanupDb(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final SecurityManager sm = pool.getSecurityManager();
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {

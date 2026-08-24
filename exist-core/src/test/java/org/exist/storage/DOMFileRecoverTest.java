@@ -45,29 +45,24 @@
  */
 package org.exist.storage;
 
-import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.io.output.StringBuilderWriter;
-import org.exist.EXistException;
 import org.exist.numbering.NodeId;
 import org.exist.numbering.NodeIdFactory;
-import org.exist.storage.btree.BTreeException;
 import org.exist.storage.btree.IndexQuery;
 import org.exist.storage.btree.Value;
 import org.exist.storage.dom.DOMFile;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.util.ReadOnlyException;
-import org.exist.xquery.TerminatedException;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests transaction management  and basic recovery for the DOMFile class.
@@ -77,14 +72,14 @@ import static org.junit.Assert.assertNotNull;
  */
 public class DOMFileRecoverTest {
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-	public void add() throws EXistException, ReadOnlyException, TerminatedException, IOException, BTreeException {
+    void add() throws EXistException, ReadOnlyException, TerminatedException, IOException, BTreeException {
 		BrokerPool.FORCE_CORRUPTION = false;
 
-		final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+		final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final NodeIdFactory idFact = pool.getNodeFactory();
 
 		try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
@@ -170,8 +165,8 @@ public class DOMFileRecoverTest {
 	}
 
     @Test
-    public void get() throws EXistException, IOException, BTreeException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void get() throws EXistException, IOException, BTreeException {
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
         	//Recover and read the data
 

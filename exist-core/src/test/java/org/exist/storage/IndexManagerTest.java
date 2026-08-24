@@ -25,6 +25,8 @@ package org.exist.storage;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+
+import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.DocumentSet;
@@ -38,34 +40,35 @@ import org.exist.indexing.MatchListener;
 import org.exist.indexing.StreamListener;
 import org.exist.indexing.StreamListener.ReindexMode;
 import org.exist.storage.btree.BTree;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
+import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class IndexManagerTest {
 
-  @ClassRule
-  public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+  @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-  @Test
-  public void configurationChangeRuntime() throws Exception  {
-    final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-    try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-      pool.getIndexManager().registerIndex(new TestIndex());
-      assertNull(broker.getIndexController().getWorkerByIndexId(TestIndex.INDEX_ID));
-    }
+    @Test
+    void configurationChangeRuntime() throws EXistException, DatabaseConfigurationException {
+      final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
+      try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        pool.getIndexManager().registerIndex(new TestIndex());
+        assertNull(broker.getIndexController().getWorkerByIndexId(TestIndex.INDEX_ID));
+      }
 
-    try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
-      assertNotNull(broker.getIndexController().getWorkerByIndexId(TestIndex.INDEX_ID));
-    }
+      try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
+        assertNotNull(broker.getIndexController().getWorkerByIndexId(TestIndex.INDEX_ID));
+      }
   }
 
   private static class TestIndex implements Index {

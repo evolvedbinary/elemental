@@ -45,18 +45,18 @@
  */
 package org.exist.validation;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
-import org.junit.Test;
 
 import org.xmldb.api.modules.CollectionManagementService;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Some tests regarding invalid collection.xconf documents.
@@ -65,13 +65,13 @@ import static org.junit.Assert.*;
  */
 public class CollectionConfigurationTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String invalidConfig = "<invalid/>";
 
     private void createCollection(String collection) throws XMLDBException {
-        final CollectionManagementService cmservice = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cmservice = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = cmservice.createCollection(collection)) {
             assertNotNull(testCollection);
         }
@@ -82,7 +82,7 @@ public class CollectionConfigurationTest {
     }
 
     private void storeCollectionXconf(final String collection, final String document) throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("xmldb:store(\"" + collection + "\", \"" + DEFAULT_COLLECTION_CONFIG_FILE + "\", " + document + ")")) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("xmldb:store(\"" + collection + "\", \"" + DEFAULT_COLLECTION_CONFIG_FILE + "\", " + document + ")")) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("Store xconf", collection + "/" + DEFAULT_COLLECTION_CONFIG_FILE, r);
@@ -92,7 +92,7 @@ public class CollectionConfigurationTest {
 
 
     @Test
-    public void insertInvalidCollectionXconf() throws XMLDBException {
+    void insertInvalidCollectionXconf() throws XMLDBException {
         createCollection("/db/system/config/db/foobar");
         storeCollectionXconf("/db/system/config/db/foobar", invalidConfig);
 

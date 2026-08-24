@@ -55,13 +55,14 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.TestUtils;
 
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.ClassRule;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
@@ -74,7 +75,7 @@ import java.util.Optional;
 import java.util.Random;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test indexing and recovery of large string sequences.
@@ -92,11 +93,11 @@ public class LargeValuesTest {
 
     private static final int KEY_LENGTH = 5000;
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void storeAndRecover() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, CollectionConfigurationException, SAXException, EXistException {
+    void storeAndRecover() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, CollectionConfigurationException, SAXException, EXistException {
         storeDocuments();
         restart();
         remove();
@@ -106,7 +107,7 @@ public class LargeValuesTest {
      * Store some documents, reindex the collection and crash without commit.
      */
     private void storeDocuments() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -150,7 +151,7 @@ public class LargeValuesTest {
 
         BrokerPool.FORCE_CORRUPTION = false;
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.READ_LOCK)) {
             assertNotNull(root);
@@ -187,7 +188,7 @@ public class LargeValuesTest {
     }
 
     private void remove() throws EXistException, PermissionDeniedException, DatabaseConfigurationException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction();
@@ -225,8 +226,8 @@ public class LargeValuesTest {
         return file;
     }
 
-    @AfterClass
-    public static void cleanupDb() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterAll
+    static void cleanupDb() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         TestUtils.cleanupDB();
     }
 }

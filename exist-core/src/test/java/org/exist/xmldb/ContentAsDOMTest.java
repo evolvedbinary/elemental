@@ -45,13 +45,11 @@
  */
 package org.exist.xmldb;
 
-import javax.xml.transform.TransformerException;
-
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.security.Permission;
 import org.exist.security.Account;
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.ClassRule;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import javax.xml.transform.OutputKeys;
@@ -59,18 +57,15 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
-
-import java.io.IOException;
 
 import static org.exist.TestUtils.*;
 
@@ -82,8 +77,8 @@ import static org.exist.TestUtils.*;
  */
 public class ContentAsDOMTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String XML =
         "<root><test>ABCDEF</test></root>";
@@ -98,7 +93,7 @@ public class ContentAsDOMTest {
 
 
     @Test
-    public void getContentAsDOM() throws XMLDBException, TransformerException, IOException {
+    void getContentAsDOM() throws XMLDBException, TransformerException, IOException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final XQueryService service = testCollection.getService(XQueryService.class);
             try (final EXistResourceSet result = (EXistResourceSet) service.query(XQUERY)) {
@@ -119,9 +114,9 @@ public class ContentAsDOMTest {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
-        CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = service.createCollection(TEST_COLLECTION)) {
             final UserManagementService ums = testCollection.getService(UserManagementService.class);
             // change ownership to guest
@@ -137,8 +132,8 @@ public class ContentAsDOMTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
         try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, ADMIN_DB_USER, ADMIN_DB_PWD)) {
             final CollectionManagementService service = root.getService(CollectionManagementService.class);

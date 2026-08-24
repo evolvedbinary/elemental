@@ -25,19 +25,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.security.AuthenticationException;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.Configuration;
 import org.exist.util.XMLReaderObjectFactory;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.exist.TestUtils.*;
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
@@ -53,14 +58,14 @@ public class DatabaseInsertResources_NoValidation_Test {
     private final static String TEST_COLLECTION = "testNoValidationInsert";
 
     private final static String VALIDATION_HOME_COLLECTION_URI = "/db/" + TEST_COLLECTION + "/" + TestTools.VALIDATION_HOME_COLLECTION;
-    
+
 
     /**
      * Insert all documents into database, switch of validation.
      */
     @Test
-    public void insertValidationResources_xsd() throws IOException {
-        final Configuration config = existEmbeddedServer.getBrokerPool().getConfiguration();
+    void insertValidationResources_xsd() throws IOException {
+        final Configuration config = EMBEDDED_DATABASE.getBrokerPool().getConfiguration();
         config.setProperty(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "no");
 
         try (final InputStream is = SAMPLES.getSample("validation/addressbook/addressbook.xsd")) {
@@ -85,8 +90,8 @@ public class DatabaseInsertResources_NoValidation_Test {
     }
 
     @Test
-    public void insertValidationResources_dtd() throws IOException {
-        final Configuration config = existEmbeddedServer.getBrokerPool().getConfiguration();
+    void insertValidationResources_dtd() throws IOException {
+        final Configuration config = EMBEDDED_DATABASE.getBrokerPool().getConfiguration();
         config.setProperty(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "no");
 
         try (final InputStream is = SAMPLES.getSample("validation/dtd/hamlet.dtd")) {
@@ -111,8 +116,8 @@ public class DatabaseInsertResources_NoValidation_Test {
     }
 
     @Test
-    public void insertValidationResource_dtd_badDocType() throws IOException {
-        final Configuration config = existEmbeddedServer.getBrokerPool().getConfiguration();
+    void insertValidationResource_dtd_badDocType() throws IOException {
+        final Configuration config = EMBEDDED_DATABASE.getBrokerPool().getConfiguration();
         config.setProperty(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "no");
 
         try (final InputStream is = SAMPLES.getSample("validation/dtd/hamlet_nodoctype.xml")) {
@@ -126,27 +131,27 @@ public class DatabaseInsertResources_NoValidation_Test {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(
             propertiesBuilder()
                 .set(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "auto")
                 .build(),
             true,
             true);
 
-    @BeforeClass
-    public static void startup() throws Exception {
+    @BeforeAll
+    static void startup() throws TransactionException, AuthenticationException, PermissionDeniedException, IOException, TriggerException {
         //create the collections we need for these tests
         createTestCollections();
     }
 
-    @AfterClass
-    public static void shutdown() throws Exception {
+    @AfterAll
+    static void shutdown() throws AuthenticationException, PermissionDeniedException, IOException, EXistException, TriggerException {
         removeTestCollections();
     }
 
-    private static void createTestCollections() throws Exception {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private static void createTestCollections() throws AuthenticationException, PermissionDeniedException, IOException, TriggerException, TransactionException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD)));
@@ -173,8 +178,8 @@ public class DatabaseInsertResources_NoValidation_Test {
         }
     }
 
-    private static void removeTestCollections() throws Exception {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private static void removeTestCollections() throws AuthenticationException, PermissionDeniedException, IOException, TriggerException, EXistException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD)));

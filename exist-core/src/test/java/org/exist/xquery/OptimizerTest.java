@@ -50,13 +50,15 @@ import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.IndexQueryService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
@@ -72,14 +74,15 @@ import java.net.URISyntaxException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.exist.samples.Samples.SAMPLES;
 import static org.junit.Assert.assertNotNull;
 
 /**
  * 
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class OptimizerTest {
 
     private final static String OPTIMIZE = "declare option exist:optimize 'enable=yes';";
@@ -106,14 +109,14 @@ public class OptimizerTest {
     private static Collection testCollection;
 
     @Test
-    public void nestedQuery() throws XMLDBException {
+    void nestedQuery() throws XMLDBException {
         execute("/root/a[descendant::b = 'one']", true, "Inner b node should be returned.", 2);
         execute("/root/a[b = 'one']", true, "Inner b node should not be returned.", 1);
         execute("/root/a[b = 'one']", false, "Inner b node should not be returned.", 1);
     }
 
     @Test
-    public void simplePredicatesRegex() throws XMLDBException {
+    void simplePredicatesRegex() throws XMLDBException {
         long r = execute("//SPEECH[matches(SPEAKER, '^HAM.*')]", false);
         execute("//SPEECH[matches(SPEAKER, '^HAM.*')]", true, MSG_OPT_ERROR, r);
         r = execute("//SPEECH[starts-with(SPEAKER, 'HAML')]", false);
@@ -125,7 +128,7 @@ public class OptimizerTest {
     }
 
     @Test
-    public void noOptimization() throws XMLDBException {
+    void noOptimization() throws XMLDBException {
         long r = execute("/root//b[parent::c/b = 'two']", false);
         assertEquals(1, r);
         execute("/root//b[parent::c/b = 'two']", true, "Parent axis should not be optimized.", r);
@@ -148,14 +151,14 @@ public class OptimizerTest {
     }
 
     @Test
-    public void reversePaths() throws XMLDBException {
+    void reversePaths() throws XMLDBException {
         long r = execute("/root//b/parent::c[b = 'two']", false);
         assertEquals(1, r);
         execute("/root//b/parent::c[b = 'two']", true, MSG_OPT_ERROR, r);
     }
 
     @Test
-    public void reversePathsWithWildcard() throws XMLDBException {
+    void reversePathsWithWildcard() throws XMLDBException {
         //parent with wildcard
         long r = execute("/root//b/parent::*[b = 'two']", false);
         assertEquals(1, r);
@@ -163,7 +166,7 @@ public class OptimizerTest {
     }
 
     @Test
-    public void booleanOperator() throws XMLDBException {
+    void booleanOperator() throws XMLDBException {
         execute("//SPEECH[true() and false()]", true, MSG_OPT_ERROR, 0);
         execute("//SPEECH[true() and true()]", true, MSG_OPT_ERROR, 2628);
     }
@@ -189,20 +192,20 @@ public class OptimizerTest {
             query = NAMESPACES + NO_OPTIMIZE + query;
         }
         try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(
             propertiesBuilder()
                     .put(FunctionFactory.PROPERTY_DISABLE_DEPRECATED_FUNCTIONS, Boolean.FALSE) //Since we use the deprecated text:match-all() function, we have to be sure is is enabled
                     .build(),
             true,
             true);
 
-    @BeforeClass
-    public static void initDatabase() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, IOException, URISyntaxException {
+    @BeforeAll
+    static void initDatabase() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, IOException, URISyntaxException {
         // initialize driver
         final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
         final Database database = (Database) cl.newInstance();
@@ -232,8 +235,8 @@ public class OptimizerTest {
         }
     }
 
-    @AfterClass
-    public static void cleanupDb() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException, XMLDBException {
+    @AfterAll
+    static void cleanupDb() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException, XMLDBException {
         testCollection.close();
         TestUtils.cleanupDB();
 	}

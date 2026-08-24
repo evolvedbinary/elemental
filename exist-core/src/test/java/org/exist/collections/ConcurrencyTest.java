@@ -47,14 +47,15 @@ package org.exist.collections;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistXPathQueryService;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -75,8 +76,8 @@ public class ConcurrencyTest {
 
     private static final Logger LOG = LogManager.getLogger(ConcurrencyTest.class);
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static int CONCURRENT_THREADS = Math.min(16, Runtime.getRuntime().availableProcessors() * 3);
     private static final int DOC_COUNT = CONCURRENT_THREADS * 10;
@@ -96,7 +97,7 @@ public class ConcurrencyTest {
         "   xmldb:remove(util:collection-name($resource), util:document-name($resource))";
 
     @Test
-	public void runTasks() {
+    void runTasks() {
         final ExecutorService executorRemove = newFixedThreadPool(CONCURRENT_THREADS, "concurrencyTest-remove");
         final ExecutorService executorQuery = newFixedThreadPool(CONCURRENT_THREADS, "concurrencyTest-query");
 
@@ -169,9 +170,9 @@ public class ConcurrencyTest {
         }
     }
 
-    @BeforeClass
-    public static void initDB() throws XMLDBException {
-        final CollectionManagementService mgmt = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeAll
+    static void initDB() throws XMLDBException {
+        final CollectionManagementService mgmt = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection test = mgmt.createCollection("test")) {
 
             for (int i = 1; i <= DOC_COUNT; i++) {
@@ -188,9 +189,9 @@ public class ConcurrencyTest {
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws XMLDBException {
-        final CollectionManagementService cmgr = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @AfterAll
+    static void cleanup() throws XMLDBException {
+        final CollectionManagementService cmgr = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cmgr.removeCollection("test");
     }
 }

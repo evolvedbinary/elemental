@@ -52,9 +52,11 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import org.exist.http.AbstractHttpTest;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.test.ExistWebServer;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
@@ -63,7 +65,7 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.http.urlrewrite.XQueryURLRewrite.LEGACY_XQUERY_CONTROLLER_FILENAME;
 import static org.exist.http.urlrewrite.XQueryURLRewrite.XQUERY_CONTROLLER_FILENAME;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -74,11 +76,11 @@ public class ControllerTest extends AbstractHttpTest {
     private static final String LEGACY_CONTROLLER_XQUERY = "<controller>xql</controller>";
     private static final String TEST_DOCUMENT_NAME = "test.xml";
 
-    @Rule
-    public final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true, false);
+    @RegisterExtension
+    public final DatabaseWebServerExtension databaseWebServer = new DatabaseWebServerExtension(true, false, true, true, false);
 
     @Test
-    public void findsLegacyController() throws IOException {
+    void findsLegacyController() throws IOException {
         final String testCollectionName = "test-finds-legacy-controller";
 
         // store the legacy controller
@@ -91,7 +93,7 @@ public class ControllerTest extends AbstractHttpTest {
     }
 
     @Test
-    public void findsController() throws IOException {
+    void findsController() throws IOException {
         final String testCollectionName = "test-finds-controller";
 
         // store the controller
@@ -104,7 +106,7 @@ public class ControllerTest extends AbstractHttpTest {
     }
 
     @Test
-    public void prefersNonLegacyController() throws IOException {
+    void prefersNonLegacyController() throws IOException {
         final String testCollectionName = "test-prefers-non-legacy-controller";
 
         // store the controller and the legacy controller
@@ -119,9 +121,9 @@ public class ControllerTest extends AbstractHttpTest {
 
     private void store(final String testCollectionName, final String documentMediaType, final String documentName, final String documentContent) throws IOException {
         final Request request = Request
-                .Put(getRestUri(existWebServer) + "/db/apps/" + testCollectionName + "/" + documentName)
+                .Put(getRestUri(databaseWebServer) + "/db/apps/" + testCollectionName + "/" + documentName)
                 .bodyString(documentContent, ContentType.create(documentMediaType));
-        int statusCode = withHttpExecutor(existWebServer, executor ->
+        int statusCode = withHttpExecutor(databaseWebServer, executor ->
                 executor.execute(request).returnResponse().getStatusLine().getStatusCode()
         );
         assertEquals(HttpStatus.SC_CREATED, statusCode);
@@ -129,8 +131,8 @@ public class ControllerTest extends AbstractHttpTest {
 
     private Tuple2<Integer, String> get(final String testCollectionName, final String documentName) throws IOException {
         final Request request = Request
-                .Get(getAppsUri(existWebServer) + "/" + testCollectionName + "/" + documentName);
-        final Tuple2<Integer, String> responseCodeAndBody = withHttpExecutor(existWebServer, executor -> {
+                .Get(getAppsUri(databaseWebServer) + "/" + testCollectionName + "/" + documentName);
+        final Tuple2<Integer, String> responseCodeAndBody = withHttpExecutor(databaseWebServer, executor -> {
             final HttpResponse response = executor.execute(request).returnResponse();
             final int sc = response.getStatusLine().getStatusCode();
             try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {

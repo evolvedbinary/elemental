@@ -45,36 +45,36 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DocumentUpdateTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	private static final String TEST_COLLECTION_NAME = "testup";
     private Collection testCollection;
-    
+
     /**
      * Test if the doc, collection and document functions are correctly
      * notified upon document updates. Call a function once on the empty collection, 
      * then call it again after a document was added, and compare the results.
      */
-	@Test
-    public void update() throws XMLDBException {
+    @Test
+    void update() throws XMLDBException {
     	String imports = 
     		"import module namespace xdb='http://exist-db.org/xquery/xmldb';\n" + 
     		"import module namespace util='http://exist-db.org/xquery/util';\n";
@@ -91,7 +91,7 @@ public class DocumentUpdateTest {
             "let $remove := xdb:remove('/db/testup', 'test1.xml')\n" +
             "return string-join((string(count(local:get-doc($path))), string(doc-available($path))), ' ')";
         String result = execQuery(query);
-        assertEquals(result, "0 false");
+        assertEquals("0 false", result);
 
         //TEST 2: doc()
         query = imports +
@@ -104,7 +104,7 @@ public class DocumentUpdateTest {
             "let $doc := xdb:store($col, 'test1.xml', <test><n>1</n></test>)\n" +
             "return string-join((string(count(local:get-doc($path))), string(doc-available($path))), ' ')";
         result = execQuery(query);
-        assertEquals(result, "1 true");
+        assertEquals("1 true", result);
 
         //TEST 3: collection()
         query = imports +
@@ -117,7 +117,7 @@ public class DocumentUpdateTest {
             "let $doc := xdb:store($col, 'test1.xml', <test><n>1</n></test>)\n" +
             "return local:xpath($path)/text()";
         result = execQuery(query);
-        assertEquals(result, "1");
+        assertEquals("1", result);
 
         //TEST 4: 'update insert' statement
         query = imports +
@@ -133,7 +133,7 @@ public class DocumentUpdateTest {
             "	count(local:xpath($path)//n)\n" +
             ")";
         result = execQuery(query);
-        assertEquals(result, "2");
+        assertEquals("2", result);
 
         //TEST 5: 'update replace' statement
         query = imports + "let $doc := xdb:store('/db', 'test1.xml', " +
@@ -155,16 +155,16 @@ public class DocumentUpdateTest {
         try (final EXistResourceSet r = (EXistResourceSet) service.query(query)) {
             assertEquals(r.getSize(), 2);
             try (final Resource resource = r.getResource(0)) {
-                assertEquals(resource.getContent().toString(), "123");
+                assertEquals("123", resource.getContent().toString());
             }
             try (final Resource resource = r.getResource(1)) {
-                assertEquals(resource.getContent().toString(), "123");
+                assertEquals("123", resource.getContent().toString());
             }
         }
     }
 
     @Test
-    public void updateAttribute() throws XMLDBException {
+    void updateAttribute() throws XMLDBException {
         String query1="let $content :="
                 +"<A><B><C d=\"xxx\">ccc1</C><C d=\"yyy\" e=\"zzz\">ccc2</C></B></A> "
                 +"let $uri := xmldb:store(\"/db/\", \"marktest7.xml\", $content) "
@@ -185,7 +185,7 @@ public class DocumentUpdateTest {
     private String execQuery(final String query) throws XMLDBException {
     	final XQueryService service = testCollection.getService(XQueryService.class);
     	try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            assertEquals(result.getSize(), 1);
+            assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 return resource.getContent().toString();
             }
@@ -193,16 +193,16 @@ public class DocumentUpdateTest {
     }
 
     @Before
-    public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection(TEST_COLLECTION_NAME);
         assertNotNull(testCollection);
     }
 
     @After
-    public void tearDown() throws XMLDBException {
+    void tearDown() throws XMLDBException {
         testCollection.close();
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         service.removeCollection(TEST_COLLECTION_NAME);
         testCollection = null;
     }

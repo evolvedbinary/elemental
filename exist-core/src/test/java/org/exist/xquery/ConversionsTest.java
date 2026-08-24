@@ -45,32 +45,31 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
+import org.xmldb.api.base.ResourceSet;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Tests for various XQuery (XML Schema) simple types conversions.
  * @author jmvanel
  */
 public class ConversionsTest {
 
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-	/** test conversion from QName to string */
-	@Test
-	public void qname2string() throws XMLDBException {
+    /** test conversion from QName to string */
+    @Test
+    void qname2string() throws XMLDBException {
         final String query = "declare namespace foo = 'http://foo'; \n" +
                 "let $a := ( xs:QName('foo:bar'), xs:QName('foo:john'), xs:QName('foo:doe') )\n" +
                     "for $b in $a \n" +
                         "return \n" +
                             "<blah>{string($b)}</blah>" ;
-		try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+		try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 			/* which returns :
 				<blah>foo:bar</blah>
 				<blah>foo:john</blah>
@@ -79,7 +78,7 @@ public class ConversionsTest {
 			try (final Resource resource = result.getResource(0)) {
 				final String r = (String) resource.getContent();
 				assertEquals("<blah>foo:bar</blah>", r);
-				assertEquals("XQuery: " + query, 3, result.getSize());
+				assertEquals(3, result.getSize(), "XQuery: " + query);
 			}
 		}
 	}

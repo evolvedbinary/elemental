@@ -55,31 +55,37 @@ import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
+import org.exist.security.AuthenticationException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.OutputKeys;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -115,16 +121,14 @@ public class SystemExportFiltersTest {
 
     private static final String BINARY = "test";
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @ClassRule
-    public static final TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
-    @BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn txn = pool.getTransactionManager().beginTransaction()) {
 
@@ -145,9 +149,8 @@ public class SystemExportFiltersTest {
     }
 
     @Test
-    public void exportImport() throws Exception {
+    void exportImport(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, LockException, SAXException, AuthenticationException {
         Path file;
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -161,7 +164,7 @@ public class SystemExportFiltersTest {
 
             boolean direct = true;
             final SystemExport sysexport = new SystemExport(broker, transaction, null, null, direct);
-            final Path backupDir = tempFolder.newFolder().toPath();
+            final Path backupDir = Files.createDirectory(TEMPORARY_FOLDER.toPath().resolve("SystemExportImportFiltersTest-exportImport"));
             file = sysexport.export(backupDir.toAbsolutePath().toString(), false, false, null);
 
             transaction.commit();
@@ -189,7 +192,7 @@ public class SystemExportFiltersTest {
             assertEquals(XML3_PROPER, serializer(broker, doc));
 
             doc = getDoc(broker, test, doc11uri.lastSegment());
-            assertTrue(doc instanceof BinaryDocument);
+            assertInstanceOf(BinaryDocument.class, doc);
             try (final InputStream is = broker.getBinaryResource(transaction, ((BinaryDocument)doc))) {
                 assertEquals(BINARY, InputStreamUtil.readString(is, UTF_8));
             }

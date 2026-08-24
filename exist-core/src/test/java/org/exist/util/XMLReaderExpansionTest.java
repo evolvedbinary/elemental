@@ -46,46 +46,41 @@
 package org.exist.util;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.LockedDocument;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Rule;
-import org.junit.Test;
-import org.xml.sax.SAXException;
+import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
 
-import javax.xml.transform.TransformerException;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class XMLReaderExpansionTest extends AbstractXMLReaderSecurityTest {
 
     private static final String EXPECTED_EXPANDED_DOC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo>" + EXTERNAL_FILE_PLACEHOLDER + "</foo>";
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Override
-    protected ExistEmbeddedServer getExistEmbeddedServer() {
-        return existEmbeddedServer;
+    protected EmbeddedDatabaseExtension getEmbeddedDatabaseExtension() {
+        return embeddedDatabase;
     }
 
     @Test
-    public void expandExternalEntities() throws EXistException, IOException, PermissionDeniedException, LockException, SAXException, TransformerException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    void expandExternalEntities() throws EXistException, IOException, PermissionDeniedException, LockException, SAXException, TransformerException {
+        final BrokerPool brokerPool = embeddedDatabase.getBrokerPool();
         final Map<String, Boolean> parserConfig = new HashMap<>();
         parserConfig.put(FEATURE_EXTERNAL_GENERAL_ENTITIES, true);
         brokerPool.getConfiguration().setProperty(XMLReaderPool.XmlParser.XML_PARSER_FEATURES_PROPERTY, parserConfig);

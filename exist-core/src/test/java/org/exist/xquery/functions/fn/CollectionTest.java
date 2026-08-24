@@ -46,21 +46,19 @@
 package org.exist.xquery.functions.fn;
 
 import com.evolvedbinary.j8fu.function.ConsumerE;
-import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.SAXAdapter;
-import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -77,16 +75,13 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URI;
-import java.net.URISyntaxException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CollectionTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static SAXParserFactory saxParserFactory = ExistSAXParserFactory.getSAXParserFactory();
     static {
@@ -94,7 +89,7 @@ public class CollectionTest {
     }
 
     @Test
-    public void doc_dynamicallyAvailableCollection_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
+    void doc_dynamicallyAvailableCollection_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -111,7 +106,7 @@ public class CollectionTest {
 
                 assertFalse(result.isEmpty());
                 assertEquals(1, result.getItemCount());
-                assertTrue(result.itemAt(0) instanceof Node);
+                assertInstanceOf(Node.class, result.itemAt(0));
 
                 final Source expectedSource = Input.fromString(doc).build();
                 final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
@@ -121,13 +116,13 @@ public class CollectionTest {
                         .checkForSimilar()
                         .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
 
     @Test
-    public void doc_dynamicallyAvailableCollection_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
+    void doc_dynamicallyAvailableCollection_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -150,7 +145,7 @@ public class CollectionTest {
 
                 assertFalse(result.isEmpty());
                 assertEquals(1, result.getItemCount());
-                assertTrue(result.itemAt(0) instanceof Node);
+                assertInstanceOf(Node.class, result.itemAt(0));
 
                 final Source expectedSource = Input.fromString(doc).build();
                 final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
@@ -160,7 +155,7 @@ public class CollectionTest {
                         .checkForSimilar()
                         .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }

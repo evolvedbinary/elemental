@@ -51,13 +51,13 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import org.exist.http.AbstractHttpTest;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
@@ -65,8 +65,8 @@ import java.io.IOException;
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.http.urlrewrite.XQueryURLRewrite.XQUERY_CONTROLLER_FILENAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -78,26 +78,26 @@ public class URLRewritingTest extends AbstractHttpTest {
 
     private static final String TEST_CONTROLLER = "xquery version \"3.1\";\n<controller>{fn:current-dateTime()}</controller>";
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true, false);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true, false);
 
     @Test
-    public void findsParentController() throws IOException {
+    void findsParentController() throws IOException {
         final XmldbURI nestedCollectionName = XmldbURI.create("nested");
         final XmldbURI docName = XmldbURI.create("test.xml");
         final String testDocument = "<hello>world</hello>";
 
-        final String storeDocUri = getRestUri(existWebServer) + TEST_COLLECTION.append(nestedCollectionName).append(docName);
+        final String storeDocUri = getRestUri(DATABASE_WEB_SERVER) + TEST_COLLECTION.append(nestedCollectionName).append(docName);
         final Request storeRequest = Request
                 .Put(storeDocUri)
                 .bodyString(testDocument, ContentType.APPLICATION_XML);
-        final int storeResponseStatusCode = withHttpExecutor(existWebServer, executor -> executor.execute(storeRequest).returnResponse().getStatusLine().getStatusCode());
+        final int storeResponseStatusCode = withHttpExecutor(DATABASE_WEB_SERVER, executor -> executor.execute(storeRequest).returnResponse().getStatusLine().getStatusCode());
         assertEquals(HttpStatus.SC_CREATED, storeResponseStatusCode);
 
-        final String retrieveDocUri = getAppsUri(existWebServer) + "/" + TEST_COLLECTION_NAME.append(nestedCollectionName).append(docName);
+        final String retrieveDocUri = getAppsUri(DATABASE_WEB_SERVER) + "/" + TEST_COLLECTION_NAME.append(nestedCollectionName).append(docName);
         final Request retrieveRequest = Request
                 .Get(retrieveDocUri);
-        final Tuple2<Integer, String> retrieveResponseStatusCodeAndBody = withHttpExecutor(existWebServer,  executor -> {
+        final Tuple2<Integer, String> retrieveResponseStatusCodeAndBody = withHttpExecutor(DATABASE_WEB_SERVER,  executor -> {
             final HttpResponse response = executor.execute(retrieveRequest).returnResponse();
             final String responseBody;
             try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream((int)response.getEntity().getContentLength())) {
@@ -110,25 +110,25 @@ public class URLRewritingTest extends AbstractHttpTest {
         assertTrue(retrieveResponseStatusCodeAndBody._2.matches("<controller>.+</controller>"));
     }
 
-    @BeforeClass
-    public static void setup() throws IOException {
+    @BeforeAll
+    static void setup() throws IOException {
         final Request request = Request
-                .Put(getRestUri(existWebServer) + TEST_COLLECTION + "/" + XQUERY_CONTROLLER_FILENAME)
+                .Put(getRestUri(DATABASE_WEB_SERVER) + TEST_COLLECTION + "/" + XQUERY_CONTROLLER_FILENAME)
                 .bodyString(TEST_CONTROLLER, ContentType.create(MediaType.APPLICATION_XQUERY));
 
-        final int statusCode = withHttpExecutor(existWebServer, executor ->
+        final int statusCode = withHttpExecutor(DATABASE_WEB_SERVER, executor ->
                 executor.execute(request).returnResponse().getStatusLine().getStatusCode()
         );
 
         assertEquals(HttpStatus.SC_CREATED, statusCode);
     }
 
-    @AfterClass
-    public static void cleanup() throws IOException {
+    @AfterAll
+    static void cleanup() throws IOException {
         final Request request = Request
-                .Delete(getRestUri(existWebServer) + TEST_COLLECTION);
+                .Delete(getRestUri(DATABASE_WEB_SERVER) + TEST_COLLECTION);
 
-        final int statusCode = withHttpExecutor(existWebServer, executor ->
+        final int statusCode = withHttpExecutor(DATABASE_WEB_SERVER, executor ->
                 executor.execute(request).returnResponse().getStatusLine().getStatusCode()
         );
 

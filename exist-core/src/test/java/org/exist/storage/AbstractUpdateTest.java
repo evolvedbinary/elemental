@@ -57,7 +57,7 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
@@ -67,16 +67,16 @@ import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.parsers.ParserConfigurationException;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.util.Optional;
-
-import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractUpdateTest {
 
@@ -85,8 +85,8 @@ public abstract class AbstractUpdateTest {
         "<?xml version=\"1.0\"?>" +
         "<products/>";
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    // we don't use @RegisterExtension as we want to force corruption in some tests
+    private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
     public final void update() throws EXistException, DatabaseConfigurationException, LockException, SAXException, PermissionDeniedException, IOException, ParserConfigurationException, XPathException {
@@ -106,12 +106,12 @@ public abstract class AbstractUpdateTest {
             }
 
             BrokerPool.FORCE_CORRUPTION = false;
-            existEmbeddedServer.restart(false);
-            pool = existEmbeddedServer.getBrokerPool();
+            embeddedDatabase.restart(false);
+            pool = embeddedDatabase.getBrokerPool();
 
             read(pool);
         } finally {
-            existEmbeddedServer.stopDb(true);
+            embeddedDatabase.stopDb(true);
         }
     }
 
@@ -123,7 +123,7 @@ public abstract class AbstractUpdateTest {
             final Serializer serializer = broker.borrowSerializer();
             try(final LockedDocument lockedDoc = broker.getXMLResource(TEST_COLLECTION_URI.append("test2/test.xml"), LockMode.READ_LOCK)) {
 
-                assertNotNull("Document '" + TEST_COLLECTION_URI.append("test2/test.xml") + "' should not be null", lockedDoc);
+                assertNotNull(lockedDoc, "Document '" + TEST_COLLECTION_URI.append("test2/test.xml") + "' should not be null");
                 final String data = serializer.serialize(lockedDoc.getDocument());
             } finally {
                 broker.returnSerializer(serializer);
@@ -160,11 +160,11 @@ public abstract class AbstractUpdateTest {
     }
     
     protected BrokerPool startDb() throws DatabaseConfigurationException, EXistException, IOException {
-        existEmbeddedServer.startDb();
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.startDb();
+        return embeddedDatabase.getBrokerPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void cleanup() {
         // restore the flag in-case of a test failure
         BrokerPool.FORCE_CORRUPTION = false;

@@ -46,33 +46,35 @@
 package org.exist.storage;
 
 import com.evolvedbinary.j8fu.tuple.Tuple3;
+import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.*;
 import org.exist.indexing.StructuralIndex;
 import org.exist.security.PermissionDeniedException;
+import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
+import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.NodeSelector;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.exist.storage.ElementValue.ELEMENT;
 
 public class MoveOverwriteCollectionTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private final static String XML1 =
             "<?xml version=\"1.0\"?>" +
@@ -107,8 +109,8 @@ public class MoveOverwriteCollectionTest {
      * i.e. its nodes are no longer present in the structural index
      */
     @Test
-    public void moveAndOverwriteCollection() throws Exception  {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void moveAndOverwriteCollection() throws EXistException, LockException, PermissionDeniedException, IOException, SAXException, QName.IllegalQNameException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             final Tuple3<Collection, Collection, Collection> collections = store(broker);
             try {
@@ -132,7 +134,7 @@ public class MoveOverwriteCollectionTest {
         }
     }
 
-    private Tuple3<Collection, Collection, Collection> store(final DBBroker broker) throws Exception {
+    private Tuple3<Collection, Collection, Collection> store(final DBBroker broker) throws PermissionDeniedException, IOException, SAXException, LockException, EXistException {
         try(final Txn transaction = broker.getBrokerPool().getTransactionManager().beginTransaction()) {
 
             final Collection test1 = createCollection(transaction, broker, TEST_COLLECTION_URI);
@@ -157,7 +159,7 @@ public class MoveOverwriteCollectionTest {
         return col;
     }
 
-    private void moveToRoot(final DBBroker broker, final Collection sourceCollection) throws Exception {
+    private void moveToRoot(final DBBroker broker, final Collection sourceCollection) throws PermissionDeniedException, LockException, IOException, TriggerException, TransactionException {
         try(final Txn transaction = broker.getBrokerPool().getTransactionManager().beginTransaction();
                 final Collection root = broker.getCollection(XmldbURI.ROOT_COLLECTION_URI)) {
             broker.moveCollection(transaction, sourceCollection, root, XmldbURI.create("test"));
@@ -165,7 +167,7 @@ public class MoveOverwriteCollectionTest {
         }
     }
 
-    private void checkIndex(final DBBroker broker, final DocumentSet docs) throws Exception {
+    private void checkIndex(final DBBroker broker, final DocumentSet docs) throws QName.IllegalQNameException {
         final StructuralIndex index = broker.getStructuralIndex();
         final NodeSelector selector = (doc, nodeId) -> new NodeProxy(null, doc, nodeId);
 

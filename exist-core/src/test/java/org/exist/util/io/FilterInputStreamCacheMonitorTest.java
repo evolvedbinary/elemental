@@ -47,7 +47,7 @@ package org.exist.util.io;
 
 import net.jpountz.xxhash.XXHash64;
 import net.jpountz.xxhash.XXHashFactory;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.ExtendedResource;
@@ -59,10 +59,10 @@ import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.Collection;
@@ -78,12 +78,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FilterInputStreamCacheMonitorTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String EOL = System.getProperty("line.separator");
     private static final String TEST_COLLECTION_NAME = "testFilterInputStreamCacheMonitor";
@@ -91,8 +91,8 @@ public class FilterInputStreamCacheMonitorTest {
     private static final long XXHASH64_SEED = 0x6429e31a;
     private static long EXPECTED_ICON_HASH = -1;
 
-    @BeforeClass
-    public static void setup() throws XMLDBException, URISyntaxException, IOException {
+    @BeforeAll
+    static void setup() throws XMLDBException, URISyntaxException, IOException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
         final int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + ". It is likely that a previous test or process within the same JVM is leaking file handles! This should be investigated. Dump: " + monitor.dump(), 0, activeCount);
@@ -101,40 +101,40 @@ public class FilterInputStreamCacheMonitorTest {
         final byte[] iconBytes = Files.readAllBytes(icon);
         EXPECTED_ICON_HASH = XXHASH64.hash(iconBytes, 0, iconBytes.length, XXHASH64_SEED);
 
-        try (final Collection testCollection = existXmldbEmbeddedServer.createCollection(existXmldbEmbeddedServer.getRoot(), TEST_COLLECTION_NAME);
+        try (final Collection testCollection = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), TEST_COLLECTION_NAME);
                 final EXistResource resource = (EXistResource)testCollection.createResource("icon.png", BinaryResource.class)) {
             resource.setContent(icon);
             testCollection.storeResource(resource);
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws XMLDBException {
-        final CollectionManagementService cms = existXmldbEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @AfterAll
+    static void cleanup() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION_NAME);
     }
 
     @Test
-    public void binaryResult() throws XMLDBException, XPathException {
+    void binaryResult() throws XMLDBException, XPathException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "." +  EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery("util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')")) {
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery("util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')")) {
 
             assertEquals(1, resourceSet.getSize());
 
             try (final EXistResource resource = (EXistResource) resourceSet.getResource(0)) {
-                assertTrue(resource instanceof LocalBinaryResource);
+                assertInstanceOf(LocalBinaryResource.class, resource);
 
                 // assert that there is one active binary (as it is in the result set)
                 assertEquals(1, monitor.getActive().size());
 
                 // check the value of the retrieved binary
                 final Object extendedContent = ((ExtendedResource) resource).getExtendedContent();
-                assertTrue(extendedContent instanceof BinaryValue);
+                assertInstanceOf(BinaryValue.class, extendedContent);
 
                 final BinaryValue binaryValue = (BinaryValue) extendedContent;
                 final byte[] retrievedIconBytes = binaryValue.toJavaObject(byte[].class);
@@ -154,14 +154,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void singleElementEnclosedExprBinaryValueStringResult() throws XMLDBException {
+    void singleElementEnclosedExprBinaryValueStringResult() throws XMLDBException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery(
                     "let $embedded := <logo><image>{util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')}</image></logo>\n" +
                             "return\n" +
                             "xmldb:store('/db/" + TEST_COLLECTION_NAME + "', 'icon.xml', $embedded)")) {
@@ -183,14 +183,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void multipleElementsEnclosedExprBinaryValueStringResult() throws XMLDBException {
+    void multipleElementsEnclosedExprBinaryValueStringResult() throws XMLDBException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "." + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery(
                     "let $bin := util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')\n" +
                     "let $embedded := <logo><image>{$bin}</image></logo>\n" +
                     "let $embedded-2 := <other>{$bin}</other>\n" +
@@ -214,14 +214,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void singleElementEnclosedExprBinaryValueElementResult() throws XMLDBException {
+    void singleElementEnclosedExprBinaryValueElementResult() throws XMLDBException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery("<logo><image>{util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')}</image></logo>")) {
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery("<logo><image>{util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')}</image></logo>")) {
 
             assertEquals(1, resourceSet.getSize());
             try (final EXistResource resource = (EXistResource) resourceSet.getResource(0)) {
@@ -251,14 +251,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void multipleElementsEnclosedExprBinaryValueElementResults() throws XMLDBException {
+    void multipleElementsEnclosedExprBinaryValueElementResults() throws XMLDBException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "." + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery(
                     "let $bin := util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')\n" +
                     "return\n" +
                     "(<logo><image>{$bin}</image></logo>, <other>{$bin}</other>)")) {
@@ -310,14 +310,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void mapEnclosedBinaryValueMapResult() throws XMLDBException, XPathException {
+    void mapEnclosedBinaryValueMapResult() throws XMLDBException, XPathException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery(
                     "map { 'key1': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png') }")) {
 
             assertEquals(1, resourceSet.getSize());
@@ -352,14 +352,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void mapEnclosedBinaryValuesMapResult() throws XMLDBException, XPathException {
+    void mapEnclosedBinaryValuesMapResult() throws XMLDBException, XPathException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery(
                     "map { 'key1': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png'), 'key2': util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png') }")) {
 
             assertEquals(1, resourceSet.getSize());
@@ -394,14 +394,14 @@ public class FilterInputStreamCacheMonitorTest {
     }
 
     @Test
-    public void mapEnclosedMapBinaryValueMapResult() throws XMLDBException, XPathException {
+    void mapEnclosedMapBinaryValueMapResult() throws XMLDBException, XPathException {
         final FilterInputStreamCacheMonitor monitor = FilterInputStreamCacheMonitor.getInstance();
 
         // assert no binaries in use yet
         int activeCount = monitor.getActive().size();
         assertEquals("FilterInputStreamCacheMonitor should have no active binaries, but found: " + activeCount + "."  + EOL + monitor.dump(), 0, activeCount);
 
-        try (final EXistResourceSet resourceSet = existXmldbEmbeddedServer.executeQuery(
+        try (final EXistResourceSet resourceSet = XMLDB_EMBEDDED_DATABASE.executeQuery(
                     "let $bin := util:binary-doc('/db/" + TEST_COLLECTION_NAME + "/icon.png')\n" +
                     "return\n" +
                     "map { 'key1': $bin, 'key2': map { 'key3': $bin } }")) {

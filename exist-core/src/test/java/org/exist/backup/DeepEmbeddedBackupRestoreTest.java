@@ -54,28 +54,30 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.MediaTypeResolver;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test that creates a deep and Wide Collection hierarchy
@@ -86,11 +88,11 @@ import static org.junit.Assert.*;
  */
 public class DeepEmbeddedBackupRestoreTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @ClassRule
-    public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
     private static final String EOL = "\n";
     private static final long XXHASH64_SEED = 0x79742bc8;
@@ -98,20 +100,20 @@ public class DeepEmbeddedBackupRestoreTest {
     private final XXHashFactory xxHashFactory = XXHashFactory.fastestJavaInstance();
     private final XXHash64 hash64 = xxHashFactory.hash64();
 
-    @BeforeClass
-    public static void registerXmldbDatabaseDriver() throws XMLDBException {
+    @BeforeAll
+    static void registerXmldbDatabaseDriver() throws XMLDBException {
         final DatabaseImpl databaseImpl = new DatabaseImpl();
         DatabaseManager.registerDatabase(databaseImpl);
     }
 
     @Test
-    public void backupThenRestore() throws IOException, XMLDBException, SAXException, LockException, PermissionDeniedException, EXistException {
+    void backupThenRestore(final BrokerPool brokerPool) throws IOException, XMLDBException, SAXException, LockException, PermissionDeniedException, EXistException {
         // create some collections and documents in the database
-        final CollectionsAndDocuments collectionsAndDocs = createHierarchy(XmldbURI.create("/db/exist-EmbeddedBackupRestoreWithAppsTest"), 20, 20, 20, 20);
+        final CollectionsAndDocuments collectionsAndDocs = createHierarchy(brokerPool, XmldbURI.create("/db/exist-EmbeddedBackupRestoreWithAppsTest"), 20, 20, 20, 20);
         assertFalse(collectionsAndDocs.collectionUris.isEmpty());
         assertFalse(collectionsAndDocs.documentInfos.isEmpty());
 
-        final Path backupDir = temporaryFolder.newFolder("exist-EmbeddedBackupRestoreWithAppsTest").toPath();
+        final Path backupDir = Files.createDirectory(TEMPORARY_FOLDER.toPath().resolve("exist-EmbeddedBackupRestoreWithAppsTest"));
         final Properties backupProperties = new Properties();
 
         final Backup backup = new Backup(
@@ -139,15 +141,14 @@ public class DeepEmbeddedBackupRestoreTest {
 
             final byte[] documentData = Files.readAllBytes(documentPath);
             final long documentHash = hash64.hash(documentData, 0, documentData.length, XXHASH64_SEED);
-            assertEquals("Expected hash '" + documentInfo.hash + "' for document '" + documentPath.toAbsolutePath() + "' but found '" + documentHash + "'", documentInfo.hash, documentHash);
+            assertEquals(documentInfo.hash, documentHash, "Expected hash '" + documentInfo.hash + "' for document '" + documentPath.toAbsolutePath() + "' but found '" + documentHash + "'");
         }
     }
 
-    private CollectionsAndDocuments createHierarchy(final XmldbURI baseCollectionUri, final int depth, final int maxWidth, final int xmlDocsPerCollection, final int binDocsPerCollection) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+    private CollectionsAndDocuments createHierarchy(final BrokerPool brokerPool, final XmldbURI baseCollectionUri, final int depth, final int maxWidth, final int xmlDocsPerCollection, final int binDocsPerCollection) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final List<XmldbURI> collectionUris = new ArrayList<>();
         final List<ResourceInfo> documentInfos = new ArrayList<>();
 
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
 
         final MediaTypeResolver mediaTypeResolver = brokerPool.getMediaTypeService().getMediaTypeResolver();
         final MediaType xmlMediaType = mediaTypeResolver.fromString(MediaType.APPLICATION_XML);

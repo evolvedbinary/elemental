@@ -45,20 +45,15 @@
  */
 package org.exist.xquery;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.Optional;
 
-import antlr.RecognitionException;
-import antlr.TokenStreamException;
-import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
@@ -70,11 +65,10 @@ import org.exist.xquery.value.Sequence;
 
 import antlr.collections.AST;
 import org.junit.ClassRule;
-import org.junit.Test;
-import org.xml.sax.SAXException;
+import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class LexerTest {
 
@@ -86,11 +80,11 @@ public class LexerTest {
 			+ "\u5165\u4E86\u5341\u4E09\u5E74\u65F6\u95F4\u3002"
 			+ "</body></text>";
 
-	@ClassRule
-	public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+	@RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-	@Test
-	public void query() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, RecognitionException, XPathException, TokenStreamException {
+    @Test
+    void query() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, RecognitionException, XPathException, TokenStreamException {
 		String query =
 			"//p[. = '\u4ED6\u4E3A\u8FD9\u9879\u5DE5\u7A0B\u6295"
 				+ "\u5165\u4E86\u5341\u4E09\u5E74\u65F6\u95F4\u3002']";

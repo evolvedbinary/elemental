@@ -45,45 +45,45 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class EntitiesTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private Collection testCollection;
     @SuppressWarnings("unused")
 	private String query;
 
-    @Before
-    public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(
                 CollectionManagementService.class);
         testCollection = service.createCollection("test");
         assertNotNull(testCollection);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         testCollection.close();
 
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(
                         CollectionManagementService.class);
         service.removeCollection("test");
         testCollection = null;
@@ -109,9 +109,9 @@ public class EntitiesTest {
     private EXistResourceSet queryResource(final XQueryService service, final String resource, final String query, final int expected, final String message) throws XMLDBException {
         final EXistResourceSet result = (EXistResourceSet) service.queryResource(resource, query);
         if(message == null) {
-            assertEquals(query, expected, result.getSize());
+            assertEquals(expected, result.getSize(), query);
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }
@@ -123,13 +123,13 @@ public class EntitiesTest {
         if(message == null) {
             assertEquals(expected, result.getSize());
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }
 
     @Test
-    public void attributeConstructor() throws XMLDBException {
+    void attributeConstructor() throws XMLDBException {
         try (final EXistResourceSet result = queryAndAssert(
                 "<foo "+
                 " ampEntity=\"{('&amp;')}\"" +
@@ -145,7 +145,7 @@ public class EntitiesTest {
     }
 
     @Test
-    public void stringConstructor() throws XMLDBException {
+    void stringConstructor() throws XMLDBException {
         try (final EXistResourceSet result = queryAndAssert("'&amp;'", 1, null)) {
             // TODO: could check result
         }
@@ -168,7 +168,7 @@ public class EntitiesTest {
     }
 
     @Test
-    public void uriConstructor() throws XMLDBException {
+    void uriConstructor() throws XMLDBException {
         try (final EXistResourceSet result = queryAndAssert("xs:anyURI(\"index.xql?a=1&amp;b=2\")", 1, null)) {
             // TODO: could check result
         }

@@ -45,21 +45,18 @@
  */
 package org.exist.storage;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import org.apache.commons.io.output.StringBuilderWriter;
-import org.exist.EXistException;
-import org.exist.storage.btree.BTreeException;
 import org.exist.storage.btree.Value;
 import org.exist.storage.index.BFile;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.FixedByteArray;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -69,12 +66,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class BFileRecoverTest {
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void add() throws EXistException, IOException, BTreeException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void add() throws EXistException, IOException, BTreeException {
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final TransactionManager mgr = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             broker.flush();
@@ -107,8 +104,8 @@ public class BFileRecoverTest {
     }
 
     @Test
-    public void read() throws EXistException, IOException, BTreeException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void read() throws EXistException, IOException, BTreeException {
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         BrokerPool.FORCE_CORRUPTION = false;
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             BFile collectionsDb = (BFile)((NativeBroker)broker).getStorage(NativeBroker.COLLECTIONS_DBX_ID);

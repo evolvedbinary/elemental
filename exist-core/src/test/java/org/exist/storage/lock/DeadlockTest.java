@@ -45,7 +45,7 @@
  */
 package org.exist.storage.lock;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -65,18 +65,17 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
@@ -91,7 +90,6 @@ import xyz.elemental.mediatype.MediaType;
  * 
  * @author wolf
  */
-@RunWith(Parameterized.class)
 public class DeadlockTest {
 
 	private static final Logger LOG = LogManager.getLogger(DeadlockTest.class);
@@ -110,19 +108,6 @@ public class DeadlockTest {
     private static final int TEST_REMOVE = 5;
 
     private static final int DELAY = 7000;
-
-    /** Use 4 test runs, querying different collections */
-    @Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {
-            { "testRandomCollection", TEST_RANDOM_COLLECTION },
-            { "testSingleCollection", TEST_SINGLE_COLLECTION },
-            { "testAllCollections", TEST_ALL_COLLECTIONS },
-            { "testSingleDoc", TEST_SINGLE_DOC },
-            { "testMixed", TEST_MIXED },
-            { "testRemoved", TEST_REMOVE }
-        });
-    }
 	
 	private static final int COLL_COUNT = 20;
 
@@ -159,18 +144,12 @@ public class DeadlockTest {
 
 	private final Random random = new Random();
 
-	@Parameter
-	public String testName;
-        
-	@Parameter(value = 1)
-	public int mode;
+	@RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-	@ClassRule
-	public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
-
-	@BeforeClass
-	public static void startDB() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException, ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void startDB() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException, ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
 		try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
@@ -195,16 +174,27 @@ public class DeadlockTest {
 		}
 	}
 
-    @After
-    public void clearDB() throws XMLDBException {
+    @AfterEach
+    void clearDB() throws XMLDBException {
 		try (final org.xmldb.api.base.Collection root = DatabaseManager.getCollection("xmldb:exist:///db/test", "admin", "")) {
 			CollectionManagementService service = root.getService(CollectionManagementService.class);
 			service.removeCollection(".");
 		}
     }
 
-    @Test
-	public void runTasks() {
+    @ParameterizedTest(name = "{0}")
+    /**
+     * Use 4 test runs, querying different collections
+     */
+    @CsvSource({
+            "testRandomCollection," + TEST_RANDOM_COLLECTION,
+            "testSingleCollection," + TEST_SINGLE_COLLECTION,
+            "testAllCollections," + TEST_ALL_COLLECTIONS,
+            "testSingleDoc," + TEST_SINGLE_DOC,
+            "testMixed," + TEST_MIXED ,
+            "testRemoved," + TEST_REMOVE
+    })
+    public void runTasks(final String testName, final int mode) {
 		final ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
         executor.submit(new StoreTask("store", COLL_COUNT, DOC_COUNT));
         synchronized (this) {
@@ -217,7 +207,7 @@ public class DeadlockTest {
             }
         }
 		for (int i = 0; i < QUERY_COUNT; i++) {
-			executor.submit(new QueryTask(COLL_COUNT));
+			executor.submit(new QueryTask(COLL_COUNT, mode));
 		}
         if (mode == TEST_REMOVE) {
             for (int i = 0; i < REMOVE_COUNT; i++) {
@@ -251,7 +241,7 @@ public class DeadlockTest {
 
 		@Override
 		public void run() {
-			final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+			final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
 			final TransactionManager transact = pool.getTransactionManager();
 			try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -294,18 +284,22 @@ public class DeadlockTest {
 
 	private class QueryTask implements Runnable {
 
-		private int collectionCount;
+		private final int collectionCount;
+        private final int currentMode;
 
-		public QueryTask(int collectionCount) {
+		public QueryTask(int collectionCount, int mode) {
 			this.collectionCount = collectionCount;
+            if (mode == TEST_MIXED || mode == TEST_REMOVE) {
+                this.currentMode = random.nextInt(4);
+            } else {
+                this.currentMode = mode;
+            }
 		}
 
+        @Override
 		public void run() {
 			final StringBuilder buf = new StringBuilder();
 			String collection = "/db";
-			int currentMode = mode;
-			if (mode == TEST_MIXED || currentMode == TEST_REMOVE)
-				currentMode = random.nextInt(4);
             if (currentMode == TEST_SINGLE_COLLECTION) {
 				int collectionId = random.nextInt(collectionCount);
 				collection = "/db/test/" + collectionId;

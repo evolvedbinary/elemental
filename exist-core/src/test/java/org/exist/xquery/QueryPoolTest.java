@@ -46,28 +46,28 @@
 package org.exist.xquery;
 
 import org.exist.source.StringSource;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistXQueryService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class QueryPoolTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private Collection testCollection;
 
     @Test
-    public void differentQueries() throws XMLDBException {
+    void differentQueries() throws XMLDBException {
         EXistXQueryService service = testCollection.getService(EXistXQueryService.class);
         for (int i = 0; i < 1000; i++) {
             String query = "update insert <node id='id" + Integer.toHexString(i) + "'>" +
@@ -80,16 +80,16 @@ public class QueryPoolTest {
     }
 
     @Test
-    public void read() throws XMLDBException {
+    void read() throws XMLDBException {
         try (final XMLResource res = (XMLResource) testCollection.getResource("large_list.xml")) {
             assertNotNull(res);
         }
     }
 
-    @Before
-    public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(
                     CollectionManagementService.class);
         testCollection = service.createCollection("test-pool");
         assertNotNull(testCollection);
@@ -100,8 +100,8 @@ public class QueryPoolTest {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         final CollectionManagementService service = testCollection.getService(CollectionManagementService.class);
         service.removeCollection("/db/test-pool");
         testCollection.close();

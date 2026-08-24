@@ -47,24 +47,24 @@ package org.exist.xquery.functions.fn;
 
 import com.evolvedbinary.j8fu.Either;
 import com.evolvedbinary.j8fu.function.ConsumerE;
-import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.SAXAdapter;
-import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static com.evolvedbinary.j8fu.Either.Left;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.LocalXMLResource;
@@ -93,7 +93,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -102,8 +101,8 @@ import java.net.URISyntaxException;
  */
 public class DocTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static SAXParserFactory saxParserFactory = ExistSAXParserFactory.getSAXParserFactory();
     static {
@@ -111,9 +110,9 @@ public class DocTest {
     }
     private Collection test = null;
 
-    @Before
-    public void setUp() throws XMLDBException {
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         //Creates the 'test' collection
         test = cms.createCollection("test");
         assertNotNull(test);
@@ -122,22 +121,22 @@ public class DocTest {
         storeResource(test, "test1.xq", BinaryResource.class, MediaType.APPLICATION_XQUERY, "doc('/test.xml')");
         storeResource(test, "test2.xq", BinaryResource.class, MediaType.APPLICATION_XQUERY, "doc('/db/test.xml')");
 
-        storeResource(existEmbeddedServer.getRoot(), "test.xml", XMLResource.class, null, "<x/>");
+        storeResource(XMLDB_EMBEDDED_DATABASE.getRoot(), "test.xml", XMLResource.class, null, "<x/>");
         storeResource(test, "test.xml", XMLResource.class, null, "<y/>");
 
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         if (test != null) {
             test.close();
             test = null;
         }
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         //Creates the 'test' collection
         cms.removeCollection("test");
 
-        existEmbeddedServer.getRoot().removeResource(existEmbeddedServer.getRoot().getResource("test.xml"));
+        XMLDB_EMBEDDED_DATABASE.getRoot().removeResource(XMLDB_EMBEDDED_DATABASE.getRoot().getResource("test.xml"));
     }
     
     private void storeResource(final Collection col, final String fileName, final Class<? extends Resource> type, final String mimeType, final String content) throws XMLDBException {
@@ -153,37 +152,37 @@ public class DocTest {
     }
 
     @Test
-    public void testURIResolveWithEval() throws XMLDBException {
+    void uriResolveWithEval() throws XMLDBException {
         String query = "util:eval(xs:anyURI('/db/test/test.xq'), false(), ())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             LocalXMLResource res = (LocalXMLResource) result.getResource(0);
             assertNotNull(res);
             Node n = res.getContentAsDOM();
-            assertTrue(n instanceof Document);
+            assertInstanceOf(Document.class, n);
             assertEquals("y", ((Document) n).getDocumentElement().getLocalName());
         }
 
         query = "util:eval(xs:anyURI('/db/test/test1.xq'), false(), ())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             XMLResource res = (LocalXMLResource) result.getResource(0);
             assertNotNull(res);
             Node n = res.getContentAsDOM();
-            assertTrue(n instanceof Document);
+            assertInstanceOf(Document.class, n);
             assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
         }
 
         query = "util:eval(xs:anyURI('/db/test/test2.xq'), false(), ())";
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             XMLResource res = (LocalXMLResource) result.getResource(0);
             assertNotNull(res);
             Node n = res.getContentAsDOM();
-            assertTrue(n instanceof Document);
+            assertInstanceOf(Document.class, n);
             assertEquals("x", ((Document) n).getDocumentElement().getLocalName());
         }
     }
 
     @Test
-    public void doc_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
+    void doc_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -201,7 +200,7 @@ public class DocTest {
 
                 assertFalse(result.isEmpty());
                 assertEquals(1, result.getItemCount());
-                assertTrue(result.itemAt(0) instanceof Node);
+                assertInstanceOf(Node.class, result.itemAt(0));
 
                 final Source expectedSource = Input.fromString(doc).build();
                 final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
@@ -211,13 +210,13 @@ public class DocTest {
                         .checkForSimilar()
                         .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
 
     @Test
-    public void doc_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
+    void doc_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -241,7 +240,7 @@ public class DocTest {
 
                 assertFalse(result.isEmpty());
                 assertEquals(1, result.getItemCount());
-                assertTrue(result.itemAt(0) instanceof Node);
+                assertInstanceOf(Node.class, result.itemAt(0));
 
                 final Source expectedSource = Input.fromString(doc).build();
                 final Source actualSource = Input.fromNode((Node) result.itemAt(0)).build();
@@ -251,13 +250,13 @@ public class DocTest {
                         .checkForSimilar()
                         .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
 
     @Test
-    public void docAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
+    void docAvailable_dynamicallyAvailableDocument_absoluteUri() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -281,7 +280,7 @@ public class DocTest {
     }
 
     @Test
-    public void docAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
+    void docAvailable_dynamicallyAvailableDocument_relativeUri() throws XPathException, EXistException, PermissionDeniedException, URISyntaxException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
 
         final String doc = "<timestamp>" + System.currentTimeMillis() + "</timestamp>";
@@ -310,7 +309,7 @@ public class DocTest {
     }
 
     @Test
-    public void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException, IOException {
+    void docAvailableInPredicate() throws XPathException, EXistException, PermissionDeniedException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
         final String query = "('/db/test.xml', '/db/test/test.xml', '/db/non-existent.xml')[fn:doc-available(.)]";
 

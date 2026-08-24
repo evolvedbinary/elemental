@@ -52,7 +52,6 @@ import java.util.Properties;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.OutputKeys;
@@ -60,13 +59,18 @@ import javax.xml.transform.OutputKeys;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.QName;
 import org.exist.security.Account;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.SAXSerializer;
-import org.junit.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.TestUtils.GUEST_DB_USER;
@@ -89,28 +93,28 @@ import org.xmldb.api.modules.XPathQueryService;
 import static org.exist.samples.Samples.SAMPLES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 public class ResourceTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testResource";
 
-    @BeforeClass
-    public static void prepareXmldbJoinTransactions() {
+    @BeforeAll
+    static void prepareXmldbJoinTransactions() {
         System.setProperty(PROP_JOIN_TRANSACTION_IF_PRESENT, "true");
     }
 
-    @AfterClass
-    public static void releaseXmldbJoinTransactions() {
+    @AfterAll
+    static void releaseXmldbJoinTransactions() {
         System.clearProperty(PROP_JOIN_TRANSACTION_IF_PRESENT);
     }
 
     @Test
-    public void readNonExistingResource() throws XMLDBException {
+    void readNonExistingResource() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             assertNotNull(testCollection);
             try (final Resource nonExistent = testCollection.getResource("12345.xml")) {
@@ -144,7 +148,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void testRecursiveSerailization() throws XMLDBException {
+    void recursiveSerailization() throws XMLDBException {
         final String xmlDoc1 = "<test><title>Title</title>"
             + "<import href=\"recurseSer2.xml\"></import>"
             + "<para>Paragraph2</para>"
@@ -184,7 +188,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void readDOM() throws XMLDBException {
+    void readDOM() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             assertNotNull(testCollection);
 
@@ -198,7 +202,7 @@ public class ResourceTest {
                     elem = ((Document) n).getDocumentElement();
                 }
                 assertNotNull(elem);
-                assertEquals(elem.getNodeName(), "PLAY");
+                assertEquals("PLAY", elem.getNodeName());
                 NodeList children = elem.getChildNodes();
                 Node node;
                 for (int i = 0; i < children.getLength(); i++) {
@@ -214,7 +218,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void setContentAsSAX() throws SAXException, ParserConfigurationException, XMLDBException, IOException {
+    void setContentAsSAX() throws SAXException, ParserConfigurationException, XMLDBException, IOException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             assertNotNull(testCollection);
 
@@ -238,7 +242,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void setContentAsDOM() throws XMLDBException, ParserConfigurationException, SAXException, IOException {
+    void setContentAsDOM() throws XMLDBException, ParserConfigurationException, SAXException, IOException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             assertNotNull(testCollection);
 
@@ -256,9 +260,9 @@ public class ResourceTest {
             }
         }
     }
-    
+
     @Test
-    public void setContentAsSourceXml() throws XMLDBException {
+    void setContentAsSourceXml() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             assertNotNull(testCollection);
 
@@ -285,7 +289,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void setContentAsSourceBinary() throws XMLDBException {
+    void setContentAsSourceBinary() throws XMLDBException {
         final byte[] bin = "Stuff And Things".getBytes(UTF_8);
 
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
@@ -304,7 +308,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void queryRemoveResource() throws XMLDBException {
+    void queryRemoveResource() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             assertNotNull(testCollection);
             String resourceName = "QueryTestPerson.xml";
@@ -329,7 +333,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void addRemove() throws XMLDBException {
+    void addRemove() throws XMLDBException {
         final String resourceID = "addremove.xml";
 
         try (final XMLResource created = addResource(resourceID, xmlForTest())) {
@@ -350,7 +354,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void addRemoveAddWithIds() throws XMLDBException {
+    void addRemoveAddWithIds() throws XMLDBException {
         final String resourceID = "removeWithIds;1.xml";
         try (final Resource resource = addResource(resourceID, "<foo1 xml:id='f'/>")) {
             // needed to ensure that resource is closed
@@ -393,10 +397,10 @@ public class ResourceTest {
                     + "</test>";
     }
 
-    @Before
-    public void setUp() throws XMLDBException, IOException {
+    @BeforeEach
+    void setUp() throws XMLDBException, IOException {
         //create a test collection
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = cms.createCollection(TEST_COLLECTION)) {
             final UserManagementService ums = testCollection.getService(UserManagementService.class);
             // change ownership to guest
@@ -418,10 +422,10 @@ public class ResourceTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION);
     }
 

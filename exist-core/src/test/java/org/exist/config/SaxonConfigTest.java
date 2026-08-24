@@ -22,33 +22,33 @@
 
 package org.exist.config;
 
-import org.exist.test.ExistEmbeddedServer;
-import org.junit.ClassRule;
-import org.junit.Test;
+import net.sf.saxon.s9api.Processor;
+import org.exist.storage.BrokerPool;
+import org.exist.test.EmbeddedDatabaseExtension;
+import org.exist.util.Configuration;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SaxonConfigTest {
 
-  @ClassRule
-  public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-  @Test
-  public void configFromBroker() {
-    final var brokerPool = existEmbeddedServer.getBrokerPool();
+    @Test
+    void configFromBroker(final BrokerPool brokerPool) {
+        final Configuration existConfiguration = brokerPool.getConfiguration();
+        assertThat(existConfiguration.getProperty("saxon.configuration")).isEqualTo("saxon-config.xml");
 
-    final var existConfiguration = brokerPool.getConfiguration();
-    assertThat(existConfiguration.getProperty("saxon.configuration")).isEqualTo("saxon-config.xml");
+        final net.sf.saxon.Configuration saxonConfiguration = brokerPool.getSaxonConfiguration();
 
-    final var saxonConfiguration = brokerPool.getSaxonConfiguration();
+        // There is no way to install EE at the test/build phase.
+        // Sanity check is to confirm this does indeed return "HE" (Home Edition).
+        final Processor saxonProcessor = brokerPool.getSaxonProcessor();
+        assertThat(saxonProcessor.getSaxonEdition()).isEqualTo("HE");
 
-    // There is no way to install EE at the test/build phase.
-    // Sanity check is to confirm this does indeed return "HE" (Home Edition).
-    final var saxonProcessor = brokerPool.getSaxonProcessor();
-    assertThat(saxonProcessor.getSaxonEdition()).isEqualTo("HE");
-
-    final var saxonConfiguration2 = brokerPool.getSaxonConfiguration();
-    assertThat(saxonConfiguration2).isSameAs(saxonConfiguration);
-
-  }
+        final net.sf.saxon.Configuration saxonConfiguration2 = brokerPool.getSaxonConfiguration();
+        assertThat(saxonConfiguration2).isSameAs(saxonConfiguration);
+    }
 }

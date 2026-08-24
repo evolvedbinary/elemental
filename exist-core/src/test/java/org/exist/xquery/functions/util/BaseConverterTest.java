@@ -45,12 +45,12 @@
  */
 package org.exist.xquery.functions.util;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -60,13 +60,13 @@ import org.xmldb.api.base.XMLDBException;
  */
 public class BaseConverterTest {
 
-    @ClassRule
-    public static ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void testBaseConverterOctalToInt() throws XMLDBException {
+    void baseConverterOctalToInt() throws XMLDBException {
         final String query = "util:base-to-integer(0755, 8)";
-        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("493", r);
@@ -75,9 +75,9 @@ public class BaseConverterTest {
     }
 
     @Test
-    public void testBaseConverterIntToHex() throws XMLDBException {
+    void baseConverterIntToHex() throws XMLDBException {
         final String query = "util:integer-to-base(10, 16)";
-        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("a", r);
@@ -86,9 +86,9 @@ public class BaseConverterTest {
     }
 
     @Test
-    public void testBaseConverterIntToBinary() throws XMLDBException {
+    void baseConverterIntToBinary() throws XMLDBException {
         final String query = "util:integer-to-base(4, 2)";
-        try (final EXistResourceSet result = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = result.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("100", r);

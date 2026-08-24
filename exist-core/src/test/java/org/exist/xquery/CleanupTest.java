@@ -45,24 +45,21 @@
  */
 package org.exist.xquery;
 
-import org.exist.EXistException;
 import org.exist.dom.QName;
 import org.exist.dom.persistent.DocumentSet;
-import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.LocalCompiledExpression;
 import org.exist.xquery.value.FunctionReference;
 import org.exist.xquery.value.Sequence;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -75,9 +72,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test if inline functions and functions defined in imported modules are properly reset.
@@ -114,12 +109,12 @@ public class CleanupTest {
 
     private Collection collection;
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @Before
-    public void setup() throws XMLDBException {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setup() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         collection = service.createCollection("test");
         try (final Resource doc = collection.createResource("test-module.xql", BinaryResource.class)) {
             doc.setContent(TEST_MODULE);
@@ -128,16 +123,16 @@ public class CleanupTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         collection.close();
         final CollectionManagementService service =
-                existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+                XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         service.removeCollection("test");
     }
 
     @Test
-    public void resetStateOfModuleVars() throws XMLDBException, XPathException {
+    void resetStateOfModuleVars() throws XMLDBException, XPathException {
         final EXistXQueryService service = collection.getService(EXistXQueryService.class);
 
         final LocalCompiledExpression compiledExpression = (LocalCompiledExpression) service.compile(TEST_QUERY);
@@ -164,9 +159,9 @@ public class CleanupTest {
 
         // execute query and check result
         try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiledExpression)) {
-            assertEquals(result.getSize(), 1);
+            assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                assertEquals(resource.getContent(), "Hello world123");
+                assertEquals("Hello world123", result.getResource(0).getContent());
             }
 
             final Sequence[] args = calledFunc.getCurrentArguments();
@@ -179,13 +174,13 @@ public class CleanupTest {
     }
 
     @Test
-    public void resetStateOfInlineFunc() throws EXistException, PermissionDeniedException, XPathException, IOException {
+    void resetStateOfInlineFunc() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final BrokerPool pool = BrokerPool.getInstance();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(TEST_INLINE), false, Sequence.EMPTY_SEQUENCE, null, null, null, null)) {
             // execute query to get a function item
             final Sequence result = queryResult.result;
-            assertEquals(result.getItemCount(), 1);
+            assertEquals(1, result.getItemCount());
             final FunctionCall call = ((FunctionReference)result.itemAt(0)).getCall();
             // closure variables are set when function item is created, but should be cleared after query
             final List<ClosureVariable> closure = call.getFunction().getClosureVariables();
@@ -194,7 +189,7 @@ public class CleanupTest {
     }
 
     @Test
-    public void preserveExternalVariable() throws XMLDBException, XPathException {
+    void preserveExternalVariable() throws XMLDBException, XPathException {
         // see https://github.com/eXist-db/exist/pull/1512 and use of util:eval
         final EXistXQueryService service = collection.getService(EXistXQueryService.class);
 
@@ -209,9 +204,9 @@ public class CleanupTest {
         module.declareVariable(new QName("VAR", MODULE_NS, "t"), "TEST");
 
         try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiledExpression)) {
-            assertEquals(result.getSize(), 2);
+            assertEquals(2, result.getSize());
             try (final Resource resource = result.getResource(1)) {
-                assertEquals(resource.getContent(), "TEST");
+                assertEquals("TEST", result.getResource(1).getContent());
             }
 
             final Variable var = module.resolveVariable(new QName("VAR", MODULE_NS, "t"));
@@ -220,7 +215,7 @@ public class CleanupTest {
     }
 
     @Test
-    public void resetStateofInternalModule() throws XMLDBException, XPathException {
+    void resetStateofInternalModule() throws XMLDBException, XPathException {
         final EXistXQueryService service = collection.getService(EXistXQueryService.class);
 
         final LocalCompiledExpression compiledExpression = (LocalCompiledExpression) service.compile(INTERNAL_MODULE_TEST);
@@ -235,9 +230,9 @@ public class CleanupTest {
         final TestModule.TestFunction func = (TestModule.TestFunction) root.getFunction();
 
         try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiledExpression)) {
-            assertEquals(result.getSize(), 1);
+            assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
-                assertEquals(resource.getContent(), "TEST");
+                assertEquals("TEST", result.getResource(0).getContent());
             }
             assertFalse(func.dummyProperty);
         }

@@ -45,13 +45,13 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
+import org.xmldb.api.base.ResourceSet;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -59,12 +59,12 @@ import org.xmldb.api.base.XMLDBException;
  */
 public class FunNumberTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(true, true, true);
-    
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(true, true, true);
+
     @Test
-    public void testFnNumberWithContext() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
+    void fnNumberWithContext() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(
             "let $errors := " +
                 "<report>" +
                     "<message level=\"Error\" line=\"1191\" column=\"49\" repeat=\"96\"></message>" +
@@ -82,10 +82,10 @@ public class FunNumberTest {
             }
         }
     }
-    
+
     @Test
-    public void testFnNumberWithArgument() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(
+    void fnNumberWithArgument() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(
             "let $errors := " +
                 "<report>" +
                     "<message level=\"Error\" line=\"1191\" column=\"49\" repeat=\"96\"></message>" +

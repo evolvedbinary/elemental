@@ -48,20 +48,20 @@ package org.exist.xmldb.concurrent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.TestUtils;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.modules.XMLResource;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DeadlockTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension SERVER = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final Logger LOG = LogManager.getLogger(DeadlockTest.class);
 
@@ -72,7 +72,7 @@ public class DeadlockTest {
             + "  <element4>value4</element4>\n" + "</document>\n";
 
     @Test
-    public void deadlock() throws Exception {
+    void deadlock() throws InterruptedException {
         final int threads = 20;
         final int resources = 200;
 

@@ -24,19 +24,21 @@ package org.exist.storage;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.XQueryContext;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Currently, tests for the {@link org.exist.storage.XQueryPool}
@@ -46,8 +48,8 @@ public class LowLevelTextTest {
 
 	private static final String TEST_XQUERY_SOURCE = "/test";
 
-	@Rule
-	public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+	@RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
 	private DBBroker broker;
 
@@ -57,9 +59,9 @@ public class LowLevelTextTest {
 
 	private CompiledXQuery preCompiledXQuery;
 
-	@Before
-	public void setUp() throws DatabaseConfigurationException, EXistException, XPathException, PermissionDeniedException, IOException {
-		final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void setUp() throws DatabaseConfigurationException, EXistException, XPathException, PermissionDeniedException, IOException {
+		final BrokerPool pool = embeddedDatabase.getBrokerPool();
 		broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
 		xqueryPool = pool.getXQueryPool();
 		stringSource = new StringSource(TEST_XQUERY_SOURCE);
@@ -69,30 +71,30 @@ public class LowLevelTextTest {
 		preCompiledXQuery = xquery.compile(context, stringSource);
 	}
 
-	@After
-	public void tearDown() {
+    @AfterEach
+    void tearDown() {
 		if(broker != null) {
 			broker.close();
 		}
 	}
 
-	@Test
-	public void borrowCompiledXQuery1() throws PermissionDeniedException {
+    @Test
+    void borrowCompiledXQuery1() throws PermissionDeniedException {
 		// put the preCompiledXQuery in cache - NOTE: returnCompiledXQuery() is not a good name
 		xqueryPool.returnCompiledXQuery(stringSource, preCompiledXQuery);
 		callAndTestBorrowCompiledXQuery(stringSource);
 	}
 
-	@Test
-	public void borrowCompiledXQuery2() throws PermissionDeniedException {
+    @Test
+    void borrowCompiledXQuery2() throws PermissionDeniedException {
 		xqueryPool.returnCompiledXQuery(stringSource, preCompiledXQuery);
 
 		callAndTestBorrowCompiledXQuery(stringSource);
 		callAndTestBorrowCompiledXQuery(stringSource);
 	}
 
-	@Test
-	public void borrowCompiledXQuery3() throws PermissionDeniedException {
+    @Test
+    void borrowCompiledXQuery3() throws PermissionDeniedException {
 		xqueryPool.returnCompiledXQuery(stringSource, preCompiledXQuery);
 
 		callAndTestBorrowCompiledXQuery(stringSource);
@@ -100,22 +102,22 @@ public class LowLevelTextTest {
 		callAndTestBorrowCompiledXQuery(stringSource);
 	}
 
-	/**
-	 * test with a new StringSource object having same content
-	 */
-	@Test
-	public void borrowCompiledXQueryNewStringSource() throws PermissionDeniedException {
+    /**
+     * test with a new StringSource object having same content
+     */
+    @Test
+    void borrowCompiledXQueryNewStringSource() throws PermissionDeniedException {
 		xqueryPool.returnCompiledXQuery(stringSource, preCompiledXQuery);
 		StringSource localStringSource = new StringSource(TEST_XQUERY_SOURCE);
 
 		callAndTestBorrowCompiledXQuery(localStringSource);
 	}
 
-	/**
-	 * test with a new StringSource object having same content
-	 */
-	@Test
-	public void borrowCompiledXQueryNewStringSource2() throws PermissionDeniedException {
+    /**
+     * test with a new StringSource object having same content
+     */
+    @Test
+    void borrowCompiledXQueryNewStringSource2() throws PermissionDeniedException {
 		xqueryPool.returnCompiledXQuery(stringSource, preCompiledXQuery);
 		StringSource localStringSource = new StringSource(TEST_XQUERY_SOURCE);
 
@@ -126,11 +128,11 @@ public class LowLevelTextTest {
 	private void callAndTestBorrowCompiledXQuery(StringSource stringSourceArg) throws PermissionDeniedException {
 		final CompiledXQuery compiledXQuery = xqueryPool.borrowCompiledXQuery(broker, stringSourceArg);
 		assertNotNull(
-				"borrowCompiledXQuery should retrieve something for this stringSource",
-				compiledXQuery);
+				compiledXQuery,
+				"borrowCompiledXQuery should retrieve something for this stringSource");
 		assertEquals(
-				"borrowCompiledXQuery should retrieve the preCompiled XQuery for this stringSource",
-				preCompiledXQuery, compiledXQuery);
+				preCompiledXQuery,
+				compiledXQuery, "borrowCompiledXQuery should retrieve the preCompiled XQuery for this stringSource");
 		xqueryPool.returnCompiledXQuery(stringSourceArg, compiledXQuery);
 	}
 }

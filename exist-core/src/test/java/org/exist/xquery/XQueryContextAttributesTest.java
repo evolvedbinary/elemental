@@ -43,14 +43,14 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.Holder;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
@@ -59,19 +59,19 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class XQueryContextAttributesTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void attributesOfMainModuleContextCleared() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    void attributesOfMainModuleContextCleared() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
             final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -105,8 +105,8 @@ public class XQueryContextAttributesTest {
     }
 
     @Test
-    public void attributesOfLibraryModuleContextCleared() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    void attributesOfLibraryModuleContextCleared() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 

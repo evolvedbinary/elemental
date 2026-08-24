@@ -28,28 +28,27 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Optional;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class InitCollectionConfigurationTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     /**
      * Ensure that etc/collection.xconf.init was deployed at startup
      */
     @Test
-    public void deployedInitCollectionConfig() throws EXistException, PermissionDeniedException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void deployedInitCollectionConfig(final BrokerPool pool) throws EXistException, PermissionDeniedException, LockException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             try (final Collection collection = broker.openCollection(XmldbURI.CONFIG_COLLECTION_URI.append("db"), Lock.LockMode.READ_LOCK)) {
                 final LockedDocument confDoc = collection.getDocumentWithLock(broker, DEFAULT_COLLECTION_CONFIG_FILE_URI, Lock.LockMode.READ_LOCK);

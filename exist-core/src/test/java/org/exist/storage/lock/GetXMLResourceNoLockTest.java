@@ -51,10 +51,10 @@ import java.util.Optional;
 
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
-import org.junit.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.exist.EXistException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.test.TestConstants;
@@ -64,12 +64,14 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import uk.ac.ic.doc.slurp.multilock.MultiLock;
 import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 
@@ -78,14 +80,14 @@ import static org.junit.Assert.*;
  */
 public class GetXMLResourceNoLockTest {
 
-	@ClassRule
-	public static final ExistWebServer existWebServer = new ExistWebServer(false, false, false, true);
+	@RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(false, false, false, true);
 
     private static String EMPTY_BINARY_FILE = "What's an up dog?";
     private static XmldbURI DOCUMENT_NAME_URI = XmldbURI.create("empty.txt");
-	
-	@Test
-	public void testCollectionMaintainsLockWhenResourceIsSelectedNoLock() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
+
+    @Test
+    void collectionMaintainsLockWhenResourceIsSelectedNoLock() throws LockException, PermissionDeniedException, EXistException, IOException, SAXException {
 
 		storeTestResource();
 
@@ -105,7 +107,7 @@ public class GetXMLResourceNoLockTest {
 
             final LockManager lockManager = broker.getBrokerPool().getLockManager();
             final MultiLock colLock = lockManager.getPathLock(testCollection.getURI().toString());
-            assertEquals("Collection does not have lock!", true, colLock.getReadHoldCount() > 0);
+            assertTrue(colLock.getReadHoldCount() > 0, "Collection does not have lock!");
 		}
 	}
 

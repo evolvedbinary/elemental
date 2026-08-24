@@ -58,14 +58,19 @@ import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.hamcrest.Matcher;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
@@ -79,8 +84,9 @@ import java.util.Optional;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.storage.DBBroker.PreserveType.NO_PRESERVE;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class StoreResourceTest {
 
@@ -96,37 +102,36 @@ public class StoreResourceTest {
     private static final int USER1_DOC1_MODE = 0664;  // rw-rw--r--
     private static final int USER1_BIN_DOC1_MODE = 0664;  // rw-rw--r--
 
-    @ClassRule
-    public static final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     /**
      * As group member replace {@link #USER1_DOC1} from {@link TestConstants#TEST_COLLECTION_URI}
      */
     @Test
-    public void replaceXmlAsOwner() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, SAXException, InterruptedException {
-        final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        final long originalDoc1LastModified = getLastModified(USER1_DOC1);
+    void replaceXmlAsOwner(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, SAXException, InterruptedException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        final long originalDoc1LastModified = getLastModified(pool, USER1_DOC1);
         Thread.sleep(5);
-        replaceXmlDoc(user2, NO_PRESERVE, USER1_DOC1, "<something>else</something>");
-        checkAttributes(USER1_DOC1, USER1_NAME, GROUP1_NAME, USER1_DOC1_MODE, equalTo(getCreated(USER1_DOC1)), greaterThanOrEqualTo(originalDoc1LastModified));
+        replaceXmlDoc(pool, user2, NO_PRESERVE, USER1_DOC1, "<something>else</something>");
+        checkAttributes(pool, USER1_DOC1, USER1_NAME, GROUP1_NAME, USER1_DOC1_MODE, equalTo(getCreated(pool, USER1_DOC1)), greaterThanOrEqualTo(originalDoc1LastModified));
     }
 
     /**
      * As group member replace {@link #USER1_BIN_DOC1} from {@link TestConstants#TEST_COLLECTION_URI}
      */
     @Test
-    public void replaceBinaryAsGroupMember() throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, SAXException, InterruptedException {
-        final Subject user2 = existWebServer.getBrokerPool().getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        final long originalDoc1LastModified = getLastModified(USER1_BIN_DOC1);
+    void replaceBinaryAsGroupMember(final BrokerPool pool) throws AuthenticationException, LockException, PermissionDeniedException, EXistException, IOException, SAXException, InterruptedException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        final long originalDoc1LastModified = getLastModified(pool, USER1_BIN_DOC1);
         Thread.sleep(5);
-        replaceBinDoc(user2, NO_PRESERVE, USER1_BIN_DOC1, "something else");
-        checkAttributes(USER1_BIN_DOC1, USER1_NAME, GROUP1_NAME, USER1_BIN_DOC1_MODE, equalTo(getCreated(USER1_BIN_DOC1)), greaterThanOrEqualTo(originalDoc1LastModified));
+        replaceBinDoc(pool, user2, NO_PRESERVE, USER1_BIN_DOC1, "something else");
+        checkAttributes(pool, USER1_BIN_DOC1, USER1_NAME, GROUP1_NAME, USER1_BIN_DOC1_MODE, equalTo(getCreated(pool, USER1_BIN_DOC1)), greaterThanOrEqualTo(originalDoc1LastModified));
     }
 
-    private void replaceXmlDoc(final Subject execAsUser, final DBBroker.PreserveType preserve, final XmldbURI docName, final String content) throws EXistException, PermissionDeniedException, LockException, IOException, SAXException {
+    private void replaceXmlDoc(final BrokerPool pool, final Subject execAsUser, final DBBroker.PreserveType preserve, final XmldbURI docName, final String content) throws EXistException, PermissionDeniedException, LockException, IOException, SAXException {
         final XmldbURI uri = TEST_COLLECTION_URI.append(docName);
 
-        final BrokerPool pool = existWebServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(execAsUser));
              final Txn transaction = pool.getTransactionManager().beginTransaction();
              final Collection col = broker.openCollection(uri.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
@@ -151,17 +156,16 @@ public class StoreResourceTest {
                         .withTest(Input.fromString(docXml))
                         .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             } finally {
                 broker.returnSerializer(serializer);
             }
         }
     }
 
-    private void replaceBinDoc(final Subject execAsUser, final DBBroker.PreserveType preserve, final XmldbURI docName, final String content) throws EXistException, PermissionDeniedException, LockException, IOException, SAXException {
+    private void replaceBinDoc(final BrokerPool pool, final Subject execAsUser, final DBBroker.PreserveType preserve, final XmldbURI docName, final String content) throws EXistException, PermissionDeniedException, LockException, IOException, SAXException {
         final XmldbURI uri = TEST_COLLECTION_URI.append(docName);
 
-        final BrokerPool pool = existWebServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(execAsUser));
              final Txn transaction = pool.getTransactionManager().beginTransaction();
              final Collection col = broker.openCollection(uri.removeLastSegment(), Lock.LockMode.WRITE_LOCK)) {
@@ -184,8 +188,7 @@ public class StoreResourceTest {
         }
     }
 
-    private long getCreated(final XmldbURI docName) throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    private long getCreated(final BrokerPool pool, final XmldbURI docName) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final LockedDocument lockedDoc = broker.getXMLResource(TEST_COLLECTION_URI.append(docName), Lock.LockMode.READ_LOCK)) {
 
@@ -193,8 +196,7 @@ public class StoreResourceTest {
         }
     }
 
-    private long getLastModified(final XmldbURI docName) throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    private long getLastModified(final BrokerPool pool, final XmldbURI docName) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final LockedDocument lockedDoc = broker.getXMLResource(TEST_COLLECTION_URI.append(docName), Lock.LockMode.READ_LOCK)) {
 
@@ -202,25 +204,23 @@ public class StoreResourceTest {
         }
     }
 
-    private void checkAttributes(final XmldbURI docName, final String expectedOwner, final String expectedGroup, final int expectedMode, final Matcher<Long> expectedCreated, final Matcher<Long> expectedLastModified) throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    private void checkAttributes(final BrokerPool pool, final XmldbURI docName, final String expectedOwner, final String expectedGroup, final int expectedMode, final Matcher<Long> expectedCreated, final Matcher<Long> expectedLastModified) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final LockedDocument lockedDoc = broker.getXMLResource(TEST_COLLECTION_URI.append(docName), Lock.LockMode.READ_LOCK)) {
 
             final DocumentImpl doc = lockedDoc.getDocument();
             final Permission permission = doc.getPermissions();
-            assertEquals("Owner value was not expected", expectedOwner, permission.getOwner().getName());
-            assertEquals("Group value was not expected", expectedGroup, permission.getGroup().getName());
-            assertEquals("Mode value was not expected", expectedMode, permission.getMode());
+            assertEquals(expectedOwner, permission.getOwner().getName(), "Owner value was not expected");
+            assertEquals(expectedGroup, permission.getGroup().getName(), "Group value was not expected");
+            assertEquals(expectedMode, permission.getMode(), "Mode value was not expected");
 
             assertThat("Created value is not correct", doc.getCreated(), expectedCreated);
             assertThat("LastModified value is not correct", doc.getLastModified(), expectedLastModified);
         }
     }
 
-    @BeforeClass
-    public static void prepareDb() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @BeforeAll
+    static void prepareDb(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final SecurityManager sm = pool.getSecurityManager();
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
@@ -236,10 +236,8 @@ public class StoreResourceTest {
         }
     }
 
-    @Before
-    public void setup() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
-
+    @BeforeEach
+    void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
         // create user1 resources
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         try (final DBBroker broker = pool.get(Optional.of(user1));
@@ -262,9 +260,8 @@ public class StoreResourceTest {
         }
     }
 
-    @After
-    public void teardown() throws EXistException, LockException, TriggerException, PermissionDeniedException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @AfterEach
+    void teardown(final BrokerPool pool) throws EXistException, LockException, TriggerException, PermissionDeniedException, IOException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -275,9 +272,8 @@ public class StoreResourceTest {
         }
     }
 
-    @AfterClass
-    public static void cleanupDb() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @AfterAll
+    static void cleanupDb(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final SecurityManager sm = pool.getSecurityManager();
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {

@@ -45,12 +45,12 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -58,13 +58,13 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XQueryService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class NamespaceUpdateTest {
 
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	private final static String namespaces =
 			"<test xmlns='http://www.foo.com'>"
@@ -76,8 +76,8 @@ public class NamespaceUpdateTest {
 
 	private Collection testCollection;
 
-	@Test
-	public void updateAttribute() throws XMLDBException {
+    @Test
+    void updateAttribute() throws XMLDBException {
 		final XQueryService service = testCollection.getService(XQueryService.class);
 		String query =
 				"declare namespace t='http://www.foo.com';\n" +
@@ -99,11 +99,11 @@ public class NamespaceUpdateTest {
 		}
 	}
 
-	@Before
-	public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
 		// initialize driver
 		final CollectionManagementService service =
-			existEmbeddedServer.getRoot().getService(
+			XMLDB_EMBEDDED_DATABASE.getRoot().getService(
 				CollectionManagementService.class);
 		testCollection = service.createCollection("test");
 		assertNotNull(testCollection);
@@ -114,11 +114,11 @@ public class NamespaceUpdateTest {
 		}
 	}
 
-	@After
-	public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
 		testCollection.close();
 		final CollectionManagementService service =
-				existEmbeddedServer.getRoot().getService(
+				XMLDB_EMBEDDED_DATABASE.getRoot().getService(
 						CollectionManagementService.class);
 		service.removeCollection("test");
 		testCollection = null;

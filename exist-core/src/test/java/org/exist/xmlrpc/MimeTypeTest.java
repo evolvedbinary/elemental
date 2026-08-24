@@ -46,14 +46,14 @@
 package org.exist.xmlrpc;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.exist.test.DatabaseWebServerExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
@@ -66,8 +66,8 @@ import org.xmldb.api.modules.XMLResource;
 
 public class MimeTypeTest {
 
-	@ClassRule
-    public final static ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+	@RegisterExtension
+    public final static DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private final static String COLLECTION_NAME = "rpctest";
     private static final String DOCUMENT_NAME = "myxmldoc";
@@ -77,11 +77,11 @@ public class MimeTypeTest {
     		""";
 
     private static String getBaseUri() {
-        return "xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc";
+        return "xmldb:exist://localhost:" + DATABASE_WEB_SERVER.getPort() + "/xmlrpc";
     }
 
     @Test
-    public void testXMLMimeType() throws XMLDBException {
+    void xmlMimeType() throws XMLDBException {
         // store an XML document without an .xml extension
     	try(Collection collection = DatabaseManager.getCollection(getBaseUri() + "/db/" + COLLECTION_NAME, TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)){
             final Class<? extends Resource> xmlResourceType = XMLResource.class;
@@ -100,8 +100,8 @@ public class MimeTypeTest {
     	}
     }
 
-	@BeforeClass
-    public static void startServer() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, SAXException {
+    @BeforeAll
+    static void startServer() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, SAXException {
         // initialize XML:DB driver
         Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
         Database database = (Database) cl.newInstance();
@@ -115,8 +115,8 @@ public class MimeTypeTest {
         }
     }
 
-    @AfterClass
-    public static void stopServer() throws XMLDBException {
+    @AfterAll
+    static void stopServer() throws XMLDBException {
         try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
             CollectionManagementService mgmt =
                     root.getService(CollectionManagementService.class);

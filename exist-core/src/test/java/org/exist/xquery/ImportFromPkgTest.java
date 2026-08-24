@@ -20,10 +20,10 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
@@ -34,7 +34,7 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
@@ -53,11 +53,11 @@ public class ImportFromPkgTest {
         }
     }
 
-    @ClassRule
-    public static ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(true, false, true, getConfigFile());
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(true, false, true, getConfigFile());
 
     @Test
-    public void printPackages() throws XMLDBException {
+    void printPackages() throws XMLDBException {
         final String query = "xmldb:get-child-resources('/db/system/repo/functx-1.0.1/functx/')";
 
         final Set<String> expected = new HashSet<>();
@@ -74,12 +74,12 @@ public class ImportFromPkgTest {
     }
 
     @Test
-    public void importFunctxNs() throws XMLDBException {
+    void importFunctxNs() throws XMLDBException {
         final String query =
             "import module namespace functx = \"http://www.functx.com\";\n" +
             "\n" +
             "<test>{functx:index-of-string('hello', 'll')}</test>";
-        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet resultSet = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertNotNull(resultSet);
             assertEquals(1, resultSet.getSize());
             final Resource result = resultSet.getResource(0);
@@ -89,12 +89,12 @@ public class ImportFromPkgTest {
     }
 
     @Test
-    public void importFunctxLocationHintDb() throws XMLDBException {
+    void importFunctxLocationHintDb() throws XMLDBException {
         final String query =
             "import module namespace functx = \"http://www.functx.com\" at \"/db/system/repo/functx-1.0.1/functx/functx.xq\";\n" +
             "\n" +
             "<test>{functx:index-of-string('hello', 'll')}</test>";
-        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet resultSet = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertNotNull(resultSet);
             assertEquals(1, resultSet.getSize());
             final Resource result = resultSet.getResource(0);
@@ -104,12 +104,12 @@ public class ImportFromPkgTest {
     }
 
     @Test
-    public void importFunctxLocationHintXmldb() throws XMLDBException {
+    void importFunctxLocationHintXmldb() throws XMLDBException {
         final String query =
             "import module namespace functx = \"http://www.functx.com\" at \"xmldb:exist:///db/system/repo/functx-1.0.1/functx/functx.xq\";\n" +
                 "\n" +
                 "<test>{functx:index-of-string('hello', 'll')}</test>";
-        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet resultSet = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertNotNull(resultSet);
             assertEquals(1, resultSet.getSize());
             final Resource result = resultSet.getResource(0);
@@ -119,13 +119,13 @@ public class ImportFromPkgTest {
     }
 
     @Test
-    public void declareFunctx() {
+    void declareFunctx() {
         final String query =
             "declare namespace functx = \"http://www.functx.com\";\n" +
                 "\n" +
                 "<test>{functx:index-of-string('hello', 'll')}</test>";
 
-        try (final EXistResourceSet resultSet = existXmldbEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet resultSet = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             // needed to close the resultSet
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage().startsWith("err:XPST0017 Call to undeclared function: functx:index-of-string"));

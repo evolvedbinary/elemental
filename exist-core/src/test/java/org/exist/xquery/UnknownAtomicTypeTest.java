@@ -23,8 +23,11 @@ package org.exist.xquery;
 
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
+import org.exist.storage.BrokerPool;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.XQueryCompilationTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.exist.test.XQueryAssertions.assertXQStaticError;
 
@@ -34,53 +37,57 @@ import static org.exist.test.XQueryAssertions.assertXQStaticError;
  *
  * @author <a href="mailto:juri@existsolutions.com">Juri Leino</a>
  */
-public class UnknownAtomicTypeTest extends XQueryCompilationTest {
+class UnknownAtomicTypeTest extends XQueryCompilationTest {
+
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
+
     @Test
-    public void letVariable() throws EXistException, PermissionDeniedException {
+    void letVariable(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "let $x as a := 0 return $x";
         final String error = "Unknown simple type a";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 11, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 11, error, compileQuery(pool, query));
     }
 
     @Test
-    public void functionReturnType() throws EXistException, PermissionDeniedException {
+    void functionReturnType(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "function () as b { () }";
         final String error = "Unknown simple type b";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 16, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 16, error, compileQuery(pool, query));
     }
 
     @Test
-    public void functionParameterType() throws EXistException, PermissionDeniedException {
+    void functionParameterType(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "function ($x as c) { $x }";
         final String error = "Unknown simple type c";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 17, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 17, error, compileQuery(pool, query));
     }
 
     @Test
-    public void instanceOf() throws EXistException, PermissionDeniedException {
+    void instanceOf(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "1 instance of d";
         final String error = "Unknown simple type d";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 15, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 15, error, compileQuery(pool, query));
     }
 
     @Test
-    public void treatAs() throws EXistException, PermissionDeniedException {
+    void treatAs(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "1 treat as e";
         final String error = "Unknown simple type e";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 12, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 12, error, compileQuery(pool, query));
     }
 
     @Test
-    public void castAs() throws EXistException, PermissionDeniedException {
+    void castAs(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "1 cast as f";
         final String error = "Unknown simple type f";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 11, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 11, error, compileQuery(pool, query));
     }
 
     @Test
-    public void castableAs() throws EXistException, PermissionDeniedException {
+    void castableAs(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         final String query = "1 castable as g";
         final String error = "Unknown simple type g";
-        assertXQStaticError(ErrorCodes.XPST0051, 1, 15, error, compileQuery(query));
+        assertXQStaticError(ErrorCodes.XPST0051, 1, 15, error, compileQuery(pool, query));
     }
 }

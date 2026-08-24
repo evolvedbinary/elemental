@@ -21,7 +21,6 @@
 package org.exist.http;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import com.googlecode.junittoolbox.ParallelParameterized;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -30,15 +29,14 @@ import org.apache.http.entity.ContentType;
 import org.eclipse.jetty.http.HttpStatus;
 import org.exist.Namespaces;
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.util.MapUtil;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xqj.Marshaller;
 import org.exist.xquery.value.Type;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.junit.runners.Parameterized;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Node;
@@ -68,7 +66,7 @@ import static org.exist.http.RESTExternalVariableTest.UntypedArrayRep.untypedArr
 import static org.exist.http.RESTExternalVariableTest.UntypedMapRep.untypedMap;
 import static org.exist.http.RESTExternalVariableTest.UntypedNamedValueRep.value;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.xmlunit.matchers.HasXPathMatcher.hasXPath;
 
 /**
@@ -76,7 +74,7 @@ import static org.xmlunit.matchers.HasXPathMatcher.hasXPath;
  *
  * @author <a href="mailto:adam@evolvedbinary.com>Adam Retter</a>
  */
-@RunWith(ParallelParameterized.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class RESTExternalVariableTest {
 
     @Parameterized.Parameters(name = "{0}")
@@ -93,8 +91,8 @@ public class RESTExternalVariableTest {
     @Parameterized.Parameter(value = 1)
     public boolean useXmlnsPrefixes;
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private static final String ADMIN_CREDENTIALS = Base64.encodeBase64String((TestUtils.ADMIN_DB_USER + ":" + TestUtils.ADMIN_DB_PWD).getBytes(UTF_8));
 
@@ -117,7 +115,7 @@ public class RESTExternalVariableTest {
         .build());
 
     @Test
-    public void queryPostWithExternalVariableNotSupplied() throws IOException {
+    void queryPostWithExternalVariableNotSupplied() throws IOException {
         final String query =
                 "<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n" +
                 "\t<exist:text><![CDATA[\n" +
@@ -130,14 +128,14 @@ public class RESTExternalVariableTest {
         final int resultStatusCode = response.getStatusLine()
                .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+        assertEquals(HttpStatus.BAD_REQUEST_400, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String actual = readResponse(response.getEntity());
         assertThat(actual, CompareMatcher.isIdenticalTo("<exception><path>/db/test/test.xml</path><message>err:XPDY0002 The value of external variable: local:my-variable has not been set</message></exception>"));
     }
 
     @Test
-    public void queryPostWithExternalVariableUndeclared() throws IOException {
+    void queryPostWithExternalVariableUndeclared() throws IOException {
         final String query =
                 "<exist:query xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" xmlns:sx=\"http://exist-db.org/xquery/types/serialized\" xmlns:" + TEST_PREFIX + "=\"" + TEST_NAMESPACE + "\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" wrap=\"yes\" typed=\"yes\">\n" +
                 "\t<exist:variables>\n" +
@@ -160,7 +158,7 @@ public class RESTExternalVariableTest {
         final int resultStatusCode = response.getStatusLine()
                 .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+        assertEquals(HttpStatus.BAD_REQUEST_400, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String actual = readResponse(response.getEntity());
 
@@ -168,172 +166,172 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedNotSupplied() throws IOException {
+    void queryPostWithExternalVariableUntypedNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, null, (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedString() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedString() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello");
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedString() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedString() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.STRING, "hello");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringNotSupplied() throws IOException {
+    void queryPostWithExternalVariableStringNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableStringSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringSuppliedString() throws IOException {
+    void queryPostWithExternalVariableStringSuppliedString() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.STRING, "hello");
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringSuppliedStrings() throws IOException {
+    void queryPostWithExternalVariableStringSuppliedStrings() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[]{ value("hello"), value("goodbye") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableStringSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello");
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, "xs:string", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedStrings() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedStrings() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[]{ value("hello"), value("goodbye") };
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedStrings() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedStrings() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptStringNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptStringNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptStringSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptStringSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptStringSuppliedString() throws IOException {
+    void queryPostWithExternalVariableOptStringSuppliedString() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.STRING, "hello");
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptStringSuppliedStrings() throws IOException {
+    void queryPostWithExternalVariableOptStringSuppliedStrings() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptStringSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptStringSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello");
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, "xs:string?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableStringsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableStringsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringsSuppliedString() throws IOException {
+    void queryPostWithExternalVariableStringsSuppliedString() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.STRING, "hello");
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringsSuppliedStrings() throws IOException {
+    void queryPostWithExternalVariableStringsSuppliedStrings() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableStringsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello");
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, "xs:string+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableStringsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello"), value("goodbye") };
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, "xs:string+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableStringzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "xs:string*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableStringzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringzSuppliedString() throws IOException {
+    void queryPostWithExternalVariableStringzSuppliedString() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.STRING, "hello");
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringzSuppliedStrings() throws IOException {
+    void queryPostWithExternalVariableStringzSuppliedStrings() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "xs:string*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringzSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableStringzSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello");
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, "xs:string*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableStringzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableStringzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello"), value("goodbye") };
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello"), value(Type.STRING, "goodbye") };
         queryPostWithExternalVariable(HttpStatus.OK_200, expectedResult, "xs:string*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedElementValue() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedElementValue() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value("<hello>world</hello>");
@@ -344,7 +342,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedElement() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedElement() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
@@ -355,18 +353,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementNotSupplied() throws IOException {
+    void queryPostWithExternalVariableElementNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableElementSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableElementSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableElementSuppliedElement() throws IOException {
+    void queryPostWithExternalVariableElementSuppliedElement() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
@@ -377,7 +375,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementSuppliedElements() throws IOException {
+    void queryPostWithExternalVariableElementSuppliedElements() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -388,7 +386,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableElementSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value("<hello>world</hello>");
@@ -399,7 +397,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedElements() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedElements() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -410,7 +408,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedElements() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedElements() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
@@ -421,18 +419,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptElementNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptElementNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptElementSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptElementSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptElementSuppliedElement() throws IOException {
+    void queryPostWithExternalVariableOptElementSuppliedElement() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
@@ -443,7 +441,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptElementSuppliedElements() throws IOException {
+    void queryPostWithExternalVariableOptElementSuppliedElements() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
@@ -454,7 +452,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptElementSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptElementSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value("<hello>world</hello>");
@@ -465,18 +463,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableElementsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableElementsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableElementsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableElementsSuppliedElement() throws IOException {
+    void queryPostWithExternalVariableElementsSuppliedElement() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
@@ -487,7 +485,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementsSuppliedElements() throws IOException {
+    void queryPostWithExternalVariableElementsSuppliedElements() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
@@ -498,7 +496,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableElementsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>") };
@@ -509,7 +507,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableElementsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -520,18 +518,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableElementzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "element()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableElementzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableElementzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "element()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableElementzSuppliedElement() throws IOException {
+    void queryPostWithExternalVariableElementzSuppliedElement() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.ELEMENT, "<hello>world</hello>");
@@ -542,7 +540,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementzSuppliedElements() throws IOException {
+    void queryPostWithExternalVariableElementzSuppliedElements() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.ELEMENT, "<hello>world</hello>"), value(Type.ELEMENT, "<goodbye>see you soon</goodbye>") };
@@ -553,7 +551,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableElementszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>") };
@@ -564,7 +562,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableElementzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableElementzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -575,7 +573,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedDocument() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedDocument() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value("<hello>world</hello>");
@@ -586,7 +584,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedDocument() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedDocument() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
@@ -597,18 +595,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentNotSupplied() throws IOException {
+    void queryPostWithExternalVariableDocumentNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableDocumentSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentSuppliedDocument() throws IOException {
+    void queryPostWithExternalVariableDocumentSuppliedDocument() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
@@ -619,7 +617,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentSuppliedDocuments() throws IOException {
+    void queryPostWithExternalVariableDocumentSuppliedDocuments() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -630,7 +628,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableDocumentSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value("<hello>world</hello>");
@@ -642,7 +640,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedDocuments() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedDocuments() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -653,7 +651,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedDocuments() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedDocuments() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
@@ -664,18 +662,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptDocumentNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptDocumentNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptDocumentSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptDocumentSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptDocumentSuppliedDocument() throws IOException {
+    void queryPostWithExternalVariableOptDocumentSuppliedDocument() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
@@ -686,7 +684,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptDocumentSuppliedDocuments() throws IOException {
+    void queryPostWithExternalVariableOptDocumentSuppliedDocuments() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
@@ -697,7 +695,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptDocumentSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptDocumentSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value("<hello>world</hello>");
@@ -709,18 +707,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableDocumentsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableDocumentsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentsSuppliedDocument() throws IOException {
+    void queryPostWithExternalVariableDocumentsSuppliedDocument() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
@@ -731,7 +729,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentsSuppliedDocuments() throws IOException {
+    void queryPostWithExternalVariableDocumentsSuppliedDocuments() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
@@ -742,7 +740,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableDocumentsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>") };
@@ -754,7 +752,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableDocumentsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -766,18 +764,18 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableDocumentzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "document-node()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableDocumentzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "document-node()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentzSuppliedDocument() throws IOException {
+    void queryPostWithExternalVariableDocumentzSuppliedDocument() throws IOException {
         final ExternalVariableValueRep externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = value(Type.DOCUMENT, "<hello>world</hello>");
@@ -788,7 +786,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentzSuppliedDocuments() throws IOException {
+    void queryPostWithExternalVariableDocumentzSuppliedDocuments() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value(Type.DOCUMENT, "<hello>world</hello>"), value(Type.DOCUMENT, "<goodbye>see you soon</goodbye>") };
@@ -799,7 +797,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableDocumentszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>") };
@@ -811,7 +809,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableDocumentzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableDocumentzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable;
         if (useXmlnsPrefixes) {
             externalVariable = new ExternalVariableValueRep[] { value("<hello>world</hello>"), value("<goodbye>see you soon</goodbye>") };
@@ -823,311 +821,311 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedComment() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedComment() throws IOException {
         final ExternalVariableValueRep externalVariable = value("<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedComment() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedComment() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.COMMENT, "<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentNotSupplied() throws IOException {
+    void queryPostWithExternalVariableCommentNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableCommentSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentSuppliedComment() throws IOException {
+    void queryPostWithExternalVariableCommentSuppliedComment() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.COMMENT, "<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentSuppliedComments() throws IOException {
+    void queryPostWithExternalVariableCommentSuppliedComments() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<!-- hello world -->"), value("<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableCommentSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedComments() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedComments() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<!-- hello world -->"), value("<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedComments() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedComments() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.COMMENT, "<!-- hello world -->"), value(Type.COMMENT, "<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptCommentNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptCommentNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptCommentSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptCommentSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptCommentSuppliedComment() throws IOException {
+    void queryPostWithExternalVariableOptCommentSuppliedComment() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.COMMENT, "<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptCommentSuppliedComments() throws IOException {
+    void queryPostWithExternalVariableOptCommentSuppliedComments() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.COMMENT, "<!-- hello world -->"), value(Type.COMMENT, "<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptCommentSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptCommentSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableCommentsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableCommentsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentsSuppliedComment() throws IOException {
+    void queryPostWithExternalVariableCommentsSuppliedComment() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.COMMENT, "<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentsSuppliedComments() throws IOException {
+    void queryPostWithExternalVariableCommentsSuppliedComments() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.COMMENT, "<!-- hello world -->"), value(Type.COMMENT, "<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableCommentsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<!-- hello world -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableCommentsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<!-- hello world -->"), value("<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableCommentzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "comment()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableCommentzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentzSuppliedComment() throws IOException {
+    void queryPostWithExternalVariableCommentzSuppliedComment() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.COMMENT, "<!-- hello world -->");
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentzSuppliedComments() throws IOException {
+    void queryPostWithExternalVariableCommentzSuppliedComments() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.COMMENT, "<!-- hello world -->"), value(Type.COMMENT, "<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableCommentszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<!-- hello world -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableCommentzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableCommentzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<!-- hello world -->"), value("<!-- goodbye see you soon -->") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "comment()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedProcessingInstruction() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedProcessingInstruction() throws IOException {
         final ExternalVariableValueRep externalVariable = value("<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedProcessingInstruction() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedProcessingInstruction() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.PROCESSING_INSTRUCTION, "<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionNotSupplied() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionSuppliedProcessingInstruction() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionSuppliedProcessingInstruction() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.PROCESSING_INSTRUCTION, "<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionSuppliedProcessingInstructions() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionSuppliedProcessingInstructions() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<?hello world?>"), value("<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedProcessingInstructions() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedProcessingInstructions() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<?hello world?>"), value("<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedProcessingInstructions() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedProcessingInstructions() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.PROCESSING_INSTRUCTION, "<?hello world?>"), value(Type.PROCESSING_INSTRUCTION, "<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptProcessingInstructionNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptProcessingInstructionNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptProcessingInstructionSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptProcessingInstructionSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptProcessingInstructionSuppliedProcessingInstruction() throws IOException {
+    void queryPostWithExternalVariableOptProcessingInstructionSuppliedProcessingInstruction() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.PROCESSING_INSTRUCTION, "<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptProcessingInstructionSuppliedProcessingInstructions() throws IOException {
+    void queryPostWithExternalVariableOptProcessingInstructionSuppliedProcessingInstructions() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.PROCESSING_INSTRUCTION, "<?hello world?>"), value(Type.PROCESSING_INSTRUCTION, "<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptProcessingInstructionSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptProcessingInstructionSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionsSuppliedProcessingInstruction() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionsSuppliedProcessingInstruction() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.PROCESSING_INSTRUCTION, "<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionsSuppliedProcessingInstructions() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionsSuppliedProcessingInstructions() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.PROCESSING_INSTRUCTION, "<?hello world?>"), value(Type.PROCESSING_INSTRUCTION, "<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<?hello world?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<?hello world?>"), value("<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "processing-instruction()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionzSuppliedProcessingInstruction() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionzSuppliedProcessingInstruction() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.PROCESSING_INSTRUCTION, "<?hello world?>");
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionzSuppliedProcessingInstructions() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionzSuppliedProcessingInstructions() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.PROCESSING_INSTRUCTION, "<?hello world?>"), value(Type.PROCESSING_INSTRUCTION, "<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<?hello world?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableProcessingInstructionzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableProcessingInstructionzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("<?hello world?>"), value("<?goodbye see-you-soon?>") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "processing-instruction()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedText() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedText() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello world");
         // NOTE(AR) we expect this to return xs:string because neither the input nor the variable is actually typed as text()
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello world") };
@@ -1135,43 +1133,43 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedText() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedText() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.TEXT, "hello world");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextNotSupplied() throws IOException {
+    void queryPostWithExternalVariableTextNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableTextSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextSuppliedText() throws IOException {
+    void queryPostWithExternalVariableTextSuppliedText() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.TEXT, "hello world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextSuppliedTexts() throws IOException {
+    void queryPostWithExternalVariableTextSuppliedTexts() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello world"), value("goodbye see you soon") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableTextSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello world");
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedTexts() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedTexts() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello world"), value("goodbye see you soon") };
         // NOTE(AR) we expect this to return xs:string because neither the input nor the variable is actually typed as text()
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "hello world"), value(Type.STRING, "goodbye see you soon") };
@@ -1179,117 +1177,117 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedTexts() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedTexts() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.TEXT, "hello world"), value(Type.TEXT, "goodbye see you soon") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptTextNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptTextNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptTextSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptTextSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptTextSuppliedText() throws IOException {
+    void queryPostWithExternalVariableOptTextSuppliedText() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.TEXT, "hello world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptTextSuppliedTexts() throws IOException {
+    void queryPostWithExternalVariableOptTextSuppliedTexts() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.TEXT, "hello world"), value(Type.TEXT, "goodbye see you soon") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptTextSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptTextSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello world");
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableTextsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableTextsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextsSuppliedText() throws IOException {
+    void queryPostWithExternalVariableTextsSuppliedText() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.TEXT, "hello world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextsSuppliedTexts() throws IOException {
+    void queryPostWithExternalVariableTextsSuppliedTexts() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.TEXT, "hello world"), value(Type.TEXT, "goodbye see you soon") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableTextsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello world") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableTextsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello world"), value("goodbye see you soon") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableTextzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "text()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableTextzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextzSuppliedText() throws IOException {
+    void queryPostWithExternalVariableTextzSuppliedText() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.TEXT, "hello world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextzSuppliedTexts() throws IOException {
+    void queryPostWithExternalVariableTextzSuppliedTexts() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.TEXT, "hello world"), value(Type.TEXT, "goodbye see you soon") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "text()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableTextszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello world") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableTextzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableTextzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("hello world"), value("goodbye see you soon") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected text(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "text()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedAttribute() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value("hello", "world");
         // NOTE(AR) we expect this to return xs:string because neither the input nor the variable is actually typed as attribute()
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "world") };
@@ -1297,44 +1295,44 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedAttribute() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.ATTRIBUTE, "hello", "world");
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributeNotSupplied() throws IOException {
+    void queryPostWithExternalVariableAttributeNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributeSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableAttributeSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributeSuppliedAttribute() throws IOException {
+    void queryPostWithExternalVariableAttributeSuppliedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.ATTRIBUTE, "revt:hello", "world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()", externalVariable);
     }
 
 
     @Test
-    public void queryPostWithExternalVariableAttributeSuppliedAttributes() throws IOException {
+    void queryPostWithExternalVariableAttributeSuppliedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributeSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableAttributeSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("revt:hello", "world");
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedAttributes() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
         // NOTE(AR) we expect this to return xs:string because neither the input nor the variable is actually typed as attribute()
         final ExternalVariableValueRep[] expectedResult = new ExternalVariableValueRep[] { value(Type.STRING, "world"), value(Type.STRING, "see you soon") };
@@ -1342,298 +1340,298 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedAttributes() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ATTRIBUTE, "revt:hello", "world"), value(Type.ATTRIBUTE, "goodbye", "see you soon") };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptAttributeNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptAttributeNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptAttributeSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptAttributeSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptAttributeSuppliedAttribute() throws IOException {
+    void queryPostWithExternalVariableOptAttributeSuppliedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.ATTRIBUTE, "revt:hello", "world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptAttributeSuppliedAttributes() throws IOException {
+    void queryPostWithExternalVariableOptAttributeSuppliedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ATTRIBUTE, "revt:hello", "world"), value(Type.ATTRIBUTE, "goodbye", "see you soon") };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptAttributeSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptAttributeSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = value("revt:hello", "world");
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributesNotSupplied() throws IOException {
+    void queryPostWithExternalVariableAttributesNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributesSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableAttributesSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributesSuppliedAttribute() throws IOException {
+    void queryPostWithExternalVariableAttributesSuppliedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.ATTRIBUTE, "revt:hello", "world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributesSuppliedAttributes() throws IOException {
+    void queryPostWithExternalVariableAttributesSuppliedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ATTRIBUTE, "revt:hello", "world"), value(Type.ATTRIBUTE, "goodbye", "see you soon") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributesSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableAttributesSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributesSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableAttributesSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributezNotSupplied() throws IOException {
+    void queryPostWithExternalVariableAttributezNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "attribute()*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributezSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableAttributezSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributezSuppliedAttribute() throws IOException {
+    void queryPostWithExternalVariableAttributezSuppliedAttribute() throws IOException {
         final ExternalVariableValueRep externalVariable = value(Type.ATTRIBUTE, "revt:hello", "world");
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributezSuppliedAttributes() throws IOException {
+    void queryPostWithExternalVariableAttributezSuppliedAttributes() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value(Type.ATTRIBUTE, "revt:hello", "world"), value(Type.ATTRIBUTE, "goodbye", "see you soon") };
         queryPostWithExternalVariable(HttpStatus.OK_200, "attribute()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributeszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableAttributeszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableAttributezSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableAttributezSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ExternalVariableValueRep[] { value("revt:hello", "world"), value("goodbye", "see you soon") };
         final String expectedResponseError = "<exception><path>/db/test/test.xml</path><message>err:XPTY0004 Invalid type for variable $local:my-variable. Expected attribute(), got xs:string</message></exception>";
         queryPostWithExternalVariable(Tuple(HttpStatus.BAD_REQUEST_400, expectedResponseError), "attribute()*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedArray() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedArray() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedArray() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedArray() throws IOException {
         final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayNotSupplied() throws IOException {
+    void queryPostWithExternalVariableArrayNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraySuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableArraySuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraySuppliedArray() throws IOException {
+    void queryPostWithExternalVariableArraySuppliedArray() throws IOException {
         final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraySuppliedArrays() throws IOException {
+    void queryPostWithExternalVariableArraySuppliedArrays() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"))), array(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraySuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableArraySuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedArrays() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedArrays() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedArrays() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedArrays() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))), array(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptArrayNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptArrayNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptArraySuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptArraySuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptArraySuppliedArray() throws IOException {
+    void queryPostWithExternalVariableOptArraySuppliedArray() throws IOException {
         final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptArraySuppliedArrays() throws IOException {
+    void queryPostWithExternalVariableOptArraySuppliedArrays() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))), array(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptArraySuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptArraySuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraysNotSupplied() throws IOException {
+    void queryPostWithExternalVariableArraysNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraysSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableArraysSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraysSuppliedArray() throws IOException {
+    void queryPostWithExternalVariableArraysSuppliedArray() throws IOException {
         final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraysSuppliedArrays() throws IOException {
+    void queryPostWithExternalVariableArraysSuppliedArrays() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))), array(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraysSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableArraysSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArraysSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableArraysSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableArrayzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "array(*)*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableArrayzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new ArrayRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayzSuppliedArray() throws IOException {
+    void queryPostWithExternalVariableArrayzSuppliedArray() throws IOException {
         final ExternalVariableValueRep externalVariable = array(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayzSuppliedArrays() throws IOException {
+    void queryPostWithExternalVariableArrayzSuppliedArrays() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { array(sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))), array(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableArrayszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedArray(sequence(value(Type.STRING, "hello")));
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableArrayzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableArrayzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = { untypedArray(sequence(value(Type.STRING, "hello"))), untypedArray(sequence(value(Type.STRING, "goodbye"))) };
         queryPostWithExternalVariable(HttpStatus.OK_200, "array(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedMap() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedMap() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedMap() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedMap() throws IOException {
         final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, null, externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapNotSupplied() throws IOException {
+    void queryPostWithExternalVariableMapNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)",  (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableMapSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new MapRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapSuppliedMap() throws IOException {
+    void queryPostWithExternalVariableMapSuppliedMap() throws IOException {
         final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapSuppliedMaps() throws IOException {
+    void queryPostWithExternalVariableMapSuppliedMaps() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             map(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1647,13 +1645,13 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableMapSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableMapSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedUntypedMaps() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedUntypedMaps() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             untypedMap(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1667,7 +1665,7 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableUntypedSuppliedMaps() throws IOException {
+    void queryPostWithExternalVariableUntypedSuppliedMaps() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             map(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1681,24 +1679,24 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptMapNotSupplied() throws IOException {
+    void queryPostWithExternalVariableOptMapNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)?", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptMapSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableOptMapSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new MapRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptMapSuppliedMap() throws IOException {
+    void queryPostWithExternalVariableOptMapSuppliedMap() throws IOException {
         final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableOptMapSuppliedMaps() throws IOException {
+    void queryPostWithExternalVariableOptMapSuppliedMaps() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             map(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1712,30 +1710,30 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableOptMapSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableOptMapSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)?", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapsNotSupplied() throws IOException {
+    void queryPostWithExternalVariableMapsNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)+", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapsSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableMapsSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new MapRep[0];
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapsSuppliedMap() throws IOException {
+    void queryPostWithExternalVariableMapsSuppliedMap() throws IOException {
         final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapsSuppliedMaps() throws IOException {
+    void queryPostWithExternalVariableMapsSuppliedMaps() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             map(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1750,13 +1748,13 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableMapsSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableMapsSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)+", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapsSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableMapsSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             untypedMap(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1770,24 +1768,24 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableMapzNotSupplied() throws IOException {
+    void queryPostWithExternalVariableMapzNotSupplied() throws IOException {
         queryPostWithExternalVariable(HttpStatus.BAD_REQUEST_400, "map(*)*", (ExternalVariableValueRep[]) null);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapzSuppliedEmpty() throws IOException {
+    void queryPostWithExternalVariableMapzSuppliedEmpty() throws IOException {
         final ExternalVariableValueRep[] externalVariable = new MapRep[0];
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapzSuppliedMap() throws IOException {
+    void queryPostWithExternalVariableMapzSuppliedMap() throws IOException {
         final ExternalVariableValueRep externalVariable = map(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapzSuppliedMaps() throws IOException {
+    void queryPostWithExternalVariableMapzSuppliedMaps() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             map(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1801,13 +1799,13 @@ public class RESTExternalVariableTest {
     }
 
     @Test
-    public void queryPostWithExternalVariableMapszSuppliedUntyped() throws IOException {
+    void queryPostWithExternalVariableMapszSuppliedUntyped() throws IOException {
         final ExternalVariableValueRep externalVariable = untypedMap(entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"))));
         queryPostWithExternalVariable(HttpStatus.OK_200, "map(*)*", externalVariable);
     }
 
     @Test
-    public void queryPostWithExternalVariableMapzSuppliedUntypeds() throws IOException {
+    void queryPostWithExternalVariableMapzSuppliedUntypeds() throws IOException {
         final ExternalVariableValueRep[] externalVariable = {
             untypedMap(
                 entry(key(Type.STRING, "key1"), sequence(value(Type.STRING, "hello"), value(Type.INTEGER, "42"))),
@@ -1908,7 +1906,7 @@ public class RESTExternalVariableTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, (int) expectedResponse._1, resultStatusCode);
+        assertEquals((int) expectedResponse._1, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         String actual = readResponse(response.getEntity());
         actual = actual.replaceFirst("\\s*\\[source:[^\\]]*\\]</message></exception>$", "</message></exception>");  // NOTE(AR) remove any source information from the actual response
@@ -2195,7 +2193,7 @@ public class RESTExternalVariableTest {
     }
 
     private static String getServerUri() {
-        return "http://localhost:" + existWebServer.getPort() + "/rest";
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/rest";
     }
 
     private static String getResourceUri() {

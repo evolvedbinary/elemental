@@ -45,15 +45,14 @@
  */
 package org.exist.xquery.functions.xquery3;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -61,11 +60,11 @@ import static org.junit.Assert.*;
  */
 public class SwitchTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void oneCaseCaseMatch() throws XMLDBException {
+    void oneCaseCaseMatch() throws XMLDBException {
         final String query = "xquery version '3.0';"
                 + "let $animal := 'Cat' return "
                 + "switch ($animal)"
@@ -74,7 +73,7 @@ public class SwitchTest {
                 + "case 'Duck' return 'Quack'"
                 + "default return 'Odd noise!'";
 
-        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet results = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = results.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("Meow", r);
@@ -83,14 +82,14 @@ public class SwitchTest {
     }
 
     @Test
-    public void twoCaseDefault() throws XMLDBException {
+    void twoCaseDefault() throws XMLDBException {
         final String query = "xquery version '3.0';"
                 + "let $animal := 'Cat' return "
                 + "switch ($animal)"
                 + "case 'Cow' case 'Calf' return 'Moo'"
                 + "default return 'No Bull?'";
 
-        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet results = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = results.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("No Bull?", r);
@@ -99,7 +98,7 @@ public class SwitchTest {
     }
 
     @Test
-    public void twoCaseCaseMatch() throws XMLDBException {
+    void twoCaseCaseMatch() throws XMLDBException {
         final String query = "xquery version '3.0';"
                 + "let $animal := 'Calf' return "
                 + "switch ($animal)"
@@ -108,7 +107,7 @@ public class SwitchTest {
                 + "case 'Duck' return 'Quack'"
                 + "default return 'Odd noise!'";
 
-        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet results = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = results.getResource(0)) {
                 final String r = (String) resource.getContent();
                 assertEquals("Moo", r);

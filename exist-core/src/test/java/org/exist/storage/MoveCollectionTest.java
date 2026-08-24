@@ -42,25 +42,24 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MoveCollectionTest {
 
-    @Rule
-    public ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
     /**
      * Test move collection /db/a/b/c/d/e/f/g/h/i/j/k to /db/z/y/x/w/v/u/k
      */
     @Test
-    public void moveDeep() throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void moveDeep(final BrokerPool pool) throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = transact.beginTransaction()) {
@@ -95,8 +94,7 @@ public class MoveCollectionTest {
      * this test checks that the sub-collections are correctly preserved.
      */
     @Test
-    public void moveDeepWithSubCollections() throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void moveDeepWithSubCollections(final BrokerPool pool) throws EXistException, IOException, PermissionDeniedException, TriggerException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = transact.beginTransaction()) {
@@ -142,8 +140,7 @@ public class MoveCollectionTest {
      * Test rename collection /db/move-collection-test-rename/before to /db/move-collection-test-rename/after
      */
     @Test
-    public void rename() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void rename(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = transact.beginTransaction()) {
@@ -182,8 +179,7 @@ public class MoveCollectionTest {
      * this test checks that the sub-collections are correctly preserved.
      */
     @Test
-    public void renameWithSubCollections() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void renameWithSubCollections(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
         final TransactionManager transact = pool.getTransactionManager();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = transact.beginTransaction()) {

@@ -49,18 +49,18 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.concurrent.action.Action;
 import org.exist.xmldb.IndexQueryService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Abstract base class for concurrent tests.
@@ -81,12 +81,12 @@ public abstract class AbstractConcurrentTest {
 
     protected Collection testCol;
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @Before
-    public final void startupDb() throws Exception {
-        final Collection rootCol = existXmldbEmbeddedServer.getRoot();
+    @BeforeEach
+    public final void startupDb() throws XMLDBException {
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         assertNotNull(rootCol);
 
         final IndexQueryService idxConf = rootCol.getService(IndexQueryService.class);
@@ -96,11 +96,11 @@ public abstract class AbstractConcurrentTest {
         assertNotNull(testCol);
     }
 
-    @After
+    @AfterEach
     public final void tearDownDb() throws XMLDBException {
         testCol.close();
 
-        final Collection rootCol = existXmldbEmbeddedServer.getRoot();
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         DBUtils.removeCollection(rootCol, getTestCollectionName());
 
         testCol = null;

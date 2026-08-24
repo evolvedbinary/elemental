@@ -45,22 +45,21 @@
  */
 package org.exist.xquery.functions.xquery3;
 
-import static org.junit.Assert.assertEquals;
-
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
+import org.xmldb.api.base.ResourceSet;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DeclareVariableTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     @Test
-    public void defaultNamespaceTest() throws XMLDBException {
+    void defaultNamespaceTest() throws XMLDBException {
         final String query = "xquery version \"3.1\";\n"
             + "\n"
             + "    declare default element namespace \"http://www.w3.org/1999/xhtml\";\n"
@@ -70,7 +69,7 @@ public class DeclareVariableTest {
             + "\n"
             + "    $docPath";
 
-        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet results = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             try (final Resource resource = results.getResource(0)) {
                 final String r = (String) resource.getContent();
 

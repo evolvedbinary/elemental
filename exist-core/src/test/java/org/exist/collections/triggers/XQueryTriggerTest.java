@@ -45,18 +45,18 @@
  */
 package org.exist.collections.triggers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.net.URISyntaxException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.xml.transform.OutputKeys;
 
 import org.apache.commons.codec.binary.Base64;
 import org.exist.TestUtils;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.*;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -72,8 +72,8 @@ import xyz.elemental.mediatype.MediaType;
  */
 public class XQueryTriggerTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	private final static String TEST_COLLECTION = "testXQueryTrigger";
 
@@ -265,9 +265,9 @@ public class XQueryTriggerTest {
 
     /** create "log" document that will be updated by the trigger,
      * and store the XQuery module implementing the trigger under test */
-    @Before
-    public void setup() throws XMLDBException {
-        final CollectionManagementService service = existEmbeddedServer.getRoot()
+    @BeforeEach
+    void setup() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot()
                 .getService(CollectionManagementService.class);
         testCollection = service.createCollection(TEST_COLLECTION);
         assertNotNull(testCollection);
@@ -284,20 +284,20 @@ public class XQueryTriggerTest {
         }
     }
 
-    @After
-    public void cleanup() throws XMLDBException {
+    @AfterEach
+    void cleanup() throws XMLDBException {
         if (testCollection != null) {
             testCollection.close();
             testCollection = null;
         }
-        final CollectionManagementService service = existEmbeddedServer.getRoot()
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot()
                 .getService(CollectionManagementService.class);
         service.removeCollection(TEST_COLLECTION);
     }
 
     /** test a trigger fired by storing a new Document  */
     @Test
-    public void documentCreate() throws XMLDBException {
+    void documentCreate() throws XMLDBException {
         // configure the Collection with the trigger under test
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
@@ -337,7 +337,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Document Update */
     @Test
-    public void documentUpdate() throws XMLDBException {
+    void documentUpdate() throws XMLDBException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -395,7 +395,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Document Delete */
     @Test
-    public void documentDelete() throws XMLDBException {
+    void documentDelete() throws XMLDBException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -454,9 +454,9 @@ public class XQueryTriggerTest {
         }
     }
 
-	/** test a trigger fired by creating a new Binary Document  */
+    /** test a trigger fired by creating a new Binary Document  */
     @Test
-    public void documentBinaryCreate() throws XMLDBException {
+    void documentBinaryCreate() throws XMLDBException {
         // configure the Collection with the trigger under test
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
@@ -500,7 +500,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Binary Document Delete */
     @Test
-    public void documentBinaryDelete() throws XMLDBException {
+    void documentBinaryDelete() throws XMLDBException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -563,7 +563,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Collection manipulations */
     @Test
-    public void collectionCreate() throws XMLDBException {
+    void collectionCreate() throws XMLDBException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -575,7 +575,7 @@ public class XQueryTriggerTest {
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        final XPathQueryService query = existEmbeddedServer.getRoot().getService(XPathQueryService.class);
+        final XPathQueryService query = XMLDB_EMBEDDED_DATABASE.getRoot().getService(XPathQueryService.class);
 
         try (final EXistResourceSet result = (EXistResourceSet) query.query(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
@@ -601,7 +601,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Collection manipulations */
     @Test
-    public void collectionCopy() throws XMLDBException, URISyntaxException {
+    void collectionCopy() throws XMLDBException, URISyntaxException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -621,31 +621,31 @@ public class XQueryTriggerTest {
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+COPY+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+COPY+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+COPY+COLLECTION+testDstTestCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+COPY+COLLECTION+testDstTestCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(EVENTS)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(EVENTS)) {
             // TODO(AR) should be 18 results see: https://github.com/eXist-db/exist/issues/4279
             // results should contain:
             //        Execute: BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
@@ -673,7 +673,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Collection manipulations */
     @Test
-    public void collectionMove() throws XMLDBException, URISyntaxException {
+    void collectionMove() throws XMLDBException, URISyntaxException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -693,31 +693,31 @@ public class XQueryTriggerTest {
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+CREATE+COLLECTION+testDstCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+CREATE+COLLECTION+testDstCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+MOVE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+MOVE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+MOVE+COLLECTION+testDstTestCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+MOVE+COLLECTION+testDstTestCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(EVENTS)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(EVENTS)) {
             // TODO(AR) should be 18 results see: https://github.com/eXist-db/exist/issues/4279
             // results should contain:
             //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
@@ -745,7 +745,7 @@ public class XQueryTriggerTest {
 
     /** test a trigger fired by a Collection manipulations */
     @Test
-    public void collectionDelete() throws XMLDBException {
+    void collectionDelete() throws XMLDBException {
         final IndexQueryService idxConf = testCollection.getService(IndexQueryService.class);
         idxConf.configureCollection(COLLECTION_CONFIG);
 
@@ -759,23 +759,23 @@ public class XQueryTriggerTest {
         // remove the trigger for the Collection under test
         idxConf.configureCollection(EMPTY_COLLECTION_CONFIG);
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+CREATE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(BEFORE+DELETE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(BEFORE+DELETE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(AFTER+DELETE+COLLECTION+testCollectionURI)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(AFTER+DELETE+COLLECTION+testCollectionURI)) {
             assertEquals(1, result.getSize());
         }
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(EVENTS)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(EVENTS)) {
             // TODO(AR) should be 12 results see: https://github.com/eXist-db/exist/issues/4279
             // results should contain:
             //        BEFORE CREATE_COLLECTION(/db/testXQueryTrigger/test): XQueryTrigger
@@ -796,7 +796,7 @@ public class XQueryTriggerTest {
     }
 
     @Test
-    public void storeDocumentInvalidTriggerForPrepare() throws XMLDBException {
+    void storeDocumentInvalidTriggerForPrepare() throws XMLDBException {
         try (final BinaryResource invalidModule = testCollection.createResource(MODULE_NAME, BinaryResource.class )) {
             ((EXistResource)invalidModule).setMediaType(MediaType.APPLICATION_XQUERY);
             invalidModule.setContent(INVALID_MODULE.getBytes());

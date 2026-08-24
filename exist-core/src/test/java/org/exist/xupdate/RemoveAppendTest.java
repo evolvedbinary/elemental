@@ -55,16 +55,20 @@ import org.exist.TestUtils;
 
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -89,12 +93,12 @@ public class RemoveAppendTest {
     private Collection testCol;
     private final Random rand = new Random();
 
-    @Rule
-    public final ExistXmldbEmbeddedServer existXmldbEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @Ignore
+    @Disabled
     @Test
-    public void testRemoveAppend() throws Exception {
+    void removeAppend() throws XMLDBException, IOException {
         final XUpdateQueryService service = testCol.getService(XUpdateQueryService.class);
         final XPathQueryService query = testCol.getService(XPathQueryService.class);
         for (int i = 1; i < 1000; i++) {
@@ -103,23 +107,23 @@ public class RemoveAppendTest {
             remove(service, which);
             
             try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/item[@id='" + which + "']")) {
-                assertEquals(result.getSize(), 1);
+                assertEquals(1, result.getSize());
                 try (final Resource resource = result.getResource(0)) {
                     resource.getContent();
                 }
             }
         }
     }
-    
+
     @Test
-    public void appendRemove() throws XMLDBException, IOException {
+    void appendRemove() throws XMLDBException, IOException {
         final XUpdateQueryService service = testCol.getService(XUpdateQueryService.class);
         final XPathQueryService query = testCol.getService(XPathQueryService.class);
         for (int i = 1; i <= 100; i++) {
             append(service, i);
 
             try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/item[@id='" + i + "']")) {
-                assertEquals(result.getSize(), 1);
+                assertEquals(1, result.getSize());
             }
         }
         
@@ -129,7 +133,7 @@ public class RemoveAppendTest {
                 "   <xu:remove select=\"/test/item[@id='" + i + "']\"/>" +
                 "</xu:modifications>";
             long mods = service.update(xu);
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
 
             try (final EXistResourceSet result = (EXistResourceSet) query.query("/test/item/e0")) {
                 // needed to ensure that result is closed
@@ -145,7 +149,7 @@ public class RemoveAppendTest {
             out.write("</xu:append>");
             out.write("</xu:modifications>");
             final long mods = service.update(out.toString());
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
         }
     }
     
@@ -159,7 +163,7 @@ public class RemoveAppendTest {
             out.write("</xu:insert-before>");
             out.write("</xu:modifications>");
             long mods = service.update(out.toString());
-            assertEquals(mods, 1);
+            assertEquals(1, mods);
         }
     }
     
@@ -171,12 +175,12 @@ public class RemoveAppendTest {
             "</xu:modifications>";
 
         long mods = service.update(XU_REMOVE);
-        assertEquals(mods, 1);
+        assertEquals(1, mods);
     }
-    
-    @Before
-    public void setUp() throws Exception {
-        rootCol = existXmldbEmbeddedServer.getRoot();
+
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        rootCol = XMLDB_EMBEDDED_DATABASE.getRoot();
         
         testCol = rootCol.getChildCollection(XmldbURI.ROOT_COLLECTION + "/test");
         if (testCol != null) {
@@ -190,8 +194,8 @@ public class RemoveAppendTest {
         DBUtils.addXMLResource(testCol, "test.xml", "<test/>");
     }
     
-    @After
-    public void tearDown() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException, XMLDBException {
+    @AfterEach
+    void tearDown() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException, XMLDBException {
         testCol.close();
 
         TestUtils.cleanupDB();

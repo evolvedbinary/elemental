@@ -54,31 +54,29 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
-import org.exist.xquery.XPathException;
 import org.exist.xquery.value.*;
 import org.exist.collections.Collection;
 import org.exist.xmldb.XmldbURI;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NodeProxy;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.runner.RunWith;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
-import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Optional;
@@ -95,7 +93,7 @@ import java.util.Properties;
  * @author Cherif YAYA
  *
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class MarshallerTest {
 
     private static XmldbURI TEST_COLLECTION_URI = XmldbURI.ROOT_COLLECTION_URI.append("xqjmarhallertest");
@@ -107,12 +105,11 @@ public class MarshallerTest {
             "       <p ns1:attr=\"a\" rend=\"bold\">Some <hi>text</hi>.</p>" +
             "   </div>" +
             "</test>";
-    
-    
-    
+
+
     @Test
-    public void atomicValues() throws EXistException, XPathException, SAXException, XMLStreamException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void atomicValues() throws EXistException, XPathException, SAXException, XMLStreamException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             ValueSequence values = new ValueSequence(3);
             values.add(new StringValue("foo"));
@@ -127,20 +124,19 @@ public class MarshallerTest {
                 String serialized = writer.toString();
 
                 Sequence seq = Marshaller.demarshall(new StringReader(serialized));
-                assertEquals(seq.itemAt(0).getStringValue(), "foo");
-                assertEquals(seq.itemAt(1).getStringValue(), "2000");
-                assertEquals(seq.itemAt(2).getStringValue(), "1000");
-                assertEquals(seq.itemAt(3).getStringValue(), "false");
-                assertEquals(seq.itemAt(4).getStringValue(), "1000.1");
+                assertEquals("foo", seq.itemAt(0).getStringValue());
+                assertEquals("2000", seq.itemAt(1).getStringValue());
+                assertEquals("1000", seq.itemAt(2).getStringValue());
+                assertEquals("false", seq.itemAt(3).getStringValue());
+                assertEquals("1000.1", seq.itemAt(4).getStringValue());
             }
         }
     }
-    
-    
+
 
     @Test
-    public void nodes() throws EXistException, PermissionDeniedException, SAXException, XPathException, XMLStreamException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void nodes() throws EXistException, PermissionDeniedException, SAXException, XPathException, XMLStreamException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             DocumentImpl doc = (DocumentImpl) broker.getXMLResource(TEST_COLLECTION_URI.append("test.xml"));
             NodeProxy p = new NodeProxy(null, doc, pool.getNodeFactory().createFromString("1.1"));
@@ -162,9 +158,9 @@ public class MarshallerTest {
             }
         }
     }
-    
+
     @Test
-    public void streamToNodeTest() throws XMLStreamException {
+    void streamToNodeTest() throws XMLStreamException {
         Node n = Marshaller.streamToNode(TEST_DOC);
         try (final StringBuilderWriter writer = new StringBuilderWriter()) {
 //            SAXSerializer serializer = 
@@ -175,12 +171,12 @@ public class MarshallerTest {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @BeforeClass
-    public static void startDB() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void startDB() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, SAXException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction()) {
@@ -195,9 +191,9 @@ public class MarshallerTest {
         }
     }
 
-    @AfterClass
-    public static void shutdown() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterAll
+    static void shutdown() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction()) {

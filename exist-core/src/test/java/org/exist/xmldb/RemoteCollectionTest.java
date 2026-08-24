@@ -47,9 +47,9 @@ package org.exist.xmldb;
 
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.xquery.util.URIUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -73,7 +73,6 @@ import xyz.elemental.mediatype.MediaType;
 
 import javax.xml.transform.Source;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,7 +83,7 @@ import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.xmldb.api.base.ResourceType.BINARY_RESOURCE;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
@@ -93,23 +92,23 @@ import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
  * @author <a href="mailto:pierrick.brihaye@free.fr">jmv
  * @author Pierrick Brihaye</a>
  */
-public class RemoteCollectionTest extends RemoteDBTest {
+class RemoteCollectionTest extends RemoteDBTest {
 
     private final static String XML_CONTENT = "<xml/>";
     private final static String BINARY_CONTENT = "TEXT";
 
-    @Before
-    public void setUp() throws ClassNotFoundException, InstantiationException, XMLDBException, IllegalAccessException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, InstantiationException, XMLDBException, IllegalAccessException {
         setUpRemoteDatabase();
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         removeCollection();
     }
 
     @Test
-    public void getServices() throws XMLDBException {
+    void getServices() throws XMLDBException {
         final List<Class<? extends Service>> expectedServiceTypes = Arrays.asList(CollectionManagementService.class,
                 DatabaseInstanceManager.class, EXistCollectionManagementService.class, EXistRestoreService.class,
                 EXistUserManagementService.class, IndexQueryService.class, UserManagementService.class,
@@ -124,18 +123,18 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
     @Test
-    public void isRemoteCollection() throws XMLDBException {
+    void isRemoteCollection() throws XMLDBException {
         final RemoteCollection collection = getCollection();
         assertTrue(collection.isRemoteCollection());
     }
 
     @Test
-    public void getPath() throws XMLDBException {
+    void getPath() throws XMLDBException {
         assertEquals(XmldbURI.ROOT_COLLECTION + "/" + getTestCollectionName(), URIUtils.urlDecodeUtf8(getCollection().getPath()));
     }
 
     @Test
-    public void createXmlResourceFromString() throws XMLDBException {
+    void createXmlResourceFromString() throws XMLDBException {
         final Collection collection = getCollection();
 
         final String resourceName = "testresource.xml";
@@ -151,7 +150,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
         try (final Resource retrievedResource = collection.getResource(resourceName)) {
             assertNotNull(retrievedResource);
             assertEquals(XML_RESOURCE, retrievedResource.getResourceType());
-            assertTrue(retrievedResource instanceof XMLResource);
+            assertInstanceOf(XMLResource.class, retrievedResource);
             final String result = (String) retrievedResource.getContent();
             assertNotNull(result);
 
@@ -163,12 +162,12 @@ public class RemoteCollectionTest extends RemoteDBTest {
                 .checkForSimilar()
                 .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences, diff.toString());
         }
     }
 
     @Test
-    public void createBinaryResourceFromString() throws XMLDBException {
+    void createBinaryResourceFromString() throws XMLDBException {
         final Collection collection = getCollection();
 
         final String resourceName = "testresource.bin";
@@ -184,15 +183,15 @@ public class RemoteCollectionTest extends RemoteDBTest {
         try (final Resource retrievedResource = collection.getResource(resourceName)) {
             assertNotNull(retrievedResource);
             assertEquals(BINARY_RESOURCE, retrievedResource.getResourceType());
-            assertTrue(retrievedResource instanceof BinaryResource);
+            assertInstanceOf(BinaryResource.class, retrievedResource);
             final byte[] result = (byte[]) retrievedResource.getContent();
             assertNotNull(result);
             assertEquals(bin, new String(result, UTF_8));
         }
 	}
 
-	@Test
-    public void createEmptyBinaryResource() throws XMLDBException, IOException {
+    @Test
+    void createEmptyBinaryResource() throws XMLDBException, IOException {
         final Collection collection = getCollection();
 
         final String resourceName = "empty.dtd";
@@ -214,7 +213,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
         try (final Resource retrievedResource = collection.getResource(resourceName)) {
             assertNotNull(retrievedResource);
             assertEquals(BINARY_RESOURCE, retrievedResource.getResourceType());
-            assertTrue(retrievedResource instanceof BinaryResource);
+            assertInstanceOf(BinaryResource.class, retrievedResource);
             final byte[] result = (byte[]) retrievedResource.getContent();
             assertNotNull(result);
             assertArrayEquals(bin, result);
@@ -222,8 +221,9 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
 
-    @Test /* issue 1874 */
-    public void createXMLFileResource() throws XMLDBException, IOException {
+    /* issue 1874 */
+    @Test
+    void createXMLFileResource() throws XMLDBException, IOException {
         final Collection collection = getCollection();
         try (final Resource resource = collection.createResource("testresource", XMLResource.class)) {
             assertNotNull(resource);
@@ -244,7 +244,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
     @Test
-	public void getNonExistentResource() throws XMLDBException {
+    void getNonExistentResource() throws XMLDBException {
         final Collection collection = getCollection();
         try (final Resource resource = collection.getResource("unknown.xml")) {
             assertNull(resource);
@@ -252,7 +252,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
 	}
 
     @Test
-	public void listResources() throws XMLDBException {
+    void listResources() throws XMLDBException {
         final List<String> xmlNames = new ArrayList<>();
         xmlNames.add("xml1");
         xmlNames.add("xml2");
@@ -272,12 +272,12 @@ public class RemoteCollectionTest extends RemoteDBTest {
         assertEquals(0, binaryNames.size());
 	}
 
-	/**
-	 * Trying to access a collection where the parent collection does
-	 * not exist caused NullPointerException on DatabaseManager.getCollection() method.
-	 */
+    /**
+     * Trying to access a collection where the parent collection does
+     * not exist caused NullPointerException on DatabaseManager.getCollection() method.
+     */
     @Test
-	public void parent() throws XMLDBException {
+    void parent() throws XMLDBException {
         final String parentName;
         try (final Collection c = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
             assertNull(c.getChildCollection("b"));
@@ -297,7 +297,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
 	}
 
 	@Test  /* issue 2743 */
-    public void getLoadRemoteResourceContentBiggerThan16MB() throws XMLDBException, SAXException, IOException {
+    void getLoadRemoteResourceContentBiggerThan16MB() throws XMLDBException, SAXException, IOException {
         Collection collection = getCollection();
         try (final RemoteXMLResource resource = (RemoteXMLResource)collection.createResource("testresource", XMLResource.class)) {
             prepareContent(resource);
@@ -312,7 +312,7 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
     @Test
-    public void isOpen() throws XMLDBException {
+    void isOpen() throws XMLDBException {
         Collection collection = getCollection();
         assertTrue(collection.isOpen());
         collection.close();
@@ -320,32 +320,32 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
     @Test
-    public void getChildCollectionCount() throws XMLDBException {
+    void getChildCollectionCount() throws XMLDBException {
         assertEquals(0, getCollection().getChildCollectionCount());
     }
 
     @Test
-    public void getPropertyWithDefault() throws XMLDBException {
+    void getPropertyWithDefault() throws XMLDBException {
         assertEquals("theDefault", getCollection().getProperty("myProperty", "theDefault"));
     }
 
     @Test
-    public void hasService(){
+    void hasService(){
         assertTrue(getCollection().hasService(XPathQueryService.class));
     }
 
     @Test
-    public void findService(){
+    void findService(){
         assertNotNull(getCollection().findService(XPathQueryService.class).get());
     }
 
     @Test
-    public void getService() throws XMLDBException {
+    void getService() throws XMLDBException {
         assertNotNull(getCollection().getService(XPathQueryService.class));
     }
 
     @Test
-    public void registerProvders() {
+    void registerProvders() {
         RemoteCollection remoteCollection = getCollection();
         final ServiceProviderCache.ProviderRegistry registry = createMock(ServiceProviderCache.ProviderRegistry.class);
 
@@ -366,24 +366,24 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
     @Test
-    public void listChildCollections() throws XMLDBException {
+    void listChildCollections() throws XMLDBException {
         assertTrue(getCollection().listChildCollections().isEmpty());
     }
 
     @Test
-    public void getChildCollections() throws XMLDBException {
+    void getChildCollections() throws XMLDBException {
         final RemoteCollection remoteCollection = getCollection();
         assertArrayEquals(new Collection[0], remoteCollection.getChildCollections());
     }
 
     @Test
-    public void getResources() throws XMLDBException {
+    void getResources() throws XMLDBException {
         final RemoteCollection remoteCollection = getCollection();
         assertArrayEquals(new org.exist.Resource[0], remoteCollection.getResources());
     }
 
     @Test
-    public void getCreationTime() throws XMLDBException {
+    void getCreationTime() throws XMLDBException {
         assertNotNull(getCollection().getCreationTime());
     }
 

@@ -45,20 +45,19 @@
  */
 package org.exist.xquery.update;
 
-import org.junit.Test;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 /**
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-public class UpdateInsertTest extends AbstractUpdateTest {
+class UpdateInsertTest extends AbstractUpdateTest {
 
     private static final String EOL = System.getProperty("line.separator");
 
     @Test
-    public void insertNamespacedAttribute() throws XMLDBException {
+    void insertNamespacedAttribute() throws XMLDBException {
         final String docName = "pathNs2.xml";
         storeXMLString(docName, "<test/>");
 
@@ -78,7 +77,7 @@ public class UpdateInsertTest extends AbstractUpdateTest {
     }
 
     @Test
-    public void insertPrecedingAttribute() throws XMLDBException {
+    void insertPrecedingAttribute() throws XMLDBException {
         final String tempId = "tmp-1512257166656";
         final String doc =
         "<annotation-list>" + EOL +
@@ -107,7 +106,7 @@ public class UpdateInsertTest extends AbstractUpdateTest {
     }
 
     @Test
-    public void insertInMemoryDocument() throws XMLDBException {
+    void insertInMemoryDocument() throws XMLDBException {
         final String doc = "<empty/>";
 
         final String docName = "empty.xml";

@@ -46,13 +46,13 @@
 package org.exist.xquery;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -61,14 +61,14 @@ import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 import xyz.elemental.mediatype.MediaType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
 public class VariablesTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String MODULE =
             "module namespace mod1 = \"http://mod1\";\n" +
@@ -90,19 +90,19 @@ public class VariablesTest {
             "  ))\n" +
             "};";
 
-    @BeforeClass
-    public static void setup() throws XMLDBException {
+    @BeforeAll
+    static void setup() throws XMLDBException {
         final Collection c = createCollection("variables-test");
         writeModule(c, "mod1.xqm", MODULE);
     }
 
     @Test
-    public void callModule() throws XMLDBException {
+    void callModule() throws XMLDBException {
         final String query =
                 "import module namespace mod1 = \"http://mod1\" at \"xmldb:exist:///db/variables-test/mod1.xqm\";\n" +
                 "$mod1:PUBLICATIONS(\"open-graph\")";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals(XML_RESOURCE, resource.getResourceType());
@@ -111,8 +111,8 @@ public class VariablesTest {
     }
 
     private static Collection createCollection(final String collectionName) throws XMLDBException {
-        Collection collection = existEmbeddedServer.getRoot().getChildCollection(collectionName);
-        final CollectionManagementService cmService = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        Collection collection = XMLDB_EMBEDDED_DATABASE.getRoot().getChildCollection(collectionName);
+        final CollectionManagementService cmService = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         if (collection == null) {
             //cmService.removeCollection(collectionName);
             try (final Collection created = cmService.createCollection(collectionName)) { }

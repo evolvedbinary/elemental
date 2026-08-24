@@ -46,10 +46,8 @@
 package org.exist.xmldb;
 
 import org.exist.security.Permission;
-import org.exist.security.PermissionDeniedException;
-import org.exist.util.SyntaxException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
@@ -58,23 +56,23 @@ import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** A test case for accessing user management service remotely ? 
  * @author <a href="mailto:pierrick.brihaye@free.fr">Sebastian Bossung, Technische Universitaet Hamburg-Harburg
  * @author Pierrick Brihaye</a>
  */
-public class RemoteDatabaseImplTest extends RemoteDBTest {
+class RemoteDatabaseImplTest extends RemoteDBTest {
 
     protected final static String ADMIN_COLLECTION_NAME = "admin-collection";
 
-    @Before
-	public void setUp() throws ClassNotFoundException, InstantiationException, XMLDBException, IllegalAccessException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, InstantiationException, XMLDBException, IllegalAccessException {
         setUpRemoteDatabase();
-	}    
+	}
 
     @Test
-    public void testGetCollection() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, SyntaxException, PermissionDeniedException {
+    void testGetCollection() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, SyntaxException, PermissionDeniedException {
         Class<?> cl = Class.forName(DB_DRIVER);
         Database database = (Database) cl.newInstance();
         DatabaseManager.registerDatabase(database);

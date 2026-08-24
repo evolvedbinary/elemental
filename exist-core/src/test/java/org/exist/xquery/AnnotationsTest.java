@@ -49,15 +49,15 @@ import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -69,25 +69,25 @@ import java.io.IOException;
 
 public class AnnotationsTest {
 
-    @ClassRule
-    public final static ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public final static XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @BeforeClass
-    public static void setUp() throws XMLDBException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeAll
+    static void setUp() throws XMLDBException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+        CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = service.createCollection("test")) {
             assertNotNull(testCollection);
         }
     }
 
-    @AfterClass
-    public static void tearDown() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterAll
+    static void tearDown() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         // testCollection.removeResource( testCollection .getResource(file_name));
         TestUtils.cleanupDB();
     }
-    
+
     @Test
-    public void annotation() throws XMLDBException {
+    void annotation() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -108,9 +108,9 @@ public class AnnotationsTest {
             }
         }
     }
-    
+
     @Test
-    public void annotationWithLiterals() throws XMLDBException {
+    void annotationWithLiterals() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -132,7 +132,7 @@ public class AnnotationsTest {
         }
     }
     
-    @Test(expected = XMLDBException.class)
+    @Test
     public void annotationInXMLNamespaceFails() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
@@ -146,13 +146,15 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	});
     }
     
-    @Test(expected = XMLDBException.class)
-    public void annotationInXMLSchemaNamespaceFails() throws XMLDBException {
+    @Test
+    void annotationInXMLSchemaNamespaceFails() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -165,13 +167,15 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	};
     }
     
-    @Test(expected = XMLDBException.class)
-    public void annotationInXMLSchemaInstanceNamespaceFails() throws XMLDBException {
+    @Test
+    void annotationInXMLSchemaInstanceNamespaceFails() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -184,13 +188,15 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	})
     }
     
-    @Test(expected = XMLDBException.class)
-    public void annotationInXPathFunctionsNamespaceFails() throws XMLDBException {
+    @Test
+    void annotationInXPathFunctionsNamespaceFails() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -203,13 +209,15 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	});
     }
     
-    @Test(expected = XMLDBException.class)
-    public void annotationInXPathFunctionsMathNamespaceFails() throws XMLDBException {
+    @Test
+    void annotationInXPathFunctionsMathNamespaceFails() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -222,13 +230,15 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	});
     }
     
-    @Test(expected = XMLDBException.class)
-    public void annotationInXQueryOptionsNamespaceFails() throws XMLDBException {
+    @Test
+    void annotationInXQueryOptionsNamespaceFails() throws XMLDBException {
         final String TEST_VALUE_CONSTANT = "hello world";
         
         final String query = 
@@ -241,9 +251,11 @@ public class AnnotationsTest {
                 + "local:hello()";
             
         final XPathQueryService service = getQueryService();
-        try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
-            // needed to ensure that result is closed
-        }
+        assertThrows(XMLDBException.class, () ->
+		try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+		    // needed to ensure that result is closed
+		}
+	});
     }
    
     private XPathQueryService getQueryService() throws XMLDBException {

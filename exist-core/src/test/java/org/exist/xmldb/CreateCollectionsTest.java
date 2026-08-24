@@ -47,7 +47,6 @@ package org.exist.xmldb;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,17 +56,15 @@ import java.util.Collections;
 import java.util.List;
 
 import org.exist.security.Account;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.io.InputStreamUtil;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.TestUtils.*;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 
 import org.xmldb.api.DatabaseManager;
@@ -79,15 +76,15 @@ import org.xmldb.api.modules.*;
 
 public class CreateCollectionsTest  {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testCreateCollection";
 
-    @Before
-    public void setUp() throws XMLDBException {
+    @BeforeEach
+    void setUp() throws XMLDBException {
         //create a test collection
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection test = cms.createCollection(TEST_COLLECTION)) {
             final UserManagementService ums = test.getService(UserManagementService.class);
             // change ownership to guest
@@ -97,22 +94,22 @@ public class CreateCollectionsTest  {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
-        final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION);
     }
 
     @Test
     public void rootCollectionHasNoParent() throws XMLDBException {
         try (final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, ADMIN_DB_USER, ADMIN_DB_PWD)) {
-            assertNull("root collection has no parent", root.getParentCollection());
+            assertNull(oot.getParentCollection(), "root collection has no parent");
         }
     }
 
     @Test
-    public void collectionMustProvideAtLeastOneService() throws XMLDBException {
+    void collectionMustProvideAtLeastOneService() throws XMLDBException {
         try (final Collection colTest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final List<Class<? extends Service>> expectedServiceTypes = Arrays.asList(CollectionManagementService.class,
                     DatabaseInstanceManager.class, EXistCollectionManagementService.class, EXistRestoreService.class,
@@ -126,20 +123,20 @@ public class CreateCollectionsTest  {
     }
 
     @Test
-    public void createCollection_hasNoSubCollections_andIsOpen() throws XMLDBException {
+    void createCollection_hasNoSubCollections_andIsOpen() throws XMLDBException {
         try (final Collection colTest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final CollectionManagementService service = colTest.getService(CollectionManagementService.class);
             try (final Collection testCollection = service.createCollection("test")) {
                 assertNotNull(testCollection);
 
                 assertEquals("Created Collection has zero child collections", 0, testCollection.getChildCollectionCount());
-                assertTrue("Created Collection state should be Open after creation", testCollection.isOpen());
+                assertTrue(testCollection.isOpen(), "Created Collection state should be Open after creation");
             }
         }
     }
 
     @Test
-    public void storeSamplesShakespeare() throws XMLDBException, IOException, URISyntaxException {
+    void storeSamplesShakespeare() throws XMLDBException, IOException, URISyntaxException {
         try (final Collection colTest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final CollectionManagementService service = colTest.getService(CollectionManagementService.class);
             try (final Collection testCollection = service.createCollection("test")) {
@@ -172,7 +169,7 @@ public class CreateCollectionsTest  {
     }
 
     @Test
-    public void storeRemoveStoreResource() throws XMLDBException, IOException, URISyntaxException {
+    void storeRemoveStoreResource() throws XMLDBException, IOException, URISyntaxException {
         try (final Collection colTest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final CollectionManagementService service = colTest.getService(CollectionManagementService.class);
             try (final Collection testCollection = service.createCollection("test")) {
@@ -185,7 +182,7 @@ public class CreateCollectionsTest  {
                 }
                 final int resourceCount;
                 try (final Resource resMacbeth = testCollection.getResource(testFile)) {
-                    assertNotNull("getResource(" + testFile + "\")", resMacbeth);
+                    assertNotNull(resMacbeth, "getResource(" + testFile + "\"));
 
                     resourceCount = testCollection.getResourceCount();
 
@@ -209,7 +206,7 @@ public class CreateCollectionsTest  {
     }
 
     @Test
-    public void storeBinaryResource() throws XMLDBException, IOException, URISyntaxException {
+    void storeBinaryResource() throws XMLDBException, IOException, URISyntaxException {
         try (Collection colTest = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             CollectionManagementService service = colTest.getService(CollectionManagementService.class);
             try (Collection testCollection = service.createCollection("test")) {
@@ -221,7 +218,7 @@ public class CreateCollectionsTest  {
                 try (final Resource storedLogo = testCollection.getResource("logo.png")) {
                     Object content = storedLogo.getContent();
                     byte[] dataStored = (byte[])content;
-                    assertArrayEquals("After storing binary resource, data out==data in", data, dataStored);
+                    assertArrayEquals(data, dataStored, "After storing binary resource, data out==data in");
                 }
             }
         }
@@ -229,7 +226,7 @@ public class CreateCollectionsTest  {
 
     private XMLResource storeResourceFromFile(final InputStream is, final Collection testCollection, final String fileName) throws XMLDBException, IOException {
         final XMLResource res = testCollection.createResource(fileName, XMLResource.class);
-        assertNotNull("storeResourceFromFile", res);
+        assertNotNull(res, "storeResourceFromFile");
         res.setContent(InputStreamUtil.readString(is, UTF_8));
         testCollection.storeResource(res);
         return res;
@@ -237,7 +234,7 @@ public class CreateCollectionsTest  {
 
     private byte[] storeBinaryResourceFromFile(Path file, Collection testCollection) throws XMLDBException, IOException {
         try (final Resource res = testCollection.createResource(file.getFileName().toString(), BinaryResource.class)) {
-            assertNotNull("store binary Resource From File", res);
+            assertNotNull(res, "store binary Resource From File");
             // Get an array of bytes from the file:
             final byte[] data = Files.readAllBytes(file);
             res.setContent(data);
@@ -247,7 +244,7 @@ public class CreateCollectionsTest  {
     }
 
     @Test
-    public void testMultipleCreates() throws XMLDBException {
+    void multipleCreates() throws XMLDBException {
 
         try (final Collection testCol = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             CollectionManagementService cms = testCol.getService(CollectionManagementService.class);

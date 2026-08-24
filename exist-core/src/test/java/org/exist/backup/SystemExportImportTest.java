@@ -46,20 +46,19 @@
 package org.exist.backup;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
 import org.exist.EXistException;
@@ -81,53 +80,31 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
 
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.FileUtils;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.xml.sax.SAXException;
-import org.xmldb.api.base.XMLDBException;
 import xyz.elemental.mediatype.MediaType;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-@RunWith(Parameterized.class)
 public class SystemExportImportTest {
 
-    @Parameters(name = "{0} zip:{2}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-                {"direct", true, false},
-                {"non-direct", false, false},
-                {"direct", true, true},
-                {"non-direct", false, true}
-        });
-    }
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
-    @Parameter
-    public String apiName;
-
-    @Parameter(value = 1)
-    public boolean direct;
-
-    @Parameter(value = 2)
-    public boolean zip;
-
-    @ClassRule
-    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static String COLLECTION_CONFIG =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
@@ -156,10 +133,15 @@ public class SystemExportImportTest {
 
     private static String BINARY = "test";
 
-    @Test
-    public void exportImport() throws EXistException, IOException, PermissionDeniedException, SAXException, ParserConfigurationException, AuthenticationException, URISyntaxException, XMLDBException {
+    @CsvSource({
+        "direct, true, false",
+        "non-direct, false, false",
+        "direct, true, true",
+        "non-direct, false, true"
+    })
+    @ParameterizedTest(name = "{0} zip:{2}")
+    public void exportImport(final BrokerPool pool, final String apiName, final boolean direct, final boolean zip) throws EXistException, IOException, PermissionDeniedException, SAXException, AuthenticationException {
         Path file;
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -167,13 +149,13 @@ public class SystemExportImportTest {
             assertNotNull(test);
 
             final SystemExport sysexport = new SystemExport(broker, transaction, null, null, direct);
-            final String backupDir = temporaryFolder.newFolder().getAbsolutePath();
+            final String backupDir = Files.createDirectory(TEMPORARY_FOLDER.toPath().resolve("SystemExportImportTest-exportImport-" + apiName + "-" + direct + "-" + zip)).toAbsolutePath().toString();
             file = sysexport.export(backupDir, false, zip, null);
 
             transaction.commit();
         }
 
-        clean();
+        clean(pool);
 
         final SystemImport restore = new SystemImport(pool);
         final RestoreListener listener = new LogRestoreListener();
@@ -195,7 +177,7 @@ public class SystemExportImportTest {
             assertEquals(XML3_PROPER, serializer(broker, doc));
 
             doc = getDoc(broker, test, doc11uri.lastSegment());
-            assertTrue(doc instanceof BinaryDocument);
+            assertInstanceOf(BinaryDocument.class, doc);
             try (final InputStream is = broker.getBinaryResource(transaction, ((BinaryDocument)doc))) {
                 assertEquals(BINARY, InputStreamUtil.readString(is, UTF_8));
             }
@@ -292,8 +274,7 @@ public class SystemExportImportTest {
         }
 	}
 
-    private void clean() throws PermissionDeniedException, IOException, TriggerException, EXistException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private void clean(final BrokerPool pool) throws PermissionDeniedException, IOException, TriggerException, EXistException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -306,10 +287,8 @@ public class SystemExportImportTest {
         }
     }
 
-	@BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
-
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

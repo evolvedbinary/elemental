@@ -46,31 +46,26 @@
 package org.exist.util;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import org.exist.EXistException;
 import org.exist.collections.*;
 import org.exist.dom.persistent.LockedDocument;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Rule;
-import org.junit.Test;
-import org.xml.sax.SAXException;
+import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
 
-import javax.xml.transform.TransformerException;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests around security exploits of the {@link org.xml.sax.XMLReader}
@@ -88,17 +83,17 @@ public class XMLReaderSecurityTest extends AbstractXMLReaderSecurityTest {
         secureConfigProperties.put(XMLReaderPool.XmlParser.XML_PARSER_FEATURES_PROPERTY, secureProperties);
     }
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(secureConfigProperties, true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(secureConfigProperties, true, true);
 
     @Override
-    protected ExistEmbeddedServer getExistEmbeddedServer() {
-        return existEmbeddedServer;
+    protected EmbeddedDatabaseExtension getEmbeddedDatabaseExtension() {
+        return embeddedDatabase;
     }
 
     @Test
-    public void cannotExpandExternalEntitiesWhenDisabled() throws EXistException, IOException, PermissionDeniedException, LockException, SAXException, TransformerException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    void cannotExpandExternalEntitiesWhenDisabled() throws EXistException, IOException, PermissionDeniedException, LockException, SAXException, TransformerException {
+        final BrokerPool brokerPool = embeddedDatabase.getBrokerPool();
 
         // create a temporary file on disk that contains secret info
         final Tuple2<String, Path> secret = createTempSecretFile();

@@ -50,7 +50,7 @@ import java.util.Arrays;
 import org.exist.TestUtils;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.EXistCollectionManagementService;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
@@ -58,7 +58,7 @@ import org.exist.xmldb.UserManagementService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,8 +81,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class XMLDBSecurityTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
     private static final String PORT_PLACEHOLDER = "${PORT}";
 
     @Parameters(name = "{0}")
@@ -100,7 +100,7 @@ public class XMLDBSecurityTest {
     public String baseUri;
 
     private final String getBaseUri() {
-        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
+        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(DATABASE_WEB_SERVER.getPort()));
     }
 
     @Test(expected=XMLDBException.class) // fails since guest has no write permissions

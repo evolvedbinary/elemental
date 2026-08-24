@@ -29,29 +29,30 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.net.URISyntaxException;
 import java.util.Optional;
 
-import static org.junit.Assert.assertNotNull;
-
 public class OpenCollectionTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, false);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, false);
 
     private static XmldbURI TEST_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("testCollection");
 
-    @BeforeClass
-    public static void init() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void init(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             broker.getOrCreateCollection(transaction, TEST_COLLECTION);
@@ -67,20 +68,19 @@ public class OpenCollectionTest {
      * Test opening a collection using a full XmldbURI including scheme.
      */
     @Test
-    public void loadFullXmldbURI() throws PermissionDeniedException, IOException, EXistException, URISyntaxException, DatabaseConfigurationException {
-        loadCollection(XmldbURI.xmldbUriFor("xmldb:exist:///db/testCollection"));
+    void loadFullXmldbURI(final BrokerPool pool) throws PermissionDeniedException, IOException, EXistException, URISyntaxException, DatabaseConfigurationException {
+        loadCollection(pool, XmldbURI.xmldbUriFor("xmldb:exist:///db/testCollection"));
     }
 
     @Test
-    public void loadRelativeXmldbURI() throws PermissionDeniedException, IOException, EXistException, URISyntaxException, DatabaseConfigurationException {
-        loadCollection(XmldbURI.xmldbUriFor("testCollection"));
+    void loadRelativeXmldbURI(final BrokerPool pool) throws PermissionDeniedException, IOException, EXistException, URISyntaxException, DatabaseConfigurationException {
+        loadCollection(pool, XmldbURI.xmldbUriFor("testCollection"));
     }
 
-    private void loadCollection(XmldbURI uri) throws DatabaseConfigurationException, IOException, EXistException, PermissionDeniedException {
+    private void loadCollection(final BrokerPool pool, final XmldbURI uri) throws DatabaseConfigurationException, IOException, EXistException, PermissionDeniedException {
         // Restart database, otherwise collection would be read from cache
-        existEmbeddedServer.restart();
+        EMBEDDED_DATABASE.restart();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             try (final Collection col = broker.openCollection(uri, Lock.LockMode.READ_LOCK)) {
                 assertNotNull(col);

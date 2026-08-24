@@ -53,16 +53,17 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.exist.Namespaces;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.xmlunit.matchers.CompareMatcher;
 
@@ -80,18 +81,18 @@ import java.util.List;
  */
 public class XIncludeSerializerTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, true, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, true, true, true);
 
     private final static XmldbURI XINCLUDE_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("xinclude_test");
     private final static XmldbURI XINCLUDE_NESTED_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("xinclude_test/data");
 
     private final static String getXmlRpcApi() {
-        return "http://127.0.0.1:" + existWebServer.getPort() + "/xmlrpc";
+        return "http://127.0.0.1:" + DATABASE_WEB_SERVER.getPort() + "/xmlrpc";
     }
 
     private final static String getRestUri()  {
-        return "http://admin:admin@127.0.0.1:" + existWebServer.getPort() + "/db/xinclude_test";
+        return "http://admin:admin@127.0.0.1:" + DATABASE_WEB_SERVER.getPort() + "/db/xinclude_test";
     }
 
     private final static String XML_DATA1
@@ -175,7 +176,7 @@ public class XIncludeSerializerTest {
             + "</test>";
 
     @Test
-    public void absSimpleREST() throws IOException {
+    void absSimpleREST() throws IOException {
         // path needs to indicate indent and wrap is off
         final String uri = getRestUri() + "/test_simple.xml?_indent=no&_wrap=no";
 
@@ -190,7 +191,7 @@ public class XIncludeSerializerTest {
     }
 
     @Test
-    public void relSimpleREST1() throws IOException {
+    void relSimpleREST1() throws IOException {
         final String uri = getRestUri() + "/test_relative1.xml?_indent=no&_wrap=no";
 
         final HttpResponse response = Executor.newInstance()
@@ -204,7 +205,7 @@ public class XIncludeSerializerTest {
     }
 
     @Test
-    public void relSimpleREST2() throws IOException {
+    void relSimpleREST2() throws IOException {
         // path needs to indicate indent and wrap is off
         final String uri = getRestUri() + "/test_relative2.xml?_indent=no&_wrap=no";
 
@@ -219,7 +220,7 @@ public class XIncludeSerializerTest {
     }
 
     @Test
-    public void xpointerREST3() throws IOException {
+    void xpointerREST3() throws IOException {
         final String uri = getRestUri() + "/test_xpointer1.xml?_indent=no&_wrap=no";
 
         final HttpResponse response = Executor.newInstance()
@@ -233,7 +234,7 @@ public class XIncludeSerializerTest {
     }
 
     @Test
-    public void xpointerREST4() throws IOException {
+    void xpointerREST4() throws IOException {
         final String uri = getRestUri() + "/test_xpointer2.xml?_indent=no&_wrap=no";
 
         final HttpResponse response = Executor.newInstance()
@@ -247,7 +248,7 @@ public class XIncludeSerializerTest {
     }
 
     @Test
-    public void fallback1() throws IOException {
+    void fallback1() throws IOException {
         final String uri = getRestUri() + "/test_fallback1.xml?_indent=no&_wrap=no";
 
         final HttpResponse response = Executor.newInstance()
@@ -261,7 +262,7 @@ public class XIncludeSerializerTest {
     }
 
     @Test
-    public void fallback2() throws IOException {
+    void fallback2() throws IOException {
         final String uri = getRestUri() + "/test_fallback2.xml?_indent=no&_wrap=no";
 
         final HttpResponse response = Executor.newInstance()
@@ -270,7 +271,7 @@ public class XIncludeSerializerTest {
 
         final String responseBody = responseBodyToString(response);
 
-        assertEquals(response.getStatusLine().toString() + ": " + responseBody, HttpStatus.SC_BAD_REQUEST, response.getStatusLine().getStatusCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusLine().getStatusCode(), response.getStatusLine().toString() + ": " + responseBody);
     }
 
     //TODO add full url test e.g. http://www.example.org/test.xml for xinclude
@@ -309,13 +310,13 @@ public class XIncludeSerializerTest {
         return client;
     }
 
-   //TODO create reader for xml
+    //TODO create reader for xml
     /*
      * SetUp / TearDown functions
      *
      */
-    @BeforeClass
-    public static void startDB() throws XmlRpcException, MalformedURLException {
+    @BeforeAll
+    static void startDB() throws XmlRpcException, MalformedURLException {
         final XmlRpcClient xmlrpc = getClient();
         final List<Object> params = new ArrayList<>();
         params.add(XINCLUDE_COLLECTION.toString());

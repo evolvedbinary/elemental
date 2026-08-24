@@ -50,9 +50,11 @@ import java.util.Optional;
 
 import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.util.*;
-import org.junit.*;
+import org.exist.test.EmbeddedDatabaseExtension;
+import org.exist.util.LockException;
+import org.exist.util.MimeType;
+import org.exist.util.StringInputSource;
+import org.junit.jupiter.api.AfterEach;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.EXistException;
 import org.exist.xmldb.XmldbURI;
@@ -60,13 +62,15 @@ import org.exist.test.TestConstants;
 import org.exist.collections.Collection;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 import xyz.elemental.mediatype.StorageType;
 import xyz.elemental.mediatype.impl.MediaTypeImpl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -75,7 +79,7 @@ import static org.junit.Assert.*;
 public class StoreBinaryTest {
 
     @Test
-    public void check_MimeType_is_preserved() throws EXistException, PermissionDeniedException, LockException, IOException, SAXException, DatabaseConfigurationException {
+    void check_MimeType_is_preserved() throws EXistException, PermissionDeniedException, LockException, IOException, SAXException, DatabaseConfigurationException {
 
         final String xqueryMimeType = MediaType.APPLICATION_XQUERY;
         final String xqueryFilename = "script.xql";
@@ -90,7 +94,7 @@ public class StoreBinaryTest {
         final XmldbURI binaryDocUri = binaryDoc.getFileURI();
 
         //restart the database
-        existEmbeddedServer.restart();
+        EMBEDDED_DATABASE.restart();
 
         //retrieve the xquery document
         binaryDoc = getBinary(binaryDocUri);
@@ -100,12 +104,12 @@ public class StoreBinaryTest {
         assertEquals(xqueryMimeType, binaryDoc.getMediaType());
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @After
-    public void removeTestResources() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterEach
+    void removeTestResources() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction()) {
@@ -118,7 +122,7 @@ public class StoreBinaryTest {
     private BinaryDocument getBinary(final XmldbURI uri) throws EXistException, PermissionDeniedException {
         BinaryDocument binaryDoc = null;
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));) {
             assertNotNull(broker);
 
@@ -133,7 +137,7 @@ public class StoreBinaryTest {
     }
 
     private BinaryDocument storeBinary(final String name, final String data, final String mimeType) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
         BinaryDocument binaryDoc = null;

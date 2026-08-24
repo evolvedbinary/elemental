@@ -46,7 +46,6 @@
 package org.exist.stax;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
-import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
@@ -59,15 +58,16 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
@@ -80,15 +80,15 @@ import java.util.function.Function;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static org.exist.stax.ExtendedXMLStreamReader.PROPERTY_NODE_ID;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.exist.stax.EmbeddedXMLStreamReaderTest.NamedEvent.*;
 
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class EmbeddedXMLStreamReaderTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_MIXED_XML_COLLECTION = XmldbURI.create("/db/persistent-dom-mixed-test");
     private static final XmldbURI MIXED_XML_NAME = XmldbURI.create("mixed.xml");
@@ -107,7 +107,7 @@ public class EmbeddedXMLStreamReaderTest {
      * Attempts to read all nodes in the document starting from the first node of the document.
      */
     @Test
-    public void allNodesInDocument_fromFirstChild() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInDocument_fromFirstChild(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 COMMENT,            // <!-- 1 -->
                 START_ELEMENT,      // <x>
@@ -136,14 +136,14 @@ public class EmbeddedXMLStreamReaderTest {
                 COMMENT             // <!-- 2 -->
         };
 
-        assertNodesIn(expected, document -> (NodeHandle)document.getFirstChild());
+        assertNodesIn(pool, expected, document -> (NodeHandle)document.getFirstChild());
     }
 
     /**
      * Attempts to read all nodes in the document element.
      */
     @Test
-    public void allNodesInDocumentElement() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInDocumentElement(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 START_ELEMENT,      // <x>
                 CHARACTERS,         // "\n  "
@@ -171,14 +171,14 @@ public class EmbeddedXMLStreamReaderTest {
         };
 
         final Function<Document, NodeHandle> docElementFun = document -> (NodeHandle)document.getDocumentElement();
-        assertNodesIn(expected, docElementFun, Optional.of(docElementFun));
+        assertNodesIn(pool, expected, docElementFun, Optional.of(docElementFun));
     }
 
     /**
      * Attempts to read all nodes in the "y1" element.
      */
     @Test
-    public void allNodesInY1Element() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInY1Element(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 START_ELEMENT,      // <y1>
                 CHARACTERS,         // text1
@@ -189,14 +189,14 @@ public class EmbeddedXMLStreamReaderTest {
         };
 
         final Function<Document, NodeHandle> y1Fun = document -> (NodeHandle)document.getDocumentElement().getElementsByTagName("y1").item(0);
-        assertNodesIn(expected, y1Fun, Optional.of(y1Fun));
+        assertNodesIn(pool, expected, y1Fun, Optional.of(y1Fun));
     }
 
     /**
      * Attempts to read all nodes in the "y2" element.
      */
     @Test
-    public void allNodesInY2Element() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInY2Element(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 START_ELEMENT,      // <y2>
                 CHARACTERS,         // text2
@@ -207,42 +207,42 @@ public class EmbeddedXMLStreamReaderTest {
         };
 
         final Function<Document, NodeHandle> y2Fun = document -> (NodeHandle)document.getDocumentElement().getElementsByTagName("y2").item(0);
-        assertNodesIn(expected, y2Fun, Optional.of(y2Fun));
+        assertNodesIn(pool, expected, y2Fun, Optional.of(y2Fun));
     }
 
     /**
      * Attempts to read all nodes in the "z1" element.
      */
     @Test
-    public void allNodesInZ1Element() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInZ1Element(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 START_ELEMENT,      // <z1>
                 END_ELEMENT         // </z1>
         };
 
         final Function<Document, NodeHandle> z1Fun = document -> (NodeHandle)document.getDocumentElement().getElementsByTagName("z1").item(0);
-        assertNodesIn(expected, z1Fun, Optional.of(z1Fun));
+        assertNodesIn(pool, expected, z1Fun, Optional.of(z1Fun));
     }
 
     /**
      * Attempts to read all nodes in the "z1" element.
      */
     @Test
-    public void allNodesInZ2Element() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInZ2Element(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 START_ELEMENT,      // <z2>
                 END_ELEMENT         // </z2>
         };
 
         final Function<Document, NodeHandle> z2Fun = document -> (NodeHandle)document.getDocumentElement().getElementsByTagName("z2").item(0);
-        assertNodesIn(expected, z2Fun, Optional.of(z2Fun));
+        assertNodesIn(pool, expected, z2Fun, Optional.of(z2Fun));
     }
 
     /**
      * Attempts to read all nodes in the document element.
      */
     @Test
-    public void allNodesInDocumentElement_fromFirstChild() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInDocumentElement_fromFirstChild(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 CHARACTERS,         // "\n  "
                 COMMENT,            // <!-- x.1 -->
@@ -267,14 +267,14 @@ public class EmbeddedXMLStreamReaderTest {
                 CHARACTERS          // "\n"
         };
 
-        assertNodesIn(expected, document -> (NodeHandle)document.getDocumentElement().getFirstChild(), Optional.of(document -> (NodeHandle)document.getDocumentElement()));
+        assertNodesIn(pool, expected, document -> (NodeHandle)document.getDocumentElement().getFirstChild(), Optional.of(document -> (NodeHandle)document.getDocumentElement()));
     }
 
     /**
      * Attempts to read all nodes in the document element.
      */
     @Test
-    public void allNodesInDocumentElement_fromY1() throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+    void allNodesInDocumentElement_fromY1(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         final NamedEvent[] expected = {
                 START_ELEMENT,      // <y1>
                 CHARACTERS,         // text1
@@ -296,15 +296,14 @@ public class EmbeddedXMLStreamReaderTest {
                 CHARACTERS          // "\n"
         };
 
-        assertNodesIn(expected, document -> (NodeHandle)document.getDocumentElement().getElementsByTagName("y1").item(0), Optional.of(document -> (NodeHandle)document.getDocumentElement()));
+        assertNodesIn(pool, expected, document -> (NodeHandle)document.getDocumentElement().getElementsByTagName("y1").item(0), Optional.of(document -> (NodeHandle)document.getDocumentElement()));
     }
 
-    public void assertNodesIn(final NamedEvent[] expected, final Function<Document, NodeHandle> initialNodeFun) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
-        assertNodesIn(expected, initialNodeFun, Optional.empty());
+    public void assertNodesIn(final BrokerPool pool, final NamedEvent[] expected, final Function<Document, NodeHandle> initialNodeFun) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
+        assertNodesIn(pool, expected, initialNodeFun, Optional.empty());
     }
 
-    public void assertNodesIn(final NamedEvent[] expected, final Function<Document, NodeHandle> initialNodeFun, final Optional<Function<Document, NodeHandle>> containerFun) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    public void assertNodesIn(final BrokerPool pool, final NamedEvent[] expected, final Function<Document, NodeHandle> initialNodeFun, final Optional<Function<Document, NodeHandle>> containerFun) throws EXistException, PermissionDeniedException, IOException, XMLStreamException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -320,7 +319,7 @@ public class EmbeddedXMLStreamReaderTest {
 
                 final NamedEvent[] actual = readAllEvents(maybeContainerNode, xmlStreamReader);
 
-                assertArrayEquals(formatExpectedActual(expected, actual), expected, actual);
+                assertArrayEquals(expected, actual, formatExpectedActual(expected, actual));
             }
 
             transaction.commit();
@@ -410,9 +409,8 @@ public class EmbeddedXMLStreamReaderTest {
         return other.isDescendantOrSelfOf(root.getNodeId());
     }
 
-    @BeforeClass
-    public static void setup() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -424,9 +422,8 @@ public class EmbeddedXMLStreamReaderTest {
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterAll
+    static void cleanup(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

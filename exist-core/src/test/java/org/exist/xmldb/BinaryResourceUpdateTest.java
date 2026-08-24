@@ -45,10 +45,11 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Resource;
@@ -56,17 +57,14 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
 
-import java.net.URISyntaxException;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URL;
 import java.nio.file.Paths;
 
-import org.junit.Test;
-import static org.junit.Assert.assertNotNull;
-
 public class BinaryResourceUpdateTest  {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private final static String TEST_COLLECTION = "testBinaryResource";
 
@@ -78,7 +76,7 @@ public class BinaryResourceUpdateTest  {
     private URL xmlFile;
 
     @Test
-    public void updateBinary() throws XMLDBException, URISyntaxException {
+    void updateBinary() throws XMLDBException, URISyntaxException {
         for (int i = 0; i < REPEAT; i++) {
             try (final BinaryResource binaryResource = testCollection.createResource("test1.xml", BinaryResource.class)) {
                 binaryResource.setContent(Paths.get(binFile.toURI()));
@@ -103,7 +101,7 @@ public class BinaryResourceUpdateTest  {
 
     // with same docname test fails for windows
     @Test
-    public void updateBinary_windows() throws XMLDBException, URISyntaxException {
+    void updateBinary_windows() throws XMLDBException, URISyntaxException {
         for (int i = 0; i < REPEAT; i++) {
             try (final BinaryResource binaryResource = testCollection.createResource("test.xml", BinaryResource.class)) {
                 binaryResource.setContent(Paths.get(binFile.toURI()));
@@ -125,9 +123,9 @@ public class BinaryResourceUpdateTest  {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection(TEST_COLLECTION);
         assertNotNull(testCollection);
         binFile = getClass().getClassLoader().getResource("org/exist/xmldb/test.bin");
@@ -136,8 +134,8 @@ public class BinaryResourceUpdateTest  {
         assertNotNull(xmlFile);
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
         try (final Collection parent = testCollection.getParentCollection()) {
             final CollectionManagementService service = parent.getService(CollectionManagementService.class);

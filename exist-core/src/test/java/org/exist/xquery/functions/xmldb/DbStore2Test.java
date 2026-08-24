@@ -46,20 +46,26 @@
 package org.exist.xquery.functions.xmldb;
 
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.eclipse.jetty.SERVER.Handler;
+import org.eclipse.jetty.SERVER.Server;
+import org.eclipse.jetty.SERVER.handler.DefaultHandler;
+import org.eclipse.jetty.SERVER.handler.HandlerList;
+import org.eclipse.jetty.SERVER.handler.ResourceHandler;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.concurrent.DBUtils;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XPathQueryService;
 
 import java.io.FileOutputStream;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -68,16 +74,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 
-import static org.junit.Assert.assertNotNull;
-
 /**
- * Due to limitation of ExistXmldbEmbeddedServer we need to split this test to two files.
- * It's not possible to have two instances of ExistXmldbEmbeddedServer at the same time.
+ * Due to limitation of XmldbEmbeddedDatabaseExtension we need to split this test to two files.
+ * It's not possible to have two instances of XmldbEmbeddedDatabaseExtension at the same time.
  */
 public class DbStore2Test {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServerWithAnyURI = new ExistXmldbEmbeddedServer(false, true,
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASEWithAnyURI = new XmldbEmbeddedDatabaseExtension(false, true,
             true, getConfig());
 
     private static final int BUFFER_SIZE = 1024 * 1024 * 4; // 4MiB buffer
@@ -88,7 +92,7 @@ public class DbStore2Test {
     private static Path jettyRootDir = null;
     private static Path pictureLocation = null;
 
-    //Second jetty server to mock HTTP resources for tests.
+    //Second jetty SERVER to mock HTTP resources for tests.
     private static Server jettyServer = null;
     private static int jettyPort = 30350;
 
@@ -101,8 +105,8 @@ public class DbStore2Test {
         }
     }
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
+    @BeforeAll
+    static void beforeClass() throws IOException {
 
         jettyPort += new Random().nextInt(15000);
 
@@ -129,15 +133,15 @@ public class DbStore2Test {
 
     }
 
-    @AfterClass
-    public static void afterClass() throws Exception {
+    @AfterAll
+    static void afterClass() {
         jettyServer.stop();
         FileUtils.deleteDirectory(jettyRootDir.toFile());
     }
 
     @Test
-    public final void testWithAnyUriEnabled() throws XMLDBException {
-        final Collection rootCol = existEmbeddedServerWithAnyURI.getRoot();
+    final void withAnyUriEnabled() throws XMLDBException {
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASEWithAnyURI.getRoot();
         try (final Collection testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION)) {
             assertNotNull(testCol);
 
@@ -155,7 +159,7 @@ public class DbStore2Test {
     }
 
     @Test
-    public final void testLargeFileStore() throws XMLDBException, IOException {
+    final void largeFileStore() throws XMLDBException, IOException {
         final byte buff[] = new byte[BUFFER_SIZE];
         try (final FileOutputStream fOut = new FileOutputStream(largeFileLocation.toFile(), true)) {
             for (long written = 0; written < FILE_SIZE; written += BUFFER_SIZE) {
@@ -164,7 +168,7 @@ public class DbStore2Test {
             fOut.flush();
         }
 
-        final Collection rootCol = existEmbeddedServerWithAnyURI.getRoot();
+        final Collection rootCol = XMLDB_EMBEDDED_DATABASEWithAnyURI.getRoot();
         try (final Collection testCol = DBUtils.addCollection(rootCol, TEST_COLLECTION)) {
             assertNotNull(testCol);
 

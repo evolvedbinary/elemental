@@ -45,19 +45,16 @@
  */
 package org.exist.xquery.functions.securitymanager;
 
-import org.exist.EXistException;
 import org.exist.dom.memtree.ElementImpl;
-import org.exist.security.PermissionDeniedException;
 import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.xquery.XPathException;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
@@ -66,25 +63,25 @@ import javax.xml.transform.Source;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class GetPermissionsTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     /**
      * See https://github.com/eXist-db/exist/issues/3231
      */
     @Test
-    public void getPermissionsNestedXml() throws EXistException, PermissionDeniedException, XPathException, IOException {
+    void getPermissionsNestedXml() throws EXistException, PermissionDeniedException, XPathException, IOException {
         final String query = "<outer><inner perm=\"{sm:get-permissions(xs:anyURI(\"/db\"))/sm:permission/@owner}\"/></outer>";
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.getBroker();
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
 
@@ -101,7 +98,7 @@ public class GetPermissionsTest {
                     .checkForSimilar()
                     .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         }
     }
 }

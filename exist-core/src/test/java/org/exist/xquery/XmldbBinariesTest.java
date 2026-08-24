@@ -45,12 +45,10 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.CompiledExpression;
@@ -71,33 +69,27 @@ import static org.xmldb.api.base.ResourceType.BINARY_RESOURCE;
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
-@RunWith(Parameterized.class)
 public class XmldbBinariesTest extends AbstractBinariesTest<EXistResourceSet, Resource, XMLDBException> {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
     private static final String PORT_PLACEHOLDER = "${PORT}";
 
-    @Parameterized.Parameters(name = "{0}")
     public static java.util.Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 { "local", "xmldb:exist://" },
                 { "remote", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc" }
         });
     }
-
-    @Parameterized.Parameter
     public String apiName;
-
-    @Parameterized.Parameter(value = 1)
     public String baseUri;
 
     private final String getBaseUri() {
-        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
+        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(DATABASE_WEB_SERVER.getPort()));
     }
 
     @Override
-    protected void storeBinaryFile(final XmldbURI filePath, byte[] content) throws Exception {
+    protected void storeBinaryFile(final XmldbURI filePath, byte[] content) throws XMLDBException {
         try (final Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
 
             final XmldbURI collectionNames[] = filePath.removeLastSegment().getPathSegments();
@@ -139,7 +131,7 @@ public class XmldbBinariesTest extends AbstractBinariesTest<EXistResourceSet, Re
     }
 
     @Override
-    protected void removeCollection(final XmldbURI collectionUri) throws Exception {
+    protected void removeCollection(final XmldbURI collectionUri) throws XMLDBException {
         try (final Collection colRoot = DatabaseManager.getCollection(getBaseUri() + "/db", ADMIN_DB_USER, ADMIN_DB_PWD)) {
 
             try (final Collection colTest = colRoot.getChildCollection("test")) {
@@ -195,5 +187,10 @@ public class XmldbBinariesTest extends AbstractBinariesTest<EXistResourceSet, Re
     @Override
     protected boolean getBoolean(final Resource item) throws XMLDBException {
         return Boolean.parseBoolean(item.getContent().toString());
+    }
+
+    public void initXmldbBinariesTest(String apiName, String baseUri) {
+        this.apiName = apiName;
+        this.baseUri = baseUri;
     }
 }

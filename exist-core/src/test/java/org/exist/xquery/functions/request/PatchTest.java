@@ -56,14 +56,15 @@ import java.io.IOException;
 import org.exist.http.RESTTest;
 import org.exist.xmldb.EXistResource;
 import org.hamcrest.Matcher;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.test.XmlStringDiffMatcher.hasSimilarXml;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -76,7 +77,7 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 /**
  * Test HTTP PATCH capabilities of {@link org.exist.http.servlets.EXistServlet}
  */
-public class PatchTest extends RESTTest {
+class PatchTest extends RESTTest {
 
     private final static String XQUERY_FILENAME = "test-patch.xql";
     private final static String XML_FILENAME = "test-patch.xml";
@@ -85,8 +86,8 @@ public class PatchTest extends RESTTest {
     private static XMLResource xml;
     private static BinaryResource bin;
 
-    @BeforeClass
-    public static void beforeClass() throws XMLDBException {
+    @BeforeAll
+    static void beforeClass() throws XMLDBException {
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
         UserManagementService ums = root.getService(UserManagementService.class);
 
@@ -107,8 +108,8 @@ public class PatchTest extends RESTTest {
         ums.chmod(xml, 0777);
     }
 
-    @AfterClass
-    public static void afterClass() throws XMLDBException {
+    @AfterAll
+    static void afterClass() throws XMLDBException {
         try {
             root.removeResource(bin);
             root.removeResource(xml);
@@ -129,7 +130,7 @@ public class PatchTest extends RESTTest {
     }
 
     @Test
-    public void patchBinary() throws IOException {
+    void patchBinary() throws IOException {
         final byte[] testData = "12345".getBytes(UTF_8);
 
         final Request patch = Request.Patch(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -139,7 +140,7 @@ public class PatchTest extends RESTTest {
     }
 
     @Test
-    public void patchXml() throws IOException {
+    void patchXml() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         final Request patch = Request.Patch(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -149,7 +150,7 @@ public class PatchTest extends RESTTest {
     }
 
     @Test
-    public void patchString() throws IOException {
+    void patchString() throws IOException {
         final String testData = "12345";
 
         final Request patch = Request.Patch(getCollectionRootUri() + "/" + XQUERY_FILENAME)
@@ -159,7 +160,7 @@ public class PatchTest extends RESTTest {
     }
 
     @Test
-    public void patchCollectionNotAllowed() throws IOException {
+    void patchCollectionNotAllowed() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         final Request patch = Request.Patch(getCollectionRootUri())
@@ -169,7 +170,7 @@ public class PatchTest extends RESTTest {
     }
 
     @Test
-    public void patchXmlResourceNotAllowed() throws IOException {
+    void patchXmlResourceNotAllowed() throws IOException {
         final String testData = "<a><b><c>hello</c></b></a>";
 
         final Request patch = Request.Patch(getCollectionRootUri() + "/" + XML_FILENAME)

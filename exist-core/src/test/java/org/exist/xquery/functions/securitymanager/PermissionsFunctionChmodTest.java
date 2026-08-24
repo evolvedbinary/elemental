@@ -45,6 +45,7 @@
  */
 package org.exist.xquery.functions.securitymanager;
 
+import com.evolvedbinary.j8fu.function.Runnable3E;
 import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.collections.Collection;
@@ -56,13 +57,18 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -71,6 +77,7 @@ import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PermissionsFunctionChmodTest {
 
@@ -93,58 +100,53 @@ public class PermissionsFunctionChmodTest {
     private static final String RWXRWS__ = "rwxrws---";
     private static final String RWXRWSRWX = "rwxrwsrwx";
 
-    @ClassRule
-    public static final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void changeDocumentModeAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeDocumentModeAsDBA(final BrokerPool pool) throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         xqueryChangeMode(pool, adminUser, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), RWXRWXRWX);
     }
 
     @Test
-    public void changeCollectionModeAsDBA() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeCollectionModeAsDBA(final BrokerPool pool) throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
         xqueryChangeMode(pool, adminUser, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), RWXRWXRWX);
     }
 
     @Test
-    public void changeDocumentModeAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeDocumentModeAsNonDBAOwner(final BrokerPool pool) throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         xqueryChangeMode(pool, user1, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), RWXRWXRWX);
     }
 
     @Test
-    public void changeCollectionModeAsNonDBAOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeCollectionModeAsNonDBAOwner(final BrokerPool pool) throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         xqueryChangeMode(pool, user1, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), RWXRWXRWX);
     }
 
-    @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentModeAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void changeDocumentModeAsNonOwner(final BrokerPool pool) throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        extractPermissionDenied(() ->
-            xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), RWXRWXRWX)
-        );
-    }
-
-    @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionModeAsNonOwner() throws AuthenticationException, XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
-        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-        extractPermissionDenied(() ->
-            xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), RWXRWXRWX)
-        );
+        Runnable3E x = () ->
+                    xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_DOC1), RWXRWXRWX);
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(x));
     }
 
     @Test
-    public void changeDocumentModeAsDBA_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeCollectionModeAsNonOwner(final BrokerPool pool) throws AuthenticationException, XPathException, PermissionDeniedException, EXistException {
+        final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
+        Runnable3E x = () ->
+                    xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_COL1), RWXRWXRWX);
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(x));
+    }
+
+    @Test
+    void changeDocumentModeAsDBA_preservesSetGid(final BrokerPool pool) throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
 
         // check the setGid bit is set before we begin
@@ -158,8 +160,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeCollectionModeAsDBA_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeCollectionModeAsDBA_preservesSetGid(final BrokerPool pool) throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
         final Subject adminUser = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
 
         // check the setGid bit is set before we begin
@@ -173,8 +174,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeDocumentModeAsNonDBAOwner_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeDocumentModeAsNonDBAOwner_preservesSetGid(final BrokerPool pool) throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
         // check the setGid bit is set before we begin
@@ -188,8 +188,7 @@ public class PermissionsFunctionChmodTest {
     }
 
     @Test
-    public void changeCollectionModeAsNonDBAOwner_preservesSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    void changeCollectionModeAsNonDBAOwner_preservesSetGid(final BrokerPool pool) throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
 
         // check the setGid bit is set before we begin
@@ -202,43 +201,36 @@ public class PermissionsFunctionChmodTest {
         assertCollectionSetGid(pool, user1, TestConstants.TEST_COLLECTION_URI.append(USER1_COL2), IS_SET);
     }
 
-    @Test(expected=PermissionDeniedException.class)
-    public void changeDocumentModeAsNonOwner_clearsSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void changeDocumentModeAsNonOwner_clearsSetGid(final BrokerPool pool) throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-
-        // check the setGid bit is set before we begin
         assertDocumentSetGid(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_XQUERY1), IS_SET);
-
-        // change the mode
         extractPermissionDenied(() ->
-            xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_XQUERY1), RWXRWSRWX)
-        );
+                    xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_XQUERY1), RWXRWSRWX)
+            );
+        XmldbURI append = TestConstants.TEST_COLLECTION_URI.append(USER1_XQUERY1);
+        assertThrows(PermissionDeniedException.class, () ->
 
-        // check the setGid bit still set
-        assertDocumentSetGid(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_XQUERY1), NOT_SET);
+            // check the setGid bit still set
+            assertDocumentSetGid(pool, user2, append, NOT_SET));
     }
 
-    @Test(expected=PermissionDeniedException.class)
-    public void changeCollectionModeAsNonOwner_clearsSetGid() throws AuthenticationException, EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void changeCollectionModeAsNonOwner_clearsSetGid(final BrokerPool pool) throws AuthenticationException, EXistException, PermissionDeniedException, XPathException {
         final Subject user2 = pool.getSecurityManager().authenticate(USER2_NAME, USER2_PWD);
-
-        // check the setGid bit is set before we begin
         assertCollectionSetGid(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_COL2), IS_SET);
-
-        // change the mode
         extractPermissionDenied(() ->
-            xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_COL2), RWXRWSRWX)
-        );
+                    xqueryChangeMode(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_COL2), RWXRWSRWX)
+            );
+        XmldbURI append = TestConstants.TEST_COLLECTION_URI.append(USER1_COL2);
+        assertThrows(PermissionDeniedException.class, () ->
 
-        // check the setGid bit still set
-        assertCollectionSetGid(pool, user2, TestConstants.TEST_COLLECTION_URI.append(USER1_COL2), NOT_SET);
+            // check the setGid bit still set
+            assertCollectionSetGid(pool, user2, append, NOT_SET));
     }
 
-    @BeforeClass
-    public static void prepareDb() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @BeforeAll
+    static void prepareDb(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final SecurityManager sm = pool.getSecurityManager();
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
@@ -262,10 +254,8 @@ public class PermissionsFunctionChmodTest {
         }
     }
 
-    @Before
-    public void setup() throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
-
+    @BeforeEach
+    void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, LockException, SAXException, IOException, AuthenticationException {
         // create user1 resources
         final Subject user1 = pool.getSecurityManager().authenticate(USER1_NAME, USER1_PWD);
         try (final DBBroker broker = pool.get(Optional.of(user1));
@@ -294,9 +284,8 @@ public class PermissionsFunctionChmodTest {
         }
     }
 
-    @After
-    public void teardown() throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @AfterEach
+    void teardown(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException, LockException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -308,9 +297,8 @@ public class PermissionsFunctionChmodTest {
         }
     }
 
-    @AfterClass
-    public static void cleanupDb() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @AfterAll
+    static void cleanupDb(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final SecurityManager sm = pool.getSecurityManager();
         try (final DBBroker broker = pool.get(Optional.of(sm.getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {

@@ -29,16 +29,16 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -53,15 +53,15 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class SerializeTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_SERIALIZE_COLLECTION = XmldbURI.create("/db/serialize-test");
 
@@ -77,14 +77,14 @@ public class SerializeTest {
         "     fn:serialize($doc, map { xs:QName(\"exist:add-exist-id\"): \"all\" })";
 
     @Test
-    public void serializeReference() throws XPathException, PermissionDeniedException, EXistException, IOException {
+    void serializeReference() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final String expected = "<?pi?><elem xmlns:exist=\"http://exist.sourceforge.net/NS/exist\" exist:id=\"2\" exist:source=\"" + DOC_WITH_PI_NAME.getCollectionPath() + "\" a=\"abc\"><!--comment--><b exist:id=\"2.3\">123</b></elem>";
         expectQueryString(SERIALIZE_WITH_EXIST_ID_ALL_QUERY, expected);
     }
 
-    @BeforeClass
-    public static void storeResources() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void storeResources() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -125,7 +125,7 @@ public class SerializeTest {
                 .checkForSimilar()
                 .build();
 
-            assertFalse(diff.toString(), diff.hasDifferences());
+            assertFalse(diff.hasDifferences(), diff.toString());
         });
     }
 
@@ -143,7 +143,7 @@ public class SerializeTest {
     }
 
     private static void expectQuery(final String query, final Consumer<Sequence> resultConsumer) throws EXistException, XPathException, PermissionDeniedException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
             final Sequence result = queryResult.result;

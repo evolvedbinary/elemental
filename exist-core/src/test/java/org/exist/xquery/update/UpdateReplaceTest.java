@@ -46,7 +46,7 @@
 package org.exist.xquery.update;
 
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -58,13 +58,13 @@ import org.xmlunit.diff.Diff;
 
 import javax.xml.transform.Source;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
-public class UpdateReplaceTest extends AbstractUpdateTest {
+class UpdateReplaceTest extends AbstractUpdateTest {
 
     @Test
-    public void replaceOnlyChildWhereParentHasNoAttributes() throws XMLDBException {
+    void replaceOnlyChildWhereParentHasNoAttributes() throws XMLDBException {
         final String testDocName = "replaceOnlyChildWhereParentHasNoAttributes.xml";
         final String testDoc = "<Test><Content><A/></Content></Test>";
 
@@ -96,13 +96,13 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                     .checkForSimilar()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
 
     @Test
-    public void replaceFirstChildWhereParentHasNoAttributes() throws XMLDBException {
+    void replaceFirstChildWhereParentHasNoAttributes() throws XMLDBException {
         final String testDocName = "replaceFirstChildWhereParentHasNoAttributes.xml";
         final String testDoc = "<Test><Content><A/><A/></Content></Test>";
 
@@ -133,13 +133,13 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                     .checkForSimilar()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
 
     @Test
-    public void replaceOnlyChildWhereParentHasAttribute() throws XMLDBException {
+    void replaceOnlyChildWhereParentHasAttribute() throws XMLDBException {
         final String testDocName = "replaceOnlyChildWhereParentHasAttribute.xml";
         final String testDoc = "<Test><Content Foo=\"bar\"><A/></Content></Test>";
 
@@ -170,13 +170,13 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                     .checkForSimilar()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }
 
     @Test
-    public void replaceFirstChildWhereParentHasAttribute() throws XMLDBException {
+    void replaceFirstChildWhereParentHasAttribute() throws XMLDBException {
         final String testDocName = "replaceFirstChildWhereParentHasAttribute.xml";
         final String testDoc = "<Test><Content Foo=\"bar\"><A/><A/></Content></Test>";
 
@@ -207,7 +207,7 @@ public class UpdateReplaceTest extends AbstractUpdateTest {
                     .checkForSimilar()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }

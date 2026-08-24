@@ -45,6 +45,7 @@
  */
 package org.exist.xmldb.concurrent;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -52,11 +53,11 @@ import java.util.List;
 import org.exist.util.FileUtils;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.action.AttributeUpdateAction;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.xmldb.api.base.XMLDBException;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author wolf
@@ -69,16 +70,16 @@ public class ConcurrentAttrUpdateTest extends AbstractConcurrentTest {
     private String[] wordList;
     private Path tempFile;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws XMLDBException, IOException {
         this.wordList = DBUtils.wordList();
         assertNotNull(wordList);
         this.tempFile = DBUtils.generateXMLFile(250, 10, wordList);
         DBUtils.addXMLResource(getTestCollection(), "R1.xml", tempFile);
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() {
         FileUtils.deleteQuietly(tempFile);
     }
 

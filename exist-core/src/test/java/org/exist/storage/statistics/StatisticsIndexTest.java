@@ -27,18 +27,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.exist.storage.BrokerPool;
-import org.exist.test.ExistEmbeddedServer;
-import org.junit.*;
+import org.exist.test.EmbeddedDatabaseExtension;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.Rule;
 
 import static org.exist.storage.NativeBroker.DEFAULT_DATA_DIR;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StatisticsIndexTest {
 
     private static Path configFile;
 
-    @BeforeClass
-    public static void prepare() throws URISyntaxException {
+    @BeforeAll
+    static void prepare() throws URISyntaxException {
         final ClassLoader loader = StatisticsIndexTest.class.getClassLoader();
         final char separator = System.getProperty("file.separator").charAt(0);
         final String packagePath = StatisticsIndexTest.class.getPackage().getName().replace('.', separator);
@@ -46,12 +47,12 @@ public class StatisticsIndexTest {
         configFile = Paths.get(loader.getResource(packagePath + separator + "conf.xml").toURI());
     }
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer("db1", configFile, null, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension("db1", configFile, null, true);
 
     @Test
-    public void statsFileExists() {
-        final Path dataDir = existEmbeddedServer.getBrokerPool().getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR, Paths.get(DEFAULT_DATA_DIR));
+    void statsFileExists() {
+        final Path dataDir = embeddedDatabase.getBrokerPool().getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR, Paths.get(DEFAULT_DATA_DIR));
         assertTrue(Files.exists(dataDir.resolve("stats.dbx")));
     }
 }

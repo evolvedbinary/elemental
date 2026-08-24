@@ -45,6 +45,7 @@
  */
 package org.exist.xmldb.concurrent;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -52,8 +53,8 @@ import java.util.List;
 import org.exist.util.FileUtils;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.action.XQueryAction;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.xmldb.api.base.XMLDBException;
 
 /**
@@ -67,15 +68,15 @@ public class ConcurrentQueryTest extends AbstractConcurrentTest {
 
 	private Path tempFile;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws XMLDBException, IOException {
         final String[] wordList = DBUtils.wordList();
         tempFile = DBUtils.generateXMLFile(500, 7, wordList);
         DBUtils.addXMLResource(getTestCollection(), "R1.xml", tempFile);
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() {
         FileUtils.deleteQuietly(tempFile);
     }
 

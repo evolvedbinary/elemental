@@ -55,15 +55,17 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.Disabled;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -73,14 +75,12 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class InspectModuleTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_COLLECTION = XmldbURI.ROOT_COLLECTION_URI.append("test-inspectModule");
     private static final XmldbURI TEST_MODULE = XmldbURI.create("test.xqm");
@@ -128,10 +128,10 @@ public class InspectModuleTest {
             "  \"hello from fun4\"\n" +
             "};\n";
 
-    @Ignore("https://github.com/eXist-db/exist/issues/1386")
+    @Disabled("https://github.com/eXist-db/exist/issues/1386")
     @Test
-    public void xqDoc_withAtSignInline() throws PermissionDeniedException, XPathException, EXistException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void xqDoc_withAtSignInline() throws PermissionDeniedException, XPathException, EXistException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -146,7 +146,7 @@ public class InspectModuleTest {
                 assertNotNull(result);
                 assertEquals(1, result.getItemCount());
                 final Item item1 = result.itemAt(0);
-                assertTrue(item1 instanceof ElementImpl);
+                assertInstanceOf(ElementImpl.class, item1);
 
                 final Element function = (Element)item1;
 
@@ -167,8 +167,8 @@ public class InspectModuleTest {
     }
 
     @Test
-    public void xqDoc_withParamsAndReturn() throws PermissionDeniedException, XPathException, EXistException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void xqDoc_withParamsAndReturn() throws PermissionDeniedException, XPathException, EXistException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try( final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -183,7 +183,7 @@ public class InspectModuleTest {
                 assertNotNull(result);
                 assertEquals(1, result.getItemCount());
                 final Item item1 = result.itemAt(0);
-                assertTrue(item1 instanceof ElementImpl);
+                assertInstanceOf(ElementImpl.class, item1);
 
                 final Element function = (Element)item1;
 
@@ -206,8 +206,8 @@ public class InspectModuleTest {
     }
 
     @Test
-    public void xqDoc_multilineDesciption() throws PermissionDeniedException, XPathException, EXistException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void xqDoc_multilineDesciption() throws PermissionDeniedException, XPathException, EXistException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -222,7 +222,7 @@ public class InspectModuleTest {
                 assertNotNull(result);
                 assertEquals(1, result.getItemCount());
                 final Item item1 = result.itemAt(0);
-                assertTrue(item1 instanceof ElementImpl);
+                assertInstanceOf(ElementImpl.class, item1);
 
                 final Element function = (Element)item1;
 
@@ -244,7 +244,7 @@ public class InspectModuleTest {
 
     @Test
     public void xqDoc_onAnnotatedFunction() throws PermissionDeniedException, XPathException, EXistException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -259,7 +259,7 @@ public class InspectModuleTest {
                 assertNotNull(result);
                 assertEquals(1, result.getItemCount());
                 final Item item1 = result.itemAt(0);
-                assertTrue(item1 instanceof ElementImpl);
+                assertInstanceOf(ElementImpl.class, item1);
 
                 final Element function = (Element)item1;
 
@@ -285,9 +285,9 @@ public class InspectModuleTest {
         }
     }
 
-    @BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -302,9 +302,9 @@ public class InspectModuleTest {
         }
     }
 
-    @AfterClass
-    public static void teardown() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterAll
+    static void teardown() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

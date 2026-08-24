@@ -34,13 +34,12 @@ import org.exist.storage.btree.Value;
 import org.exist.storage.dom.DOMFile;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.util.DatabaseConfigurationException;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xquery.TerminatedException;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests transaction management and basic recovery for the BTree base class.
@@ -50,20 +49,20 @@ import static org.junit.Assert.assertEquals;
  */
 public class BTreeRecoverTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
     private int count = 0;
 
     @Test
-    public void addAndRead() throws EXistException, IOException, BTreeException, TerminatedException, DatabaseConfigurationException {
-        BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void addAndRead() throws EXistException, IOException, BTreeException, TerminatedException, DatabaseConfigurationException {
+        BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         BrokerPool.FORCE_CORRUPTION = true;
 
         add(pool);
 
         BrokerPool.FORCE_CORRUPTION = false;
-        existEmbeddedServer.restart();
-        pool = existEmbeddedServer.getBrokerPool();
+        EMBEDDED_DATABASE.restart();
+        pool = EMBEDDED_DATABASE.getBrokerPool();
 
         get(pool);
     }
@@ -120,7 +119,7 @@ public class BTreeRecoverTest {
             
             final IndexQuery query = new IndexQuery(IndexQuery.GEQ, new NativeBroker.NodeRef(500, idFact.createInstance(1)));
             domDb.query(query, new IndexCallback());
-            assertEquals(count, 800);
+            assertEquals(800, count);
         }
     }
     

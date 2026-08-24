@@ -46,11 +46,11 @@
 package org.exist.xquery;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.CompiledExpression;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XQueryService;
@@ -68,8 +68,8 @@ import org.xmldb.api.modules.XQueryService;
  */
 public class NodeTypeTest {
 
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension SERVER = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	public static final String DOC = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
 			"<page partition=\"home\" path=\"/\" version=\"live\">" +
@@ -101,17 +101,17 @@ public class NodeTypeTest {
 			"    <body/>" +
 			"</page>";
 
-	/**
-	 * This test passes nodes containing xml entities to eXist and tries
-	 * to read it back in:
-	 * <ul>
-	 * <li>Register a database instance</li>
-	 * <li>Write a "live" document to the database using the XQueryService</li>
-	 * <li>Create a "work" version of it</li>
-	 * </ul>
-	 */
-	@Test
-	public final void removeAndReload() throws XMLDBException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    /**
+     * This test passes nodes containing xml entities to eXist and tries
+     * to read it back in:
+     * <ul>
+     * <li>Register a database instance</li>
+     * <li>Write a "live" document to the database using the XQueryService</li>
+     * <li>Create a "work" version of it</li>
+     * </ul>
+     */
+    @Test
+    final void removeAndReload() throws XMLDBException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 		// write "live" document to the database
 		store(DOC, "live.xml");
 		
@@ -134,7 +134,7 @@ public class NodeTypeTest {
 		query.append("$doc := xmldb:store('" + XmldbURI.ROOT_COLLECTION + "', $document, $data)");
 		query.append("return <result/>");
 
-		final XQueryService service = server.getRoot().getService(XQueryService.class);
+		final XQueryService service = SERVER.getRoot().getService(XQueryService.class);
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("document", document);
         service.declareVariable("data", xml);
@@ -177,7 +177,7 @@ public class NodeTypeTest {
 		query.append("    return\n");
 		query.append("		              ()\n");
 
-		final XQueryService service = server.getRoot().getService(XQueryService.class);
+		final XQueryService service = SERVER.getRoot().getService(XQueryService.class);
         final CompiledExpression cQuery = service.compile(query.toString());
         service.declareVariable("collection", XmldbURI.ROOT_COLLECTION);
 		try (final EXistResourceSet result = (EXistResourceSet) service.execute(cQuery)) {
@@ -196,7 +196,7 @@ public class NodeTypeTest {
 		query.append("$mods := xmldb:remove('" + XmldbURI.ROOT_COLLECTION + "', '" + doc + "')");
 		query.append("return <modifications>{$mods}</modifications>");
 
-		final XQueryService service = server.getRoot().getService(XQueryService.class);
+		final XQueryService service = SERVER.getRoot().getService(XQueryService.class);
         final CompiledExpression cQuery = service.compile(query.toString());
 		try (final EXistResourceSet result = (EXistResourceSet) service.execute(cQuery)) {
 			// needed to ensure that result is closed

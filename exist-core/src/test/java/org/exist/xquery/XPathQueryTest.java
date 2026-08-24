@@ -45,24 +45,21 @@
  */
 package org.exist.xquery;
 
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.EXistResourceSet;
 import org.exist.xmldb.EXistXPathQueryService;
 import org.exist.xmldb.EXistXQueryService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.CompiledExpression;
@@ -78,7 +75,6 @@ import org.xmlunit.matchers.CompareMatcher;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import java.io.File;
 import java.io.IOException;
@@ -90,34 +86,29 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
 public class XPathQueryTest {
 
-    @ClassRule
-    public static final TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, true, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, true, true, true);
     private static final String PORT_PLACEHOLDER = "${PORT}";
 
-    @Parameterized.Parameters(name = "{0}")
     public static java.util.Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 { "local", XmldbURI.LOCAL_DB },
                 { "remote", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc" +  XmldbURI.ROOT_COLLECTION}
         });
     }
-
-    @Parameterized.Parameter
     public String apiName;
-
-    @Parameterized.Parameter(value = 1)
     public String baseUri;
 
     private final String getBaseUri() {
-        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
+        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(DATABASE_WEB_SERVER.getPort()));
     }
 
     private final static String nested =
@@ -260,9 +251,9 @@ public class XPathQueryTest {
     private final static String cdata_xml = "<elem1><![CDATA[" + cdata_content + "]]></elem1>";
     
     private Collection testCollection;
-    
-    @Before
-    public void setUp() throws Exception {
+
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, InstantiationException, IllegalAccessException, XMLDBException {
         // initialize driver
         final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
         final Database database = (Database) cl.newInstance();
@@ -281,8 +272,10 @@ public class XPathQueryTest {
         testCollection.close();
     }
 
-    @Test
-    public void childWildcards() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void childWildcards(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String docName = "testChildWildcards.xml";
         final XQueryService service =
             storeXMLStringAndGetQueryService(docName, "<test xmlns=\"http://test\"/>");
@@ -300,8 +293,10 @@ public class XPathQueryTest {
         queryResourceV(service, docName, "/child::*:test", 1);
     }
 
-    @Test
-    public void pathExpression() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void pathExpression(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
@@ -312,7 +307,7 @@ public class XPathQueryTest {
         } catch (final XMLDBException e) {
             message = e.getMessage();
         }
-        assertTrue("Exception wanted: " + message, message.indexOf("XPTY0019") > -1);
+        assertTrue(message.indexOf("XPTY0019") > -1, "Exception wanted: " + message);
 
         //Undefined context sequence
         message = "";
@@ -321,7 +316,7 @@ public class XPathQueryTest {
         } catch (final XMLDBException e) {
             message = e.getMessage();
         }
-        assertTrue("Exception wanted: " + message, message.indexOf("XPDY0002") > -1);
+        assertTrue(message.indexOf("XPDY0002") > -1, "Exception wanted: " + message);
 
         message = "";
         try {
@@ -331,7 +326,7 @@ public class XPathQueryTest {
             message = e.getMessage();
         }
         //No effective boolean value for such a kind of sequence !
-        assertTrue("Exception wanted: " + message, message.indexOf("FORG0006") >-1);
+        assertTrue(message.indexOf("FORG0006") >-1, "Exception wanted: " + message);
 
         queryAndAssertV(service, "let $a := ('a', 'b', 'c') return $a[2 to 2]", 1, null);
         queryAndAssertV(service, "let $a := ('a', 'b', 'c') return $a[(2 to 2)]", 1, null);
@@ -348,8 +343,10 @@ public class XPathQueryTest {
     }
 
     /** test simple queries involving attributes */
-    @Test
-    public void attributes() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void attributes(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String testDocument = "numbers.xml";
 
         final XQueryService service = storeXMLStringAndGetQueryService(
@@ -357,129 +354,139 @@ public class XPathQueryTest {
 
         String query = "/test/item[ @id='1' ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(testDocument, query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query);
 
             try (final XMLResource resource = (XMLResource) result.getResource(0)) {
                 Node node = resource.getContentAsDOM();
                 if (node.getNodeType() == Node.DOCUMENT_NODE)
                     node = node.getFirstChild();
-                assertEquals("XPath: " + query, "item", node.getNodeName());
+                assertEquals("item", node.getNodeName(), "XPath: " + query);
             }
         }
 
         query = "/test/item [ @type='alphanum' ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource(testDocument, query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query);
         }
     }
 
-    @Test
-    public void starAxis() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void starAxis(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/*/item")) {
-            assertEquals("XPath: /*/item", 4, result.getSize());
+            assertEquals(4, result.getSize(), "XPath: /*/item");
         }
 
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/test/*")) {
-            assertEquals("XPath: /test/*", 4, result.getSize());
+            assertEquals(4, result.getSize(), "XPath: /test/*");
         }
 
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/test/descendant-or-self::*")) {
-            assertEquals("XPath: /test/descendant-or-self::*", 13, result.getSize());
+           assertEquals(13, result.getSize(), "XPath: /test/descendant-or-self::*");
         }
 
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", "/*/*")) {
             //Strange !!! Should be 8
-            assertEquals("XPath: /*/*", 4, result.getSize());
+            assertEquals(4, result.getSize(), "XPath: /*/*");
         }
     }
 
-    @Test
-    public void starAxisConstraints() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void starAxisConstraints(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("namespaces.xml", namespaces);
         service.setNamespace("t", "http://www.foo.com");
 
         String query = "// t:title/text() [ . != 'aaaa' ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/t:test/*:section[contains(., 'comment')]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/t:test/t:*[contains(., 'comment')]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/t:test/t:section[contains(., 'comment')]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/t:test/t:section/*[contains(., 'comment')]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/ * / * [ t:title ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/ t:test / t:section [ t:title ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query = "/ t:test / t:section";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query );
         }
     }
 
-    @Test
-    public void starAxisConstraints2() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void starAxisConstraints2(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("namespaces.xml", namespaces);
         service.setNamespace("t", "http://www.foo.com");
 
         String query =  "/ * [ ./ * / t:title ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
         }
 
         query =  "/ * [ * / t:title ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
         }
     }
 
-    @Test
-    public void starAxisConstraints3() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void starAxisConstraints3(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("namespaces.xml", namespaces);
         service.setNamespace("t", "http://www.foo.com");
 
         final String query =  "// * [ . = 'Test Document' ]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("namespaces.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
         }
     }
 
-    @Test
-    public void root() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void root(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         storeXMLStringAndGetQueryService("nested2.xml", nested2);
         final XQueryService service = storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         String query = "let $doc := <a><b/></a> return root($doc)";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query );
 
             try (final XMLResource resource = (XMLResource) result.getResource(0)) {
                 Node node = resource.getContentAsDOM();
@@ -487,7 +494,7 @@ public class XPathQueryTest {
                 if (node.getNodeType() == Node.DOCUMENT_NODE) {
                     node = node.getFirstChild();
                 }
-                assertEquals("XPath: " + query, "a", node.getNodeName());
+                assertEquals("a", node.getNodeName(), "XPath: " + query);
             }
         }
 
@@ -499,14 +506,16 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void name() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void name(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
 
         final String query = "(<a/>,<b/>)/name()";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("nested2.xml", query)) {
-            assertEquals("XPath: " + query, 2, result.getSize());
+            assertEquals(2, result.getSize(), "XPath: " + query);
             try (final Resource resource = result.getResource(0)) {
                 assertEquals("a", resource.getContent().toString());
             }
@@ -516,8 +525,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void parentAxis() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void parentAxis(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
 
@@ -559,8 +570,10 @@ public class XPathQueryTest {
             "for $price in //n:price where $price/parent::*[@id = '3']/n:stock = '5' return $price", 1);
     }
 
-    @Test
-    public void parentSelfAxis() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void parentSelfAxis(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
         storeXMLStringAndGetQueryService("numbers.xml", numbers);
@@ -579,8 +592,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void selfAxis() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void selfAxis(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("self.xml", self);
 
@@ -606,8 +621,10 @@ public class XPathQueryTest {
         queryResourceV(service, "self.xml", "/self::namespace-node()", 0);
     }
 
-    @Test
-    public void ancestorAxis() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void ancestorAxis(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("nested3.xml", nested3);
 
@@ -625,8 +642,10 @@ public class XPathQueryTest {
         queryResourceV(service, "nested3.xml", "//a[t = '3'][ancestor-or-self::*[3]/t = '1']", 1);
     }
 
-    @Test
-    public void ancestorIndex() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void ancestorIndex(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("nested2.xml", nested2);
 
@@ -638,8 +657,10 @@ public class XPathQueryTest {
         queryResourceV(service, "nested2.xml", "(<a/>, <b/>, <c/>)/ancestor::*", 0);
     }
 
-    @Test
-    public void precedingSiblingAxis_persistent() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void precedingSiblingAxis_persistent(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         XQueryService service =
                 storeXMLStringAndGetQueryService("siblings.xml", siblings);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
@@ -736,8 +757,10 @@ public class XPathQueryTest {
         queryResourceV(service, "siblings_named2.xml", "//y[@n eq '2']/preceding-sibling::y", 1);
     }
 
-    @Test
-    public void precedingSiblingAxis_memtree() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void precedingSiblingAxis_memtree(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
@@ -827,8 +850,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void followingSiblingAxis_persistent() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void followingSiblingAxis_persistent(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         XQueryService service = storeXMLStringAndGetQueryService("siblings.xml", siblings);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
@@ -869,7 +894,7 @@ public class XPathQueryTest {
             }
             try (final XMLResource resource = (XMLResource) result.getResource(1)) {
                 final Node testElem = resource.getContentAsDOM();
-                assertTrue(testElem instanceof Element);
+                assertInstanceOf(Element.class, testElem);
                 assertEquals("test", testElem.getNodeName());
             }
             try (final Resource resource = result.getResource(2)) {
@@ -910,8 +935,10 @@ public class XPathQueryTest {
         queryResourceV(service, "siblings_named2.xml", "//y[@n eq '2']/following-sibling::y", 1);
     }
 
-    @Test
-    public void followingSiblingAxis_memtree() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void followingSiblingAxis_memtree(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         service.setProperty(OutputKeys.INDENT, "no");
@@ -983,8 +1010,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void followingAxis() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void followingAxis(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("siblings.xml", siblings);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
@@ -1079,8 +1108,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void precedingAxis() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void precedingAxis(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("siblings.xml", siblings);
         service.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
@@ -1090,8 +1121,11 @@ public class XPathQueryTest {
         queryResourceV(service, "siblings.xml", "//a/n[. = '3']/preceding::s", 3);
     }
 
-    @Test
-    public void position() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void position(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
@@ -1111,15 +1145,15 @@ public class XPathQueryTest {
 
         String query = "for $a in (<a/>, <b/>, <c/>) return $a/position()";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 3, result.getSize());
+            assertEquals(3, result.getSize(), "XPath: " + query);
             try (final XMLResource resource = (XMLResource) result.getResource(0)) {
-                assertEquals("XPath: " + query, "1", resource.getContent().toString());
+                assertEquals("1", resource.getContent().toString(), "XPath: " + query);
             }
             try (final XMLResource resource = (XMLResource) result.getResource(1)) {
-                assertEquals("XPath: " + query, "1", resource.getContent().toString());
+                assertEquals("1", resource.getContent().toString(), "XPath: " + query);
             }
             try (final XMLResource resource = (XMLResource) result.getResource(2)) {
-                assertEquals("XPath: " + query, "1", resource.getContent().toString());
+               assertEquals("1", resource.getContent().toString(), "XPath: " + query);
             }
         }
 
@@ -1128,7 +1162,7 @@ public class XPathQueryTest {
                 "</root>; " +
                 "(for $x in $doc/a return $x)[position() mod 3 = 2]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 2, result.getSize());
+            assertEquals(2, result.getSize(), "XPath: " + query);
         }
 
         query = "declare variable $doc := <root>" +
@@ -1136,7 +1170,7 @@ public class XPathQueryTest {
                 "</root>; " +
                 "for $x in $doc/a return $x[position() mod 3 = 2]";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 0, result.getSize());
+            assertEquals(0, result.getSize(), "XPath: " + query);
         }
 
         query = "declare variable $doc := <root>" +
@@ -1144,23 +1178,23 @@ public class XPathQueryTest {
                 "</root>; " +
                 "for $x in $doc/a[position() mod 3 = 2] return $x";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 2, result.getSize());
+            assertEquals(2, result.getSize(), "XPath: " + query);
         }
 
 
         query = "let $test := <test><a> a </a><a>a</a></test>" +
                 "return distinct-values($test/a/normalize-space(.))";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query);
             try (final XMLResource resource = (XMLResource) result.getResource(0)) {
-                assertEquals("XPath: " + query, "a", resource.getContent().toString());
+                assertEquals("a", resource.getContent().toString(), "XPath: " + query);
             }
         }
 
         query = "let $doc := document {<a><b n='1'/><b n='2'/></a>} " +
             "return $doc//b/(if (@n = '1') then position() else ())";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query);
             try (final Resource resource = result.getResource(0)) {
                 assertEquals("1", resource.getContent().toString());
             }
@@ -1168,7 +1202,7 @@ public class XPathQueryTest {
 
         //Try a second time to see if the position is reset
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+           assertEquals(1, result.getSize(), "XPath: " + query);
             try (final Resource resource = result.getResource(0)) {
                 assertEquals("1", resource.getContent().toString());
             }
@@ -1178,7 +1212,7 @@ public class XPathQueryTest {
         "return $doc/a[1] [b[1]]";
         service.setProperty(OutputKeys.INDENT, "no");
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 1, result.getSize());
+            assertEquals(1, result.getSize(), "XPath: " + query);
             try (final Resource resource = result.getResource(0)) {
                 assertThat(resource.getContent().toString(), CompareMatcher.isIdenticalTo("<a><b/></a>"));
             }
@@ -1196,26 +1230,30 @@ public class XPathQueryTest {
         //assertEquals("XPath: " + query, 3, result.getSize());
     }
 
-    @Test
-    public void last() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void last(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
             storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         final String query = "<a><b>test1</b><b>test2</b></a>/b/last()";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query)) {
-            assertEquals("XPath: " + query, 2, result.getSize());
+            assertEquals(2, result.getSize(), "XPath: " + query);
             try (final XMLResource resource = (XMLResource) result.getResource(0)) {
-                assertEquals("XPath: " + query, "2", resource.getContent().toString());
+                assertEquals("2", resource.getContent().toString(), "XPath: " + query);
             }
             try (final XMLResource resource = (XMLResource) result.getResource(1)) {
-                assertEquals("XPath: " + query, "2", resource.getContent().toString());
+                assertEquals("2", resource.getContent().toString(), "XPath: " + query);
             }
         }
     }
 
 
-    @Test
-    public void numbers() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void numbers(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
@@ -1242,9 +1280,9 @@ public class XPathQueryTest {
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "min(( 123456789123456789123456789, " +
                 "123456789123456789123456789123456789123456789 ))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("minimum of big integers",
-                    "123456789123456789123456789",
-                    resource.getContent().toString());
+                assertEquals("123456789123456789123456789",
+                resource.getContent().toString(),
+                "minimum of big integers");
             }
         }
 
@@ -1257,21 +1295,23 @@ public class XPathQueryTest {
         assertTrue(message.indexOf("XPTY0004") > -1);
     }
 
-    @Test
-    public void dates() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void dates(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         String query = "xs:untypedAtomic(\"--12-05:00\") cast as xs:gMonth";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query);
              final XMLResource resource = (XMLResource)result.getResource(0)) {
-            assertEquals("XPath: " + query, "--12-05:00", resource.getContent().toString());
+            assertEquals("--12-05:00", resource.getContent().toString(), "XPath: " + query);
         }
 
         query = "(xs:dateTime(\"0001-01-01T01:01:01Z\") + xs:yearMonthDuration(\"-P20Y07M\"))";
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("numbers.xml", query);
              final XMLResource resource = (XMLResource)result.getResource(0)) {
-            assertEquals("XPath: " + query, "-0021-06-01T01:01:01Z", resource.getContent().toString());
+            assertEquals("-0021-06-01T01:01:01Z", resource.getContent().toString(), "XPath: " + query);
         }
     }
     
@@ -1281,9 +1321,11 @@ public class XPathQueryTest {
                 storeXMLStringAndGetQueryService("dates.xml", date);
         queryResourceV(service, "dates.xml", "/timestamp[@date = xs:date('2006-04-29+02:00')]", 1);
     }
-    
-    @Test
-    public void predicates() throws XMLDBException, IOException, SAXException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicates(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final String numbers =
                 "<test>"
                 + "<item id='1' type='alphanum'><price>5.6</price><stock>22</stock></item>"
@@ -1357,8 +1399,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void predicates2() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicates2(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final String numbers =
                 "<test>"
                 + "<item id='1' type='alphanum'><price>5.6</price><stock>22</stock></item>"
@@ -1531,21 +1575,23 @@ public class XPathQueryTest {
     /**
      * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1460610&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1460610&group_id=17691&atid=117691</a>
      */
-    @Test
-    public void predicates_bug1460610() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicates_bug1460610(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "(1, 2, 3)[ . lt 3]";
         
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
 
-            assertEquals("SFBUG 1460610 nr of results", 2, result.getSize());
+            assertEquals(2, rs.getSize(), "SFBUG 1460610 nr of results");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("SFBUG 1460610 1st result", "1",
-                    resource.getContent().toString());
+                assertEquals("1", resource.getContent().toString(),
+                    "SFBUG 1460610 1st result");
             }
             try (final Resource resource = result.getResource(1)) {
-                assertEquals("SFBUG 1460610 2nd result", "2",
-                    resource.getContent().toString());
+                assertEquals("2", resource).getContent().toString(),
+                    "SFBUG 1460610 2nd result");
             }
         }
     }
@@ -1553,16 +1599,18 @@ public class XPathQueryTest {
     /**
      * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1537355&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1537355&group_id=17691&atid=117691</a>
      */
-    @Test
-    public void predicates_bug1537355() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicates_bug1537355(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "let $one := 1 return (1, 2, 3)[$one + 1]";
         
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("SFBUG 1537355 nr of results", 1, result.getSize());
+            assertEquals(1, rs.getSize(), "SFBUG 1537355 nr of results");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("SFBUG 1537355 result", "2",
-                    resource.getContent().toString());
+                assertEquals("2", resource.getContent().toString(),
+                    "SFBUG 1537355 result");
             }
         }
     }
@@ -1570,8 +1618,10 @@ public class XPathQueryTest {
     /**
      * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1533053&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1533053&group_id=17691&atid=117691</a>
      */
-    @Test
-    public void nestedPredicates_bug1533053() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void nestedPredicates_bug1533053(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         String xQuery = "let $doc := <objects>" +
@@ -1604,20 +1654,22 @@ public class XPathQueryTest {
         }
     }
 
-    
+
     /**
      * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691</a>
      */
-    @Test
-    public void predicate_bug1488303() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicate_bug1488303(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
         
         // test one
         final String xQuery1 = "let $q := <q><t>eXist</t></q> return $q//t";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery1)) {
-            assertEquals("nr of results", 1, result.getSize());
+            assertEquals(1, result.getSize(), "nr of results");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("result", "<t>eXist</t>",
+                assertEquals("<t>eXist</t>",
                     resource.getContent().toString());
             }
         }
@@ -1625,9 +1677,9 @@ public class XPathQueryTest {
         // test two
         final String xQuery2 = "let $q := <q><t>eXist</t></q> return ($q//t)[1]";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery2)) {
-            assertEquals("nr of results", 1, result.getSize());
+           ssertEquals(1, result.getSize(), "nr of results");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("result", "<t>eXist</t>",
+                assertEquals("<t>eXist</t>",
                     resource.getContent().toString());
             }
         }
@@ -1635,20 +1687,22 @@ public class XPathQueryTest {
         // This one fails http://sourceforge.net/tracker/index.php?func=detail&aid=1488303&group_id=17691&atid=117691
         final String xQuery3 = "let $q := <q><t>eXist</t></q> return $q//t[1]";
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery3)) {
-            assertEquals("SFBUG 1488303 nr of results", 1, result.getSize());
+            assertEquals(1, result.getSize(), "SFBUG 1488303 nr of results");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("SFBUG 1488303 result", "<t>eXist</t>",
-                    resource.getContent().toString());
+                 assertEquals("<t>eXist</t>", resource.getContent().toString(),
+                    "SFBUG 1488303 result");
             }
         }
     }
 
-    
+
     /**
      * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1460791&group_id=17691&atid=117691">http://sourceforge.net/tracker/index.php?func=detail&aid=1460791&group_id=17691&atid=117691</a>
      */
-    @Test
-    public void descendantOrSelf_bug1460791() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void descendantOrSelf_bug1460791(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; let $test:=<z><a>aaa</a><z>zzz</z></z> "
                 +"return ( <one>{$test//z}</one>, <two>{$test/descendant-or-self::node()/child::z}</two> )";
         
@@ -1658,25 +1712,27 @@ public class XPathQueryTest {
 //        System.out.println("BUG1460791/1" + rs.getResource(0).getContent().toString() );
 //        System.out.println("BUG1460791/2" + rs.getResource(1).getContent().toString() );
 
-            assertEquals("SFBUG 1460791 nr of results", 2, result.getSize());
+            assertEquals(2, rs.getSize(), "SFBUG 1460791 nr of results");
 
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("SFBUG 1460791 result part 1", "<one><z>zzz</z></one>",
-                    resource.getContent().toString());
+                assertEquals("<one><z>zzz</z></one>", resource.getContent().toString(),
+                    "SFBUG 1460791 result part 1");
             }
 
             try (final Resource resource = result.getResource(1)) {
-                assertEquals("SFBUG 1460791 result part 2", "<two><z>zzz</z></two>",
-                    resource.getContent().toString());
+                 assertEquals("<two><z>zzz</z></two>", resource).getContent().toString(),
+                    "SFBUG 1460791 result part 2");
             }
         }
     }
-    
+
     /**
      * @see <a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1462120&group_id=17691&atid=1176">http://sourceforge.net/tracker/index.php?func=detail&aid=1462120&group_id=17691&atid=1176</a>
      */
-    @Test
-    public void xpath_bug1462120() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void xpath_bug1462120(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; "
                 +"let $m:=<Units><Unit name=\"g\" size=\"1\"/>"
                 +"<Unit name=\"kg\" size=\"1000\"/></Units> "
@@ -1688,21 +1744,21 @@ public class XPathQueryTest {
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
 
-            assertEquals("SFBUG 1462120 nr of results", 3, result.getSize());
+            assertEquals(3, rs.getSize(), "SFBUG 1462120 nr of results");
 
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("SFBUG 1462120 result part 1", "<Unit name=\"g\" size=\"1\"/>",
-                    resource.getContent().toString());
+                assertEquals("<Unit name=\"g\" size=\"1\"/>",
+                    resource.getContent().toString(), "SFBUG 1462120 result part 1");
             }
 
             try (final Resource resource = result.getResource(1)) {
-                assertEquals("SFBUG 1462120 result part 2", "<br/>",
-                    resource.getContent().toString());
+                assertEquals("<br/>",
+                    resource.getContent().toString(), SFBUG 1462120 result part 2");
             }
 
             try (final Resource resource = result.getResource(2)) {
-                assertEquals("SFBUG 1462120 result part 3", "<Unit name=\"g\" size=\"1\"/>",
-                    resource.getContent().toString());
+                assertEquals("<Unit name=\"g\" size=\"1\"/>",
+                    resource.getContent().toString(), "SFBUG 1462120 result part 3");
             }
         }
     }
@@ -1714,31 +1770,35 @@ public class XPathQueryTest {
      *
      * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
-    @Test
-    public void predicate_bug_wiki_1() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicate_bug_wiki_1(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "let $dum := <dummy><el>1</el><el>2</el></dummy> return $dum/el[2]";
         
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
 
-            assertEquals("Predicate bug wiki_1", 1, result.getSize());
+            assertEquals(1, rs.getSize(), "Predicate bug wiki_1");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("Predicate bug wiki_1", "<el>2</el>",
-                    resource.getContent().toString());
+                assertEquals("<el>2</el>",
+                    resource.getContent().toString(), "Predicate bug wiki_1");
             }
         }
     }
 
-    @Test
-    public void predicate_bug_andrzej() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void predicate_bug_andrzej(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery =
             "doc('/db/test/predicates.xml')//elem1/elem2[ string-length( ./elem3 ) > 0][1]/elem3/text()";
         final XQueryService service =
             storeXMLStringAndGetQueryService("predicates.xml", predicates);
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("testPredicateBUGAndrzej", 1, result.getSize());
+            assertEquals(1, result.getSize(), "testPredicateBUGAndrzej");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("testPredicateBUGAndrzej", "val1", resource.getContent().toString());
+                assertEquals("val1", resource.getContent().toString(), "testPredicateBUGAndrzej");
             }
         }
     }
@@ -1747,28 +1807,32 @@ public class XPathQueryTest {
      * removing Self: makes the query work OK
      * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
-    @Test
-    public void cardinalitySelf_bug_wiki_2() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void cardinalitySelf_bug_wiki_2(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "let $test := <test><works><employee>a</employee><employee>b</employee></works></test> "
                 + "for $h in $test/works/employee[2] return fn:name($h/self::employee)";
 
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("CardinalitySelfBUG bug wiki_2", 1, result.getSize());
+            assertEquals(1, result.getSize(), "CardinalitySelfBUG bug wiki_2");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("CardinalitySelfBUG bug wiki_2", "employee",
-                    resource.getContent().toString());
+                assertEquals("employee",
+                    resource.getContent().toString(), "CardinalitySelfBUG bug wiki_2");
             }
         }
     }
-    
+
     /**
      * Problem in VirtualNodeSet which return 2 attributes because it 
      * computes every level
      * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
-    @Test
-    public void virtualNodeset_bug_wiki_3() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void virtualNodeset_bug_wiki_3(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; "
                 + "let $node := (<c id=\"OK\"><b id=\"cool\"/></c>)"
                 + "/descendant::*/attribute::id return <a>{$node}</a>";
@@ -1776,10 +1840,10 @@ public class XPathQueryTest {
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
 
-            assertEquals("VirtualNodesetBUG_wiki_3", 1, result.getSize());
+            assertEquals(1, result.getSize(), "VirtualNodesetBUG_wiki_3");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("VirtualNodesetBUG_wiki_3", "<a id=\"cool\"/>",
-                    resource.getContent().toString());
+                assertEquals("<a id=\"cool\"/>",
+                    resource.getContent().toString(), "VirtualNodesetBUG_wiki_3");
             }
         }
     } 
@@ -1789,8 +1853,10 @@ public class XPathQueryTest {
      *
      * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
-    @Test
-    public void virtualNodeset_bug_wiki_4() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void virtualNodeset_bug_wiki_4(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; "
                 + "let $node := (<c id=\"OK\">"
                 + "<b id=\"cool\"/></c>)/descendant-or-self::*/child::b "
@@ -1798,10 +1864,10 @@ public class XPathQueryTest {
 
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("VirtualNodesetBUG_wiki_4", 1, result.getSize());
+            assertEquals(1, result.getSize(), "VirtualNodesetBUG_wiki_4");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("VirtualNodesetBUG_wiki_4", "<a><b id=\"cool\"/></a>",
-                    resource.getContent().toString());
+                assertEquals("<a><b id=\"cool\"/></a>",
+                    resource.getContent().toString(), "VirtualNodesetBUG_wiki_4");
             }
         }
     } 
@@ -1811,25 +1877,29 @@ public class XPathQueryTest {
      *
      * @see <a href="http://wiki.exist-db.org/space/XQueryBugs">http://wiki.exist-db.org/space/XQueryBugs</a>
      */
-    @Test
-    public void virtualNodeset_bug_wiki_5() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void virtualNodeset_bug_wiki_5(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; "
                 + "let $node := (<c id=\"OK\"><b id=\"cool\"/>"
                 + "</c>)/descendant-or-self::*/descendant::b return <a>{$node}</a>";
 
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("VirtualNodesetBUG_wiki_5", 1, result.getSize());
+            assertEquals(1, result.getSize(), "VirtualNodesetBUG_wiki_5");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("VirtualNodesetBUG_wiki_5", "<a><b id=\"cool\"/></a>",
-                    resource.getContent().toString());
+                assertEquals("<a><b id=\"cool\"/></a>",
+                    resource.getContent().toString(), "VirtualNodesetBUG_wiki_5");
             }
         }
     } 
     
     // It seems that the document builder receives events that are irrelevant.
-    @Test
-    public void documentBuilder_bug_wiki_6() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void documentBuilder_bug_wiki_6(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; "
                 + "declare function local:test() {let $results := <dummy/>"
                 + "return \"id\" }; "
@@ -1837,34 +1907,38 @@ public class XPathQueryTest {
 
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("testDocumentBuilderBUG_wiki_6", 1, result.getSize());
+            assertEquals(1, result.getSize(), "testDocumentBuilderBUG_wiki_6");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("testDocumentBuilderBUG_wiki_6", "<wrapper><string id=\"id\"/></wrapper>",
-                    resource.getContent().toString());
+                assertEquals("<wrapper><string id=\"id\"/></wrapper>",
+                    resource.getContent().toString(), "testDocumentBuilderBUG_wiki_6");
             }
         }
     }
-    
-    @Test
-    public void castInPredicate_bug_wiki_7() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void castInPredicate_bug_wiki_7(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "let $number := 2, $list := (\"a\", \"b\", \"c\") return $list[xs:int($number * 2) - 1]";
 
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("testCalculationInPredicate_wiki_7", 1, result.getSize());
+            assertEquals(1, result.getSize(), "testCalculationInPredicate_wiki_7");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("testCalculationInPredicate_wiki_7", "c",
-                    resource.getContent().toString());
+                assertEquals("c",
+                    resource.getContent().toString(), "testCalculationInPredicate_wiki_7");
             }
         }
      }
-     
-     /**
-      * Miscomputation of the expression context in where clause when no 
-      * wrapper expression is used. Using, e.g. where data($x/@id) eq "id" works !
-      */
-    @Test
-    public void computation_bug_wiki_8() throws XMLDBException {
+
+    /**
+     * Miscomputation of the expression context in where clause when no 
+     * wrapper expression is used. Using, e.g. where data($x/@id) eq "id" works !
+     */
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void computation_bug_wiki_8(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String xQuery = "declare option exist:serialize \"method=xml indent=no\"; "
                  + "let $a := element node1 { attribute id {'id'}, "
                  + "element node1 { '1'},element node2 { '2'} }"
@@ -1872,16 +1946,18 @@ public class XPathQueryTest {
 
         final XQueryService service = getQueryService();
         try (final EXistResourceSet result = (EXistResourceSet) service.query(xQuery)) {
-            assertEquals("testComputationBug_wiki_8", 1, result.getSize());
+            assertEquals(1, result.getSize(), "testComputationBug_wiki_8");
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("testComputationBug_wiki_8", "<node1 id=\"id\"><node1>1</node1><node2>2</node2></node1>",
-                    resource.getContent().toString());
+                assertEquals("<node1 id=\"id\"><node1>1</node1><node2>2</node2></node1>",
+                    resource.getContent().toString(), "testComputationBug_wiki_8");
             }
         }
     }
 
-    @Test
-    public void strings() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void strings(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
@@ -1901,8 +1977,11 @@ public class XPathQueryTest {
         };
     }
 
-    @Test
-    public void quotes() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void quotes(String apiName, String baseUri) throws XMLDBException {
+
+        initXPathQueryTest(apiName, baseUri);
 
         final XQueryService service =
                 storeXMLStringAndGetQueryService("quotes.xml", quotes);
@@ -1913,96 +1992,96 @@ public class XPathQueryTest {
         queryResourceV(service, "quotes.xml", "declare variable $content as xs:string external; /test[title = $content]", 1);
     }
 
-    @Test
-    public void booleans() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void booleans(String apiName, String baseUri) throws XMLDBException {
+
+        initXPathQueryTest(apiName, baseUri);
 
         final XQueryService service =
                 storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(1.0)", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of 1.0 should be true", "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of 1.0 should be true");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(0.0)", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of 0.0 should be false", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of 0.0 should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:double(0.0))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of double 0.0 should be false", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of double 0.0 should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:double(1.0))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of double 1.0 should be true", "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of double 1.0 should be true");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:float(1.0))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of float 1.0 should be true", "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of float 1.0 should be true");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:float(0.0))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of float 0.0 should be false", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of float 0.0 should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:integer(0))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of integer 0 should be false", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of integer 0 should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(xs:integer(1))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of integer 1 should be true", "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of integer 1 should be true");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "'true' cast as xs:boolean", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of 'true' cast to xs:boolean should be true",
-                    "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of 'true' cast to xs:boolean should be true");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "'false' cast as xs:boolean", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of 'false' cast to xs:boolean should be false",
-                    "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of 'false' cast to xs:boolean should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean('Hello')", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of string 'Hello' should be true", "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of string 'Hello' should be true");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean('')", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of empty string should be false", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of empty string should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(())", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of empty sequence should be false", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "boolean value of empty sequence should be false");
             }
         }
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(('Hello'))", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of sequence with non-empty string should be true",
-                    "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of sequence with non-empty string should be true");
             }
         }
 
@@ -2012,8 +2091,7 @@ public class XPathQueryTest {
 
         try (final EXistResourceSet result = queryResource(service, "numbers.xml", "boolean(//item[@id = '1']/price)", 1)) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("boolean value of 5.6 should be true", "true",
-                    resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), "boolean value of 5.6 should be true");
             }
         }
 
@@ -2026,8 +2104,11 @@ public class XPathQueryTest {
         assertTrue(message.indexOf("FORG0006") > -1);
     }
 
-    @Test
-    public void not() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void not(String apiName, String baseUri) throws XMLDBException {
+
+        initXPathQueryTest(apiName, baseUri);
 
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
@@ -2056,8 +2137,10 @@ public class XPathQueryTest {
         queryResourceV(service, "strings.xml", "//*[blah][not(@blah)]", 0);
     }
 
-    @Test
-    public void logicalOr() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void logicalOr(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
@@ -2070,10 +2153,12 @@ public class XPathQueryTest {
              final Resource resource = result.getResource(0)) {
             assertEquals("false", resource.getContent().toString());
         }
-    } 
-    
-    @Test
-    public void logicalAnd() throws XMLDBException, IOException, SAXException {
+    }
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void logicalAnd(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("strings.xml", strings);
 
@@ -2086,10 +2171,12 @@ public class XPathQueryTest {
              final Resource resource = result.getResource(0)) {
             assertEquals("false", resource.getContent().toString());
         }
-    }     
-    
-    @Test
-    public void ids_persistent() throws XMLDBException {
+    }
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void ids_persistent(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service =
                 storeXMLStringAndGetQueryService("ids.xml", ids);
 
@@ -2116,9 +2203,11 @@ public class XPathQueryTest {
         queryResourceV(service, "ids.xml", "id('id4', /test)", 1);
     }
 
-    @Ignore("Not yet supported in eXist")
-    @Test
-    public void ids_memtree() throws XMLDBException {
+    @Disabled("Not yet supported in eXist")
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void ids_memtree(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         try (final EXistResourceSet result = (EXistResourceSet) service.query("document { " + ids_content + " }//a/id(@ref)")) {
@@ -2141,9 +2230,11 @@ public class XPathQueryTest {
             assertEquals("<name>two</name>", r.getContent().toString());
         }
     }
-    
-    @Test
-    public void idsOnEmptyCollection() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void idsOnEmptyCollection(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         try (final Collection root = DatabaseManager.getCollection(getBaseUri(), "admin", "")) {
             final CollectionManagementService service = root.getService(CollectionManagementService.class);
             try (final Collection emptyCollection = service.createCollection("empty")) {
@@ -2153,9 +2244,11 @@ public class XPathQueryTest {
             }
         }
     }
-    
-    @Test
-    public void idRefs_persistent() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void idRefs_persistent(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
        final XQueryService service =
           storeXMLStringAndGetQueryService("ids.xml", ids);
   
@@ -2165,9 +2258,11 @@ public class XPathQueryTest {
        queryResourceV(service, "ids.xml", "<results>{/idref('id2')}</results>", 1);
     }
 
-    @Ignore("Not yet supported in eXist")
-    @Test
-    public void idRefs_memtree() throws XMLDBException {
+    @Disabled("Not yet supported in eXist")
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void idRefs_memtree(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         try (final EXistResourceSet result = (EXistResourceSet) service.query("document {" + ids_content + "}/idref('id2')")) {
@@ -2186,9 +2281,11 @@ public class XPathQueryTest {
             assertEquals(1, result.getSize());
         }
     }
-    
-    @Test
-    public void externalVars() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void externalVars(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service1 = storeXMLStringAndGetQueryService("strings.xml", strings);
 
         String query =
@@ -2255,9 +2352,11 @@ public class XPathQueryTest {
         }
         assertTrue(message.indexOf("XPTY0004") > -1);
     }
-    
-    @Test
-    public void externalVars2() throws ParserConfigurationException, IOException, SAXException, XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void externalVars2(String apiName, String baseUri) throws ParserConfigurationException, IOException, SAXException, XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         final DocumentBuilder builder = factory.newDocumentBuilder();
         final InputSource source = new InputSource(new StringReader(strings));
@@ -2271,8 +2370,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void queryResource() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void queryResource(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         try (final XMLResource doc = testCollection.createResource("strings.xml", XMLResource.class)) {
             doc.setContent(strings);
             testCollection.storeResource(doc);
@@ -2293,14 +2394,16 @@ public class XPathQueryTest {
             assertEquals(2, result.getSize());
         }
     }
-    
+
     /**
      * test involving ancestor::
      * >>>>>>> currently this produces variable corruption :
      * 			The result is the ancestor <<<<<<<<<<
      */
-    @Test
-    public void ancestor() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void ancestor(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = storeXMLStringAndGetQueryService("numbers.xml", numbers);
 
         final String query =
@@ -2318,8 +2421,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void namespaces() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void namespaces(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = storeXMLStringAndGetQueryService("namespaces.xml", namespaces);
 
         service.setNamespace("t", "http://www.foo.com");
@@ -2349,8 +2454,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void preserveSpace() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void preserveSpace(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = storeXMLStringAndGetQueryService("whitespace.xml", ws);
 
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("whitespace.xml", "//text")) {
@@ -2367,18 +2474,22 @@ public class XPathQueryTest {
             }
         }
     }
-    
-    @Test
-    public void nestedElements() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void nestedElements(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = storeXMLStringAndGetQueryService("nested.xml", nested);
 
         try (final EXistResourceSet result = (EXistResourceSet) service.queryResource("nested.xml", "//c")) {
             assertEquals(3, result.getSize());
         }
     }
-    
-    @Test
-    public void staticVariables() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void staticVariables(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XPathQueryService service = testCollection.getService(XPathQueryService.class);
 
         try (final XMLResource doc = testCollection.createResource("numbers.xml", XMLResource.class)) {
@@ -2412,8 +2523,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void membersAsResource() throws XMLDBException, IOException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void membersAsResource(String apiName, String baseUri) throws XMLDBException, IOException {
+        initXPathQueryTest(apiName, baseUri);
 //			XPathQueryService service =
 //				(XPathQueryService) testCollection.getService(
 //					"XPathQueryService",
@@ -2433,12 +2546,14 @@ public class XPathQueryTest {
 
             final Pattern p = Pattern.compile(".*(<price>.*){4}", Pattern.DOTALL);
             final Matcher m = p.matcher(content);
-            assertTrue("get whole document numbers.xml", m.matches());
+            assertTrue(m.matches(), "get whole document numbers.xml");
         }
     }
 
-    @Test
-    public void satisfies() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void satisfies(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         try (final EXistResourceSet result = queryAndAssert(service,
@@ -2447,7 +2562,7 @@ public class XPathQueryTest {
                 "       return false() ",
                 1,  "")) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("satisfies + FLWR expression allways false 1", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "satisfies + FLWR expression allways false 1");
             }
         }
 
@@ -2457,27 +2572,29 @@ public class XPathQueryTest {
                 "   local:foo()",
                 1,  "")) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals("satisfies + FLWR expression allways false 2", "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), "satisfies + FLWR expression allways false 2");
             }
         }
 
         String query = "every $x in () satisfies false()";
         try (final EXistResourceSet result = queryAndAssert(service, query, 1,  "")) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals(query, "true", resource.getContent().toString());
+                assertEquals("true", resource.getContent().toString(), query);
             }
         }
 
         query = "some $x in () satisfies true()";
         try (final EXistResourceSet result = queryAndAssert(service, query, 1,  "")) {
             try (final Resource resource = result.getResource(0)) {
-                assertEquals(query, "false", resource.getContent().toString());
+                assertEquals("false", resource.getContent().toString(), query);
             }
         }
     }
-    
-    @Test
-    public void intersect() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void intersect(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         String query = "()  intersect ()";
@@ -2489,9 +2606,11 @@ public class XPathQueryTest {
         query = "(1)  intersect  ()";
         queryAndAssertV(service, query, 0, "");
     }
-    
-    @Test
-    public void union() throws XMLDBException {
+
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void union(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         String query = "()  union ()";
@@ -2524,8 +2643,10 @@ public class XPathQueryTest {
         queryAndAssertV(service, query, 2, "");
     }
 
-    @Test
-    public void except() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void except(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         String query = "()  except ()";
@@ -2552,8 +2673,10 @@ public class XPathQueryTest {
         queryAndAssertV(service, query, 1, "");
     }
 
-    @Test
-    public void convertToBoolean() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void convertToBoolean(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
 
@@ -2575,11 +2698,9 @@ public class XPathQueryTest {
             for (int i = 0; i < 10; i++) {
                 try (final Resource resource = result.getResource(i)) {
                     if (i < 5) {
-                        assertEquals("true " + (i + 1), "<true>true</true>",
-                            resource.getContent().toString());
+                        assertEquals("<true>true</true>", resource.getContent().toString(), "true " + (i + 1));
                     } else {
-                        assertEquals("false " + (i + 1), "<false>false</false>",
-                            resource.getContent().toString());
+                        assertEquals("<false>false</false>", resource.getContent().toString(), "false " + (i + 1));
                     }
                 }
             }
@@ -2595,11 +2716,13 @@ public class XPathQueryTest {
             exceptionThrown = true;
             message = e.getMessage();
         }
-        assertTrue("Exception wanted: " + message, exceptionThrown);
+        assertTrue(exceptionThrown, "Exception wanted: " + message);
     }
 
-    @Test
-    public void compile() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void compile(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String invalidQuery = "for $i in (1 to 10)\n return $b";
         final String validQuery = "for $i in (1 to 10) return $i";
         final String validModule = "module namespace foo=\"urn:foo\";\n" +
@@ -2612,10 +2735,10 @@ public class XPathQueryTest {
         try {
             service.compile(invalidQuery);
         } catch (XMLDBException e) {
-            assertEquals(((XPathException)e.getCause()).getLine(), 2);
+            assertEquals(2, ((XPathException) e.getCause()).getLine());
             exceptionOccurred = true;
         }
-        assertTrue("Expected an exception", exceptionOccurred);
+        assertTrue(exceptionOccurred, "Expected an exception");
         
         exceptionOccurred = false;
         try {
@@ -2623,21 +2746,23 @@ public class XPathQueryTest {
         } catch (XPathException e) {
             exceptionOccurred = true;
         }
-        assertTrue("Expected an exception", exceptionOccurred);
+        assertTrue(exceptionOccurred, "Expected an exception");
 
         service.compile(validQuery);
         service.compile(validModule);
     }
-    
+
     /**
      * Added by Geoff Shuetrim on 15 July 2006 (geoff@galexy.net).
      * This test has been added following identification of a problem running
      * XPath queries that involved the name of elements with the name 'xpointer'.
      * @throws XMLDBException
      */
-    @Ignore
-    @Test
-    public void xpointerElementNameHandling() throws XMLDBException {
+    @Disabled
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void xpointerElementNameHandling(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = storeXMLStringAndGetQueryService(
                 "xpointer.xml", xpointerElementName);
 
@@ -2651,8 +2776,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void atomization() throws XMLDBException, IOException, SAXException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void atomization(String apiName, String baseUri) throws XMLDBException, IOException, SAXException {
+        initXPathQueryTest(apiName, baseUri);
         final String query =
                 "declare namespace ex = \"http://example.org\";\n" +
                 "declare function ex:elementName() as xs:QName {\n" +
@@ -2673,8 +2800,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void substring() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void substring(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         // Test cases by MIKA
@@ -2701,8 +2830,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void cdataPersistentDom() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void cdataPersistentDom(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final String docName = "cdata.xml";
 
         final XQueryService service =
@@ -2751,10 +2882,12 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void cdataMemtreeDom() throws XMLDBException, IOException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void cdataMemtreeDom(String apiName, String baseUri) throws XMLDBException, IOException {
+        initXPathQueryTest(apiName, baseUri);
         final String docName = "cdata.xml";
-        final Path tempFile = tempFolder.newFile().toPath();
+        final Path tempFile = File.createTempFile("junit", null, TEMPORARY_FOLDER).toPath();
         Files.write(tempFile, Arrays.asList(cdata_xml));
 
         final XQueryService service = getQueryService();
@@ -2802,8 +2935,10 @@ public class XPathQueryTest {
         }
     }
 
-    @Test
-    public void cdataComputedDom() throws XMLDBException {
+    @MethodSource("data")
+    @ParameterizedTest(name = "{0}")
+    public void cdataComputedDom(String apiName, String baseUri) throws XMLDBException {
+        initXPathQueryTest(apiName, baseUri);
         final XQueryService service = getQueryService();
 
         String query =
@@ -2899,9 +3034,9 @@ public class XPathQueryTest {
     private EXistResourceSet queryResource(final XQueryService service, final String resource, final String query, final int expected, @Nullable final String message) throws XMLDBException {
         final EXistResourceSet result = (EXistResourceSet) service.queryResource(resource, query);
         if(message == null) {
-            assertEquals(query, expected, result.getSize());
+            assertEquals(expected, result.getSize(), query);
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }
@@ -2918,7 +3053,7 @@ public class XPathQueryTest {
         if(message == null) {
             assertEquals(expected, result.getSize());
         } else {
-            assertEquals(message, expected, result.getSize());
+            assertEquals(expected, result.getSize(), message);
         }
         return result;
     }
@@ -2942,5 +3077,10 @@ public class XPathQueryTest {
             testCollection.storeResource(doc);
         }
         return getQueryService();
+    }
+
+    public void initXPathQueryTest(String apiName, String baseUri) {
+        this.apiName = apiName;
+        this.baseUri = baseUri;
     }
 }

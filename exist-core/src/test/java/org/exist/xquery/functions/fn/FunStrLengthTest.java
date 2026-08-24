@@ -45,24 +45,23 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
+import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.modules.XPathQueryService;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FunStrLengthTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer server = new ExistXmldbEmbeddedServer(true, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension SERVER = new XmldbEmbeddedDatabaseExtension(true, true, true);
 
     @Test
-    public void contextItemWithinPredicate() throws XMLDBException {
-        final XPathQueryService queryService = server.getRoot().getService(XPathQueryService.class);
+    void contextItemWithinPredicate() throws XMLDBException {
+        final XPathQueryService queryService = SERVER.getRoot().getService(XPathQueryService.class);
 
         // upon empty sequence
         try (final EXistResourceSet result = (EXistResourceSet) queryService.query("()[fn:string-length(.) gt 0]")) {

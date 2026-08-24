@@ -45,12 +45,12 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ResourceIterator;
@@ -61,19 +61,19 @@ import org.xmldb.api.modules.XMLResource;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class LocalXMLResourceDOMTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static String TEST_RESOURCE_NAME = "doc1.xml";
 
-    @BeforeClass
-    public static void setup() throws XMLDBException {
-        final CollectionManagementService cms = existEmbeddedServer
+    @BeforeAll
+    static void setup() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE
                 .getRoot()
                 .getService(CollectionManagementService.class);
 
@@ -89,9 +89,9 @@ public class LocalXMLResourceDOMTest {
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws XMLDBException {
-        final CollectionManagementService cms = existEmbeddedServer
+    @AfterAll
+    static void cleanup() throws XMLDBException {
+        final CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE
                 .getRoot()
                 .getService(CollectionManagementService.class);
 
@@ -99,11 +99,11 @@ public class LocalXMLResourceDOMTest {
     }
 
     @Test
-    public void testEnhancer01() throws XMLDBException {
+    void enhancer01() throws XMLDBException {
         final String query = "doc('" + TestConstants.TEST_COLLECTION_URI.getRawCollectionPath() + "/" + TEST_RESOURCE_NAME + "')//properties[property[@key eq 'type'][text() eq 'Table']]";
 
-        try (final EXistResourceSet rs1 = existEmbeddedServer.executeQuery(query);
-             final EXistResourceSet rs2 = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet rs1 = XMLDB_EMBEDDED_DATABASE.executeQuery(query);
+             final EXistResourceSet rs2 = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
 
             final ResourceIterator i1 = rs1.getIterator();
             final ResourceIterator i2 = rs2.getIterator();
@@ -120,8 +120,8 @@ public class LocalXMLResourceDOMTest {
     }
 
     @Test
-    public void testEnhancer02() throws XMLDBException {
-        try (final EXistResourceSet rs1 = existEmbeddedServer.executeQuery(
+    void enhancer02() throws XMLDBException {
+        try (final EXistResourceSet rs1 = XMLDB_EMBEDDED_DATABASE.executeQuery(
             "doc('" + TestConstants.TEST_COLLECTION_URI.getRawCollectionPath() + "/" + TEST_RESOURCE_NAME + "')//properties/property[@key='type' and text()='Table']"
         )) {
             for (final ResourceIterator i1 = rs1.getIterator(); i1.hasMoreResources(); ) {
@@ -134,7 +134,7 @@ public class LocalXMLResourceDOMTest {
                         + "declare namespace xmldb=\"http://exist-db.org/xquery/xmldb\";"
                         + "declare variable $local:document external;"
                         + "$local:document";
-                    try (final EXistResourceSet rs2 = existEmbeddedServer.executeQuery(query, variables)) {
+                    try (final EXistResourceSet rs2 = XMLDB_EMBEDDED_DATABASE.executeQuery(query, variables)) {
 
                         for (final ResourceIterator i2 = rs2.getIterator(); i2.hasMoreResources(); ) {
                             try (final XMLResource r2 = (XMLResource) i2.nextResource()) {

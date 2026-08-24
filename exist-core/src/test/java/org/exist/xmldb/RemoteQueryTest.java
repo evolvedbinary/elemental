@@ -52,9 +52,9 @@ import java.net.URISyntaxException;
 import org.exist.test.TestConstants;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmlrpc.XmlRpcTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
@@ -69,23 +69,23 @@ import org.xmldb.api.modules.XQueryService;
 import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.exist.samples.Samples.SAMPLES;
 
-public class RemoteQueryTest extends RemoteDBTest {
+class RemoteQueryTest extends RemoteDBTest {
 	private Collection testCollection;
 	private Collection xmlrpcCollection;
 
-	@Test
-	public void resourceSet() throws XMLDBException {
+    @Test
+    void resourceSet() throws XMLDBException {
 		final String query = "//SPEECH[SPEAKER = 'HAMLET']";
 		final XQueryService service = testCollection.getService(XQueryService.class);
 		service.setProperty("highlight-matches", "none");
 		final CompiledExpression compiled = service.compile(query);
 		try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
 
-            assertEquals(result.getSize(), 359);
+        assertEquals(359, result.getSize());
 
             for (int i = 0; i < result.getSize(); i++) {
                 try (final XMLResource r = (XMLResource) result.getResource(i)) {
@@ -95,8 +95,8 @@ public class RemoteQueryTest extends RemoteDBTest {
         }
 	}
 
-	@Test
-	public void externalVar() throws XMLDBException {
+    @Test
+    void externalVar() throws XMLDBException {
         final String query = XmlRpcTest.QUERY_MODULE_DATA;
         final XQueryService service = testCollection.getService(XQueryService.class);
         service.setProperty("highlight-matches", "none");
@@ -110,7 +110,7 @@ public class RemoteQueryTest extends RemoteDBTest {
         final CompiledExpression compiled = service.compile(query);
         try (final EXistResourceSet result = (EXistResourceSet) service.execute(compiled)) {
 
-            assertEquals(result.getSize(), 2);
+        assertEquals(2, result.getSize());
 
             for (int i = 0; i < result.getSize(); i++) {
                 try (final XMLResource r = (XMLResource) result.getResource(i)) {
@@ -120,8 +120,8 @@ public class RemoteQueryTest extends RemoteDBTest {
         }
 	}
 
-	@Before
-	public void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, URISyntaxException, IOException {
+    @BeforeEach
+    void setUp() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException, URISyntaxException, IOException {
         // initialize driver
         final Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
         final Database database = (Database) cl.newInstance();
@@ -151,8 +151,8 @@ public class RemoteQueryTest extends RemoteDBTest {
         }
 	}
 
-	@After
-	public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         xmlrpcCollection.close();
         testCollection.close();
 

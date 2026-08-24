@@ -45,17 +45,27 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 
+import java.io.IOException;
 import java.util.Optional;
 
+import org.exist.EXistException;
 import org.exist.collections.*;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.txn.*;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.InputStreamSupplierInputSource;
+import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.Rule;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 public class RemoveRootCollectionTest {
@@ -64,7 +74,7 @@ public class RemoveRootCollectionTest {
     Collection root;
 
     @Test
-    public void removeEmptyRootCollection() throws Exception {
+    void removeEmptyRootCollection() throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final BrokerPool pool = BrokerPool.getInstance();
         final TransactionManager transact = pool.getTransactionManager();
         try (final Txn transaction = transact.beginTransaction()) {
@@ -76,7 +86,7 @@ public class RemoveRootCollectionTest {
     }
 
     @Test
-    public void removeRootCollectionWithChildCollection() throws Exception {
+    void removeRootCollectionWithChildCollection() throws PermissionDeniedException, EXistException, IOException, TriggerException {
         addChildToRoot();
         final BrokerPool pool = BrokerPool.getInstance();
         final TransactionManager transact = pool.getTransactionManager();
@@ -88,9 +98,9 @@ public class RemoveRootCollectionTest {
         assertEquals(0, root.getDocumentCount(broker));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void removeRootCollectionWithDocument() throws Exception {
+    void removeRootCollectionWithDocument() throws LockException, PermissionDeniedException, EXistException, IOException, SAXException {
         addDocumentToRoot();
         final BrokerPool pool = BrokerPool.getInstance();
         final TransactionManager transact = pool.getTransactionManager();
@@ -102,24 +112,24 @@ public class RemoveRootCollectionTest {
         assertEquals(0, root.getDocumentCount(broker));
     }
 
-    @Rule
-    public final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-    @Before
-    public void startDB() throws Exception {
+    @BeforeEach
+    void startDB() throws EXistException, PermissionDeniedException {
         final BrokerPool pool = BrokerPool.getInstance();
         broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
         root = broker.getCollection(XmldbURI.ROOT_COLLECTION_URI);
     }
 
-    @After
-    public void stopDB() {
+    @AfterEach
+    void stopDB() {
         if (broker != null) {
             broker.close();
         }
     }
 
-    private void addDocumentToRoot() throws Exception {
+    private void addDocumentToRoot() throws EXistException, LockException, PermissionDeniedException, IOException, SAXException {
         final BrokerPool pool = BrokerPool.getInstance();
         final TransactionManager transact = pool.getTransactionManager();
         try (final Txn transaction = transact.beginTransaction()) {
@@ -129,7 +139,7 @@ public class RemoveRootCollectionTest {
         }
     }
 
-    private void addChildToRoot() throws Exception {
+    private void addChildToRoot() throws EXistException, PermissionDeniedException, IOException, TriggerException {
         final BrokerPool pool = BrokerPool.getInstance();
         final TransactionManager transact = pool.getTransactionManager();
         try (final Txn transaction = transact.beginTransaction()) {

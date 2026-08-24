@@ -48,13 +48,16 @@ package org.exist.xquery.update;
 import com.evolvedbinary.j8fu.function.RunnableE;
 import org.easymock.IArgumentMatcher;
 import org.easymock.IMocksControl;
+import org.exist.EXistException;
 import org.exist.dom.persistent.*;
 import org.exist.indexing.*;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.btree.DBException;
+import org.exist.util.DatabaseConfigurationException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XQueryContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.XMLDBException;
 
 import java.util.Optional;
@@ -63,7 +66,7 @@ import java.util.function.BiConsumer;
 import static org.easymock.EasyMock.*;
 
 
-public class IndexIntegrationTest extends AbstractUpdateTest {
+class IndexIntegrationTest extends AbstractUpdateTest {
 
     private void run(final XmldbURI docUri, final String data, final BiConsumer<IndexWorker, StreamListener> setup, final RunnableE<XMLDBException> test) throws Exception {
         storeXMLString(docUri.lastSegment().toString(), data);
@@ -115,7 +118,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
     }
 
     @Test
-    public void insertElement() throws Exception {
+    void insertElement() throws DBException, DatabaseConfigurationException, XMLDBException, EXistException {
 
         final String docName = "pathNs2.xml";
         final XmldbURI docUri = XmldbURI.create("/db/test/"+docName);
@@ -149,7 +152,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
     }
 
     @Test
-    public void updateAttribute() throws Exception {
+    void updateAttribute() throws DBException, DatabaseConfigurationException, XMLDBException, EXistException {
 
         final String docName = "pathNs2.xml";
         final XmldbURI docUri = XmldbURI.create("/db/test/"+docName);
@@ -198,7 +201,7 @@ public class IndexIntegrationTest extends AbstractUpdateTest {
     }
 
     @Test
-    public void removeAttribute() throws Exception {
+    void removeAttribute() throws DBException, DatabaseConfigurationException, XMLDBException, EXistException {
 
         final String docName = "pathNs2.xml";
         final XmldbURI docUri = XmldbURI.create("/db/test/"+docName);

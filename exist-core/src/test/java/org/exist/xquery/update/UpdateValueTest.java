@@ -45,16 +45,15 @@
  */
 package org.exist.xquery.update;
 
-import org.junit.Test;
-import org.xmldb.api.base.XMLDBException;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  */
-public class UpdateValueTest extends AbstractUpdateTest {
+class UpdateValueTest extends AbstractUpdateTest {
 
     @Test
-    public void updateNamespacedAttribute() throws XMLDBException {
+    void updateNamespacedAttribute() throws XMLDBException {
         final String docName = "pathNs.xml";
         storeXMLString(docName, "<test><t xml:id=\"id1\"/></test>");
 
@@ -67,7 +66,7 @@ public class UpdateValueTest extends AbstractUpdateTest {
     }
 
     @Test
-    public void updateAttributeInNamespacedElement() throws XMLDBException {
+    void updateAttributeInNamespacedElement() throws XMLDBException {
         final String docName = "docNs.xml";
         storeXMLString(docName, "<test xmlns=\"http://test.com\" id=\"id1\"/>");
 

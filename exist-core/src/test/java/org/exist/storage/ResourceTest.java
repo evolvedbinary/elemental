@@ -58,19 +58,20 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.ExistEmbeddedServer;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *  0 byte binary files cannot be retrieved from database. This test
@@ -78,21 +79,21 @@ import static org.junit.Assert.assertEquals;
  *
  * @author wessels
  */
-public class ResourceTest {
+class ResourceTest {
     
     private final static String EMPTY_BINARY_FILE = "";
     private final static XmldbURI DOCUMENT_NAME_URI = XmldbURI.create("empty.txt");
 
-    // we don't use @ClassRule/@Rule as we want to force corruption in some tests
-    private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    // we don't use @RegisterExtension as we want to force corruption in some tests
+    private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         BrokerPool.stopAll(false);
     }
 
     @Test
-    public void storeAndRead() throws SAXException, PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, EXistException {
+    void storeAndRead() throws SAXException, PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, EXistException {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = startDb();
         store(pool);
@@ -161,7 +162,7 @@ public class ResourceTest {
     }
 
     @Test
-    public void storeAndRead2() throws SAXException, PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, EXistException {
+    void storeAndRead2() throws SAXException, PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, EXistException {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = startDb();
     	store(pool);
@@ -207,22 +208,22 @@ public class ResourceTest {
     }
 
     private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException {
-        existEmbeddedServer.startDb();
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.startDb();
+        return embeddedDatabase.getBrokerPool();
     }
 
     private BrokerPool restartDb() throws DatabaseConfigurationException, IOException, EXistException {
-        existEmbeddedServer.restart(false);
-        return existEmbeddedServer.getBrokerPool();
+        embeddedDatabase.restart(false);
+        return embeddedDatabase.getBrokerPool();
     }
 
-    @After
-    public void stopDb() {
-        existEmbeddedServer.stopDb();
+    @AfterEach
+    void stopDb() {
+        embeddedDatabase.stopDb();
     }
 
-    @AfterClass
-    public static void cleanup() {
+    @AfterAll
+    static void cleanup() {
         BrokerPool.FORCE_CORRUPTION = false;
     }
 }

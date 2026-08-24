@@ -51,14 +51,14 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -68,13 +68,13 @@ import xyz.elemental.mediatype.MediaType;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ReindexTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI DOCUMENT_WITH_CHILD_NODES_COLLECTION = XmldbURI.create("/db/reindex-document-child-nodes-test");
     private static final XmldbURI DOCUMENT_WITH_CHILD_NODES_NAME = XmldbURI.create("doc-child-nodes.xml");
@@ -97,7 +97,7 @@ public class ReindexTest {
             "</n>";
 
     @Test
-    public void reindexDocumentChildNodes() throws IOException, EXistException, PermissionDeniedException, SAXException, LockException {
+    void reindexDocumentChildNodes() throws IOException, EXistException, PermissionDeniedException, SAXException, LockException {
         reindexDocumentChildNodes_checkNodes();
 
         reindex(DOCUMENT_WITH_CHILD_NODES_COLLECTION);
@@ -106,7 +106,7 @@ public class ReindexTest {
     }
 
     @Test
-    public void reindexElementChildren() throws EXistException, PermissionDeniedException, IOException, LockException {
+    void reindexElementChildren() throws EXistException, PermissionDeniedException, IOException, LockException {
         reindexElementChildren_checkNodes();
 
         reindex(ELEMENT_WITH_CHILD_NODES_COLLECTION);
@@ -115,7 +115,7 @@ public class ReindexTest {
     }
 
     private void reindexDocumentChildNodes_checkNodes() throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -156,7 +156,7 @@ public class ReindexTest {
     }
 
     private void reindexElementChildren_checkNodes() throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -210,7 +210,7 @@ public class ReindexTest {
     }
 
     private static void reindex(final XmldbURI collectionUri) throws EXistException, PermissionDeniedException, IOException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
             broker.reindexCollection(transaction, collectionUri);
@@ -221,7 +221,7 @@ public class ReindexTest {
     private static void storeDocument(final XmldbURI collectionUri,
                                       final XmldbURI docName, final String doc)
             throws PermissionDeniedException, IOException, SAXException, EXistException, LockException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -237,7 +237,7 @@ public class ReindexTest {
     }
 
     private static void removeCollection(final XmldbURI collectionUri) throws PermissionDeniedException, LockException, IOException, TriggerException, EXistException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction();
              final Collection collection = broker.openCollection(collectionUri, Lock.LockMode.WRITE_LOCK)) {
@@ -250,14 +250,14 @@ public class ReindexTest {
         }
     }
 
-    @BeforeClass
-    public static void setup() throws LockException, SAXException, PermissionDeniedException, EXistException, IOException {
+    @BeforeAll
+    static void setup() throws LockException, SAXException, PermissionDeniedException, EXistException, IOException {
         storeDocument(DOCUMENT_WITH_CHILD_NODES_COLLECTION, DOCUMENT_WITH_CHILD_NODES_NAME, DOCUMENT_WITH_CHILD_NODES_XML);
         storeDocument(ELEMENT_WITH_CHILD_NODES_COLLECTION, ELEMENT_WITH_CHILD_NODES_NAME, ELEMENT_WITH_CHILD_NODES_XML);
     }
 
-    @AfterClass
-    public static void cleanup() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
+    @AfterAll
+    static void cleanup() throws LockException, TriggerException, PermissionDeniedException, EXistException, IOException {
         removeCollection(ELEMENT_WITH_CHILD_NODES_COLLECTION);
         removeCollection(DOCUMENT_WITH_CHILD_NODES_COLLECTION);
     }

@@ -31,13 +31,12 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XPathException;
 import org.exist.xquery.value.Item;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import xyz.elemental.mediatype.MediaType;
@@ -50,15 +49,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class ConvertTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_COLLECTION_URI = XmldbURI.create("/db/covert-test");
 
@@ -73,7 +72,7 @@ public class ConvertTest {
     };
 
     @Test
-    public void memtreeDocumentToSaxon() throws XPathException {
+    void memtreeDocumentToSaxon() throws XPathException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.memtree.DocumentImpl document = getInMemoryDocument(false);
 
@@ -86,7 +85,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeDocumentExplicitToSaxon() throws XPathException {
+    void memtreeDocumentExplicitToSaxon() throws XPathException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.memtree.DocumentImpl document = getInMemoryDocument(true);
 
@@ -99,7 +98,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void persistentDocumentToSaxon() throws XPathException, LockException, PermissionDeniedException, EXistException, IOException, SAXException {
+    void persistentDocumentToSaxon() throws XPathException, LockException, PermissionDeniedException, EXistException, IOException, SAXException {
         // create an Elemental persistent DOM document
         final org.exist.dom.persistent.DocumentImpl document = getPersistentDocument();
         final NodeProxy nodeProxy = NodeProxy.wrap(null, document);
@@ -113,7 +112,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void persistentElementFromDocumentToSaxon() throws XPathException, LockException, PermissionDeniedException, EXistException, IOException, SAXException {
+    void persistentElementFromDocumentToSaxon() throws XPathException, LockException, PermissionDeniedException, EXistException, IOException, SAXException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.persistent.DocumentImpl document = getPersistentDocument();
         final org.exist.dom.persistent.ElementImpl element = (org.exist.dom.persistent.ElementImpl) document.getDocumentElement();
@@ -129,7 +128,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void persistentElementFromElementToSaxon() throws XPathException, LockException, PermissionDeniedException, EXistException, IOException, SAXException {
+    void persistentElementFromElementToSaxon() throws XPathException, LockException, PermissionDeniedException, EXistException, IOException, SAXException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.persistent.DocumentImpl document = getPersistentDocument();
         final org.exist.dom.persistent.ElementImpl element = (org.exist.dom.persistent.ElementImpl) document.getDocumentElement();
@@ -146,7 +145,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeElementFromDocumentToSaxon() throws XPathException {
+    void memtreeElementFromDocumentToSaxon() throws XPathException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.memtree.DocumentImpl document = getInMemoryDocument(false);
         final org.exist.dom.memtree.ElementImpl element = (org.exist.dom.memtree.ElementImpl) document.getDocumentElement();
@@ -161,7 +160,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeElementFromDocumentExplicitToSaxon() throws XPathException {
+    void memtreeElementFromDocumentExplicitToSaxon() throws XPathException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.memtree.DocumentImpl document = getInMemoryDocument(true);
         final org.exist.dom.memtree.ElementImpl element = (org.exist.dom.memtree.ElementImpl) document.getDocumentElement();
@@ -176,7 +175,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeElementToSaxon() throws XPathException {
+    void memtreeElementToSaxon() throws XPathException {
         final org.exist.dom.memtree.ElementImpl element = getFirstInMemoryElement();
 
         // convert to Saxon
@@ -188,7 +187,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeElementFromElementToSaxon() throws XPathException {
+    void memtreeElementFromElementToSaxon() throws XPathException {
         final org.exist.dom.memtree.ElementImpl element = getNestedInMemoryElement();
 
         // convert to Saxon
@@ -200,7 +199,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeAttributeFromDocumentToSaxon() throws XPathException {
+    void memtreeAttributeFromDocumentToSaxon() throws XPathException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.memtree.DocumentImpl document = getInMemoryDocument(false);
         final org.exist.dom.memtree.ElementImpl element = (org.exist.dom.memtree.ElementImpl) document.getDocumentElement();
@@ -216,7 +215,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeAttributeFromDocumentExplicitToSaxon() throws XPathException {
+    void memtreeAttributeFromDocumentExplicitToSaxon() throws XPathException {
         // create an Elemental in-memory DOM document
         final org.exist.dom.memtree.DocumentImpl document = getInMemoryDocument(true);
         final org.exist.dom.memtree.ElementImpl element = (org.exist.dom.memtree.ElementImpl) document.getDocumentElement();
@@ -233,7 +232,7 @@ public class ConvertTest {
 
 
     @Test
-    public void memtreeAttributeToSaxon() throws XPathException {
+    void memtreeAttributeToSaxon() throws XPathException {
         final org.exist.dom.memtree.AttrImpl attribute = getFirstInMemoryAttribute();
 
         // convert to Saxon
@@ -245,7 +244,7 @@ public class ConvertTest {
     }
 
     @Test
-    public void memtreeAttributeFromElementToSaxon() throws XPathException {
+    void memtreeAttributeFromElementToSaxon() throws XPathException {
         final org.exist.dom.memtree.AttrImpl attribute = getNestedInMemoryAttribute();
 
         // convert to Saxon
@@ -327,7 +326,7 @@ public class ConvertTest {
     private static org.exist.dom.persistent.DocumentImpl getPersistentDocument() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final org.exist.dom.memtree.DocumentImpl inMemoryDocument = getInMemoryDocument(true);
 
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try (final Txn transaction = brokerPool.getTransactionManager().beginTransaction();
              final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Collection testCollection = broker.getOrCreateCollection(transaction, TEST_COLLECTION_URI)) {
@@ -349,7 +348,7 @@ public class ConvertTest {
         assertEquals(1, xdmValue.size());
         final XdmItem xdmItem = xdmValue.itemAt(0);
         assertNotNull(xdmItem);
-        assertTrue(xdmItem instanceof XdmNode);
+        assertInstanceOf(XdmNode.class, xdmItem);
         return (XdmNode) xdmItem;
     }
 

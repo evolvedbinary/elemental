@@ -48,37 +48,40 @@ package org.exist.xquery.update;
 import com.evolvedbinary.j8fu.function.Consumer2E;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
+import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
+import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
-import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpdateInsertTriggersDefragTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(propertiesBuilder().put(DBBroker.PROPERTY_XUPDATE_FRAGMENTATION_FACTOR, -1).build(), true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(propertiesBuilder().put(DBBroker.PROPERTY_XUPDATE_FRAGMENTATION_FACTOR, -1).build(), true, true);
 
-    @Before
-    public void setUp() throws Exception {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void setUp() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -93,20 +96,20 @@ public class UpdateInsertTriggersDefragTest {
     }
 
     @Test
-    public void triggerDefragAfterUpdate() throws Exception {
+    void triggerDefragAfterUpdate() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final String updateQuery = "update insert <item>new node</item> into doc('" + TestConstants.TEST_COLLECTION_URI + "/" + TestConstants.TEST_XML_URI + "')//list";
         assertQuery(updateQuery, updateResults ->
-            assertTrue("Update expression returns an empty sequence", updateResults.isEmpty())
+            assertTrue(updateResults.isEmpty(), "Update expression returns an empty sequence")
         );
 
         final String searchQuery = "doc('" + TestConstants.TEST_COLLECTION_URI + "/" + TestConstants.TEST_XML_URI + "')//item";
         assertQuery(searchQuery, searchResults ->
-            assertEquals("Both items are returned", 2, searchResults.getItemCount())
+            assertEquals(2, searchResults.getItemCount(), "Both items are returned")
         );
     }
 
     private void assertQuery(final String query, final Consumer2E<Sequence, XPathException, PermissionDeniedException> assertions) throws EXistException, XPathException, PermissionDeniedException, IOException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool brokerPool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 

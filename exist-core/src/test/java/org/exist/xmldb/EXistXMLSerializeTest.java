@@ -47,19 +47,15 @@ package org.exist.xmldb;
 
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.security.Account;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.modules.CollectionManagementService;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Properties;
-import javax.xml.parsers.ParserConfigurationException;
 
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -69,17 +65,17 @@ import org.apache.xml.serialize.XMLSerializer;
 
 import org.exist.util.serializer.DOMSerializer;
 import org.exist.util.serializer.SAXSerializer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.exist.TestUtils.GUEST_DB_USER;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -91,8 +87,8 @@ import org.xmldb.api.modules.XMLResource;
  */
 public class EXistXMLSerializeTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	private final static String XML_DATA =
     	"<test>" +
@@ -113,9 +109,9 @@ public class EXistXMLSerializeTest {
 
     private final static String TEST_COLLECTION = "testXmlSerialize";
 
-    @Before
-    public void setUp() throws Exception {
-        CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         try (final Collection testCollection = service.createCollection(TEST_COLLECTION)) {
             UserManagementService ums = testCollection.getService(UserManagementService.class);
             // change ownership to guest
@@ -125,15 +121,15 @@ public class EXistXMLSerializeTest {
         }
     }
 
-    @After
-    public void tearDown() throws XMLDBException {
+    @AfterEach
+    void tearDown() throws XMLDBException {
         //delete the test collection
-        CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+        CollectionManagementService cms = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION);
     }
 
     @Test
-    public void serialize1() throws TransformerException, XMLDBException, ParserConfigurationException, SAXException, IOException, URISyntaxException {
+    void serialize1() throws TransformerException, XMLDBException, ParserConfigurationException, SAXException, IOException, URISyntaxException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             final String resourceId;
             try (final XMLResource resource = testCollection.createResource(null, XMLResource.class)) {
@@ -164,7 +160,7 @@ public class EXistXMLSerializeTest {
     }
 
     @Test
-    public void serialize2() throws ParserConfigurationException, SAXException, IOException, XMLDBException, URISyntaxException {
+    void serialize2() throws ParserConfigurationException, SAXException, IOException, XMLDBException, URISyntaxException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
             final String resourceId;
@@ -198,7 +194,7 @@ public class EXistXMLSerializeTest {
     }
 
     @Test
-    public void serialize3() throws ParserConfigurationException, SAXException, IOException, XMLDBException, TransformerException, URISyntaxException {
+    void serialize3() throws ParserConfigurationException, SAXException, IOException, XMLDBException, TransformerException, URISyntaxException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
             final String resourceId;
@@ -223,7 +219,7 @@ public class EXistXMLSerializeTest {
     }
 
     @Test
-    public void serialize4() throws ParserConfigurationException, SAXException, IOException, XMLDBException, URISyntaxException {
+    void serialize4() throws ParserConfigurationException, SAXException, IOException, XMLDBException, URISyntaxException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
 
             Document doc = javax.xml.parsers.DocumentBuilderFactory.newInstance( ).newDocumentBuilder().parse(Paths.get(testFile.toURI()).toFile());
@@ -250,7 +246,7 @@ public class EXistXMLSerializeTest {
     }
 
     @Test
-    public void serialize5() throws XMLDBException {
+    void serialize5() throws XMLDBException {
         try (final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION)) {
             try (final XMLResource resource = testCollection.createResource("test.xml", XMLResource.class)) {
                 resource.setContent(XML_DATA);

@@ -50,26 +50,25 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.XmldbURI;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import xyz.elemental.mediatype.MediaType;
 
-import java.io.IOException;
+import java.io.File;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.http.HttpStatus.SC_CREATED;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for retrieving a document containing CDATA via
@@ -77,24 +76,24 @@ import static org.junit.Assert.*;
  */
 public class CDataIntergationTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
-    @ClassRule
-    public static final TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
     private final static String cdata_content = "Hello there \"Bob?\"";
     private final static String cdata_xml = "<elem1><![CDATA[" + cdata_content + "]]></elem1>";
 
     @Test
-    public void cdataRestApi() throws IOException {
-        final String uri = "http://localhost:" + existWebServer.getPort() + "/exist/rest/db";
+    void cdataRestApi() throws IOException {
+        final String uri = "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/exist/rest/db";
         final String docUri = uri + "/rest-cdata-test.xml";
 
         final Executor executor = Executor
                 .newInstance()
                 .auth(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)
-                .authPreemptive(new HttpHost("localhost", existWebServer.getPort()));
+                .authPreemptive(new HttpHost("localhost", DATABASE_WEB_SERVER.getPort()));
 
         // store document
         final HttpResponse storeResponse = executor.execute(
@@ -117,7 +116,7 @@ public class CDataIntergationTest {
     }
 
     @Test
-    public void cdataXmlDbApi() throws XMLDBException {
+    void cdataXmlDbApi() throws XMLDBException {
         final String docName = "xmldb-cdata-test.xml";
         final Database database = new DatabaseImpl();
         DatabaseManager.registerDatabase(database);

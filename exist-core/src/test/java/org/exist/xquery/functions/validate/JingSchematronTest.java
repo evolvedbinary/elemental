@@ -45,16 +45,17 @@
  */
 package org.exist.xquery.functions.validate;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
 import static org.exist.samples.Samples.SAMPLES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
 import java.io.IOException;
@@ -73,36 +74,36 @@ public class JingSchematronTest {
 
     private static final String[] TEST_RESOURCES = { "Tournament-valid.xml", "Tournament-invalid.xml", "tournament-schema.sch" };
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String noValidation = "<?xml version='1.0'?>" +
             "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
             "    <validation mode='no'/>" +
             "</collection>";
 
-    @BeforeClass
-    public static void prepareResources() throws XMLDBException, IOException {
+    @BeforeAll
+    static void prepareResources() throws XMLDBException, IOException {
 
         // Switch off validation
-        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/tournament")) {
-            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+        try (final Collection conf = XMLDB_EMBEDDED_DATABASE.createCollection(existEmbeddedServer.getRoot(), "system/config/db/tournament")) {
+            XmldbEmbeddedDatabaseExtension.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
         // Store schematron 1.5 test files
-        try (final Collection col15 = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "tournament/1.5")) {
+        try (final Collection col15 = XMLDB_EMBEDDED_DATABASE.createCollection(existEmbeddedServer.getRoot(), "tournament/1.5")) {
 
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/tournament/1.5/" + testResource)) {
                     assertNotNull(is);
-                    existEmbeddedServer.storeResource(col15, testResource, InputStreamUtil.readAll(is));
+                    XmldbEmbeddedDatabaseExtension.storeResource(col15, testResource, InputStreamUtil.readAll(is));
                 }
             }
         }
     }
 
     @Test
-    public void sch_15_stored_valid() throws XMLDBException {
+    void sch_15_stored_valid() throws XMLDBException {
         String query = "validation:jing-report( " +
                 "doc('/db/tournament/1.5/Tournament-valid.xml'), " +
                 "doc('/db/tournament/1.5/tournament-schema.sch') )";
@@ -111,12 +112,12 @@ public class JingSchematronTest {
     }
 
     @Test
-    public void sch_15_stored_valid_boolean() throws XMLDBException {
+    void sch_15_stored_valid_boolean() throws XMLDBException {
         final String query = "validation:jing( " +
                 "doc('/db/tournament/1.5/Tournament-valid.xml'), " +
                 "doc('/db/tournament/1.5/tournament-schema.sch') )";
 
-        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet results = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, results.getSize());
 
             try (final Resource resource = results.getResource(0)) {
@@ -127,7 +128,7 @@ public class JingSchematronTest {
     }
 
     @Test
-    public void sch_15_stored_invalid() throws XMLDBException {
+    void sch_15_stored_invalid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "doc('/db/tournament/1.5/Tournament-invalid.xml'), " +
                 "doc('/db/tournament/1.5/tournament-schema.sch') )";
@@ -135,7 +136,7 @@ public class JingSchematronTest {
     }
 
     @Test
-    public void sch_15_anyuri_valid() throws XMLDBException {
+    void sch_15_anyuri_valid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "xs:anyURI('xmldb:exist:///db/tournament/1.5/Tournament-valid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/tournament/1.5/tournament-schema.sch') )";
@@ -143,7 +144,7 @@ public class JingSchematronTest {
     }
 
     @Test
-    public void sch_15_anyuri_invalid() throws XMLDBException {
+    void sch_15_anyuri_invalid() throws XMLDBException {
         final String query = "validation:jing-report( " +
                 "xs:anyURI('xmldb:exist:///db/tournament/1.5/Tournament-invalid.xml'), " +
                 "xs:anyURI('xmldb:exist:///db/tournament/1.5/tournament-schema.sch') )";
@@ -151,7 +152,7 @@ public class JingSchematronTest {
     }
 
     private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
-        try (final EXistResourceSet results = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet results = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, results.getSize());
 
             try (final Resource resource = results.getResource(0)) {

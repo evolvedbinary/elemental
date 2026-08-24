@@ -45,20 +45,21 @@
  */
 package org.exist.xquery.functions.validate;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.xml.sax.SAXException;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
@@ -73,37 +74,37 @@ public class JaxpParseTest {
 
     private static final String[] TEST_RESOURCES = { "defaultValue.xml", "defaultValue.xsd" };
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String noValidation = "<?xml version='1.0'?>" +
             "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
             "    <validation mode='no'/>" +
             "</collection>";
 
-    @BeforeClass
-    public static void prepareResources() throws Exception {
+    @BeforeAll
+    static void prepareResources() throws XMLDBException, IOException {
 
         // Switch off validation
-        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse_validate")) {
-            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+        try (final Collection conf = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "system/config/db/parse_validate")) {
+            XmldbEmbeddedDatabaseExtension.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
-        try (final Collection schemasCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse_validate")) {
+        try (final Collection schemasCollection = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "parse_validate")) {
 
             for (final String testResource : TEST_RESOURCES) {
                 try (final InputStream is = SAMPLES.getSample("validation/parse_validate/" + testResource)) {
                     assertNotNull(is);
-                    existEmbeddedServer.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
+                    XmldbEmbeddedDatabaseExtension.storeResource(schemasCollection, testResource, InputStreamUtil.readAll(is));
                 }
             }
         }
 
     }
 
-    @Before
-    public void clearGrammarCache() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+    @BeforeEach
+    void clearGrammarCache() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("validation:clear-grammar-cache()")) {
             try (final Resource resource = result.getResource(0)) {
                 resource.getContent();
             }
@@ -111,10 +112,10 @@ public class JaxpParseTest {
     }
 
     @Test
-    public void parse_and_fill_defaults() throws XMLDBException, IOException, SAXException {
+    void parse_and_fill_defaults() throws XMLDBException, IOException, SAXException {
         String query = "validation:pre-parse-grammar(xs:anyURI('/db/parse_validate/defaultValue.xsd'))";
         String result = execute(query);
-        assertEquals(result, "defaultTest");
+        assertEquals("defaultTest", result);
 
         query = "declare option exist:serialize 'indent=no'; " +
                 "validation:jaxp-parse(xs:anyURI('/db/parse_validate/defaultValue.xml'), true(), ())";
@@ -128,7 +129,7 @@ public class JaxpParseTest {
     }
 
     private String execute(final String query) throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 return (String) resource.getContent();

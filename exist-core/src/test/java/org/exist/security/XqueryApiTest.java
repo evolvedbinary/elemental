@@ -51,99 +51,99 @@ import org.exist.EXistException;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.Properties;
 
 public class XqueryApiTest extends AbstractApiSecurityTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer server = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Override
-    protected void createCol(final String collectionName, final String uid, final String pwd) throws ApiException {
+    void createCol(final String collectionName, final String uid, final String pwd) throws ApiException {
         try (final XQueryUtil.QueryResult queryResult = executeQuery(uid, pwd, "xmldb:create-collection('/db', '" + collectionName + "')")) {
             assertEquals("/db/" + collectionName, serialize(queryResult.result));
         }
     }
 
     @Override
-    protected void removeCol(final String collectionName, final String uid, final String pwd) throws ApiException {
+    void removeCol(final String collectionName, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "xmldb:remove('/db/" + collectionName + "')").close();
     }
 
     @Override
-    protected void chownCol(final String collectionUri, final String owner_uid, final String group_gid, final String uid, final String pwd) throws ApiException {
+    void chownCol(final String collectionUri, final String owner_uid, final String group_gid, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:chown(xs:anyURI('" + collectionUri + "'), '" + owner_uid + ":" + group_gid + "')").close();
     }
 
     @Override
-    protected void chmodCol(final String collectionUri, final String mode, final String uid, final String pwd) throws ApiException {
+    void chmodCol(final String collectionUri, final String mode, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:chmod(xs:anyURI('" + collectionUri + "'), '" + mode + "')").close();
     }
 
     @Override
-    protected void chmodRes(final String resourceUri, final String mode, final String uid, final String pwd) throws ApiException {
+    void chmodRes(final String resourceUri, final String mode, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:chmod(xs:anyURI('" + resourceUri + "'), '" + mode + "')").close();
     }
 
     @Override
-    protected void chownRes(final String resourceUri, final String owner_uid, final String group_gid, final String uid, final String pwd) throws ApiException {
+    void chownRes(final String resourceUri, final String owner_uid, final String group_gid, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:chown(xs:anyURI('" + resourceUri + "'), '" + owner_uid + ":" + group_gid + "')").close();
     }
 
     @Override
-    protected void addCollectionUserAce(final String collectionUri, final String user_uid, final String mode, final boolean allow, final String uid, final String pwd) throws ApiException {
+    void addCollectionUserAce(final String collectionUri, final String user_uid, final String mode, final boolean allow, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:add-user-ace(xs:anyURI('" + collectionUri + "'), '" + user_uid + "', " + (allow ? "true()" : "false()") + ", '" + mode + "')").close();
     }
 
     @Override
-    protected String getXmlResourceContent(final String resourceUri, final String uid, final String pwd) throws ApiException {
+    String getXmlResourceContent(final String resourceUri, final String uid, final String pwd) throws ApiException {
         try (final XQueryUtil.QueryResult queryResult = executeQuery(uid, pwd, "fn:doc('" + resourceUri + "')")) {
             return serialize(queryResult.result);
         }
     }
 
     @Override
-    protected void removeAccount(final String account_uid, final String uid, final String pwd) throws ApiException {
+    void removeAccount(final String account_uid, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "if (sm:user-exists('" + account_uid + "')) then sm:remove-account('" + account_uid + "') else()").close();
     }
 
     @Override
-    protected void removeGroup(final String group_gid, final String uid, final String pwd) throws ApiException {
+    void removeGroup(final String group_gid, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "if (sm:group-exists('" + group_gid + "')) then sm:remove-group('" + group_gid + "') else ()").close();
     }
 
     @Override
-    protected void createAccount(final String account_uid, final String account_pwd, final String group_uid, final String uid, final String pwd) throws ApiException {
+    void createAccount(final String account_uid, final String account_pwd, final String group_uid, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:create-account('" + account_uid + "', '" + account_pwd + "', '" + group_uid + "', ())").close();
     }
 
     @Override
-    protected void createGroup(final String group_gid, final String uid, final String pwd) throws ApiException {
+    void createGroup(final String group_gid, final String uid, final String pwd) throws ApiException {
         executeQuery(uid, pwd, "sm:create-group('" + group_gid + "')").close();
     }
 
     @Override
-    protected void createXmlResource(final String resourceUri, final String content, final String uid, final String pwd) throws ApiException {
+    void createXmlResource(final String resourceUri, final String content, final String uid, final String pwd) throws ApiException {
         final int resIdx = resourceUri.lastIndexOf('/');
         final String collectionUri = resourceUri.substring(0, resIdx);
         final String resourceName = resourceUri.substring(resIdx + 1);
-        executeQuery(uid, pwd, "xmldb:store('" + collectionUri + "', '" + resourceName + "', fn:parse-xml('" + content + "'))").close();
+(??)        executeQuery(uid, pwd, "xmldb:store('" + collectionUri + "', '" + resourceName + "', fn:parse-xml('" + content + "'))");
     }
 
     @Override
-    protected void createBinResource(final String resourceUri, final byte[] content, final String uid, final String pwd) throws ApiException {
+    void createBinResource(final String resourceUri, final byte[] content, final String uid, final String pwd) throws ApiException {
         final int resIdx = resourceUri.lastIndexOf('/');
         final String collectionUri = resourceUri.substring(0, resIdx);
         final String resourceName = resourceUri.substring(resIdx + 1);
@@ -153,7 +153,7 @@ public class XqueryApiTest extends AbstractApiSecurityTest {
 
     private XQueryUtil.QueryResult executeQuery(final String uid, final String pwd, final String query) throws ApiException {
         try {
-            final BrokerPool pool = server.getBrokerPool();
+            final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
 
             final Subject user = pool.getSecurityManager().authenticate(uid, pwd);
             try (final DBBroker broker = pool.get(Optional.of(user))) {
@@ -164,8 +164,8 @@ public class XqueryApiTest extends AbstractApiSecurityTest {
         }
     }
 
-    private String serialize(final Sequence sequence) throws ApiException {
-        try (final DBBroker broker = server.getBrokerPool().getBroker();
+    private String serialize(final BrokerPool pool, final Sequence sequence) throws ApiException {
+        try (final DBBroker broker = EMBEDDED_DATABASE.getBrokerPool().getBroker();
              final StringBuilderWriter writer = new StringBuilderWriter()) {
             final XQuerySerializer serializer = new XQuerySerializer(broker, new Properties(), writer);
             serializer.serialize(sequence);

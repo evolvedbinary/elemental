@@ -24,31 +24,31 @@ package org.exist.storage;
 
 import org.exist.EXistException;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.zip.ZipFile;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DataBackupTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @ClassRule
-    public static TemporaryFolder folder = new TemporaryFolder();
+    @TempDir
+    public static File folder;
 
     @Test
-    public void backup() throws InterruptedException, IOException {
-        final TestableDataBackup dataBackup = new TestableDataBackup(folder.getRoot().toPath());
-        existEmbeddedServer.getBrokerPool().triggerSystemTask(dataBackup);
+    void backup() throws InterruptedException, IOException {
+        final TestableDataBackup dataBackup = new TestableDataBackup(folder.toPath());
+        EMBEDDED_DATABASE.getBrokerPool().triggerSystemTask(dataBackup);
 
         while(!dataBackup.isCompleted()) {
             Thread.sleep(100);

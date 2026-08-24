@@ -51,12 +51,13 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XPathException;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -69,7 +70,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI;
 import static org.exist.collections.CollectionConfigurationManager.CONFIG_COLLECTION_URI;
 import static org.exist.test.Util.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Checks that multiple XQuery Triggers can be formed into a chain,
@@ -101,8 +102,8 @@ import static org.junit.Assert.*;
  */
 public class XQueryTriggerChainTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer EXIST_EMBEDDED_SERVER = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EXIST_EMBEDDED_SERVER = new EmbeddedDatabaseExtension(true, true);
 
 	private final static XmldbURI TEST_COLLECTION_URI = XmldbURI.create("/db/testXQueryTriggerChain");
 
@@ -154,9 +155,8 @@ public class XQueryTriggerChainTest {
             "  </exist:triggers>" +
             "</exist:collection>";
 
-    @BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool pool = EXIST_EMBEDDED_SERVER.getBrokerPool();
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
                 final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
@@ -191,12 +191,11 @@ public class XQueryTriggerChainTest {
     }
 
     @Test
-    public void xqueryTriggerChain() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, XPathException {
+    void xqueryTriggerChain(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final String uuid = UUID.randomUUID().toString();
         final String documentName = uuid + ".xml";
         final String documentContent = "<id>" + uuid + "</id>";
 
-        final BrokerPool pool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final Txn transaction = pool.getTransactionManager().beginTransaction();
              final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 

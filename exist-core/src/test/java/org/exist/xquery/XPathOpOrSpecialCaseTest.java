@@ -45,16 +45,19 @@
  */
 package org.exist.xquery;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 /**
@@ -65,51 +68,43 @@ import org.xmldb.api.modules.XMLResource;
  */
 public class XPathOpOrSpecialCaseTest extends Assert {
 
-	private static final Logger LOG = LogManager.getLogger(XPathOpOrSpecialCaseTest.class);
-
-	@ClassRule
-	public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+	@RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
 	/** Database test collection (<code>/db/blah</code>). */
 	private Collection testCollection;
-	
-	@Before
-	public void setUp() throws Exception 
-	{
-        final CollectionManagementService service = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
+
+    @BeforeEach
+    void setUp() throws XMLDBException {
+        final CollectionManagementService service = XMLDB_EMBEDDED_DATABASE.getRoot().getService(CollectionManagementService.class);
         testCollection = service.createCollection("blah");
         assertNotNull(testCollection);
     }
 
-	@After
-	public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws XMLDBException {
 		if (testCollection != null) {
 			testCollection.close();
 			testCollection = null;
 		}
 		final CollectionManagementService service =
-				existEmbeddedServer.getRoot().getService(
+				XMLDB_EMBEDDED_DATABASE.getRoot().getService(
 						CollectionManagementService.class);
 		service.removeCollection("blah");
 	}
 
-	/**
-	 * Given an essentially empty XML document at path <code>/db/blah/blah.xml</code>,
-	 * query the document with a bogus predicate containing an <code>or<code> operation;
-	 * expect <code>org.exist.xquery.XPathException: exerr:ERROR cannot convert xs:boolean('false') to a node set</code>.
-	 */
-	@Test
-	public void verifyOpOrInPredicate() throws Exception {
-		try {
-			storeXML(testCollection, "blah.xml", "<blah>No element content.</blah>");
-			try (final EXistResourceSet result = existEmbeddedServer.executeQuery("/blah[a='A' or b='B']")) {
-				// needed to close the result
-			}
-		} catch(final XMLDBException e) {
-			LOG.error(e.getMessage(), e);
-			throw e;
-		}
+    /**
+     * Given an essentially empty XML document at path <code>/db/blah/blah.xml</code>,
+     * query the document with a bogus predicate containing an <code>or<code> operation;
+     * expect <code>org.exist.xquery.XPathException: exerr:ERROR cannot convert xs:boolean('false') to a node set</code>.
+     */
+    @Test
+    void verifyOpOrInPredicate() throws XMLDBException {
+        storeXML(testCollection, "blah.xml", "<blah>No element content.</blah>");
+       try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("/blah[a='A' or b='B']")) {
+			// needed to close the result
 	}
+    }
 
 	/** 
 	 * Store the XML string into the specified collection and document.

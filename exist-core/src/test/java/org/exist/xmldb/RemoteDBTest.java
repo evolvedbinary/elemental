@@ -45,16 +45,16 @@
  */
 package org.exist.xmldb;
 
-import org.exist.test.ExistWebServer;
-import org.junit.ClassRule;
+import org.exist.test.DatabaseWebServerExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Assertions;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /** An abstract wrapper for remote DB tests
  * @author <a href="mailto:pierrick.brihaye@free.fr">Sebastian Bossung, Technische Universitaet Hamburg-Harburg
@@ -63,8 +63,8 @@ import static org.junit.Assert.fail;
 //TODO : manage content from here, not from the derived classes
 public abstract class RemoteDBTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private final static String CHILD_COLLECTION = "unit-testing-collection-Citt\u00E0";
     public final static String DB_DRIVER = "org.exist.xmldb.DatabaseImpl";
@@ -72,7 +72,7 @@ public abstract class RemoteDBTest {
     private RemoteCollection collection = null;
 
     public static String getUri() {
-        return "xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc";
+        return "xmldb:exist://localhost:" + DATABASE_WEB_SERVER.getPort() + "/xmlrpc";
     }
 
     protected void setUpRemoteDatabase() throws ClassNotFoundException, IllegalAccessException, InstantiationException, XMLDBException {
@@ -93,14 +93,14 @@ public abstract class RemoteDBTest {
     }
 
     protected void removeCollection() {
-        collection.close();
-    	try (final Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
-            assertNotNull(rootCollection);
-            final CollectionManagementService cms = rootCollection.getService(CollectionManagementService.class);
-            cms.removeCollection(CHILD_COLLECTION);
-        } catch (final Exception e) {
-            fail(e.getMessage()); 
-        }
+        Assertions.assertDoesNotThrow(() -> {
+   		collection.close();
+	    	try (final Collection rootCollection = DatabaseManager.getCollection(getUri() + XmldbURI.ROOT_COLLECTION, "admin", "")) {
+		    assertNotNull(rootCollection);
+		    final CollectionManagementService cms = rootCollection.getService(CollectionManagementService.class);
+		    cms.removeCollection(CHILD_COLLECTION);
+		}
+	});
     }
 
     protected RemoteCollection getCollection() {

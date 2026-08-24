@@ -58,16 +58,16 @@ import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 import org.exist.xmldb.XmldbURI;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -87,12 +87,12 @@ import java.util.Optional;
 import java.util.Properties;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PersistentDomTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_SIMPLE_XML_COLLECTION = XmldbURI.create("/db/persistent-dom-simple-test");
     private static final XmldbURI SIMPLE_XML_NAME = XmldbURI.create("simple.xml");
@@ -120,8 +120,7 @@ public class PersistentDomTest {
 
 
     @Test
-    public void mixed_childNodes() throws EXistException, PermissionDeniedException, IOException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void mixed_childNodes(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -178,8 +177,7 @@ public class PersistentDomTest {
     }
 
     @Test
-    public void mixed_siblings() throws EXistException, PermissionDeniedException, IOException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void mixed_siblings(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -294,8 +292,7 @@ public class PersistentDomTest {
     }
 
     @Test
-    public void documentElement_previousSibling_simple() throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void documentElement_previousSibling_simple(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -324,8 +321,7 @@ public class PersistentDomTest {
     }
 
     @Test
-    public void documentElement_nextSibling_simple() throws EXistException, PermissionDeniedException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void documentElement_nextSibling_simple(final BrokerPool pool) throws EXistException, PermissionDeniedException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -354,8 +350,7 @@ public class PersistentDomTest {
     }
 
     @Test
-    public void cdata() throws EXistException, PermissionDeniedException, IOException, SAXException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void cdata(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -435,7 +430,7 @@ public class PersistentDomTest {
                 .checkForIdentical()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     private static String serialize(final DBBroker broker, final Node node) throws IOException, SAXException {
@@ -473,9 +468,8 @@ public class PersistentDomTest {
         }
     }
 
-    @BeforeClass
-    public static void setup() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -494,9 +488,8 @@ public class PersistentDomTest {
         }
     }
 
-    @AfterClass
-    public static void cleanup() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterAll
+    static void cleanup(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, TriggerException {
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

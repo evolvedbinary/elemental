@@ -45,13 +45,12 @@
  */
 package org.exist.dom.memtree;
 
-import com.googlecode.junittoolbox.ParallelParameterized;
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.exist.xmldb.EXistResourceSet;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
@@ -61,45 +60,28 @@ import org.xmlunit.diff.Diff;
 
 import javax.xml.transform.Source;
 
-import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.xmldb.api.base.ResourceType.XML_RESOURCE;
 
 /**
  * <a href="https://github.com/eXist-db/exist/issues/1682#issuecomment-402108184">https://github.com/eXist-db/exist/issues/1682#issuecomment-402108184</a>
  */
-@RunWith(ParallelParameterized.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class DocumentBuilderReceiverIntegrationTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
-    @Parameterized.Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-                {"docs-null-ns-1", "<x>{document { <dummy xmlns=''/> }}</x>", "<x><dummy/></x>"},
-                {"merge-docs-ns-1", "<x>{parse-xml(\"<dummy xmlns=''/>\")}</x>", "<x><dummy/></x>"},
-                {"merge-docs-ns-2", "<x xmlns=''>{parse-xml(\"<dummy xmlns=''/>\")}</x>", "<x><dummy/></x>"},
-                {"merge-docs-ns-3", "<x xmlns='xyz'>{parse-xml(\"<dummy xmlns=''/>\")}</x>", "<x xmlns='xyz'><dummy xmlns=''/></x>"},
-                {"merge-docs-ns-4", "<x xmlns=''>{parse-xml(\"<dummy xmlns='xyz'/>\")}</x>", "<x><dummy xmlns='xyz'/></x>"}
-        });
-    }
-
-    @Parameterized.Parameter
-    public String testName;
-
-    @Parameterized.Parameter(value = 1)
-    public String query;
-
-    @Parameterized.Parameter(value = 2)
-    public String expectedResult;
-
-    @Test
-    public void mergeDocuments() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+        "docs-null-ns-1,<x>{document { <dummy xmlns=''/> }}</x>,<x><dummy/></x>",
+        "merge-docs-ns-1,<x>{parse-xml(\"<dummy xmlns=''/>\")}</x>,<x><dummy/></x>",
+        "merge-docs-ns-2,<x xmlns=''>{parse-xml(\"<dummy xmlns=''/>\")}</x>,<x><dummy/></x>",
+        "merge-docs-ns-3,<x xmlns='xyz'>{parse-xml(\"<dummy xmlns=''/>\")}</x>,<x xmlns='xyz'><dummy xmlns=''/></x>",
+        "merge-docs-ns-4,<x xmlns=''>{parse-xml(\"<dummy xmlns='xyz'/>\")}</x>,<x><dummy xmlns='xyz'/></x>"
+    })
+    public void mergeDocuments(final String testName, final String query, final String expectedResult) throws XMLDBException {
+        final ResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query);
 
             assertNotNull(result);
             assertEquals(1, result.getSize());
@@ -117,7 +99,7 @@ public class DocumentBuilderReceiverIntegrationTest {
                     .ignoreWhitespace()
                     .build();
 
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
         }
     }

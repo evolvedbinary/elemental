@@ -55,51 +55,57 @@ import org.exist.security.Subject;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class AccountManagementFunctionRemoveAccountTest {
 
-    @Rule
-    public final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteSystemAccount() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void cannotDeleteSystemAccount() throws AuthenticationException {
         final Subject admin = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.SYSTEM, Optional.of(admin)).close());
+        Runnable3E x = () -> xqueryRemoveAccount(SecurityManager.SYSTEM, Optional.of(admin).close());
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(x));
     }
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteDbaAccount() throws XPathException, PermissionDeniedException, EXistException, IOException {
-        extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.DBA_USER).close());
+    @Test
+    void cannotDeleteDbaAccount() {
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.DBA_USER).close()));
     }
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteGuestAccount() throws XPathException, PermissionDeniedException, EXistException, IOException {
-        extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.GUEST_USER).close());
+    @Test
+    void cannotDeleteGuestAccount() {
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.GUEST_USER).close()));
     }
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotDeleteUnknownAccount() throws XPathException, PermissionDeniedException, EXistException, IOException {
-        extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.UNKNOWN_USER).close());
+    @Test
+    void cannotDeleteUnknownAccount() {
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(() -> xqueryRemoveAccount(SecurityManager.UNKNOWN_USER).close()));
     }
 
     private XQueryUtil.QueryResult xqueryRemoveAccount(final String username) throws XPathException, PermissionDeniedException, EXistException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
         final Optional<Subject> asUser = Optional.of(pool.getSecurityManager().getSystemSubject());
         return xqueryRemoveAccount(username, asUser);
     }
 
     private XQueryUtil.QueryResult xqueryRemoveAccount(final String username, final Optional<Subject> asUser) throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+        final BrokerPool pool = embeddedDatabase.getBrokerPool();
 
         final String query =
                 "import module namespace sm = 'http://exist-db.org/xquery/securitymanager';\n" +

@@ -46,33 +46,30 @@
 package org.exist.dom.memtree;
 
 import com.googlecode.junittoolbox.ParallelRunner;
-import org.exist.test.ExistXmldbEmbeddedServer;
-import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
-import org.junit.runner.RunWith;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
  */
-@RunWith(ParallelRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class MemtreeInXQueryTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(true, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(true, true, true);
 
     @Test
-    public void pi_attributes() throws XMLDBException {
+    void pi_attributes() throws XMLDBException {
         final String xquery = "let $doc := document{\n" +
                 "    processing-instruction{\"ok\"}{\"ok\"},\n" +
                 "    <root/>\n" +
                 "}\n" +
                 "return count($doc//processing-instruction()/@*)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals(0, Integer.parseInt(resource.getContent().toString()));
@@ -81,14 +78,14 @@ public class MemtreeInXQueryTest {
     }
 
     @Test
-    public void pi_children() throws XMLDBException {
+    void pi_children() throws XMLDBException {
         final String xquery = "let $doc := document{\n" +
                 "    processing-instruction{\"ok\"}{\"ok\"},\n" +
                 "    <root/>\n" +
                 "}\n" +
                 "return count($doc//processing-instruction()/node())";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals(0, Integer.parseInt(resource.getContent().toString()));
@@ -97,14 +94,14 @@ public class MemtreeInXQueryTest {
     }
 
     @Test
-    public void pi_descendantAttributes() throws XMLDBException {
+    void pi_descendantAttributes() throws XMLDBException {
         final String xquery = "let $doc := document{\n" +
                 "    processing-instruction{\"ok\"}{\"ok\"},\n" +
                 "    <root/>\n" +
                 "}\n" +
                 "return count($doc//processing-instruction()//@*)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals(0, Integer.parseInt(resource.getContent().toString()));
@@ -113,7 +110,7 @@ public class MemtreeInXQueryTest {
     }
 
     @Test
-    public void attr_attributes() throws XMLDBException {
+    void attr_attributes() throws XMLDBException {
         final String xquery = "let $doc := document {\n" +
                 "    element a {\n" +
                 "        attribute x { \"y\" }\n" +
@@ -121,7 +118,7 @@ public class MemtreeInXQueryTest {
                 "} return\n" +
                 "    count($doc/a/@x/@y)";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals(0, Integer.parseInt(resource.getContent().toString()));
@@ -130,7 +127,7 @@ public class MemtreeInXQueryTest {
     }
 
     @Test
-    public void attr_children() throws XMLDBException {
+    void attr_children() throws XMLDBException {
         final String xquery = "let $doc := document {\n" +
                 "    element a {\n" +
                 "        attribute x { \"y\" }\n" +
@@ -138,7 +135,7 @@ public class MemtreeInXQueryTest {
                 "} return\n" +
                 "    count($doc/a/@x/node())";
 
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(xquery)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(xquery)) {
             assertEquals(1, result.getSize());
             try (final Resource resource = result.getResource(0)) {
                 assertEquals(0, Integer.parseInt(resource.getContent().toString()));

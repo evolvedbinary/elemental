@@ -55,25 +55,25 @@ import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SecurityManagerTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final String REMOVED_COLLECTION_NAME = "removed";
     private static final XmldbURI ACCOUNTS_URI = SecurityManager.SECURITY_COLLECTION_URI.append(RealmImpl.ID).append("accounts");
@@ -84,9 +84,8 @@ public class SecurityManagerTest {
     private static final String TEST_USER_NAME = "test-user-1";
     private static final String TEST_GROUP_NAME = TEST_USER_NAME;
 
-    @BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    @BeforeAll
+    static void setup(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException {
         final SecurityManager securityManager = brokerPool.getSecurityManager();
 
         // create the personal group
@@ -109,8 +108,7 @@ public class SecurityManagerTest {
     }
 
     @Test
-    public void deleteAccount() throws EXistException, PermissionDeniedException, XPathException, LockException, IOException {
-        final BrokerPool brokerPool = existEmbeddedServer.getBrokerPool();
+    void deleteAccount(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException, XPathException, LockException {
         final SecurityManager securityManager = brokerPool.getSecurityManager();
 
         try (final DBBroker broker = brokerPool.get(Optional.of(securityManager.getSystemSubject()))) {

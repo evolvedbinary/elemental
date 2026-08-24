@@ -25,21 +25,25 @@ import java.io.*;
 import java.net.URL;
 import java.util.Optional;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.security.AuthenticationException;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.XMLReaderObjectFactory;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.TestUtils.*;
@@ -121,26 +125,26 @@ public class DatabaseInsertResources_WithValidation_Test {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(
         propertiesBuilder()
             .set(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "auto")
             .build(),
         true,
         true);
 
-    @BeforeClass
-    public static void startup() throws Exception {
+    @BeforeAll
+    public static void startup() throws AuthenticationException, PermissionDeniedException, EXistException, IOException, TriggerException {
         createTestCollections();
     }
 
-    @AfterClass
-    public static void shutdown() throws Exception {
+    @AfterAll
+    public static void shutdown() throws AuthenticationException, PermissionDeniedException, EXistException, IOException, TriggerException {
         removeTestCollections();
     }
 
-    private static void createTestCollections() throws Exception {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private static void createTestCollections() throws AuthenticationException, EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD)));
@@ -160,8 +164,8 @@ public class DatabaseInsertResources_WithValidation_Test {
         }
     }
 
-    private static void removeTestCollections() throws Exception {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private static void removeTestCollections() throws AuthenticationException, EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().authenticate(ADMIN_DB_USER, ADMIN_DB_PWD)));

@@ -46,7 +46,7 @@
 package org.exist.xquery.functions.request;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,9 +63,9 @@ import org.exist.http.RESTTest;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.EXistResource;
 import org.exist.xmldb.UserManagementService;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
@@ -80,7 +80,7 @@ import javax.annotation.Nullable;
  * @author <a href="mailto:adam@exist-db.org">Adam Retter</a>
  * @version 1.0
  */
-public class GetParameterTest extends RESTTest {
+class GetParameterTest extends RESTTest {
 
     private final static String XQUERY = "for $param-name in request:get-parameter-names() return for $param-value in request:get-parameter($param-name, ()) return fn:concat($param-name, '=', $param-value)";
     private final static String XQUERY_FILENAME = "test-get-parameter.xql";
@@ -90,9 +90,9 @@ public class GetParameterTest extends RESTTest {
 
     private static Collection root;
 
-    
-    @BeforeClass
-    public static void beforeClass() throws XMLDBException {
+
+    @BeforeAll
+    static void beforeClass() throws XMLDBException {
         root = DatabaseManager.getCollection("xmldb:exist://localhost:" + existWebServer.getPort() + "/xmlrpc/db", "admin", "");
         try (final BinaryResource res = root.createResource(XQUERY_FILENAME, BinaryResource.class)) {
             ((EXistResource) res).setMediaType(MediaType.APPLICATION_XQUERY);
@@ -103,8 +103,8 @@ public class GetParameterTest extends RESTTest {
         }
     }
 
-    @AfterClass
-    public static void afterClass() throws XMLDBException {
+    @AfterAll
+    static void afterClass() throws XMLDBException {
         try (final BinaryResource res = (BinaryResource)root.getResource(XQUERY_FILENAME)) {
             root.removeResource(res);
         }
@@ -115,31 +115,31 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testGetNoParameter() throws IOException {
+    void getNoParameter() throws IOException {
         testGet(null);
     }
 
     @Test
-    public void testPostNoParameter() throws IOException {
+    void postNoParameter() throws IOException {
         testPost(null);
     }
 
     @Test
-    public void testGetEmptyParameter() throws IOException{
+    void getEmptyParameter() throws IOException{
         testGet(new NameValues[] {
             new NameValues("param1", new String[]{})
         });
     }
 
     @Test
-    public void testPostEmptyParameter() throws IOException{
+    void postEmptyParameter() throws IOException{
         testPost(new NameValues[] {
             new NameValues("param1", new String[]{})
         });
     }
 
     @Test
-    public void testGetSingleValueParameter() throws IOException {
+    void getSingleValueParameter() throws IOException {
         testGet(new NameValues[] {
             new NameValues("param1", new String[] {
                 "value1"
@@ -148,7 +148,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testPostSingleValueParameter() throws IOException {
+    void postSingleValueParameter() throws IOException {
         testPost(new NameValues[] {
             new NameValues("param1", new String[] {
                 "value1"
@@ -157,7 +157,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testGetMultiValueParameter() throws IOException {
+    void getMultiValueParameter() throws IOException {
         testGet(new NameValues[]{
             new NameValues("param1", new String[] {
                 "value1",
@@ -169,7 +169,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testPostMultiValueParameter() throws IOException {
+    void postMultiValueParameter() throws IOException {
         testPost(new NameValues[]{
             new NameValues("param1", new String[] {
                 "value1",
@@ -181,7 +181,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testPostMultiValueParameterWithQueryStringMultiValueParameter() throws IOException {
+    void postMultiValueParameterWithQueryStringMultiValueParameter() throws IOException {
         testPost(
             new NameValues[]{
                 new NameValues("param1", new String[] {
@@ -202,8 +202,8 @@ public class GetParameterTest extends RESTTest {
         );
     }
 
-   @Test
-    public void testPostMultiValueParameterWithQueryStringMultiValueParameterMerge() throws IOException {
+    @Test
+    void postMultiValueParameterWithQueryStringMultiValueParameterMerge() throws IOException {
         testPost(
             new NameValues[]{
                 new NameValues("param1", new String[] {
@@ -225,7 +225,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testMultipartPostMultiValueParameterAndFile() throws IOException {
+    void multipartPostMultiValueParameterAndFile() throws IOException {
         testMultipartPost(
             new Param[]{
                 new NameValues("param1", new String[] {
@@ -240,7 +240,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testMultipartPostFileAndMultiValueParameter() throws IOException {
+    void multipartPostFileAndMultiValueParameter() throws IOException {
         testMultipartPost(
             new Param[]{
                 new TextFileUpload(TEST_FILE_NAME, TEST_FILE_CONTENT),
@@ -255,7 +255,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testMultipartPostMultiValueParameterAndFileAndMultiValueParameter() throws IOException {
+    void multipartPostMultiValueParameterAndFileAndMultiValueParameter() throws IOException {
         testMultipartPost(
             new Param[]{
                 new NameValues("param1", new String[] {
@@ -276,7 +276,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testMultipartPostAndMultiValueParameterAndFileAndMultiValueParameterWithQueryStringMultiValueParameters() throws IOException {
+    void multipartPostAndMultiValueParameterAndFileAndMultiValueParameterWithQueryStringMultiValueParameters() throws IOException {
         testMultipartPost(
             new NameValues[]{
                 new NameValues("param1", new String[] {
@@ -305,7 +305,7 @@ public class GetParameterTest extends RESTTest {
     }
 
     @Test
-    public void testMultipartPostAndMultiValueParameterAndFileAndMultiValueParameterWithQueryStringMultiValueParametersMerged() throws IOException {
+    void multipartPostAndMultiValueParameterAndFileAndMultiValueParameterWithQueryStringMultiValueParametersMerged() throws IOException {
         testMultipartPost(
             new NameValues[]{
                 new NameValues("param1", new String[] {

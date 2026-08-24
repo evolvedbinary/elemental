@@ -40,19 +40,20 @@ import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TransactionTestDSL;
 import org.exist.util.InputStreamSupplierInputSource;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.ClassRule;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Optional;
-import java.util.concurrent.*;
 
 import static org.exist.test.TransactionTestDSL.ExecutionListener;
 import static org.exist.test.TransactionTestDSL.NULL_SCHEDULE_LISTENER;
@@ -60,9 +61,7 @@ import static org.exist.test.TransactionTestDSL.STD_OUT_SCHEDULE_LISTENER;
 import static org.exist.test.TransactionTestDSL.TransactionOperation.*;
 import static org.exist.test.TransactionTestDSL.TransactionScheduleBuilder.biSchedule;
 import static org.exist.test.TestConstants.TEST_COLLECTION_URI;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 
 /**
@@ -75,15 +74,15 @@ import static org.exist.samples.Samples.SAMPLES;
  */
 public class ConcurrentTransactionsTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     // flip this to `true` if you want to see a trace of the transaction schedule execution on Standard Out
     private static final boolean DEBUG_TRACING = false;
     private static final ExecutionListener EXECUTION_LISTENER = DEBUG_TRACING ? STD_OUT_SCHEDULE_LISTENER : NULL_SCHEDULE_LISTENER;
 
     @Test
-    public void getDocuments() throws ExecutionException, InterruptedException {
+    void getDocuments() throws ExecutionException, InterruptedException {
         final String documentUri = "/db/test/hamlet.xml";
 
         final Tuple2<DocumentImpl, DocumentImpl> result = biSchedule()
@@ -92,7 +91,7 @@ public class ConcurrentTransactionsTest {
                 .andThenT1(commit())
                                                                 .andThenT2(commit())
                 .build()
-            .execute(existEmbeddedServer.getBrokerPool(), EXECUTION_LISTENER);
+            .execute(EMBEDDED_DATABASE.getBrokerPool(), EXECUTION_LISTENER);
 
         assertNotNull(result);
         assertNotNull(result._1);
@@ -103,7 +102,7 @@ public class ConcurrentTransactionsTest {
     }
 
     @Test
-    public void getDeleteUpdate() throws ExecutionException, InterruptedException {
+    void getDeleteUpdate() throws ExecutionException, InterruptedException {
         final String documentUri = "/db/test/hamlet.xml";
 
         final Tuple2<Void, Void> result = biSchedule()
@@ -115,11 +114,11 @@ public class ConcurrentTransactionsTest {
                                                         .andThenT2(commit())
                 .build()
 
-            .execute(existEmbeddedServer.getBrokerPool(), EXECUTION_LISTENER);
+            .execute(EMBEDDED_DATABASE.getBrokerPool(), EXECUTION_LISTENER);
     }
 
     @Test
-    public void delete_read() throws ExecutionException, InterruptedException {
+    void delete_read() throws ExecutionException, InterruptedException {
         final String documentUri = "/db/test/hamlet.xml";
 
         final Tuple2<Void, DocumentImpl> result = biSchedule()
@@ -127,7 +126,7 @@ public class ConcurrentTransactionsTest {
                 .andThenT1(deleteDocument())
                                                                 .andThenT2(getDocument(documentUri))
                 .build()
-            .execute(existEmbeddedServer.getBrokerPool(), EXECUTION_LISTENER);
+            .execute(EMBEDDED_DATABASE.getBrokerPool(), EXECUTION_LISTENER);
 
         assertNull(null, result._1);
 
@@ -136,7 +135,7 @@ public class ConcurrentTransactionsTest {
     }
 
     @Test
-    public void delete_commit_read() throws ExecutionException, InterruptedException {
+    void delete_commit_read() throws ExecutionException, InterruptedException {
         final String documentUri = "/db/test/hamlet.xml";
 
         final Tuple2<Void, DocumentImpl> result = biSchedule()
@@ -145,7 +144,7 @@ public class ConcurrentTransactionsTest {
                 .andThenT1(commit())
                                                                 .andThenT2(getDocument(documentUri))
                 .build()
-            .execute(existEmbeddedServer.getBrokerPool(), EXECUTION_LISTENER);
+            .execute(EMBEDDED_DATABASE.getBrokerPool(), EXECUTION_LISTENER);
 
         assertNull(result._1);
         assertNull(result._2);  // should be null as document was deleted!
@@ -156,7 +155,7 @@ public class ConcurrentTransactionsTest {
      * made by the transaction.
      */
     @Test
-    public void delete_abort_read() throws ExecutionException, InterruptedException {
+    void delete_abort_read() throws ExecutionException, InterruptedException {
         final String documentUri = "/db/test/hamlet.xml";
 
         final Tuple2<Void, DocumentImpl> result = biSchedule()
@@ -165,7 +164,7 @@ public class ConcurrentTransactionsTest {
                 .andThenT1(abort())
                                                                 .andThenT2(getDocument(documentUri))
                 .build()
-            .execute(existEmbeddedServer.getBrokerPool(), EXECUTION_LISTENER);
+            .execute(EMBEDDED_DATABASE.getBrokerPool(), EXECUTION_LISTENER);
 
         assertNull(result._1);
         assertNull(result._2);
@@ -173,9 +172,9 @@ public class ConcurrentTransactionsTest {
 //        assertEquals(documentUri, result._2.getURI().getCollectionPath());  // should not be null as transaction T1 was aborted!
     }
 
-    @Before
-    public void setupDocs() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void setupDocs() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, URISyntaxException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {
@@ -191,9 +190,9 @@ public class ConcurrentTransactionsTest {
         }
     }
 
-    @After
-    public void removeDocs() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterEach
+    void removeDocs() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
             final Txn transaction = transact.beginTransaction()) {

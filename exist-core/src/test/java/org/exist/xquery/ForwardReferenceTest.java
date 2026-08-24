@@ -48,20 +48,19 @@ package org.exist.xquery;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.collections.triggers.TriggerException;
 import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -70,14 +69,14 @@ import java.util.Optional;
 import java.util.Properties;
 
 import static org.exist.test.Util.*;
-import static org.junit.Assert.assertEquals;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ForwardReferenceTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer EXIST_EMBEDDED_SERVER = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     private static final XmldbURI TEST_COLLECTION_URI = XmldbURI.create("/db/test-deferred-function-call");
 
@@ -134,9 +133,8 @@ public class ForwardReferenceTest {
             "};\n").getBytes(UTF_8));
     private static XmldbURI TEST_PAGES_MODULE_URI = null;
 
-    @BeforeClass
-    public static void setup() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
+    @BeforeAll
+    static void setup(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 
@@ -158,7 +156,7 @@ public class ForwardReferenceTest {
     }
 
     @Test
-    public void test1() throws EXistException, PermissionDeniedException, IOException, TriggerException, XPathException {
+    void test1(final BrokerPool brokerPool) throws EXistException, PermissionDeniedException, IOException, XPathException {
         final StringSource testXquerySource = new StringSource(
                 "xquery version \"3.1\";\n" +
                 "\n" +
@@ -169,7 +167,6 @@ public class ForwardReferenceTest {
                 "    inspect:module-functions(xs:anyURI(\"xmldb:exist://" + TEST_PAGES_MODULE_URI + "\"))\n" +
                 "))");
 
-        final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
         try (final DBBroker broker = brokerPool.get(Optional.of(brokerPool.getSecurityManager().getSystemSubject()));
              final Txn transaction = brokerPool.getTransactionManager().beginTransaction()) {
 

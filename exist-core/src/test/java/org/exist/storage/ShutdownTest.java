@@ -54,7 +54,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.StringSource;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
@@ -62,10 +62,10 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryUtil;
 import org.exist.xquery.value.Sequence;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.exist.samples.Samples.SAMPLES;
 
 import org.xml.sax.SAXException;
@@ -73,18 +73,18 @@ import xyz.elemental.mediatype.MediaType;
 
 public class ShutdownTest {
 
-    @ClassRule
-    public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-	public void shutdown() throws EXistException, LockException, SAXException, PermissionDeniedException, XPathException, IOException {
+    void shutdown() throws EXistException, LockException, SAXException, PermissionDeniedException, XPathException, IOException {
 		for (int i = 0; i < 2; i++) {
 			storeAndShutdown();
 		}
 	}
 	
 	public void storeAndShutdown() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, XPathException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
 
 		try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {

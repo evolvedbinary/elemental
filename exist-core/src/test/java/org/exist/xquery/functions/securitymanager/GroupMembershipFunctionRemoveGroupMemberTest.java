@@ -45,6 +45,7 @@
  */
 package org.exist.xquery.functions.securitymanager;
 
+import com.evolvedbinary.j8fu.function.Runnable3E;
 import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.security.*;
@@ -52,17 +53,17 @@ import org.exist.security.SecurityManager;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.xquery.XPathException;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import static org.exist.xquery.functions.securitymanager.SecurityManagerTestUtil.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GroupMembershipFunctionRemoveGroupMemberTest {
 
@@ -72,34 +73,35 @@ public class GroupMembershipFunctionRemoveGroupMemberTest {
     private static final String OTHER_GROUP1_NAME = "otherGroup";
     private static final String OTHER_GROUP2_NAME = "otherGroup2";
 
-    @Rule
-    public final ExistEmbeddedServer existWebServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public final EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotRemoveAllGroupsFromUserAsOwner() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void cannotRemoveAllGroupsFromUserAsOwner(final BrokerPool pool) throws AuthenticationException {
         final Subject owner = pool.getSecurityManager().authenticate(USER1_NAME, USER1_NAME);
-        extractPermissionDenied(() -> {
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(owner)).close();
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(owner)).close();
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(owner)).close();
-        });
+        Runnable3E x = () -> {
+                xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(owner)).close();
+                xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(owner)).close();
+                xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(owner)).close();
+            };
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(x));
     }
 
-    @Test(expected = PermissionDeniedException.class)
-    public void cannotRemoveAllGroupsFromUserAsDBA() throws XPathException, PermissionDeniedException, EXistException, AuthenticationException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @Test
+    void cannotRemoveAllGroupsFromUserAsDBA(final BrokerPool pool) throws XPathException, PermissionDeniedException, EXistException, AuthenticationException {
         final Subject admin = pool.getSecurityManager().authenticate(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD);
-        extractPermissionDenied(() -> {
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(admin)).close();
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(admin)).close();
-            xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(admin)).close();
-        });
+        Runnable3E x = () -> {
+                xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP2_NAME, Optional.of(admin)).close();
+                xqueryRemoveUserFromGroup(pool, USER1_NAME, OTHER_GROUP1_NAME, Optional.of(admin)).close();
+                xqueryRemoveUserFromGroup(pool, USER1_NAME, USER1_NAME, Optional.of(admin)).close();
+            };
+        assertThrows(PermissionDeniedException.class, () ->
+            extractPermissionDenied(x));
     }
 
-    @Before
-    public void setup() throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existWebServer.getBrokerPool();
+    @BeforeEach
+    void setup(final BrokerPool pool) throws EXistException, PermissionDeniedException, XPathException {
         final SecurityManager sm = pool.getSecurityManager();
 
         // create user with personal group as primary group

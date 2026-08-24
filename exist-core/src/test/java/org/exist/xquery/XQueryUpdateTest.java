@@ -59,17 +59,19 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.ClassRule;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class XQueryUpdateTest {
 
@@ -85,8 +87,8 @@ public class XQueryUpdateTest {
     protected final static int ITEMS_TO_APPEND = 500;
 
     @Test
-    public void append() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void append() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -108,7 +110,7 @@ public class XQueryUpdateTest {
             query = "/products";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), 1);
+                assertEquals(1, seq.getItemCount());
 
                 final Serializer serializer = broker.borrowSerializer();
                 try {
@@ -133,11 +135,11 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void appendAttributes() throws EXistException, PermissionDeniedException, XPathException, SAXException, LockException, IOException {
+    void appendAttributes() throws EXistException, PermissionDeniedException, XPathException, SAXException, LockException, IOException {
 
         append();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -155,7 +157,7 @@ public class XQueryUpdateTest {
             query = "/products";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), 1);
+                assertEquals(1, seq.getItemCount());
 
                 final Serializer serializer = broker.borrowSerializer();
                 try {
@@ -200,8 +202,8 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void insertBefore() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void insertBefore() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -242,7 +244,7 @@ public class XQueryUpdateTest {
             query = "/products";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), 1);
+                assertEquals(1, seq.getItemCount());
 
                 final Serializer serializer = broker.borrowSerializer();
                 try {
@@ -267,8 +269,8 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void insertAfter() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void insertAfter() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -309,7 +311,7 @@ public class XQueryUpdateTest {
             query = "/products";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), 1);
+                assertEquals(1, seq.getItemCount());
 
                 final Serializer serializer = broker.borrowSerializer();
                 try {
@@ -334,11 +336,11 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void update() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+    void update() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -412,11 +414,11 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void remove() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+    void remove() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
         	String query =
@@ -429,18 +431,18 @@ public class XQueryUpdateTest {
         	query = "//product";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), 0);
+                assertEquals(0, seq.getItemCount());
             }
 
         }
     }
 
     @Test
-    public void rename() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+    void rename() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -453,7 +455,7 @@ public class XQueryUpdateTest {
             query = "//product/desc";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
             }
 
             query =
@@ -466,18 +468,18 @@ public class XQueryUpdateTest {
             query = "//product/@count";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
             }
 
         }
     }
 
     @Test
-    public void replace() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+    void replace() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
 
         append();
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
 
             String query =
@@ -490,7 +492,7 @@ public class XQueryUpdateTest {
             query = "//product/desc";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
             }
 
             query =
@@ -503,7 +505,7 @@ public class XQueryUpdateTest {
             query = "//product/@num";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
             }
 
             query =
@@ -516,14 +518,14 @@ public class XQueryUpdateTest {
             query = "//product[starts-with(desc, 'A new')]";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), ITEMS_TO_APPEND);
+                assertEquals(ITEMS_TO_APPEND, seq.getItemCount());
             }
         }
     }
 
     @Test
-    public void attrUpdate() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void attrUpdate() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException, XPathException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             store(broker, "test.xml", UPDATE_XML);
 
@@ -543,8 +545,8 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void appendCDATA() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void appendCDATA() throws EXistException, PermissionDeniedException, XPathException, SAXException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query =
             	"	update insert\n" +
@@ -561,7 +563,7 @@ public class XQueryUpdateTest {
             query = "/products";
             try (final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
                 final Sequence seq = queryResult.result;
-                assertEquals(seq.getItemCount(), 1);
+                assertEquals(1, seq.getItemCount());
 
                 final Serializer serializer = broker.borrowSerializer();
                 try {
@@ -580,8 +582,8 @@ public class XQueryUpdateTest {
     }
 
     @Test
-    public void insertAttrib() throws EXistException, PermissionDeniedException, XPathException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void insertAttrib() throws EXistException, PermissionDeniedException, XPathException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             String query =
                 "declare namespace xmldb = 'http://exist-db.org/xquery/xmldb'; "+
@@ -602,20 +604,20 @@ public class XQueryUpdateTest {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @Before
-    public void loadTestData() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @BeforeEach
+    void loadTestData() throws EXistException, LockException, SAXException, PermissionDeniedException, IOException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()))) {
             store(broker, "test.xml", TEST_XML);
         }
     }
 
-    @After
-    public void removeTestData() throws EXistException, PermissionDeniedException, IOException, TriggerException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    @AfterEach
+    void removeTestData() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager transact = pool.getTransactionManager();
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = transact.beginTransaction()) {
@@ -631,7 +633,7 @@ public class XQueryUpdateTest {
 
     private void store(DBBroker broker, String docName, String data) throws PermissionDeniedException, EXistException, SAXException, LockException, IOException {
         Collection root;
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         final TransactionManager mgr = pool.getTransactionManager();
         try (final Txn transaction = mgr.beginTransaction()) {
 

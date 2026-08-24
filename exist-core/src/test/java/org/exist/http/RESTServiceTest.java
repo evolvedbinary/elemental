@@ -71,13 +71,16 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -85,9 +88,6 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
 import javax.xml.transform.Source;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
@@ -96,22 +96,19 @@ import xyz.elemental.mediatype.MediaType;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.hamcrest.junit.MatcherAssume.assumeThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * A test case for accessing a remote server via REST-Style Web API.
  * @author <a href="mailto:pierrick.brihaye@free.fr">wolf
  * @author Pierrick Brihaye</a>
  */
-//@RunWith(ParallelRunner.class)    // TODO(AR) when running in parallel a deadlock is encountered... this needs to be resolved!
+//@Execution(ExecutionMode.CONCURRENT)    // TODO(AR) when running in parallel a deadlock is encountered... this needs to be resolved!
 public class RESTServiceTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private static final String XML_DATA = "<test>"
             + "<para>\u00E4\u00E4\u00FC\u00FC\u00F6\u00F6\u00C4\u00C4\u00D6\u00D6\u00DC\u00DC</para>"
@@ -263,11 +260,11 @@ public class RESTServiceTest {
 
 
     private static String getServerUri() {
-        return "http://localhost:" + existWebServer.getPort() + "/rest";
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/rest";
     }
 
     private static String getServerUriRedirected() {
-        return "http://localhost:" + existWebServer.getPort();
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort();
     }
 
     private static String getCollectionUri() {
@@ -347,15 +344,14 @@ public class RESTServiceTest {
         return getServerUri() + XmldbURI.ROOT_COLLECTION + "/test//../test/A-Za-z0-9_~!$&'()*+,;=@%20%23%25%27%2F%3F%5B%5Däöü.xml";
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
-    @BeforeClass
-    public static void setup() throws PermissionDeniedException, IOException, TriggerException {
+    @BeforeAll
+    static void setup(final BrokerPool pool) throws PermissionDeniedException, IOException, TriggerException {
         credentials = Base64.encodeBase64String("admin:".getBytes(UTF_8));
         badCredentials = Base64.encodeBase64String("johndoe:this pw should fail".getBytes(UTF_8));
 
-        final BrokerPool pool =  existEmbeddedServer.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -394,16 +390,16 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void getFailNoSuchDocument() throws IOException {
+    void getFailNoSuchDocument() throws IOException {
         final String uri = getCollectionUri() + "/nosuchdocument.xml";
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.NOT_FOUND_404, resultStatusCode);
+        assertEquals(HttpStatus.NOT_FOUND_404, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void xqueryGetWithEmptyPath() throws IOException {
+    void xqueryGetWithEmptyPath() throws IOException {
         /* store the documents that we need for this test */
         doPut(TEST_XQUERY_WITH_PATH_PARAMETER, "requestwithpath.xq", HttpStatus.CREATED_201);
 
@@ -414,18 +410,18 @@ public class RESTServiceTest {
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         final String responseBody = readResponse(response.getEntity());
         final String pathInfo = responseBody.substring("pathInfo=".length(), responseBody.indexOf("servletPath=") - 2);
         final String servletPath = responseBody.substring(responseBody.indexOf("servletPath=") + "servletPath=".length(), responseBody.lastIndexOf("\r\n"));
 
         //check the responses
-        assertEquals("XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"", "/db/test/requestwithpath.xq", servletPath);
-        assertEquals("XQuery pathInfo is: \"" + pathInfo + "\" expected: \"\"", "", pathInfo);
+        assertEquals("/db/test/requestwithpath.xq", servletPath, "XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"");
+        assertEquals("", pathInfo, "XQuery pathInfo is: \"" + pathInfo + "\" expected: \"\"");
     }
 
     @Test
-    public void xqueryPOSTWithEmptyPath() throws IOException {
+    void xqueryPOSTWithEmptyPath() throws IOException {
         /* store the documents that we need for this test */
         doPut(TEST_XQUERY_WITH_PATH_PARAMETER, "requestwithpath.xq", HttpStatus.CREATED_201);
 
@@ -433,18 +429,18 @@ public class RESTServiceTest {
         final HttpResponse response = doPostWithAuth(uri, "boo");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         final String responseBody = readResponse(response.getEntity());
         final String pathInfo = responseBody.substring("pathInfo=".length(), responseBody.indexOf("servletPath=")-2);
         final String servletPath = responseBody.substring(responseBody.indexOf("servletPath=") + "servletPath=".length(), responseBody.lastIndexOf("\r\n"));
 
         //check the responses
-        assertEquals("XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"", "/db/test/requestwithpath.xq", servletPath);
-        assertEquals("XQuery pathInfo is: \"" + pathInfo + "\" expected: \"\"", "", pathInfo);
+        assertEquals("/db/test/requestwithpath.xq", servletPath, "XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"");
+        assertEquals("", pathInfo, "XQuery pathInfo is: \"" + pathInfo + "\" expected: \"\"");
     }
 
     @Test
-    public void xqueryGetWithNonEmptyPath() throws IOException {
+    void xqueryGetWithNonEmptyPath() throws IOException {
         /* store the documents that we need for this test */
         doPut(TEST_XQUERY_WITH_PATH_PARAMETER, "requestwithpath.xq", HttpStatus.CREATED_201);
 
@@ -452,18 +448,18 @@ public class RESTServiceTest {
         final HttpResponse response = doGetWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         final String responseBody = readResponse(response.getEntity());
         final String pathInfo = responseBody.substring("pathInfo=".length(), responseBody.indexOf("servletPath=") - 2);
         final String servletPath = responseBody.substring(responseBody.indexOf("servletPath=") + "servletPath=".length(), responseBody.lastIndexOf("\r\n"));
 
         //check the responses
-        assertEquals("XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"", "/db/test/requestwithpath.xq", servletPath);
-        assertEquals("XQuery pathInfo is: \"" + pathInfo + "\" expected: \"/some/path\"", "/some/path", pathInfo);
+        assertEquals("/db/test/requestwithpath.xq", servletPath, "XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"");
+        assertEquals("/some/path", pathInfo, "XQuery pathInfo is: \"" + pathInfo + "\" expected: \"/some/path\"");
     }
 
     @Test
-    public void xqueryPOSTWithNonEmptyPath() throws IOException {
+    void xqueryPOSTWithNonEmptyPath() throws IOException {
         /* store the documents that we need for this test */
         doPut(TEST_XQUERY_WITH_PATH_PARAMETER, "requestwithpath.xq", HttpStatus.CREATED_201);
 
@@ -471,19 +467,19 @@ public class RESTServiceTest {
         final HttpResponse response = doPostWithAuth(uri, "boo");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         final String responseBody = readResponse(response.getEntity());
         final String pathInfo = responseBody.substring("pathInfo=".length(), responseBody.indexOf("servletPath=") - 2);
         final String servletPath = responseBody.substring(responseBody.indexOf("servletPath=") + "servletPath=".length(), responseBody.lastIndexOf("\r\n"));
 
         //check the responses
-        assertEquals("XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"", "/db/test/requestwithpath.xq", servletPath);
-        assertEquals("XQuery pathInfo is: \"" + pathInfo + "\" expected: \"/some/path\"", "/some/path", pathInfo);
+        assertEquals("/db/test/requestwithpath.xq", servletPath, "XQuery servletPath is: \"" + servletPath + "\" expected: \"/db/test/requestwithpath.xq\"");
+        assertEquals("/some/path", pathInfo, "XQuery pathInfo is: \"" + pathInfo + "\" expected: \"/some/path\"");
     }
 
 
     @Test
-    public void xqueryGetFailWithNonEmptyPath() throws IOException {
+    void xqueryGetFailWithNonEmptyPath() throws IOException {
         /* store the documents that we need for this test */
         HttpResponse response = doPutWithAuth(getResourceUri(), MediaType.APPLICATION_XML, XML_DATA);
 
@@ -491,73 +487,73 @@ public class RESTServiceTest {
         response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.NOT_FOUND_404, resultStatusCode);
+        assertEquals(HttpStatus.NOT_FOUND_404, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void testPut() throws IOException {
+    void put() throws IOException {
         final int r = uploadData();
-        assertEquals("Server returned response code: " + r, HttpStatus.CREATED_201, r);
+        assertEquals(HttpStatus.CREATED_201, r, "Server returned response code: " + r);
 
         doGet();
     }
 
     @Test
-    public void testPutPlus() throws IOException {
+    void putPlus() throws IOException {
         assumeThat("Requires non-Windows platform", System.getProperty("os.name").toLowerCase(), not(containsString("win")));
 
         HttpResponse response = doPutWithAuth(getResourceUriPlus(), ContentType.APPLICATION_XML.getMimeType(), XML_DATA);
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.CREATED_201, resultStatusCode);
+        assertEquals(HttpStatus.CREATED_201, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         response = doGet(getResourceUriPlus());
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType(MediaType.APPLICATION_XML, response);
         assertNotNull(readResponse(response.getEntity()));
     }
 
     @Test
-    public void putFailAgainstCollection() throws IOException {
+    void putFailAgainstCollection() throws IOException {
         final HttpResponse response = doPutWithAuth(getCollectionUri(), MediaType.APPLICATION_XML, XML_DATA);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+        assertEquals(HttpStatus.BAD_REQUEST_400, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void putWithCharset() throws IOException {
+    void putWithCharset() throws IOException {
         final HttpResponse response = doPutWithAuth(getResourceUri(), "application/xml; charset=UTF-8", XML_DATA);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.CREATED_201, resultStatusCode);
+        assertEquals(HttpStatus.CREATED_201, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void putFailAndRechallengeAuthorization() throws IOException {
+    void putFailAndRechallengeAuthorization() throws IOException {
         final HttpResponse response = Request.Put(getResourceUri())
             .setHeader("Authorization", "Basic " + badCredentials)
             .execute()
             .returnResponse();
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.UNAUTHORIZED_401, resultStatusCode);
+        assertEquals(HttpStatus.UNAUTHORIZED_401, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String auth = response.getFirstHeader("WWW-Authenticate").getValue();
-        assertEquals("WWW-Authenticate = " + auth, "Basic realm=\"exist\"", auth);
+        assertEquals("Basic realm=\"exist\"", auth, "WWW-Authenticate = " + auth);
     }
 
     @Test
-    public void putAgainstXQuery() throws IOException {
+    void putAgainstXQuery() throws IOException {
         doPut(TEST_XQUERY_WITH_PATH_AND_CONTENT, "requestwithcontent.xq", HttpStatus.CREATED_201);
 
         final String uri = getCollectionUriRedirected() + "/requestwithcontent.xq/a/b/c";
         final HttpResponse response = doPutWithAuth(uri, MediaType.APPLICATION_XML, "<data>test data</data>");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         //get the response of the query
         final String responseBody = readResponse(response.getEntity());
@@ -565,14 +561,14 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void deleteAgainstXQuery() throws IOException {
+    void deleteAgainstXQuery() throws IOException {
         doPut(TEST_XQUERY_WITH_PATH_PARAMETER, "requestwithcontent.xq", HttpStatus.CREATED_201);
 
         final String uri = getCollectionUriRedirected() + "/requestwithcontent.xq/a/b/c";
         final HttpResponse response = doDeleteWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         //get the response of the query
         final String responseBody = readResponse(response.getEntity());
@@ -581,36 +577,36 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void headAgainstXQuery() throws IOException {
+    void headAgainstXQuery() throws IOException {
         doPut(TEST_XQUERY_WITH_PATH_PARAMETER, "requestwithcontent.xq", HttpStatus.CREATED_201);
 
         final String uri = getCollectionUriRedirected() + "/requestwithcontent.xq/a/b/c";
         final HttpResponse response = doHeadWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void xUpdate() throws IOException {
+    void xUpdate() throws IOException {
         final HttpResponse response = doPostWithAuth(getResourceUri(), XUPDATE);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         doGet();
     }
 
     @Test
-    public void queryPost() throws IOException, SAXException, ParserConfigurationException {
+    void queryPost() throws IOException, SAXException, ParserConfigurationException {
         uploadData();
 
         final HttpResponse response = doPostWithAuth(getResourceUri(), QUERY_REQUEST);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String data = readResponse(response.getEntity());
         final int hits = parseResponse(data);
@@ -618,18 +614,18 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void queryPostXQueryError() throws IOException {
+    void queryPostXQueryError() throws IOException {
         final HttpResponse response = doPostWithAuth(getResourceUri(), QUERY_REQUEST_ERROR);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+        assertEquals(HttpStatus.BAD_REQUEST_400, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     /**
      * See: <a href="https://github.com/eXist-db/exist/issues/5845">[BUG] Spurious namespace declarations in REST API results</a>
      */
     @Test
-    public void queryPostWithEnclosedExpressionResponseNamespaces() throws IOException {
+    void queryPostWithEnclosedExpressionResponseNamespaces() throws IOException {
         String query =
                 "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" wrap=\"no\" typed=\"no\">\n" +
                 "   <text>&lt;doc&gt;{3+4}&lt;/doc&gt;</text>\n" +
@@ -639,7 +635,7 @@ public class RESTServiceTest {
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         String data = readResponse(response.getEntity());
         assertEquals("<doc>7</doc>", data.trim());
@@ -653,7 +649,7 @@ public class RESTServiceTest {
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         data = readResponse(response.getEntity());
         assertEquals("<doc>7</doc>", data.trim());
@@ -663,7 +659,7 @@ public class RESTServiceTest {
      * See: <a href="https://github.com/eXist-db/exist/issues/5845">[BUG] Spurious namespace declarations in REST API results</a>
      */
     @Test
-    public void queryPostWithoutEnclosedExpressionResponseNamespaces() throws IOException {
+    void queryPostWithoutEnclosedExpressionResponseNamespaces() throws IOException {
         String query =
                 "<query xmlns=\"http://exist.sourceforge.net/NS/exist\" wrap=\"no\" typed=\"no\">\n" +
                 "   <text>&lt;doc&gt;7&lt;/doc&gt;</text>\n" +
@@ -673,7 +669,7 @@ public class RESTServiceTest {
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         String data = readResponse(response.getEntity());
         assertEquals("<doc>7</doc>", data.trim());
@@ -687,14 +683,14 @@ public class RESTServiceTest {
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
 
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         data = readResponse(response.getEntity());
         assertEquals("<doc>7</doc>", data.trim());
     }
 
     @Test
-    public void queryGet() throws IOException {
+    void queryGet() throws IOException {
         final String uri = getCollectionUri()
                 + "?_query="
                 + URLEncoder
@@ -707,12 +703,12 @@ public class RESTServiceTest {
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertNotNull(readResponse(response.getEntity()));
     }
 
     @Test
-    public void queryGetXQueryError() throws IOException {
+    void queryGetXQueryError() throws IOException {
         final String uri = getCollectionUri()
                 + "?_query="
                 + URLEncoder
@@ -722,16 +718,16 @@ public class RESTServiceTest {
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.BAD_REQUEST_400, resultStatusCode);
+        assertEquals(HttpStatus.BAD_REQUEST_400, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void requestModule() throws IOException {
+    void requestModule() throws IOException {
         String uri = getCollectionUri() + "?_query=request:get-uri()&_wrap=no";
         HttpResponse response = doGet(uri);
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         String responseBody = readResponse(response.getEntity()).trim();
         assertTrue(responseBody.endsWith(XmldbURI.ROOT_COLLECTION + "/test"));
 
@@ -740,13 +736,13 @@ public class RESTServiceTest {
         response = doGet(uri);
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         responseBody = readResponse(response.getEntity()).trim();
         assertTrue(responseBody.endsWith(XmldbURI.ROOT_COLLECTION + "/test"));
     }
 
     @Test
-    public void requestGetParameterFromModule() throws IOException {
+    void requestGetParameterFromModule() throws IOException {
         /* store the documents that we need for this test */
         doPut(TEST_XQUERY_PARAMETER, "requestparameter.xql", HttpStatus.CREATED_201);
         doPut(TEST_XQUERY_PARAMETER_MODULE, "requestparametermod.xqm", HttpStatus.CREATED_201);
@@ -757,7 +753,7 @@ public class RESTServiceTest {
             final HttpResponse response = doGetWithAuth(uri);
             final int resultStatusCode = response.getStatusLine()
                 .getStatusCode();
-            assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+            assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
             assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
             //get the response of the query
@@ -767,13 +763,13 @@ public class RESTServiceTest {
             final String strXQMRequestParameter = responseBody.substring(responseBody.indexOf("xqm=") + "xqm=".length(), responseBody.lastIndexOf("\r\n"));
 
             //check the responses
-            assertEquals("XQuery Request Parameter is: \"" + strXQLRequestParameter + "\" expected: \"somedoc" + i + "\"", "somedoc" + i, strXQLRequestParameter);
-            assertEquals("XQuery Module Request Parameter is: \"" + strXQMRequestParameter + "\" expected: \"somedoc" + i + "\"", "somedoc" + i, strXQMRequestParameter);
+            assertEquals("somedoc" + i, strXQLRequestParameter, "XQuery Request Parameter is: \"" + strXQLRequestParameter + "\" expected: \"somedoc" + i + "\"");
+            assertEquals("somedoc" + i, strXQMRequestParameter, "XQuery Module Request Parameter is: \"" + strXQMRequestParameter + "\" expected: \"somedoc" + i + "\"");
         }
     }
 
     @Test
-    public void storedQuery() throws IOException {
+    void storedQuery() throws IOException {
         doPut(TEST_MODULE, "module.xq", HttpStatus.CREATED_201);
         doPut(TEST_XQUERY, "test.xq", HttpStatus.CREATED_201);
 
@@ -787,7 +783,7 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void execQueryWithNoAuth() throws IOException {
+    void execQueryWithNoAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed only by owner
@@ -798,11 +794,11 @@ public class RESTServiceTest {
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.UNAUTHORIZED_401, resultStatusCode);
+        assertEquals(HttpStatus.UNAUTHORIZED_401, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void execGuestQueryWithNoAuth() throws IOException {
+    void execGuestQueryWithNoAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed by guest
@@ -813,7 +809,7 @@ public class RESTServiceTest {
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -836,11 +832,11 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     @Test
-    public void execQueryWithBasicAuth() throws IOException {
+    void execQueryWithBasicAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed only by owner
@@ -851,7 +847,7 @@ public class RESTServiceTest {
         final HttpResponse response = doGetWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -874,11 +870,11 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     @Test
-    public void execQueryWithBasicAuthCaseInsensitive() throws IOException {
+    void execQueryWithBasicAuthCaseInsensitive() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed only by owner
@@ -892,7 +888,7 @@ public class RESTServiceTest {
             .returnResponse();
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -915,11 +911,11 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     @Test
-    public void execSetUidQueryWithNoAuth() throws IOException {
+    void execSetUidQueryWithNoAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed setUid as admin by guest
@@ -930,7 +926,7 @@ public class RESTServiceTest {
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -959,11 +955,11 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     @Test
-    public void execSetUidQueryWithBasicAuth() throws IOException {
+    void execSetUidQueryWithBasicAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed setUid as admin by guest
@@ -974,7 +970,7 @@ public class RESTServiceTest {
         final HttpResponse response = doGetWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -997,11 +993,11 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     @Test
-    public void execQueryWithBearerAuth() throws IOException {
+    void execQueryWithBearerAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed only by owner
@@ -1017,11 +1013,11 @@ public class RESTServiceTest {
 
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.UNAUTHORIZED_401, resultStatusCode);
+        assertEquals(HttpStatus.UNAUTHORIZED_401, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void execSetUidQueryWithBearerAuth() throws IOException {
+    void execSetUidQueryWithBearerAuth() throws IOException {
         doPut(AUTH_QUERY, "auth.xq", HttpStatus.CREATED_201);
 
         // allow query to be executed setUid as admin by guest
@@ -1036,7 +1032,7 @@ public class RESTServiceTest {
 
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
@@ -1065,58 +1061,58 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     // test rest server ability to handle encoded characters
     // all the tests with EncodedPath in function declaration aim to test rest server ability to handle special characters
     @Test
-    public void doGetEncodedPath() throws IOException {
+    void doGetEncodedPath() throws IOException {
         final String uri = getServerUri() + GET_METHOD_ENCODED_DOC_URI.getCollectionPath();
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
 
         //readResponse is appending \r\n to each line that's why its added the expected content
-        assertEquals("Server returned document content " + responseBody, TEST_ENCODED_XML_DOC_CONTENT + "\r\n", responseBody);
+        assertEquals(TEST_ENCODED_XML_DOC_CONTENT + "\r\n", responseBody, "Server returned document content " + responseBody);
     }
 
     @Test
-    public void doHeadEncodedPath() throws IOException {
+    void doHeadEncodedPath() throws IOException {
         final String uri = getServerUri() + GET_METHOD_ENCODED_DOC_URI.getCollectionPath();
         final HttpResponse response = doHead(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     @Test
-    public void doPutEncodedPath() throws IOException {
+    void doPutEncodedPath() throws IOException {
         final String uri = getServerUri() + PUT_METHOD_ENCODED_DOC_URI.getCollectionPath();
         final String data = "<foobar/>";
 
         HttpResponse response = doPutWithAuth(uri, MediaType.APPLICATION_XML, data);
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.CREATED_201, resultStatusCode);
+        assertEquals(HttpStatus.CREATED_201, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         // assert file content updated
         response = doGet(uri);
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
         //readResponse is appending \r\n to each line that's why its added the expected content
-        assertEquals("Server returned document content " + responseBody, data + "\r\n", responseBody);
+        assertEquals(data + "\r\n", responseBody, "Server returned document content " + responseBody);
     }
 
     @Test
-    public void doPostEncodedPath() throws IOException {
+    void doPostEncodedPath() throws IOException {
         final String uri = getServerUri() + GET_METHOD_ENCODED_COLLECTION_URI.getCollectionPath();
 
         final String data = "<query xmlns=\"http://exist.sourceforge.net/NS/exist\">\n" +
@@ -1128,38 +1124,38 @@ public class RESTServiceTest {
         final HttpResponse response = doPostWithAuth(uri, data);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
 
         //readResponse is appending \r\n to each line that's why its added the expected content
-        assertTrue("Server returned " + responseBody, responseBody.contains("exist:hits=\"1\""));
+        assertTrue(responseBody.contains("exist:hits=\"1\""), "Server returned " + responseBody);
     }
 
     @Test
-    public void doDeleteEncodedPath() throws IOException {
+    void doDeleteEncodedPath() throws IOException {
         final String docUri = getServerUri() + DELETE_METHOD_ENCODED_DOC_URI.getCollectionPath();
         HttpResponse response = doDeleteWithAuth(docUri);
         int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         // assert file content updated
         response = doGet(docUri);
         resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.NOT_FOUND_404, resultStatusCode);
+        assertEquals(HttpStatus.NOT_FOUND_404, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     /**
      * By default there should be NO doctype serialized.
      */
     @Test
-    public void getDocTypeDefault() throws IOException {
+    void getDocTypeDefault() throws IOException {
         final HttpResponse response = doGet(getResourceWithDocTypeUri());
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
@@ -1168,11 +1164,11 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void getDocTypeNo() throws IOException {
+    void getDocTypeNo() throws IOException {
         final HttpResponse response = doGet(getResourceWithDocTypeUri() + "?_output-doctype=no");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
@@ -1180,11 +1176,11 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void getDocTypeYes() throws IOException {
+    void getDocTypeYes() throws IOException {
         final HttpResponse response = doGet(getResourceWithDocTypeUri() + "?_output-doctype=yes");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         final String responseBody = readResponse(response.getEntity());
@@ -1194,12 +1190,12 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void getDocWithXslPi() throws IOException {
+    void getDocWithXslPi() throws IOException {
         final String uri = getServerUri() + TEST_XSLPI_COLLECTION_URI.append(TEST_XML_DOC_WITH_XSLPI_URI);
         final HttpResponse response = doGet(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         // NOTE(AR) At present the RESTServer will force XHTML with text/html mimetype and indenting if an xsl-pi is used... this should probably be improved in future!
         assertResponseMediaType(MediaType.TEXT_HTML, response);
@@ -1217,22 +1213,22 @@ public class RESTServiceTest {
                 .checkForSimilar()
                 .build();
 
-        assertFalse(diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), diff.toString());
     }
 
     @Test
-    public void getDocWithXslPi_twice() throws IOException {
+    void getDocWithXslPi_twice() throws IOException {
         // NOTE(AR) doing this twice revealed an issue with the Serializer not being correctly reset
         getDocWithXslPi();
         getDocWithXslPi();
     }
 
     @Test
-    public void getXmlDeclDefault() throws IOException {
+    void getXmlDeclDefault() throws IOException {
         final HttpResponse response = doGet(getResourceWithXmlDeclUri());
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String responseBody = readResponse(response.getEntity());
         assertEquals("<?xml version=\"1.1\" encoding=\"ISO-8859-1\" standalone=\"yes\"?>\r\n" +
@@ -1240,11 +1236,11 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void getXmlDeclNo() throws IOException {
+    void getXmlDeclNo() throws IOException {
         final HttpResponse response = doGet(getResourceWithXmlDeclUri() + "?_omit-original-xml-declaration=no");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
             assertResponseMediaType("application/xml", response);
 
         final String responseBody = readResponse(response.getEntity());
@@ -1253,11 +1249,11 @@ public class RESTServiceTest {
     }
 
     @Test
-    public void getXmlDeclYes() throws IOException {
+    void getXmlDeclYes() throws IOException {
         final HttpResponse response = doGet(getResourceWithXmlDeclUri() + "?_omit-original-xml-declaration=yes");
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType("application/xml", response);
 
         final String responseBody = readResponse(response.getEntity());
@@ -1378,7 +1374,7 @@ public class RESTServiceTest {
         final HttpResponse response = doGetWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     private void doStoredQuery(final boolean cacheHeader, final boolean wrap) throws IOException {
@@ -1390,7 +1386,7 @@ public class RESTServiceTest {
         final HttpResponse response = doGetWithAuth(uri);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
 
         final String cached = response.getFirstHeader("X-XQuery-Cached").getValue();
         assertNotNull(cached);
@@ -1403,9 +1399,9 @@ public class RESTServiceTest {
 
         final String responseBody = readResponse(response.getEntity());
         if (wrap) {
-            assertTrue("Server returned response: " + responseBody, responseBody.startsWith("<exist:result "));
+            assertTrue(responseBody.startsWith("<exist:result "), "Server returned response: " + responseBody);
         } else {
-            assertTrue("Server returned response: " + responseBody, responseBody.startsWith("Hello World!"));
+            assertTrue(responseBody.startsWith("Hello World!"), "Server returned response: " + responseBody);
         }
     }
 
@@ -1414,7 +1410,7 @@ public class RESTServiceTest {
         final HttpResponse response = doPutWithAuth(uri, MediaType.APPLICATION_XQUERY, data);
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, expectedResponseCode, resultStatusCode);
+        assertEquals(expectedResponseCode, resultStatusCode, "Server returned response code: " + resultStatusCode);
     }
 
     private int uploadData() throws IOException {
@@ -1435,7 +1431,7 @@ public class RESTServiceTest {
 
         final int resultStatusCode = response.getStatusLine()
             .getStatusCode();
-        assertEquals("Server returned response code: " + resultStatusCode, HttpStatus.OK_200, resultStatusCode);
+        assertEquals(HttpStatus.OK_200, resultStatusCode, "Server returned response code: " + resultStatusCode);
         assertResponseMediaType(MediaType.APPLICATION_XML, response);
 
         assertNotNull(readResponse(response.getEntity()));
@@ -1520,6 +1516,6 @@ public class RESTServiceTest {
         if (semicolon > 0) {
             contentType = contentType.substring(0, semicolon).trim();
         }
-        assertEquals("Server returned content type: " + contentType, expectedContentType, contentType);
+        assertEquals(expectedContentType, contentType, "Server returned content type: " + contentType);
     }
 }

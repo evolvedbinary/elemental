@@ -32,9 +32,9 @@
  */
 package org.exist.xquery.functions.xmldb;
 
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Rule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class AbstractXMLDBTest {
 
@@ -43,11 +43,11 @@ public abstract class AbstractXMLDBTest {
      * we restart the server for each test
      * which ensures a clean http session.
      */
-    @Rule
-    public final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+    @RegisterExtension
+    public final DatabaseWebServerExtension databaseWebServer = new DatabaseWebServerExtension(true, false, true, true);
 
     protected String getRestUrl() {
-        return "http://localhost:" + existWebServer.getPort();
+        return "http://localhost:" + databaseWebServer.getPort();
     }
 
     protected String getCollectionRootUri() {

@@ -47,36 +47,30 @@ package org.exist.storage;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
-import org.exist.util.LockException;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.StringInputSource;
 import org.exist.xmldb.XmldbURI;
 import org.junit.ClassRule;
-import org.junit.Test;
-import org.xml.sax.SAXException;
+import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BinaryDocumentTest {
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(true, true);
 
     @Test
-    public void removeCollection() throws PermissionDeniedException, IOException, SAXException, LockException, EXistException {
+    void removeCollection() throws PermissionDeniedException, IOException, SAXException, LockException, EXistException {
         final XmldbURI testCollectionUri = XmldbURI.create("/db/remove-collection-test");
         final XmldbURI thingUri = testCollectionUri.append("thing");
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 
@@ -99,11 +93,11 @@ public class BinaryDocumentTest {
     }
 
     @Test
-    public void overwriteCollection() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
+    void overwriteCollection() throws EXistException, PermissionDeniedException, IOException, SAXException, LockException {
         final XmldbURI testCollectionUri = XmldbURI.create("/db/overwrite-collection-test");
         final XmldbURI thingUri = testCollectionUri.append("thing");
 
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        final BrokerPool pool = EMBEDDED_DATABASE.getBrokerPool();
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
                 final Txn transaction = pool.getTransactionManager().beginTransaction()) {
 

@@ -21,25 +21,21 @@
  */
 package org.exist.storage;
 
-import org.exist.EXistException;
-import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.util.Configuration;
-import org.exist.util.DatabaseConfigurationException;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for startup triggers.
@@ -49,8 +45,8 @@ public class StartupTriggerTest {
     private final static String USER = "testuser1";
     private final static String PASSWORD = "testpass";
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(null, null, properties(), true, true);
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(null, null, properties(), true, true);
 
     public static Properties properties() {
         final List<Configuration.StartupTriggerConfig> startupTriggers = new ArrayList<>();
@@ -65,7 +61,7 @@ public class StartupTriggerTest {
      * Check if startup trigger has access to security manager.
      */
     @Test
-    public void createUser() throws DatabaseConfigurationException, EXistException, IOException {
+    void createUser() throws DatabaseConfigurationException, EXistException, IOException {
         assertTrue(TestStartupTrigger.completed);
     }
 
@@ -80,19 +76,15 @@ public class StartupTriggerTest {
                 final UserAider aider = new UserAider(USER);
                 aider.setPassword(PASSWORD);
 
-                try {
+                Assertions.assertDoesNotThrow(() -> {
                     secman.addAccount(sysBroker, aider);
-                } catch (final PermissionDeniedException | EXistException e) {
-                    fail(e.getMessage());
-                }
+                });
 
                 assertTrue(secman.hasAccount(USER));
 
-                try {
+                Assertions.assertDoesNotThrow(() -> {
                     secman.deleteAccount(USER);
-                } catch (final PermissionDeniedException | EXistException e) {
-                    fail(e.getMessage());
-                }
+                });
             }
 
             completed = true;

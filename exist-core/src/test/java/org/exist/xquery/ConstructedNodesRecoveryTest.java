@@ -61,7 +61,7 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
@@ -71,8 +71,8 @@ import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 
 import org.exist.xquery.value.Sequence;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -82,14 +82,14 @@ import javax.xml.transform.OutputKeys;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests for recovery of database corruption after constructed node operations (in-memory nodes)
  * @author <a href="mailto:adam.retter@devon.gov.uk">Adam Retter</a>
  */
-public class ConstructedNodesRecoveryTest {
+class ConstructedNodesRecoveryTest {
 
 	private final static String query =
 		"declare variable $categories := \n" +
@@ -125,22 +125,22 @@ public class ConstructedNodesRecoveryTest {
 			"<grapefruit colour=\"yellow\"/>" +
 		"</fruit>";
 
-	// we don't use @ClassRule/@Rule as we want to force corruption in some tests
-	private ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
+	// we don't use @RegisterExtension we want to force corruption in some tests
+	private EmbeddedDatabaseExtension embeddedDatabase = new EmbeddedDatabaseExtension(true, true);
 
-	/**
-	 * Issues a query against constructed nodes and then corrupts the database (intentionally)
-	 */
+    /**
+     * Issues a query against constructed nodes and then corrupts the database (intentionally)
+     */
     @Test
-	public void constructedNodesCorrupt() throws PermissionDeniedException, DatabaseConfigurationException, LockException, IOException, SAXException, XPathException, EXistException {
+    void constructedNodesCorrupt() throws PermissionDeniedException, DatabaseConfigurationException, LockException, IOException, SAXException, XPathException, EXistException {
 		constructedNodeQuery(true);
     }
-    
-	/**
-	 * Recovers from corruption (intentional) and then issues a query against constructed nodes
-	 */
+
+    /**
+     * Recovers from corruption (intentional) and then issues a query against constructed nodes
+     */
     @Test
-	public void constructedNodesRecover() throws PermissionDeniedException, DatabaseConfigurationException, LockException, IOException, SAXException, XPathException, EXistException {
+    void constructedNodesRecover() throws PermissionDeniedException, DatabaseConfigurationException, LockException, IOException, SAXException, XPathException, EXistException {
 		constructedNodeQuery(false);
 	}
 	
@@ -285,12 +285,12 @@ public class ConstructedNodesRecoveryTest {
 	}
 
 	private BrokerPool startDb() throws EXistException, IOException, DatabaseConfigurationException {
-		existEmbeddedServer.startDb();
-		return existEmbeddedServer.getBrokerPool();
+		embeddedDatabase.startDb();
+		return embeddedDatabase.getBrokerPool();
 	}
 
-	@After
-	public void stopDb() {
-		existEmbeddedServer.stopDb();
+    @AfterEach
+    void stopDb() {
+		embeddedDatabase.stopDb();
 	}
 }

@@ -56,9 +56,9 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
-import org.exist.test.ExistWebServer;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.exist.test.DatabaseWebServerExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import xyz.elemental.mediatype.MediaType;
 
 import java.io.IOException;
@@ -70,20 +70,20 @@ import static org.exist.management.client.JMXtoXML.JMX_NAMESPACE;
 import static org.exist.management.client.JMXtoXML.JMX_PREFIX;
 import static org.exist.util.JREUtil.IS_JAVA_1_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.xmlunit.matchers.HasXPathMatcher.hasXPath;
 
 public class JmxRemoteTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true, false);
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true, false);
 
     private static String getServerUri() {
-        return "http://localhost:" + existWebServer.getPort() + "/exist/status";
+        return "http://localhost:" + DATABASE_WEB_SERVER.getPort() + "/exist/status";
     }
 
     @Test
-    public void checkContent() throws IOException {
+    void checkContent() throws IOException {
         // Get content
         final Request request = Request.Get(getServerUri());
         final String jmxXml = withHttpExecutor(executor -> executor.execute(request).returnContent().asString());
@@ -113,7 +113,7 @@ public class JmxRemoteTest {
     }
 
     @Test
-    public void checkBasicRequest() throws IOException {
+    void checkBasicRequest() throws IOException {
         final Request request = Request.Get(getServerUri())
                 .addHeader(new BasicHeader("Accept", ContentType.APPLICATION_XML.toString()));
 

@@ -45,15 +45,17 @@
  */
 package org.exist.xquery.functions.validate;
 
-import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.test.XmldbEmbeddedDatabaseExtension;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.EXistResourceSet;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.exist.samples.Samples.SAMPLES;
 import static org.xmlunit.matchers.EvaluateXPathMatcher.hasXPath;
 
@@ -71,55 +73,55 @@ import org.xmldb.api.base.XMLDBException;
  */
 public class JaxpDtdCatalogTest {
 
-    @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    @RegisterExtension
+    public static final XmldbEmbeddedDatabaseExtension XMLDB_EMBEDDED_DATABASE = new XmldbEmbeddedDatabaseExtension(false, true, true);
 
     private static final String noValidation = "<?xml version='1.0'?>" +
             "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
             "    <validation mode='no'/>" +
             "</collection>";
 
-    @BeforeClass
-    public static void prepareResources() throws XMLDBException, IOException {
+    @BeforeAll
+    static void prepareResources() throws XMLDBException, IOException {
 
         // Switch off validation
-        try (final Collection conf = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "system/config/db/parse")) {
-            existEmbeddedServer.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
+        try (Collection conf = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "system/config/db/parse")) {
+            XmldbEmbeddedDatabaseExtension.storeResource(conf, DEFAULT_COLLECTION_CONFIG_FILE, noValidation.getBytes());
         }
 
-        try (final Collection dtdsCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/dtds")) {
+        try (Collection dtdsCollection = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "parse/dtds")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/dtds/MyNameSpace.dtd")) {
                 assertNotNull(is);
-                existEmbeddedServer.storeResource(dtdsCollection, "MyNameSpace.dtd", InputStreamUtil.readAll(is));
+                XmldbEmbeddedDatabaseExtension.storeResource(dtdsCollection, "MyNameSpace.dtd", InputStreamUtil.readAll(is));
             }
         }
 
-        try (final Collection parseCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse")) {
+        try (Collection parseCollection = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "parse")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/catalog.xml")) {
                 assertNotNull(is);
-                existEmbeddedServer.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
+                XmldbEmbeddedDatabaseExtension.storeResource(parseCollection, "catalog.xml", InputStreamUtil.readAll(is));
             }
         }
 
-        try (final Collection instanceCollection = existEmbeddedServer.createCollection(existEmbeddedServer.getRoot(), "parse/instance")) {
+        try (Collection instanceCollection = XMLDB_EMBEDDED_DATABASE.createCollection(XMLDB_EMBEDDED_DATABASE.getRoot(), "parse/instance")) {
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/valid-dtd.xml")) {
                 assertNotNull(is);
-                existEmbeddedServer.storeResource(instanceCollection, "valid-dtd.xml", InputStreamUtil.readAll(is));
+                XmldbEmbeddedDatabaseExtension.storeResource(instanceCollection, "valid-dtd.xml", InputStreamUtil.readAll(is));
             }
 
             try (final InputStream is = SAMPLES.getSample("validation/parse/instance/invalid-dtd.xml")) {
                 assertNotNull(is);
-                existEmbeddedServer.storeResource(instanceCollection, "invalid-dtd.xml", InputStreamUtil.readAll(is));
+                XmldbEmbeddedDatabaseExtension.storeResource(instanceCollection, "invalid-dtd.xml", InputStreamUtil.readAll(is));
             }
         }
     }
 
-    @Before
-    public void clearGrammarCache() throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery("validation:clear-grammar-cache()")) {
+    @BeforeEach
+    void clearGrammarCache() throws XMLDBException {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery("validation:clear-grammar-cache()")) {
             try (final Resource resource = result.getResource(0)) {
                 resource.getContent();
             }
@@ -130,7 +132,7 @@ public class JaxpDtdCatalogTest {
      * ***********************************************************************************
      */
     @Test
-    public void dtd_stored_catalog_valid() throws XMLDBException {
+    void dtd_stored_catalog_valid() throws XMLDBException {
         final String query = "validation:jaxp-report( " +
                 "xs:anyURI('/db/parse/instance/valid-dtd.xml'), false()," +
                 "doc('/db/parse/catalog.xml') )";
@@ -138,7 +140,7 @@ public class JaxpDtdCatalogTest {
     }
 
     @Test
-    public void dtd_stored_catalog_invalid() throws XMLDBException {
+    void dtd_stored_catalog_invalid() throws XMLDBException {
         final String query = "validation:jaxp-report( " +
                 "xs:anyURI('/db/parse/instance/invalid-dtd.xml'), false()," +
                 "doc('/db/parse/catalog.xml') )";
@@ -146,7 +148,7 @@ public class JaxpDtdCatalogTest {
     }
 
     @Test
-    public void dtd_anyURI_catalog_valid() throws XMLDBException {
+    void dtd_anyURI_catalog_valid() throws XMLDBException {
         final String query = "validation:jaxp-report( " +
                 "xs:anyURI('/db/parse/instance/valid-dtd.xml'), false()," +
                 "xs:anyURI('/db/parse/catalog.xml') )";
@@ -154,7 +156,7 @@ public class JaxpDtdCatalogTest {
     }
 
     @Test
-    public void dtd_anyURI_catalog_invalid() throws XMLDBException {
+    void dtd_anyURI_catalog_invalid() throws XMLDBException {
         final String query = "validation:jaxp-report( " +
                 "xs:anyURI('/db/parse/instance/invalid-dtd.xml'), false()," +
                 "xs:anyURI('/db/parse/catalog.xml') )";
@@ -168,7 +170,7 @@ public class JaxpDtdCatalogTest {
      *
      */
     @Test
-    public void dtd_searched_valid() throws XMLDBException {
+    void dtd_searched_valid() throws XMLDBException {
         final String query = "validation:jaxp-report( " +
                 "xs:anyURI('/db/parse/instance/valid-dtd.xml'), false()," +
                 "xs:anyURI('/db/parse/') )";
@@ -176,7 +178,7 @@ public class JaxpDtdCatalogTest {
     }
 
     @Test
-    public void dtd_searched_invalid() throws XMLDBException {
+    void dtd_searched_invalid() throws XMLDBException {
         final String query = "validation:jaxp-report( " +
                 "xs:anyURI('/db/parse/instance/invalid-dtd.xml'), false()," +
                 "xs:anyURI('/db/parse/') )";
@@ -184,7 +186,7 @@ public class JaxpDtdCatalogTest {
     }
 
     private void executeAndEvaluate(final String query, final String expectedValue) throws XMLDBException {
-        try (final EXistResourceSet result = existEmbeddedServer.executeQuery(query)) {
+        try (final EXistResourceSet result = XMLDB_EMBEDDED_DATABASE.executeQuery(query)) {
             assertEquals(1, result.getSize());
 
             try (final Resource resource = result.getResource(0)) {

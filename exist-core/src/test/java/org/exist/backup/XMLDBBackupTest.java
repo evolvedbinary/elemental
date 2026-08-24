@@ -46,16 +46,17 @@
 package org.exist.backup;
 
 import org.exist.TestUtils;
-import org.exist.test.ExistWebServer;
+import org.exist.test.DatabaseWebServerExtension;
 import org.exist.xmldb.AbstractRestoreServiceTaskListener;
 import org.exist.xmldb.EXistRestoreService;
 import org.exist.xmldb.XmldbURI;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
@@ -70,46 +71,34 @@ import org.xmlunit.diff.Diff;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Source;
+
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@CsvSource({
+    "local (classic),xmldb:exist://embedded-eXist-server,false",
+    "remote (classic),xmldb:exist://localhost${PORT}:/xmlrpc,false",
+    "local (dedup),xmldb:exist://embedded-eXist-server,false",
+    "remote (dedup),xmldb:exist://localhost:${PORT}/xmlrpc,true",
+})
 public class XMLDBBackupTest {
 
-    @ClassRule
-    public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
-    private static final String PORT_PLACEHOLDER = "${PORT}";
+    @RegisterExtension
+    public static final DatabaseWebServerExtension DATABASE_WEB_SERVER = new DatabaseWebServerExtension(true, false, true, true);
 
     private static final String COLLECTION_NAME = "test-xmldb-backup-restore";
 
-    @ClassRule
-    public static final TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @Parameterized.Parameters(name = "{0}")
-    public static java.util.Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] {
-                { "local (classic)", XmldbURI.EMBEDDED_SERVER_URI.toString(), false },
-                { "remote (classic)", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc", false },
-                { "local (dedup)", XmldbURI.EMBEDDED_SERVER_URI.toString(), false },
-                { "remote (dedup)", "xmldb:exist://localhost:" + PORT_PLACEHOLDER + "/xmlrpc", true },
-        });
-    }
-
-    @Parameterized.Parameter
-    public String apiName;
-
-    @Parameterized.Parameter(value = 1)
-    public String baseUri;
-
-    @Parameterized.Parameter(value = 2)
-    public boolean deduplicateBlobs;
+    @TempDir
+    public static File TEMPORARY_FOLDER;
 
     private static final String DOC1_NAME = "doc1.xml";
     private final String doc1Content = "<timestamp>" + System.nanoTime() + "</timestamp>";
@@ -119,8 +108,17 @@ public class XMLDBBackupTest {
     private static final String BIN_DOC2_NAME = "doc2.bin";
     private final String binDoc2Content = Long.toString(System.nanoTime());
 
-    private final String getBaseUri() {
-        return baseUri.replace(PORT_PLACEHOLDER, Integer.toString(existWebServer.getPort()));
+    @Parameter(0)
+    public String apiName;
+
+    @Parameter(1)
+    public String baseUri;
+
+    @Parameter(2)
+    public boolean deduplicateBlobs;
+
+    private String getBaseUri() {
+        return baseUri.replace("${PORT}", Integer.toString(DATABASE_WEB_SERVER.getPort()));
     }
 
     @Test
@@ -155,7 +153,7 @@ public class XMLDBBackupTest {
                     .withTest(actual)
                     .checkForIdentical()
                     .build();
-                assertFalse(diff.toString(), diff.hasDifferences());
+                assertFalse(diff.hasDifferences(), diff.toString());
             }
 
             try (final Resource binDoc1 = testCollection.getResource(BIN_DOC1_NAME)) {
@@ -169,7 +167,7 @@ public class XMLDBBackupTest {
     }
 
     private Path backup(final String filename, final XmldbURI collectionUri) throws IOException, XMLDBException, SAXException {
-        final Path backupFile = tempFolder.newFile(filename).toPath();
+        final Path backupFile = Files.createFile(TEMPORARY_FOLDER.toPath().resolve(filename));
         final Backup backup = new Backup(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD,
                 backupFile,
                 collectionUri,
@@ -194,8 +192,8 @@ public class XMLDBBackupTest {
         }
     }
 
-    @Before
-    public void before() throws XMLDBException {
+    @BeforeEach
+    void before() throws XMLDBException {
         try (final Collection root = DatabaseManager.getCollection(getBaseUri() + "/db", TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)) {
             final CollectionManagementService colService = root.getService(CollectionManagementService.class);
             try (final Collection testCollection = colService.createCollection(COLLECTION_NAME)) {

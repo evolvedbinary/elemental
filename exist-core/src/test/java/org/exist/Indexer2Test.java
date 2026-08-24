@@ -59,9 +59,8 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.ExistEmbeddedServer;
+import org.exist.test.EmbeddedDatabaseExtension;
 import org.exist.test.TestConstants;
-import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.StringInputSource;
 import org.exist.util.serializer.SAXSerializer;
@@ -72,11 +71,12 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 
 import static org.exist.util.PropertiesBuilder.propertiesBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.xml.sax.SAXException;
 import xyz.elemental.mediatype.MediaType;
 
@@ -115,24 +115,22 @@ public class Indexer2Test {
             "</result>";
 
     @Test
-    public void store_preserve_mixed_ws() throws PermissionDeniedException, IOException, EXistException, SAXException, LockException, XPathException, AuthenticationException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    void store_preserve_mixed_ws(final BrokerPool pool) {
         assertTrue(((Boolean) pool.getConfiguration().getProperty(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT)).booleanValue());
         assertEquals("none", pool.getConfiguration().getProperty(Indexer.PROPERTY_SUPPRESS_WHITESPACE));
     }
 
     @Test
-    public void retrieve_boundary_space_preserve_with_preserve_mixed_ws() throws EXistException, PermissionDeniedException, SAXException, XPathException, IOException {
+    void retrieve_boundary_space_preserve_with_preserve_mixed_ws(final BrokerPool pool) throws XPathException, PermissionDeniedException, EXistException, SAXException {
         assertEquals("<result name=\"" + TestConstants.TEST_COLLECTION_URI.toString() + "/"+ TestConstants.TEST_XML_URI2.toString() + "\">\n" +
                 "    <inline>\n" +
                 "Government of new Territory of Nevada—Governor Nye and the practical jokers—Mr. Clemens begins journalistic life on Virginia City Enterprise.\n" + "</inline>\n" +
                 "    <stored>\n" +
                 "Government of new Territory of Nevada—Governor Nye and the practical jokers—Mr. Clemens begins journalistic life on Virginia City Enterprise.\n" + "</stored>\n" +
-                "</result>", executeQuery());
+                "</result>", executeQuery(pool));
     }
 
-    private String executeQuery() throws EXistException, PermissionDeniedException, SAXException, XPathException, IOException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private String executeQuery(final BrokerPool pool) throws EXistException, PermissionDeniedException, SAXException, XPathException {
         try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
              final StringBuilderWriter out = new StringBuilderWriter();
              final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(XQUERY), false, null, null, null, null, null)) {
@@ -152,8 +150,7 @@ public class Indexer2Test {
         }
     }
 
-    private static void storeDoc() throws PermissionDeniedException, IOException, EXistException, SAXException, LockException, AuthenticationException {
-        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+    private static void storeDoc(final BrokerPool pool) throws PermissionDeniedException, IOException, EXistException, SAXException, LockException, AuthenticationException {
         final TransactionManager txnMgr = pool.getTransactionManager();
 
         try(final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().authenticate("admin", "")));
@@ -170,8 +167,8 @@ public class Indexer2Test {
         }
     }
 
-    @ClassRule
-    public static final ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(
+    @RegisterExtension
+    public static final EmbeddedDatabaseExtension EMBEDDED_DATABASE = new EmbeddedDatabaseExtension(
             propertiesBuilder()
                 .put(Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT, true)
                 .set(Indexer.PROPERTY_SUPPRESS_WHITESPACE, "none")
@@ -179,8 +176,8 @@ public class Indexer2Test {
             true,
             false);
 
-    @BeforeClass
-    public static void setUp() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, LockException, AuthenticationException {
-        storeDoc();
+    @BeforeAll
+    static void setUp(final BrokerPool pool) throws EXistException, PermissionDeniedException, IOException, SAXException, LockException, AuthenticationException {
+        storeDoc(pool);
     }
 }
