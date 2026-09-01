@@ -230,7 +230,7 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     public NodeProxy(final Expression expression, final DocumentImpl doc, final NodeId nodeId, final short nodeType, final long address) {
         this.expression = (expression == null && doc != null) ? doc.getExpression() : expression;
         this.doc = doc;
-        this.nodeType = nodeType;
+        this.nodeType = nodeType == UNKNOWN_NODE_TYPE && NodeId.DOCUMENT_NODE.equals(nodeId) ? Node.DOCUMENT_NODE : nodeType;
         this.internalAddress = address;
         this.nodeId = nodeId;
     }
