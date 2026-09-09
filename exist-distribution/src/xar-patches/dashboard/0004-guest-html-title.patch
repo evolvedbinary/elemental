@@ -1,0 +1,11 @@
+--- a/guest.html	2021-09-21 11:43:38
++++ b/guest.html	2026-07-29 09:30:01
+@@ -3,7 +3,7 @@
+     <meta charset="utf-8"/>
+     <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes"/>
+ 
+-    <title>existdb-dashboard</title>
++    <title>Dashboard :: Elemental</title>
+ 
+     <link rel="stylesheet" href="resources/styles.css"/>
+     <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>

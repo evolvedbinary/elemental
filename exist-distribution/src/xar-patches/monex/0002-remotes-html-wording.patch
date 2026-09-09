@@ -1,0 +1,29 @@
+--- a/remotes.html	2026-05-30 21:12:45
++++ b/remotes.html	2026-07-29 09:30:25
+@@ -61,7 +61,7 @@
+         <div class="alert alert-danger" data-template="app:scheduler-enabled">
+             <i class="fa fa-ban"/>
+             <b>Alert! </b>
+-            <span class="message">Remote monitoring <strong>requires</strong> eXist's scheduler
++            <span class="message">Remote monitoring <strong>requires</strong> the scheduler
+                 module to be enabled. See <code>extensions/build.properties</code> and
+                     <code>conf.xml</code>.</span>
+         </div>
+@@ -76,7 +76,7 @@
+                     responsiveness of the system. <code>Response Time</code> is the elapsed time
+                     until the client received the response. </p>
+                 <h3>Configuration</h3>
+-                <p>To monitor remote eXist-db instances, edit the XML file <a href="instances.xml" target="eXide" class="eXide-open" data-exide-open="/db/apps/monex/instances.xml">instances.xml</a> in the root collection of
++                <p>To monitor remote instances, edit the XML file <a href="instances.xml" target="eXide" class="eXide-open" data-exide-open="/db/apps/monex/instances.xml">instances.xml</a> in the root collection of
+                     the monex application. Monex pings each server at configurable times or
+                     intervals. You can also set up email alerts in <a href="notifications.xml" target="eXide" class="eXide-open" data-exide-open="/db/apps/monex/notifications.xml">notifications.xml</a>.</p>
+                 <p>The configuration for monitoring a remote instance looks as follows:</p>
+@@ -100,7 +100,7 @@
+                         <td>token</td>
+                         <td>the unique JMX token required to connect to the JMX servlet. This token is generated
+                             for every server and can be found in the file <code>jmxservlet.token</code> 
+-                            inside the data directory of the eXist instance. Note: eXist versions before 2.2 
++                            inside the data directory of the instance. Note: eXist-db versions before 2.2 
+                             do not use this mechanism, so no token is required.</td>
+                     </tr>
+                     <tr>
