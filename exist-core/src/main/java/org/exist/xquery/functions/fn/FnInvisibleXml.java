@@ -28,6 +28,8 @@ import org.exist.dom.QName;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
+import de.bottlecaps.markup.Blitz;
+
 public class FnInvisibleXml extends BasicFunction {
 
     private static final String FS_INVISIBLE_XML_NAME = "invisible-xml";
@@ -62,7 +64,12 @@ public class FnInvisibleXml extends BasicFunction {
         @Override
         public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
             String parserInput = getCurrentArguments()[0].itemAt(0).getStringValue();
-            return new StringValue(parserInput);
+            // generate the default ixml grammar
+            String ixmlGrammar = Blitz.ixmlGrammar();
+            // parse the input using the ixml grammar
+            String generatedXML = Blitz.generate(ixmlGrammar).parse(parserInput);
+
+            return new StringValue(generatedXML);
         }
 
         @Override
