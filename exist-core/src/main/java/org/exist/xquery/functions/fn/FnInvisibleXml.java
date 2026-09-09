@@ -20,31 +20,22 @@
  */
 package org.exist.xquery.functions.fn;
 
+import static org.exist.xquery.functions.fn.FnModule.functionSignature;
+import static org.exist.xquery.FunctionDSL.returns;
+
 import org.exist.dom.QName;
-import org.exist.xquery.BasicFunction;
-import org.exist.xquery.Cardinality;
-import org.exist.xquery.FunctionSignature;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
-import org.exist.xquery.value.FunctionReturnSequenceType;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.StringValue;
-import org.exist.xquery.value.Type;
+import org.exist.xquery.*;
+import org.exist.xquery.value.*;
 
 public class FnInvisibleXml extends BasicFunction {
 
     private static final String FS_INVISIBLE_XML_NAME = "invisible-xml";
 
-    /**
-     * Note for the arguments one of them takses 2 types and I need to create a super type use transform.java as example
-     */
-
-    public final static FunctionSignature FNS_INVISIBLE_XML = new FunctionSignature(
+    public final static FunctionSignature FS_INVISIBLE_XML = new FunctionSignature(
             new QName(FS_INVISIBLE_XML_NAME, FnModule.NAMESPACE_URI),
             "Evaluates invisible XML.",
             null,
-            new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "The evaluated string.")
-    );
+            new FunctionReturnSequenceType(Type.FUNCTION, Cardinality.EXACTLY_ONE, "The parser function."));
 
     public FnInvisibleXml(final XQueryContext context, final FunctionSignature signature) {
         super(context, signature);
@@ -52,6 +43,31 @@ public class FnInvisibleXml extends BasicFunction {
 
     @Override
     public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
-        return new StringValue("TODO TODO TODO, maybe next");
+        final IxmlParserFunction fn = new IxmlParserFunction(context); // QUESTIONS : where context??
+        final FunctionCall call = new FunctionCall(context, fn);
+        return new FunctionReference(call);
+    }
+
+    private static class IxmlParserFunction extends UserDefinedFunction {
+
+        IxmlParserFunction(final XQueryContext context) {
+            super(context, functionSignature(
+                    "invisible-xml",
+                    "Gets the next random number generator.",
+                    returns(Type.STRING, "just a random string for now")));
+        }
+
+        @Override
+        public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
+            return new StringValue("inner function return value");
+        }
+
+        @Override
+        public void accept(final ExpressionVisitor visitor) {
+            if (visited) {
+                return;
+            }
+            visited = true;
+        }
     }
 }
