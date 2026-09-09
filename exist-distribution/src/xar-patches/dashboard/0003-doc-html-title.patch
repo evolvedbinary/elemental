@@ -1,0 +1,11 @@
+--- a/doc.html
++++ b/doc.html
+@@ -3,7 +3,7 @@
+     <meta charset="utf-8"/>
+     <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes"/>
+ 
+-    <title>existdb-dashboard</title>
++    <title>Dashboard :: Elemental</title>
+ 
+     <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+ 

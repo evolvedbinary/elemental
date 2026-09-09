@@ -1,0 +1,11 @@
+--- a/profiling.html
++++ b/profiling.html
+@@ -23,7 +23,7 @@
+     <section class="content profiling" data-template="app:profile">
+         <div class="pad margin no-print">
+             <div class="callout callout-info">Enable tracing to start collecting statistics. Run
+-                queries as usual (through any eXist interface), then press "Refresh" to see
++                queries as usual (through any interface), then press "Refresh" to see
+                 statistics. </div>
+         </div>
+         <div class="box">

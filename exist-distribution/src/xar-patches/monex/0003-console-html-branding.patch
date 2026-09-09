@@ -1,0 +1,11 @@
+--- a/console.html
++++ b/console.html
+@@ -64,7 +64,7 @@
+             </div><!-- /.box-header -->
+             <div class="box-body">
+                 <p>If you <strong>upgraded this app from an older version</strong>, please restart
+-                    eXist once to refresh the library on the web server.</p>
++                     to refresh the library on the web server.</p>
+                 <p>Use the console:log functions in your XQuery to send messages to the remote
+                     console. For example:</p>
+                 <pre><code class="language-xquery">import module namespace console="http://exist-db.org/xquery/console";
