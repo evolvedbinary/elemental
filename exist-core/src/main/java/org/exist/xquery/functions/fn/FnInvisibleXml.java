@@ -21,6 +21,7 @@
 package org.exist.xquery.functions.fn;
 
 import static org.exist.xquery.functions.fn.FnModule.functionSignature;
+import static org.exist.xquery.FunctionDSL.param;
 import static org.exist.xquery.FunctionDSL.returns;
 
 import org.exist.dom.QName;
@@ -54,12 +55,14 @@ public class FnInvisibleXml extends BasicFunction {
             super(context, functionSignature(
                     "invisible-xml",
                     "Gets the next random number generator.",
-                    returns(Type.STRING, "just a random string for now")));
+                    returns(Type.STRING, "just a random string for now"),
+                    param("Parser inpuit", Type.STRING, "param description")));
         }
 
         @Override
         public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
-            return new StringValue("inner function return value");
+            String parserInput = getCurrentArguments()[0].itemAt(0).getStringValue();
+            return new StringValue(parserInput);
         }
 
         @Override
