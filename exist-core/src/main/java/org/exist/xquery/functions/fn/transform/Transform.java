@@ -58,16 +58,25 @@ import java.io.IOException;
 import java.io.StringWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.exist.dom.INodeHandle;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.storage.serializers.EXistOutputKeys;
+import org.exist.storage.serializers.NodeValueInputSource;
 import org.exist.util.Holder;
 import org.exist.xquery.ErrorCodes;
+import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.functions.fn.FnTransform;
 import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
-import org.w3c.dom.Document;
+import org.exist.xslt.SaxonConfiguration;
+import org.exist.xslt.XsltURIResolverHelper;
 import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -75,10 +84,12 @@ import javax.xml.transform.ErrorListener;
 import javax.xml.transform.Source;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.URIResolver;
+import javax.xml.transform.sax.SAXSource;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
@@ -113,134 +124,181 @@ public class Transform {
     private static Logger LOGGER =  LogManager.getLogger(org.exist.xquery.functions.fn.transform.Transform.class);
     private static final org.exist.xquery.functions.fn.transform.Transform.ErrorListenerLog4jAdapter ERROR_LISTENER = new Transform.ErrorListenerLog4jAdapter(Transform.LOGGER);
 
-    final Convert.ToSaxon toSaxon = new Convert.ToSaxon() {
-        @Override
-        DocumentBuilder newDocumentBuilder() {
-            return context.getBroker().getBrokerPool().getSaxonProcessor().newDocumentBuilder();
-        }
-    };
-
     private static final Cache<String, XsltExecutable> XSLT_EXECUTABLE_CACHE = Caffeine.newBuilder()
             .maximumSize(25)
             .weakValues()
             .build();
 
-    private final XQueryContext context;
-    private final FnTransform fnTransform;
+    private final Expression callingExpression;
 
-
-    public Transform(final XQueryContext context, final FnTransform fnTransform) {
-        this.context = context;
-        this.fnTransform = fnTransform;
+    public Transform(final Expression callingExpression) {
+        this.callingExpression = callingExpression;
     }
 
-    public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
+    public MapType eval(final SaxonConfiguration saxonConfiguration, final Convert.ToSaxon toSaxon, final Options options, final Sequence contextSequence, @Nullable final ErrorListener errorListener) throws XPathException {
+        if (!(options.xsltVersion.equals(V1_0) || options.xsltVersion.equals(V2_0) || options.xsltVersion.equals(V3_0))) {
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0001, "xslt-version: " + options.xsltVersion + " is not supported.");
+        }
 
-        final Options options = new Options(context, fnTransform, toSaxon, (MapType) args[0].itemAt(0));
-
-        //TODO(AR) Saxon recommends to use a <code>StreamSource</code> or <code>SAXSource</code> instead of DOMSource for performance
-        final Optional<Source> sourceNode = Transform.getSourceNode(options.sourceNode, context.getBaseURI());
-
-        if (options.xsltVersion.equals(V1_0) || options.xsltVersion.equals(V2_0) || options.xsltVersion.equals(V3_0)) {
-            try {
-                final Holder<XPathException> compileException = new Holder<>();
-                final XsltExecutable xsltExecutable;
-                if (options.shouldCache.orElse(BooleanValue.TRUE).getValue()) {
-                    xsltExecutable = Transform.XSLT_EXECUTABLE_CACHE.get(executableHash(options), key -> {
-                        try {
-                            return compileExecutable(options);
-                        } catch (final XPathException e) {
-                            compileException.value = e;
-                            return null;
-                        }
-                    });
-                } else {
-                    xsltExecutable = compileExecutable(options);
-                }
-
-                if (compileException.value != null) {
-                    // if we could not compile the xslt, rethrow the error
-                    throw compileException.value;
-                }
-                if (xsltExecutable == null) {
-                    throw new XPathException(fnTransform, ErrorCodes.FOXT0003, "Unable to compile stylesheet (No error returned from compilation)");
-                }
-
-                final Xslt30Transformer xslt30Transformer = xsltExecutable.load30();
-                xslt30Transformer.setMessageListener(new XsltMessageListener(context.getBroker().getBrokerPool().getSaxonProcessor(), getLogger()));
-
-                options.initialMode.ifPresent(qNameValue -> xslt30Transformer.setInitialMode(Convert.ToSaxon.of(qNameValue.getQName())));
-                xslt30Transformer.setInitialTemplateParameters(options.templateParams, false);
-                xslt30Transformer.setInitialTemplateParameters(options.tunnelParams, true);
-                if (options.baseOutputURI.isPresent()) {
-                    final AtomicValue baseOutputURI = options.baseOutputURI.get();
-                    final AtomicValue asString = baseOutputURI.convertTo(Type.STRING);
-                    if (asString instanceof StringValue) {
-                        xslt30Transformer.setBaseOutputURI(asString.getStringValue());
+        try {
+            final Holder<XPathException> compileException = new Holder<>();
+            final XsltExecutable xsltExecutable;
+            if (options.shouldCache.orElse(BooleanValue.TRUE).getValue()) {
+                xsltExecutable = Transform.XSLT_EXECUTABLE_CACHE.get(executableCacheKey(options), key -> {
+                    try {
+                        return compileExecutable(saxonConfiguration, toSaxon, options);
+                    } catch (final XPathException e) {
+                        compileException.value = e;
+                        return null;
                     }
-                }
-
-                // The delivery mechanism
-                final SerializationProperties serializationProperties =
-                        SerializationParameters.getAsSerializationProperties(
-                                options.serializationParams.orElse(new MapType(context)),
-                                (code, message) -> new XPathException(fnTransform, code, message));
-                final Delivery delivery = new Delivery(context, options.deliveryFormat, serializationProperties);
-
-                // Record the secondary result documents generated
-                final Map<URI, Delivery> resultDocuments = new HashMap<>();
-                xslt30Transformer.setResultDocumentHandler(resultDocumentURI -> {
-                    final Delivery resultDelivery = new Delivery(context, options.deliveryFormat, serializationProperties);
-                    resultDocuments.put(resultDocumentURI, resultDelivery);
-                    return resultDelivery.createDestination(xslt30Transformer, true);
                 });
-
-                if (options.globalContextItem.isPresent()) {
-                    final Item item = options.globalContextItem.get();
-                    final XdmItem xdmItem = (XdmItem) toSaxon.of(item);
-                    xslt30Transformer.setGlobalContextItem(xdmItem);
-                } else if (sourceNode.isPresent()) {
-                    final Document document;
-                    Source source = sourceNode.get();
-                    final Node node = ((DOMSource)sourceNode.get()).getNode();
-                    if (!(node instanceof org.exist.dom.memtree.DocumentImpl) && !(node instanceof org.exist.dom.persistent.DocumentImpl)) {
-                        //The source may not be a document
-                        //If it isn't, it should be part of a document, so we build a DOMSource to use
-                        document = node.getOwnerDocument();
-                        source = new DOMSource(document);
-                    }
-                    final var brokerPool = context.getBroker().getBrokerPool();
-                    final DocumentBuilder sourceBuilder = brokerPool.getSaxonProcessor().newDocumentBuilder();
-                    final XdmNode xdmNode = sourceBuilder.build(source);
-                    xslt30Transformer.setGlobalContextItem(xdmNode);
-                } else {
-                    xslt30Transformer.setGlobalContextItem(null);
-                }
-
-                final Transform.TemplateInvocation invocation = new Transform.TemplateInvocation(
-                        options, sourceNode, delivery, xslt30Transformer, resultDocuments);
-                return invocation.invoke();
-            } catch (final SaxonApiException e) {
-                throw originalXPathException("Could not transform input using: " + options.xsltSource._1 + ", at line: " + e.getLineNumber() + ". Error: ", e, ErrorCodes.FOXT0003);
-            } catch (final  UncheckedXPathException e) {
-                final Location location = e.getXPathException().getLocator();
-                int line = -1;
-                int column = -1;
-                if (location != null) {
-                    line = location.getLineNumber();
-                    column = location.getColumnNumber();
-                }
-                throw originalXPathException("Could not transform input using: " + options.xsltSource._1 + ", at line: " + line + ", column: " + column + ". Error: ", e, ErrorCodes.FOXT0003);
+            } else {
+                xsltExecutable = compileExecutable(saxonConfiguration, toSaxon, options);
             }
 
-        } else {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0001, "xslt-version: " + options.xsltVersion + " is not supported.");
+            if (compileException.value != null) {
+                // if we could not compile the xslt, rethrow the error
+                throw compileException.value;
+            }
+            if (xsltExecutable == null) {
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0003, "Unable to compile stylesheet (No error returned from compilation)");
+            }
+
+            final Xslt30Transformer xslt30Transformer = xsltExecutable.load30();
+            xslt30Transformer.setMessageListener(new XsltMessageListener(saxonConfiguration.getProcessor(), getLogger()));
+            @Nullable final String base = options.resolvedStylesheetBaseURI.map(AnyURIValue::getStringValue).orElse(null);
+            final URIResolver uriResolver = XsltURIResolverHelper.getXsltURIResolver(callingExpression.getContext().getBroker().getBrokerPool(), xslt30Transformer.getURIResolver(), base, true);
+            xslt30Transformer.setURIResolver(uriResolver);
+
+            options.initialMode.ifPresent(qNameValue -> xslt30Transformer.setInitialMode(Convert.ToSaxon.of(qNameValue.getQName())));
+            xslt30Transformer.setInitialTemplateParameters(options.templateParams, false);
+            xslt30Transformer.setInitialTemplateParameters(options.tunnelParams, true);
+            if (errorListener != null) {
+                xslt30Transformer.setErrorListener(errorListener);
+            }
+            if (options.baseOutputURI.isPresent()) {
+                final AtomicValue baseOutputURI = options.baseOutputURI.get();
+                final AtomicValue asString = baseOutputURI.convertTo(Type.STRING);
+                if (asString instanceof StringValue) {
+                    xslt30Transformer.setBaseOutputURI(asString.getStringValue());
+                }
+            }
+
+            // The delivery mechanism
+            final SerializationProperties serializationProperties =
+                    SerializationParameters.getAsSerializationProperties(
+                            options.serializationParams.orElse(new MapType(callingExpression.getContext())),
+                            (code, message) -> new XPathException(callingExpression, code, message));
+            final Delivery delivery = new Delivery(callingExpression.getContext(), options.deliveryFormat, serializationProperties);
+
+            // Record the secondary result documents generated
+            final Map<URI, Delivery> resultDocuments = new HashMap<>();
+            xslt30Transformer.setResultDocumentHandler(resultDocumentURI -> {
+                final Delivery resultDelivery = new Delivery(callingExpression.getContext(), options.deliveryFormat, serializationProperties);
+                resultDocuments.put(resultDocumentURI, resultDelivery);
+                return resultDelivery.createDestination(xslt30Transformer, true);
+            });
+
+            if (options.globalContextItem.isPresent()) {
+                final Item globalContextItem = options.globalContextItem.get();
+                if (globalContextItem instanceof NodeValue) {
+                    final NodeValue globalContextItemNodeValue = (NodeValue) globalContextItem;
+                    final boolean globalContextItemIsDocument = ((INodeHandle<?>) globalContextItemNodeValue).getNodeType() == Node.DOCUMENT_NODE;
+
+                    // read the global-context-item from Elemental and transform it with Saxon
+                    final InputSource globalContextItemInputSource = new NodeValueInputSource(globalContextItemNodeValue, getBaseURI(globalContextItemNodeValue, callingExpression));
+                    final org.exist.storage.serializers.Serializer xmlReader = callingExpression.getContext().getBroker().borrowSerializer();
+                    try {
+                        configureXmlReader(xmlReader, options);
+                        final Source source = new SAXSource(xmlReader, globalContextItemInputSource);
+                        final DocumentBuilder globalContextItemBuilder = toSaxon.newDocumentBuilder();
+                        XdmNode xdmNode = globalContextItemBuilder.build(source);
+                        // TODO(AR) START TEMP
+                        if (!globalContextItemIsDocument) {
+                            final Iterator<XdmNode> children = xdmNode.children().iterator();
+                            if (children.hasNext()) {
+                                xdmNode = children.next();
+                            }
+                        }
+                        // TODO(AR) END TEMP
+                        xslt30Transformer.setGlobalContextItem(xdmNode);
+
+                    } finally {
+                        callingExpression.getContext().getBroker().returnSerializer(xmlReader);
+                    }
+                } else {
+                    final XdmItem xdmItem = (XdmItem) toSaxon.of(globalContextItem);
+                    xslt30Transformer.setGlobalContextItem(xdmItem);
+                }
+
+            } else if (options.sourceNode.isPresent()) {
+                // set the global-context-item as the root of the tree containing the source node
+                NodeValue globalContextItemNodeValue = options.sourceNode.get();
+
+                if (((INodeHandle<?>) globalContextItemNodeValue).getNodeType() != Node.DOCUMENT_NODE) {
+                    // global-context-item is not at the root of the tree, so set it to the root
+                    if (globalContextItemNodeValue.getImplementationType() == NodeValue.PERSISTENT_NODE) {
+                        // Persistent DOM
+                        globalContextItemNodeValue = NodeProxy.wrap(callingExpression, (DocumentImpl) globalContextItemNodeValue.getOwnerDocument());
+                    } else {
+                        // In-Memory DOM
+                        globalContextItemNodeValue = (org.exist.dom.memtree.DocumentImpl) globalContextItemNodeValue.getOwnerDocument();
+                    }
+                }
+
+                // read the global-context-item from Elemental and set it in Saxon
+                final InputSource globalContextItemInputSource = new NodeValueInputSource(globalContextItemNodeValue, getBaseURI(globalContextItemNodeValue, callingExpression));
+
+                final org.exist.storage.serializers.Serializer xmlReader = callingExpression.getContext().getBroker().borrowSerializer();
+                try {
+                    configureXmlReader(xmlReader, options);
+                    final Source source = new SAXSource(xmlReader, globalContextItemInputSource);
+                    final DocumentBuilder sourceBuilder = toSaxon.newDocumentBuilder();
+                    final XdmNode xdmNode = sourceBuilder.build(source);
+                    xslt30Transformer.setGlobalContextItem(xdmNode);
+
+                    //TODO(AR) remove this after testing
+//                DOMSource source = (DOMSource) sourceNode.get();
+//                Node node = source.getNode();
+//                if (node.getNodeType() != Node.DOCUMENT_NODE) {
+//                    // not at the root of the tree, so get the root
+//                    node = node.getOwnerDocument();
+//                    source = new DOMSource(node, node.getBaseURI());
+//                }
+
+//                final DocumentBuilder sourceBuilder = toSaxon.newDocumentBuilder();
+//                final XdmNode xdmNode = sourceBuilder.build(source);
+//                xslt30Transformer.setGlobalContextItem(xdmNode);
+
+                } finally {
+                    callingExpression.getContext().getBroker().returnSerializer(xmlReader);
+                }
+
+            } else {
+                xslt30Transformer.setGlobalContextItem(null);
+            }
+
+            final Transform.TemplateInvocation invocation = new Transform.TemplateInvocation(
+                    options, delivery, xslt30Transformer, resultDocuments);
+            return invocation.invoke(toSaxon);
+
+        } catch (final SaxonApiException e) {
+            throw originalXPathException("Could not transform input using: " + options.xsltSource._1 + ", at line: " + e.getLineNumber() + ". Error: ", e, ErrorCodes.FOXT0003);
+        } catch (final  UncheckedXPathException e) {
+            final Location location = e.getXPathException().getLocator();
+            int line = -1;
+            int column = -1;
+            if (location != null) {
+                line = location.getLineNumber();
+                column = location.getColumnNumber();
+            }
+            throw originalXPathException("Could not transform input using: " + options.xsltSource._1 + ", at line: " + line + ", column: " + column + ". Error: ", e, ErrorCodes.FOXT0003);
         }
     }
 
 
-    private XsltExecutable compileExecutable(final Options options) throws XPathException {
-        final XsltCompiler xsltCompiler = context.getBroker().getBrokerPool().getSaxonProcessor().newXsltCompiler();
+    private XsltExecutable compileExecutable(final SaxonConfiguration saxonConfiguration, final Convert.ToSaxon toSaxon, final Options options) throws XPathException {
+        final XsltCompiler xsltCompiler = saxonConfiguration.getProcessor().newXsltCompiler();
         final SingleRequestErrorListener errorListener = new SingleRequestErrorListener(Transform.ERROR_LISTENER);
         xsltCompiler.setErrorListener(errorListener);
 
@@ -254,25 +312,28 @@ public class Transform {
             xsltCompiler.setParameter(new net.sf.saxon.s9api.QName(qKey.getPrefix(), qKey.getLocalPart()), value);
         }
 
-        xsltCompiler.setURIResolver(new URIResolution.CompileTimeURIResolver(context, fnTransform) {
-            @Override  public Source resolve(final String href, final String base) throws TransformerException {
-                // Correct error from URI resolution when there is no base
-                try {
-                    final URI hrefURI = URI.create(href);
-                    if (options.resolvedStylesheetBaseURI.isEmpty() && !hrefURI.isAbsolute() && isNullOrEmpty(base)) {
-                        final XPathException resolutionException = new XPathException(fnTransform,
-                            ErrorCodes.XTSE0165,
-                            "transform using a relative href, \n" +
-                                "using option stylesheet-text, but without stylesheet-base-uri");
-                        throw new TransformerException(resolutionException);
-                    }
-                } catch (final IllegalArgumentException e) {
-                    throw new TransformerException(e);
-                }
-                // Checked the special error case, defer to eXist resolution
-                return super.resolve(href, base);
-            }
-        });
+        @Nullable final String base = options.resolvedStylesheetBaseURI.map(AnyURIValue::getStringValue).orElse(null);
+        final URIResolver uriResolver = XsltURIResolverHelper.getXsltURIResolver(callingExpression.getContext().getBroker().getBrokerPool(), xsltCompiler.getURIResolver(), base, true);
+        xsltCompiler.setURIResolver(uriResolver);
+//        xsltCompiler.setURIResolver(new URIResolution.CompileTimeURIResolver(callingExpression) {
+//            @Override  public Source resolve(final String href, final String base) throws TransformerException {
+//                // Correct error from URI resolution when there is no base
+//                try {
+//                    final URI hrefURI = URI.create(href);
+//                    if (options.resolvedStylesheetBaseURI.isEmpty() && !hrefURI.isAbsolute() && isNullOrEmpty(base)) {
+//                        final XPathException resolutionException = new XPathException(callingExpression,
+//                            ErrorCodes.XTSE0165,
+//                            "transform using a relative href, \n" +
+//                                "using option stylesheet-text, but without stylesheet-base-uri");
+//                        throw new TransformerException(resolutionException);
+//                    }
+//                } catch (final IllegalArgumentException e) {
+//                    throw new TransformerException(e);
+//                }
+//                // Checked the special error case, defer to eXist resolution
+//                return super.resolve(href, base);
+//            }
+//        });
 
         try {
             options.resolvedStylesheetBaseURI.ifPresent(anyURIValue -> options.xsltSource._2.setSystemId(anyURIValue.getStringValue()));
@@ -296,7 +357,7 @@ public class Transform {
         Throwable cause = e;
         while (cause != null) {
             if (cause instanceof XPathException) {
-                return new XPathException(fnTransform, ((XPathException) cause).getErrorCode(), prefix + cause.getMessage());
+                return new XPathException(callingExpression, ((XPathException) cause).getErrorCode(), prefix + cause.getMessage(), cause);
             }
             cause = cause.getCause();
         }
@@ -313,15 +374,15 @@ public class Transform {
                     } catch (final IllegalArgumentException ee) {
                         errorCode = new ErrorCodes.DynamicErrorCode(errorCodeQName, cause.getMessage());
                     }
-                    return new XPathException(fnTransform, errorCode, prefix + cause.getMessage());
+                    return new XPathException(callingExpression, errorCode, prefix + cause.getMessage());
                 } else {
-                    return new XPathException(fnTransform, defaultErrorCode, prefix + cause.getMessage());
+                    return new XPathException(callingExpression, defaultErrorCode, prefix + cause.getMessage());
                 }
             }
             cause = cause.getCause();
         }
 
-        return new XPathException(fnTransform, defaultErrorCode, prefix + e.getMessage());
+        return new XPathException(callingExpression, defaultErrorCode, prefix + e.getMessage());
     }
 
     /**
@@ -331,8 +392,8 @@ public class Transform {
      * @param options options to read
      * @return a string, the hash we want
      */
-    private String executableHash(final Options options) {
-
+    private String executableCacheKey(final Options options) {
+        // TODO(AR) this needs improving should use a dedicated class ExecutableCacheKey for the return value - that class should contain only members that need to be compared for equality to determine the key
         final String uniquifier;
         if (options.resolvedStylesheetBaseURI.isPresent() || options.sourceTextChecksum.isPresent()) {
             uniquifier = "";
@@ -350,35 +411,72 @@ public class Transform {
                 options.stylesheetNodeDocumentPath,
                 options.stylesheetNodeDocumentPath).toString();
 
-        return Tuple(locationHash, paramHash).toString();
+        return Tuple(options.saxonConfiguration.getConfiguration().hashCode(), locationHash, paramHash).toString();
+    }
+
+    private static void configureXmlReader(final org.exist.storage.serializers.Serializer xmlReader, final Options options) throws XPathException {
+        if (options.vendorOptions.isPresent()) {
+            final MapType vendorOptions = options.vendorOptions.get();
+            final boolean expandXincludes = Options.EXPAND_XINCLUDES.get(options.xsltVersion, vendorOptions).map(BooleanValue::getValue).orElse(false);
+            try {
+                xmlReader.setProperty(EXistOutputKeys.EXPAND_XINCLUDES, expandXincludes ? "yes" : "no");
+            } catch (final SAXNotRecognizedException | SAXNotSupportedException e) {
+                // no-op - exception will never be thrown in practice
+            }
+            if (expandXincludes) {
+                @Nullable final String xincludePath = Options.XINCLUDE_PATH.get(options.xsltVersion, vendorOptions).map(StringValue::getStringValue).orElse(null);
+                if (xincludePath != null) {
+                    xmlReader.getXIncludeFilter().setModuleLoadPath(xincludePath);
+                }
+            }
+        }
+    }
+
+    private static @Nullable String getBaseURI(final NodeValue nodeValue, final Expression callingExpression) {
+        @Nullable String baseUri = nodeValue.getNode().getBaseURI();
+        if (baseUri == null) {
+            try {
+                final AnyURIValue contextBaseURI = callingExpression.getContext().getBaseURI();
+                if (contextBaseURI != null) {
+                    baseUri = contextBaseURI.getStringValue();
+                }
+            } catch (final XPathException e) {
+                // ignore
+                return null;
+            }
+        }
+
+        if (isNullOrEmpty(baseUri)) {
+            return null;
+        }
+
+        return baseUri;
     }
 
     private class TemplateInvocation {
 
         final Options options;
-        Optional<Source> sourceNode;
         final Delivery delivery;
         final Destination destination;
         final Xslt30Transformer xslt30Transformer;
         final Map<URI, Delivery> resultDocuments;
 
-        TemplateInvocation(final Options options, final Optional<Source> sourceNode, final Delivery delivery, final Xslt30Transformer xslt30Transformer, final Map<URI, Delivery> resultDocuments) {
+        TemplateInvocation(final Options options, final Delivery delivery, final Xslt30Transformer xslt30Transformer, final Map<URI, Delivery> resultDocuments) {
             this.options = options;
-            this.sourceNode = sourceNode;
             this.delivery = delivery;
             this.destination = delivery.createDestination(xslt30Transformer, false);
             this.xslt30Transformer = xslt30Transformer;
             this.resultDocuments = resultDocuments;
         }
 
-        private MapType invokeCallFunction() throws XPathException, SaxonApiException {
+        private MapType invokeCallFunction(final Convert.ToSaxon toSaxon) throws XPathException, SaxonApiException {
             assert options.initialFunction.isPresent();
             final net.sf.saxon.s9api.QName qName = Convert.ToSaxon.of(options.initialFunction.get().getQName());
             final XdmValue[] functionParams;
             if (options.functionParams.isPresent()) {
                 functionParams = toSaxon.of(options.functionParams.get());
             } else {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Error - transform using XSLT 3.0 option initial-function, but the corresponding option function-params was not supplied.");
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Error - transform using XSLT 3.0 option initial-function, but the corresponding option function-params was not supplied.");
             }
 
             xslt30Transformer.callFunction(qName, functionParams, destination);
@@ -388,7 +486,7 @@ public class Transform {
         private MapType invokeCallTemplate() throws XPathException, SaxonApiException {
             assert options.initialTemplate.isPresent();
             if (options.initialMode.isPresent()) {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0002,
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0002,
                         Options.INITIAL_MODE.name + " supplied indicating apply-templates invocation, " +
                                 "AND " + Options.INITIAL_TEMPLATE.name + " supplied indicating call-template invocation.");
             }
@@ -403,21 +501,61 @@ public class Transform {
             return makeResultMap(options, delivery, resultDocuments);
         }
 
-        private MapType invokeApplyTemplates() throws XPathException, SaxonApiException {
+        private MapType invokeApplyTemplates(final Convert.ToSaxon toSaxon) throws XPathException, SaxonApiException {
             if (options.initialMatchSelection.isPresent()) {
                 final Sequence initialMatchSelection = options.initialMatchSelection.get();
-                final Item item = initialMatchSelection.itemAt(0);
-                if (item instanceof Document) {
-                    final Source sourceIMS = new DOMSource((Document)item, context.getBaseURI().getStringValue());
-                    xslt30Transformer.applyTemplates(sourceIMS, destination);
+                final Item initialMatchSelectionItem = initialMatchSelection.itemAt(0);
+                if (initialMatchSelectionItem instanceof NodeValue) {
+
+                    final NodeValue initialMatchSelectionNodeValue = (NodeValue) initialMatchSelectionItem;
+
+                    // read the initial match selection from Elemental and transform it with Saxon
+                    final InputSource initialMatchSelectionInputSource = new NodeValueInputSource(initialMatchSelectionNodeValue, getBaseURI(initialMatchSelectionNodeValue, callingExpression));
+                    final org.exist.storage.serializers.Serializer xmlReader = callingExpression.getContext().getBroker().borrowSerializer();
+                    try {
+                        configureXmlReader(xmlReader, options);
+                        final Source source = new SAXSource(xmlReader, initialMatchSelectionInputSource);
+                        xslt30Transformer.applyTemplates(source, destination);
+
+                    } finally {
+                        callingExpression.getContext().getBroker().returnSerializer(xmlReader);
+                    }
+
+                    // TODO (AR) remove this after testing
+//                    final Source sourceIMS = new DOMSource((Document)item, callingExpression.getContext().getBaseURI().getStringValue());
+//                    xslt30Transformer.applyTemplates(sourceIMS, destination);
                 } else {
                     final XdmValue selection = toSaxon.of(initialMatchSelection);
                     xslt30Transformer.applyTemplates(selection, destination);
                 }
-            } else if (sourceNode.isPresent()) {
-                xslt30Transformer.applyTemplates(sourceNode.get(), destination);
+            } else if (options.sourceNode.isPresent()) {
+                final NodeValue sourceNode = options.sourceNode.get();
+                final boolean sourceNodeIsDocument = ((INodeHandle<?>) sourceNode).getNodeType() == Node.DOCUMENT_NODE;
+
+                // read the source node from Elemental and transform it with Saxon
+                final InputSource sourceNodeInputSource = new NodeValueInputSource(sourceNode, getBaseURI(sourceNode, callingExpression));
+                final org.exist.storage.serializers.Serializer xmlReader = callingExpression.getContext().getBroker().borrowSerializer();
+                try {
+                    configureXmlReader(xmlReader, options);
+
+                    // TODO(AR) START TEMP
+                    if (!sourceNodeIsDocument) {
+                        try {
+                            xmlReader.setProperty(org.exist.storage.serializers.Serializer.GENERATE_DOC_EVENTS, "false");
+                        } catch (final SAXNotRecognizedException | SAXNotSupportedException e) {
+                            // no-op
+                        }
+                    }
+                    // TODO(AR) END TEMP
+
+                    final Source source = new SAXSource(xmlReader, sourceNodeInputSource);
+                    xslt30Transformer.applyTemplates(source, destination);
+
+                } finally {
+                    callingExpression.getContext().getBroker().returnSerializer(xmlReader);
+                }
             } else {
-                throw new XPathException(fnTransform,
+                throw new XPathException(callingExpression,
                         ErrorCodes.FOXT0002,
                         "One of " + Options.SOURCE_NODE.name + " or " +
                                 Options.INITIAL_MATCH_SELECTION.name + " or " +
@@ -427,19 +565,19 @@ public class Transform {
             return makeResultMap(options, delivery, resultDocuments);
         }
 
-        private MapType invoke() throws XPathException, SaxonApiException {
+        MapType invoke(final Convert.ToSaxon toSaxon) throws XPathException, SaxonApiException {
             if (options.initialFunction.isPresent()) {
-                return invokeCallFunction();
+                return invokeCallFunction(toSaxon);
             } else if (options.initialTemplate.isPresent()) {
                 return invokeCallTemplate();
             } else {
-                return invokeApplyTemplates();
+                return invokeApplyTemplates(toSaxon);
             }
         }
 
         private MapType makeResultMap(final Options options, final Delivery primaryDelivery, final Map<URI, Delivery> resultDocuments) throws XPathException {
 
-            try (final MapType outputMap = new MapType(context)) {
+            try (final MapType outputMap = new MapType(callingExpression.getContext())) {
                 final AtomicValue outputKey;
                 outputKey = options.baseOutputURI.orElseGet(() -> new StringValue("output"));
 
@@ -465,10 +603,6 @@ public class Transform {
         } else {
             return before;
         }
-    }
-
-    private static Optional<Source> getSourceNode(final Optional<NodeValue> sourceNode, final AnyURIValue baseURI) {
-        return sourceNode.map(NodeValue::getNode).map(node -> new DOMSource(node, baseURI.getStringValue()));
     }
 
     /**

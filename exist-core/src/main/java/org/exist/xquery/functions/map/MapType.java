@@ -262,7 +262,7 @@ public class MapType extends AbstractMapType {
     }
 
     @Override
-    public AbstractMapType put(final AtomicValue key, final Sequence value) {
+    public MapType put(final AtomicValue key, final Sequence value) {
         final IMap<AtomicValue, Sequence> newMap = map.put(key, value);
         return new MapType(getExpression(), this.context, newMap, keyType == key.getType() ? keyType : MIXED_KEY_TYPES);
     }

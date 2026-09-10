@@ -388,9 +388,13 @@ public class TransformTest {
 
             assertNotNull(sequence);
             assertTrue(sequence.hasOne());
+            final Item resultItem = sequence.itemAt(0);
+            assertTrue(resultItem instanceof org.exist.dom.memtree.ElementImpl);
+            final Document resultDocument = ((Element) resultItem).getOwnerDocument();
+            assertNotNull(resultDocument);
 
             final Source expected = Input.fromString("<counts><count1>2</count1><count2>1</count2></counts>").build();
-            final Source actual = Input.fromDocument(sequence.itemAt(0).toJavaObject(Node.class).getOwnerDocument()).build();
+            final Source actual = Input.fromDocument(resultDocument).build();
 
             final Diff diff = DiffBuilder.compare(expected)
                     .withTest(actual)

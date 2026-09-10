@@ -298,7 +298,7 @@ public interface Context {
      */
     Collator getCollator(String uri, ErrorCodes.ErrorCode errorCode) throws XPathException;
 
-    Collator getDefaultCollator();
+    @Nullable Collator getDefaultCollator();
 
     /**
      * Set the set of statically known documents for the current execution context.
