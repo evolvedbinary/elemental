@@ -363,6 +363,29 @@
                             <goal>resources</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>copy-unpatched-xars</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${expath.pkg.dir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${expath.pkg.dir}-downloaded</directory>
+                                    <includes>
+                                        <include>*.xar</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>dashboard-*.xar</exclude>
+                                        <exclude>monex-*.xar</exclude>
+                                        <exclude>packageservice-*.xar</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -702,13 +725,53 @@
                             </filesets>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>remove-old-dashboard-branding</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${expath.pkg.dir}-dashboard-staging/resources/images</directory>
+                                    <includes>
+                                        <include>existdb.png</include>
+                                        <include>existdb-web.svg</include>
+                                        <include>x.svg</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>remove-old-monex-branding</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${expath.pkg.dir}-monex-staging/resources/img</directory>
+                                    <includes>
+                                        <include>exist_icon_16x16.ico</include>
+                                        <include>existdb-logo.png</include>
+                                        <include>powered-by-whiteglass.svg</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
             <plugin>
                 <groupId>com.evolvedbinary.maven.plugins</groupId>
                 <artifactId>expath-package-repository-plugin</artifactId>
-                <version>1.3.1</version>
+                <version>1.5.0</version>
                 <executions>
                     <execution>
                         <id>fetch-xars</id>
@@ -718,11 +781,14 @@
                         </goals>
                         <configuration>
                             <repoUri>${public.xar.repo.uri}</repoUri>
-                            <outputDirectory>${expath.pkg.dir}</outputDirectory>
+                            <outputDirectory>${expath.pkg.dir}-downloaded</outputDirectory>
                             <elementalVersion>${project.version}</elementalVersion>
+                            <elementalExistDbPkgCompatibleVersion>${exist-db.expath.pkg.compatible.version}</elementalExistDbPkgCompatibleVersion>
                             <packages>
                                 <package>
                                     <abbrev>dashboard</abbrev>
+                                    <setPathPropertyName>dashboard-xar-path</setPathPropertyName>
+                                    <setFileNamePropertyName>dashboard-xar-filename</setFileNamePropertyName>
                                 </package>
                                 <package>
                                     <abbrev>eXide</abbrev>
@@ -738,9 +804,13 @@
                                 </package>
                                 <package>
                                     <abbrev>monex</abbrev>
+                                    <setPathPropertyName>monex-xar-path</setPathPropertyName>
+                                    <setFileNamePropertyName>monex-xar-filename</setFileNamePropertyName>
                                 </package>
                                 <package>
                                     <abbrev>packageservice</abbrev>
+                                    <setPathPropertyName>packageservice-xar-path</setPathPropertyName>
+                                    <setFileNamePropertyName>packageservice-xar-filename</setFileNamePropertyName>
                                 </package>
                                 <package>
                                     <abbrev>semver-xq</abbrev>
@@ -754,130 +824,135 @@
                 </executions>
             </plugin>
 
-            <!-- Replace the eXist-db logo with the Elemental logo in the Dashboard and Monex XAR files -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.2.0</version>
+                <groupId>com.evolvedbinary.maven.plugins</groupId>
+                <artifactId>compress-uncompress-maven-plugin</artifactId>
+                <version>1.0.2</version>
                 <executions>
                     <execution>
                         <id>unzip-dashboard</id>
-                        <phase>process-resources</phase>
+                        <phase>generate-resources</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>uncompress</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar" />
-                                <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
-                                <unzip src="${dashboard-xar-path}" dest="${expath.pkg.dir}-dashboard-staging/">
-                                    <patternset>
-                                        <exclude name="resources/images/existdb.png" />
-                                        <exclude name="resources/images/existdb-web.svg" />
-                                        <exclude name="resources/images/x.svg" />
-                                    </patternset>
-                                </unzip>
-                            </target>
+                            <inputFile>${dashboard-xar-path}</inputFile>
+                            <outputPath>${expath.pkg.dir}-dashboard-staging</outputPath>
+                            <algorithm>zip</algorithm>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-patched-dashboard</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>compress</goal>
+                        </goals>
+                        <configuration>
+                            <inputPath>${expath.pkg.dir}-dashboard-staging</inputPath>
+                            <outputPath>${expath.pkg.dir}/${dashboard-xar-filename}</outputPath>
+                            <algorithm>zip</algorithm>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>unzip-packageservice</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>uncompress</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${packageservice-xar-path}</inputFile>
+                            <outputPath>${expath.pkg.dir}-packageservice-staging</outputPath>
+                            <algorithm>zip</algorithm>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-patched-packageservice</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>compress</goal>
+                        </goals>
+                        <configuration>
+                            <inputPath>${expath.pkg.dir}-packageservice-staging</inputPath>
+                            <outputPath>${expath.pkg.dir}/${packageservice-xar-filename}</outputPath>
+                            <algorithm>zip</algorithm>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>unzip-monex</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>uncompress</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${monex-xar-path}</inputFile>
+                            <outputPath>${expath.pkg.dir}-monex-staging</outputPath>
+                            <algorithm>zip</algorithm>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-patched-monex</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>compress</goal>
+                        </goals>
+                        <configuration>
+                            <inputPath>${expath.pkg.dir}-monex-staging</inputPath>
+                            <outputPath>${expath.pkg.dir}/${monex-xar-filename}</outputPath>
+                            <algorithm>zip</algorithm>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>com.evolvedbinary.maven.plugins</groupId>
+                <artifactId>patch-maven-plugin</artifactId>
+                <version>1.2.0-SNAPSHOT</version>
+                <configuration>
+                    <failOnFailedPatch>true</failOnFailedPatch>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>patch-packageservice</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <configuration>
+                            <targetDirectory>${expath.pkg.dir}-packageservice-staging</targetDirectory>
+                            <patchDirectory>${project.basedir}/src/xar-patches/packageservice</patchDirectory>
                         </configuration>
                     </execution>
                     <execution>
                         <id>patch-dashboard</id>
                         <phase>process-resources</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>apply</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <replace file="${expath.pkg.dir}-dashboard-staging/admin.xql" token="title&gt;existdb-dashboard&lt;" value="title&gt;Dashboard :: Elemental&lt;" />
-                                <replace file="${expath.pkg.dir}-dashboard-staging/build.html" token="title&gt;existdb-dashboard&lt;" value="title&gt;Dashboard :: Elemental&lt;" />
-                                <replace file="${expath.pkg.dir}-dashboard-staging/doc.html" token="title&gt;existdb-dashboard&lt;" value="title&gt;Dashboard :: Elemental&lt;" />
-                                <replace file="${expath.pkg.dir}-dashboard-staging/guest.html" token="title&gt;existdb-dashboard&lt;" value="title&gt;Dashboard :: Elemental&lt;" />
-                                <replace file="${expath.pkg.dir}-dashboard-staging/index.html" token="title&gt;existdb-dashboard&lt;" value="title&gt;Dashboard :: Elemental&lt;" />
-                                <replace file="${expath.pkg.dir}-dashboard-staging/existdb-dashboard.html" token="existdb-web.svg" value="elemental-web.svg" />
-                                <loadfile property="elemental-web-svg" srcFile="${project.build.outputDirectory}/elemental-web.svg" />
-                                <replaceregexp file="${expath.pkg.dir}-dashboard-staging/bower_components/existdb-launcher/existdb-branding.html" match="&lt;svg.+&lt;/svg&gt;" replace="${elemental-web-svg}" />
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>zip-patched-dashboard</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <fileset id="dashboard-fileset" dir="${expath.pkg.dir}" includes="dashboard-*.xar" />
-                                <pathconvert property="dashboard-xar-path" refid="dashboard-fileset" />
-                                <zip destfile="${dashboard-xar-path}">
-                                    <fileset dir="${expath.pkg.dir}-dashboard-staging" />
-                                    <zipfileset dir="${project.build.outputDirectory}" includes="elemental-web.svg" fullpath="resources/images/elemental-web.svg" />
-                                </zip>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>unzip-monex</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <fileset id="monex-fileset" dir="${expath.pkg.dir}" includes="monex-*.xar" />
-                                <pathconvert property="monex-xar-path" refid="monex-fileset" />
-                                <unzip src="${monex-xar-path}" dest="${expath.pkg.dir}-monex-staging/">
-                                    <patternset>
-                                        <exclude name="resources/img/exist_icon_16x16.ico" />
-                                        <exclude name="resources/img/existdb-logo.png" />
-                                        <exclude name="resources/img/powered-by-whiteglass.svg" />
-                                    </patternset>
-                                </unzip>
-                            </target>
+                            <targetDirectory>${expath.pkg.dir}-dashboard-staging</targetDirectory>
+                            <patchDirectory>${project.basedir}/src/xar-patches/dashboard</patchDirectory>
                         </configuration>
                     </execution>
                     <execution>
                         <id>patch-monex</id>
                         <phase>process-resources</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>apply</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <replace file="${expath.pkg.dir}-monex-staging/console.html" token="eXist once" value="" />
-                                <replace file="${expath.pkg.dir}-monex-staging/login.html" token="exist_icon_16x16.ico" value="elemental-favicon.ico" />
-                                <replace file="${expath.pkg.dir}-monex-staging/login.html" token="existdb-logo.png" value="elemental-web.svg" />
-                                <replace file="${expath.pkg.dir}-monex-staging/profiling.html" token="any eXist interface" value="any interface" />
-                                <replace file="${expath.pkg.dir}-monex-staging/remotes.html" token="eXist's scheduler" value="the scheduler" />
-                                <replace file="${expath.pkg.dir}-monex-staging/remotes.html" token="remote eXist-db instances" value="remote instances" />
-                                <replace file="${expath.pkg.dir}-monex-staging/remotes.html" token="the eXist instance" value="the instance" />
-                                <replace file="${expath.pkg.dir}-monex-staging/remotes.html" token="eXist versions before" value="eXist-db versions before" />
-                                <replace file="${expath.pkg.dir}-monex-staging/templates/page.html" token="exist_icon_16x16.ico" value="elemental-favicon.ico" />
-                                <replace file="${expath.pkg.dir}-monex-staging/templates/page.html" token="existdb-logo.png" value="elemental-web.svg" />
-                                <replace file="${expath.pkg.dir}-monex-staging/templates/page.html" token="powered-by-whiteglass.svg" value="elemental-web.svg" />
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>zip-patched-monex</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <fileset id="monex-fileset" dir="${expath.pkg.dir}" includes="monex-*.xar" />
-                                <pathconvert property="monex-xar-path" refid="monex-fileset" />
-                                <zip destfile="${monex-xar-path}">
-                                    <fileset dir="${expath.pkg.dir}-monex-staging" />
-                                    <zipfileset dir="${project.build.outputDirectory}" includes="elemental-favicon.ico" fullpath="resources/img/elemental-favicon.ico" />
-                                    <zipfileset dir="${project.build.outputDirectory}" includes="elemental-web.svg" fullpath="resources/img/elemental-web.svg" />
-                                </zip>
-                            </target>
+                            <targetDirectory>${expath.pkg.dir}-monex-staging</targetDirectory>
+                            <patchDirectory>${project.basedir}/src/xar-patches/monex</patchDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+
+
 
             <plugin>
                 <groupId>com.evolvedbinary.maven.mfrey</groupId>

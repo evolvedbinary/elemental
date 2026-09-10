@@ -1,0 +1,20 @@
+--- a/login.html
++++ b/login.html
+@@ -10,7 +10,7 @@
+         <title data-template="config:app-title">App Title</title>
+         <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport"/>
+         <meta data-template="config:app-meta"/>
+-        <link rel="shortcut icon" href="resources/img/exist_icon_16x16.ico"/>
++        <link rel="shortcut icon" href="resources/img/elemental-favicon.ico"/>
+         <link href="resources/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+         <link href="resources/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+         <link href="resources/css/ionicons.min.css" rel="stylesheet" type="text/css"/>
+@@ -21,7 +21,7 @@
+     <body class="login-page">
+         <div class="login-box">
+             <div class="login-logo">
+-                <img src="resources/img/existdb-logo.png" height="40"/>
++                <img src="resources/img/elemental-web.svg" height="40"/>
+             </div>
+             <div class="login-box-body">
+                 <div class="login-box-msg">Sign in as a dba user</div>
