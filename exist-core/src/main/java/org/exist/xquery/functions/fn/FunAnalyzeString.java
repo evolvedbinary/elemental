@@ -71,6 +71,7 @@ import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
+import org.exist.xslt.SaxonConfiguration;
 import org.xml.sax.helpers.AttributesImpl;
 
 import javax.xml.XMLConstants;
@@ -173,7 +174,7 @@ public class FunAnalyzeString extends BasicFunction {
     }
 
     private void analyzeString(final MemTreeBuilder builder, final String input, String pattern, final String flags) throws XPathException {
-        final Configuration config = context.getBroker().getBrokerPool().getSaxonConfiguration();
+        final Configuration config = SaxonConfiguration.getConfiguration(getContext().getConfiguration(), null).getConfiguration();
 
         final List<String> warnings = new ArrayList<>(1);
 

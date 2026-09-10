@@ -47,7 +47,6 @@ package org.exist.storage;
 
 import com.evolvedbinary.j8fu.fsm.AtomicFSM;
 import com.evolvedbinary.j8fu.fsm.FSM;
-import com.evolvedbinary.j8fu.lazy.AtomicLazyVal;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
@@ -141,8 +140,6 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     private StatusReporter statusReporter = null;
 
     private final XQuery xqueryService = new XQuery();
-
-    private AtomicLazyVal<SaxonConfiguration> saxonConfiguration = new AtomicLazyVal<>(() -> SaxonConfiguration.loadConfiguration(this));
 
     //TODO : make it non-static since every database instance may have its own policy.
     //TODO : make a default value that could be overwritten by the configuration
@@ -1955,14 +1952,6 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     @Override
     public void registerCollectionTrigger(final Class<? extends CollectionTrigger> clazz) {
         collectionTriggers.add(new CollectionTriggerProxy(clazz));
-    }
-
-    public net.sf.saxon.Configuration getSaxonConfiguration() {
-        return saxonConfiguration.get().getConfiguration();
-    }
-
-    public net.sf.saxon.s9api.Processor getSaxonProcessor() {
-        return saxonConfiguration.get().getProcessor();
     }
 
     /**

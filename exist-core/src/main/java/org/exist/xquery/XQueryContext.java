@@ -1148,7 +1148,7 @@ public class XQueryContext implements BinaryValueManager, Context {
     }
 
     @Override
-    public Collator getDefaultCollator() {
+    public @Nullable Collator getDefaultCollator() {
         return defaultCollator;
     }
 

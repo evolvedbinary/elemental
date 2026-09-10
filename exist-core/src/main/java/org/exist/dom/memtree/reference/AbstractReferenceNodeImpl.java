@@ -23,7 +23,6 @@ package org.exist.dom.memtree.reference;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.NodeImpl;
-import org.exist.dom.persistent.AttrImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.xquery.Expression;
 import org.exist.xquery.NodeTest;

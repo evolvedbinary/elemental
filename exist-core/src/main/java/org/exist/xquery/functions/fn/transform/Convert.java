@@ -79,7 +79,7 @@ import java.util.List;
  *     It's not clear how easy or hard that would be.
  * </p>
  */
-class Convert {
+public class Convert {
 
     private Convert() {
         super();
@@ -132,9 +132,17 @@ class Convert {
 
     static final private String COULD_NOT_BE_CONVERTED = " could not be converted to an eXist ";
 
-    abstract static class ToSaxon {
+    public static class ToSaxon {
 
-        abstract DocumentBuilder newDocumentBuilder();
+        private final Processor processor;
+
+        public ToSaxon(final Processor processor) {
+            this.processor = processor;
+        }
+
+        DocumentBuilder newDocumentBuilder() {
+            return processor.newDocumentBuilder();
+        }
 
         static net.sf.saxon.s9api.QName of(final QName qName) {
             return new net.sf.saxon.s9api.QName(qName.getPrefix() == null ? "" : qName.getPrefix(), qName.getNamespaceURI(), qName.getLocalPart());

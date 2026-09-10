@@ -91,6 +91,7 @@ public interface Namespaces {
 	String EXIST_JAVA_BINDING_NS = "http://exist.sourceforge.net/NS/exist/java-binding";
 	String EXIST_JAVA_BINDING_NS_PREFIX = "java";
 
+	String EXIST_FEATURE_NS = EXIST_NS + "/feature";
 
     String XML_NS = XMLConstants.XML_NS_URI;
 	String XMLNS_NS = XMLConstants.XMLNS_ATTRIBUTE_NS_URI;

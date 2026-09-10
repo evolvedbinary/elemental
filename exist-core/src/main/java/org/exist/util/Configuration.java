@@ -62,6 +62,7 @@ import org.exist.util.io.ContentFilePool;
 import org.exist.xquery.Expression;
 import org.exist.xquery.PerformanceStats;
 import org.exist.xquery.XQueryWatchDog;
+import org.exist.xslt.SaxonConfiguration;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
