@@ -18,17 +18,30 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 package org.exist.xquery.functions.fn;
 
 import static org.exist.xquery.functions.fn.FnModule.functionSignature;
 import static org.exist.xquery.FunctionDSL.param;
 import static org.exist.xquery.FunctionDSL.returns;
 
+import org.exist.Namespaces;
 import org.exist.dom.QName;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.memtree.SAXAdapter;
+import org.exist.util.XMLReaderPool;
+import org.exist.validation.ValidationReport;
 import org.exist.xquery.*;
+import org.exist.xquery.functions.validation.Shared;
 import org.exist.xquery.value.*;
+import org.xml.sax.*;
 
 import de.bottlecaps.markup.Blitz;
+
+import java.io.IOException;
+import java.io.StringReader;
 
 public class FnInvisibleXml extends BasicFunction {
 
@@ -57,7 +70,7 @@ public class FnInvisibleXml extends BasicFunction {
             super(context, functionSignature(
                     "invisible-xml",
                     "Gets the next random number generator.",
-                    returns(Type.STRING, "just a random string for now"),
+                    returns(Type.DOCUMENT, "just a random string for now"),
                     param("Parser inpuit", Type.STRING, "param description")));
         }
 
@@ -69,7 +82,25 @@ public class FnInvisibleXml extends BasicFunction {
             // parse the input using the ixml grammar
             String generatedXML = Blitz.generate(ixmlGrammar).parse(parserInput);
 
-            return new StringValue(generatedXML);
+            return parse(generatedXML, null);
+        }
+
+        private Sequence parse(final String xmlContent, final Sequence[] args) throws XPathException {
+            DocumentImpl document = null;
+            final SAXAdapter adapter = new SAXAdapter(context);
+            try {
+                XMLReaderPool pool = context.getBroker().getBrokerPool().getParserPool();
+                XMLReader reader = pool.borrowXMLReader();
+                reader.setContentHandler(adapter);
+                reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, adapter);
+                reader.parse(new InputSource(new StringReader(xmlContent)));
+                document = adapter.getDocument();
+            } catch (Exception e) {
+
+            } finally {
+                return document;
+            }
+
         }
 
         @Override
